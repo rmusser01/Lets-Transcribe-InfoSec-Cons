@@ -1,5 +1,5 @@
 # Lets-Transcribe-Defcon
-Let's transcribe every single defcon talk and make them easily searchable by title, content, or author!
+Let's transcribe & summarize every single Blackhat & Defcon talk (to start with...) and make them easily searchable by title, content, or author!
 
 ### Pipeline
 1. Using the tldw project(I'm biased): https://github.com/rmusser01/tldw
