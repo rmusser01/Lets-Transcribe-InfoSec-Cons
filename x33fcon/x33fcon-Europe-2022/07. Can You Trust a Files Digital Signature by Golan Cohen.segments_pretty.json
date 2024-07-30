@@ -1,0 +1,1139 @@
+{
+  "segments": [
+    {
+      "Time_Start": 0.0,
+      "Time_End": 12.48,
+      "Text": "This text was transcribed using whisper model: large-v2\n\n Hello everyone, my name is Golan. Today we're gonna explore the topic of digital signatures,"
+    },
+    {
+      "Time_Start": 12.48,
+      "Time_End": 18.92,
+      "Text": " specifically we'll talk about PE files. It's my first time here at ZipCon, I'm very glad to be"
+    },
+    {
+      "Time_Start": 18.92,
+      "Time_End": 26.96,
+      "Text": " here, glad to see you all, and let's begin. Now it's only fair that you also get to know me,"
+    },
+    {
+      "Time_Start": 27.0,
+      "Time_End": 33.2,
+      "Text": " so a little bit about myself. My name is Golan Cohen, I work at Checkpoint, which is based in"
+    },
+    {
+      "Time_Start": 33.2,
+      "Time_End": 40.4,
+      "Text": " Tel Aviv, Israel. Today I'm in charge of researching and protecting infections that"
+    },
+    {
+      "Time_Start": 40.4,
+      "Time_End": 47.2,
+      "Text": " originate from documents and email, but at the time of this research I was a malware analyst,"
+    },
+    {
+      "Time_Start": 47.2,
+      "Time_End": 55.16,
+      "Text": " and as part of my job I monitored suspicious files and our clients telemetry. We also wrote"
+    },
+    {
+      "Time_Start": 55.28,
+      "Time_End": 62.2,
+      "Text": " protections and behavior rules to detect those threats. Also I recently became a father,"
+    },
+    {
+      "Time_Start": 62.2,
+      "Time_End": 67.88000000000001,
+      "Text": " and here you can see my daughter helping me out with this presentation, and on my free time I"
+    },
+    {
+      "Time_Start": 67.88000000000001,
+      "Time_End": 74.28,
+      "Text": " like to explore electronics, I like to take things apart, try to put them back together,"
+    },
+    {
+      "Time_Start": 74.28,
+      "Time_End": 83.60000000000001,
+      "Text": " and that's it. Let's begin. This is our agenda for the talk. At first I'll explain how this"
+    },
+    {
+      "Time_Start": 84.04,
+      "Time_End": 90.52000000000001,
+      "Text": " research started, why we got into this. Next we'll talk about the infection chain. This all"
+    },
+    {
+      "Time_Start": 90.52000000000001,
+      "Time_End": 96.80000000000001,
+      "Text": " started with a specific campaign that we found, so we'll go through each of the steps that the"
+    },
+    {
+      "Time_Start": 96.80000000000001,
+      "Time_End": 102.72000000000001,
+      "Text": " threat actor took. I'll explain what digital signatures are and why they're important,"
+    },
+    {
+      "Time_Start": 102.72000000000001,
+      "Time_End": 108.68,
+      "Text": " specifically again for PE files. We'll talk about the file signature vulnerability that was used in"
+    },
+    {
+      "Time_Start": 108.68,
+      "Time_End": 115.56,
+      "Text": " this case, which is very easy to exploit, and I'll show you how to do that. And at last we'll"
+    },
+    {
+      "Time_Start": 115.56,
+      "Time_End": 126.16000000000001,
+      "Text": " summarize and I'll give my conclusions. So how did this research start? Somewhere in September"
+    },
+    {
+      "Time_Start": 126.16000000000001,
+      "Time_End": 133.4,
+      "Text": " 2021 one of my teammates sent me this article. This article was written by Sentinel One Labs,"
+    },
+    {
+      "Time_Start": 133.52,
+      "Time_End": 141.20000000000002,
+      "Text": " and it was about a particular malware campaign, a ZLoader campaign. We'll get to what ZLoader is"
+    },
+    {
+      "Time_Start": 141.20000000000002,
+      "Time_End": 147.68,
+      "Text": " in a few slides. It's basically a banking trojan, and just as a high overview of that,"
+    },
+    {
+      "Time_Start": 147.68,
+      "Time_End": 157.48000000000002,
+      "Text": " the previous campaign, it started with an installer, teamviewer.msi. Next we see that"
+    },
+    {
+      "Time_Start": 158.32,
+      "Time_End": 164.88,
+      "Text": " the threat actors ran some batch scripts. We see they disabled Windows Defender service,"
+    },
+    {
+      "Time_Start": 164.88,
+      "Time_End": 172.28,
+      "Text": " and made some modifications to it. And at last ZLoader payload was injected into MSI Exec,"
+    },
+    {
+      "Time_Start": 172.28,
+      "Time_End": 179.67999999999998,
+      "Text": " using a specific malicious DLL. So just remember this high overview, because we're gonna see"
+    },
+    {
+      "Time_Start": 179.72,
+      "Time_End": 189.32,
+      "Text": " similar steps that are taken in the next campaign. This is also from this article. This is one of the"
+    },
+    {
+      "Time_Start": 189.32,
+      "Time_End": 196.32,
+      "Text": " scripts that the threat actors ran on the machine. This script was in charge of making some changes"
+    },
+    {
+      "Time_Start": 196.32,
+      "Time_End": 203.52,
+      "Text": " to Windows Defender, adding some exclusions to it. Sorry for the small font, but you can see"
+    },
+    {
+      "Time_Start": 203.64000000000001,
+      "Time_End": 210.52,
+      "Text": " some pretty malicious commands here, like trying to exclude all .exe files from being scanned by"
+    },
+    {
+      "Time_Start": 210.52,
+      "Time_End": 218.68,
+      "Text": " Windows Defender. Another funny thing that I found is, like many of us, we jump into writing"
+    },
+    {
+      "Time_Start": 218.68,
+      "Time_End": 224.84,
+      "Text": " code without reading the documentation first. They tried to also exclude .exe and .dll files"
+    },
+    {
+      "Time_Start": 224.84,
+      "Time_End": 232.4,
+      "Text": " using a wildcard, but this argument does not accept wildcards, so it's a funny thing that I"
+    },
+    {
+      "Time_Start": 232.48000000000002,
+      "Time_End": 241.52,
+      "Text": " found. So based on this script that we just saw, I wanted to search and try to look for similar"
+    },
+    {
+      "Time_Start": 241.52,
+      "Time_End": 249.64000000000001,
+      "Text": " scripts that are using the same type of attack. And I found another script that was similar,"
+    },
+    {
+      "Time_Start": 249.64000000000001,
+      "Time_End": 257.24,
+      "Text": " but had some other commands. So this first detection that I found, we see also exclusion"
+    },
+    {
+      "Time_Start": 257.24,
+      "Time_End": 263.48,
+      "Text": " for MSI exec. If you recall, what the threat actors did is they injected the malicious payload"
+    },
+    {
+      "Time_Start": 263.48,
+      "Time_End": 269.04,
+      "Text": " into MSI exec. They disabled the scanning of downloaded files and attachments by Windows"
+    },
+    {
+      "Time_Start": 269.04,
+      "Time_End": 274.2,
+      "Text": " Defender. They disabled real-time monitoring and many, many other commands. We'll take a look at"
+    },
+    {
+      "Time_Start": 274.2,
+      "Time_End": 279.96000000000004,
+      "Text": " them in just a second. But from this first detection, we were able to map out the entire"
+    },
+    {
+      "Time_Start": 280.08,
+      "Time_End": 289.91999999999996,
+      "Text": " new campaign of zloader. So this is what this new campaign looked like. We'll go through each of the"
+    },
+    {
+      "Time_Start": 289.91999999999996,
+      "Time_End": 298.08,
+      "Text": " steps briefly. At first, we see there's a process called a terror agent that ran on the machine."
+    },
+    {
+      "Time_Start": 298.08,
+      "Time_End": 306.56,
+      "Text": " This terror agent ran a few batch scripts. We see some downloading of executable files and"
+    },
+    {
+      "Time_Start": 307.16,
+      "Time_End": 317.2,
+      "Text": " DLLs. And at last, we see also a malicious DLL that injects zloader into MSI exec. So what is"
+    },
+    {
+      "Time_Start": 317.2,
+      "Time_End": 324.92,
+      "Text": " a terror agent? A simple Google search led us to a terror's website. A terror is a software company,"
+    },
+    {
+      "Time_Start": 324.92,
+      "Time_End": 332.36,
+      "Text": " also based in Israel, so close to home. And what they do is they do RMM software, which is for IT"
+    },
+    {
+      "Time_Start": 332.48,
+      "Time_End": 338.56,
+      "Text": " professionals. What is RMM? It's a remote monitoring and management software. It allows"
+    },
+    {
+      "Time_Start": 338.56,
+      "Time_End": 344.6,
+      "Text": " them for remote access and controlling of their customers' computers. And you can also try this"
+    },
+    {
+      "Time_Start": 344.6,
+      "Time_End": 350.6,
+      "Text": " software for free. You can sign up on the website and get your free trial account. Oh, by the way,"
+    },
+    {
+      "Time_Start": 350.6,
+      "Time_End": 356.04,
+      "Text": " we'll use this mini-map on the top right to keep track of where we are in this infection chain."
+    },
+    {
+      "Time_Start": 356.20000000000005,
+      "Time_End": 365.04,
+      "Text": " And just a nice anecdote, Atera has been known to use, to be, have been used previously by the"
+    },
+    {
+      "Time_Start": 365.04,
+      "Time_End": 371.64000000000004,
+      "Text": " Conti group as an additional backdoor to computers that they've infected, alongside with Cobalt"
+    },
+    {
+      "Time_Start": 371.64000000000004,
+      "Time_End": 378.76,
+      "Text": " Strike. So we signed up for a free account on Atera, and we wanted to take a look at the functions"
+    },
+    {
+      "Time_Start": 378.76,
+      "Time_End": 385.32000000000005,
+      "Text": " that you could do on computers that have this software installed on there. On the left here,"
+    },
+    {
+      "Time_Start": 385.32,
+      "Time_End": 391.56,
+      "Text": " you can see some of the functions that you can run on the machine. You can view the task manager,"
+    },
+    {
+      "Time_Start": 391.56,
+      "Time_End": 398.6,
+      "Text": " you can start and stop processes, you can download and upload files to the machine, run scripts,"
+    },
+    {
+      "Time_Start": 398.6,
+      "Time_End": 405.6,
+      "Text": " run PowerShell commands, and many other actions. And when you sign up for an account, you can also"
+    },
+    {
+      "Time_Start": 405.6,
+      "Time_End": 410.84,
+      "Text": " create a custom installer. This installer, when installed to the machine, will automatically"
+    },
+    {
+      "Time_Start": 410.96000000000004,
+      "Time_End": 420.72,
+      "Text": " connect that machine to your Atera account, so you will be able to control it. Next, we see the"
+    },
+    {
+      "Time_Start": 420.72,
+      "Time_End": 426.14000000000004,
+      "Text": " Atera agent process ran two scripts. This is one of them. It's called defender.bet, defender with"
+    },
+    {
+      "Time_Start": 426.14000000000004,
+      "Time_End": 434.92,
+      "Text": " two R's. That's how the adversaries called this script. And we can see it has about 10 more"
+    },
+    {
+      "Time_Start": 434.96000000000004,
+      "Time_End": 442.96000000000004,
+      "Text": " commands than the previous campaign that we saw. We see at the bottom the exclusion for MSI exec,"
+    },
+    {
+      "Time_Start": 442.96000000000004,
+      "Time_End": 449.20000000000005,
+      "Text": " and we see at the top that they still didn't read the documentation and tried to use wildcards."
+    },
+    {
+      "Time_Start": 449.20000000000005,
+      "Time_End": 460.48,
+      "Text": " Next, we see Atera agent calling the loader.bat script. Now, as it's pretty obvious, this script"
+    },
+    {
+      "Time_Start": 460.48,
+      "Time_End": 466.96000000000004,
+      "Text": " is in charge of loading another script. At the top, we see this new script being downloaded,"
+    },
+    {
+      "Time_Start": 466.96000000000004,
+      "Time_End": 474.32,
+      "Text": " and at the bottom, we see some commands, some implementation of a trial and error way to run"
+    },
+    {
+      "Time_Start": 474.32,
+      "Time_End": 481.6,
+      "Text": " this new script using self ping instead of a sleep timer, a sleep function. Now, let's take a look at"
+    },
+    {
+      "Time_Start": 481.6,
+      "Time_End": 491.08000000000004,
+      "Text": " what this new script that they downloaded does. Now, this script is called new.bat, and here,"
+    },
+    {
+      "Time_Start": 491.08000000000004,
+      "Time_End": 497.08000000000004,
+      "Text": " they made our job a little bit easier for us, and they left us comments. So, from those comments,"
+    },
+    {
+      "Time_Start": 497.08000000000004,
+      "Time_End": 505.48,
+      "Text": " we can easily see that this script first checks for admin privileges. If we don't have admin,"
+    },
+    {
+      "Time_Start": 505.48,
+      "Time_End": 511.36,
+      "Text": " then we kindly request the user to give us admin permissions. Once we have those permissions,"
+    },
+    {
+      "Time_Start": 511.36,
+      "Time_End": 520.48,
+      "Text": " we download a new script and run it with elevated permissions. Now, this new script,"
+    },
+    {
+      "Time_Start": 520.48,
+      "Time_End": 526.76,
+      "Text": " this is where the money is. This is where the brain of the infection is, and we'll break it"
+    },
+    {
+      "Time_Start": 526.76,
+      "Time_End": 535.2,
+      "Text": " down into a few categories. At the top, we can see we're adding some more exclusions into Windows"
+    },
+    {
+      "Time_Start": 535.24,
+      "Time_End": 542.6,
+      "Text": " Defender. These exclusions are for certain folders where we will download some executable files and"
+    },
+    {
+      "Time_Start": 542.6,
+      "Time_End": 552.76,
+      "Text": " DLLs. We download those files into our app data folder. Next, we make some changes to the machine"
+    },
+    {
+      "Time_Start": 552.76,
+      "Time_End": 559.44,
+      "Text": " that we're infecting in order to make analyzing that machine just a little bit harder. We disable"
+    },
+    {
+      "Time_Start": 559.6800000000001,
+      "Time_End": 569.84,
+      "Text": " task manager. We disable command line, registry tools, and also disable run from the menu. Next,"
+    },
+    {
+      "Time_Start": 569.84,
+      "Time_End": 578.0,
+      "Text": " we make some changes into the boot configuration. Now, this line, we'll dive into this line in the"
+    },
+    {
+      "Time_Start": 578.0,
+      "Time_End": 585.0,
+      "Text": " next slide. It's a pretty important command. I'll skip it for now, and at last, we will take care"
+    },
+    {
+      "Time_Start": 585.0,
+      "Time_End": 592.14,
+      "Text": " of persistence and download a bad script into the startup folder. So, what is this command that we"
+    },
+    {
+      "Time_Start": 592.14,
+      "Time_End": 602.92,
+      "Text": " skipped? We see this command is running mshta on a file, a DLL file that was just downloaded. Now,"
+    },
+    {
+      "Time_Start": 602.92,
+      "Time_End": 611.0,
+      "Text": " if you're not familiar with mshta, mshta is a program that is built into the operating system"
+    },
+    {
+      "Time_Start": 611.0,
+      "Time_End": 618.2,
+      "Text": " to Windows, and it stands for Microsoft HTML application. It's used to run HTA files. So,"
+    },
+    {
+      "Time_Start": 618.2,
+      "Time_End": 624.92,
+      "Text": " the first question that we should be asking ourselves is, how is mshta run on a DLL file?"
+    },
+    {
+      "Time_Start": 624.92,
+      "Time_End": 630.32,
+      "Text": " It's supposed to run on a .hta file. Maybe this is actually an HTA file, and they just changed"
+    },
+    {
+      "Time_Start": 630.32,
+      "Time_End": 639.16,
+      "Text": " the extension. No, it's a DLL file. So, how is that possible? Now, the next question that we had is"
+    },
+    {
+      "Time_Start": 639.9599999999999,
+      "Time_End": 648.0,
+      "Text": " mshta is, as I said, built into the operating system inside a system32 folder, and it's assigned"
+    },
+    {
+      "Time_Start": 648.0,
+      "Time_End": 655.28,
+      "Text": " program by Microsoft, and when we took a look at the appcontest.dll, the file that was downloaded"
+    },
+    {
+      "Time_Start": 655.28,
+      "Time_End": 662.9599999999999,
+      "Text": " by the script, we saw that it was a DLL, and it was also signed by Microsoft with a valid signature,"
+    },
+    {
+      "Time_Start": 663.12,
+      "Time_End": 672.84,
+      "Text": " but when running this command together, we get the malicious payload injected into msiexec. So,"
+    },
+    {
+      "Time_Start": 672.84,
+      "Time_End": 680.88,
+      "Text": " how is that possible? I don't think that Microsoft released a malware. So, we wanted to take a look"
+    },
+    {
+      "Time_Start": 680.88,
+      "Time_End": 688.72,
+      "Text": " at this a bit further, but first, let's talk a little bit about digital signatures. So,"
+    },
+    {
+      "Time_Start": 688.72,
+      "Time_End": 696.88,
+      "Text": " what's a digital signature? It's a mathematical scheme for verifying the authenticity of digital"
+    },
+    {
+      "Time_Start": 696.88,
+      "Time_End": 702.48,
+      "Text": " files. It allows us to confirm that the file originated from the signer and has not been"
+    },
+    {
+      "Time_Start": 702.48,
+      "Time_End": 709.0,
+      "Text": " tampered with or changed since it left the signer's computer, and there's this entity called"
+    },
+    {
+      "Time_Start": 709.0,
+      "Time_End": 717.48,
+      "Text": " Certificate Authority, which gives out and issues digital certificates in order to have us sign"
+    },
+    {
+      "Time_Start": 717.6,
+      "Time_End": 726.76,
+      "Text": " those files. So, how does this whole process work? We have a user, a software developer. He wants to"
+    },
+    {
+      "Time_Start": 726.76,
+      "Time_End": 733.16,
+      "Text": " sign his software, so he contacts one of many third-party trusted certificate authorities,"
+    },
+    {
+      "Time_Start": 733.16,
+      "Time_End": 739.88,
+      "Text": " and registers with them. Once he registers with them, he can get this digital certificate that"
+    },
+    {
+      "Time_Start": 739.92,
+      "Time_End": 749.12,
+      "Text": " will allow him to sign files. If we take another step and understand this process,"
+    },
+    {
+      "Time_Start": 749.12,
+      "Time_End": 756.16,
+      "Text": " then we have Joe. Joe is a software developer, and he wants to sign his software. So, he will"
+    },
+    {
+      "Time_Start": 756.16,
+      "Time_End": 763.76,
+      "Text": " use his personal private key, and using this private key, he can sign his file. Now we have"
+    },
+    {
+      "Time_Start": 763.92,
+      "Time_End": 771.4,
+      "Text": " Bob, who wants to use Joe's software and make sure that the software is valid and digitally"
+    },
+    {
+      "Time_Start": 771.4,
+      "Time_End": 779.2,
+      "Text": " signed by Joe. So, he will take Joe's digital certificate that was given to him by the CA. On"
+    },
+    {
+      "Time_Start": 779.2,
+      "Time_End": 787.04,
+      "Text": " this digital certificate, it holds Joe's public key, and using that public key, he can decrypt"
+    },
+    {
+      "Time_Start": 787.16,
+      "Time_End": 795.5999999999999,
+      "Text": " the digital signature, and make sure that the file is legitimate. Now, let's see how this looks"
+    },
+    {
+      "Time_Start": 795.5999999999999,
+      "Time_End": 806.0,
+      "Text": " on the file itself. This is an abstract view of a PE file. The file is divided into the PE headers"
+    },
+    {
+      "Time_Start": 806.0,
+      "Time_End": 810.7199999999999,
+      "Text": " and the actual data that we're not going to go into the different sections because it's not"
+    },
+    {
+      "Time_Start": 810.72,
+      "Time_End": 817.2,
+      "Text": " relevant for our case here. But, in general, we have the PE data, and the PE headers,"
+    },
+    {
+      "Time_Start": 817.2,
+      "Time_End": 823.9200000000001,
+      "Text": " and the data itself. PE headers hold information like a time of when the file was compiled,"
+    },
+    {
+      "Time_Start": 823.9200000000001,
+      "Time_End": 832.12,
+      "Text": " entry point of the file, different addresses of the different sections, and so on. Now,"
+    },
+    {
+      "Time_Start": 832.12,
+      "Time_End": 836.32,
+      "Text": " when we want to sign this file, the first step that we need to take is we need to compute the"
+    },
+    {
+      "Time_Start": 836.32,
+      "Time_End": 842.72,
+      "Text": " digest of the file. Digest of the file is also called the image hash of the file. It's a little"
+    },
+    {
+      "Time_Start": 842.72,
+      "Time_End": 848.96,
+      "Text": " bit different than the actual hash of the file because it doesn't take into account the checksum"
+    },
+    {
+      "Time_Start": 848.96,
+      "Time_End": 857.08,
+      "Text": " and the signature data that is present on the file itself. So, we compute the digest. Next,"
+    },
+    {
+      "Time_Start": 857.08,
+      "Time_End": 864.7600000000001,
+      "Text": " we will take this digest and encrypt it using our private key, and this data will be appended to the"
+    },
+    {
+      "Time_Start": 864.8,
+      "Time_End": 871.72,
+      "Text": " file, and along with some other metadata for the signature, this will be our signature,"
+    },
+    {
+      "Time_Start": 871.72,
+      "Time_End": 878.72,
+      "Text": " and now the file is signed. Now, when Bob wants to verify that this file is signed,"
+    },
+    {
+      "Time_Start": 878.72,
+      "Time_End": 885.04,
+      "Text": " what's happening behind the scenes is, again, Bob will compute the digest of the file,"
+    },
+    {
+      "Time_Start": 885.04,
+      "Time_End": 893.8,
+      "Text": " excluding the signature data and the checksum of the file. He will take the signature and decrypt"
+    },
+    {
+      "Time_Start": 893.84,
+      "Time_End": 899.8800000000001,
+      "Text": " the signature using Joe's public key, and compare the two. If they are the same,"
+    },
+    {
+      "Time_Start": 899.8800000000001,
+      "Time_End": 907.4000000000001,
+      "Text": " then the file is valid and digitally signed. Now, before we go back to our campaign,"
+    },
+    {
+      "Time_Start": 907.4000000000001,
+      "Time_End": 912.9200000000001,
+      "Text": " why are we even talking about digital signatures? Why is this important for us? You may be asking"
+    },
+    {
+      "Time_Start": 912.9200000000001,
+      "Time_End": 923.6,
+      "Text": " this. So, digital signatures have been used for evading detection, many security products,"
+    },
+    {
+      "Time_Start": 923.96,
+      "Time_End": 930.84,
+      "Text": " and EDRs rely on digital signatures to verify files, and as was said here in previous talks,"
+    },
+    {
+      "Time_Start": 930.84,
+      "Time_End": 940.0,
+      "Text": " if a file is signed by Microsoft, then it is a little safer. So, some of the MITRE techniques"
+    },
+    {
+      "Time_Start": 940.0,
+      "Time_End": 947.88,
+      "Text": " that we can see that use digital signatures are masquerading. So, you can append a digital"
+    },
+    {
+      "Time_Start": 947.88,
+      "Time_End": 953.0400000000001,
+      "Text": " signature to a file, just any digital signature. The file will show up as having a digital"
+    },
+    {
+      "Time_Start": 953.0799999999999,
+      "Time_End": 960.76,
+      "Text": " certificate, even though this digital certificate is not valid, it will also show that. There's"
+    },
+    {
+      "Time_Start": 960.76,
+      "Time_End": 967.76,
+      "Text": " co-signing, so some threat actors and adversaries have been known to make up bogus companies and"
+    },
+    {
+      "Time_Start": 967.76,
+      "Time_End": 975.36,
+      "Text": " sign up with CAs to receive digital certificates until they are revoked, or there have been also"
+    },
+    {
+      "Time_Start": 975.48,
+      "Time_End": 983.4,
+      "Text": " instances of adversaries stealing legitimate digital certificates and using that certificate"
+    },
+    {
+      "Time_Start": 983.4,
+      "Time_End": 990.84,
+      "Text": " to sign their malware. And there are some sub-techniques that are also mentioned,"
+    },
+    {
+      "Time_Start": 990.84,
+      "Time_End": 999.36,
+      "Text": " like using system binaries that are signed in order to run malicious code. So, let's go back"
+    },
+    {
+      "Time_Start": 999.4,
+      "Time_End": 1009.08,
+      "Text": " to our campaign. We have MSHDA running on appcontest.dll, the DLL that was downloaded. If"
+    },
+    {
+      "Time_Start": 1009.08,
+      "Time_End": 1017.32,
+      "Text": " we look at the properties of the DLL, we see that it is signed by Microsoft Windows, and we also"
+    },
+    {
+      "Time_Start": 1017.32,
+      "Time_End": 1025.92,
+      "Text": " see that the original file name of this DLL is appresolver.dll. So, now we wanted to investigate"
+    },
+    {
+      "Time_Start": 1026.04,
+      "Time_End": 1032.64,
+      "Text": " and see what is this appresolver file. This file is also found on our computers. It's a DLL file"
+    },
+    {
+      "Time_Start": 1032.64,
+      "Time_End": 1040.5600000000002,
+      "Text": " that is in charge of resolving apps to extensions. So, we found this file, and we compared the two."
+    },
+    {
+      "Time_Start": 1040.5600000000002,
+      "Time_End": 1048.04,
+      "Text": " Using this simple comparison, we see that the files are different in just a few places in the"
+    },
+    {
+      "Time_Start": 1048.04,
+      "Time_End": 1054.0,
+      "Text": " PE headers. On the left, you can see the original appresolver file, and on the right, you see the"
+    },
+    {
+      "Time_Start": 1054.04,
+      "Time_End": 1062.16,
+      "Text": " malicious DLL. And you can see that the malicious DLL has a VBScript appended to it. In this VBScript,"
+    },
+    {
+      "Time_Start": 1062.16,
+      "Time_End": 1070.8,
+      "Text": " you can see the malicious command that is used to inject the malicious payload into msiexec. So,"
+    },
+    {
+      "Time_Start": 1070.8,
+      "Time_End": 1078.04,
+      "Text": " this would explain how MSHDA ran this code. It looked for the script tag and ran the code that's"
+    },
+    {
+      "Time_Start": 1078.08,
+      "Time_End": 1084.28,
+      "Text": " inside it. But the question that we should be asking now is, how is that possible? How did"
+    },
+    {
+      "Time_Start": 1084.28,
+      "Time_End": 1093.6399999999999,
+      "Text": " the adversaries make a modification to the file while keeping the digital signature valid? So,"
+    },
+    {
+      "Time_Start": 1093.6399999999999,
+      "Time_End": 1099.84,
+      "Text": " we need to ask ourselves, can we trust a file's digital signature? And let's see how they did"
+    },
+    {
+      "Time_Start": 1099.84,
+      "Time_End": 1107.84,
+      "Text": " that. So, we go back to our abstract view of a PE file. Again, divided into the PE headers and the"
+    },
+    {
+      "Time_Start": 1108.04,
+      "Time_End": 1116.24,
+      "Text": " data itself. Inside the PE headers, we have a security directory. This directory holds information"
+    },
+    {
+      "Time_Start": 1116.24,
+      "Time_End": 1124.1,
+      "Text": " about the digital signature of the file. It has the size of the signature and its location on the"
+    },
+    {
+      "Time_Start": 1124.1,
+      "Time_End": 1131.32,
+      "Text": " file. In this case here, this PE file is not signed. So, the signature size field inside these"
+    },
+    {
+      "Time_Start": 1131.48,
+      "Time_End": 1140.6,
+      "Text": " security directory is zero. Now, when we sign this file, this field will correspond to the"
+    },
+    {
+      "Time_Start": 1140.6,
+      "Time_End": 1148.1599999999999,
+      "Text": " actual signature size of the file. Now, once we make a change to the file, here we appended a"
+    },
+    {
+      "Time_Start": 1148.1599999999999,
+      "Time_End": 1153.28,
+      "Text": " malicious script. It could be any data that we append to the file. This digital signature is"
+    },
+    {
+      "Time_Start": 1153.32,
+      "Time_End": 1163.8,
+      "Text": " no longer valid. So, how do we go about and fix this and make the signature valid? We can compute"
+    },
+    {
+      "Time_Start": 1163.8,
+      "Time_End": 1170.8,
+      "Text": " a new signature size. So, what we do, we take the original size of the signature, we compute in"
+    },
+    {
+      "Time_Start": 1170.8,
+      "Time_End": 1178.44,
+      "Text": " bytes the length of the data that we appended to the file, and we just change this signature size"
+    },
+    {
+      "Time_Start": 1178.88,
+      "Time_End": 1185.24,
+      "Text": " the PE header. And all of a sudden, our file is valid and digitally signed. So, this is what"
+    },
+    {
+      "Time_Start": 1185.24,
+      "Time_End": 1192.56,
+      "Text": " happened in this particular instance. Now, when we found this, we were ecstatic. We thought this"
+    },
+    {
+      "Time_Start": 1192.56,
+      "Time_End": 1200.44,
+      "Text": " is a great CVE that we can report, and we were very happy with it. But apparently, this is not"
+    },
+    {
+      "Time_Start": 1200.44,
+      "Time_End": 1208.0,
+      "Text": " new. There are three different CVEs that talk about this issue. First one is from 2012. Now,"
+    },
+    {
+      "Time_Start": 1208.16,
+      "Time_End": 1218.52,
+      "Text": " after the CVE in 2012, Microsoft actually released a fix for this issue in 2013. The fix actually"
+    },
+    {
+      "Time_Start": 1218.52,
+      "Time_End": 1226.16,
+      "Text": " makes a more exhaustive check for the digital signature, and it actually fixes this issue. So,"
+    },
+    {
+      "Time_Start": 1226.16,
+      "Time_End": 1235.32,
+      "Text": " if it fixes the issue, how do we find this now in 2021? This was in 2021, but it's also relevant"
+    },
+    {
+      "Time_Start": 1235.32,
+      "Time_End": 1243.28,
+      "Text": " today. So, what happened is in 2014, just a year later, Microsoft removed this fix as default"
+    },
+    {
+      "Time_Start": 1243.28,
+      "Time_End": 1248.96,
+      "Text": " behavior. You have to actively change a few registry keys in order to have this fix applied"
+    },
+    {
+      "Time_Start": 1248.96,
+      "Time_End": 1255.84,
+      "Text": " to your machine. What they said in their blog post is that impact to existing software could"
+    },
+    {
+      "Time_Start": 1255.84,
+      "Time_End": 1264.28,
+      "Text": " be high, and we prefer not to do this as default behavior. You just saw in the previous slide how"
+    },
+    {
+      "Time_Start": 1264.96,
+      "Time_End": 1272.92,
+      "Text": " easily exploitable this issue is, and as we said before, many security products rely on digital"
+    },
+    {
+      "Time_Start": 1272.92,
+      "Time_End": 1284.8799999999999,
+      "Text": " signatures. So, let's go back to our campaign. Just touch on a few more issues. What is ZLoader?"
+    },
+    {
+      "Time_Start": 1285.6000000000001,
+      "Time_End": 1293.5200000000002,
+      "Text": " ZLoader is a malware, banking Trojan slash botnet. It borrows a lot of functionality from the"
+    },
+    {
+      "Time_Start": 1293.5200000000002,
+      "Time_End": 1302.1200000000001,
+      "Text": " infamous Zeus banking malware. They're very similar. It is a very stealthy malware, and"
+    },
+    {
+      "Time_Start": 1302.1200000000001,
+      "Time_End": 1312.44,
+      "Text": " they improve their evasion from one campaign to another. Very sophisticated. What's a banking"
+    },
+    {
+      "Time_Start": 1312.44,
+      "Time_End": 1320.24,
+      "Text": " malware in just a few words? It's usually a banking Trojan. It's a file pretending to be"
+    },
+    {
+      "Time_Start": 1320.24,
+      "Time_End": 1325.92,
+      "Text": " something else. They perform man-in-the-browser attacks. So, they inject code into your browser"
+    },
+    {
+      "Time_Start": 1325.92,
+      "Time_End": 1331.4,
+      "Text": " to look for certain websites where you would input a sense of information, like your password"
+    },
+    {
+      "Time_Start": 1331.4,
+      "Time_End": 1338.16,
+      "Text": " and username. Usually, it would be for banking sites, and they would send this information to"
+    },
+    {
+      "Time_Start": 1338.16,
+      "Time_End": 1345.72,
+      "Text": " their C2 servers. Just to sum up some of the defensive agent techniques that we saw in this"
+    },
+    {
+      "Time_Start": 1345.72,
+      "Time_End": 1353.4,
+      "Text": " campaign, there was this, at first we saw Terra, the use of legitimate software in order to back"
+    },
+    {
+      "Time_Start": 1353.4,
+      "Time_End": 1360.24,
+      "Text": " door the machine and install their scripts. We saw the impairing of defenses, all those commands that"
+    },
+    {
+      "Time_Start": 1360.32,
+      "Time_End": 1368.4,
+      "Text": " we saw to turn off basically Windows Defender. Injection techniques to inject our malicious"
+    },
+    {
+      "Time_Start": 1368.4,
+      "Time_End": 1377.4,
+      "Text": " payload into MSI exec. System binary proxy execution is the use of MSHDA to run this"
+    },
+    {
+      "Time_Start": 1377.4,
+      "Time_End": 1385.56,
+      "Text": " malicious code, and we also see the use of a decade-old vulnerability that is not fixed by"
+    },
+    {
+      "Time_Start": 1385.56,
+      "Time_End": 1393.44,
+      "Text": " default. So, now after we went through the entire campaign, and we talked about the signature"
+    },
+    {
+      "Time_Start": 1393.44,
+      "Time_End": 1402.36,
+      "Text": " vulnerability, we had just one other question to answer. Where did a terror agent come from? Did"
+    },
+    {
+      "Time_Start": 1402.36,
+      "Time_End": 1410.0,
+      "Text": " the malicious actors install this on the machine themselves and connect it to their account? Were"
+    },
+    {
+      "Time_Start": 1410.0,
+      "Time_End": 1416.12,
+      "Text": " they able to take over an existing account and use that legitimate account to run those scripts?"
+    },
+    {
+      "Time_Start": 1416.12,
+      "Time_End": 1424.32,
+      "Text": " So, we found out that there was, they installed it themselves, those actors. They used a file"
+    },
+    {
+      "Time_Start": 1424.32,
+      "Time_End": 1432.88,
+      "Text": " called java.msi, and ZLoader has been known to masquerade itself as Java, Zoom, and TeamViewer,"
+    },
+    {
+      "Time_Start": 1433.0,
+      "Time_End": 1442.2800000000002,
+      "Text": " as we saw in the previous campaign. How do we find this out? When we signed up to the free"
+    },
+    {
+      "Time_Start": 1442.2800000000002,
+      "Time_End": 1447.64,
+      "Text": " account, we downloaded the custom installer that would connect the machine to our account,"
+    },
+    {
+      "Time_Start": 1447.64,
+      "Time_End": 1456.0800000000002,
+      "Text": " and we analyzed it. And what we found on this installer, we actually found the email that we"
+    },
+    {
+      "Time_Start": 1456.1999999999998,
+      "Time_End": 1463.8,
+      "Text": " used to sign up to the account, followed by the string integrator login. What this is, is basically"
+    },
+    {
+      "Time_Start": 1463.8,
+      "Time_End": 1469.96,
+      "Text": " when the installer runs on the machine, it creates a registry key. This registry key will hold the"
+    },
+    {
+      "Time_Start": 1469.96,
+      "Time_End": 1475.96,
+      "Text": " email of the account that that machine is connected to, and this gave us something tangible to look"
+    },
+    {
+      "Time_Start": 1475.96,
+      "Time_End": 1485.6,
+      "Text": " for when we wanted to find this suspicious installation. So, we wanted to look for suspicious"
+    },
+    {
+      "Time_Start": 1486.1200000000001,
+      "Time_End": 1495.0400000000002,
+      "Text": " installations of a Tera agent, and we found this installation right here when the account name,"
+    },
+    {
+      "Time_Start": 1495.0400000000002,
+      "Time_End": 1506.72,
+      "Text": " sorry, account email is antique.corp at mailto.plus. Now, mailto.plus is a temporary email service that"
+    },
+    {
+      "Time_Start": 1506.72,
+      "Time_End": 1511.2800000000002,
+      "Text": " you can sign up. You don't even need to sign up, you just go on the website, you can specify"
+    },
+    {
+      "Time_Start": 1511.28,
+      "Time_End": 1517.32,
+      "Text": " whatever name you want for the email. It will be at mailto.plus, and you will have this email"
+    },
+    {
+      "Time_Start": 1517.32,
+      "Time_End": 1526.3999999999999,
+      "Text": " address for the next 15 minutes. Now, when we looked for this email address on VT, we actually"
+    },
+    {
+      "Time_Start": 1526.3999999999999,
+      "Time_End": 1533.52,
+      "Text": " found the java.msi. It only had three detections, and all those detections were for potentially"
+    },
+    {
+      "Time_Start": 1533.52,
+      "Time_End": 1542.8,
+      "Text": " unwanted software and remote agent installer. When we installed this MSI on our machine,"
+    },
+    {
+      "Time_Start": 1542.8,
+      "Time_End": 1551.84,
+      "Text": " we actually saw all of the infection chain running on our computer. So, let's talk a little bit about"
+    },
+    {
+      "Time_Start": 1551.84,
+      "Time_End": 1561.56,
+      "Text": " the extent of the campaign, and we found out that this campaign affected over 2,000 victims from 116"
+    },
+    {
+      "Time_Start": 1561.6,
+      "Time_End": 1566.52,
+      "Text": " different countries, mainly from the United States and Canada. Now, you may ask yourself,"
+    },
+    {
+      "Time_Start": 1566.52,
+      "Time_End": 1577.48,
+      "Text": " how do we find this out? Well, again, the attackers gave us clues. We found an open directory on the"
+    },
+    {
+      "Time_Start": 1577.48,
+      "Time_End": 1583.6,
+      "Text": " domain that they hosted their malicious files, and one of those files was entries. That's what"
+    },
+    {
+      "Time_Start": 1583.6,
+      "Time_End": 1589.12,
+      "Text": " it was called. It was basically a log of all of the infected machines that they were able to"
+    },
+    {
+      "Time_Start": 1589.16,
+      "Time_End": 1597.5200000000002,
+      "Text": " infect. For each machine, it had the date and time of infection, the IP address, country,"
+    },
+    {
+      "Time_Start": 1597.5200000000002,
+      "Time_End": 1604.7600000000002,
+      "Text": " and the user agent that was used in order to download the malicious files. So, we parsed this"
+    },
+    {
+      "Time_Start": 1604.7600000000002,
+      "Time_End": 1615.3200000000002,
+      "Text": " file and created this graph. Let's talk a little bit about the impact that we had after publishing"
+    },
+    {
+      "Time_Start": 1615.36,
+      "Time_End": 1623.8,
+      "Text": " our research. So, here at the top, you can see the malicious DLL with the script on VirusTotal."
+    },
+    {
+      "Time_Start": 1623.8,
+      "Time_End": 1632.9199999999998,
+      "Text": " You can see that in December, this DLL had a sign tag on VirusTotal, and just a few months later,"
+    },
+    {
+      "Time_Start": 1632.9199999999998,
+      "Time_End": 1639.08,
+      "Text": " after we published our research, the sign tag is no longer present on this file. We contacted"
+    },
+    {
+      "Time_Start": 1639.1999999999998,
+      "Time_End": 1645.52,
+      "Text": " VirusTotal, and we were told that after our research was published, they decided to apply"
+    },
+    {
+      "Time_Start": 1645.52,
+      "Time_End": 1654.0,
+      "Text": " Microsoft's fix to their system, and now files that make changes to the signature for PE files"
+    },
+    {
+      "Time_Start": 1654.0,
+      "Time_End": 1660.96,
+      "Text": " will no longer show up as signed. So, we're pretty proud of that. Also, during the research,"
+    },
+    {
+      "Time_Start": 1660.96,
+      "Time_End": 1668.1599999999999,
+      "Text": " and when we found the campaign, we were also in contact with Atera, and they blocked, of course,"
+    },
+    {
+      "Time_Start": 1668.28,
+      "Time_End": 1673.76,
+      "Text": " the malicious account, and also the use of temporary email address to be signed up for"
+    },
+    {
+      "Time_Start": 1673.76,
+      "Time_End": 1687.88,
+      "Text": " that service. Okay, so let's summarize what we went through. Returning to our original question,"
+    },
+    {
+      "Time_Start": 1687.88,
+      "Time_End": 1695.64,
+      "Text": " can we trust a digital signature? We sort of can. You just don't know if there's any additional data"
+    },
+    {
+      "Time_Start": 1695.64,
+      "Time_End": 1701.76,
+      "Text": " that can be appended to the script. During our checks, we saw that most environments are"
+    },
+    {
+      "Time_Start": 1701.76,
+      "Time_End": 1709.3200000000002,
+      "Text": " vulnerable to this exploit. I haven't seen a single computer that applied Microsoft's fix"
+    },
+    {
+      "Time_Start": 1709.3200000000002,
+      "Time_End": 1718.8000000000002,
+      "Text": " by themselves. This, as I said, would require them to change only two registry keys. So,"
+    },
+    {
+      "Time_Start": 1718.8000000000002,
+      "Time_End": 1724.8400000000001,
+      "Text": " we recommend that you apply this fix, and you previously saw how easy it is to exploit this"
+    },
+    {
+      "Time_Start": 1725.0000000000002,
+      "Time_End": 1733.2800000000002,
+      "Text": " vulnerability. It can be used for code execution, delivery, or data exfiltration as well. So,"
+    },
+    {
+      "Time_Start": 1733.2800000000002,
+      "Time_End": 1736.4800000000002,
+      "Text": " yep."
+    }
+  ]
+}

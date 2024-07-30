@@ -1,0 +1,1739 @@
+{
+  "segments": [
+    {
+      "Time_Start": 0.0,
+      "Time_End": 12.120000000000001,
+      "Text": "This text was transcribed using whisper model: large-v2\n\n Hi, everyone. Welcome to my talk. Bring your own module and enjoy the ride. It will be"
+    },
+    {
+      "Time_Start": 12.120000000000001,
+      "Time_End": 17.6,
+      "Text": " covering DLL hijacking and proxying, basically how it works under the hood, and we'll also"
+    },
+    {
+      "Time_Start": 17.6,
+      "Time_End": 22.32,
+      "Text": " check it from the defensive side. It's really an honor to be here and be able to talk about"
+    },
+    {
+      "Time_Start": 22.32,
+      "Time_End": 28.0,
+      "Text": " this, and big thanks to the organizers of ZipCon for the invite."
+    },
+    {
+      "Time_Start": 28.0,
+      "Time_End": 32.52,
+      "Text": " As stated here, all opinions expressed are my own and have nothing to do with my employer."
+    },
+    {
+      "Time_Start": 32.52,
+      "Time_End": 37.4,
+      "Text": " And also, I don't claim any ownership of this technique, and these are just my thoughts"
+    },
+    {
+      "Time_Start": 37.4,
+      "Time_End": 42.56,
+      "Text": " on the topic, so they might be inaccurate to some extent, and in that case, I welcome"
+    },
+    {
+      "Time_Start": 42.56,
+      "Time_End": 51.04,
+      "Text": " any critical questions and thoughts as they help me learn and improve."
+    },
+    {
+      "Time_Start": 51.04,
+      "Time_End": 57.8,
+      "Text": " The agenda for today is as follows. So we'll quickly check why it's still interesting for"
+    },
+    {
+      "Time_Start": 58.800000000000004,
+      "Time_End": 64.32000000000001,
+      "Text": " attackers, more advanced and less advanced ones, and red teamers. We'll quickly go over"
+    },
+    {
+      "Time_Start": 64.32000000000001,
+      "Time_End": 69.0,
+      "Text": " some basics of dynamic link libraries just to get familiar with how they work, and after"
+    },
+    {
+      "Time_Start": 69.0,
+      "Time_End": 75.0,
+      "Text": " that, we'll see how we can hijack them and proxy them. From that point, we'll check how"
+    },
+    {
+      "Time_Start": 75.0,
+      "Time_End": 81.72,
+      "Text": " far we can go with proxying, and we'll see what I mean by that in a bit. And after that,"
+    },
+    {
+      "Time_Start": 81.72,
+      "Time_End": 87.52000000000001,
+      "Text": " we'll compare it to DLL proxying and classic injection. We'll wrap it up with some detections"
+    },
+    {
+      "Time_Start": 87.52,
+      "Time_End": 92.32,
+      "Text": " and a very simple trick I call disappearing proxy."
+    },
+    {
+      "Time_Start": 92.32,
+      "Time_End": 97.6,
+      "Text": " But before all that, a quick introduction. My name is Stefan Juraszkiewicz, and I'm currently"
+    },
+    {
+      "Time_Start": 97.6,
+      "Time_End": 104.8,
+      "Text": " a member of a small but a very amazing red team of a very large enterprise, and I mostly"
+    },
+    {
+      "Time_Start": 104.8,
+      "Time_End": 112.0,
+      "Text": " work on defense evasion and covert operation windows. My earlier background includes some"
+    },
+    {
+      "Time_Start": 112.0,
+      "Time_End": 119.8,
+      "Text": " system administration and web application pentesting. Oh, okay, sorry. My background"
+    },
+    {
+      "Time_Start": 119.8,
+      "Time_End": 125.44,
+      "Text": " includes some web application pentesting and assist submitting, and before I joined the"
+    },
+    {
+      "Time_Start": 125.44,
+      "Time_End": 130.96,
+      "Text": " red team, so my dream job, I was currently, I was a member of the same organization's"
+    },
+    {
+      "Time_Start": 130.96,
+      "Time_End": 139.0,
+      "Text": " blue team. So overall, it was a fun path. And that kind of brings us to why. Why is"
+    },
+    {
+      "Time_Start": 139.0,
+      "Time_End": 144.0,
+      "Text": " this still kind of relevant and interesting to talk about? It's because threat actors"
+    },
+    {
+      "Time_Start": 144.0,
+      "Time_End": 150.96,
+      "Text": " are doing it for more than 20 years, and they're actively doing it even today. More advanced"
+    },
+    {
+      "Time_Start": 150.96,
+      "Time_End": 154.96,
+      "Text": " and even less advanced ones are bringing their own modules, and these are some, just some"
+    },
+    {
+      "Time_Start": 154.96,
+      "Time_End": 160.68,
+      "Text": " of the examples that caught my eye. Basically, in the first case, the module that was used"
+    },
+    {
+      "Time_Start": 160.68,
+      "Time_End": 167.44,
+      "Text": " by SolarWinds application was backdoored by a threat actor, and in the second case, the"
+    },
+    {
+      "Time_Start": 167.44,
+      "Time_End": 172.68,
+      "Text": " dropper was actually dropping the legit Windows Defender that's an older version of Windows"
+    },
+    {
+      "Time_Start": 172.68,
+      "Time_End": 184.0,
+      "Text": " Defender that would sideload the NPSVC DLL, which was actually the real loader. And also,"
+    },
+    {
+      "Time_Start": 184.0,
+      "Time_End": 189.04,
+      "Text": " another very good reason comes from the fact that it's very hard to detect and basically"
+    },
+    {
+      "Time_Start": 189.04,
+      "Time_End": 196.44,
+      "Text": " distinguish from legit activities from both analyst perspective and automation, because"
+    },
+    {
+      "Time_Start": 196.44,
+      "Time_End": 199.64,
+      "Text": " once the DLL is basically written to the disk, all it needs to do is just wait there"
+    },
+    {
+      "Time_Start": 199.64,
+      "Time_End": 205.2,
+      "Text": " and sit for a process to start and actually load it in its memory space. And once that"
+    },
+    {
+      "Time_Start": 205.2,
+      "Time_End": 211.28,
+      "Text": " happens, all malicious callbacks are actually coming from the now, let's say, backdoor process."
+    },
+    {
+      "Time_Start": 211.28,
+      "Time_End": 215.24,
+      "Text": " And eventually, if an alert comes in and the investigation starts, people will be looking"
+    },
+    {
+      "Time_Start": 215.24,
+      "Time_End": 221.8,
+      "Text": " at the process, not at the module itself. So for us with siblings, that was kind of"
+    },
+    {
+      "Time_Start": 221.8,
+      "Time_End": 229.60000000000002,
+      "Text": " familiar. And because we're talking about all that, let's quickly go over some basics"
+    },
+    {
+      "Time_Start": 229.60000000000002,
+      "Time_End": 238.96,
+      "Text": " of dynamic link libraries just to know what we're bringing in this case. Dynamic link"
+    },
+    {
+      "Time_Start": 238.96,
+      "Time_End": 245.16000000000003,
+      "Text": " libraries are Microsoft's way of basically sharing and reusing code between applications."
+    },
+    {
+      "Time_Start": 245.16,
+      "Time_End": 250.07999999999998,
+      "Text": " And they're of typical format that you would expect, of portable executable format that"
+    },
+    {
+      "Time_Start": 250.07999999999998,
+      "Time_End": 258.2,
+      "Text": " you would expect. They are portable executables that basically have a typical format, some"
+    },
+    {
+      "Time_Start": 258.2,
+      "Time_End": 266.0,
+      "Text": " headers, some sections, like text section, which should contain the executable data,"
+    },
+    {
+      "Time_Start": 266.0,
+      "Time_End": 272.12,
+      "Text": " our data section, and data section with the initialized variables and all these things."
+    },
+    {
+      "Time_Start": 272.12,
+      "Time_End": 277.36,
+      "Text": " What else? They also have import and export address table. And both are very important."
+    },
+    {
+      "Time_Start": 277.36,
+      "Time_End": 283.64,
+      "Text": " But for the proxying purposes, we'll mostly be focusing on the export address table. And"
+    },
+    {
+      "Time_Start": 283.64,
+      "Time_End": 289.0,
+      "Text": " we'll see why that's in a bit. And finally, they are, Microsoft calls them"
+    },
+    {
+      "Time_Start": 289.0,
+      "Time_End": 296.92,
+      "Text": " the application extensions. So they're not really, like, they provide additional functionalities"
+    },
+    {
+      "Time_Start": 296.92,
+      "Time_End": 301.52000000000004,
+      "Text": " to the main module. The main XE loads them to get some additional functionalities from"
+    },
+    {
+      "Time_Start": 301.52000000000004,
+      "Time_End": 308.52000000000004,
+      "Text": " them. And since we're talking about the import and export address tables, here are just some"
+    },
+    {
+      "Time_Start": 308.52000000000004,
+      "Time_End": 316.32,
+      "Text": " snippets of both for version DLL. And I'm not going to be going too much into detail."
+    },
+    {
+      "Time_Start": 316.32,
+      "Time_End": 321.28000000000003,
+      "Text": " I'm just going to say what I keep in mind when I deal with these structures. In the"
+    },
+    {
+      "Time_Start": 321.28000000000003,
+      "Time_End": 327.20000000000005,
+      "Text": " first case, the import address table is just a list of functions that are imported from"
+    },
+    {
+      "Time_Start": 327.20000000000005,
+      "Time_End": 332.24,
+      "Text": " another module and used by this one. And the export address table is basically a list of"
+    },
+    {
+      "Time_Start": 332.24,
+      "Time_End": 339.28000000000003,
+      "Text": " functions that are exported by the module. They are exported by their function names"
+    },
+    {
+      "Time_Start": 339.28000000000003,
+      "Time_End": 346.76000000000005,
+      "Text": " and ordinals, which is basically their number, like first, second, fifth, whatever. And that's"
+    },
+    {
+      "Time_Start": 346.76,
+      "Time_End": 352.36,
+      "Text": " so that the loader eventually can easily look them up, basically resolve their addresses,"
+    },
+    {
+      "Time_Start": 352.36,
+      "Time_End": 358.71999999999997,
+      "Text": " and basically make a correction in the import address table of the loading module."
+    },
+    {
+      "Time_Start": 358.71999999999997,
+      "Time_End": 364.71999999999997,
+      "Text": " To make all this a bit clearer, we'll also see how the loading process actually works."
+    },
+    {
+      "Time_Start": 364.71999999999997,
+      "Time_End": 371.59999999999997,
+      "Text": " There are a couple of steps. The loader starts by searching for a module by a specific name."
+    },
+    {
+      "Time_Start": 371.8,
+      "Time_End": 376.88,
+      "Text": " Once it finds it, it checks its headers and determines the size, the architecture, and"
+    },
+    {
+      "Time_Start": 376.88,
+      "Time_End": 382.44,
+      "Text": " after that, it basically allocates some space in the memory space for the process, and then"
+    },
+    {
+      "Time_Start": 382.44,
+      "Time_End": 389.44,
+      "Text": " maps the DLL in that memory space. After that, it performs reallocations, because, well,"
+    },
+    {
+      "Time_Start": 389.44,
+      "Time_End": 397.16,
+      "Text": " DLL is probably not going to be loaded in its preferred base address, so it needs to"
+    },
+    {
+      "Time_Start": 397.16,
+      "Time_End": 402.8,
+      "Text": " be reallocated so that everything aligns nice in memory. And after it's done with that,"
+    },
+    {
+      "Time_Start": 402.8,
+      "Time_End": 409.0,
+      "Text": " it will go ahead and load the dependencies. So it will basically just check the import"
+    },
+    {
+      "Time_Start": 409.0,
+      "Time_End": 414.32000000000005,
+      "Text": " address table of the loaded module. It will see the list of functions that it's importing"
+    },
+    {
+      "Time_Start": 414.32000000000005,
+      "Time_End": 419.12,
+      "Text": " and the modules from where they're imported, so it will go ahead and just find them, load"
+    },
+    {
+      "Time_Start": 419.12,
+      "Time_End": 423.6,
+      "Text": " them, so basically repeat the first couple of steps."
+    },
+    {
+      "Time_Start": 423.6,
+      "Time_End": 429.20000000000005,
+      "Text": " After that, it will bind imports. Essentially, it's going to resolve the addresses of the"
+    },
+    {
+      "Time_Start": 429.20000000000005,
+      "Time_End": 433.72,
+      "Text": " functions that are used by the application and make those corrections in the import address"
+    },
+    {
+      "Time_Start": 433.72,
+      "Time_End": 438.88,
+      "Text": " table of the loading modules. And finally, it's going to call DLL main to just let the"
+    },
+    {
+      "Time_Start": 438.88,
+      "Time_End": 445.96000000000004,
+      "Text": " DLL itself initialize. And for DLL hijacking and proxying, we're going to be using the"
+    },
+    {
+      "Time_Start": 445.96000000000004,
+      "Time_End": 451.24,
+      "Text": " first step in this chain, which is finding the DLL. So let's see how the loader does"
+    },
+    {
+      "Time_Start": 451.24,
+      "Time_End": 460.20000000000005,
+      "Text": " that. Here's a list of locations and basically the order in which the loader checks them."
+    },
+    {
+      "Time_Start": 460.20000000000005,
+      "Time_End": 465.56000000000006,
+      "Text": " So apart from the modules that are already in memory and the modules that are stored"
+    },
+    {
+      "Time_Start": 465.56000000000006,
+      "Time_End": 471.04,
+      "Text": " under the known DLLs registry key, the loader will check these six locations from top to"
+    },
+    {
+      "Time_Start": 471.04,
+      "Time_End": 476.16,
+      "Text": " bottom. It will search for a module of a particular name, and if it finds it, it will"
+    },
+    {
+      "Time_Start": 476.16,
+      "Time_End": 482.72,
+      "Text": " load it from that location. And that kind of brings us to the first requirement the"
+    },
+    {
+      "Time_Start": 482.72,
+      "Time_End": 490.40000000000003,
+      "Text": " loader has. So it needs a module of a specific name in a specific place, any of these ones."
+    },
+    {
+      "Time_Start": 490.40000000000003,
+      "Time_End": 495.96000000000004,
+      "Text": " And that's where basically the hijacking comes in and proxying later."
+    },
+    {
+      "Time_Start": 495.96000000000004,
+      "Time_End": 504.04,
+      "Text": " So if we would run ProcMon with these filters set and we would run any of these applications,"
+    },
+    {
+      "Time_Start": 504.04,
+      "Time_End": 509.24,
+      "Text": " we would basically see a bunch of missing DLLs, or ProcMon would say they're missing."
+    },
+    {
+      "Time_Start": 509.24,
+      "Time_End": 513.88,
+      "Text": " But essentially, the application still continues to run, which just basically means that the"
+    },
+    {
+      "Time_Start": 513.88,
+      "Time_End": 518.1600000000001,
+      "Text": " DLL is missing from the location where it was first checked, but it was also found in"
+    },
+    {
+      "Time_Start": 518.1600000000001,
+      "Time_End": 522.84,
+      "Text": " another location. So somewhere later in the search order for these modules, it's actually"
+    },
+    {
+      "Time_Start": 522.84,
+      "Time_End": 530.44,
+      "Text": " in system 32 or system 64, depending if we're looking on Signal or Discord, because one"
+    },
+    {
+      "Time_Start": 530.44,
+      "Time_End": 540.48,
+      "Text": " is 64-bit, one is 32-bit application. So technically, we see that the loader is actually"
+    },
+    {
+      "Time_Start": 540.48,
+      "Time_End": 546.32,
+      "Text": " trying to load a module from this path with a specific name. If we would create a module,"
+    },
+    {
+      "Time_Start": 546.32,
+      "Time_End": 552.8000000000001,
+      "Text": " drop it in any of these paths and name it, give it a name from this list, the application"
+    },
+    {
+      "Time_Start": 552.8000000000001,
+      "Time_End": 558.4000000000001,
+      "Text": " would, at runtime, try to load it. And that's basically how the hijack occurs."
+    },
+    {
+      "Time_Start": 558.4000000000001,
+      "Time_End": 562.6,
+      "Text": " Also what's kind of important to keep in mind in this case is that if we would just create"
+    },
+    {
+      "Time_Start": 562.6,
+      "Time_End": 568.5200000000001,
+      "Text": " a random module that would do something we want, like run our shellcode or pop up a message"
+    },
+    {
+      "Time_Start": 568.5200000000001,
+      "Time_End": 574.6200000000001,
+      "Text": " box or pretty much anything, that would not work, because the requirement for the name"
+    },
+    {
+      "Time_Start": 574.6200000000001,
+      "Time_End": 579.8000000000001,
+      "Text": " would be fulfilled in terms of the application would see there is a module of a particular"
+    },
+    {
+      "Time_Start": 579.8000000000001,
+      "Time_End": 586.1200000000001,
+      "Text": " name, it fits, let's try to load it. But it wouldn't work, because we previously"
+    },
+    {
+      "Time_Start": 586.1200000000001,
+      "Time_End": 593.2,
+      "Text": " said that the DLLs are actually application extensions, so the loader has some expectations"
+    },
+    {
+      "Time_Start": 593.2,
+      "Time_End": 599.36,
+      "Text": " from the module it loads. And for us to not actually have to implement every single function"
+    },
+    {
+      "Time_Start": 599.36,
+      "Time_End": 606.8000000000001,
+      "Text": " and comply with the loader, we just need to rely on proxying. And I kind of find the proxying"
+    },
+    {
+      "Time_Start": 606.8000000000001,
+      "Time_End": 615.2800000000001,
+      "Text": " easiest to explain in a practical example. So let's say we have a target.exe, and target.exe"
+    },
+    {
+      "Time_Start": 615.2800000000001,
+      "Time_End": 621.72,
+      "Text": " wants to work with getFileVersionInfoA from version DLL. It will do some basic steps."
+    },
+    {
+      "Time_Start": 621.72,
+      "Time_End": 626.08,
+      "Text": " It's going to load version DLL in memory. After that, it's going to walk through its"
+    },
+    {
+      "Time_Start": 626.08,
+      "Time_End": 633.7600000000001,
+      "Text": " export address table, parse it, find the functions it needs, and it's going to resolve it, find"
+    },
+    {
+      "Time_Start": 633.76,
+      "Time_End": 636.96,
+      "Text": " the function, and the function is there, ready to be used. And that's perfectly fine"
+    },
+    {
+      "Time_Start": 636.96,
+      "Time_End": 641.52,
+      "Text": " in cases where you have actually a physical address of the function, so where the function"
+    },
+    {
+      "Time_Start": 641.52,
+      "Time_End": 648.48,
+      "Text": " itself is implemented in the module. In some cases, like world language name A, the function"
+    },
+    {
+      "Time_Start": 648.48,
+      "Time_End": 653.52,
+      "Text": " is not implemented in the module, it just has a pointer to another module where the"
+    },
+    {
+      "Time_Start": 653.52,
+      "Time_End": 659.48,
+      "Text": " function actually is implemented. So the loader will actually have to repeat the steps, so"
+    },
+    {
+      "Time_Start": 659.48,
+      "Time_End": 665.5600000000001,
+      "Text": " it will try to find that module. If it's not already in memory, it's going to load it,"
+    },
+    {
+      "Time_Start": 665.5600000000001,
+      "Time_End": 670.72,
+      "Text": " and it's going to go through its export address table, find the function it needs."
+    },
+    {
+      "Time_Start": 670.72,
+      "Time_End": 677.36,
+      "Text": " This is a very good feature from the perspective of maintaining backwards compatibility,"
+    },
+    {
+      "Time_Start": 677.36,
+      "Time_End": 685.48,
+      "Text": " because let's say we have a module A and module B, some functionality is implemented in module A,"
+    },
+    {
+      "Time_Start": 685.48,
+      "Time_End": 691.24,
+      "Text": " and we decide to, for some reason, move it to module B. Instead of actually refactoring"
+    },
+    {
+      "Time_Start": 691.24,
+      "Time_End": 696.44,
+      "Text": " the whole thing, we just have to put the pointer and say, hey, loader, next time you need it,"
+    },
+    {
+      "Time_Start": 696.44,
+      "Time_End": 703.24,
+      "Text": " look for it in module B, and that's pretty much it. So how can it be abused?"
+    },
+    {
+      "Time_Start": 703.24,
+      "Time_End": 709.6,
+      "Text": " Essentially, we would want to repeat the same steps as Windows does in legit cases,"
+    },
+    {
+      "Time_Start": 709.64,
+      "Time_End": 719.52,
+      "Text": " and we would want to do that in a way so we know that we need a DLL of a particular name."
+    },
+    {
+      "Time_Start": 719.52,
+      "Time_End": 725.16,
+      "Text": " We saw that one of the DLLs from the list was version DLL, so let's go ahead and create a DLL"
+    },
+    {
+      "Time_Start": 725.16,
+      "Time_End": 734.5600000000001,
+      "Text": " that's going to run shellcode or whatever, name it version, and we also need to take the original"
+    },
+    {
+      "Time_Start": 734.5600000000001,
+      "Time_End": 740.0400000000001,
+      "Text": " version DLL from the system and put it in the, let's say, application folder."
+    },
+    {
+      "Time_Start": 740.0400000000001,
+      "Time_End": 747.7600000000001,
+      "Text": " And we need to make sure that our version DLL that's going to be loaded has all the functionalities"
+    },
+    {
+      "Time_Start": 747.7600000000001,
+      "Time_End": 755.8000000000001,
+      "Text": " that the original version has. And instead of actually implementing every single function,"
+    },
+    {
+      "Time_Start": 755.8000000000001,
+      "Time_End": 759.8800000000001,
+      "Text": " we basically just put a bunch of pointers in the export address table."
+    },
+    {
+      "Time_Start": 759.88,
+      "Time_End": 766.28,
+      "Text": " So when the process starts, it loads version, it sees that, hey, all the functions,"
+    },
+    {
+      "Time_Start": 766.28,
+      "Time_End": 770.6,
+      "Text": " we don't have any, but they're going to be in another module, in this case, word DLL."
+    },
+    {
+      "Time_Start": 770.6,
+      "Time_End": 778.6,
+      "Text": " So the loader will then try to reach for word DLL and actually load it, resolve all the functions."
+    },
+    {
+      "Time_Start": 778.6,
+      "Time_End": 784.04,
+      "Text": " With this, we basically achieved two things. We were able to get our, in this case,"
+    },
+    {
+      "Time_Start": 784.04,
+      "Time_End": 791.4399999999999,
+      "Text": " malicious module running in the memory of a process, and we also were able to keep the process"
+    },
+    {
+      "Time_Start": 791.4399999999999,
+      "Time_End": 794.7199999999999,
+      "Text": " running without breaking anything, because process eventually found what it needs,"
+    },
+    {
+      "Time_Start": 794.7199999999999,
+      "Time_End": 800.88,
+      "Text": " and it continued to run business as usual. So for proxying, for us to work,"
+    },
+    {
+      "Time_Start": 800.88,
+      "Time_End": 806.76,
+      "Text": " we need to focus on kind of two things. First one is we need to export."
+    },
+    {
+      "Time_Start": 806.76,
+      "Time_End": 812.36,
+      "Text": " We need to make sure our exports are actually pointing to a module and to those functions,"
+    },
+    {
+      "Time_Start": 812.36,
+      "Time_End": 820.64,
+      "Text": " and that's kind of easy to do with the pragma command directives, or we basically define it in the dev file."
+    },
+    {
+      "Time_Start": 820.64,
+      "Time_End": 826.32,
+      "Text": " And the second thing that's a bit more trickier is we have to deal with DLL main."
+    },
+    {
+      "Time_Start": 826.32,
+      "Time_End": 834.64,
+      "Text": " Microsoft says that there is a bunch of things that can and cannot be done from DLL main."
+    },
+    {
+      "Time_Start": 834.64,
+      "Time_End": 841.6800000000001,
+      "Text": " There's a small amount of things that can safely be done from DLL main because of the potential of deadlocks,"
+    },
+    {
+      "Time_Start": 841.6800000000001,
+      "Time_End": 848.84,
+      "Text": " but they also say that we can potentially create a thread as long as we don't synchronize it with other threads."
+    },
+    {
+      "Time_Start": 848.84,
+      "Time_End": 856.36,
+      "Text": " So we're basically doing that here. We created a small function that's going to just pop up a message box,"
+    },
+    {
+      "Time_Start": 856.36,
+      "Time_End": 862.5600000000001,
+      "Text": " and we are going to call it from our DLL main in case where the DLL is loaded."
+    },
+    {
+      "Time_Start": 862.5600000000001,
+      "Time_End": 866.1600000000001,
+      "Text": " So that's pretty much it for our proof of concept."
+    },
+    {
+      "Time_Start": 866.16,
+      "Time_End": 876.28,
+      "Text": " And when we set the stage just by dropping the version DLL, our message box proxy, and word DLL in the signal directory,"
+    },
+    {
+      "Time_Start": 876.28,
+      "Time_End": 881.68,
+      "Text": " we run the signal, and yeah, we see a bunch of pop-ups, which is fine."
+    },
+    {
+      "Time_Start": 881.68,
+      "Time_End": 890.56,
+      "Text": " We also see that Rockman is not really complaining about it because both version and word DLL are successfully loaded."
+    },
+    {
+      "Time_Start": 890.5600000000001,
+      "Time_End": 897.4000000000001,
+      "Text": " And this kind of proves that our code is working, but how far can we actually go with it?"
+    },
+    {
+      "Time_Start": 897.4000000000001,
+      "Time_End": 905.12,
+      "Text": " And when I initially started to play around with DLL proxying, I was just going through Rockman output,"
+    },
+    {
+      "Time_Start": 905.12,
+      "Time_End": 914.8000000000001,
+      "Text": " and I saw that Rockman shows that signal is using a create file to actually start open and read and load the module."
+    },
+    {
+      "Time_Start": 914.8000000000001,
+      "Time_End": 924.2800000000001,
+      "Text": " So essentially, as we can see here, and Microsoft documentation says that both load library and create file can actually work with full paths."
+    },
+    {
+      "Time_Start": 924.2800000000001,
+      "Time_End": 930.6800000000001,
+      "Text": " In this case, it's a full path to another folder, in this case, system 32."
+    },
+    {
+      "Time_Start": 930.6800000000001,
+      "Time_End": 937.5200000000001,
+      "Text": " But will it also work in case of full path to another share, SMB or web app?"
+    },
+    {
+      "Time_Start": 937.5200000000001,
+      "Time_End": 939.5200000000001,
+      "Text": " Let's find out."
+    },
+    {
+      "Time_Start": 939.52,
+      "Time_End": 944.0799999999999,
+      "Text": " So the idea is essentially this."
+    },
+    {
+      "Time_Start": 944.0799999999999,
+      "Time_End": 954.3199999999999,
+      "Text": " In the application directory, we drop a proxy module whose exports address table is pointing to a module that's hosted on an external share,"
+    },
+    {
+      "Time_Start": 954.3199999999999,
+      "Time_End": 956.56,
+      "Text": " maybe SMB or web app."
+    },
+    {
+      "Time_Start": 956.56,
+      "Time_End": 961.84,
+      "Text": " So when the Discord starts, it sees the first module."
+    },
+    {
+      "Time_Start": 961.84,
+      "Time_End": 964.1999999999999,
+      "Text": " It says, OK, we're going to try to load it."
+    },
+    {
+      "Time_Start": 964.2,
+      "Time_End": 970.96,
+      "Text": " The export address table is actually pointing to version X that's hosted on the remote share."
+    },
+    {
+      "Time_Start": 970.96,
+      "Time_End": 977.84,
+      "Text": " And that version X has, let's say, in this case, C2 shellcode or whatever we decide to put in it."
+    },
+    {
+      "Time_Start": 977.84,
+      "Time_End": 985.0,
+      "Text": " So the module, the Discord is actually going to try to go there and load that from the external share."
+    },
+    {
+      "Time_Start": 985.0,
+      "Time_End": 992.28,
+      "Text": " But that also leaves us with the need for the full circle to be completed,"
+    },
+    {
+      "Time_Start": 992.28,
+      "Time_End": 999.84,
+      "Text": " because we need to make sure that our exports from version X DLL are actually giving the Discord what it needs."
+    },
+    {
+      "Time_Start": 999.84,
+      "Time_End": 1006.56,
+      "Text": " So to implement that, we would just basically provide the path to local version DLL."
+    },
+    {
+      "Time_Start": 1006.56,
+      "Time_End": 1011.36,
+      "Text": " So the Discord goes to one place, sees it's not there, goes to another place, sees it's not there."
+    },
+    {
+      "Time_Start": 1011.36,
+      "Time_End": 1013.68,
+      "Text": " But in the third place, maybe I try that."
+    },
+    {
+      "Time_Start": 1013.6800000000001,
+      "Time_End": 1017.48,
+      "Text": " And it finds all the functionalities it needs locally on the disk,"
+    },
+    {
+      "Time_Start": 1017.48,
+      "Time_End": 1022.0400000000001,
+      "Text": " while we still have our two additional modules loaded in memory."
+    },
+    {
+      "Time_Start": 1022.0400000000001,
+      "Time_End": 1027.16,
+      "Text": " And in case of SMB, it's pretty straightforward to do."
+    },
+    {
+      "Time_Start": 1027.16,
+      "Time_End": 1033.1200000000001,
+      "Text": " We actually need to provide a path to a module hosted on the SMB share."
+    },
+    {
+      "Time_Start": 1033.1200000000001,
+      "Time_End": 1034.24,
+      "Text": " So we need to get a full path."
+    },
+    {
+      "Time_Start": 1034.24,
+      "Time_End": 1037.72,
+      "Text": " We also need to host the module, obviously."
+    },
+    {
+      "Time_Start": 1037.72,
+      "Time_End": 1046.56,
+      "Text": " And yeah, for these tests, I was using the Impacted, but Sharp web server also ran good in a couple of tests."
+    },
+    {
+      "Time_Start": 1046.56,
+      "Time_End": 1054.4,
+      "Text": " And once we actually compile the proxy module with these exports, we drop it in the Discord app directory."
+    },
+    {
+      "Time_Start": 1054.4,
+      "Time_End": 1057.88,
+      "Text": " When we run Discord, we see our message boxes popping up."
+    },
+    {
+      "Time_Start": 1057.88,
+      "Time_End": 1061.16,
+      "Text": " On the attacker side, we see SMB authentication."
+    },
+    {
+      "Time_Start": 1061.16,
+      "Time_End": 1065.32,
+      "Text": " And after not so much, we see our Cobalt Strike beacon coming back."
+    },
+    {
+      "Time_Start": 1065.32,
+      "Time_End": 1066.96,
+      "Text": " Pretty cool, right?"
+    },
+    {
+      "Time_Start": 1066.96,
+      "Time_End": 1072.44,
+      "Text": " And essentially, for WebDAV, the process is exactly the same."
+    },
+    {
+      "Time_Start": 1072.44,
+      "Time_End": 1075.3600000000001,
+      "Text": " We just need to provide a full path to the module."
+    },
+    {
+      "Time_Start": 1075.3600000000001,
+      "Time_End": 1078.08,
+      "Text": " This time, hosted on the WebDAV share."
+    },
+    {
+      "Time_Start": 1078.08,
+      "Time_End": 1082.8,
+      "Text": " We need to provide a port on which the WebDAV service is listening."
+    },
+    {
+      "Time_Start": 1082.8,
+      "Time_End": 1084.3600000000001,
+      "Text": " So we do that through app port."
+    },
+    {
+      "Time_Start": 1084.3600000000001,
+      "Time_End": 1088.8,
+      "Text": " And again, we host it, but this time on a WebDAV share."
+    },
+    {
+      "Time_Start": 1088.8,
+      "Time_End": 1091.24,
+      "Text": " Essentially, the same thing."
+    },
+    {
+      "Time_Start": 1091.24,
+      "Time_End": 1093.2,
+      "Text": " So once again, we run it."
+    },
+    {
+      "Time_Start": 1093.2,
+      "Time_End": 1095.6000000000001,
+      "Text": " We drop the proxy module."
+    },
+    {
+      "Time_Start": 1095.6000000000001,
+      "Time_End": 1098.2400000000002,
+      "Text": " We run Discord."
+    },
+    {
+      "Time_Start": 1098.2400000000002,
+      "Time_End": 1101.5600000000002,
+      "Text": " This time, we, again, see message boxes, which is a good initial sign."
+    },
+    {
+      "Time_Start": 1101.5600000000002,
+      "Time_End": 1109.96,
+      "Text": " And on the attacker side, we see WebDAV traffic, some requests, and finally, again, a callback, which is good."
+    },
+    {
+      "Time_Start": 1109.96,
+      "Time_End": 1111.0800000000002,
+      "Text": " Kind of expected."
+    },
+    {
+      "Time_Start": 1111.0800000000002,
+      "Time_End": 1117.88,
+      "Text": " But in both cases, SMB and WebDAV, the version X module is exactly the same."
+    },
+    {
+      "Time_Start": 1117.88,
+      "Time_End": 1121.4800000000002,
+      "Text": " So there's no differences between the cases."
+    },
+    {
+      "Time_Start": 1121.48,
+      "Time_End": 1130.4,
+      "Text": " It just exports the functions from shows that the exports are now pointing to the module in SysWall 64."
+    },
+    {
+      "Time_Start": 1130.4,
+      "Time_End": 1132.6,
+      "Text": " And what else?"
+    },
+    {
+      "Time_Start": 1132.6,
+      "Time_End": 1145.0,
+      "Text": " Yeah, we basically put our, in this case, I'm saying encrypted shellcode, because when they started to work on this for bypassing a defender, it was enough if we just reverse the bytes."
+    },
+    {
+      "Time_Start": 1145.0,
+      "Time_End": 1150.88,
+      "Text": " Reverse the order of bytes so that the defender doesn't really recognize the shellcode initially."
+    },
+    {
+      "Time_Start": 1150.88,
+      "Time_End": 1157.8400000000001,
+      "Text": " But after some time, it actually started picking up on it, so I had to implement a full AES encryption for that."
+    },
+    {
+      "Time_Start": 1157.8400000000001,
+      "Time_End": 1166.1200000000001,
+      "Text": " We instruct the compiler to put our shellcode in the text section of the module, so bundle it with the rest of the executable code."
+    },
+    {
+      "Time_Start": 1166.1200000000001,
+      "Time_End": 1169.2,
+      "Text": " And we're also talking about a new trial."
+    },
+    {
+      "Time_Start": 1169.2,
+      "Time_End": 1178.92,
+      "Text": " So we basically create a, we basically call the runme function from version X DLL once it's loaded."
+    },
+    {
+      "Time_Start": 1178.96,
+      "Time_End": 1181.28,
+      "Text": " And we run this function in a separate thread."
+    },
+    {
+      "Time_Start": 1181.28,
+      "Time_End": 1184.8400000000001,
+      "Text": " And that function only does just a couple of things."
+    },
+    {
+      "Time_Start": 1184.8400000000001,
+      "Time_End": 1188.76,
+      "Text": " It checks if a beacon is already running on the host."
+    },
+    {
+      "Time_Start": 1188.76,
+      "Time_End": 1200.72,
+      "Text": " And if not, it basically changes the permissions of the beacon section, of the raw shellcode section, to page execute read write so it can decrypt it."
+    },
+    {
+      "Time_Start": 1200.72,
+      "Time_End": 1205.56,
+      "Text": " After decryption, it changes it back to read and execute, which is normal text section permission."
+    },
+    {
+      "Time_Start": 1205.56,
+      "Time_End": 1211.0,
+      "Text": " And if it all goes well, it just runs the shellcode."
+    },
+    {
+      "Time_Start": 1211.0,
+      "Time_End": 1217.3600000000001,
+      "Text": " And a couple of things to consider for these use cases, in case of web dev."
+    },
+    {
+      "Time_Start": 1217.3600000000001,
+      "Time_End": 1225.24,
+      "Text": " So the web client service might not be actually running by default, so we need to find a way to start it."
+    },
+    {
+      "Time_Start": 1225.24,
+      "Time_End": 1231.6,
+      "Text": " And it's very good if we're running in a high integrity level and we can actually just run the service."
+    },
+    {
+      "Time_Start": 1231.6,
+      "Time_End": 1234.96,
+      "Text": " But when that's not the case, I did some research."
+    },
+    {
+      "Time_Start": 1234.96,
+      "Time_End": 1239.36,
+      "Text": " And there was a really cool project called Web Dev Delivery by Arnox."
+    },
+    {
+      "Time_Start": 1239.36,
+      "Time_End": 1245.96,
+      "Text": " And that project basically taught me a lot about web dev."
+    },
+    {
+      "Time_Start": 1245.96,
+      "Time_End": 1254.88,
+      "Text": " One of the things that we'll see later is how we can basically, taken from that project, how we can four-star the web dev service from medium integrity."
+    },
+    {
+      "Time_Start": 1254.88,
+      "Time_End": 1261.0400000000002,
+      "Text": " And also, the DLL that's pulled from a web dev share is going to be cached locally."
+    },
+    {
+      "Time_Start": 1261.0400000000002,
+      "Time_End": 1267.3600000000001,
+      "Text": " So it's going to be cached under service profiles, local service subdata, dfs.folder there."
+    },
+    {
+      "Time_Start": 1267.3600000000001,
+      "Time_End": 1273.44,
+      "Text": " And if we want to avoid leaving any traces, we actually have to remove that manually."
+    },
+    {
+      "Time_Start": 1273.44,
+      "Time_End": 1284.7600000000002,
+      "Text": " In SMB case, depending on the operating system which we're operating on, guest access will probably be disabled if we're not talking about Windows 10 Home or Windows 10 Pro."
+    },
+    {
+      "Time_Start": 1284.76,
+      "Time_End": 1291.52,
+      "Text": " That can kind of be circumvented with setting up a proper share with a username and password."
+    },
+    {
+      "Time_Start": 1291.52,
+      "Time_End": 1300.52,
+      "Text": " And also, in contrast to web dev, the module that's going to be loaded through this is actually not going to be cached anywhere."
+    },
+    {
+      "Time_Start": 1300.52,
+      "Time_End": 1302.32,
+      "Text": " So it's going to be loaded directly."
+    },
+    {
+      "Time_Start": 1302.32,
+      "Time_End": 1312.52,
+      "Text": " But also, we'll have outbound SMB traffic, which is something to look for if you're a defender, potentially even block it if it's not already."
+    },
+    {
+      "Time_Start": 1312.52,
+      "Time_End": 1316.8,
+      "Text": " And I basically started with some early research."
+    },
+    {
+      "Time_Start": 1316.8,
+      "Time_End": 1318.8,
+      "Text": " I did not have too much time to tinker about it."
+    },
+    {
+      "Time_Start": 1318.8,
+      "Time_End": 1329.76,
+      "Text": " But SMB over Quick looks like a potential future candidate and something that may come up in the future."
+    },
+    {
+      "Time_Start": 1329.76,
+      "Time_End": 1343.32,
+      "Text": " So yeah, to conclude this, we are basically able to, under the right circumstances, load and execute modules from different directories or even different shares."
+    },
+    {
+      "Time_Start": 1343.32,
+      "Time_End": 1345.8799999999999,
+      "Text": " We can even force the application to hold multiple modules."
+    },
+    {
+      "Time_Start": 1345.8799999999999,
+      "Time_End": 1354.12,
+      "Text": " And we just need to make sure that the application actually finds what it needs at the end of that redirection chain."
+    },
+    {
+      "Time_Start": 1354.16,
+      "Time_End": 1365.92,
+      "Text": " And since we're this whole time talking about running our code in the memory space of another process, let's compare the ideal of proxying with just plain classic vanilla injection."
+    },
+    {
+      "Time_Start": 1365.92,
+      "Time_End": 1374.24,
+      "Text": " For this part of the talk, I decided to go with the Messagebox shellcode because C2 shellcode is usually reflectively loaded."
+    },
+    {
+      "Time_Start": 1374.24,
+      "Time_End": 1376.2,
+      "Text": " It's going to run from up."
+    },
+    {
+      "Time_Start": 1376.2,
+      "Time_End": 1383.16,
+      "Text": " There are some additional memory allocations and writing performed for the, let's say, the final implant shellcode."
+    },
+    {
+      "Time_Start": 1383.16,
+      "Time_End": 1393.0,
+      "Text": " And the location from which that shellcode would be running would be basically selected by the reflective loader."
+    },
+    {
+      "Time_Start": 1393.0,
+      "Time_End": 1403.64,
+      "Text": " We can potentially manipulate that with hooking the functions that the loader uses or writing our own reflective loader."
+    },
+    {
+      "Time_Start": 1403.64,
+      "Time_End": 1409.0400000000002,
+      "Text": " But for the sake of simplicity, I went with the basic Messagebox shellcode from MSF Venom."
+    },
+    {
+      "Time_Start": 1409.0400000000002,
+      "Time_End": 1411.8400000000001,
+      "Text": " And here, it's bundled in the text section."
+    },
+    {
+      "Time_Start": 1411.84,
+      "Time_End": 1415.1999999999998,
+      "Text": " So basically, back to disk."
+    },
+    {
+      "Time_Start": 1415.1999999999998,
+      "Time_End": 1417.52,
+      "Text": " Looks like a regular normal text section."
+    },
+    {
+      "Time_Start": 1417.52,
+      "Time_End": 1419.6,
+      "Text": " Nothing really odd."
+    },
+    {
+      "Time_Start": 1419.6,
+      "Time_End": 1421.9199999999998,
+      "Text": " It's bundled with the rest of the executable code from the module."
+    },
+    {
+      "Time_Start": 1424.52,
+      "Time_End": 1431.1999999999998,
+      "Text": " And as we've seen earlier when I detailed the version X, we will be creating a new thread to run the shellcode."
+    },
+    {
+      "Time_Start": 1431.1999999999998,
+      "Time_End": 1437.84,
+      "Text": " And in the first case, it's going to be a shellcode thread with the thread ID of 4012."
+    },
+    {
+      "Time_Start": 1437.84,
+      "Time_End": 1446.08,
+      "Text": " The start address is going to be pointing to somewhere in our module to, let's say, some offset in our module."
+    },
+    {
+      "Time_Start": 1446.08,
+      "Time_End": 1456.6799999999998,
+      "Text": " And as we can see here, the thread stack is showing the functions that are called by the shellcode itself, in the order they're called."
+    },
+    {
+      "Time_Start": 1456.6799999999998,
+      "Time_End": 1465.4399999999998,
+      "Text": " And the offsets are actually marking the return addresses of them."
+    },
+    {
+      "Time_Start": 1465.44,
+      "Time_End": 1471.88,
+      "Text": " If we want to make that a bit more legit in memory, we can actually export the runme function."
+    },
+    {
+      "Time_Start": 1471.88,
+      "Time_End": 1477.04,
+      "Text": " And then we get the start address looking a bit like this."
+    },
+    {
+      "Time_Start": 1477.04,
+      "Time_End": 1478.1200000000001,
+      "Text": " Both are perfectly legit."
+    },
+    {
+      "Time_Start": 1478.1200000000001,
+      "Time_End": 1490.24,
+      "Text": " Both look relatively legit because, as we saw previously, everything is backed by a physical DLL on disk."
+    },
+    {
+      "Time_Start": 1490.24,
+      "Time_End": 1496.56,
+      "Text": " And if we compare that to classical injection, we have a very similar process."
+    },
+    {
+      "Time_Start": 1496.56,
+      "Time_End": 1507.24,
+      "Text": " So our process allocates some space in the process of our choosing, let's say, notepad."
+    },
+    {
+      "Time_Start": 1507.24,
+      "Time_End": 1509.04,
+      "Text": " Then it writes the shellcode there."
+    },
+    {
+      "Time_Start": 1509.04,
+      "Time_End": 1512.84,
+      "Text": " And finally, it creates a thread that runs our shellcode."
+    },
+    {
+      "Time_Start": 1512.84,
+      "Time_End": 1515.84,
+      "Text": " Here we can see the execution and message box popping up."
+    },
+    {
+      "Time_Start": 1515.84,
+      "Time_End": 1521.9599999999998,
+      "Text": " But when we actually check the memory and threads, we see something different."
+    },
+    {
+      "Time_Start": 1521.9599999999998,
+      "Time_End": 1529.76,
+      "Text": " So we have a new read execute region, which is not backed by anything."
+    },
+    {
+      "Time_Start": 1529.76,
+      "Time_End": 1534.6399999999999,
+      "Text": " And in case of a message box shellcode, it's relatively small."
+    },
+    {
+      "Time_Start": 1534.6399999999999,
+      "Time_End": 1538.6,
+      "Text": " So even some memory scanners are going to miss it."
+    },
+    {
+      "Time_Start": 1538.6000000000001,
+      "Time_End": 1546.8400000000001,
+      "Text": " But in cases of actual C2 shellcode, these sections would be larger and would definitely stand more out."
+    },
+    {
+      "Time_Start": 1546.8400000000001,
+      "Time_End": 1558.7600000000002,
+      "Text": " And also, looking at the whole thread stack, we can see our thread stack is pointing to somewhere in that memory region."
+    },
+    {
+      "Time_Start": 1558.7600000000002,
+      "Time_End": 1562.16,
+      "Text": " So we know it's going to lead us to our shellcode eventually."
+    },
+    {
+      "Time_Start": 1562.16,
+      "Time_End": 1565.24,
+      "Text": " And what's more interesting is that the start address, in this case,"
+    },
+    {
+      "Time_Start": 1565.24,
+      "Time_End": 1574.52,
+      "Text": " is pointing to the address of the RTL user thread start function that's implemented in NTDLL."
+    },
+    {
+      "Time_Start": 1574.52,
+      "Time_End": 1579.24,
+      "Text": " This is a solid indicator that the thread was actually created from a remote process."
+    },
+    {
+      "Time_Start": 1579.24,
+      "Time_End": 1585.28,
+      "Text": " And lately, I noticed that there are some EDRs that are actually picking up on it."
+    },
+    {
+      "Time_Start": 1585.28,
+      "Time_End": 1588.92,
+      "Text": " So they're not complaining about writing to a remote process."
+    },
+    {
+      "Time_Start": 1588.92,
+      "Time_End": 1591.6000000000001,
+      "Text": " They're not complaining about memory allocation."
+    },
+    {
+      "Time_Start": 1591.6000000000001,
+      "Time_End": 1601.1200000000001,
+      "Text": " But they're very, very loud when we actually try to create a thread that's going to run the shellcode."
+    },
+    {
+      "Time_Start": 1601.1200000000001,
+      "Time_End": 1609.68,
+      "Text": " Yeah, and to compare and summarize that, in case of DLL proxying, everything is happening locally within the process."
+    },
+    {
+      "Time_Start": 1609.68,
+      "Time_End": 1614.96,
+      "Text": " We can even avoid some API calls like allocation and writing."
+    },
+    {
+      "Time_Start": 1614.96,
+      "Time_End": 1619.92,
+      "Text": " We'll have an executable memory that's backed by something on disk."
+    },
+    {
+      "Time_Start": 1619.92,
+      "Time_End": 1622.0,
+      "Text": " And that looks pretty legit."
+    },
+    {
+      "Time_Start": 1622.0,
+      "Time_End": 1624.28,
+      "Text": " And yeah, try this created locally."
+    },
+    {
+      "Time_Start": 1624.28,
+      "Time_End": 1629.72,
+      "Text": " Compared to classical injection, we have process A injecting into process B, writing, allocating."
+    },
+    {
+      "Time_Start": 1629.72,
+      "Time_End": 1638.72,
+      "Text": " So memory section that's used to receive the shellcode from our process A can be read execute or read write execute."
+    },
+    {
+      "Time_Start": 1638.72,
+      "Time_End": 1644.6000000000001,
+      "Text": " And if we don't apply some module stomping, it's going to be not backed by anything on disk."
+    },
+    {
+      "Time_Start": 1644.6000000000001,
+      "Time_End": 1647.3200000000002,
+      "Text": " And it's going to stick out."
+    },
+    {
+      "Time_Start": 1647.32,
+      "Time_End": 1657.84,
+      "Text": " And finally, process, if we're not using some other technique like thread hijack or a APC injection or something like that,"
+    },
+    {
+      "Time_Start": 1657.84,
+      "Time_End": 1665.76,
+      "Text": " the thread that's running the shellcode is going to be noticeable that it's created from a remote process."
+    },
+    {
+      "Time_Start": 1665.76,
+      "Time_End": 1669.84,
+      "Text": " And all these indicators kind of led us to detections."
+    },
+    {
+      "Time_Start": 1669.84,
+      "Time_End": 1675.76,
+      "Text": " There are many things that can be combined to write relatively robust and precise detections"
+    },
+    {
+      "Time_Start": 1675.76,
+      "Time_End": 1677.52,
+      "Text": " and avoid the number of false positives."
+    },
+    {
+      "Time_Start": 1677.52,
+      "Time_End": 1681.32,
+      "Text": " But I'm going to try to stick to only two things that are, in my opinion,"
+    },
+    {
+      "Time_Start": 1681.32,
+      "Time_End": 1686.4,
+      "Text": " mostly important to relevant to DLL hijacking and proxying."
+    },
+    {
+      "Time_Start": 1686.4,
+      "Time_End": 1692.24,
+      "Text": " And not other behaviors that will result as exploitation of this, let's say, issue."
+    },
+    {
+      "Time_Start": 1692.24,
+      "Time_End": 1694.48,
+      "Text": " And the first one is obviously file writing."
+    },
+    {
+      "Time_Start": 1694.48,
+      "Time_End": 1705.72,
+      "Text": " So the core issue lies in the attacker's ability to actually write a module to a place where the application will load it from."
+    },
+    {
+      "Time_Start": 1706.3600000000001,
+      "Time_End": 1717.56,
+      "Text": " And so we can use data from ProcMon, in this case, to create an alert that would basically trigger if a module"
+    },
+    {
+      "Time_Start": 1717.56,
+      "Time_End": 1726.32,
+      "Text": " of a specific name is written to a specific location, in this case, the signal application folder."
+    },
+    {
+      "Time_Start": 1726.32,
+      "Time_End": 1730.52,
+      "Text": " We can also, because we know that eventually Signal will find the module it needs,"
+    },
+    {
+      "Time_Start": 1730.56,
+      "Time_End": 1737.6399999999999,
+      "Text": " we can also just create a comparison, basically like a list of names from SysWall64, System32,"
+    },
+    {
+      "Time_Start": 1737.6399999999999,
+      "Time_End": 1741.48,
+      "Text": " and cross-reference that list of names with the names of the modules written."
+    },
+    {
+      "Time_Start": 1741.48,
+      "Time_End": 1744.0,
+      "Text": " If we have a match, we alert on that."
+    },
+    {
+      "Time_Start": 1744.0,
+      "Time_End": 1751.92,
+      "Text": " That's definitely far from bulletproof and something that can be circumvented by breaking some more steps."
+    },
+    {
+      "Time_Start": 1751.92,
+      "Time_End": 1754.04,
+      "Text": " But it's a good start."
+    },
+    {
+      "Time_Start": 1754.04,
+      "Time_End": 1758.12,
+      "Text": " It gives us something to monitor and look for."
+    },
+    {
+      "Time_Start": 1758.1200000000001,
+      "Time_End": 1765.0400000000002,
+      "Text": " And the second thing is the export address table of the module itself."
+    },
+    {
+      "Time_Start": 1765.0400000000002,
+      "Time_End": 1770.1200000000001,
+      "Text": " So one quick look at it, and we'll basically know everything we need to know about the module."
+    },
+    {
+      "Time_Start": 1770.1200000000001,
+      "Time_End": 1779.0800000000002,
+      "Text": " In case of proxy DLLs, so the upper one, we can see that all functions are forwarded somewhere else to,"
+    },
+    {
+      "Time_Start": 1779.0800000000002,
+      "Time_End": 1782.72,
+      "Text": " in this case, to version as System32."
+    },
+    {
+      "Time_Start": 1782.72,
+      "Time_End": 1787.92,
+      "Text": " In case of legit modules, most of the functions will have their RBAs or their physical addresses."
+    },
+    {
+      "Time_Start": 1787.92,
+      "Time_End": 1793.68,
+      "Text": " And only a handful, like one or two maybe, will be forwarded to another module, usually in the same directory."
+    },
+    {
+      "Time_Start": 1797.3200000000002,
+      "Time_End": 1805.96,
+      "Text": " And that brings us to the disappearing proxy, which is just a very, very basic use of DLL main."
+    },
+    {
+      "Time_Start": 1818.92,
+      "Time_End": 1820.4,
+      "Text": " That's not really."
+    },
+    {
+      "Time_Start": 1827.92,
+      "Time_End": 1836.92,
+      "Text": " So the font is definitely not ideal here, but I'll be uploading this somewhere."
+    },
+    {
+      "Time_Start": 1836.92,
+      "Time_End": 1840.2,
+      "Text": " So if anybody's interested, they can see it."
+    },
+    {
+      "Time_Start": 1840.2,
+      "Time_End": 1842.3200000000002,
+      "Text": " The setup here is as follows."
+    },
+    {
+      "Time_Start": 1842.32,
+      "Time_End": 1847.9199999999998,
+      "Text": " We basically have our proxy DLL written in a single directory."
+    },
+    {
+      "Time_Start": 1847.9199999999998,
+      "Time_End": 1851.48,
+      "Text": " We named it version DLL."
+    },
+    {
+      "Time_Start": 1851.48,
+      "Time_End": 1858.04,
+      "Text": " We are, at this point, running in medium integrity."
+    },
+    {
+      "Time_Start": 1858.04,
+      "Time_End": 1869.9199999999998,
+      "Text": " And we also have an up-to-date defender, so everything is on no exclusions and automatic sample submission."
+    },
+    {
+      "Time_Start": 1869.92,
+      "Time_End": 1875.1200000000001,
+      "Text": " It doesn't really matter because this whole environment is in LUN, so it doesn't really matter,"
+    },
+    {
+      "Time_Start": 1875.1200000000001,
+      "Time_End": 1878.8000000000002,
+      "Text": " but that's how you keep the environment for testing."
+    },
+    {
+      "Time_Start": 1878.8000000000002,
+      "Time_End": 1882.6000000000001,
+      "Text": " From the attacker side, we're serving the dprotect DLL,"
+    },
+    {
+      "Time_Start": 1882.6000000000001,
+      "Time_End": 1888.6000000000001,
+      "Text": " which is essentially a module that has Cobblestrike shellcode hosted in it."
+    },
+    {
+      "Time_Start": 1888.6000000000001,
+      "Time_End": 1899.8000000000002,
+      "Text": " And we also have a Cobblestrike server with zero callbacks at this point."
+    },
+    {
+      "Time_Start": 1899.8,
+      "Time_End": 1907.3999999999999,
+      "Text": " So if we go back to the victim machine and we try running signal, it will fail."
+    },
+    {
+      "Time_Start": 1907.3999999999999,
+      "Time_End": 1916.76,
+      "Text": " And it will fail because the service we need, in this case, web.service, is not really running."
+    },
+    {
+      "Time_Start": 1916.76,
+      "Time_End": 1922.3999999999999,
+      "Text": " And instead of elevating privileges and moving to generating more events,"
+    },
+    {
+      "Time_Start": 1922.3999999999999,
+      "Time_End": 1929.2,
+      "Text": " I basically just use this handy trick, one-liner, to actually push start the web.service."
+    },
+    {
+      "Time_Start": 1929.2,
+      "Time_End": 1936.4,
+      "Text": " And as you can see, the web.service is now running, so we should be successful."
+    },
+    {
+      "Time_Start": 1936.4,
+      "Time_End": 1946.2,
+      "Text": " And at this point, keep an eye out to version DLL, so what happens when it's actually loaded, when the signal runs."
+    },
+    {
+      "Time_Start": 1946.2,
+      "Time_End": 1950.0800000000002,
+      "Text": " And it's gone."
+    },
+    {
+      "Time_Start": 1950.0800000000002,
+      "Time_End": 1952.1200000000001,
+      "Text": " We go back to our attacker host."
+    },
+    {
+      "Time_Start": 1952.1200000000001,
+      "Time_End": 1956.88,
+      "Text": " We see some web.traffic and the dprotect was actually retrieved."
+    },
+    {
+      "Time_Start": 1956.88,
+      "Time_End": 1966.96,
+      "Text": " And we see a callback from Cobblestrike, which is a pretty good thing if you're a teamer."
+    },
+    {
+      "Time_Start": 1966.96,
+      "Time_End": 1974.5200000000002,
+      "Text": " Actually, I'm going to run some commands here just to actually prove that we can execute some code on the endpoint."
+    },
+    {
+      "Time_Start": 1974.5200000000002,
+      "Time_End": 1982.8000000000002,
+      "Text": " And we'll go quickly back to process hacker to inspect the load modules in signal."
+    },
+    {
+      "Time_Start": 1982.8,
+      "Time_End": 1987.48,
+      "Text": " We're interested in two modules, actually three, but two in this case."
+    },
+    {
+      "Time_Start": 1987.48,
+      "Time_End": 1994.52,
+      "Text": " The first one is dprotect, and it's actually loaded from a remote share, as we can see here."
+    },
+    {
+      "Time_Start": 1994.52,
+      "Time_End": 1996.0,
+      "Text": " It's clearly shown."
+    },
+    {
+      "Time_Start": 1996.0,
+      "Time_End": 2007.68,
+      "Text": " And the second one, so the version DLL, we only have one version DLL, and it's from system 32."
+    },
+    {
+      "Time_Start": 2007.68,
+      "Time_End": 2013.8400000000001,
+      "Text": " So what happened with our module?"
+    },
+    {
+      "Time_Start": 2013.8400000000001,
+      "Time_End": 2014.4,
+      "Text": " Any guesses?"
+    },
+    {
+      "Time_Start": 2017.48,
+      "Time_End": 2022.04,
+      "Text": " It just basically renamed itself at runtime to mzdll."
+    },
+    {
+      "Time_Start": 2025.6000000000001,
+      "Time_End": 2034.04,
+      "Text": " And yeah, we can see here that it's actually the masqueraded module loaded from the mzdll."
+    },
+    {
+      "Time_Start": 2034.04,
+      "Time_End": 2043.32,
+      "Text": " When we exit signal gracefully, so without any forcing, the mz will return itself to version DLL in this case."
+    },
+    {
+      "Time_Start": 2043.32,
+      "Time_End": 2047.08,
+      "Text": " And yeah, we have the command execution."
+    },
+    {
+      "Time_Start": 2047.08,
+      "Time_End": 2062.88,
+      "Text": " So going back to the slides, the disappearing proxy is essentially nothing more than one API call just in the right place."
+    },
+    {
+      "Time_Start": 2063.2400000000002,
+      "Time_End": 2064.32,
+      "Text": " It's a move file call."
+    },
+    {
+      "Time_Start": 2064.32,
+      "Time_End": 2070.08,
+      "Text": " Basically, we are providing a full path to our module, and we're naming it to mzdll."
+    },
+    {
+      "Time_Start": 2070.08,
+      "Time_End": 2074.28,
+      "Text": " And it's all wrapped in switcheroo and switchback."
+    },
+    {
+      "Time_Start": 2074.28,
+      "Time_End": 2077.2000000000003,
+      "Text": " So those functions are basically called in two cases."
+    },
+    {
+      "Time_Start": 2077.2000000000003,
+      "Time_End": 2090.6,
+      "Text": " In first case, the switcheroo, so the renaming from version DLL to mzdll, is called when the proxy DLL is actually loaded, so when the signal starts and loads version DLL."
+    },
+    {
+      "Time_Start": 2090.6,
+      "Time_End": 2096.36,
+      "Text": " And the switchback is called in case when the DLL is unloaded from memory."
+    },
+    {
+      "Time_Start": 2096.36,
+      "Time_End": 2100.44,
+      "Text": " I also implemented a very quick and dirty cleanup."
+    },
+    {
+      "Time_Start": 2100.44,
+      "Time_End": 2103.88,
+      "Text": " Really bad practice, but for my purposes, it did the job."
+    },
+    {
+      "Time_Start": 2103.88,
+      "Time_End": 2107.4,
+      "Text": " Basically, we just clean up the tfs.dev directory."
+    },
+    {
+      "Time_Start": 2107.4,
+      "Time_End": 2113.68,
+      "Text": " We remove all the DLLs from there that will be cached."
+    },
+    {
+      "Time_Start": 2113.68,
+      "Time_End": 2116.2799999999997,
+      "Text": " And I guess that's all for me."
+    },
+    {
+      "Time_Start": 2120.6,
+      "Time_End": 2122.08,
+      "Text": " Thank you."
+    }
+  ]
+}

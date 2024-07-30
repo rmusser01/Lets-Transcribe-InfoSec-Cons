@@ -1,0 +1,2164 @@
+{
+  "segments": [
+    {
+      "Time_Start": 0.0,
+      "Time_End": 11.16,
+      "Text": "This text was transcribed using whisper model: large-v2\n\n Thank you all for coming."
+    },
+    {
+      "Time_Start": 11.16,
+      "Time_End": 16.36,
+      "Text": " In this presentation, I'd like to take you on a journey to explore some uncharted legacy"
+    },
+    {
+      "Time_Start": 16.36,
+      "Time_End": 23.84,
+      "Text": " features of Excel that resulted in a vulnerability that allows an attacker to craft a signed"
+    },
+    {
+      "Time_Start": 23.84,
+      "Time_End": 25.84,
+      "Text": " phishing payload."
+    },
+    {
+      "Time_Start": 25.84,
+      "Time_End": 34.44,
+      "Text": " This payload would result in the user seeing a legitimate Microsoft signed document or"
+    },
+    {
+      "Time_Start": 34.44,
+      "Time_End": 38.08,
+      "Text": " no security warning at all."
+    },
+    {
+      "Time_Start": 38.08,
+      "Time_End": 42.480000000000004,
+      "Text": " We're going to see that it is possible to inject code into a Microsoft signed document"
+    },
+    {
+      "Time_Start": 42.480000000000004,
+      "Time_End": 48.44,
+      "Text": " without invalidating the signature and thus effectively reusing this Microsoft signed"
+    },
+    {
+      "Time_Start": 48.44,
+      "Time_End": 53.879999999999995,
+      "Text": " document as if code signing."
+    },
+    {
+      "Time_Start": 53.88,
+      "Time_End": 59.800000000000004,
+      "Text": " First I signed a CV for it in the category remote code execution, but before diving into"
+    },
+    {
+      "Time_Start": 59.800000000000004,
+      "Time_End": 65.32000000000001,
+      "Text": " the content, first a quick introduction."
+    },
+    {
+      "Time_Start": 65.32000000000001,
+      "Time_End": 67.16,
+      "Text": " My name is Dima van der Waal."
+    },
+    {
+      "Time_Start": 67.16,
+      "Time_End": 71.80000000000001,
+      "Text": " I'm a red teamer and offensive developer at Outflank."
+    },
+    {
+      "Time_Start": 71.80000000000001,
+      "Time_End": 79.6,
+      "Text": " I really like to develop things that break things and then using them in operations."
+    },
+    {
+      "Time_Start": 79.60000000000001,
+      "Time_End": 85.44000000000001,
+      "Text": " At Outflank, we're specialized in red teaming, giving trainings and offensive security tooling"
+    },
+    {
+      "Time_Start": 85.44000000000001,
+      "Time_End": 89.84,
+      "Text": " and we also put stuff on our GitHub and perform research."
+    },
+    {
+      "Time_Start": 89.84,
+      "Time_End": 97.52000000000001,
+      "Text": " For instance, in the fields of phishing and office."
+    },
+    {
+      "Time_Start": 97.52000000000001,
+      "Time_End": 106.88000000000001,
+      "Text": " This inspired me to start my own journey into this field."
+    },
+    {
+      "Time_Start": 106.88,
+      "Time_End": 110.72,
+      "Text": " I'd like to start this presentation with a little bit more background on the journey,"
+    },
+    {
+      "Time_Start": 110.72,
+      "Time_End": 118.56,
+      "Text": " then some background on office to give a more context about why this was interesting."
+    },
+    {
+      "Time_Start": 118.56,
+      "Time_End": 126.08,
+      "Text": " Then I'd like to go from identifying a vulnerability, then moving into creating our very first proof"
+    },
+    {
+      "Time_Start": 126.08,
+      "Time_End": 133.35999999999999,
+      "Text": " of concept into fully weaponizing this vulnerability that is also allowing me to use it in client"
+    },
+    {
+      "Time_Start": 133.35999999999999,
+      "Time_End": 135.76,
+      "Text": " engagements."
+    },
+    {
+      "Time_Start": 135.76,
+      "Time_End": 142.88,
+      "Text": " And then later we'll see what Microsoft did to mitigate and patch this issue."
+    },
+    {
+      "Time_Start": 142.88,
+      "Time_End": 147.0,
+      "Text": " The story started simple, with a simple problem statement."
+    },
+    {
+      "Time_Start": 147.0,
+      "Time_End": 150.67999999999998,
+      "Text": " I would like to create a better phishing payload."
+    },
+    {
+      "Time_Start": 150.67999999999998,
+      "Time_End": 153.92,
+      "Text": " And a phishing payload needs to have a few properties, right?"
+    },
+    {
+      "Time_Start": 153.92,
+      "Time_End": 159.79999999999998,
+      "Text": " It needs to have a cool icon and it needs to be double clickable because I want user"
+    },
+    {
+      "Time_Start": 159.79999999999998,
+      "Time_End": 165.04,
+      "Text": " convenience for my phishing targets."
+    },
+    {
+      "Time_Start": 165.04,
+      "Time_End": 171.56,
+      "Text": " The process I wanted to apply is, I would like to look around, learn stuff and understand"
+    },
+    {
+      "Time_Start": 171.56,
+      "Time_End": 180.64,
+      "Text": " things better, and then search for something that feels a bit off, feels a bit weird, funny,"
+    },
+    {
+      "Time_Start": 180.64,
+      "Time_End": 183.48,
+      "Text": " shady, and then dive deeper into it."
+    },
+    {
+      "Time_Start": 183.48,
+      "Time_End": 186.51999999999998,
+      "Text": " And then repeat this process over and over."
+    },
+    {
+      "Time_Start": 186.51999999999998,
+      "Time_End": 191.72,
+      "Text": " And my starting point was office file types."
+    },
+    {
+      "Time_Start": 191.72,
+      "Time_End": 197.28,
+      "Text": " I wanted to identify and understand office file types, and I started out with using the"
+    },
+    {
+      "Time_Start": 197.28,
+      "Time_End": 199.76,
+      "Text": " file and the save as dialogue."
+    },
+    {
+      "Time_Start": 199.76,
+      "Time_End": 207.28,
+      "Text": " So I save a specific file as with a different extension each time, and do some comparisons"
+    },
+    {
+      "Time_Start": 207.28,
+      "Time_End": 208.4,
+      "Text": " between that."
+    },
+    {
+      "Time_Start": 208.4,
+      "Time_End": 213.92,
+      "Text": " Furthermore, I downloaded all kinds of random stuff from the internet, and I searched in"
+    },
+    {
+      "Time_Start": 213.92,
+      "Time_End": 219.28,
+      "Text": " the C program files office installation directory."
+    },
+    {
+      "Time_Start": 219.28,
+      "Time_End": 224.76,
+      "Text": " And looking through the installation directory of office, there were some example files,"
+    },
+    {
+      "Time_Start": 224.76,
+      "Time_End": 228.12,
+      "Text": " let's say, XLAM files."
+    },
+    {
+      "Time_Start": 228.12,
+      "Time_End": 233.16,
+      "Text": " No clue what those were, but there were a few of them around."
+    },
+    {
+      "Time_Start": 233.16,
+      "Time_End": 237.16,
+      "Text": " And they had a cool icon, so let's see what those were."
+    },
+    {
+      "Time_Start": 237.16,
+      "Time_End": 244.52,
+      "Text": " But there was also one file that got my attention that I was all too familiar with, an XLL file."
+    },
+    {
+      "Time_Start": 244.52,
+      "Time_End": 247.84,
+      "Text": " So what is going on here?"
+    },
+    {
+      "Time_Start": 247.84,
+      "Time_End": 256.44,
+      "Text": " Are these files consuming or using this XLL file, or what is an XLAM file anyway?"
+    },
+    {
+      "Time_Start": 256.44,
+      "Time_End": 264.8,
+      "Text": " An XLAM file is an Excel add-in, and the add-in is not really a sheet, it's an add-in."
+    },
+    {
+      "Time_Start": 264.8,
+      "Time_End": 267.24,
+      "Text": " It adds functionality to Excel."
+    },
+    {
+      "Time_Start": 267.24,
+      "Time_End": 276.68,
+      "Text": " And in this case, ATP VBA is the analysis tool pack add-in."
+    },
+    {
+      "Time_Start": 276.68,
+      "Time_End": 281.08,
+      "Text": " It adds a button to the Excel bar."
+    },
+    {
+      "Time_Start": 281.08,
+      "Time_End": 290.24,
+      "Text": " Well, if you click on it, you get more options, and you can do all kinds of analysis on your"
+    },
+    {
+      "Time_Start": 290.24,
+      "Time_End": 299.28000000000003,
+      "Text": " cells or your worksheets, and perform other cool calculations."
+    },
+    {
+      "Time_Start": 299.32000000000005,
+      "Time_End": 308.04,
+      "Text": " So what happens if I just copy-paste this XLAM into another directory, like ctemp?"
+    },
+    {
+      "Time_Start": 308.04,
+      "Time_End": 312.44000000000005,
+      "Text": " Upon opening, double-clicking, which worked, I got a security warning, and the security"
+    },
+    {
+      "Time_Start": 312.44000000000005,
+      "Time_End": 314.84000000000003,
+      "Text": " warning said a couple of things."
+    },
+    {
+      "Time_Start": 314.84000000000003,
+      "Time_End": 320.92,
+      "Text": " It said that the digital signature is valid, and that it contains macros, and if I wanted"
+    },
+    {
+      "Time_Start": 320.92,
+      "Time_End": 325.28000000000003,
+      "Text": " to enable them or not."
+    },
+    {
+      "Time_Start": 325.28000000000003,
+      "Time_End": 331.48,
+      "Text": " So I enabled them, and then the functionality kept working, possibly implying that it could"
+    },
+    {
+      "Time_Start": 331.48,
+      "Time_End": 337.72,
+      "Text": " load maybe some other resources from the office installation directory."
+    },
+    {
+      "Time_Start": 337.72,
+      "Time_End": 343.84000000000003,
+      "Text": " But then I was thinking, like, what happened if I also put an XLL in the same directory"
+    },
+    {
+      "Time_Start": 343.84000000000003,
+      "Time_End": 348.32000000000005,
+      "Text": " with the analys32.xll name?"
+    },
+    {
+      "Time_Start": 348.32000000000005,
+      "Time_End": 351.92,
+      "Text": " But instead of using the one from the office installation directory, I just created my"
+    },
+    {
+      "Time_Start": 351.92,
+      "Time_End": 358.0,
+      "Text": " own malicious unsigned XLL, and hit the enable button."
+    },
+    {
+      "Time_Start": 358.0,
+      "Time_End": 359.56,
+      "Text": " Bam!"
+    },
+    {
+      "Time_Start": 359.56,
+      "Time_End": 362.36,
+      "Text": " My XLL opens."
+    },
+    {
+      "Time_Start": 362.36,
+      "Time_End": 363.40000000000003,
+      "Text": " This is really interesting."
+    },
+    {
+      "Time_Start": 363.40000000000003,
+      "Time_End": 372.48,
+      "Text": " So my malicious unsigned XLL is loaded from a signed context, and it loads, in this case,"
+    },
+    {
+      "Time_Start": 372.48,
+      "Time_End": 379.24,
+      "Text": " an explorer of a CMD window and a small pop-up."
+    },
+    {
+      "Time_Start": 379.24,
+      "Time_End": 382.76,
+      "Text": " Let's do a small recap so far."
+    },
+    {
+      "Time_Start": 382.76,
+      "Time_End": 393.76,
+      "Text": " So we look through the office installation directory, and it contains some signed files."
+    },
+    {
+      "Time_Start": 393.76,
+      "Time_End": 398.44,
+      "Text": " These signed Excel add-ins can be moved to another directory without invalidating the"
+    },
+    {
+      "Time_Start": 398.44,
+      "Time_End": 408.76,
+      "Text": " signature, and I can also replace the XLL by my unsigned XLL, and the add-in will then"
+    },
+    {
+      "Time_Start": 408.76,
+      "Time_End": 414.88,
+      "Text": " run from a signed context an unsigned XLL."
+    },
+    {
+      "Time_Start": 414.88,
+      "Time_End": 422.68,
+      "Text": " And this is potentially really interesting, because if a user will see that something"
+    },
+    {
+      "Time_Start": 422.68,
+      "Time_End": 428.68,
+      "Text": " is signed by Microsoft and the signature is valid, then it must be legitimate, right?"
+    },
+    {
+      "Time_Start": 428.68,
+      "Time_End": 433.2,
+      "Text": " This could be potentially great for phishing."
+    },
+    {
+      "Time_Start": 433.2,
+      "Time_End": 435.0,
+      "Text": " So let's see what happens."
+    },
+    {
+      "Time_Start": 435.0,
+      "Time_End": 438.44,
+      "Text": " Let's do first a little bit of office background."
+    },
+    {
+      "Time_Start": 439.12,
+      "Time_End": 443.32,
+      "Text": " And specifically Excel."
+    },
+    {
+      "Time_Start": 443.32,
+      "Time_End": 448.0,
+      "Text": " Excel is not only amazing for normal users to create really cool spreadsheets and do"
+    },
+    {
+      "Time_Start": 448.0,
+      "Time_End": 457.56,
+      "Text": " whatever they do, but also great for programmers to automate things in various ways."
+    },
+    {
+      "Time_Start": 457.56,
+      "Time_End": 461.88,
+      "Text": " And these various ways lead to various file types."
+    },
+    {
+      "Time_Start": 461.88,
+      "Time_End": 469.71999999999997,
+      "Text": " And Office has many security features to protect users from malicious actors, while"
+    },
+    {
+      "Time_Start": 469.71999999999997,
+      "Time_End": 474.71999999999997,
+      "Text": " still allowing normal programmers to automate these things."
+    },
+    {
+      "Time_Start": 474.71999999999997,
+      "Time_End": 478.6,
+      "Text": " And I'd like to go through a few of those protections."
+    },
+    {
+      "Time_Start": 478.6,
+      "Time_End": 484.56,
+      "Text": " First we'll talk about Excel security dialogues, then we talk about various file types, and"
+    },
+    {
+      "Time_Start": 484.56,
+      "Time_End": 489.52,
+      "Text": " then about the trust flow."
+    },
+    {
+      "Time_Start": 489.52,
+      "Time_End": 492.35999999999996,
+      "Text": " This is a security warning."
+    },
+    {
+      "Time_Start": 492.35999999999996,
+      "Time_End": 496.26,
+      "Text": " This is the normal macro warning from an XLSM."
+    },
+    {
+      "Time_Start": 496.26,
+      "Time_End": 498.2,
+      "Text": " This is a slightly different one."
+    },
+    {
+      "Time_Start": 498.2,
+      "Time_End": 505.09999999999997,
+      "Text": " This is if you combine macros with active remote content."
+    },
+    {
+      "Time_Start": 505.09999999999997,
+      "Time_End": 508.64,
+      "Text": " This is a warning from an add-in."
+    },
+    {
+      "Time_Start": 508.64,
+      "Time_End": 514.22,
+      "Text": " It looks totally different, and it's more like prominent."
+    },
+    {
+      "Time_Start": 514.22,
+      "Time_End": 519.5400000000001,
+      "Text": " It asks you to enable macros or leave them disabled."
+    },
+    {
+      "Time_Start": 519.5400000000001,
+      "Time_End": 523.74,
+      "Text": " And this is a security warning for an XLL."
+    },
+    {
+      "Time_Start": 523.74,
+      "Time_End": 531.46,
+      "Text": " This doesn't contain the scary word macro, but it just mentions add-in, which already"
+    },
+    {
+      "Time_Start": 531.46,
+      "Time_End": 536.5400000000001,
+      "Text": " sounds a lot nicer."
+    },
+    {
+      "Time_Start": 536.5400000000001,
+      "Time_End": 543.4200000000001,
+      "Text": " So let's do a little bit of a file type comparison, because these security warnings, they're influenced"
+    },
+    {
+      "Time_Start": 543.42,
+      "Time_End": 545.86,
+      "Text": " by also file types."
+    },
+    {
+      "Time_Start": 545.86,
+      "Time_End": 552.0799999999999,
+      "Text": " So this is the normal XLSX, this is a worksheet, then you have two file types that have macros"
+    },
+    {
+      "Time_Start": 552.0799999999999,
+      "Time_End": 557.3,
+      "Text": " embedded into them, and macro code can be signed."
+    },
+    {
+      "Time_Start": 557.3,
+      "Time_End": 564.42,
+      "Text": " So if you have a valid signature, it will result in a different dialogue."
+    },
+    {
+      "Time_Start": 564.42,
+      "Time_End": 567.48,
+      "Text": " And there is an XLL, which is an Excel add-in."
+    },
+    {
+      "Time_Start": 567.48,
+      "Time_End": 572.52,
+      "Text": " It can also contain code, but not in the way you would possibly expect it."
+    },
+    {
+      "Time_Start": 572.62,
+      "Time_End": 582.56,
+      "Text": " And the extension can be important for phishing, because if you have a more mature target,"
+    },
+    {
+      "Time_Start": 582.56,
+      "Time_End": 589.28,
+      "Text": " you might want to take a different extension, like something that is less common, or something"
+    },
+    {
+      "Time_Start": 589.28,
+      "Time_End": 596.9399999999999,
+      "Text": " that I possibly not have had in the training, or an extension like XLS that you do not necessarily"
+    },
+    {
+      "Time_Start": 596.94,
+      "Time_End": 604.62,
+      "Text": " see from the outside if it contains macros or not."
+    },
+    {
+      "Time_Start": 604.62,
+      "Time_End": 606.0600000000001,
+      "Text": " So what is this XLL?"
+    },
+    {
+      "Time_Start": 606.0600000000001,
+      "Time_End": 613.46,
+      "Text": " This XLL is actually a DLL, a portable executable."
+    },
+    {
+      "Time_Start": 613.46,
+      "Time_End": 620.74,
+      "Text": " And XLL can only be loaded if you have an XLL that is the same bitness as your host"
+    },
+    {
+      "Time_Start": 620.74,
+      "Time_End": 622.4200000000001,
+      "Text": " process."
+    },
+    {
+      "Time_Start": 622.42,
+      "Time_End": 629.62,
+      "Text": " So if you have a 64-bit Excel version running, then you also need to phish your target with"
+    },
+    {
+      "Time_Start": 629.62,
+      "Time_End": 632.4599999999999,
+      "Text": " a 64-bit XLL."
+    },
+    {
+      "Time_Start": 632.4599999999999,
+      "Time_End": 638.4599999999999,
+      "Text": " And likewise, if your target has a 32-bit office, then you need to phish with a 32-bit"
+    },
+    {
+      "Time_Start": 638.4599999999999,
+      "Time_End": 639.4599999999999,
+      "Text": " XLL."
+    },
+    {
+      "Time_Start": 639.4599999999999,
+      "Time_End": 650.04,
+      "Text": " What is also interesting is, just to get back to the XLL, it's really interesting to use"
+    },
+    {
+      "Time_Start": 650.04,
+      "Time_End": 653.68,
+      "Text": " one of those, because you can just natively program."
+    },
+    {
+      "Time_Start": 653.68,
+      "Time_End": 660.16,
+      "Text": " You can use OPSEC safe C++ with direct system calls, all your code obfuscation and anti-reversing,"
+    },
+    {
+      "Time_Start": 660.16,
+      "Time_End": 661.88,
+      "Text": " whatever you want."
+    },
+    {
+      "Time_Start": 661.88,
+      "Time_End": 665.88,
+      "Text": " It provides great benefits."
+    },
+    {
+      "Time_Start": 665.88,
+      "Time_End": 670.8399999999999,
+      "Text": " What's also interesting is that it doesn't support Mark of the Web."
+    },
+    {
+      "Time_Start": 670.8399999999999,
+      "Time_End": 675.88,
+      "Text": " And Mark of the Web is a security attribute that is set on a file."
+    },
+    {
+      "Time_Start": 675.88,
+      "Time_End": 684.64,
+      "Text": " If you download it from the internet, or if you save it from an attachment, for instance."
+    },
+    {
+      "Time_Start": 684.64,
+      "Time_End": 690.64,
+      "Text": " Basically prevent of allowing Office to choose a different dialogue."
+    },
+    {
+      "Time_Start": 690.64,
+      "Time_End": 694.88,
+      "Text": " Let's quickly look into the file format of the left three files."
+    },
+    {
+      "Time_Start": 694.88,
+      "Time_End": 702.18,
+      "Text": " The Office Open XML file format."
+    },
+    {
+      "Time_Start": 702.18,
+      "Time_End": 703.6,
+      "Text": " That is basically a zip."
+    },
+    {
+      "Time_Start": 703.6,
+      "Time_End": 710.34,
+      "Text": " So you can unzip it using just your default zip tool, or 7-zip."
+    },
+    {
+      "Time_Start": 710.34,
+      "Time_End": 713.86,
+      "Text": " And it contains all kinds of XML files."
+    },
+    {
+      "Time_Start": 713.86,
+      "Time_End": 720.82,
+      "Text": " While browsing through it, you'll see a couple of files, such as the VBA project.bin file,"
+    },
+    {
+      "Time_Start": 720.82,
+      "Time_End": 725.34,
+      "Text": " and possibly, if it's signed, a signature.bin file."
+    },
+    {
+      "Time_Start": 725.34,
+      "Time_End": 730.7,
+      "Text": " And this is the part of the document that is signed."
+    },
+    {
+      "Time_Start": 731.2800000000001,
+      "Time_End": 737.6400000000001,
+      "Text": " In theory, all the other XML files in all the other directories are not signed."
+    },
+    {
+      "Time_Start": 737.6400000000001,
+      "Time_End": 744.26,
+      "Text": " And in theory, you can even transplant the assigned files into another file."
+    },
+    {
+      "Time_Start": 744.26,
+      "Time_End": 751.8000000000001,
+      "Text": " And thus, lift on the security notifications and assigning."
+    },
+    {
+      "Time_Start": 751.8000000000001,
+      "Time_End": 758.5600000000001,
+      "Text": " When looking at the XLAM file, there was also another thing that was interesting to note."
+    },
+    {
+      "Time_Start": 758.5600000000001,
+      "Time_End": 770.1800000000001,
+      "Text": " The difference between an XLAM add-in and an XLSM sheet was just one word in one of the XML files."
+    },
+    {
+      "Time_Start": 770.1800000000001,
+      "Time_End": 777.1400000000001,
+      "Text": " So by replacing this add-in word with the word sheet, I can also just quickly change"
+    },
+    {
+      "Time_Start": 777.1400000000001,
+      "Time_End": 782.7,
+      "Text": " the extension of the file, and thus move from one file to another."
+    },
+    {
+      "Time_Start": 782.72,
+      "Time_End": 790.24,
+      "Text": " And then from an XLSM, I can use the file save as dialog in Excel to then move to other"
+    },
+    {
+      "Time_Start": 790.24,
+      "Time_End": 799.48,
+      "Text": " file formats, and thus gain flexibility on phishing my target with different kind of extensions."
+    },
+    {
+      "Time_Start": 803.6400000000001,
+      "Time_End": 805.44,
+      "Text": " Let's look at the trust flow."
+    },
+    {
+      "Time_Start": 805.7,
+      "Time_End": 812.86,
+      "Text": " If a user opens a file that has macros enabled in it, and the file has the mark of the web"
+    },
+    {
+      "Time_Start": 812.86,
+      "Time_End": 820.7,
+      "Text": " attribute, so meaning that it comes from the internet, then Excel or Office in this case"
+    },
+    {
+      "Time_Start": 820.7,
+      "Time_End": 826.5,
+      "Text": " would go through a certain flow, querying all kind of register options and whatnot to"
+    },
+    {
+      "Time_Start": 826.5,
+      "Time_End": 833.7,
+      "Text": " verify if it should run the macro or not, or give a dialog."
+    },
+    {
+      "Time_Start": 833.7,
+      "Time_End": 838.12,
+      "Text": " So if it's in a trusted location, then macros are enabled for sure."
+    },
+    {
+      "Time_Start": 838.12,
+      "Time_End": 845.5200000000001,
+      "Text": " If it's digitally signed and the trusted publisher is on the PC, then macros are enabled, and"
+    },
+    {
+      "Time_Start": 845.5200000000001,
+      "Time_End": 849.9200000000001,
+      "Text": " so on and so forth."
+    },
+    {
+      "Time_Start": 849.9200000000001,
+      "Time_End": 852.5,
+      "Text": " But how does this work with XLS?"
+    },
+    {
+      "Time_Start": 852.5,
+      "Time_End": 858.0,
+      "Text": " Because they don't have the mark of the web."
+    },
+    {
+      "Time_Start": 858.0,
+      "Time_End": 860.88,
+      "Text": " Then you'll enter a different flow."
+    },
+    {
+      "Time_Start": 860.98,
+      "Time_End": 868.3,
+      "Text": " Like this, Microsoft Office has various flows and nuances and exceptions that allows you"
+    },
+    {
+      "Time_Start": 868.3,
+      "Time_End": 875.02,
+      "Text": " as an attacker to work and try to bypass the different things."
+    },
+    {
+      "Time_Start": 875.02,
+      "Time_End": 880.98,
+      "Text": " What I would like you to remember from this slide is that the trust flow has many nuances"
+    },
+    {
+      "Time_Start": 880.98,
+      "Time_End": 885.78,
+      "Text": " and exceptions, and it's quite a complex thing."
+    },
+    {
+      "Time_Start": 885.78,
+      "Time_End": 889.78,
+      "Text": " So small recap."
+    },
+    {
+      "Time_Start": 889.8,
+      "Time_End": 898.4399999999999,
+      "Text": " Most of the Office file types are OOXMLs, so are ZIPs, and are openable."
+    },
+    {
+      "Time_Start": 898.4399999999999,
+      "Time_End": 904.72,
+      "Text": " Only the macro is signed, so all the worksheets, they can be freely edited without invalidating"
+    },
+    {
+      "Time_Start": 904.72,
+      "Time_End": 906.88,
+      "Text": " the signature."
+    },
+    {
+      "Time_Start": 906.88,
+      "Time_End": 918.12,
+      "Text": " An XLL is an Excel add-in DLL, which is really interesting as a file type because it's different"
+    },
+    {
+      "Time_Start": 918.18,
+      "Time_End": 925.38,
+      "Text": " and it can allow you as an attacker to have various OPSEC safety features, and there's"
+    },
+    {
+      "Time_Start": 925.38,
+      "Time_End": 927.94,
+      "Text": " different file types and dialogues."
+    },
+    {
+      "Time_Start": 927.94,
+      "Time_End": 935.82,
+      "Text": " Furthermore, the trust flow is complex and has many nuances and exceptions."
+    },
+    {
+      "Time_Start": 935.82,
+      "Time_End": 939.08,
+      "Text": " Let's do a deep dive in the analysis tool pack."
+    },
+    {
+      "Time_Start": 939.08,
+      "Time_End": 940.2,
+      "Text": " What is it?"
+    },
+    {
+      "Time_Start": 940.2,
+      "Time_End": 942.5,
+      "Text": " How does it work?"
+    },
+    {
+      "Time_Start": 942.5,
+      "Time_End": 943.5,
+      "Text": " Is it vulnerable?"
+    },
+    {
+      "Time_Start": 943.5,
+      "Time_End": 944.5,
+      "Text": " Can we exploit it?"
+    },
+    {
+      "Time_Start": 944.5,
+      "Time_End": 952.12,
+      "Text": " Can we misuse it some way to fish a target in an interesting way?"
+    },
+    {
+      "Time_Start": 952.12,
+      "Time_End": 960.76,
+      "Text": " First, when I would try to look into this, I used Excel and I wanted to try to go to"
+    },
+    {
+      "Time_Start": 960.76,
+      "Time_End": 966.0,
+      "Text": " the macro editor and extract the VBA code, or look at the VBA code."
+    },
+    {
+      "Time_Start": 966.0,
+      "Time_End": 972.68,
+      "Text": " Well, this was password protected, so I had to use another trick, another tool."
+    },
+    {
+      "Time_Start": 972.6800000000001,
+      "Time_End": 978.36,
+      "Text": " I used Olive VBA to extract the macros, of course, out of the document."
+    },
+    {
+      "Time_Start": 978.36,
+      "Time_End": 984.6,
+      "Text": " Olive VBA is a really nice tool and it will just print the macro code and also give you"
+    },
+    {
+      "Time_Start": 984.6,
+      "Time_End": 986.24,
+      "Text": " a nice summary."
+    },
+    {
+      "Time_Start": 986.24,
+      "Time_End": 994.6,
+      "Text": " And this summary mentions how to execute, how to open, suspicious, run, register, and"
+    },
+    {
+      "Time_Start": 994.6,
+      "Time_End": 998.6400000000001,
+      "Text": " execute Excel for macro."
+    },
+    {
+      "Time_Start": 998.64,
+      "Time_End": 1004.76,
+      "Text": " So this is all the more reason to continue deep diving into this document and to see"
+    },
+    {
+      "Time_Start": 1004.76,
+      "Time_End": 1008.66,
+      "Text": " what is going on."
+    },
+    {
+      "Time_Start": 1008.66,
+      "Time_End": 1016.62,
+      "Text": " Looking at the VBA code, if you distill it down, there's only a hundred or so interesting"
+    },
+    {
+      "Time_Start": 1016.62,
+      "Time_End": 1019.38,
+      "Text": " lines of code left."
+    },
+    {
+      "Time_Start": 1019.38,
+      "Time_End": 1021.3199999999999,
+      "Text": " So let's analyze these."
+    },
+    {
+      "Time_Start": 1021.3199999999999,
+      "Time_End": 1024.76,
+      "Text": " Let's start at the beginning."
+    },
+    {
+      "Time_Start": 1024.76,
+      "Time_End": 1034.08,
+      "Text": " In the beginning, you'll see that a couple of cells are kind of named and referenced."
+    },
+    {
+      "Time_Start": 1034.08,
+      "Time_End": 1041.04,
+      "Text": " It has an auto open function, as we already figured out, which calls four more functions."
+    },
+    {
+      "Time_Start": 1041.04,
+      "Time_End": 1043.1,
+      "Text": " The first function isn't really interesting."
+    },
+    {
+      "Time_Start": 1043.1,
+      "Time_End": 1048.96,
+      "Text": " It just contains a lot of constant values and doesn't really do that much."
+    },
+    {
+      "Time_Start": 1048.96,
+      "Time_End": 1052.26,
+      "Text": " But the second function is already a bit bigger."
+    },
+    {
+      "Time_Start": 1052.26,
+      "Time_End": 1054.86,
+      "Text": " It's the pick platform function."
+    },
+    {
+      "Time_Start": 1054.86,
+      "Time_End": 1068.18,
+      "Text": " And this function is Windows or Mac OS aware, hinting that both Windows and Mac OS are supported"
+    },
+    {
+      "Time_Start": 1068.18,
+      "Time_End": 1071.82,
+      "Text": " and possibly vulnerable."
+    },
+    {
+      "Time_Start": 1071.82,
+      "Time_End": 1079.96,
+      "Text": " And then you'll see that a few cells are being referenced and the value within the cell is"
+    },
+    {
+      "Time_Start": 1079.96,
+      "Time_End": 1083.56,
+      "Text": " being saved within a variable."
+    },
+    {
+      "Time_Start": 1083.56,
+      "Time_End": 1086.64,
+      "Text": " Interesting."
+    },
+    {
+      "Time_Start": 1086.64,
+      "Time_End": 1089.32,
+      "Text": " So how would that look like?"
+    },
+    {
+      "Time_Start": 1089.32,
+      "Time_End": 1101.28,
+      "Text": " So the XLAM, if you convert it to a sheet and then unhide the work spaces, you'll find"
+    },
+    {
+      "Time_Start": 1101.28,
+      "Time_End": 1110.44,
+      "Text": " that it has some XLL names and directory separators and what not saved into the cells."
+    },
+    {
+      "Time_Start": 1110.44,
+      "Time_End": 1118.32,
+      "Text": " And for this talk, we can basically exploit all the functionality within this add-in by"
+    },
+    {
+      "Time_Start": 1118.32,
+      "Time_End": 1127.66,
+      "Text": " just using cell B8, the XLL name, NLS 32.XLL."
+    },
+    {
+      "Time_Start": 1127.66,
+      "Time_End": 1135.88,
+      "Text": " So for the remainder of the talk, we're going to focus on cell B8."
+    },
+    {
+      "Time_Start": 1135.88,
+      "Time_End": 1138.18,
+      "Text": " So how is an XLL being loaded then?"
+    },
+    {
+      "Time_Start": 1138.18,
+      "Time_End": 1146.14,
+      "Text": " How is this XLL name being consumed by the rest of the VBA code?"
+    },
+    {
+      "Time_Start": 1146.14,
+      "Time_End": 1149.14,
+      "Text": " So we already figured out that the code runs on open."
+    },
+    {
+      "Time_Start": 1149.14,
+      "Time_End": 1155.02,
+      "Text": " And then after the pick platform function, the verify open function is being called."
+    },
+    {
+      "Time_Start": 1155.3799999999999,
+      "Time_End": 1162.86,
+      "Text": " The cell value is being stored in a variable called XLL name and then later being consumed"
+    },
+    {
+      "Time_Start": 1162.86,
+      "Time_End": 1168.1399999999999,
+      "Text": " by this function called registerXLL."
+    },
+    {
+      "Time_Start": 1168.1399999999999,
+      "Time_End": 1177.58,
+      "Text": " Pretty much without any input validation or so whatsoever."
+    },
+    {
+      "Time_Start": 1177.58,
+      "Time_End": 1183.06,
+      "Text": " If you look to the remainder of the function, you'll see that all the other variables and"
+    },
+    {
+      "Time_Start": 1183.06,
+      "Time_End": 1190.94,
+      "Text": " code flows that use the registerXLL function are also vulnerable."
+    },
+    {
+      "Time_Start": 1190.94,
+      "Time_End": 1205.1,
+      "Text": " And important to notice is that if no valid XLL is found, the worksheet is closed and"
+    },
+    {
+      "Time_Start": 1205.1,
+      "Time_End": 1208.3,
+      "Text": " all macro code execution will stop."
+    },
+    {
+      "Time_Start": 1208.3,
+      "Time_End": 1212.74,
+      "Text": " So any further VBA code will not be called."
+    },
+    {
+      "Time_Start": 1212.74,
+      "Time_End": 1216.08,
+      "Text": " So this is like a hard process exit."
+    },
+    {
+      "Time_Start": 1216.08,
+      "Time_End": 1223.1,
+      "Text": " So it is important that this macro code will find a valid XLL."
+    },
+    {
+      "Time_Start": 1223.1,
+      "Time_End": 1228.46,
+      "Text": " So small recap, analysis tool pack runs on open."
+    },
+    {
+      "Time_Start": 1228.46,
+      "Time_End": 1234.38,
+      "Text": " It will load an XLL from the name in the worksheet."
+    },
+    {
+      "Time_Start": 1234.38,
+      "Time_End": 1239.02,
+      "Text": " Cells are not part of the signature, so they can be freely edited without invalidating"
+    },
+    {
+      "Time_Start": 1239.02,
+      "Time_End": 1241.42,
+      "Text": " it."
+    },
+    {
+      "Time_Start": 1241.42,
+      "Time_End": 1246.66,
+      "Text": " RegisterXLL loads an XLL, also unsigned ones."
+    },
+    {
+      "Time_Start": 1246.66,
+      "Time_End": 1254.8600000000001,
+      "Text": " And Office for Mac also seems to be supported, hinting that it is also vulnerable."
+    },
+    {
+      "Time_Start": 1254.8600000000001,
+      "Time_End": 1258.5,
+      "Text": " We're going to focus on Windows for now."
+    },
+    {
+      "Time_Start": 1258.5,
+      "Time_End": 1262.3400000000001,
+      "Text": " Let's try to make a very first proof of concept."
+    },
+    {
+      "Time_Start": 1262.3400000000001,
+      "Time_End": 1265.42,
+      "Text": " So how would that look like?"
+    },
+    {
+      "Time_Start": 1265.42,
+      "Time_End": 1270.94,
+      "Text": " As an attacker, I would like to change the file name of the analysis tool pack add-in"
+    },
+    {
+      "Time_Start": 1270.94,
+      "Time_End": 1273.6200000000001,
+      "Text": " to something else."
+    },
+    {
+      "Time_Start": 1273.6200000000001,
+      "Time_End": 1281.5800000000002,
+      "Text": " Possibly it's something that would, for instance, complement my phishing storyline."
+    },
+    {
+      "Time_Start": 1281.5800000000002,
+      "Time_End": 1285.78,
+      "Text": " Possibly also changing the file extension."
+    },
+    {
+      "Time_Start": 1285.78,
+      "Time_End": 1293.98,
+      "Text": " I would like to change the file name of the XLL and maybe also the extension of the XLL"
+    },
+    {
+      "Time_Start": 1293.98,
+      "Time_End": 1300.18,
+      "Text": " to steer the user away from clicking on it, because it's unsigned, and to steer them towards"
+    },
+    {
+      "Time_Start": 1300.26,
+      "Time_End": 1307.5,
+      "Text": " clicking the signed XLM, the add-in macro."
+    },
+    {
+      "Time_Start": 1307.5,
+      "Time_End": 1313.38,
+      "Text": " This is to lower suspicion, for instance."
+    },
+    {
+      "Time_Start": 1313.38,
+      "Time_End": 1322.0600000000002,
+      "Text": " And I would like to load the correct bitness of XLL according to the environment that we're"
+    },
+    {
+      "Time_Start": 1322.0600000000002,
+      "Time_End": 1323.0600000000002,
+      "Text": " running in."
+    },
+    {
+      "Time_Start": 1323.22,
+      "Time_End": 1334.1399999999999,
+      "Text": " So I would like the add-in to choose whether to load a 64-bit or a 32-bit XLL."
+    },
+    {
+      "Time_Start": 1334.1399999999999,
+      "Time_End": 1336.98,
+      "Text": " Let's try to make a very first proof of concept."
+    },
+    {
+      "Time_Start": 1336.98,
+      "Time_End": 1338.54,
+      "Text": " So this is the original version."
+    },
+    {
+      "Time_Start": 1338.54,
+      "Time_End": 1340.5,
+      "Text": " This is the normal flow."
+    },
+    {
+      "Time_Start": 1340.5,
+      "Time_End": 1346.82,
+      "Text": " And in the normal flow, this analysis 32.XLL is obtained from cell B8 and then used in"
+    },
+    {
+      "Time_Start": 1346.82,
+      "Time_End": 1349.5,
+      "Text": " register XLL."
+    },
+    {
+      "Time_Start": 1349.5,
+      "Time_End": 1357.94,
+      "Text": " Let's change the value within the cell into demo of demo64.success."
+    },
+    {
+      "Time_Start": 1357.94,
+      "Time_End": 1365.62,
+      "Text": " So we can change the name and the extension, and the XLL still loads."
+    },
+    {
+      "Time_Start": 1365.62,
+      "Time_End": 1367.42,
+      "Text": " Let's continue."
+    },
+    {
+      "Time_Start": 1367.42,
+      "Time_End": 1376.26,
+      "Text": " Let's use, instead of a static string, let's use a formula inside of my cell to calculate"
+    },
+    {
+      "Time_Start": 1376.26,
+      "Time_End": 1383.46,
+      "Text": " whether our current Excel host process is 64-bit or 32-bit."
+    },
+    {
+      "Time_Start": 1383.46,
+      "Time_End": 1384.86,
+      "Text": " And that also worked."
+    },
+    {
+      "Time_Start": 1384.86,
+      "Time_End": 1398.62,
+      "Text": " So for a 64-bit Excel, demo64 would be loaded, and for a 32-bit Excel, demo32 was loaded."
+    },
+    {
+      "Time_Start": 1398.62,
+      "Time_End": 1406.08,
+      "Text": " Let's use the previous trick to go from an XLAM to an XLSM by changing this single word"
+    },
+    {
+      "Time_Start": 1406.24,
+      "Time_End": 1414.56,
+      "Text": " and also changing the extension and then using the file save as dialog to go to an XLS."
+    },
+    {
+      "Time_Start": 1414.56,
+      "Time_End": 1419.84,
+      "Text": " And the reason why I would like to change to an XLS is because from the outside, you"
+    },
+    {
+      "Time_Start": 1419.84,
+      "Time_End": 1427.08,
+      "Text": " don't necessarily see that it contains macros, contrary to an XLSM where you see that it"
+    },
+    {
+      "Time_Start": 1427.08,
+      "Time_End": 1430.4399999999998,
+      "Text": " has possibly macros."
+    },
+    {
+      "Time_Start": 1430.4399999999998,
+      "Time_End": 1434.4399999999998,
+      "Text": " And this is how a very first proof of concept would look like."
+    },
+    {
+      "Time_Start": 1434.44,
+      "Time_End": 1439.72,
+      "Text": " It has two files that are not clickable, well, on a normal system not clickable, and"
+    },
+    {
+      "Time_Start": 1439.72,
+      "Time_End": 1442.68,
+      "Text": " an XLS file that is."
+    },
+    {
+      "Time_Start": 1442.68,
+      "Time_End": 1448.04,
+      "Text": " And if you could bundle them up in a zip or a 7-zip or a ISO or image, whatever, we can"
+    },
+    {
+      "Time_Start": 1448.04,
+      "Time_End": 1459.68,
+      "Text": " send it to a client and then possibly gain initial foothold."
+    },
+    {
+      "Time_Start": 1459.68,
+      "Time_End": 1465.2,
+      "Text": " So a small recap, Analysis Toolpack loads an XLL from a local path."
+    },
+    {
+      "Time_Start": 1465.2,
+      "Time_End": 1470.72,
+      "Text": " You can use a relative path or absolute path."
+    },
+    {
+      "Time_Start": 1470.72,
+      "Time_End": 1476.72,
+      "Text": " You can change file names and extensions, and you can use formulas to calculate your"
+    },
+    {
+      "Time_Start": 1476.72,
+      "Time_End": 1480.4,
+      "Text": " current bitness, 64, 32-bit."
+    },
+    {
+      "Time_Start": 1480.4,
+      "Time_End": 1484.92,
+      "Text": " And it's possible to change to a different file type."
+    },
+    {
+      "Time_Start": 1484.92,
+      "Time_End": 1489.52,
+      "Text": " And that would be the end of the story if I just wanted to make a proof of concept."
+    },
+    {
+      "Time_Start": 1490.36,
+      "Time_End": 1493.96,
+      "Text": " Because this, in theory, is already sufficient to report to Microsoft that there is something"
+    },
+    {
+      "Time_Start": 1493.96,
+      "Time_End": 1500.36,
+      "Text": " interesting here, and that would basically end it."
+    },
+    {
+      "Time_Start": 1500.36,
+      "Time_End": 1507.32,
+      "Text": " Or we can try to fully weaponize it and make it as powerful and dangerous as possible and"
+    },
+    {
+      "Time_Start": 1507.32,
+      "Time_End": 1511.28,
+      "Text": " see how deep this rabbit hole goes."
+    },
+    {
+      "Time_Start": 1511.28,
+      "Time_End": 1514.24,
+      "Text": " So let's do that."
+    },
+    {
+      "Time_Start": 1514.24,
+      "Time_End": 1523.76,
+      "Text": " Let's improve upon our current proof of concept by not providing three files in a zip or something"
+    },
+    {
+      "Time_Start": 1523.76,
+      "Time_End": 1531.92,
+      "Text": " like that, or providing multiple files, but to actually load this XLL from a remote location."
+    },
+    {
+      "Time_Start": 1531.92,
+      "Time_End": 1535.72,
+      "Text": " But then we run into our very first problem."
+    },
+    {
+      "Time_Start": 1535.72,
+      "Time_End": 1542.08,
+      "Text": " Registered XLL does not accept any URIs or URLs, so you cannot start with HTTP or HTTPS"
+    },
+    {
+      "Time_Start": 1542.8799999999999,
+      "Time_End": 1552.96,
+      "Text": " Well, for obvious reasons, Excel doesn't want you to load from a remote DLL over HTTPS."
+    },
+    {
+      "Time_Start": 1552.96,
+      "Time_End": 1559.6399999999999,
+      "Text": " But luckily, UNC paths, like also including SMB, were allowed."
+    },
+    {
+      "Time_Start": 1559.6399999999999,
+      "Time_End": 1570.8799999999999,
+      "Text": " And this gave another interesting possibility, is to use WebDAV through UNC."
+    },
+    {
+      "Time_Start": 1570.92,
+      "Time_End": 1578.44,
+      "Text": " Though WebDAV requires you to have the WebClient service on the target PC running."
+    },
+    {
+      "Time_Start": 1578.44,
+      "Time_End": 1584.48,
+      "Text": " And starting WebClient requires a manual trigger, or the manual start of this service, because"
+    },
+    {
+      "Time_Start": 1584.48,
+      "Time_End": 1588.92,
+      "Text": " it doesn't start automatically when the system boots up."
+    },
+    {
+      "Time_Start": 1588.92,
+      "Time_End": 1595.16,
+      "Text": " Furthermore, it also requires administrative privileges to start it manually."
+    },
+    {
+      "Time_Start": 1595.16,
+      "Time_End": 1603.44,
+      "Text": " Luckily, there are ways to start it using a trigger that do not require administrative privileges."
+    },
+    {
+      "Time_Start": 1603.44,
+      "Time_End": 1610.24,
+      "Text": " So we have a choice now, either to send an additional file or something that would maybe"
+    },
+    {
+      "Time_Start": 1610.24,
+      "Time_End": 1615.0,
+      "Text": " trigger the WebClient service."
+    },
+    {
+      "Time_Start": 1615.0,
+      "Time_End": 1620.88,
+      "Text": " For instance, a Word document with a remote template could work."
+    },
+    {
+      "Time_Start": 1620.88,
+      "Time_End": 1627.4,
+      "Text": " Or we create a small Excel gadget to start this WebClient service."
+    },
+    {
+      "Time_Start": 1627.4,
+      "Time_End": 1629.48,
+      "Text": " Let's do that."
+    },
+    {
+      "Time_Start": 1629.48,
+      "Time_End": 1635.24,
+      "Text": " So there's a couple of gadgets you can use in Excel to trigger the WebClient service,"
+    },
+    {
+      "Time_Start": 1635.24,
+      "Time_End": 1637.8400000000001,
+      "Text": " and one of which is a very simple one."
+    },
+    {
+      "Time_Start": 1637.8400000000001,
+      "Time_End": 1641.0800000000002,
+      "Text": " You just reference a remote cell."
+    },
+    {
+      "Time_Start": 1641.0800000000002,
+      "Time_End": 1647.96,
+      "Text": " So instead of typing a formula, or instead of just putting some text into a cell, you"
+    },
+    {
+      "Time_Start": 1647.96,
+      "Time_End": 1653.76,
+      "Text": " just tell Excel, look, the content of the cell, we have it, but it's just all the way"
+    },
+    {
+      "Time_Start": 1653.76,
+      "Time_End": 1657.24,
+      "Text": " over there on this HTTP address."
+    },
+    {
+      "Time_Start": 1657.24,
+      "Time_End": 1662.92,
+      "Text": " And Excel would fetch its content, thus triggering WebClient."
+    },
+    {
+      "Time_Start": 1662.92,
+      "Time_End": 1667.6000000000001,
+      "Text": " And we could use this in a certain way."
+    },
+    {
+      "Time_Start": 1667.6000000000001,
+      "Time_End": 1674.24,
+      "Text": " Like remember that the workbook would close when no valid Excel is found?"
+    },
+    {
+      "Time_Start": 1674.24,
+      "Time_End": 1677.8,
+      "Text": " We can abuse the error message being shown just before that."
+    },
+    {
+      "Time_Start": 1678.6399999999999,
+      "Time_End": 1687.08,
+      "Text": " So the first time a user would double-click on this infected add-in, register.xll would"
+    },
+    {
+      "Time_Start": 1687.08,
+      "Time_End": 1694.08,
+      "Text": " not be able to reach the WebDAV location because WebClient is not running."
+    },
+    {
+      "Time_Start": 1694.08,
+      "Time_End": 1700.8799999999999,
+      "Text": " It would try to load an error message from this remote location, triggering WebClient,"
+    },
+    {
+      "Time_Start": 1700.8799999999999,
+      "Time_End": 1703.6,
+      "Text": " and then the workbook would close."
+    },
+    {
+      "Time_Start": 1703.6000000000001,
+      "Time_End": 1711.96,
+      "Text": " The second time, our target would double-click on this add-in, register.xll will be able"
+    },
+    {
+      "Time_Start": 1711.96,
+      "Time_End": 1720.0400000000002,
+      "Text": " to find this remote WebDAV location over HTTP or HTTPS, and then our malicious XLL is loaded"
+    },
+    {
+      "Time_Start": 1720.0400000000002,
+      "Time_End": 1722.1200000000001,
+      "Text": " into the Excel memory."
+    },
+    {
+      "Time_Start": 1722.1200000000001,
+      "Time_End": 1728.8000000000002,
+      "Text": " Of course, this would require some social engineering or phishing or just a user that"
+    },
+    {
+      "Time_Start": 1728.8,
+      "Time_End": 1735.1599999999999,
+      "Text": " is just really happy to see what we have in this Excel sheet."
+    },
+    {
+      "Time_Start": 1735.1599999999999,
+      "Time_End": 1740.8,
+      "Text": " So this requires a user to open this file twice."
+    },
+    {
+      "Time_Start": 1740.8,
+      "Time_End": 1741.8,
+      "Text": " Which is good."
+    },
+    {
+      "Time_Start": 1741.8,
+      "Time_End": 1743.54,
+      "Text": " It's already better."
+    },
+    {
+      "Time_Start": 1743.54,
+      "Time_End": 1744.84,
+      "Text": " But we want something more."
+    },
+    {
+      "Time_Start": 1744.84,
+      "Time_End": 1751.3999999999999,
+      "Text": " We just want something really nice, like one file that fully exploits the target just after"
+    },
+    {
+      "Time_Start": 1751.3999999999999,
+      "Time_End": 1757.8799999999999,
+      "Text": " this enable macro button is clicked, that works on any Office version, any Windows host"
+    },
+    {
+      "Time_Start": 1757.88,
+      "Time_End": 1762.2,
+      "Text": " version, 32-bit, 64-bit."
+    },
+    {
+      "Time_Start": 1762.2,
+      "Time_End": 1766.2800000000002,
+      "Text": " We basically want a golden bullet."
+    },
+    {
+      "Time_Start": 1766.2800000000002,
+      "Time_End": 1768.1200000000001,
+      "Text": " Let's see if we can find that."
+    },
+    {
+      "Time_Start": 1768.1200000000001,
+      "Time_End": 1773.6000000000001,
+      "Text": " Luckily, there is one function we haven't looked into yet."
+    },
+    {
+      "Time_Start": 1773.6000000000001,
+      "Time_End": 1774.72,
+      "Text": " Let's do a small recap."
+    },
+    {
+      "Time_Start": 1774.72,
+      "Time_End": 1781.1000000000001,
+      "Text": " So the first function has some constants, then there is some OS variables being set,"
+    },
+    {
+      "Time_Start": 1781.1000000000001,
+      "Time_End": 1786.8400000000001,
+      "Text": " then we have our vulnerable register.xll function, and then the last function is actually very"
+    },
+    {
+      "Time_Start": 1786.8400000000001,
+      "Time_End": 1788.88,
+      "Text": " short."
+    },
+    {
+      "Time_Start": 1788.88,
+      "Time_End": 1802.3600000000001,
+      "Text": " The last function does a register ID, performs an execute XL4 macro on a concatenated string."
+    },
+    {
+      "Time_Start": 1802.3600000000001,
+      "Time_End": 1811.96,
+      "Text": " And this string that is being fed into the execute XL4 macro function is being concatenated"
+    },
+    {
+      "Time_Start": 1811.96,
+      "Time_End": 1818.4,
+      "Text": " from some static content and some content that was originally found in the cells."
+    },
+    {
+      "Time_Start": 1818.4,
+      "Time_End": 1821.52,
+      "Text": " This is a classic command injection."
+    },
+    {
+      "Time_Start": 1821.52,
+      "Time_End": 1827.96,
+      "Text": " An interesting one, because XL4 macros at the time did not have any AMSI support."
+    },
+    {
+      "Time_Start": 1827.96,
+      "Time_End": 1835.28,
+      "Text": " AMSI, Anti-Malware Scanning Interface, is an interface for, for instance, AV and EDR"
+    },
+    {
+      "Time_Start": 1835.28,
+      "Time_End": 1839.74,
+      "Text": " vendors to hook into and try to detect malicious activity."
+    },
+    {
+      "Time_Start": 1839.74,
+      "Time_End": 1845.98,
+      "Text": " So this is a stealthy way to continue our phishing."
+    },
+    {
+      "Time_Start": 1845.98,
+      "Time_End": 1849.34,
+      "Text": " Let's look at the normal flow."
+    },
+    {
+      "Time_Start": 1849.34,
+      "Time_End": 1854.9,
+      "Text": " And looking at the normal flow, you'll see that register of the verify open function"
+    },
+    {
+      "Time_Start": 1854.9,
+      "Time_End": 1860.74,
+      "Text": " with register.xll provides some kind of input validation."
+    },
+    {
+      "Time_Start": 1860.74,
+      "Time_End": 1868.06,
+      "Text": " Because if no valid XLL is found, then we're not, well, we're going to close the workbook"
+    },
+    {
+      "Time_Start": 1868.06,
+      "Time_End": 1876.1799999999998,
+      "Text": " and end our execution before register function ID function is being called."
+    },
+    {
+      "Time_Start": 1876.1799999999998,
+      "Time_End": 1884.1799999999998,
+      "Text": " So we already need to know in advance what our target, that our target has a valid XLL"
+    },
+    {
+      "Time_Start": 1884.1799999999998,
+      "Time_End": 1885.8999999999999,
+      "Text": " and where it is located."
+    },
+    {
+      "Time_Start": 1885.8999999999999,
+      "Time_End": 1895.84,
+      "Text": " Luckily, we don't really need to, because Excel has a custom XLL and DLL search path."
+    },
+    {
+      "Time_Start": 1895.8400000000001,
+      "Time_End": 1900.1200000000001,
+      "Text": " So it also takes into account its own installation directory."
+    },
+    {
+      "Time_Start": 1900.1200000000001,
+      "Time_End": 1906.5200000000002,
+      "Text": " And using the default values, we already know where an XLL is located."
+    },
+    {
+      "Time_Start": 1906.5200000000002,
+      "Time_End": 1910.5200000000002,
+      "Text": " It's located in the library analysis folder."
+    },
+    {
+      "Time_Start": 1910.5200000000002,
+      "Time_End": 1912.8400000000001,
+      "Text": " So we're going to use that."
+    },
+    {
+      "Time_Start": 1912.8400000000001,
+      "Time_End": 1922.3200000000002,
+      "Text": " Let's see if we can still use this path, but also add some malicious code into that."
+    },
+    {
+      "Time_Start": 1922.32,
+      "Time_End": 1928.28,
+      "Text": " Let's see if we can pop a calculator application."
+    },
+    {
+      "Time_Start": 1928.28,
+      "Time_End": 1936.6799999999998,
+      "Text": " We're going to try to do that by injecting some code and then just traversing it back."
+    },
+    {
+      "Time_Start": 1936.6799999999998,
+      "Time_End": 1941.12,
+      "Text": " So we're going to try, we're going to put our code in a dirt traversal."
+    },
+    {
+      "Time_Start": 1941.12,
+      "Time_End": 1949.58,
+      "Text": " Register XLL will perform path simplification, normalization, and thus remove the code, ending"
+    },
+    {
+      "Time_Start": 1949.58,
+      "Time_End": 1951.8799999999999,
+      "Text": " up with a valid path."
+    },
+    {
+      "Time_Start": 1952.44,
+      "Time_End": 1958.44,
+      "Text": " But register of execute Excel for macro will concatenate everything together, as if it"
+    },
+    {
+      "Time_Start": 1958.44,
+      "Time_End": 1962.3200000000002,
+      "Text": " is a normal string, and then feed it to the function."
+    },
+    {
+      "Time_Start": 1962.3200000000002,
+      "Time_End": 1969.2800000000002,
+      "Text": " We can escape the quotes and basically get code execution."
+    },
+    {
+      "Time_Start": 1969.2800000000002,
+      "Time_End": 1974.8000000000002,
+      "Text": " So a new Excel window of a new calculator window is opening."
+    },
+    {
+      "Time_Start": 1974.8000000000002,
+      "Time_End": 1980.0,
+      "Text": " We learned we can put malicious code into a dirt traversal."
+    },
+    {
+      "Time_Start": 1980.12,
+      "Time_End": 1986.96,
+      "Text": " Now, let's go to remote code execution."
+    },
+    {
+      "Time_Start": 1986.96,
+      "Time_End": 1994.4,
+      "Text": " Let's host our XLL on a WebDAV share and use the same trick to register it."
+    },
+    {
+      "Time_Start": 1994.4,
+      "Time_End": 2001.76,
+      "Text": " We have to escape, we have to perform some more dirt traversal because we're using backslashes."
+    },
+    {
+      "Time_Start": 2001.76,
+      "Time_End": 2005.92,
+      "Text": " String call will look like this, and this will get executed."
+    },
+    {
+      "Time_Start": 2005.92,
+      "Time_End": 2014.92,
+      "Text": " And that would work sometimes because here as well, register is not allowed to start"
+    },
+    {
+      "Time_Start": 2014.92,
+      "Time_End": 2018.24,
+      "Text": " the web client service."
+    },
+    {
+      "Time_Start": 2018.24,
+      "Time_End": 2024.68,
+      "Text": " But luckily we can use the same trick by referencing a remote cell."
+    },
+    {
+      "Time_Start": 2024.68,
+      "Time_End": 2028.8400000000001,
+      "Text": " We are going to use the function run."
+    },
+    {
+      "Time_Start": 2028.8400000000001,
+      "Time_End": 2036.8000000000002,
+      "Text": " So we are going to use the function run on a remote Excel sheet and reference, for instance,"
+    },
+    {
+      "Time_Start": 2036.8000000000002,
+      "Time_End": 2040.8400000000001,
+      "Text": " an empty cell, and then we're going to use register."
+    },
+    {
+      "Time_Start": 2040.8400000000001,
+      "Time_End": 2045.88,
+      "Text": " And this one works, victory."
+    },
+    {
+      "Time_Start": 2045.88,
+      "Time_End": 2052.04,
+      "Text": " Run triggers the web client service and register loads the 64-bit XLL."
+    },
+    {
+      "Time_Start": 2052.04,
+      "Time_End": 2057.6400000000003,
+      "Text": " So now we want to make our final proof of concept."
+    },
+    {
+      "Time_Start": 2058.2,
+      "Time_End": 2066.4,
+      "Text": " I also want to mention that it's also possible to load an add-in macro or a macro-enabled sheet."
+    },
+    {
+      "Time_Start": 2066.4,
+      "Time_End": 2071.68,
+      "Text": " And, well, this would be an option and maybe a bit of an easier one, but you will still"
+    },
+    {
+      "Time_Start": 2071.68,
+      "Time_End": 2074.16,
+      "Text": " remain in macro land."
+    },
+    {
+      "Time_Start": 2074.16,
+      "Time_End": 2077.7999999999997,
+      "Text": " I want to load a portable executable."
+    },
+    {
+      "Time_Start": 2077.7999999999997,
+      "Time_End": 2079.04,
+      "Text": " Let's do that."
+    },
+    {
+      "Time_Start": 2079.04,
+      "Time_End": 2085.3199999999997,
+      "Text": " So first, we're going to start with a string, like the first part of our exploit string"
+    },
+    {
+      "Time_Start": 2085.3199999999997,
+      "Time_End": 2087.04,
+      "Text": " will be put in a cell."
+    },
+    {
+      "Time_Start": 2087.04,
+      "Time_End": 2091.96,
+      "Text": " Then we're going to take another cell that will be a formula that will calculate which"
+    },
+    {
+      "Time_Start": 2091.96,
+      "Time_End": 2096.24,
+      "Text": " URL to use, a 64-bit URL or a 32-bit URL."
+    },
+    {
+      "Time_Start": 2096.24,
+      "Time_End": 2099.48,
+      "Text": " And then we're going to end with another static string."
+    },
+    {
+      "Time_Start": 2099.48,
+      "Time_End": 2107.0,
+      "Text": " We're going to concatenate those three cells together and then thus have our exploit code."
+    },
+    {
+      "Time_Start": 2107.0,
+      "Time_End": 2116.04,
+      "Text": " And this worked brilliantly well against 64-bit Excel, 32-bit Excel, on various platforms"
+    },
+    {
+      "Time_Start": 2116.04,
+      "Time_End": 2119.08,
+      "Text": " and OSs."
+    },
+    {
+      "Time_Start": 2119.08,
+      "Time_End": 2123.16,
+      "Text": " So we found XL4 micro-injection."
+    },
+    {
+      "Time_Start": 2123.16,
+      "Time_End": 2130.2799999999997,
+      "Text": " We used the verify-open bypass, we bypassed verify-open by using a dir traversal and by"
+    },
+    {
+      "Time_Start": 2130.2799999999997,
+      "Time_End": 2136.16,
+      "Text": " referencing a remote relative reference."
+    },
+    {
+      "Time_Start": 2136.16,
+      "Time_End": 2142.52,
+      "Text": " And we now have one file that we can send to our target."
+    },
+    {
+      "Time_Start": 2142.52,
+      "Time_End": 2147.96,
+      "Text": " This is interesting because it allows for little to no pre-knowledge to perform our"
+    },
+    {
+      "Time_Start": 2147.96,
+      "Time_End": 2151.24,
+      "Text": " phishing."
+    },
+    {
+      "Time_Start": 2151.24,
+      "Time_End": 2159.72,
+      "Text": " And when we tried it, we noticed something strange."
+    },
+    {
+      "Time_Start": 2159.72,
+      "Time_End": 2166.6,
+      "Text": " When testing our weaponized version during engagements, we noticed that the users of"
+    },
+    {
+      "Time_Start": 2166.72,
+      "Time_End": 2174.8399999999997,
+      "Text": " some of our clients did not receive any warning message or security notification at all, while"
+    },
+    {
+      "Time_Start": 2174.8399999999997,
+      "Time_End": 2181.08,
+      "Text": " they should have, according to the settings that we saw."
+    },
+    {
+      "Time_Start": 2181.08,
+      "Time_End": 2189.24,
+      "Text": " And this is because the publisher that signed the analysis tool pack macro was already noted"
+    },
+    {
+      "Time_Start": 2189.24,
+      "Time_End": 2191.44,
+      "Text": " as trusted."
+    },
+    {
+      "Time_Start": 2191.56,
+      "Time_End": 2197.36,
+      "Text": " This was required in a few very weird, a few special border cases."
+    },
+    {
+      "Time_Start": 2197.36,
+      "Time_End": 2203.12,
+      "Text": " If you want to install Visual Studio, if you want to do an offline installation of Visual"
+    },
+    {
+      "Time_Start": 2203.12,
+      "Time_End": 2209.64,
+      "Text": " Studio on older operating systems, or if you have some security patches that you want to"
+    },
+    {
+      "Time_Start": 2209.64,
+      "Time_End": 2215.7200000000003,
+      "Text": " install offline, then you need to add this certificate to your trust store as well."
+    },
+    {
+      "Time_Start": 2215.7200000000003,
+      "Time_End": 2224.2000000000003,
+      "Text": " So you only have to add it to your operating system's trust store, not additionally to"
+    },
+    {
+      "Time_Start": 2224.2000000000003,
+      "Time_End": 2230.6400000000003,
+      "Text": " your office's trust store, and also not on all endpoints, just on the relevant ones."
+    },
+    {
+      "Time_Start": 2230.6400000000003,
+      "Time_End": 2239.4800000000005,
+      "Text": " So there were also some misconfigurations found at these clients."
+    },
+    {
+      "Time_Start": 2239.4800000000005,
+      "Time_End": 2243.36,
+      "Text": " And these misconfigurations led to a very dangerous situation, because if I would make"
+    },
+    {
+      "Time_Start": 2243.36,
+      "Time_End": 2249.8,
+      "Text": " an XLS, then it would not be possible, or it would be very difficult for an end user"
+    },
+    {
+      "Time_Start": 2249.8,
+      "Time_End": 2255.6800000000003,
+      "Text": " to see if there's macros enabled or not, because once you double click, you don't get a warning,"
+    },
+    {
+      "Time_Start": 2255.6800000000003,
+      "Time_End": 2260.08,
+      "Text": " and it just opens."
+    },
+    {
+      "Time_Start": 2260.08,
+      "Time_End": 2266.0,
+      "Text": " So how did Microsoft mitigate and patch this issue?"
+    },
+    {
+      "Time_Start": 2266.0,
+      "Time_End": 2274.8,
+      "Text": " This wasn't necessarily an easy issue to patch, because every semi-annual release,"
+    },
+    {
+      "Time_Start": 2274.8,
+      "Time_End": 2279.6,
+      "Text": " there were new add-in sheets signed by Microsoft."
+    },
+    {
+      "Time_Start": 2279.6,
+      "Time_End": 2286.0,
+      "Text": " Furthermore, looking at the samples we found online, we noticed that this vulnerability"
+    },
+    {
+      "Time_Start": 2286.0,
+      "Time_End": 2291.36,
+      "Text": " and these signatures were out there already for more than 10 years."
+    },
+    {
+      "Time_Start": 2291.6800000000003,
+      "Time_End": 2297.76,
+      "Text": " Now, these signatures, or these sheets, were timestamped signs, meaning that the signature"
+    },
+    {
+      "Time_Start": 2297.76,
+      "Time_End": 2301.0,
+      "Text": " is valid indefinitely."
+    },
+    {
+      "Time_Start": 2301.0,
+      "Time_End": 2308.48,
+      "Text": " And Office doesn't support any certificate revocation lists, meaning that by design,"
+    },
+    {
+      "Time_Start": 2308.48,
+      "Time_End": 2313.56,
+      "Text": " there is no revocation option."
+    },
+    {
+      "Time_Start": 2313.56,
+      "Time_End": 2319.84,
+      "Text": " It took Microsoft quite a while to come up with a patch, and in the meantime, they assigned"
+    },
+    {
+      "Time_Start": 2319.84,
+      "Time_End": 2326.8,
+      "Text": " a CVE in the category Remote Code Execution, and they patched it using a couple of different"
+    },
+    {
+      "Time_Start": 2326.8,
+      "Time_End": 2330.32,
+      "Text": " methods combined together."
+    },
+    {
+      "Time_Start": 2330.32,
+      "Time_End": 2335.84,
+      "Text": " The first one, of course, is they patched the vulnerable VBA code."
+    },
+    {
+      "Time_Start": 2335.84,
+      "Time_End": 2342.6800000000003,
+      "Text": " Now, instead of using cell references, they just hard-coded the correct values into the"
+    },
+    {
+      "Time_Start": 2342.6800000000003,
+      "Time_End": 2347.1200000000003,
+      "Text": " VBA that was signed."
+    },
+    {
+      "Time_Start": 2347.12,
+      "Time_End": 2354.7999999999997,
+      "Text": " The ExecuteExcelForMacro function did not need much more patching after that, after"
+    },
+    {
+      "Time_Start": 2354.7999999999997,
+      "Time_End": 2364.0,
+      "Text": " everything was hard-coded, but even then, they also did, like, quote, escaping."
+    },
+    {
+      "Time_Start": 2364.0,
+      "Time_End": 2374.72,
+      "Text": " And they hard-coded blocked all the old add-ins from running, and they added another option"
+    },
+    {
+      "Time_Start": 2374.88,
+      "Time_End": 2379.4800000000005,
+      "Text": " with a registry setting to prevent any signing downgrade."
+    },
+    {
+      "Time_Start": 2379.4800000000005,
+      "Time_End": 2386.4800000000005,
+      "Text": " So now, you cannot go from a signed context into an unsigned context."
+    },
+    {
+      "Time_Start": 2386.4800000000005,
+      "Time_End": 2396.36,
+      "Text": " So you cannot load an unsigned XLL from a signed add-in, for instance."
+    },
+    {
+      "Time_Start": 2396.36,
+      "Time_End": 2403.6800000000003,
+      "Text": " Let's wrap it up with the main takeaways from this talk."
+    },
+    {
+      "Time_Start": 2403.68,
+      "Time_End": 2409.64,
+      "Text": " We accomplished to explore some of the uncharted legacy features of Excel."
+    },
+    {
+      "Time_Start": 2409.64,
+      "Time_End": 2415.6,
+      "Text": " These resulted in the vulnerability that allowed an attacker to craft signed phishing payloads,"
+    },
+    {
+      "Time_Start": 2415.6,
+      "Time_End": 2423.0,
+      "Text": " where users would see that it would be signed by Microsoft or no warning at all."
+    },
+    {
+      "Time_Start": 2423.0,
+      "Time_End": 2429.7599999999998,
+      "Text": " It would work against almost any Windows machine with Office installed, and it worked by injecting"
+    },
+    {
+      "Time_Start": 2429.76,
+      "Time_End": 2437.76,
+      "Text": " code into parts of the document which weren't signed, so without invalidating a signature."
+    },
+    {
+      "Time_Start": 2437.76,
+      "Time_End": 2445.28,
+      "Text": " This vulnerability was in more than 10 years, and we believe that there's many more of these"
+    },
+    {
+      "Time_Start": 2445.28,
+      "Time_End": 2451.84,
+      "Text": " kind of signed documents or other legacy features out there that are vulnerable."
+    },
+    {
+      "Time_Start": 2451.84,
+      "Time_End": 2458.6400000000003,
+      "Text": " So I hope that my talk was inspiring to you to go and find out some of these more legacy"
+    },
+    {
+      "Time_Start": 2458.64,
+      "Time_End": 2459.64,
+      "Text": " features."
+    },
+    {
+      "Time_Start": 2459.64,
+      "Time_End": 2461.92,
+      "Text": " Thank you all."
+    }
+  ]
+}
