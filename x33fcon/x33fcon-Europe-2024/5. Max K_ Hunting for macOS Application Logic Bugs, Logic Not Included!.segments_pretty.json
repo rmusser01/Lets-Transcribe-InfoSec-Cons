@@ -1,0 +1,1819 @@
+{
+  "segments": [
+    {
+      "Time_Start": 0.0,
+      "Time_End": 13.84,
+      "Text": "This text was transcribed using whisper model: large-v2\n\n Before we get started, can I see how many people are familiar with Mac OS reverse engineering"
+    },
+    {
+      "Time_Start": 13.84,
+      "Time_End": 15.88,
+      "Text": " or privilege separation?"
+    },
+    {
+      "Time_Start": 15.88,
+      "Time_End": 18.48,
+      "Text": " Is that nobody?"
+    },
+    {
+      "Time_Start": 18.48,
+      "Time_End": 19.48,
+      "Text": " Okay."
+    },
+    {
+      "Time_Start": 19.48,
+      "Time_End": 21.48,
+      "Text": " Ah, I see one."
+    },
+    {
+      "Time_Start": 21.48,
+      "Time_End": 22.48,
+      "Text": " Cool."
+    },
+    {
+      "Time_Start": 22.48,
+      "Time_End": 23.8,
+      "Text": " All right."
+    },
+    {
+      "Time_Start": 23.8,
+      "Time_End": 24.8,
+      "Text": " The agenda."
+    },
+    {
+      "Time_Start": 24.8,
+      "Time_End": 30.240000000000002,
+      "Text": " I'll start with an introduction of essentially covering who, when, what, and why."
+    },
+    {
+      "Time_Start": 30.240000000000002,
+      "Time_End": 32.52,
+      "Text": " Then I'll move on to three bugs."
+    },
+    {
+      "Time_Start": 32.52,
+      "Time_End": 39.88,
+      "Text": " The first one being ZCC LPE, and then an AWS VPN local privilege escalation, and then a"
+    },
+    {
+      "Time_Start": 39.88,
+      "Time_End": 42.480000000000004,
+      "Text": " installer local privilege escalation."
+    },
+    {
+      "Time_Start": 42.480000000000004,
+      "Time_End": 46.24,
+      "Text": " And then essentially I'll cover two bugs that I thought were interesting that I couldn't"
+    },
+    {
+      "Time_Start": 46.24,
+      "Time_End": 51.040000000000006,
+      "Text": " necessarily exploit to achieve code execution as root, but they're still logic bugs."
+    },
+    {
+      "Time_Start": 51.040000000000006,
+      "Time_End": 52.040000000000006,
+      "Text": " Cool."
+    },
+    {
+      "Time_Start": 52.040000000000006,
+      "Time_End": 54.24,
+      "Text": " I'll start with the who."
+    },
+    {
+      "Time_Start": 54.28,
+      "Time_End": 56.28,
+      "Text": " I'm a security consultant with Secure."
+    },
+    {
+      "Time_Start": 56.28,
+      "Time_End": 60.760000000000005,
+      "Text": " I have to have this obligatory my opinions are my own and don't represent my employers,"
+    },
+    {
+      "Time_Start": 60.760000000000005,
+      "Time_End": 64.12,
+      "Text": " even though that doesn't actually cover you, but still."
+    },
+    {
+      "Time_Start": 64.12,
+      "Time_End": 68.6,
+      "Text": " Primarily I have responsibilities with like operating system security, build reviews,"
+    },
+    {
+      "Time_Start": 68.6,
+      "Time_End": 73.48,
+      "Text": " thick clients, net set code review, et cetera, and of course the necessary evil of writing"
+    },
+    {
+      "Time_Start": 73.48,
+      "Time_End": 74.48,
+      "Text": " reports."
+    },
+    {
+      "Time_Start": 74.48,
+      "Time_End": 78.4,
+      "Text": " I have some certifications, not that certs really mean anything."
+    },
+    {
+      "Time_Start": 78.4,
+      "Time_End": 80.68,
+      "Text": " I've spoke at some conferences before."
+    },
+    {
+      "Time_Start": 80.68,
+      "Time_End": 85.08000000000001,
+      "Text": " This is definitely the biggest conference of them all."
+    },
+    {
+      "Time_Start": 85.08000000000001,
+      "Time_End": 87.84,
+      "Text": " I did some bug hunting and I found some bugs."
+    },
+    {
+      "Time_Start": 87.84,
+      "Time_End": 88.84,
+      "Text": " Cool."
+    },
+    {
+      "Time_Start": 88.84,
+      "Time_End": 91.4,
+      "Text": " I'll start off with the when."
+    },
+    {
+      "Time_Start": 91.4,
+      "Time_End": 96.08000000000001,
+      "Text": " This was like a period of two months where I maybe spent an hour a day, give or take,"
+    },
+    {
+      "Time_Start": 96.08000000000001,
+      "Time_End": 99.08000000000001,
+      "Text": " like 60 hours, 65 hours finding bugs."
+    },
+    {
+      "Time_Start": 99.08000000000001,
+      "Time_End": 104.28,
+      "Text": " A lot of the bugs are just like typical TCC bypasses, but I thought these three bugs were"
+    },
+    {
+      "Time_Start": 104.28,
+      "Time_End": 110.64000000000001,
+      "Text": " particularly interesting and could help other people to learn about this kind of stuff."
+    },
+    {
+      "Time_Start": 110.64,
+      "Time_End": 115.64,
+      "Text": " As I mentioned to WoodSecure Labs, WoodSecure Labs is our research group and we publish"
+    },
+    {
+      "Time_Start": 115.64,
+      "Time_End": 119.12,
+      "Text": " our research at labs.woodsecure.com."
+    },
+    {
+      "Time_Start": 119.12,
+      "Time_End": 124.48,
+      "Text": " The value of disclosing bugs is not just for the people you're disclosing the bugs to,"
+    },
+    {
+      "Time_Start": 124.48,
+      "Time_End": 127.92,
+      "Text": " so they can fix their stuff, it's also for other security researchers so they can learn"
+    },
+    {
+      "Time_Start": 127.92,
+      "Time_End": 131.76,
+      "Text": " about the bugs, how they can find them elsewhere."
+    },
+    {
+      "Time_Start": 131.76,
+      "Time_End": 135.12,
+      "Text": " Check out this in the coming weeks and there will be two blog posts in more depth than"
+    },
+    {
+      "Time_Start": 135.12,
+      "Time_End": 137.44,
+      "Text": " I'll cover today."
+    },
+    {
+      "Time_Start": 137.44,
+      "Time_End": 139.04,
+      "Text": " What actually is a logic bug?"
+    },
+    {
+      "Time_Start": 139.04,
+      "Time_End": 142.76,
+      "Text": " I'm essentially preaching to the choir here because there's a lot of security people,"
+    },
+    {
+      "Time_Start": 142.76,
+      "Time_End": 147.84,
+      "Text": " but essentially logic is reasoning conducted or assessed according to strict principles"
+    },
+    {
+      "Time_Start": 147.84,
+      "Time_End": 151.35999999999999,
+      "Text": " of validity."
+    },
+    {
+      "Time_Start": 151.35999999999999,
+      "Time_End": 156.07999999999998,
+      "Text": " Essentially logic bugs have high exploit reliability, so it's not something like memory corruption"
+    },
+    {
+      "Time_Start": 156.07999999999998,
+      "Time_End": 161.32,
+      "Text": " where you could break a device or cause an app to crash."
+    },
+    {
+      "Time_Start": 161.32,
+      "Time_End": 166.16,
+      "Text": " Essentially it's breaking trust placed on processes and procedures."
+    },
+    {
+      "Time_Start": 166.16,
+      "Time_End": 170.64,
+      "Text": " Essentially unverified assumptions and things like file system operations, link based abuse,"
+    },
+    {
+      "Time_Start": 170.64,
+      "Time_End": 176.24,
+      "Text": " coercion of privilege execution of controlled resources and crossing privilege boundaries"
+    },
+    {
+      "Time_Start": 176.24,
+      "Time_End": 179.24,
+      "Text": " through unexpected manners."
+    },
+    {
+      "Time_Start": 179.24,
+      "Time_End": 182.4,
+      "Text": " Essentially the oh we can assume this file exists or oh the client is going to be trusted"
+    },
+    {
+      "Time_Start": 182.4,
+      "Time_End": 184.56,
+      "Text": " is signed by us."
+    },
+    {
+      "Time_Start": 184.56,
+      "Time_End": 186.96,
+      "Text": " Why these bugs still exist?"
+    },
+    {
+      "Time_Start": 186.96,
+      "Time_End": 191.68,
+      "Text": " This is not new research, people like Chaba Fitzel and Wojciech, they've spoken at conferences,"
+    },
+    {
+      "Time_Start": 191.68,
+      "Time_End": 197.0,
+      "Text": " very similar bugs and you can still find them in modern applications."
+    },
+    {
+      "Time_Start": 197.0,
+      "Time_End": 202.84,
+      "Text": " A lot of the time when you see a talk or you see a blog, it's the process of just the successes,"
+    },
+    {
+      "Time_Start": 202.84,
+      "Time_End": 206.8,
+      "Text": " not necessarily the failures, so it's sometimes useful to see that kind of thing so you can"
+    },
+    {
+      "Time_Start": 206.8,
+      "Time_End": 207.8,
+      "Text": " build a mindset."
+    },
+    {
+      "Time_Start": 207.8,
+      "Time_End": 213.64000000000001,
+      "Text": " I wanted to cover that story of walk through of how I identified some of the bugs and how"
+    },
+    {
+      "Time_Start": 213.64000000000001,
+      "Time_End": 218.12,
+      "Text": " you can build a methodology or automate steps to make your life easier and the responsible"
+    },
+    {
+      "Time_Start": 218.12,
+      "Time_End": 223.6,
+      "Text": " disclosure process is a little bit annoying when it comes to HackerOne, bug crowd, etc."
+    },
+    {
+      "Time_Start": 223.6,
+      "Time_End": 229.56,
+      "Text": " but I'm not going to drone on about that, come talk to me and I'll mourn about it."
+    },
+    {
+      "Time_Start": 229.56,
+      "Time_End": 236.4,
+      "Text": " To start ZCC, local privilege escalation, essentially it's a cliche NSXPC bug where"
+    },
+    {
+      "Time_Start": 236.4,
+      "Time_End": 241.32,
+      "Text": " you can abuse an entitlement placed on an executable, get code execution within the"
+    },
+    {
+      "Time_Start": 241.32,
+      "Time_End": 247.88,
+      "Text": " executable that has the entitlement placed, talk to an NSXPC service and get root."
+    },
+    {
+      "Time_Start": 248.32,
+      "Time_End": 254.2,
+      "Text": " This kind of adventure started with a client project, essentially it's a piece of software"
+    },
+    {
+      "Time_Start": 254.2,
+      "Time_End": 258.88,
+      "Text": " which allows you to connect resources together, so a user doesn't want to run a VPN, they"
+    },
+    {
+      "Time_Start": 258.88,
+      "Time_End": 264.04,
+      "Text": " just want to connect to a specific resource like internal GitHub or GitLab, etc."
+    },
+    {
+      "Time_Start": 264.04,
+      "Time_End": 269.0,
+      "Text": " You install this ZCC connector and it allows you to talk to that stuff."
+    },
+    {
+      "Time_Start": 269.0,
+      "Time_End": 275.0,
+      "Text": " A client came to us asking, we've got this app, it has posture policies, it forces BitLocker"
+    },
+    {
+      "Time_Start": 275.0,
+      "Time_End": 281.4,
+      "Text": " antivirus specific certificates installed, can a user from a third party bypass this"
+    },
+    {
+      "Time_Start": 281.4,
+      "Time_End": 284.92,
+      "Text": " if they have it installed on their device, I was like cool, you're paying us to do crack"
+    },
+    {
+      "Time_Start": 284.92,
+      "Time_End": 288.08,
+      "Text": " me's basically which is fun."
+    },
+    {
+      "Time_Start": 288.08,
+      "Time_End": 293.68,
+      "Text": " They had five days on Windows, five days on Mac OS, I was the person that did both."
+    },
+    {
+      "Time_Start": 293.68,
+      "Time_End": 297.48,
+      "Text": " I demonstrated all of the POCs, I had full posture bypasses in a couple of days which"
+    },
+    {
+      "Time_Start": 297.48,
+      "Time_End": 301.92,
+      "Text": " was fun, so I had some extra time to give them some value, like are they at risk, can"
+    },
+    {
+      "Time_Start": 301.92,
+      "Time_End": 306.24,
+      "Text": " somebody with a foothold on a device get code execution as root."
+    },
+    {
+      "Time_Start": 306.24,
+      "Time_End": 309.88,
+      "Text": " I immediately, Windows was relatively hard and there's a lot more people that have looked"
+    },
+    {
+      "Time_Start": 309.88,
+      "Time_End": 314.64000000000004,
+      "Text": " at Windows reverse engineering, Windows phone research and Mac OS is kind of a bit of a"
+    },
+    {
+      "Time_Start": 314.64000000000004,
+      "Time_End": 317.24,
+      "Text": " grey area, people don't fully understand it."
+    },
+    {
+      "Time_Start": 317.24,
+      "Time_End": 322.16,
+      "Text": " I found a couple of components which were like this isn't good, let's pull the string"
+    },
+    {
+      "Time_Start": 322.16,
+      "Time_End": 325.12,
+      "Text": " and see where it goes, yeah, I found some bugs."
+    },
+    {
+      "Time_Start": 325.12,
+      "Time_End": 331.32,
+      "Text": " So to start off when you're looking for exploiting from a low per user to a high per user, look"
+    },
+    {
+      "Time_Start": 331.32,
+      "Time_End": 334.88,
+      "Text": " at what's available, what's running, what are the privileges it's running as, you can"
+    },
+    {
+      "Time_Start": 334.88,
+      "Time_End": 340.4,
+      "Text": " see when you run the processes, that's an alias, you see two components running as root,"
+    },
+    {
+      "Time_Start": 340.4,
+      "Time_End": 344.8,
+      "Text": " you can also see some launch daemons running, you see within launch daemons there's two"
+    },
+    {
+      "Time_Start": 344.8,
+      "Time_End": 350.88,
+      "Text": " components related, service.plist, tunnel.plist and you can also see the launch daemons loaded"
+    },
+    {
+      "Time_Start": 350.88,
+      "Time_End": 355.18,
+      "Text": " and actually with the PID with launch CTL."
+    },
+    {
+      "Time_Start": 355.18,
+      "Time_End": 359.15999999999997,
+      "Text": " Actually looking at those plists you can identify what components are running, where the actual"
+    },
+    {
+      "Time_Start": 359.16,
+      "Time_End": 363.56,
+      "Text": " binary is, does it have any way you can communicate with it, that's Mac services and programme"
+    },
+    {
+      "Time_Start": 363.56,
+      "Time_End": 365.6,
+      "Text": " arguments."
+    },
+    {
+      "Time_Start": 365.6,
+      "Time_End": 370.68,
+      "Text": " You can see this comm.zscaler.service tray communication, that's the thing you can talk"
+    },
+    {
+      "Time_Start": 370.68,
+      "Time_End": 372.48,
+      "Text": " to."
+    },
+    {
+      "Time_Start": 372.48,
+      "Time_End": 375.96000000000004,
+      "Text": " You can do the same for the tunnel component, you see the same thing, the Mac service and"
+    },
+    {
+      "Time_Start": 375.96000000000004,
+      "Time_End": 378.64000000000004,
+      "Text": " the programme arguments."
+    },
+    {
+      "Time_Start": 378.64000000000004,
+      "Time_End": 383.84000000000003,
+      "Text": " Before I continue, quick little intermission about SIP, system integrity protection, on"
+    },
+    {
+      "Time_Start": 383.84000000000003,
+      "Time_End": 389.36,
+      "Text": " Windows you can essentially just open a process if you have permissions to do it, essentially"
+    },
+    {
+      "Time_Start": 389.36,
+      "Time_End": 393.48,
+      "Text": " allocate memory, write to the memory, create a thread and you're running in the process"
+    },
+    {
+      "Time_Start": 393.48,
+      "Time_End": 396.52000000000004,
+      "Text": " space of that executable."
+    },
+    {
+      "Time_Start": 396.52000000000004,
+      "Time_End": 403.72,
+      "Text": " You can't do that on Mac OS, unless you have a zero day or you have something you can leverage."
+    },
+    {
+      "Time_Start": 403.72,
+      "Time_End": 409.48,
+      "Text": " You can't do like DLL hijacking, DLL side loading, planting, all the fancy terms people"
+    },
+    {
+      "Time_Start": 409.48,
+      "Time_End": 410.48,
+      "Text": " like to use."
+    },
+    {
+      "Time_Start": 410.48,
+      "Time_End": 416.76,
+      "Text": " You can't attach a debugger to things unless they disable security features or through"
+    },
+    {
+      "Time_Start": 416.76,
+      "Time_End": 419.64000000000004,
+      "Text": " vulnerable entitlements."
+    },
+    {
+      "Time_Start": 419.64000000000004,
+      "Time_End": 424.76,
+      "Text": " Essentially inspecting these components with the code sign you tell, you can see the top"
+    },
+    {
+      "Time_Start": 424.76,
+      "Time_End": 430.96000000000004,
+      "Text": " left is the Zscaler executable itself, the main GUI app, no interesting entitlements"
+    },
+    {
+      "Time_Start": 430.96000000000004,
+      "Time_End": 437.76,
+      "Text": " like the Zscaler service, nothing really of interest, however this tunnel component had"
+    },
+    {
+      "Time_Start": 437.84,
+      "Time_End": 443.64,
+      "Text": " two things that are very interesting, the com, Apple, security, environment variables,"
+    },
+    {
+      "Time_Start": 443.64,
+      "Time_End": 448.88,
+      "Text": " you can set an environment variable that equals your dilib and it will load it, however because"
+    },
+    {
+      "Time_Start": 448.88,
+      "Time_End": 453.92,
+      "Text": " of the hard run time it won't load it, it will just refuse it, that's where the disabled"
+    },
+    {
+      "Time_Start": 453.92,
+      "Time_End": 459.03999999999996,
+      "Text": " library validation entitlement comes in, now you have a way to load code within that specific"
+    },
+    {
+      "Time_Start": 459.03999999999996,
+      "Time_End": 461.71999999999997,
+      "Text": " component."
+    },
+    {
+      "Time_Start": 461.71999999999997,
+      "Time_End": 466.56,
+      "Text": " You can automate the steps, you don't have to run those code sign commands each time."
+    },
+    {
+      "Time_Start": 466.56,
+      "Time_End": 473.0,
+      "Text": " You can use Yara, it's amazing, threat intelligence, threat hunting, everybody loves Yara."
+    },
+    {
+      "Time_Start": 473.0,
+      "Time_End": 479.88,
+      "Text": " You can use the Yara rules at this gist and find that specific binary, you can scan your"
+    },
+    {
+      "Time_Start": 479.88,
+      "Time_End": 482.8,
+      "Text": " whole system and find loads of fun stuff."
+    },
+    {
+      "Time_Start": 482.8,
+      "Time_End": 491.04,
+      "Text": " So NSXPC, the newer spec, the higher level API is based on XPC which is a framework like"
+    },
+    {
+      "Time_Start": 491.04,
+      "Time_End": 495.72,
+      "Text": " IPC for Windows, it allows multiple components and multiple privilege levels, they can be"
+    },
+    {
+      "Time_Start": 495.72,
+      "Time_End": 501.20000000000005,
+      "Text": " the same privilege level to talk to each other, they have interfaces, connection objects,"
+    },
+    {
+      "Time_Start": 501.20000000000005,
+      "Time_End": 510.52000000000004,
+      "Text": " they have a listener, they essentially facilitate connections between multiple components."
+    },
+    {
+      "Time_Start": 510.52000000000004,
+      "Time_End": 514.36,
+      "Text": " So essentially in order to talk to these you need to read the documentation to understand"
+    },
+    {
+      "Time_Start": 514.36,
+      "Time_End": 521.96,
+      "Text": " how to speak the language, so this here specifically is NSXPC, you initialise a connection, tell"
+    },
+    {
+      "Time_Start": 521.96,
+      "Time_End": 527.52,
+      "Text": " it what object you want to, what language you want to speak, resume to it and then essentially"
+    },
+    {
+      "Time_Start": 527.52,
+      "Time_End": 529.6,
+      "Text": " you can talk to the service."
+    },
+    {
+      "Time_Start": 529.6,
+      "Time_End": 536.9200000000001,
+      "Text": " So you see on the top right that's the reversed Zscaler service binary, it has the connection"
+    },
+    {
+      "Time_Start": 536.9200000000001,
+      "Time_End": 542.4000000000001,
+      "Text": " string com.zscaler service trade communication and then the bottom left you can see the frame"
+    },
+    {
+      "Time_Start": 542.4000000000001,
+      "Time_End": 544.12,
+      "Text": " of how to talk to it."
+    },
+    {
+      "Time_Start": 544.12,
+      "Time_End": 549.84,
+      "Text": " I haven't told it what we want to connect to though, so it's just a starting point."
+    },
+    {
+      "Time_Start": 549.84,
+      "Time_End": 555.1600000000001,
+      "Text": " Doing some more reversing within the should accept new connection handler, there's three"
+    },
+    {
+      "Time_Start": 555.1600000000001,
+      "Time_End": 561.76,
+      "Text": " main components, you can either talk to the actual Zscaler like end point which is for"
+    },
+    {
+      "Time_Start": 561.76,
+      "Time_End": 568.32,
+      "Text": " the tray, aka the user interface or you can talk to essentially the tunnel or the filter."
+    },
+    {
+      "Time_Start": 568.32,
+      "Time_End": 571.84,
+      "Text": " So essentially because we found the tunnel component had the vulnerability in it that"
+    },
+    {
+      "Time_Start": 571.84,
+      "Time_End": 576.08,
+      "Text": " you could load code, we want to inspect that more."
+    },
+    {
+      "Time_Start": 576.08,
+      "Time_End": 581.1600000000001,
+      "Text": " So if anybody is familiar with iOS reversing, you can use something called class dump or"
+    },
+    {
+      "Time_Start": 581.1600000000001,
+      "Time_End": 586.76,
+      "Text": " IPSW is another tool, I had a really weird bug with class dump which I didn't understand"
+    },
+    {
+      "Time_Start": 586.76,
+      "Time_End": 591.36,
+      "Text": " that essentially it couldn't load the classes despite it being Objective C and as you can"
+    },
+    {
+      "Time_Start": 591.36,
+      "Time_End": 596.84,
+      "Text": " see here, it says it's Objective C but it didn't work, so I luckily in a blog I found"
+    },
+    {
+      "Time_Start": 596.84,
+      "Time_End": 600.6,
+      "Text": " somebody mentioned something called class dump Swift and for whatever reason it wasn't"
+    },
+    {
+      "Time_Start": 600.6,
+      "Time_End": 604.6600000000001,
+      "Text": " written in Swift, it was written in Objective C but I could dump classes, so you see these"
+    },
+    {
+      "Time_Start": 604.66,
+      "Time_End": 608.8399999999999,
+      "Text": " classes are like what's actually available through the XPC service, so you see things"
+    },
+    {
+      "Time_Start": 608.8399999999999,
+      "Time_End": 614.9,
+      "Text": " like stop tunnel and start tunnel, things like clean logs, update config, these are"
+    },
+    {
+      "Time_Start": 614.9,
+      "Time_End": 620.14,
+      "Text": " things that could be interesting to abuse, like you might want to delete files or essentially"
+    },
+    {
+      "Time_Start": 620.14,
+      "Time_End": 624.8199999999999,
+      "Text": " completely deny service to the user."
+    },
+    {
+      "Time_Start": 624.8199999999999,
+      "Time_End": 628.5,
+      "Text": " Another interesting component was the actual Zscaler tunnel, that's like another component"
+    },
+    {
+      "Time_Start": 628.5,
+      "Time_End": 630.98,
+      "Text": " you can talk to."
+    },
+    {
+      "Time_Start": 630.98,
+      "Time_End": 637.7,
+      "Text": " The XPC protocol itself had far more functions, had a total of 53 functions which were available,"
+    },
+    {
+      "Time_Start": 637.7,
+      "Time_End": 641.22,
+      "Text": " so essentially it's a case of identifying the ones that are interesting and just manually"
+    },
+    {
+      "Time_Start": 641.22,
+      "Time_End": 645.5,
+      "Text": " reversing it, it's horrible work but you find fun stuff."
+    },
+    {
+      "Time_Start": 645.5,
+      "Time_End": 650.94,
+      "Text": " So immediately I found some interesting things like update external proxy config, clean up"
+    },
+    {
+      "Time_Start": 650.94,
+      "Time_End": 657.4,
+      "Text": " DB files and there was one function called install revert ZCC and software installation"
+    },
+    {
+      "Time_Start": 657.4,
+      "Time_End": 663.0,
+      "Text": " as root that you could potentially control, sounds like a path to get a root code execution."
+    },
+    {
+      "Time_Start": 663.0,
+      "Time_End": 668.8,
+      "Text": " You see there's references to architecture strings, things like X86, 64, ARM64, there's"
+    },
+    {
+      "Time_Start": 668.8,
+      "Time_End": 673.48,
+      "Text": " a mention of a path inside the debug string, seems like we are getting warmer, there's"
+    },
+    {
+      "Time_Start": 673.48,
+      "Time_End": 679.72,
+      "Text": " a sub call to a function called install ZCC with racks which is essentially like the path"
+    },
+    {
+      "Time_Start": 679.72,
+      "Time_End": 681.64,
+      "Text": " you specified."
+    },
+    {
+      "Time_Start": 681.64,
+      "Time_End": 687.84,
+      "Text": " Reversing the install ZCC function, you see it's just appending R2 plus this known string,"
+    },
+    {
+      "Time_Start": 687.84,
+      "Time_End": 693.48,
+      "Text": " the contents Mac OS install builder and if you know Mac OS when you reverse a .app, open"
+    },
+    {
+      "Time_Start": 693.48,
+      "Time_End": 698.88,
+      "Text": " up a .app, show in the finder, you see the contents Mac OS directory which usually has"
+    },
+    {
+      "Time_Start": 698.88,
+      "Time_End": 700.28,
+      "Text": " a binary within it."
+    },
+    {
+      "Time_Start": 700.28,
+      "Time_End": 706.84,
+      "Text": " So we know we now can control the argument which is like a path, we have nice debug output"
+    },
+    {
+      "Time_Start": 706.84,
+      "Time_End": 713.2800000000001,
+      "Text": " for debugging which is written into known file paths within logs directory and it calls"
+    },
+    {
+      "Time_Start": 713.2800000000001,
+      "Time_End": 719.08,
+      "Text": " run command to shell, seems like a good primitive for local privilege escalation."
+    },
+    {
+      "Time_Start": 719.08,
+      "Time_End": 724.88,
+      "Text": " As I said before, the top screen shot shows that initial frame to talk to the actual service"
+    },
+    {
+      "Time_Start": 724.88,
+      "Time_End": 731.5,
+      "Text": " and the bottom right creates a remote object proxy and essentially sends the temp directory"
+    },
+    {
+      "Time_Start": 731.62,
+      "Time_End": 737.74,
+      "Text": " and if we place that contents Mac OS install builder, it gets executed as root, so that's"
+    },
+    {
+      "Time_Start": 737.74,
+      "Time_End": 742.1,
+      "Text": " easy code execution, probably took about an hour, an hour and a half to find which is"
+    },
+    {
+      "Time_Start": 742.1,
+      "Time_End": 746.22,
+      "Text": " super easy, this is like a multi billion dollar company."
+    },
+    {
+      "Time_Start": 746.22,
+      "Time_End": 751.38,
+      "Text": " A dangerous assumption was placed, assuming we an attacker cannot load code into a signed"
+    },
+    {
+      "Time_Start": 751.38,
+      "Time_End": 758.42,
+      "Text": " Mac OS executable and talk to the XPC service and we broke that assumption."
+    },
+    {
+      "Time_Start": 758.42,
+      "Time_End": 766.02,
+      "Text": " Second bug I'm going to talk about is a bug in the AWS VPN, the AWS VPN is a traditional"
+    },
+    {
+      "Time_Start": 766.02,
+      "Time_End": 770.78,
+      "Text": " VPN, essentially takes a config and sets up a new network adapter and allows you to talk"
+    },
+    {
+      "Time_Start": 770.78,
+      "Time_End": 776.9,
+      "Text": " to resources, instead of NSXPC this time it's an XPC, it's a lower level API, far easier"
+    },
+    {
+      "Time_Start": 776.9,
+      "Time_End": 780.38,
+      "Text": " to reverse, far easier to understand."
+    },
+    {
+      "Time_Start": 780.38,
+      "Time_End": 787.3,
+      "Text": " So what is the AWS client VPN, it's essentially just a wrapper around an open VPN build that"
+    },
+    {
+      "Time_Start": 787.3000000000001,
+      "Time_End": 792.7400000000001,
+      "Text": " has some things like hardened, so if anybody has exploited open VPN, if it's running in"
+    },
+    {
+      "Time_Start": 792.7400000000001,
+      "Time_End": 798.3000000000001,
+      "Text": " a privileged component, you can set scripts to run before and after the VPN goes up and"
+    },
+    {
+      "Time_Start": 798.3000000000001,
+      "Time_End": 802.1,
+      "Text": " down, they completely patch that out, which is good."
+    },
+    {
+      "Time_Start": 802.1,
+      "Time_End": 806.4000000000001,
+      "Text": " It used a privileged helper tool, so you didn't have to type in your root password every time,"
+    },
+    {
+      "Time_Start": 806.4000000000001,
+      "Time_End": 812.6600000000001,
+      "Text": " so you click a button, connect, disconnect, it does root stuff, so you see on and off"
+    },
+    {
+      "Time_Start": 812.66,
+      "Time_End": 818.1,
+      "Text": " the VPN, reset DNS settings, it empowers the user, allows the user to do things that"
+    },
+    {
+      "Time_Start": 818.1,
+      "Time_End": 820.6999999999999,
+      "Text": " they would need a password for."
+    },
+    {
+      "Time_Start": 820.6999999999999,
+      "Time_End": 826.78,
+      "Text": " So doing some reversing, quick little triage using the symbol dump tool, you can immediately"
+    },
+    {
+      "Time_Start": 826.78,
+      "Time_End": 833.06,
+      "Text": " see the XPC underscore function, that's the C API instead of NSXPC, doing some further"
+    },
+    {
+      "Time_Start": 833.06,
+      "Time_End": 838.42,
+      "Text": " reversing inside the main function, there is no immediate verification of a client,"
+    },
+    {
+      "Time_Start": 838.4200000000001,
+      "Time_End": 843.3800000000001,
+      "Text": " so essentially there is nothing, then it has a XPC peer event handler with a bunch"
+    },
+    {
+      "Time_Start": 843.3800000000001,
+      "Time_End": 849.9000000000001,
+      "Text": " of message types, ignore the top ones, there is a restore DNS, fix DNS and uninstall, so"
+    },
+    {
+      "Time_Start": 849.9000000000001,
+      "Time_End": 854.1800000000001,
+      "Text": " you just need to follow the thread, keep on pulling, see where you end up."
+    },
+    {
+      "Time_Start": 854.1800000000001,
+      "Time_End": 858.98,
+      "Text": " No verification, literally nothing to verify that the client connecting is who it's supposed"
+    },
+    {
+      "Time_Start": 858.98,
+      "Time_End": 861.3800000000001,
+      "Text": " to be."
+    },
+    {
+      "Time_Start": 861.3800000000001,
+      "Time_End": 867.22,
+      "Text": " So looking at the fix DNS functionality, you see the applications directory is used."
+    },
+    {
+      "Time_Start": 868.22,
+      "Time_End": 872.78,
+      "Text": " You call that function with the correct message type and it essentially runs that script in"
+    },
+    {
+      "Time_Start": 872.78,
+      "Time_End": 878.46,
+      "Text": " that hard coded path, okay, cool, that directory has been changed to be root because it contains"
+    },
+    {
+      "Time_Start": 878.46,
+      "Time_End": 883.46,
+      "Text": " a privileged helper tool, the permissions we can't do anything with that immediately."
+    },
+    {
+      "Time_Start": 883.46,
+      "Time_End": 887.6600000000001,
+      "Text": " Same with the restore DNS, it's calling a hard coded script content, it's using pop"
+    },
+    {
+      "Time_Start": 887.6600000000001,
+      "Time_End": 896.1800000000001,
+      "Text": " in instead of the objective C methods, however, inside the uninstall application function"
+    },
+    {
+      "Time_Start": 896.1800000000001,
+      "Time_End": 901.82,
+      "Text": " it uses remove item at path and it's deleting inside the applications directory, it's also"
+    },
+    {
+      "Time_Start": 901.82,
+      "Time_End": 908.74,
+      "Text": " deleting the AWS VPN client directory in its entirety, so the scripts we saw before, so"
+    },
+    {
+      "Time_Start": 908.74,
+      "Time_End": 912.9000000000001,
+      "Text": " it's running from AWS VPN client, we have the ability to execute that script and now"
+    },
+    {
+      "Time_Start": 912.9000000000001,
+      "Time_End": 918.3000000000001,
+      "Text": " we can delete it, so if we potentially deleted it and then called the script, maybe ideas,"
+    },
+    {
+      "Time_Start": 918.3000000000001,
+      "Time_End": 924.7800000000001,
+      "Text": " so essentially you can start up a connection using the CXPC API and essentially start a"
+    },
+    {
+      "Time_Start": 924.78,
+      "Time_End": 932.9399999999999,
+      "Text": " communication to that service and then you can just make your directory, so you essentially"
+    },
+    {
+      "Time_Start": 932.9399999999999,
+      "Time_End": 939.3,
+      "Text": " call the uninstall message, create the exploit directory and then because it's macOS, inside"
+    },
+    {
+      "Time_Start": 939.3,
+      "Time_End": 943.5799999999999,
+      "Text": " the applications directory you don't need to be root to install apps, if you use Mac"
+    },
+    {
+      "Time_Start": 943.5799999999999,
+      "Time_End": 947.5799999999999,
+      "Text": " you can just drag the app onto that little window that pops up and installs it, you don't"
+    },
+    {
+      "Time_Start": 947.5799999999999,
+      "Time_End": 951.9,
+      "Text": " need a password, so we have created that directory, create the script in its place and then call"
+    },
+    {
+      "Time_Start": 951.9,
+      "Time_End": 957.62,
+      "Text": " the fixed DNS or the other DNS function and then get code execution as root."
+    },
+    {
+      "Time_Start": 957.62,
+      "Time_End": 963.38,
+      "Text": " Another super simple bug, these bugs still exist because not very many people have laid"
+    },
+    {
+      "Time_Start": 963.38,
+      "Time_End": 970.8199999999999,
+      "Text": " eyes on macOS apps compared to Windows, everybody in the NAN knows Windows, a dangerous assumption"
+    },
+    {
+      "Time_Start": 970.8199999999999,
+      "Time_End": 980.06,
+      "Text": " was placed, assuming us an attacker wouldn't connect and call an XPC function."
+    },
+    {
+      "Time_Start": 980.0600000000001,
+      "Time_End": 983.5400000000001,
+      "Text": " They were an amazing company to work with when I reported the bug, I just sent them"
+    },
+    {
+      "Time_Start": 983.5400000000001,
+      "Time_End": 988.0200000000001,
+      "Text": " an email, got their GPG key, sent them the write up and then within a day they got back"
+    },
+    {
+      "Time_Start": 988.0200000000001,
+      "Time_End": 993.3000000000001,
+      "Text": " to me and then within a couple of weeks they fixed it, they did the fix amazingly, they"
+    },
+    {
+      "Time_Start": 993.3000000000001,
+      "Time_End": 997.6400000000001,
+      "Text": " essentially enforced an identifier check, is the person who is connecting who it's supposed"
+    },
+    {
+      "Time_Start": 997.6400000000001,
+      "Time_End": 1004.1,
+      "Text": " to be, they essentially set the code signing ID to be the correct code signing ID for them,"
+    },
+    {
+      "Time_Start": 1004.1,
+      "Time_End": 1008.2600000000001,
+      "Text": " it doesn't use the PID, you can't abuse it through PID reuse attacks and rejects it if"
+    },
+    {
+      "Time_Start": 1008.26,
+      "Time_End": 1013.18,
+      "Text": " it fails, really good, well done AWS."
+    },
+    {
+      "Time_Start": 1013.18,
+      "Time_End": 1018.58,
+      "Text": " I'm going to now talk about a installer bug, so typically when you think of local privilege"
+    },
+    {
+      "Time_Start": 1018.58,
+      "Time_End": 1024.02,
+      "Text": " escalation bugs, it's more of like you land on a box and you want to get to root, with"
+    },
+    {
+      "Time_Start": 1024.02,
+      "Time_End": 1030.54,
+      "Text": " these kind of bugs if you can anticipate software installation or anticipate software updates,"
+    },
+    {
+      "Time_Start": 1030.54,
+      "Time_End": 1035.42,
+      "Text": " you can essentially either place files, create directories, redirect privilege operations,"
+    },
+    {
+      "Time_Start": 1035.42,
+      "Time_End": 1040.5,
+      "Text": " on Windows it's not so much of an issue, on Mac OS they explicitly say these are bugs"
+    },
+    {
+      "Time_Start": 1040.5,
+      "Time_End": 1046.54,
+      "Text": " which is super interesting, you do see on Windows MSI files, you see people get privesks"
+    },
+    {
+      "Time_Start": 1046.54,
+      "Time_End": 1050.8200000000002,
+      "Text": " through installers and it's like 50-50, people think it's a vuln, people don't think it's"
+    },
+    {
+      "Time_Start": 1050.8200000000002,
+      "Time_End": 1055.1000000000001,
+      "Text": " a vuln, it's interesting, cool."
+    },
+    {
+      "Time_Start": 1055.1000000000001,
+      "Time_End": 1059.38,
+      "Text": " If you are interested in installer bugs I highly recommend this talk by Patrick Wardle,"
+    },
+    {
+      "Time_Start": 1059.38,
+      "Time_End": 1065.3000000000002,
+      "Text": " he's amazing, him and the Objective-C group have got some really good research."
+    },
+    {
+      "Time_Start": 1065.3000000000002,
+      "Time_End": 1069.7800000000002,
+      "Text": " A quick little talk about installers, there's like two main types of installers, there's"
+    },
+    {
+      "Time_Start": 1069.7800000000002,
+      "Time_End": 1073.98,
+      "Text": " package installers, app installers, there are other types but just for sake of ease"
+    },
+    {
+      "Time_Start": 1073.98,
+      "Time_End": 1076.3000000000002,
+      "Text": " these are the main two I'm going to talk about."
+    },
+    {
+      "Time_Start": 1076.3000000000002,
+      "Time_End": 1080.3400000000001,
+      "Text": " With package installers you need to install it, you need a root password, it's a bit more"
+    },
+    {
+      "Time_Start": 1080.3400000000001,
+      "Time_End": 1081.66,
+      "Text": " annoying."
+    },
+    {
+      "Time_Start": 1081.66,
+      "Time_End": 1085.98,
+      "Text": " With app installers as I said with the previous bug, you can just drag and drop install."
+    },
+    {
+      "Time_Start": 1085.98,
+      "Time_End": 1090.7,
+      "Text": " You can also ask for elevation with the SM jobless API but I'm not going to cover that"
+    },
+    {
+      "Time_Start": 1090.7,
+      "Time_End": 1092.02,
+      "Text": " here."
+    },
+    {
+      "Time_Start": 1092.02,
+      "Time_End": 1095.78,
+      "Text": " With the package installers that ask for the root password, it has a pre-install and a"
+    },
+    {
+      "Time_Start": 1095.78,
+      "Time_End": 1101.14,
+      "Text": " post-install script and these get executed pre-install and post-install, so you have"
+    },
+    {
+      "Time_Start": 1101.14,
+      "Time_End": 1105.88,
+      "Text": " different stages where you could potentially abuse something."
+    },
+    {
+      "Time_Start": 1105.88,
+      "Time_End": 1109.66,
+      "Text": " Package installers as I said before they are typically elevated, so you need a password"
+    },
+    {
+      "Time_Start": 1109.66,
+      "Time_End": 1113.94,
+      "Text": " to double click it and install it."
+    },
+    {
+      "Time_Start": 1113.94,
+      "Time_End": 1118.06,
+      "Text": " Interesting thing, if you know Windows, if you ever do operating system security you"
+    },
+    {
+      "Time_Start": 1118.06,
+      "Time_End": 1123.9,
+      "Text": " see path hijacks very frequently, so a client will have added the D drive to the start of"
+    },
+    {
+      "Time_Start": 1123.9,
+      "Time_End": 1129.06,
+      "Text": " the system path and it's great, the D drive can be written by anybody, any other scheduled"
+    },
+    {
+      "Time_Start": 1129.06,
+      "Time_End": 1135.1000000000001,
+      "Text": " task or another binary with not full path, fully qualified path, you can just plant the"
+    },
+    {
+      "Time_Start": 1135.1000000000001,
+      "Time_End": 1139.8600000000001,
+      "Text": " binary there, the scheduled task will just execute the one you planted."
+    },
+    {
+      "Time_Start": 1139.8600000000001,
+      "Time_End": 1145.2600000000002,
+      "Text": " Same kind of thing happens on Mac OS, by default the user local bin directory is writable"
+    },
+    {
+      "Time_Start": 1145.2600000000002,
+      "Time_End": 1150.42,
+      "Text": " by users in the admin group which is not amazing because if a root script is running something"
+    },
+    {
+      "Time_Start": 1150.42,
+      "Time_End": 1154.7800000000002,
+      "Text": " from the admin group, from a directory that's owned by the admin group, you can get code"
+    },
+    {
+      "Time_Start": 1154.7800000000002,
+      "Time_End": 1159.3600000000001,
+      "Text": " execution to root without a password, it's fun."
+    },
+    {
+      "Time_Start": 1159.3600000000001,
+      "Time_End": 1163.94,
+      "Text": " So when you are looking at installers, there is a piece of software called suspicious package"
+    },
+    {
+      "Time_Start": 1163.94,
+      "Time_End": 1169.6200000000001,
+      "Text": " which is adequately named, it allows you to inspect subcomponents, either you think"
+    },
+    {
+      "Time_Start": 1169.6200000000001,
+      "Time_End": 1174.42,
+      "Text": " something is malware or you might want to look at it for exploitation opportunities,"
+    },
+    {
+      "Time_Start": 1174.42,
+      "Time_End": 1178.54,
+      "Text": " you can just drag and drop it onto this piece of software, read the code, it's annoying,"
+    },
+    {
+      "Time_Start": 1178.54,
+      "Time_End": 1182.7,
+      "Text": " it doesn't have syntax highlighting but you just command A, paste it into Visual Studio"
+    },
+    {
+      "Time_Start": 1182.7,
+      "Time_End": 1185.42,
+      "Text": " code or something like that."
+    },
+    {
+      "Time_Start": 1185.42,
+      "Time_End": 1189.06,
+      "Text": " So essentially the pre-install script is what I'm going to be looking at."
+    },
+    {
+      "Time_Start": 1189.06,
+      "Time_End": 1193.42,
+      "Text": " There was an interesting piece of functionality which was to do with uninstalling a previous"
+    },
+    {
+      "Time_Start": 1193.42,
+      "Time_End": 1198.8600000000001,
+      "Text": " version that was installed, so say you want to perform an update, you just install your"
+    },
+    {
+      "Time_Start": 1198.8600000000001,
+      "Time_End": 1203.7,
+      "Text": " package and they will go okay, bye bye old version, here is the new version."
+    },
+    {
+      "Time_Start": 1203.7,
+      "Time_End": 1209.0600000000002,
+      "Text": " Essentially it had this string, the uninstall a path variable, it initialised it to be an"
+    },
+    {
+      "Time_Start": 1209.0600000000002,
+      "Time_End": 1215.02,
+      "Text": " empty string, it then iterated over a hard coded list of paths, so as you see here essentially"
+    },
+    {
+      "Time_Start": 1215.02,
+      "Time_End": 1219.74,
+      "Text": " it's using the applications directory, so on a first time install that F secure directory"
+    },
+    {
+      "Time_Start": 1219.74,
+      "Time_End": 1223.3,
+      "Text": " is not going to exist, which is interesting by default."
+    },
+    {
+      "Time_Start": 1223.3,
+      "Time_End": 1228.5,
+      "Text": " As I said before, users in the admin group which is not a root user, you still need a"
+    },
+    {
+      "Time_Start": 1228.5,
+      "Time_End": 1233.94,
+      "Text": " password to elevate to root, to use sudo et cetera, it's granted read write execute to"
+    },
+    {
+      "Time_Start": 1233.94,
+      "Time_End": 1237.1,
+      "Text": " that admin group."
+    },
+    {
+      "Time_Start": 1237.1,
+      "Time_End": 1241.98,
+      "Text": " Essentially later on in the script, it checks if that uninstall a path variable had been"
+    },
+    {
+      "Time_Start": 1241.98,
+      "Time_End": 1247.7,
+      "Text": " set, so if we had hypothetically placed that applications F secure uninstall binary there,"
+    },
+    {
+      "Time_Start": 1247.7,
+      "Time_End": 1253.3400000000001,
+      "Text": " it would be populated and then executes that found path with either the P, the U or no"
+    },
+    {
+      "Time_Start": 1253.3400000000001,
+      "Time_End": 1255.3,
+      "Text": " argument."
+    },
+    {
+      "Time_Start": 1255.3,
+      "Time_End": 1260.26,
+      "Text": " So essentially you can write a quick little script to create a malicious C binary or whatever"
+    },
+    {
+      "Time_Start": 1260.26,
+      "Time_End": 1265.5800000000002,
+      "Text": " language you want to choose, place it there and anticipate a user installing elements"
+    },
+    {
+      "Time_Start": 1265.5800000000002,
+      "Time_End": 1269.7,
+      "Text": " and essentially in a home environment, this is like a home antivirus, you are not going"
+    },
+    {
+      "Time_Start": 1269.7,
+      "Time_End": 1276.5800000000002,
+      "Text": " to be having a multi user set up with like identity management or et cetera, so you just"
+    },
+    {
+      "Time_Start": 1276.62,
+      "Time_End": 1281.3,
+      "Text": " anticipate this install of antivirus, you might have compromised their emails et cetera,"
+    },
+    {
+      "Time_Start": 1281.3,
+      "Time_End": 1284.22,
+      "Text": " seeing their liking advertising."
+    },
+    {
+      "Time_Start": 1284.22,
+      "Time_End": 1289.02,
+      "Text": " You can get the prompt to the admins putting in his password, you have already set up the"
+    },
+    {
+      "Time_Start": 1289.02,
+      "Time_End": 1295.6599999999999,
+      "Text": " exploit chain and then essentially this root text output gets created in an arbitrary location"
+    },
+    {
+      "Time_Start": 1295.6599999999999,
+      "Time_End": 1300.86,
+      "Text": " just as a proof of concept and then your code execution is root from just an install and"
+    },
+    {
+      "Time_Start": 1300.86,
+      "Time_End": 1305.06,
+      "Text": " you have just set it up and wait for the right moment."
+    },
+    {
+      "Time_Start": 1305.06,
+      "Time_End": 1309.54,
+      "Text": " A dangerous assumption was made, assuming we an attacker doesn't have control over a"
+    },
+    {
+      "Time_Start": 1309.54,
+      "Time_End": 1315.6599999999999,
+      "Text": " macro in a non-root writable location, which in this case we did, they fixed that by essentially"
+    },
+    {
+      "Time_Start": 1315.6599999999999,
+      "Time_End": 1319.62,
+      "Text": " not using the applications directory, which is yeah, good."
+    },
+    {
+      "Time_Start": 1319.62,
+      "Time_End": 1326.6599999999999,
+      "Text": " Cool, I'm going to cover some unexploitable logic bugs which are quite interesting."
+    },
+    {
+      "Time_Start": 1326.6599999999999,
+      "Time_End": 1330.78,
+      "Text": " Logic bugs you don't necessarily have to exploit them to get root code execution, it's still"
+    },
+    {
+      "Time_Start": 1330.8999999999999,
+      "Time_End": 1337.34,
+      "Text": " something that they might reuse code at a later point or yeah, that kind of mindset."
+    },
+    {
+      "Time_Start": 1337.34,
+      "Time_End": 1341.26,
+      "Text": " So admin by request, I'm sure people are familiar with it, like if you are in an enterprise"
+    },
+    {
+      "Time_Start": 1341.26,
+      "Time_End": 1346.02,
+      "Text": " environment and you want to grant your users the ability to elevate a programme or piece"
+    },
+    {
+      "Time_Start": 1346.02,
+      "Time_End": 1350.58,
+      "Text": " of software, essentially this software allows you to do it."
+    },
+    {
+      "Time_Start": 1350.58,
+      "Time_End": 1356.22,
+      "Text": " Admin by request on Mac OS, it uses XPC for the privilege separation, it has the should"
+    },
+    {
+      "Time_Start": 1356.22,
+      "Time_End": 1363.74,
+      "Text": " accept new connection routine, essentially it has the protocol XPC ECOM service."
+    },
+    {
+      "Time_Start": 1363.74,
+      "Time_End": 1367.98,
+      "Text": " If you can see here, it's doing something, set connection code signing requirements and"
+    },
+    {
+      "Time_Start": 1367.98,
+      "Time_End": 1371.5,
+      "Text": " it has a big code signing requirement string in there."
+    },
+    {
+      "Time_Start": 1371.5,
+      "Time_End": 1374.6200000000001,
+      "Text": " It checks the XPC client, right?"
+    },
+    {
+      "Time_Start": 1374.6200000000001,
+      "Time_End": 1376.46,
+      "Text": " Well not necessarily."
+    },
+    {
+      "Time_Start": 1376.46,
+      "Time_End": 1381.82,
+      "Text": " So essentially typically this is supposed to be, so on Mac OS when you sign an app with"
+    },
+    {
+      "Time_Start": 1381.82,
+      "Time_End": 1387.02,
+      "Text": " a developer certificate, it's not officially signed, it's not essentially like proven to"
+    },
+    {
+      "Time_Start": 1387.02,
+      "Time_End": 1388.46,
+      "Text": " be signed by Apple."
+    },
+    {
+      "Time_Start": 1388.46,
+      "Time_End": 1392.1399999999999,
+      "Text": " When you sign something with a dev cert you have to submit it to Apple, then they cross"
+    },
+    {
+      "Time_Start": 1392.1399999999999,
+      "Time_End": 1395.22,
+      "Text": " sign it and you have a properly signed app."
+    },
+    {
+      "Time_Start": 1395.22,
+      "Time_End": 1399.54,
+      "Text": " Here essentially it's using or instead of and, I have never seen it before, it's the"
+    },
+    {
+      "Time_Start": 1399.54,
+      "Time_End": 1405.96,
+      "Text": " first piece of software I have seen, so essentially you can have any code that's signed by Apple"
+    },
+    {
+      "Time_Start": 1405.96,
+      "Time_End": 1410.46,
+      "Text": " and you can talk to this XPC service, so you think like surely Apple don't have any binaries"
+    },
+    {
+      "Time_Start": 1410.46,
+      "Time_End": 1418.06,
+      "Text": " that are vulnerable to DOL injection or hijacking, which is not necessarily right."
+    },
+    {
+      "Time_Start": 1418.06,
+      "Time_End": 1422.54,
+      "Text": " Essentially this Safari for Webkit exists on everybody who has a MacBook here, you will"
+    },
+    {
+      "Time_Start": 1422.54,
+      "Time_End": 1427.22,
+      "Text": " be able to find this binary on your system, not sure why it's included but it is."
+    },
+    {
+      "Time_Start": 1427.22,
+      "Time_End": 1433.16,
+      "Text": " It has those two entitlements that we saw before, the allow dialled environment variables"
+    },
+    {
+      "Time_Start": 1433.16,
+      "Time_End": 1437.58,
+      "Text": " and disable library validation entitlement."
+    },
+    {
+      "Time_Start": 1437.58,
+      "Time_End": 1442.3,
+      "Text": " So essentially you can just inject a DOL, even still it doesn't have a hardened run"
+    },
+    {
+      "Time_Start": 1442.3,
+      "Time_End": 1448.4199999999998,
+      "Text": " time, the flag is none, no hardened run time, you don't need those entitlements, weird binary"
+    },
+    {
+      "Time_Start": 1448.4199999999998,
+      "Time_End": 1451.06,
+      "Text": " to be on your system."
+    },
+    {
+      "Time_Start": 1451.06,
+      "Time_End": 1456.1799999999998,
+      "Text": " You can use the code sign tool to essentially validate if this theory is correct."
+    },
+    {
+      "Time_Start": 1456.1799999999998,
+      "Time_End": 1461.1399999999999,
+      "Text": " You specify that connection requirement that we found in the binary, use code sign with"
+    },
+    {
+      "Time_Start": 1461.1399999999999,
+      "Time_End": 1467.02,
+      "Text": " the R flag and then it says valid on disk, satisfies its designated requirement, explicit"
+    },
+    {
+      "Time_Start": 1467.02,
+      "Time_End": 1468.94,
+      "Text": " requirement satisfied."
+    },
+    {
+      "Time_Start": 1468.94,
+      "Time_End": 1470.62,
+      "Text": " So what can you do with it?"
+    },
+    {
+      "Time_Start": 1470.62,
+      "Time_End": 1475.82,
+      "Text": " I'm not going to say any more because there might be some fun stuff you can do with that."
+    },
+    {
+      "Time_Start": 1475.82,
+      "Time_End": 1481.06,
+      "Text": " So dangerous assumption was made again, assuming they have adequately checked the NSXPC client,"
+    },
+    {
+      "Time_Start": 1481.06,
+      "Time_End": 1484.3,
+      "Text": " which they haven't."
+    },
+    {
+      "Time_Start": 1484.3,
+      "Time_End": 1491.1399999999999,
+      "Text": " Another bug in AWS client VPN, they had a logic bug in their path checking functionality."
+    },
+    {
+      "Time_Start": 1491.1399999999999,
+      "Time_End": 1495.3799999999999,
+      "Text": " Essentially if you are familiar with like the POSIX file system, Linux file system,"
+    },
+    {
+      "Time_Start": 1495.38,
+      "Time_End": 1500.2600000000002,
+      "Text": " you have symbolic links, hard links, the main type of link you can put, a symbolic"
+    },
+    {
+      "Time_Start": 1500.2600000000002,
+      "Time_End": 1505.42,
+      "Text": " link is essentially a temporary file gets created and points somewhere else, a hard"
+    },
+    {
+      "Time_Start": 1505.42,
+      "Time_End": 1510.7,
+      "Text": " link is essentially the two files need to exist and a link is placed between the two."
+    },
+    {
+      "Time_Start": 1510.7,
+      "Time_End": 1513.8200000000002,
+      "Text": " Essentially here all it's doing is getting the attributes of the target that's passed"
+    },
+    {
+      "Time_Start": 1513.8200000000002,
+      "Time_End": 1518.7,
+      "Text": " in like an argument and checking if it's NS file type symbolic link and does some weird"
+    },
+    {
+      "Time_Start": 1518.7,
+      "Time_End": 1524.7,
+      "Text": " ternary operator because disassemblers aren't perfect."
+    },
+    {
+      "Time_Start": 1524.7,
+      "Time_End": 1531.3400000000001,
+      "Text": " This is used here and there throughout the service, there's no real files which are controlled"
+    },
+    {
+      "Time_Start": 1531.3400000000001,
+      "Time_End": 1536.38,
+      "Text": " by the low privilege user that's like interacted with by a root process, which is interesting,"
+    },
+    {
+      "Time_Start": 1536.38,
+      "Time_End": 1543.82,
+      "Text": " it's like this current connection text file and the actual PID file for the debug interface"
+    },
+    {
+      "Time_Start": 1543.82,
+      "Time_End": 1550.02,
+      "Text": " for OpenVPN, it's calling a symbolic link, checking if they are symbolic links, not really"
+    },
+    {
+      "Time_Start": 1550.02,
+      "Time_End": 1553.3400000000001,
+      "Text": " sure why it's checking if they are symbolic links."
+    },
+    {
+      "Time_Start": 1553.3400000000001,
+      "Time_End": 1560.7,
+      "Text": " Same here with get valid config path, it's calling a symbolic link twice throughout this,"
+    },
+    {
+      "Time_Start": 1560.7,
+      "Time_End": 1562.9800000000002,
+      "Text": " not really interesting."
+    },
+    {
+      "Time_Start": 1562.9800000000002,
+      "Time_End": 1567.2200000000003,
+      "Text": " You can test this hypothesis, how you might be able to bypass this by using a different"
+    },
+    {
+      "Time_Start": 1567.2200000000003,
+      "Time_End": 1572.5800000000002,
+      "Text": " type of link, a hard link instead of a symbolic link, this is research that was done by Chava"
+    },
+    {
+      "Time_Start": 1572.5800000000002,
+      "Time_End": 1578.9,
+      "Text": " Fitzel, he's got really good talk about abusing Mac OS directory permissions, highly recommend"
+    },
+    {
+      "Time_Start": 1578.9,
+      "Time_End": 1580.7800000000002,
+      "Text": " watching that."
+    },
+    {
+      "Time_Start": 1580.78,
+      "Time_End": 1586.5,
+      "Text": " So you can write some very simple objective C, it's overly verbose and obtuse to make"
+    },
+    {
+      "Time_Start": 1586.5,
+      "Time_End": 1593.66,
+      "Text": " it easier to read, so you copy that ternary operator logic essentially, if it's a symbolic"
+    },
+    {
+      "Time_Start": 1593.66,
+      "Time_End": 1600.8999999999999,
+      "Text": " link, it shouts at you, is symbolic link bad, if not it just prints is and then the type."
+    },
+    {
+      "Time_Start": 1600.8999999999999,
+      "Time_End": 1606.42,
+      "Text": " So we can test that, we create a symbolic link, a true symbolic link and run the tool"
+    },
+    {
+      "Time_Start": 1606.42,
+      "Time_End": 1610.9,
+      "Text": " against it, it shouts at us, is symbolic link and then we create a vanilla hard link"
+    },
+    {
+      "Time_Start": 1610.9,
+      "Time_End": 1617.8600000000001,
+      "Text": " with just LN with no parameter and then essentially it doesn't detect it's a symbolic link."
+    },
+    {
+      "Time_Start": 1617.8600000000001,
+      "Time_End": 1622.22,
+      "Text": " So a dangerous assumption was made here, it's not verifying the file type correctly, if"
+    },
+    {
+      "Time_Start": 1622.22,
+      "Time_End": 1626.1000000000001,
+      "Text": " it's really checking if it's a link, it should be checking for extra attributes."
+    },
+    {
+      "Time_Start": 1626.1000000000001,
+      "Time_End": 1629.8600000000001,
+      "Text": " I don't know why that's there."
+    },
+    {
+      "Time_Start": 1629.8600000000001,
+      "Time_End": 1634.54,
+      "Text": " Some takeaways, in my humble opinion don't waste your time with bug bounty if you want"
+    },
+    {
+      "Time_Start": 1634.54,
+      "Time_End": 1642.02,
+      "Text": " to own the bugs, because I have been absolutely strung out to dry by that."
+    },
+    {
+      "Time_Start": 1642.02,
+      "Time_End": 1646.18,
+      "Text": " Respect the 90 plus 30 day Google project zero rule, engage with them via email if you"
+    },
+    {
+      "Time_Start": 1646.18,
+      "Time_End": 1651.7,
+      "Text": " want to own the bug, don't go through bug bounty programs, resist a request if they"
+    },
+    {
+      "Time_Start": 1651.7,
+      "Time_End": 1656.62,
+      "Text": " try to reroute you elsewhere, if you want to own the bug, don't go through bug bounty"
+    },
+    {
+      "Time_Start": 1656.62,
+      "Time_End": 1661.22,
+      "Text": " programs but send it to them via email, if you don't care, if you want a bit of cash,"
+    },
+    {
+      "Time_Start": 1661.22,
+      "Time_End": 1663.9,
+      "Text": " just do it through bug bounty programs."
+    },
+    {
+      "Time_Start": 1663.9,
+      "Time_End": 1667.22,
+      "Text": " Logic bugs are everywhere, some more useful than others."
+    },
+    {
+      "Time_Start": 1667.22,
+      "Time_End": 1672.02,
+      "Text": " You will find logic bugs if you poke at things for long enough, they are everywhere, great"
+    },
+    {
+      "Time_Start": 1672.02,
+      "Time_End": 1676.74,
+      "Text": " research on NTFS bugs."
+    },
+    {
+      "Time_Start": 1676.74,
+      "Time_End": 1680.82,
+      "Text": " Assumptions are made to be broken, if you assume something without verifying it then"
+    },
+    {
+      "Time_Start": 1680.82,
+      "Time_End": 1685.52,
+      "Text": " you are very likely to be able to bypass that and computer go brr, never assume, it makes"
+    },
+    {
+      "Time_Start": 1685.52,
+      "Time_End": 1689.82,
+      "Text": " an arse out of you and me or alternatively, I don't know if anybody has watched lock stock"
+    },
+    {
+      "Time_Start": 1689.82,
+      "Time_End": 1695.22,
+      "Text": " and two smoking barrels, great gangster film, they say assumption is the mother of all"
+    },
+    {
+      "Time_Start": 1695.22,
+      "Time_End": 1698.82,
+      "Text": " fuck ups."
+    },
+    {
+      "Time_Start": 1698.82,
+      "Time_End": 1707.34,
+      "Text": " Give some credit where credit is due, great research, it's funny that the guy used this"
+    },
+    {
+      "Time_Start": 1707.34,
+      "Time_End": 1710.86,
+      "Text": " in the previous talk as well, go find some bugs."
+    },
+    {
+      "Time_Start": 1719.82,
+      "Time_End": 1721.82,
+      "Text": " https://www.youtube.com.au"
+    }
+  ]
+}

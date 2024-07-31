@@ -1,0 +1,1994 @@
+{
+  "segments": [
+    {
+      "Time_Start": 0.0,
+      "Time_End": 14.0,
+      "Text": "This text was transcribed using whisper model: large-v2\n\n This talk is called Busting Red Team Transfer Style, Lessons Learned from Building an ETW"
+    },
+    {
+      "Time_Start": 14.0,
+      "Time_End": 16.88,
+      "Text": " Based Sysmon Replacement from Scratch."
+    },
+    {
+      "Time_Start": 16.88,
+      "Time_End": 22.16,
+      "Text": " This is Philipp, my name is Sebastian, we have a third of us who can't be with us today,"
+    },
+    {
+      "Time_Start": 22.16,
+      "Time_End": 23.16,
+      "Text": " Dominik Philipps."
+    },
+    {
+      "Time_Start": 23.16,
+      "Time_End": 29.0,
+      "Text": " We are members of the C-Circuit of the Deutsche Bahn AG, we like trains and Philipp and me"
+    },
+    {
+      "Time_Start": 29.0,
+      "Time_End": 33.96,
+      "Text": " we are both former red teamers who recently switched to the blue side of things."
+    },
+    {
+      "Time_Start": 33.96,
+      "Time_End": 36.28,
+      "Text": " Why this talk?"
+    },
+    {
+      "Time_Start": 36.28,
+      "Time_End": 40.64,
+      "Text": " Defenders of you might know without reliable and context-rich telemetry we couldn't be"
+    },
+    {
+      "Time_Start": 40.64,
+      "Time_End": 46.92,
+      "Text": " doing our job, we couldn't be writing detection rules, we couldn't hunt down attackers or"
+    },
+    {
+      "Time_Start": 46.92,
+      "Time_End": 50.480000000000004,
+      "Text": " attacker activities and we couldn't be doing incident response."
+    },
+    {
+      "Time_Start": 50.480000000000004,
+      "Time_End": 55.56,
+      "Text": " The thing is that different sensors have pros and cons, the biggest issue is that defenders"
+    },
+    {
+      "Time_Start": 55.56,
+      "Time_End": 61.56,
+      "Text": " have to trust third party sensors and cannot customise the sensor which means that we cannot"
+    },
+    {
+      "Time_Start": 61.56,
+      "Time_End": 67.8,
+      "Text": " add new events to the sensor, we cannot enrich existing events and most unfortunately we"
+    },
+    {
+      "Time_Start": 67.8,
+      "Time_End": 73.52000000000001,
+      "Text": " have to trust that the sensor actually does what we think it does to reliably collect"
+    },
+    {
+      "Time_Start": 73.52000000000001,
+      "Time_End": 77.28,
+      "Text": " and forward telemetry which can make our life actually very difficult."
+    },
+    {
+      "Time_Start": 77.28,
+      "Time_End": 83.32000000000001,
+      "Text": " For example if we take a look at this network event where it says that one DLL was connecting"
+    },
+    {
+      "Time_Start": 83.32000000000001,
+      "Time_End": 87.64000000000001,
+      "Text": " to the internet and we are trying to understand why, it would be really great if we had the"
+    },
+    {
+      "Time_Start": 87.64000000000001,
+      "Time_End": 94.0,
+      "Text": " command line of run DLL which is unfortunately not included in event ID number 3, so we kind"
+    },
+    {
+      "Time_Start": 94.0,
+      "Time_End": 98.08000000000001,
+      "Text": " of have to correlate event ID number 3 with event ID number 1 where the command line is"
+    },
+    {
+      "Time_Start": 98.08000000000001,
+      "Time_End": 100.16000000000001,
+      "Text": " finally included."
+    },
+    {
+      "Time_Start": 100.16000000000001,
+      "Time_End": 105.56,
+      "Text": " This can make our Splunk queries a little bit difficult and complex, this is a very"
+    },
+    {
+      "Time_Start": 105.56,
+      "Time_End": 110.4,
+      "Text": " easy example but they can get very complex when we have to join multiple events together"
+    },
+    {
+      "Time_Start": 110.56,
+      "Time_End": 115.32000000000001,
+      "Text": " and as we do not have access to the source code of Sysmon we cannot customise the event."
+    },
+    {
+      "Time_Start": 115.32000000000001,
+      "Time_End": 118.96000000000001,
+      "Text": " If we had access to the source code then we could add the command line to event ID number"
+    },
+    {
+      "Time_Start": 118.96000000000001,
+      "Time_End": 120.32000000000001,
+      "Text": " 3."
+    },
+    {
+      "Time_Start": 120.32000000000001,
+      "Time_End": 124.60000000000001,
+      "Text": " Now we might be saying oh yeah why aren't you using MDE, it has way more rich data and"
+    },
+    {
+      "Time_Start": 124.60000000000001,
+      "Time_End": 129.96,
+      "Text": " this is great, it allows us to build way more complex detection rules, there's one big issue"
+    },
+    {
+      "Time_Start": 129.96,
+      "Time_End": 134.28,
+      "Text": " with MDE however and this is called event sampling."
+    },
+    {
+      "Time_Start": 134.28,
+      "Time_End": 138.6,
+      "Text": " Event sampling basically means that it is up to MDE if an event is forwarded or not"
+    },
+    {
+      "Time_Start": 138.68,
+      "Time_End": 144.0,
+      "Text": " and the criteria for this is completely OPEC, MDE decides internally if an event is forwarded"
+    },
+    {
+      "Time_Start": 144.0,
+      "Time_End": 149.92,
+      "Text": " or not based on criteria we don't know, for example it might not forward an event if MDE"
+    },
+    {
+      "Time_Start": 149.92,
+      "Time_End": 156.07999999999998,
+      "Text": " thinks this event is not very important or there are too many events or whatever else,"
+    },
+    {
+      "Time_Start": 156.07999999999998,
+      "Time_End": 160.44,
+      "Text": " we don't know, we don't have the source code, we have to trust the vendor."
+    },
+    {
+      "Time_Start": 160.44,
+      "Time_End": 165.95999999999998,
+      "Text": " And the issue is that with unpredictable telemetry we can basically not write reliable detection"
+    },
+    {
+      "Time_Start": 166.0,
+      "Time_End": 169.68,
+      "Text": " rules if you do not know which data we have."
+    },
+    {
+      "Time_Start": 169.68,
+      "Time_End": 174.24,
+      "Text": " One word about call stacks, MDE does not give us any telemetry about call stacks, Sysmon"
+    },
+    {
+      "Time_Start": 174.24,
+      "Time_End": 180.48000000000002,
+      "Text": " has at least one for event ID number 10, process access, which is a shame because having access"
+    },
+    {
+      "Time_Start": 180.48000000000002,
+      "Time_End": 185.88,
+      "Text": " to call stacks would allow us to write very sophisticated detection rules but neither"
+    },
+    {
+      "Time_Start": 185.88,
+      "Time_End": 192.0,
+      "Text": " MDE nor Sysmon has a very good support for call stacks."
+    },
+    {
+      "Time_Start": 192.0,
+      "Time_End": 196.52,
+      "Text": " So the goal of our project was basically to have the best of both worlds, so we want"
+    },
+    {
+      "Time_Start": 196.52,
+      "Time_End": 201.04,
+      "Text": " to have a customised security sensor which is under our control and which allows us to"
+    },
+    {
+      "Time_Start": 201.04,
+      "Time_End": 204.48,
+      "Text": " fine tune the events to our needs."
+    },
+    {
+      "Time_Start": 204.48,
+      "Time_End": 210.32,
+      "Text": " We want to be using our security sensor alongside MDE because we still want to use it for things"
+    },
+    {
+      "Time_Start": 210.32,
+      "Time_End": 214.48,
+      "Text": " such as incident response, client isolation and these kind of things."
+    },
+    {
+      "Time_Start": 214.48,
+      "Time_End": 219.7,
+      "Text": " We want it to be implemented in user land as Sysmon is, simply for stability reasons"
+    },
+    {
+      "Time_Start": 220.10000000000002,
+      "Time_End": 224.06000000000003,
+      "Text": " and the events that we emit must be compatible with Sysmon because we do not want to rewrite"
+    },
+    {
+      "Time_Start": 224.06000000000003,
+      "Time_End": 230.70000000000002,
+      "Text": " every single SPL rule we have simply because we are now using another sensor."
+    },
+    {
+      "Time_Start": 230.70000000000002,
+      "Time_End": 235.64000000000001,
+      "Text": " And now Philipp is going to talk to you about ETW, how we tried at first and completely"
+    },
+    {
+      "Time_Start": 235.64000000000001,
+      "Time_End": 237.18,
+      "Text": " failed on the first try."
+    },
+    {
+      "Time_Start": 237.18,
+      "Time_End": 243.02,
+      "Text": " Alright, so now I'm going to explain ETW in two slides."
+    },
+    {
+      "Time_Start": 243.02,
+      "Time_End": 249.54000000000002,
+      "Text": " ETW by itself nowadays is a high speed communication mechanism but it was originally"
+    },
+    {
+      "Time_Start": 249.57999999999998,
+      "Time_End": 255.14,
+      "Text": " developed to be a logging mechanism to do some troubleshooting and diagnostics."
+    },
+    {
+      "Time_Start": 255.14,
+      "Time_End": 260.74,
+      "Text": " And the cool part about ETW is that you can consume events in real time and developers"
+    },
+    {
+      "Time_Start": 260.74,
+      "Time_End": 265.82,
+      "Text": " can decide where an event may be generated, so for example someone at Microsoft can decide"
+    },
+    {
+      "Time_Start": 265.82,
+      "Time_End": 272.65999999999997,
+      "Text": " that in a kernel if someone is creating a file for example then an event is being generated."
+    },
+    {
+      "Time_Start": 272.65999999999997,
+      "Time_End": 277.78,
+      "Text": " Each event has an event ID, so for example process start events have a different event"
+    },
+    {
+      "Time_Start": 277.78000000000003,
+      "Time_End": 281.34000000000003,
+      "Text": " ID than image load events."
+    },
+    {
+      "Time_Start": 281.34000000000003,
+      "Time_End": 287.58000000000004,
+      "Text": " And event IDs are predefined by developers which means that we can't change anything"
+    },
+    {
+      "Time_Start": 287.58000000000004,
+      "Time_End": 288.86,
+      "Text": " about them."
+    },
+    {
+      "Time_Start": 288.86,
+      "Time_End": 294.34000000000003,
+      "Text": " So for example if there's a process start event and the command line would be missing"
+    },
+    {
+      "Time_Start": 294.34000000000003,
+      "Time_End": 298.42,
+      "Text": " there would be no way for us to add this command line to the event."
+    },
+    {
+      "Time_Start": 298.42,
+      "Time_End": 303.70000000000005,
+      "Text": " We can do some minor configuration about ETW events but that's about it."
+    },
+    {
+      "Time_Start": 303.7,
+      "Time_End": 310.3,
+      "Text": " ETW events contain the payload itself like the command line for the process start event"
+    },
+    {
+      "Time_Start": 310.3,
+      "Time_End": 317.98,
+      "Text": " and all ETW events have metadata such as the PID that specifies which process is responsible"
+    },
+    {
+      "Time_Start": 317.98,
+      "Time_End": 323.3,
+      "Text": " for the event generation and the timestamp of the event."
+    },
+    {
+      "Time_Start": 323.3,
+      "Time_End": 329.0,
+      "Text": " There are kernel and user providers and the difference is the origin of the event."
+    },
+    {
+      "Time_Start": 329.0,
+      "Time_End": 334.16,
+      "Text": " So for kernel providers events are being generated in the kernel itself or on kernel"
+    },
+    {
+      "Time_Start": 334.16,
+      "Time_End": 340.24,
+      "Text": " driver and for userland providers it's a userland component such as a running process, a DLL"
+    },
+    {
+      "Time_Start": 340.24,
+      "Time_End": 341.76,
+      "Text": " or an XE."
+    },
+    {
+      "Time_Start": 341.76,
+      "Time_End": 350.04,
+      "Text": " And of course this part is prone to tampering because you can just patch the ETW event right."
+    },
+    {
+      "Time_Start": 350.04,
+      "Time_End": 360.92,
+      "Text": " So now we are ETW experts, nice, and we basically try to implement all Sysmon events using ETW"
+    },
+    {
+      "Time_Start": 360.92,
+      "Time_End": 367.0,
+      "Text": " and for that we used commonly known providers such as the ones listed right here and we"
+    },
+    {
+      "Time_Start": 367.0,
+      "Time_End": 371.56,
+      "Text": " just wanted to see if this idea actually works."
+    },
+    {
+      "Time_Start": 371.56,
+      "Time_End": 374.40000000000003,
+      "Text": " It didn't work."
+    },
+    {
+      "Time_Start": 374.40000000000003,
+      "Time_End": 381.96000000000004,
+      "Text": " We ran into many issues and I'm going to explain the most interesting ones over the next slides."
+    },
+    {
+      "Time_Start": 381.96000000000004,
+      "Time_End": 388.56000000000006,
+      "Text": " So for us performance is really critical because we want to roll this out to production systems"
+    },
+    {
+      "Time_Start": 388.56000000000006,
+      "Time_End": 396.36,
+      "Text": " and due to high CPU load when we have to hash stuff we had to do some optimizing."
+    },
+    {
+      "Time_Start": 396.36,
+      "Time_End": 401.88000000000005,
+      "Text": " Also we had missing telemetry so for example we couldn't implement some events and sometimes"
+    },
+    {
+      "Time_Start": 401.88,
+      "Time_End": 405.2,
+      "Text": " we had telemetry but it was inconsistent."
+    },
+    {
+      "Time_Start": 405.2,
+      "Time_End": 409.68,
+      "Text": " And we also had a challenge for short-lived processes because sometimes we have to access"
+    },
+    {
+      "Time_Start": 409.68,
+      "Time_End": 416.12,
+      "Text": " a running process and if it's gone, well, data is gone as well."
+    },
+    {
+      "Time_Start": 416.12,
+      "Time_End": 422.28,
+      "Text": " So some of you may know Sysmon event number 7, the image load event."
+    },
+    {
+      "Time_Start": 422.28,
+      "Time_End": 427.52,
+      "Text": " It contains file hashes for the image that's being loaded and it's also one of the most"
+    },
+    {
+      "Time_Start": 427.52,
+      "Time_End": 433.0,
+      "Text": " common events and since we have to do hashing it's also one of the most CPU intensive events"
+    },
+    {
+      "Time_Start": 433.0,
+      "Time_End": 436.08,
+      "Text": " that you can have."
+    },
+    {
+      "Time_Start": 436.08,
+      "Time_End": 442.24,
+      "Text": " We need some optimization for that and since Sysmon is kind of our role model for this"
+    },
+    {
+      "Time_Start": 442.24,
+      "Time_End": 447.71999999999997,
+      "Text": " in regards to performance we checked Sysmon how it's handling stuff and there seems to"
+    },
+    {
+      "Time_Start": 447.71999999999997,
+      "Time_End": 453.76,
+      "Text": " be some kind of caching mechanism in place because if you're rebooting your machine and"
+    },
+    {
+      "Time_Start": 453.76,
+      "Time_End": 457.92,
+      "Text": " you're starting MS Edge for example, you can see that it's using for example 10% of"
+    },
+    {
+      "Time_Start": 457.92,
+      "Time_End": 464.08,
+      "Text": " CPU time and then you're closing Edge and starting it up again it will consume 0% which"
+    },
+    {
+      "Time_Start": 464.08,
+      "Time_End": 470.64,
+      "Text": " indicates that the image hash will be cached somewhere and there needs to be some mechanism"
+    },
+    {
+      "Time_Start": 470.64,
+      "Time_End": 477.48,
+      "Text": " in place to invalidate the hash entry in case someone is changing the DLL on disk."
+    },
+    {
+      "Time_Start": 477.48,
+      "Time_End": 485.28000000000003,
+      "Text": " So we thought about that and we kind of stole the idea and implemented a similar cache mechanism"
+    },
+    {
+      "Time_Start": 485.28000000000003,
+      "Time_End": 491.96000000000004,
+      "Text": " ourselves and we really quickly ran into a race condition."
+    },
+    {
+      "Time_Start": 491.96000000000004,
+      "Time_End": 496.16,
+      "Text": " Imagine if you have a DLL on disk, you're changing it and in the next millisecond someone"
+    },
+    {
+      "Time_Start": 496.16,
+      "Time_End": 501.92,
+      "Text": " is loading this DLL then there's a possibility that in the generated event there's still"
+    },
+    {
+      "Time_Start": 502.0,
+      "Time_End": 509.44,
+      "Text": " the old image hash present because the information that the DLL was changed wasn't yet propagated"
+    },
+    {
+      "Time_Start": 509.44,
+      "Time_End": 516.16,
+      "Text": " to Sysmon or our sensor and yet this seems to affect Sysmon as well."
+    },
+    {
+      "Time_Start": 516.16,
+      "Time_End": 519.36,
+      "Text": " Basically we saw that in our own tests."
+    },
+    {
+      "Time_Start": 519.36,
+      "Time_End": 523.9,
+      "Text": " That's a typical issue with ETW because you're basically standing on the side and watching"
+    },
+    {
+      "Time_Start": 523.9,
+      "Time_End": 530.96,
+      "Text": " things happening and you don't have any hooks for example so you're basically dealing with"
+    },
+    {
+      "Time_Start": 530.96,
+      "Time_End": 536.48,
+      "Text": " old information all the time."
+    },
+    {
+      "Time_Start": 536.48,
+      "Time_End": 537.48,
+      "Text": " Short-lived processes."
+    },
+    {
+      "Time_Start": 537.48,
+      "Time_End": 543.84,
+      "Text": " They are a challenge because in the process create event for Sysmon event ID number one"
+    },
+    {
+      "Time_Start": 543.84,
+      "Time_End": 549.1600000000001,
+      "Text": " there are fields like the current working directory or the logon UID and the ETW providers"
+    },
+    {
+      "Time_Start": 549.1600000000001,
+      "Time_End": 554.6,
+      "Text": " that we're using they don't supply these values so we had no other choice than to determine"
+    },
+    {
+      "Time_Start": 554.6,
+      "Time_End": 559.5600000000001,
+      "Text": " them dynamically by accessing the process which of course is not guaranteed to work"
+    },
+    {
+      "Time_Start": 559.5600000000001,
+      "Time_End": 564.24,
+      "Text": " and we have a timing issue again."
+    },
+    {
+      "Time_Start": 564.24,
+      "Time_End": 565.24,
+      "Text": " Missing telemetry."
+    },
+    {
+      "Time_Start": 565.24,
+      "Time_End": 570.8000000000001,
+      "Text": " For example there's Sysmon event ID number two, I've called it time stomping."
+    },
+    {
+      "Time_Start": 570.8000000000001,
+      "Time_End": 577.24,
+      "Text": " It's happening if someone changes the file creation date to an old timestamp for example"
+    },
+    {
+      "Time_Start": 577.24,
+      "Time_End": 585.84,
+      "Text": " and there's basically no event that you can use to create such an event from ETW."
+    },
+    {
+      "Time_Start": 585.84,
+      "Time_End": 588.2800000000001,
+      "Text": " The same is happening for named pipe events."
+    },
+    {
+      "Time_Start": 588.28,
+      "Time_End": 594.6,
+      "Text": " There's no dedicated event that you can use and we fought really hard about this problem"
+    },
+    {
+      "Time_Start": 594.6,
+      "Time_End": 601.0,
+      "Text": " because named pipes are, at least for our use case, really important."
+    },
+    {
+      "Time_Start": 601.0,
+      "Time_End": 607.72,
+      "Text": " And there's the object manager trace which we can use in theory to detect named pipe"
+    },
+    {
+      "Time_Start": 607.72,
+      "Time_End": 614.24,
+      "Text": " creations or connects but in practice it will result in high CPU load and that's happening"
+    },
+    {
+      "Time_Start": 614.24,
+      "Time_End": 619.48,
+      "Text": " because named pipes are created, are treated like files in the kernel so if you're looking"
+    },
+    {
+      "Time_Start": 619.48,
+      "Time_End": 624.48,
+      "Text": " for named pipe events you're basically getting all file events as well and 99% of them are"
+    },
+    {
+      "Time_Start": 624.48,
+      "Time_End": 628.08,
+      "Text": " trash for us and we have to throw them away."
+    },
+    {
+      "Time_Start": 628.08,
+      "Time_End": 633.72,
+      "Text": " And basically there's no way to do efficient pre-filtering."
+    },
+    {
+      "Time_Start": 633.72,
+      "Time_End": 639.92,
+      "Text": " So we thought about this and we asked ourselves the question if ETW is still the way to go"
+    },
+    {
+      "Time_Start": 639.92,
+      "Time_End": 641.28,
+      "Text": " for us."
+    },
+    {
+      "Time_Start": 641.3199999999999,
+      "Time_End": 648.0,
+      "Text": " If you look at security products you can see that they are always using kernel level telemetry"
+    },
+    {
+      "Time_Start": 648.0,
+      "Time_End": 654.36,
+      "Text": " like MDE for example and essentially they are leveraging kernel callbacks which provide"
+    },
+    {
+      "Time_Start": 654.36,
+      "Time_End": 658.9599999999999,
+      "Text": " rich telemetry which is also really reliable."
+    },
+    {
+      "Time_Start": 658.9599999999999,
+      "Time_End": 664.56,
+      "Text": " But we don't have access to this information but we kind of need it."
+    },
+    {
+      "Time_Start": 664.5600000000001,
+      "Time_End": 671.9200000000001,
+      "Text": " So there's basically a way for us that we could get this information by using the Sysmon"
+    },
+    {
+      "Time_Start": 671.9200000000001,
+      "Time_End": 678.6400000000001,
+      "Text": " driver which is already tested, it's existing, it's signed but if you're looking at terminal"
+    },
+    {
+      "Time_Start": 678.6400000000001,
+      "Time_End": 683.96,
+      "Text": " servers for example which have many users being locked on at the same time, we ran into"
+    },
+    {
+      "Time_Start": 683.96,
+      "Time_End": 690.1200000000001,
+      "Text": " performance issues so we currently are unable to run this driver on these systems."
+    },
+    {
+      "Time_Start": 690.12,
+      "Time_End": 698.28,
+      "Text": " And we don't feel like creating our own kernel driver because of blue screen issues."
+    },
+    {
+      "Time_Start": 698.28,
+      "Time_End": 703.0,
+      "Text": " So in our world it would be ideal to find an existing kernel driver that gives us telemetry"
+    },
+    {
+      "Time_Start": 703.0,
+      "Time_End": 708.6,
+      "Text": " relevant for threat hunting and the kernel driver should emit events using ETW."
+    },
+    {
+      "Time_Start": 708.6,
+      "Time_End": 712.48,
+      "Text": " So we were looking for one."
+    },
+    {
+      "Time_Start": 712.48,
+      "Time_End": 719.08,
+      "Text": " In ETW there are many provider types and one of them is the manifest-based provider."
+    },
+    {
+      "Time_Start": 719.08,
+      "Time_End": 726.48,
+      "Text": " It's basically based on an XML schema that you can read and parse and the schema defines"
+    },
+    {
+      "Time_Start": 726.48,
+      "Time_End": 731.0400000000001,
+      "Text": " what kind of events are being generated, how they look like and so on."
+    },
+    {
+      "Time_Start": 731.0400000000001,
+      "Time_End": 738.32,
+      "Text": " So the next idea was to export all of these XMLs and just grab for interesting stuff."
+    },
+    {
+      "Time_Start": 738.32,
+      "Time_End": 743.08,
+      "Text": " And interesting stuff in our case are events related to registry because that's the biggest"
+    },
+    {
+      "Time_Start": 743.08,
+      "Time_End": 747.0400000000001,
+      "Text": " pain point for us."
+    },
+    {
+      "Time_Start": 747.04,
+      "Time_End": 754.16,
+      "Text": " So we just grabbed for Hive, registry Hive, and we got quite a few matches and one, the"
+    },
+    {
+      "Time_Start": 754.16,
+      "Time_End": 761.8,
+      "Text": " Microsoft Windows Sec provider looked really interesting based on the schema definition."
+    },
+    {
+      "Time_Start": 761.8,
+      "Time_End": 767.16,
+      "Text": " It's implemented in a kernel driver which is obviously signed, it's provided by Microsoft"
+    },
+    {
+      "Time_Start": 767.16,
+      "Time_End": 769.8199999999999,
+      "Text": " but it's not loaded by default."
+    },
+    {
+      "Time_Start": 769.8199999999999,
+      "Time_End": 774.64,
+      "Text": " And it's related to a service called Sense which is also not running by default on Windows"
+    },
+    {
+      "Time_Start": 774.64,
+      "Time_End": 777.4399999999999,
+      "Text": " systems but it's defined."
+    },
+    {
+      "Time_Start": 777.4399999999999,
+      "Time_End": 782.76,
+      "Text": " And we found out that this service is running in case you're onboarded in MDE which is no"
+    },
+    {
+      "Time_Start": 782.76,
+      "Time_End": 786.48,
+      "Text": " issue for us because we have MDE."
+    },
+    {
+      "Time_Start": 786.48,
+      "Time_End": 789.4399999999999,
+      "Text": " And you can't start the service on your own."
+    },
+    {
+      "Time_Start": 789.4399999999999,
+      "Time_End": 793.3199999999999,
+      "Text": " If you try to do it manually you get a permission denied error."
+    },
+    {
+      "Time_Start": 793.3199999999999,
+      "Time_End": 800.84,
+      "Text": " We found that this provider gives us raw telemetry which may solve our problems."
+    },
+    {
+      "Time_Start": 800.84,
+      "Time_End": 804.04,
+      "Text": " But we got another problem, we can't even access it."
+    },
+    {
+      "Time_Start": 804.4399999999999,
+      "Time_End": 808.8,
+      "Text": " In a system, if you try to open it, it says you need to be admin."
+    },
+    {
+      "Time_Start": 808.8,
+      "Time_End": 812.8399999999999,
+      "Text": " And we looked into it and we saw that you need a Microsoft signed binary to be able"
+    },
+    {
+      "Time_Start": 812.8399999999999,
+      "Time_End": 816.7199999999999,
+      "Text": " to access this one."
+    },
+    {
+      "Time_Start": 816.7199999999999,
+      "Time_End": 818.7199999999999,
+      "Text": " So yeah, we don't have one."
+    },
+    {
+      "Time_Start": 818.7199999999999,
+      "Time_End": 823.68,
+      "Text": " We don't have any binary that's signed by Microsoft that's under our control."
+    },
+    {
+      "Time_Start": 823.68,
+      "Time_End": 829.3199999999999,
+      "Text": " So we had the idea to let Windows open the provider for us."
+    },
+    {
+      "Time_Start": 829.3199999999999,
+      "Time_End": 832.64,
+      "Text": " And there's a feature in Windows called autologger."
+    },
+    {
+      "Time_Start": 832.64,
+      "Time_End": 836.72,
+      "Text": " These are special trace sessions that are being started at boot."
+    },
+    {
+      "Time_Start": 836.72,
+      "Time_End": 842.12,
+      "Text": " And yeah, it's basically being used to do system tracing and diagnosis starting from"
+    },
+    {
+      "Time_Start": 842.12,
+      "Time_End": 844.24,
+      "Text": " the boot process onwards."
+    },
+    {
+      "Time_Start": 844.24,
+      "Time_End": 849.52,
+      "Text": " And since autologgers are started by the kernel, it passes the permission check."
+    },
+    {
+      "Time_Start": 849.52,
+      "Time_End": 854.28,
+      "Text": " So yeah, permission check is not existent for us anymore."
+    },
+    {
+      "Time_Start": 854.28,
+      "Time_End": 860.2,
+      "Text": " So we defined the autologger, we performed the system reboot and now we had access to"
+    },
+    {
+      "Time_Start": 860.24,
+      "Time_End": 863.12,
+      "Text": " the telemetry."
+    },
+    {
+      "Time_Start": 863.12,
+      "Time_End": 868.08,
+      "Text": " And we saw that the telemetry is similar to the Sysmon telemetry, but it has an important"
+    },
+    {
+      "Time_Start": 868.08,
+      "Time_End": 869.08,
+      "Text": " difference."
+    },
+    {
+      "Time_Start": 869.08,
+      "Time_End": 874.0400000000001,
+      "Text": " It forwards events to us using ETW instead of using IOCTL calls."
+    },
+    {
+      "Time_Start": 874.0400000000001,
+      "Time_End": 878.32,
+      "Text": " And it turned out that our multi-user systems already had this one running."
+    },
+    {
+      "Time_Start": 878.32,
+      "Time_End": 881.84,
+      "Text": " So performance should be good as well."
+    },
+    {
+      "Time_Start": 881.84,
+      "Time_End": 887.12,
+      "Text": " And the telemetry itself, it looked quite good because we had NAND pipe events, time"
+    },
+    {
+      "Time_Start": 887.12,
+      "Time_End": 889.5600000000001,
+      "Text": " stomping info, we had call traces."
+    },
+    {
+      "Time_Start": 889.9200000000001,
+      "Time_End": 895.48,
+      "Text": " It did no sampling, so we had raw data and the process start events already included"
+    },
+    {
+      "Time_Start": 895.48,
+      "Time_End": 900.9200000000001,
+      "Text": " all three hashes that we need, so we get them for free."
+    },
+    {
+      "Time_Start": 900.9200000000001,
+      "Time_End": 906.24,
+      "Text": " To actually use it, we used the Krebs ETW library provided by Microsoft."
+    },
+    {
+      "Time_Start": 906.24,
+      "Time_End": 911.44,
+      "Text": " They're using it in their O365 environment in production, so that looked like a good"
+    },
+    {
+      "Time_Start": 911.44,
+      "Time_End": 918.0400000000001,
+      "Text": " candidate, but it wasn't possible to open an existing trace using this library."
+    },
+    {
+      "Time_Start": 918.04,
+      "Time_End": 924.52,
+      "Text": " So we forked it, we've changed it accordingly to our needs, and we've open sourced it,"
+    },
+    {
+      "Time_Start": 924.52,
+      "Time_End": 926.9599999999999,
+      "Text": " so you cannot use it."
+    },
+    {
+      "Time_Start": 926.9599999999999,
+      "Time_End": 932.24,
+      "Text": " Documentation is ETW style, so there is none, have fun."
+    },
+    {
+      "Time_Start": 932.24,
+      "Time_End": 935.64,
+      "Text": " Maybe we'll do it in the future, I don't know."
+    },
+    {
+      "Time_Start": 935.64,
+      "Time_End": 941.0,
+      "Text": " We also implemented kernel level filtering, which means that we're able to filter for"
+    },
+    {
+      "Time_Start": 941.0,
+      "Time_End": 947.68,
+      "Text": " IDs, pits, flags, and the event payload itself directly in the kernel, so we don't have to"
+    },
+    {
+      "Time_Start": 947.84,
+      "Time_End": 952.4000000000001,
+      "Text": " do it in our user space application."
+    },
+    {
+      "Time_Start": 952.4000000000001,
+      "Time_End": 956.8800000000001,
+      "Text": " So these are some examples of the process create telemetry, as you can see at the bottom"
+    },
+    {
+      "Time_Start": 956.8800000000001,
+      "Time_End": 962.2,
+      "Text": " there's the SHA hash already included, command line and everything."
+    },
+    {
+      "Time_Start": 962.2,
+      "Time_End": 971.84,
+      "Text": " We have create remote thread events, for example, and NAND pipe events including the pipe name."
+    },
+    {
+      "Time_Start": 971.84,
+      "Time_End": 976.5200000000001,
+      "Text": " But we still had issues, especially for registry events."
+    },
+    {
+      "Time_Start": 976.56,
+      "Time_End": 982.72,
+      "Text": " So the manifest of this provider defines registry events that should be generated, but in reality"
+    },
+    {
+      "Time_Start": 982.72,
+      "Time_End": 987.76,
+      "Text": " they weren't present, and we looked into that and we saw that there's a bit field the driver"
+    },
+    {
+      "Time_Start": 987.76,
+      "Time_End": 994.6,
+      "Text": " is using to configure the ETW provider, and the bit for registry events is 0, and we can't"
+    },
+    {
+      "Time_Start": 994.6,
+      "Time_End": 995.72,
+      "Text": " change it."
+    },
+    {
+      "Time_Start": 995.72,
+      "Time_End": 999.72,
+      "Text": " So we're guessing Microsoft is still testing stuff, we don't know."
+    },
+    {
+      "Time_Start": 999.72,
+      "Time_End": 1005.04,
+      "Text": " Maybe it will be enabled in the future, but as of now we can't get any relevant telemetry"
+    },
+    {
+      "Time_Start": 1005.0400000000001,
+      "Time_End": 1008.4000000000001,
+      "Text": " for registry using this provider."
+    },
+    {
+      "Time_Start": 1008.4000000000001,
+      "Time_End": 1012.9200000000001,
+      "Text": " But we found an alternative that's working quite well for us."
+    },
+    {
+      "Time_Start": 1012.9200000000001,
+      "Time_End": 1016.4800000000001,
+      "Text": " It's called the Microsoft Anti-Malware Engine provider."
+    },
+    {
+      "Time_Start": 1016.4800000000001,
+      "Time_End": 1021.0000000000001,
+      "Text": " It's not raw registry data, it's behaviour based, so we're getting events that defend"
+    },
+    {
+      "Time_Start": 1021.0000000000001,
+      "Time_End": 1026.68,
+      "Text": " things that are relevant, but as of now it's good enough."
+    },
+    {
+      "Time_Start": 1026.68,
+      "Time_End": 1031.44,
+      "Text": " And of course registry key renames are still an issue."
+    },
+    {
+      "Time_Start": 1031.44,
+      "Time_End": 1034.96,
+      "Text": " All right."
+    },
+    {
+      "Time_Start": 1034.96,
+      "Time_End": 1035.96,
+      "Text": " Thank you."
+    },
+    {
+      "Time_Start": 1035.96,
+      "Time_End": 1041.16,
+      "Text": " Following the research that Philip was just introducing to you and using the SAC provider"
+    },
+    {
+      "Time_Start": 1041.16,
+      "Time_End": 1046.0800000000002,
+      "Text": " we were able to write our own security logging mechanism which we call Weasel, which is short"
+    },
+    {
+      "Time_Start": 1046.0800000000002,
+      "Time_End": 1049.56,
+      "Text": " for Windows Event and Security Logging."
+    },
+    {
+      "Time_Start": 1049.56,
+      "Time_End": 1054.0,
+      "Text": " It uses the SAC provider as the baseline of telemetry, so every time there's a process"
+    },
+    {
+      "Time_Start": 1054.0,
+      "Time_End": 1059.0,
+      "Text": " started we get informed about this using the SAC provider, we get the SHA hash and so on"
+    },
+    {
+      "Time_Start": 1059.0,
+      "Time_End": 1065.44,
+      "Text": " from it, but we're also using additional providers which we still need for events which"
+    },
+    {
+      "Time_Start": 1065.44,
+      "Time_End": 1070.24,
+      "Text": " are not implemented in the SAC provider, but we enrich those events with information about"
+    },
+    {
+      "Time_Start": 1070.24,
+      "Time_End": 1077.44,
+      "Text": " the respective process of which we have the information gained via the SAC provider."
+    },
+    {
+      "Time_Start": 1077.44,
+      "Time_End": 1081.4,
+      "Text": " Currently we are supporting 22 enriched and customisable events which basically includes"
+    },
+    {
+      "Time_Start": 1081.4,
+      "Time_End": 1087.48,
+      "Text": " all Sysmon events there are except some fields in the registry, but we also introduce additional"
+    },
+    {
+      "Time_Start": 1087.48,
+      "Time_End": 1093.56,
+      "Text": " events such as AMSI, RPC, .NET assembly loaded and these kind of things."
+    },
+    {
+      "Time_Start": 1093.56,
+      "Time_End": 1098.1200000000001,
+      "Text": " Similarly to Sysmon, Weasel runs as a background service and writes into the Windows event"
+    },
+    {
+      "Time_Start": 1098.1200000000001,
+      "Time_End": 1101.68,
+      "Text": " log so we can forward it to Splunk."
+    },
+    {
+      "Time_Start": 1101.68,
+      "Time_End": 1106.84,
+      "Text": " The event filters are configurable via a config file which is very similar to Sysmon and in"
+    },
+    {
+      "Time_Start": 1106.84,
+      "Time_End": 1111.64,
+      "Text": " the future there will be of course way more events."
+    },
+    {
+      "Time_Start": 1111.64,
+      "Time_End": 1114.8,
+      "Text": " Taking a look at some of those events on the upper left screenshot we see that there's"
+    },
+    {
+      "Time_Start": 1114.8,
+      "Time_End": 1119.24,
+      "Text": " an image load event, we have every field that Sysmon is implementing but we also have"
+    },
+    {
+      "Time_Start": 1119.24,
+      "Time_End": 1123.24,
+      "Text": " the call trace which led to the library being loaded."
+    },
+    {
+      "Time_Start": 1123.24,
+      "Time_End": 1129.8799999999999,
+      "Text": " On the lower screenshot we see that the event ID number 3 finally contains the command line"
+    },
+    {
+      "Time_Start": 1129.8799999999999,
+      "Time_End": 1135.48,
+      "Text": " of the process which was our initial issue and on the right side we see an RPC event"
+    },
+    {
+      "Time_Start": 1135.48,
+      "Time_End": 1140.48,
+      "Text": " which does not only contain the call stack but also things such as the procedure number"
+    },
+    {
+      "Time_Start": 1140.48,
+      "Time_End": 1144.96,
+      "Text": " which is called or the interface UUID."
+    },
+    {
+      "Time_Start": 1144.96,
+      "Time_End": 1151.6,
+      "Text": " So for now what we have is we have a stable architecture, we can use different ETW providers"
+    },
+    {
+      "Time_Start": 1151.6,
+      "Time_End": 1156.0,
+      "Text": " and we have every information about the processes we need to enrich our events."
+    },
+    {
+      "Time_Start": 1156.0,
+      "Time_End": 1160.24,
+      "Text": " This means for us that the SPL queries we are implementing are now way simpler because"
+    },
+    {
+      "Time_Start": 1160.24,
+      "Time_End": 1165.4,
+      "Text": " our events are way better enriched than those of Sysmon because we are able to include every"
+    },
+    {
+      "Time_Start": 1165.4,
+      "Time_End": 1170.44,
+      "Text": " information we have about the process such as the command line or CVD or these kind of"
+    },
+    {
+      "Time_Start": 1170.44,
+      "Time_End": 1175.2,
+      "Text": " things but we are also able, since this is our sensor, we are also able to include stuff"
+    },
+    {
+      "Time_Start": 1175.2,
+      "Time_End": 1180.04,
+      "Text": " such as information about the parent process or the grandparent process if we need them"
+    },
+    {
+      "Time_Start": 1180.04,
+      "Time_End": 1182.48,
+      "Text": " to understand a certain event."
+    },
+    {
+      "Time_Start": 1182.48,
+      "Time_End": 1187.88,
+      "Text": " But we are also able to add additional information such as context fields to existing events."
+    },
+    {
+      "Time_Start": 1187.88,
+      "Time_End": 1196.4,
+      "Text": " For example we have an is managed tag which is added to the event and which lets us know"
+    },
+    {
+      "Time_Start": 1196.4,
+      "Time_End": 1199.72,
+      "Text": " if a process is managed or not which might be super helpful if you're trying to analyze"
+    },
+    {
+      "Time_Start": 1199.72,
+      "Time_End": 1201.28,
+      "Text": " a call stack."
+    },
+    {
+      "Time_Start": 1201.28,
+      "Time_End": 1205.52,
+      "Text": " But there are also built in fine grained detections which we are calling IOC tags, I'm going to"
+    },
+    {
+      "Time_Start": 1205.52,
+      "Time_End": 1208.56,
+      "Text": " talk about them in a second."
+    },
+    {
+      "Time_Start": 1208.56,
+      "Time_End": 1213.76,
+      "Text": " Our config, it's very similar to Sysmon except that it's implemented in JSON."
+    },
+    {
+      "Time_Start": 1213.76,
+      "Time_End": 1219.2,
+      "Text": " We do support Boolean operations such as and, or, not and these kind of things."
+    },
+    {
+      "Time_Start": 1219.2,
+      "Time_End": 1224.48,
+      "Text": " Per field we can say it must start with, end with, does contains, not contains and these"
+    },
+    {
+      "Time_Start": 1224.48,
+      "Time_End": 1227.3600000000001,
+      "Text": " kind of things so very similar to Sysmon."
+    },
+    {
+      "Time_Start": 1227.3600000000001,
+      "Time_End": 1236.0000000000002,
+      "Text": " So per event we can enable what we are calling detections or modules for detections."
+    },
+    {
+      "Time_Start": 1236.0000000000002,
+      "Time_End": 1241.2400000000002,
+      "Text": " So for example for an image load event we activate a module which is meant to detect"
+    },
+    {
+      "Time_Start": 1241.2400000000002,
+      "Time_End": 1245.64,
+      "Text": " a technique which is called module proxying and for other events we are right now trying"
+    },
+    {
+      "Time_Start": 1245.64,
+      "Time_End": 1251.0000000000002,
+      "Text": " to or we are activating modules which are meant to detect direct or indirect system"
+    },
+    {
+      "Time_Start": 1251.0000000000002,
+      "Time_End": 1252.0000000000002,
+      "Text": " calls."
+    },
+    {
+      "Time_Start": 1252.0000000000002,
+      "Time_End": 1256.16,
+      "Text": " Let us talk about those built in detections."
+    },
+    {
+      "Time_Start": 1256.16,
+      "Time_End": 1260.5600000000002,
+      "Text": " Many offensive techniques can barely be detected using Splunk rules alone because they are"
+    },
+    {
+      "Time_Start": 1260.5600000000002,
+      "Time_End": 1262.24,
+      "Text": " way too dependent on the endpoint."
+    },
+    {
+      "Time_Start": 1262.24,
+      "Time_End": 1266.1200000000001,
+      "Text": " For example if you're trying to do call stack normalization in a larger environment it's"
+    },
+    {
+      "Time_Start": 1266.1200000000001,
+      "Time_End": 1270.4,
+      "Text": " a task which is near too impossible to do because there are many different Windows builds"
+    },
+    {
+      "Time_Start": 1270.4,
+      "Time_End": 1274.4,
+      "Text": " and the offsets in NTDL of course they are always different per build."
+    },
+    {
+      "Time_Start": 1274.4,
+      "Time_End": 1280.24,
+      "Text": " In other cases the IOC footprint is way too small so we would have to sum up additional"
+    },
+    {
+      "Time_Start": 1280.24,
+      "Time_End": 1286.0,
+      "Text": " events and to introduce a bigger IOC which would again require a lot of correlation which"
+    },
+    {
+      "Time_Start": 1286.0,
+      "Time_End": 1290.52,
+      "Text": " means again we would have to save a lot of stuff in Splunk and make our SPI queries way"
+    },
+    {
+      "Time_Start": 1290.52,
+      "Time_End": 1292.04,
+      "Text": " more difficult."
+    },
+    {
+      "Time_Start": 1292.04,
+      "Time_End": 1296.96,
+      "Text": " But as we have a custom sensor which is a great thing we can detect and correlate on"
+    },
+    {
+      "Time_Start": 1296.96,
+      "Time_End": 1302.12,
+      "Text": " the endpoint itself so we could be doing the call stack analysis on the endpoint itself."
+    },
+    {
+      "Time_Start": 1302.12,
+      "Time_End": 1307.2,
+      "Text": " For taking a process access event for example it happens quite a lot even with a kind of"
+    },
+    {
+      "Time_Start": 1307.2,
+      "Time_End": 1312.96,
+      "Text": " suspicious access mask but we can only store a limited amount of events."
+    },
+    {
+      "Time_Start": 1313.56,
+      "Time_End": 1318.64,
+      "Text": " There are many evasion techniques which attackers came up with with introduced unnecessary IOCs"
+    },
+    {
+      "Time_Start": 1318.64,
+      "Time_End": 1323.52,
+      "Text": " and which we are trying to detect on the endpoint and forward the event if we detected something"
+    },
+    {
+      "Time_Start": 1323.52,
+      "Time_End": 1324.52,
+      "Text": " fishy going on."
+    },
+    {
+      "Time_Start": 1324.52,
+      "Time_End": 1329.92,
+      "Text": " For example a direct system call detection it's very simple if we do see that the last"
+    },
+    {
+      "Time_Start": 1329.92,
+      "Time_End": 1335.16,
+      "Text": " module in the call stack to open process is not NTDLL but something else then we do add"
+    },
+    {
+      "Time_Start": 1335.16,
+      "Time_End": 1342.3600000000001,
+      "Text": " an IOC tag saying hey this call stack looks like it was using a, there's a direct system"
+    },
+    {
+      "Time_Start": 1342.3600000000001,
+      "Time_End": 1345.44,
+      "Text": " call going on here."
+    },
+    {
+      "Time_Start": 1345.44,
+      "Time_End": 1350.96,
+      "Text": " Similarly to direct system calls or indirect system calls where it is abused that not every"
+    },
+    {
+      "Time_Start": 1350.96,
+      "Time_End": 1356.4,
+      "Text": " system call stub in NTDLL is hooked and attackers are reusing a non-hooked stub but with an"
+    },
+    {
+      "Time_Start": 1356.4,
+      "Time_End": 1358.4,
+      "Text": " unexpected system call number."
+    },
+    {
+      "Time_Start": 1358.4,
+      "Time_End": 1363.44,
+      "Text": " In here in the screenshot we see that a program was calling NTDLL execution yet in the call"
+    },
+    {
+      "Time_Start": 1363.44,
+      "Time_End": 1368.44,
+      "Text": " stack we do see that the stub of NT open file was used which doesn't make any sense because"
+    },
+    {
+      "Time_Start": 1368.44,
+      "Time_End": 1370.64,
+      "Text": " we have a huge mismatch here."
+    },
+    {
+      "Time_Start": 1370.64,
+      "Time_End": 1374.5600000000002,
+      "Text": " And if we do see something like this then we can also add an IOC tag saying that this"
+    },
+    {
+      "Time_Start": 1374.5600000000002,
+      "Time_End": 1378.8000000000002,
+      "Text": " looks like it was an indirect system call which we have observed."
+    },
+    {
+      "Time_Start": 1378.8000000000002,
+      "Time_End": 1383.3600000000001,
+      "Text": " And we do this by building a static list of system call offsets and NTDLL stubs who's"
+    },
+    {
+      "Time_Start": 1383.3600000000001,
+      "Time_End": 1390.0400000000002,
+      "Text": " related who we are, which we expect to see when a certain event happened and if we do"
+    },
+    {
+      "Time_Start": 1390.0400000000002,
+      "Time_End": 1394.2800000000002,
+      "Text": " not see that stub which we are expecting then we're saying this might be an indirect system"
+    },
+    {
+      "Time_Start": 1394.2800000000002,
+      "Time_End": 1398.64,
+      "Text": " call and we add this to the event itself."
+    },
+    {
+      "Time_Start": 1398.64,
+      "Time_End": 1403.5600000000002,
+      "Text": " Talking about image load events, there are a couple of DLLs which are usually loaded"
+    },
+    {
+      "Time_Start": 1403.5600000000002,
+      "Time_End": 1408.0,
+      "Text": " by both C2 beacons and other offensive tools such as WinInit, NetAPI and these kind of"
+    },
+    {
+      "Time_Start": 1408.0,
+      "Time_End": 1416.3200000000002,
+      "Text": " things and as these tools are usually protected by a packer in order to circumvent static"
+    },
+    {
+      "Time_Start": 1416.3200000000002,
+      "Time_End": 1423.4,
+      "Text": " signatures, you usually have a private page in the call stack to kernel32 load library"
+    },
+    {
+      "Time_Start": 1423.4,
+      "Time_End": 1430.48,
+      "Text": " which certainly is an IOC so we can add an IOC tag saying this call stack contains a"
+    },
+    {
+      "Time_Start": 1430.48,
+      "Time_End": 1436.2,
+      "Text": " memory page and what attackers are usually doing to bypass this is that they proxy the"
+    },
+    {
+      "Time_Start": 1436.2,
+      "Time_End": 1442.52,
+      "Text": " call to load library through NTDLL using worker threads from a thread pool and what is happening"
+    },
+    {
+      "Time_Start": 1442.52,
+      "Time_End": 1447.3600000000001,
+      "Text": " internally is that a separate worker thread picks up the work item and loads the DLL into"
+    },
+    {
+      "Time_Start": 1447.3600000000001,
+      "Time_End": 1452.3600000000001,
+      "Text": " the process which produces a kind of clean call stack without suspicious pages because"
+    },
+    {
+      "Time_Start": 1452.5200000000002,
+      "Time_End": 1458.0800000000002,
+      "Text": " the worker thread is not related to the code of the beacon."
+    },
+    {
+      "Time_Start": 1458.0800000000002,
+      "Time_End": 1459.88,
+      "Text": " But is it really that good?"
+    },
+    {
+      "Time_Start": 1459.88,
+      "Time_End": 1464.48,
+      "Text": " On the left side we see how load library is usually being used so we see that if load"
+    },
+    {
+      "Time_Start": 1464.48,
+      "Time_End": 1469.92,
+      "Text": " library is called it internally calls LDR load library and NTDLL so the Windows API"
+    },
+    {
+      "Time_Start": 1469.92,
+      "Time_End": 1474.8000000000002,
+      "Text": " is calling the NT API which is a perfect fine thing but if you're using work items we see"
+    },
+    {
+      "Time_Start": 1474.8000000000002,
+      "Time_End": 1480.0000000000002,
+      "Text": " that the NTDLL is calling into the kernel32 DLL which then once again is internally calling"
+    },
+    {
+      "Time_Start": 1480.0,
+      "Time_End": 1485.68,
+      "Text": " LDR load library and this is quite odd because in this moment we have a shift from the NT"
+    },
+    {
+      "Time_Start": 1485.68,
+      "Time_End": 1490.2,
+      "Text": " API to the Windows API which doesn't make a lot of sense as the Windows API is an abstraction"
+    },
+    {
+      "Time_Start": 1490.2,
+      "Time_End": 1494.0,
+      "Text": " there for the NT API and not the other way around."
+    },
+    {
+      "Time_Start": 1494.0,
+      "Time_End": 1497.96,
+      "Text": " So we can see this in the call stack and on the left side we see a normal call to load"
+    },
+    {
+      "Time_Start": 1497.96,
+      "Time_End": 1502.8,
+      "Text": " library where something ended up calling load library implemented in kernel base which then"
+    },
+    {
+      "Time_Start": 1502.8,
+      "Time_End": 1505.22,
+      "Text": " calls the NT API internally."
+    },
+    {
+      "Time_Start": 1505.22,
+      "Time_End": 1512.74,
+      "Text": " On the right side we do see, however, that something in NTDLL is calling kernel base"
+    },
+    {
+      "Time_Start": 1512.74,
+      "Time_End": 1517.3,
+      "Text": " which contains the load library which then once again is calling NT API and this sequence"
+    },
+    {
+      "Time_Start": 1517.3,
+      "Time_End": 1524.18,
+      "Text": " of calls is so rare that we can actually say with a very low false positive rate if we"
+    },
+    {
+      "Time_Start": 1524.18,
+      "Time_End": 1530.5,
+      "Text": " detect such a call stack in an image load event then we can add an IOC tag saying this"
+    },
+    {
+      "Time_Start": 1530.5,
+      "Time_End": 1537.3,
+      "Text": " looks like module proxying to us and forward the event because we find it especially interesting."
+    },
+    {
+      "Time_Start": 1537.3,
+      "Time_End": 1543.02,
+      "Text": " But that's not everything we do, we implement something we call process rating which means"
+    },
+    {
+      "Time_Start": 1543.02,
+      "Time_End": 1548.3,
+      "Text": " that we observe the behaviour of a process for a longer time, so for example we record"
+    },
+    {
+      "Time_Start": 1548.3,
+      "Time_End": 1553.3,
+      "Text": " if the process is talking to the internet or to the intranet at the same time, if it"
+    },
+    {
+      "Time_Start": 1553.3,
+      "Time_End": 1557.94,
+      "Text": " loads certain DLLs and if a certain threshold is set then we report the process as such"
+    },
+    {
+      "Time_Start": 1558.26,
+      "Time_End": 1562.42,
+      "Text": " because it looks like an offensive tool or an injected beacon."
+    },
+    {
+      "Time_Start": 1562.42,
+      "Time_End": 1566.8600000000001,
+      "Text": " Additionally processes are periodically scanned for IOCs such as optimal memory allocations"
+    },
+    {
+      "Time_Start": 1566.8600000000001,
+      "Time_End": 1568.66,
+      "Text": " or thread states."
+    },
+    {
+      "Time_Start": 1568.66,
+      "Time_End": 1570.7,
+      "Text": " Why thread states?"
+    },
+    {
+      "Time_Start": 1570.7,
+      "Time_End": 1575.74,
+      "Text": " It's because HTTP based beacons usually wait between the callbacks and now the idea would"
+    },
+    {
+      "Time_Start": 1575.74,
+      "Time_End": 1580.22,
+      "Text": " be to enumerate all idling threads and check the call stack to the blocking function and"
+    },
+    {
+      "Time_Start": 1580.22,
+      "Time_End": 1587.38,
+      "Text": " if you find an IOC in this call stack it also influences the process rating."
+    },
+    {
+      "Time_Start": 1587.7,
+      "Time_End": 1592.0600000000002,
+      "Text": " For example on the upper screenshot we see that a thread is idling and the call stack"
+    },
+    {
+      "Time_Start": 1592.0600000000002,
+      "Time_End": 1597.22,
+      "Text": " to NTDelayExecution contains two very odd values, the first is not even an executable"
+    },
+    {
+      "Time_Start": 1597.22,
+      "Time_End": 1602.8600000000001,
+      "Text": " page and the second is a pointer to a private committed memory area which is a huge IOC"
+    },
+    {
+      "Time_Start": 1602.8600000000001,
+      "Time_End": 1605.42,
+      "Text": " that there is an injected beacon."
+    },
+    {
+      "Time_Start": 1605.42,
+      "Time_End": 1610.2600000000002,
+      "Text": " The second screenshot shows again a thread which is idling but we identified a module"
+    },
+    {
+      "Time_Start": 1610.2600000000002,
+      "Time_End": 1615.7800000000002,
+      "Text": " which is not the same module as it is on disk so we can assume that a beacon or another"
+    },
+    {
+      "Time_Start": 1615.8999999999999,
+      "Time_End": 1623.02,
+      "Text": " tool loaded this DLL and replaced the content of this legitimate DLL with itself."
+    },
+    {
+      "Time_Start": 1623.02,
+      "Time_End": 1629.78,
+      "Text": " This one is not a strong IOC, it's probably the smallest IOC in this technique because"
+    },
+    {
+      "Time_Start": 1629.78,
+      "Time_End": 1635.3799999999999,
+      "Text": " it happens quite a lot that processes are changing the DLLs."
+    },
+    {
+      "Time_Start": 1635.3799999999999,
+      "Time_End": 1641.86,
+      "Text": " Speaking about sleep masks, I'm not going to get too much into details for timing reasons."
+    },
+    {
+      "Time_Start": 1641.8600000000001,
+      "Time_End": 1647.5400000000002,
+      "Text": " It is important however to understand that APC based sleep masks at some point they trigger"
+    },
+    {
+      "Time_Start": 1647.5400000000002,
+      "Time_End": 1653.3000000000002,
+      "Text": " a sequence of APCs and one of those calls a blocking function and this is quite odd"
+    },
+    {
+      "Time_Start": 1653.3000000000002,
+      "Time_End": 1658.22,
+      "Text": " because an APC basically tells a thread, hey while you have nothing to do I give you another"
+    },
+    {
+      "Time_Start": 1658.22,
+      "Time_End": 1664.3000000000002,
+      "Text": " task and if an APC says hey while you have nothing to do please wait for five minutes,"
+    },
+    {
+      "Time_Start": 1664.3000000000002,
+      "Time_End": 1666.3000000000002,
+      "Text": " this doesn't make a lot of sense."
+    },
+    {
+      "Time_Start": 1666.3,
+      "Time_End": 1672.1399999999999,
+      "Text": " So if we see that a blocking function was called and we see the user APC dispatcher"
+    },
+    {
+      "Time_Start": 1672.1399999999999,
+      "Time_End": 1681.26,
+      "Text": " on the call stack and we can with a high confidentiality say that there is something going on."
+    },
+    {
+      "Time_Start": 1681.26,
+      "Time_End": 1689.62,
+      "Text": " Same goes for timer based sleep masks, once again they are using timers, one of which"
+    },
+    {
+      "Time_Start": 1689.62,
+      "Time_End": 1693.22,
+      "Text": " ends up calling a blocking function."
+    },
+    {
+      "Time_Start": 1693.22,
+      "Time_End": 1698.94,
+      "Text": " The thing is that even MSDN says if you use timers then please don't make them block because"
+    },
+    {
+      "Time_Start": 1698.94,
+      "Time_End": 1701.82,
+      "Text": " you are going to ruin your own thread pool."
+    },
+    {
+      "Time_Start": 1701.82,
+      "Time_End": 1705.98,
+      "Text": " So if we do see the RTL PTP timer callback in the call stack to a blocking function then"
+    },
+    {
+      "Time_Start": 1705.98,
+      "Time_End": 1711.9,
+      "Text": " we can also consider this an IOC."
+    },
+    {
+      "Time_Start": 1711.9,
+      "Time_End": 1715.78,
+      "Text": " The idea to check for this callback on the call stack is not ideal because we do not"
+    },
+    {
+      "Time_Start": 1715.78,
+      "Time_End": 1720.22,
+      "Text": " find pending timers, we only find those timers who are already fired and this leaves a big"
+    },
+    {
+      "Time_Start": 1720.22,
+      "Time_End": 1726.78,
+      "Text": " detection gap and call stack currently bypasses this and in order to find projects like these"
+    },
+    {
+      "Time_Start": 1726.78,
+      "Time_End": 1732.06,
+      "Text": " we would have to enumerate all pending timers and the callbacks which is not an easy task"
+    },
+    {
+      "Time_Start": 1732.06,
+      "Time_End": 1737.82,
+      "Text": " since timers are barely documented and thread pools on which timers are built on, they are"
+    },
+    {
+      "Time_Start": 1737.82,
+      "Time_End": 1739.5,
+      "Text": " also not officially documented."
+    },
+    {
+      "Time_Start": 1739.5,
+      "Time_End": 1745.6200000000001,
+      "Text": " They are not officially documented, however Safe Breach Labs a couple of months ago released"
+    },
+    {
+      "Time_Start": 1745.6200000000001,
+      "Time_End": 1751.74,
+      "Text": " a really cool tool which they call Pool Party in which they make use of a very clever technique"
+    },
+    {
+      "Time_Start": 1751.74,
+      "Time_End": 1754.1000000000001,
+      "Text": " to inject into another process."
+    },
+    {
+      "Time_Start": 1754.1000000000001,
+      "Time_End": 1759.5400000000002,
+      "Text": " With this tool they also released structs on timers and thread pools, I don't know where"
+    },
+    {
+      "Time_Start": 1759.5400000000002,
+      "Time_End": 1764.66,
+      "Text": " they have them from but I'm very glad that they released them because using those structs"
+    },
+    {
+      "Time_Start": 1764.66,
+      "Time_End": 1772.3000000000002,
+      "Text": " it is actually possible to enumerate pending timers and their exact callback."
+    },
+    {
+      "Time_Start": 1772.3,
+      "Time_End": 1781.7,
+      "Text": " And if we do find a pending timer which callback points to a function which is usually executed"
+    },
+    {
+      "Time_Start": 1781.7,
+      "Time_End": 1788.34,
+      "Text": " by a beacon or by a sleep mask, then we can with a very high confidentiality say that"
+    },
+    {
+      "Time_Start": 1788.34,
+      "Time_End": 1793.6399999999999,
+      "Text": " there is a beacon which is using a sleep mask injected into the process."
+    },
+    {
+      "Time_Start": 1793.6399999999999,
+      "Time_End": 1797.62,
+      "Text": " And this is really cool, we are now able to enumerate every single pending timer and the"
+    },
+    {
+      "Time_Start": 1797.62,
+      "Time_End": 1801.86,
+      "Text": " callbacks and this currently finds most of the implementations of timer based sleep masks"
+    },
+    {
+      "Time_Start": 1801.8600000000001,
+      "Time_End": 1804.7800000000002,
+      "Text": " because we are able to enumerate them very precisely."
+    },
+    {
+      "Time_Start": 1804.7800000000002,
+      "Time_End": 1810.0200000000002,
+      "Text": " It of course depends on which function the callback executes because we can only match"
+    },
+    {
+      "Time_Start": 1810.0200000000002,
+      "Time_End": 1814.8600000000001,
+      "Text": " on callbacks or functions of which we know that sleep masks are using them."
+    },
+    {
+      "Time_Start": 1814.8600000000001,
+      "Time_End": 1819.7400000000002,
+      "Text": " The severity here is quite critical and we do see that here that callstack masker of"
+    },
+    {
+      "Time_Start": 1819.7400000000002,
+      "Time_End": 1823.7,
+      "Text": " Cobalt Strike was actually found using this tool."
+    },
+    {
+      "Time_Start": 1823.7,
+      "Time_End": 1828.14,
+      "Text": " As you see callstacks are extremely valuable for defenders and it's not a surprise that"
+    },
+    {
+      "Time_Start": 1828.14,
+      "Time_End": 1831.42,
+      "Text": " our attackers are of course trying to spoof their stacks."
+    },
+    {
+      "Time_Start": 1831.42,
+      "Time_End": 1836.3400000000001,
+      "Text": " There are many proof of concepts, probably the best one is Silent Moonwalk, but most"
+    },
+    {
+      "Time_Start": 1836.3400000000001,
+      "Time_End": 1842.98,
+      "Text": " of those which I found they make use of a ROP gadget which jumps to a non-volatile register"
+    },
+    {
+      "Time_Start": 1842.98,
+      "Time_End": 1844.1000000000001,
+      "Text": " and guess what we can do?"
+    },
+    {
+      "Time_Start": 1844.1000000000001,
+      "Time_End": 1849.38,
+      "Text": " We simply iterate through the callstack and try to see if we find a return address which"
+    },
+    {
+      "Time_Start": 1849.38,
+      "Time_End": 1857.42,
+      "Text": " points to such a gadget and if we have a match here then we could also report this process."
+    },
+    {
+      "Time_Start": 1857.42,
+      "Time_End": 1863.26,
+      "Text": " If we put all of this together then we see in this screenshot echo.exe which is one of"
+    },
+    {
+      "Time_Start": 1863.26,
+      "Time_End": 1869.3000000000002,
+      "Text": " the most popular or well-known sleep masks there is and we have different findings such"
+    },
+    {
+      "Time_Start": 1869.3000000000002,
+      "Time_End": 1877.22,
+      "Text": " as an exec timer which we found which points to NTDL and NTContinue but also many others."
+    },
+    {
+      "Time_Start": 1877.22,
+      "Time_End": 1882.3400000000001,
+      "Text": " So this process would certainly hit the threshold for us to report it."
+    },
+    {
+      "Time_Start": 1882.3400000000001,
+      "Time_End": 1888.3000000000002,
+      "Text": " A year ago I released a proof of concept for this which I have heavily updated for"
+    },
+    {
+      "Time_Start": 1888.3000000000002,
+      "Time_End": 1894.18,
+      "Text": " this presentation and you're free to play with it and let me know your results."
+    },
+    {
+      "Time_Start": 1894.18,
+      "Time_End": 1901.5400000000002,
+      "Text": " It should find most of those timer-based sleep masks currently."
+    },
+    {
+      "Time_Start": 1901.5400000000002,
+      "Time_End": 1907.46,
+      "Text": " In summary, we were way quicker than we thought."
+    },
+    {
+      "Time_Start": 1907.46,
+      "Time_End": 1912.74,
+      "Text": " So in summary what is important to understand is that relying on third-party sensors is"
+    },
+    {
+      "Time_Start": 1912.74,
+      "Time_End": 1917.1000000000001,
+      "Text": " challenging for us as defenders because we cannot customize the events and we have to"
+    },
+    {
+      "Time_Start": 1917.1000000000001,
+      "Time_End": 1919.98,
+      "Text": " live with those events that we have."
+    },
+    {
+      "Time_Start": 1919.98,
+      "Time_End": 1925.02,
+      "Text": " If you want to build your own ETW provider then you need to understand that well-known"
+    },
+    {
+      "Time_Start": 1925.02,
+      "Time_End": 1929.6200000000001,
+      "Text": " if you want to write your own sensor you need to understand that well-known ETW providers"
+    },
+    {
+      "Time_Start": 1929.6200000000001,
+      "Time_End": 1933.42,
+      "Text": " are not always meant to be used for threat hunting."
+    },
+    {
+      "Time_Start": 1933.42,
+      "Time_End": 1938.26,
+      "Text": " We did find a way to use raw sense telemetry which is great and we built our custom sensor"
+    },
+    {
+      "Time_Start": 1938.26,
+      "Time_End": 1943.42,
+      "Text": " based on this SEC provider which requires an MD on board the device but as we were saying"
+    },
+    {
+      "Time_Start": 1943.42,
+      "Time_End": 1947.7,
+      "Text": " in the beginning we want to be using both at the same time so that's not an issue for"
+    },
+    {
+      "Time_Start": 1947.7,
+      "Time_End": 1949.26,
+      "Text": " us."
+    },
+    {
+      "Time_Start": 1949.26,
+      "Time_End": 1954.42,
+      "Text": " The events of our sensor are customizable and we introduced fine-grained detection mechanisms"
+    },
+    {
+      "Time_Start": 1954.42,
+      "Time_End": 1959.22,
+      "Text": " for things such as modular proxying, direct and indirect system calls but there are of"
+    },
+    {
+      "Time_Start": 1959.22,
+      "Time_End": 1963.1000000000001,
+      "Text": " course way more to come in the future."
+    },
+    {
+      "Time_Start": 1963.1000000000001,
+      "Time_End": 1968.9,
+      "Text": " We have a built-in scanner to detect C2 agents and what is going to happen in the future"
+    },
+    {
+      "Time_Start": 1968.9,
+      "Time_End": 1976.38,
+      "Text": " is that we of course need to think about how to protect our own ETW session and our sensor"
+    },
+    {
+      "Time_Start": 1976.38,
+      "Time_End": 1978.1000000000001,
+      "Text": " itself."
+    },
+    {
+      "Time_Start": 1978.1000000000001,
+      "Time_End": 1982.6200000000001,
+      "Text": " We are already doing this it's just that we don't tell you how and of course in the future"
+    },
+    {
+      "Time_Start": 1982.6200000000001,
+      "Time_End": 1992.0600000000002,
+      "Text": " we're going to implement way more events to make our sensor even better."
+    },
+    {
+      "Time_Start": 1992.06,
+      "Time_End": 1996.3799999999999,
+      "Text": " That's it and thank you so much for your attention you are now free to ask any questions."
+    }
+  ]
+}

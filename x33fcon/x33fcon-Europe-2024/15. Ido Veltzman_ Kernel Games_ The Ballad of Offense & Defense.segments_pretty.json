@@ -1,0 +1,1544 @@
+{
+  "segments": [
+    {
+      "Time_Start": 0.0,
+      "Time_End": 15.0,
+      "Text": "This text was transcribed using whisper model: large-v2\n\n First of all, I wanted to say thank you for coming, and thank you for having me, and welcome"
+    },
+    {
+      "Time_Start": 15.0,
+      "Time_End": 17.6,
+      "Text": " to my talk, Kernel Games."
+    },
+    {
+      "Time_Start": 17.6,
+      "Time_End": 20.84,
+      "Text": " So a little bit about myself."
+    },
+    {
+      "Time_Start": 20.84,
+      "Time_End": 22.72,
+      "Text": " I'm a researcher and developer."
+    },
+    {
+      "Time_Start": 22.72,
+      "Time_End": 30.64,
+      "Text": " I'm also making some open source tools, among others are Nidhogg, which is a kernel, a Windows"
+    },
+    {
+      "Time_Start": 30.64,
+      "Time_End": 39.96,
+      "Text": " kernel rootkit that I will use to present today, Sandman, which is NTP backdoor, and"
+    },
+    {
+      "Time_Start": 39.96,
+      "Time_End": 44.16,
+      "Text": " Khronos, which is a zip obfuscation technique."
+    },
+    {
+      "Time_Start": 44.16,
+      "Time_End": 52.56,
+      "Text": " I also post my stuff under this website, and among other things, I posted a lot of the"
+    },
+    {
+      "Time_Start": 52.56,
+      "Time_End": 62.28,
+      "Text": " Ring Zero, which is a kernel development series, and influenced a lot this talk."
+    },
+    {
+      "Time_Start": 62.28,
+      "Time_End": 65.64,
+      "Text": " So let's see what we're going to talk about today."
+    },
+    {
+      "Time_Start": 65.64,
+      "Time_End": 71.76,
+      "Text": " So I will be focusing on post-exploitation and what happens when you already have a rootkit"
+    },
+    {
+      "Time_Start": 71.76,
+      "Time_End": 77.36,
+      "Text": " loaded, so I won't discuss loading the rootkit."
+    },
+    {
+      "Time_Start": 77.36,
+      "Time_End": 84.96,
+      "Text": " We're going to talk about how to inject the DLL, dumping credentials, removing callbacks"
+    },
+    {
+      "Time_Start": 84.96,
+      "Time_End": 93.74,
+      "Text": " of antiviruses and EDRs, and we will also see a demo using the mythic C2, and specifically"
+    },
+    {
+      "Time_Start": 93.74,
+      "Time_End": 100.4,
+      "Text": " Athena agent, and see how everything integrates together."
+    },
+    {
+      "Time_Start": 100.4,
+      "Time_End": 108.92,
+      "Text": " But that's not all, and in the spirit of the conference, I will also show how to detect"
+    },
+    {
+      "Time_Start": 108.92,
+      "Time_End": 117.52000000000001,
+      "Text": " common rootkit methodologies, such as kernel callbacks tampering, and IRP hooking, but"
+    },
+    {
+      "Time_Start": 117.52000000000001,
+      "Time_End": 123.88000000000001,
+      "Text": " not only with waving hands, but also a demo and code that will be released after this"
+    },
+    {
+      "Time_Start": 123.88000000000001,
+      "Time_End": 126.96000000000001,
+      "Text": " talk."
+    },
+    {
+      "Time_Start": 126.96000000000001,
+      "Time_End": 131.92000000000002,
+      "Text": " Let's start by discussing about rootkit methodologies."
+    },
+    {
+      "Time_Start": 131.92000000000002,
+      "Time_End": 141.24,
+      "Text": " So when we want to hide a module, the reason for it would be to evade two types of analysis."
+    },
+    {
+      "Time_Start": 141.24,
+      "Time_End": 145.20000000000002,
+      "Text": " One being manual, and the other one being automatic."
+    },
+    {
+      "Time_Start": 145.20000000000002,
+      "Time_End": 154.84,
+      "Text": " Manual as if the analyst is now sitting on the workstation and trying to find the attacker."
+    },
+    {
+      "Time_Start": 154.84,
+      "Time_End": 163.24,
+      "Text": " They will use all sorts of tools, like system informer or process hacker and other tools,"
+    },
+    {
+      "Time_Start": 163.24,
+      "Time_End": 173.28,
+      "Text": " and also automatic analysis, like tools like PC that scan for injected shellcodes and DLLs"
+    },
+    {
+      "Time_Start": 173.28,
+      "Time_End": 174.96,
+      "Text": " and so on."
+    },
+    {
+      "Time_Start": 174.96,
+      "Time_End": 177.84,
+      "Text": " So let's see how we're doing it on practice."
+    },
+    {
+      "Time_Start": 177.84,
+      "Time_End": 182.28,
+      "Text": " So first we have to acquire a handle to the remote process."
+    },
+    {
+      "Time_Start": 182.28,
+      "Time_End": 190.8,
+      "Text": " We're doing it using this command, which will give us the process, the kernel presentation"
+    },
+    {
+      "Time_Start": 190.8,
+      "Time_End": 193.6,
+      "Text": " of process."
+    },
+    {
+      "Time_Start": 193.6,
+      "Time_End": 199.44,
+      "Text": " And then what we'll do is we want to attach to the kernel stack, and the reason being"
+    },
+    {
+      "Time_Start": 199.44,
+      "Time_End": 211.2,
+      "Text": " that we want to do operations on the process memory, and some of it is not possible if"
+    },
+    {
+      "Time_Start": 211.20000000000002,
+      "Time_End": 213.20000000000002,
+      "Text": " we're not attaching to the stack."
+    },
+    {
+      "Time_Start": 213.20000000000002,
+      "Time_End": 218.92000000000002,
+      "Text": " This is essentially just switching the context of our current thread to be in the context"
+    },
+    {
+      "Time_Start": 218.92000000000002,
+      "Time_End": 221.60000000000002,
+      "Text": " of the target process."
+    },
+    {
+      "Time_Start": 221.60000000000002,
+      "Time_End": 228.00000000000003,
+      "Text": " From there we would like to extract from the PB the in load order model list, which contains"
+    },
+    {
+      "Time_Start": 228.00000000000003,
+      "Time_End": 233.12,
+      "Text": " the currently loaded modules inside the process."
+    },
+    {
+      "Time_Start": 233.12,
+      "Time_End": 241.6,
+      "Text": " Then we'll simply iterate it and remove our target if it's found from the load model on"
+    },
+    {
+      "Time_Start": 241.6,
+      "Time_End": 242.6,
+      "Text": " the list."
+    },
+    {
+      "Time_Start": 242.6,
+      "Time_End": 250.46,
+      "Text": " But if that would be all, we wouldn't have the last cube about the VAD, and the VAD tree"
+    },
+    {
+      "Time_Start": 250.46,
+      "Time_End": 257.04,
+      "Text": " is essentially a tree that describes all the loaded modules and metadata about them."
+    },
+    {
+      "Time_Start": 257.04,
+      "Time_End": 266.84000000000003,
+      "Text": " So for example, it contains the memory regions, the permissions on these regions, and since"
+    },
+    {
+      "Time_Start": 266.84000000000003,
+      "Time_End": 274.8,
+      "Text": " it's so easy to change your own PB, most tools don't rely on the PB, but rely on the VAD,"
+    },
+    {
+      "Time_Start": 274.8,
+      "Time_End": 279.8,
+      "Text": " and we'll see that we can hide from the VAD as well."
+    },
+    {
+      "Time_Start": 279.8,
+      "Time_End": 284.96000000000004,
+      "Text": " The way we do it is we first getting the offset to the VAD root, which is the root of the"
+    },
+    {
+      "Time_Start": 284.96,
+      "Time_End": 291.03999999999996,
+      "Text": " tree that we would like to iterate, and the lock."
+    },
+    {
+      "Time_Start": 291.03999999999996,
+      "Time_End": 297.76,
+      "Text": " The reason why we get the lock is simply we don't want to interfere with other processes"
+    },
+    {
+      "Time_Start": 297.76,
+      "Time_End": 302.64,
+      "Text": " and we want to make sure we're working alone on this."
+    },
+    {
+      "Time_Start": 302.64,
+      "Time_End": 311.35999999999996,
+      "Text": " And after we're getting the lock, we will simply iterate the VAD tree and find our node."
+    },
+    {
+      "Time_Start": 311.36,
+      "Time_End": 317.40000000000003,
+      "Text": " I didn't add the finding code, but it's pretty simple."
+    },
+    {
+      "Time_Start": 317.40000000000003,
+      "Time_End": 323.08000000000004,
+      "Text": " Simply iterating the tree, and once we found the node, we will try to hide it."
+    },
+    {
+      "Time_Start": 323.08000000000004,
+      "Time_End": 329.84000000000003,
+      "Text": " If it's type of image, what we're talking about when we're talking about loaded module,"
+    },
+    {
+      "Time_Start": 329.84000000000003,
+      "Time_End": 332.08000000000004,
+      "Text": " then we will simply null the name."
+    },
+    {
+      "Time_Start": 332.08000000000004,
+      "Time_End": 338.82,
+      "Text": " If the name is nulled, then most tools will simply won't present it."
+    },
+    {
+      "Time_Start": 338.82,
+      "Time_End": 340.96000000000004,
+      "Text": " So we achieved our goal."
+    },
+    {
+      "Time_Start": 340.96,
+      "Time_End": 345.35999999999996,
+      "Text": " And if it's physical memory, we just mark it as no access."
+    },
+    {
+      "Time_Start": 345.35999999999996,
+      "Time_End": 354.68,
+      "Text": " Again, it is very good when we're talking about live analysis and about automatic tools,"
+    },
+    {
+      "Time_Start": 354.68,
+      "Time_End": 360.59999999999997,
+      "Text": " but for example, if an investigator already took the workstation and doing a postmortem"
+    },
+    {
+      "Time_Start": 360.59999999999997,
+      "Time_End": 368.59999999999997,
+      "Text": " analysis, then they will be able to find it using tools like volatility."
+    },
+    {
+      "Time_Start": 368.6,
+      "Time_End": 371.44,
+      "Text": " Let's talk about dumping credentials as well."
+    },
+    {
+      "Time_Start": 371.44,
+      "Time_End": 378.44,
+      "Text": " So the reason being is we want to first and foremost evade from anti-viruses and EDRs."
+    },
+    {
+      "Time_Start": 378.44,
+      "Time_End": 379.44,
+      "Text": " Why?"
+    },
+    {
+      "Time_Start": 379.44,
+      "Time_End": 385.84000000000003,
+      "Text": " Because I talked actually a couple of days ago with someone that said that he had to"
+    },
+    {
+      "Time_Start": 385.84000000000003,
+      "Time_End": 391.64000000000004,
+      "Text": " load a vulnerable driver that will load another driver that will disable the anti-viruses"
+    },
+    {
+      "Time_Start": 391.64000000000004,
+      "Time_End": 398.52000000000004,
+      "Text": " and EDRs just so he can dump credentials later on with what not."
+    },
+    {
+      "Time_Start": 398.52,
+      "Time_End": 403.64,
+      "Text": " And I think it's a bit of a shame because if you're already on the kernel, why not just"
+    },
+    {
+      "Time_Start": 403.64,
+      "Time_End": 406.08,
+      "Text": " pass it on the kernel?"
+    },
+    {
+      "Time_Start": 406.08,
+      "Time_End": 413.12,
+      "Text": " And besides that advantage, we also don't need to tackle PPL."
+    },
+    {
+      "Time_Start": 413.12,
+      "Time_End": 419.79999999999995,
+      "Text": " PPL is protected process light and does not allow even if your system accessing that process,"
+    },
+    {
+      "Time_Start": 419.79999999999995,
+      "Time_End": 423.96,
+      "Text": " so you would have to bypass that as well."
+    },
+    {
+      "Time_Start": 424.52000000000004,
+      "Time_End": 430.64000000000004,
+      "Text": " I think the best part is that the code is recyclable, so you can just use it in the"
+    },
+    {
+      "Time_Start": 430.64000000000004,
+      "Time_End": 431.64000000000004,
+      "Text": " kernel."
+    },
+    {
+      "Time_Start": 431.64000000000004,
+      "Time_End": 437.36,
+      "Text": " It will work almost identical and I think it's a win-win."
+    },
+    {
+      "Time_Start": 437.36,
+      "Time_End": 441.28000000000003,
+      "Text": " So when we're talking about dumping credentials, we care about two things."
+    },
+    {
+      "Time_Start": 441.28000000000003,
+      "Time_End": 447.68000000000006,
+      "Text": " We care about the login session list that contains the domain, username, and the hash"
+    },
+    {
+      "Time_Start": 447.68,
+      "Time_End": 454.32,
+      "Text": " will encrypt it and the hash of the user and we care about the 3DS key."
+    },
+    {
+      "Time_Start": 454.32,
+      "Time_End": 459.88,
+      "Text": " The 3DS key is the key that's used to encrypt this user hash."
+    },
+    {
+      "Time_Start": 459.88,
+      "Time_End": 465.64,
+      "Text": " So what we're doing here, getting a handle to LSAS, attaching to the stack, and then"
+    },
+    {
+      "Time_Start": 465.64,
+      "Time_End": 472.56,
+      "Text": " we're doing binary finding because neither of the structs are exported by default or"
+    },
+    {
+      "Time_Start": 472.56,
+      "Time_End": 482.36,
+      "Text": " exported at all from the, sorry, from LSAS, we have to search it manually on the process."
+    },
+    {
+      "Time_Start": 482.36,
+      "Time_End": 489.72,
+      "Text": " We're just using this function as the style function and we will find a couple of signatures"
+    },
+    {
+      "Time_Start": 489.72,
+      "Time_End": 491.84000000000003,
+      "Text": " to get to our structs."
+    },
+    {
+      "Time_Start": 491.84000000000003,
+      "Time_End": 499.44,
+      "Text": " So here we're just moving on, quotes and quotes, and just getting to the function that contains"
+    },
+    {
+      "Time_Start": 499.52,
+      "Time_End": 503.8,
+      "Text": " the offset to the object that we want."
+    },
+    {
+      "Time_Start": 503.8,
+      "Time_End": 511.88,
+      "Text": " Once we find that function, we want to extract the 3DS key by simply reading it."
+    },
+    {
+      "Time_Start": 511.88,
+      "Time_End": 515.46,
+      "Text": " But before we read it, remember, we're in the kernel."
+    },
+    {
+      "Time_Start": 515.46,
+      "Time_End": 521.32,
+      "Text": " So if we're accessing invalid memory, what will happen is we will crash the machine and"
+    },
+    {
+      "Time_Start": 521.32,
+      "Time_End": 526.84,
+      "Text": " that's the opposite of the whole stealthy idea of having a rootkit."
+    },
+    {
+      "Time_Start": 526.84,
+      "Time_End": 531.64,
+      "Text": " So what we'll do is validate it in two phases."
+    },
+    {
+      "Time_Start": 531.64,
+      "Time_End": 540.08,
+      "Text": " Phase one would be using probe for read or probe address as a wrapper around it."
+    },
+    {
+      "Time_Start": 540.08,
+      "Time_End": 546.6,
+      "Text": " Once we know that the address is valid for read and write, because probe for read is"
+    },
+    {
+      "Time_Start": 546.6,
+      "Time_End": 554.96,
+      "Text": " nowadays validating also for write, then we will validate the tag, which is a magic that"
+    },
+    {
+      "Time_Start": 554.96,
+      "Time_End": 559.6800000000001,
+      "Text": " makes sure that we read the right struct."
+    },
+    {
+      "Time_Start": 559.6800000000001,
+      "Time_End": 568.76,
+      "Text": " Now we'll simply copy the 3DS key to our struct that we will later on send to the user."
+    },
+    {
+      "Time_Start": 568.76,
+      "Time_End": 574.22,
+      "Text": " And now what we have to do is just get the logon session list."
+    },
+    {
+      "Time_Start": 574.22,
+      "Time_End": 580.44,
+      "Text": " After we extract it, we will validate it the same way we validated the 3DS key in terms"
+    },
+    {
+      "Time_Start": 580.44,
+      "Time_End": 586.0,
+      "Text": " of probing the address and make sure that it is readable."
+    },
+    {
+      "Time_Start": 586.0,
+      "Time_End": 589.5200000000001,
+      "Text": " And we will get how many credentials we actually have."
+    },
+    {
+      "Time_Start": 589.5200000000001,
+      "Time_End": 594.6400000000001,
+      "Text": " So we can allocate that amount of data."
+    },
+    {
+      "Time_Start": 594.6400000000001,
+      "Time_End": 599.2800000000001,
+      "Text": " Once we allocate that memory, what we do is simply copy what we're interested in, which"
+    },
+    {
+      "Time_Start": 599.2800000000001,
+      "Time_End": 604.7600000000001,
+      "Text": " is the username, domain, and encrypted anti-hash."
+    },
+    {
+      "Time_Start": 604.76,
+      "Time_End": 612.84,
+      "Text": " And now we have everything we need to dump the credentials, send it to the user, and"
+    },
+    {
+      "Time_Start": 612.84,
+      "Time_End": 617.48,
+      "Text": " they will decrypt it on their home, on a user mode program."
+    },
+    {
+      "Time_Start": 617.48,
+      "Time_End": 626.04,
+      "Text": " The reason that they didn't decrypt it on the kernel is because I want to avoid dangerous"
+    },
+    {
+      "Time_Start": 626.04,
+      "Time_End": 631.54,
+      "Text": " functions and dangerous operations and make it as minimized as possible so it will be"
+    },
+    {
+      "Time_Start": 631.54,
+      "Time_End": 636.0,
+      "Text": " less prone for errors."
+    },
+    {
+      "Time_Start": 636.0,
+      "Time_End": 638.02,
+      "Text": " Now we're simply detaching from the process."
+    },
+    {
+      "Time_Start": 638.02,
+      "Time_End": 644.16,
+      "Text": " If it failed, we will free all the resources and if it succeeded, we will send the size"
+    },
+    {
+      "Time_Start": 644.16,
+      "Time_End": 652.06,
+      "Text": " that the user needs to allocate and then validate it, of course, and then send the list to decrypt"
+    },
+    {
+      "Time_Start": 652.06,
+      "Time_End": 656.78,
+      "Text": " it on their own."
+    },
+    {
+      "Time_Start": 656.78,
+      "Time_End": 661.18,
+      "Text": " Let's do a little refreshment on object callbacks."
+    },
+    {
+      "Time_Start": 661.82,
+      "Time_End": 668.1400000000001,
+      "Text": " Callbacks are a mechanism that's used by antiviruses and EDRs to get telemetry because in the end"
+    },
+    {
+      "Time_Start": 668.1400000000001,
+      "Time_End": 672.4200000000001,
+      "Text": " detections are driven from telemetry that they get."
+    },
+    {
+      "Time_Start": 672.4200000000001,
+      "Time_End": 677.58,
+      "Text": " We can register callbacks for pre or post operation."
+    },
+    {
+      "Time_Start": 677.58,
+      "Time_End": 682.58,
+      "Text": " A great example would be preparation for opening a handle."
+    },
+    {
+      "Time_Start": 682.58,
+      "Time_End": 693.1,
+      "Text": " So any time anything wants to open a handle to a process, we can intercept that call and"
+    },
+    {
+      "Time_Start": 693.1,
+      "Time_End": 694.82,
+      "Text": " strip permissions."
+    },
+    {
+      "Time_Start": 694.82,
+      "Time_End": 697.82,
+      "Text": " We can deny that request whatsoever."
+    },
+    {
+      "Time_Start": 697.82,
+      "Time_End": 704.7,
+      "Text": " There are all different kinds of object callbacks."
+    },
+    {
+      "Time_Start": 704.7,
+      "Time_End": 712.5400000000001,
+      "Text": " For example, registry, processes, threads, files, events, not all of them are enabled"
+    },
+    {
+      "Time_Start": 712.5400000000001,
+      "Time_End": 719.62,
+      "Text": " and if you try to enable them, you will encounter blue skin of death from patch guard."
+    },
+    {
+      "Time_Start": 719.62,
+      "Time_End": 724.94,
+      "Text": " So we won't want to enable them."
+    },
+    {
+      "Time_Start": 725.94,
+      "Time_End": 734.1800000000001,
+      "Text": " I'm taking as an example from the rootkit handling process and thread types."
+    },
+    {
+      "Time_Start": 734.1800000000001,
+      "Time_End": 743.58,
+      "Text": " So first we will acquire the type lock and then we will iterate the list, simple as that."
+    },
+    {
+      "Time_Start": 743.58,
+      "Time_End": 749.74,
+      "Text": " If the callback is enabled, we will first see if what we want, if the others want to"
+    },
+    {
+      "Time_Start": 749.74,
+      "Time_End": 757.38,
+      "Text": " remove is a pre operation or post operation because there are different functions and"
+    },
+    {
+      "Time_Start": 757.38,
+      "Time_End": 766.42,
+      "Text": " if we match, we will see if it is enabled and if it is enabled, what we will do is then"
+    },
+    {
+      "Time_Start": 766.42,
+      "Time_End": 772.28,
+      "Text": " only replace it with dummy because we don't care if it isn't enabled."
+    },
+    {
+      "Time_Start": 772.28,
+      "Time_End": 780.24,
+      "Text": " The dummy will simply make return success so the antiviruses and EDRs won't get the"
+    },
+    {
+      "Time_Start": 780.24,
+      "Time_End": 786.72,
+      "Text": " telemetry and like I said before, if there's no telemetry, there's no detection."
+    },
+    {
+      "Time_Start": 786.72,
+      "Time_End": 792.88,
+      "Text": " So our idea when we're tampering with callbacks, all callbacks, no matter if it's object or"
+    },
+    {
+      "Time_Start": 792.88,
+      "Time_End": 801.6,
+      "Text": " not, is to make sure that the EDR and antiviruses won't have the telemetry and the data to make"
+    },
+    {
+      "Time_Start": 801.6,
+      "Time_End": 806.5400000000001,
+      "Text": " detections upon it."
+    },
+    {
+      "Time_Start": 806.5400000000001,
+      "Time_End": 814.08,
+      "Text": " And now let's see how we even get the address we want because we need as a user perspective"
+    },
+    {
+      "Time_Start": 814.08,
+      "Time_End": 819.16,
+      "Text": " somehow tie the address to the driver."
+    },
+    {
+      "Time_Start": 819.16,
+      "Time_End": 820.88,
+      "Text": " Let's see how we do it."
+    },
+    {
+      "Time_Start": 820.88,
+      "Time_End": 827.9,
+      "Text": " So what we're getting is first getting the type lock and then we iterate."
+    },
+    {
+      "Time_Start": 827.9,
+      "Time_End": 832.78,
+      "Text": " If it's enabled, then we want to copy it."
+    },
+    {
+      "Time_Start": 832.78,
+      "Time_End": 836.98,
+      "Text": " But before we copy it, we will try to find the associated driver."
+    },
+    {
+      "Time_Start": 836.98,
+      "Time_End": 841.62,
+      "Text": " I will show in a bit the code of how we do it."
+    },
+    {
+      "Time_Start": 841.62,
+      "Time_End": 849.72,
+      "Text": " And we copy the callback address to ours alongside the driver name and return it to the user"
+    },
+    {
+      "Time_Start": 849.72,
+      "Time_End": 852.86,
+      "Text": " later on."
+    },
+    {
+      "Time_Start": 852.86,
+      "Time_End": 854.86,
+      "Text": " How we do it is pretty simple."
+    },
+    {
+      "Time_Start": 854.86,
+      "Time_End": 862.94,
+      "Text": " We use ZWA query information to get the information of the loaded drivers because usually our"
+    },
+    {
+      "Time_Start": 862.94,
+      "Time_End": 870.26,
+      "Text": " target driver will be a valid driver, meaning they just loaded it by service, signed, so"
+    },
+    {
+      "Time_Start": 870.26,
+      "Time_End": 873.62,
+      "Text": " it will be on that list."
+    },
+    {
+      "Time_Start": 873.62,
+      "Time_End": 882.34,
+      "Text": " And after we get that information, we iterate all drivers and simply checking if the address"
+    },
+    {
+      "Time_Start": 882.34,
+      "Time_End": 891.86,
+      "Text": " of the callback is within that specific address range of the driver."
+    },
+    {
+      "Time_Start": 891.86,
+      "Time_End": 898.7,
+      "Text": " But I didn't want only to show code and speak with waving hands."
+    },
+    {
+      "Time_Start": 898.7,
+      "Time_End": 903.7,
+      "Text": " I wanted to show a real demo."
+    },
+    {
+      "Time_Start": 903.7,
+      "Time_End": 906.38,
+      "Text": " So let's talk a little bit about Mythic."
+    },
+    {
+      "Time_Start": 906.38,
+      "Time_End": 914.62,
+      "Text": " Mythic is a very popular C2 infrastructure written primarily in Golang but it's a feature."
+    },
+    {
+      "Time_Start": 914.62,
+      "Time_End": 922.86,
+      "Text": " And to my opinion, it's a great choice for everyone that wants to create their agent"
+    },
+    {
+      "Time_Start": 922.86,
+      "Time_End": 929.38,
+      "Text": " but don't want to mess with the server side because usually when people want to create"
+    },
+    {
+      "Time_Start": 929.38,
+      "Time_End": 937.38,
+      "Text": " their agent, they're not looking to manage their communication, make everything synchronized"
+    },
+    {
+      "Time_Start": 937.38,
+      "Time_End": 940.62,
+      "Text": " and make everything go smoothly and make the UI."
+    },
+    {
+      "Time_Start": 940.62,
+      "Time_End": 944.82,
+      "Text": " So I think it solves that problem."
+    },
+    {
+      "Time_Start": 944.82,
+      "Time_End": 950.86,
+      "Text": " And even if you don't want to make your own agent from scratch, you can base your work"
+    },
+    {
+      "Time_Start": 950.86,
+      "Time_End": 956.5,
+      "Text": " on other people's work and just use theirs."
+    },
+    {
+      "Time_Start": 956.62,
+      "Time_End": 961.86,
+      "Text": " And it is highly maintained and there are lots of agents to choose from."
+    },
+    {
+      "Time_Start": 961.86,
+      "Time_End": 966.06,
+      "Text": " So I chose to integrate with the developer of Athena."
+    },
+    {
+      "Time_Start": 966.06,
+      "Time_End": 976.3,
+      "Text": " Athena is a .NET cross-platform Mythic agent, meaning it can run on Windows, Linux, macOS"
+    },
+    {
+      "Time_Start": 976.3,
+      "Time_End": 983.94,
+      "Text": " and it has so many features, SOCKS5, P2P agent support, command loading and whatnot."
+    },
+    {
+      "Time_Start": 983.94,
+      "Time_End": 988.3000000000001,
+      "Text": " Highly recommend to check his work."
+    },
+    {
+      "Time_Start": 988.3000000000001,
+      "Time_End": 995.62,
+      "Text": " And in the newest version, it also contains support for all of NeDog's features with the"
+    },
+    {
+      "Time_Start": 995.62,
+      "Time_End": 1002.0600000000001,
+      "Text": " new C Sharp API I introduced."
+    },
+    {
+      "Time_Start": 1002.0600000000001,
+      "Time_End": 1010.32,
+      "Text": " So here I wanted to show a very basic example of using Mythic and NeDog."
+    },
+    {
+      "Time_Start": 1010.32,
+      "Time_End": 1019.0400000000001,
+      "Text": " So we have here we have this window that we will see that we will see the process."
+    },
+    {
+      "Time_Start": 1019.0400000000001,
+      "Time_End": 1021.36,
+      "Text": " And in this window, this is our control window."
+    },
+    {
+      "Time_Start": 1021.36,
+      "Time_End": 1025.04,
+      "Text": " So let's see."
+    },
+    {
+      "Time_Start": 1025.04,
+      "Time_End": 1028.06,
+      "Text": " Here we're getting a process named agent.exe."
+    },
+    {
+      "Time_Start": 1028.06,
+      "Time_End": 1029.8400000000001,
+      "Text": " We see that it is running."
+    },
+    {
+      "Time_Start": 1029.8400000000001,
+      "Time_End": 1031.48,
+      "Text": " This is our agent."
+    },
+    {
+      "Time_Start": 1031.48,
+      "Time_End": 1039.44,
+      "Text": " And we use the NeDog API to put the PID of that process and hide it."
+    },
+    {
+      "Time_Start": 1039.56,
+      "Time_End": 1044.56,
+      "Text": " We see that it is successful and now the process is no longer seen."
+    },
+    {
+      "Time_Start": 1044.56,
+      "Time_End": 1052.0,
+      "Text": " Again, this is very, very, very simplified example."
+    },
+    {
+      "Time_Start": 1052.0,
+      "Time_End": 1053.52,
+      "Text": " And you can do so much more."
+    },
+    {
+      "Time_Start": 1053.52,
+      "Time_End": 1056.68,
+      "Text": " You can do the hide DLL we talked about."
+    },
+    {
+      "Time_Start": 1056.68,
+      "Time_End": 1059.3200000000002,
+      "Text": " You can do dumping credentials."
+    },
+    {
+      "Time_Start": 1059.3200000000002,
+      "Time_End": 1065.5800000000002,
+      "Text": " You can do anything that NeDog gives you to do."
+    },
+    {
+      "Time_Start": 1065.58,
+      "Time_End": 1070.1799999999998,
+      "Text": " Let's talk about the detection part."
+    },
+    {
+      "Time_Start": 1070.1799999999998,
+      "Time_End": 1077.98,
+      "Text": " So first I will come up with some proposition."
+    },
+    {
+      "Time_Start": 1077.98,
+      "Time_End": 1081.82,
+      "Text": " My proposition would be to do periodic scanning."
+    },
+    {
+      "Time_Start": 1081.82,
+      "Time_End": 1088.26,
+      "Text": " And I know that PerchCore does it and I know that it might be a little bit problematic."
+    },
+    {
+      "Time_Start": 1088.26,
+      "Time_End": 1092.96,
+      "Text": " But I think that with the right implementation, it can be good."
+    },
+    {
+      "Time_Start": 1092.96,
+      "Time_End": 1099.6000000000001,
+      "Text": " And the reason being that we don't really have callbacks and ETW events for everything."
+    },
+    {
+      "Time_Start": 1099.6000000000001,
+      "Time_End": 1106.52,
+      "Text": " For some things, we simply cannot get that information as well."
+    },
+    {
+      "Time_Start": 1106.52,
+      "Time_End": 1115.28,
+      "Text": " So in the case of tampering kernel callbacks, like we saw before, we would need to scan"
+    },
+    {
+      "Time_Start": 1115.28,
+      "Time_End": 1119.64,
+      "Text": " and see if any kernel object was modified."
+    },
+    {
+      "Time_Start": 1119.64,
+      "Time_End": 1126.92,
+      "Text": " The best solution will also be to load the driver that will do the periodic scanning"
+    },
+    {
+      "Time_Start": 1126.92,
+      "Time_End": 1129.48,
+      "Text": " in the very early stages."
+    },
+    {
+      "Time_Start": 1129.48,
+      "Time_End": 1137.2800000000002,
+      "Text": " Meaning if you have Elam driver that will be loaded shortly after the OS is loaded,"
+    },
+    {
+      "Time_Start": 1137.2800000000002,
+      "Time_End": 1139.5400000000002,
+      "Text": " it's perfect."
+    },
+    {
+      "Time_Start": 1139.5400000000002,
+      "Time_End": 1142.96,
+      "Text": " And then we would like to find the odd callbacks."
+    },
+    {
+      "Time_Start": 1142.96,
+      "Time_End": 1145.22,
+      "Text": " But what are the odd callbacks?"
+    },
+    {
+      "Time_Start": 1145.22,
+      "Time_End": 1150.38,
+      "Text": " So let's take, for example, the object callbacks we saw earlier."
+    },
+    {
+      "Time_Start": 1150.38,
+      "Time_End": 1160.26,
+      "Text": " As we saw, what we did was replacing one of the callbacks with a dummy callback."
+    },
+    {
+      "Time_Start": 1160.26,
+      "Time_End": 1170.22,
+      "Text": " What we can do is see if there's mismatch between one pre-callback operation and another."
+    },
+    {
+      "Time_Start": 1170.22,
+      "Time_End": 1174.26,
+      "Text": " And see if they're tied to different drivers."
+    },
+    {
+      "Time_Start": 1174.3,
+      "Time_End": 1177.3,
+      "Text": " Or if a driver has more than one handler."
+    },
+    {
+      "Time_Start": 1177.3,
+      "Time_End": 1185.66,
+      "Text": " For example, if we have the callback that is being called before a handle is opened."
+    },
+    {
+      "Time_Start": 1185.66,
+      "Time_End": 1192.48,
+      "Text": " And we see that it already has one, and another driver is mapped, has another one."
+    },
+    {
+      "Time_Start": 1192.48,
+      "Time_End": 1200.94,
+      "Text": " So we have two pre-handle callbacks to the same driver, which is pretty weird."
+    },
+    {
+      "Time_Start": 1200.94,
+      "Time_End": 1205.42,
+      "Text": " Another thing would be, well, you can tell me, well, I can just zero it."
+    },
+    {
+      "Time_Start": 1205.42,
+      "Time_End": 1206.7,
+      "Text": " You're right."
+    },
+    {
+      "Time_Start": 1206.7,
+      "Time_End": 1214.18,
+      "Text": " But then what will happen is we'll have an enable field and zeroed callbacks."
+    },
+    {
+      "Time_Start": 1214.18,
+      "Time_End": 1220.26,
+      "Text": " Of course, it isn't bulletproof and you can make it disabled and zero and whatnot."
+    },
+    {
+      "Time_Start": 1220.26,
+      "Time_End": 1229.14,
+      "Text": " But I think that many tools that disable callbacks miss that thing."
+    },
+    {
+      "Time_Start": 1229.14,
+      "Time_End": 1233.22,
+      "Text": " But it's not all kernel callbacks."
+    },
+    {
+      "Time_Start": 1233.22,
+      "Time_End": 1238.8200000000002,
+      "Text": " There's also ETWTI, which is ETW Threat Intelligence."
+    },
+    {
+      "Time_Start": 1238.8200000000002,
+      "Time_End": 1242.8200000000002,
+      "Text": " This is a provider that was introduced a couple of years ago."
+    },
+    {
+      "Time_Start": 1242.8200000000002,
+      "Time_End": 1247.9,
+      "Text": " And what it does, it gives insights on specific security related events."
+    },
+    {
+      "Time_Start": 1247.9,
+      "Time_End": 1257.42,
+      "Text": " For example, if someone queues an APC for a process, you will get it through this provider."
+    },
+    {
+      "Time_Start": 1257.42,
+      "Time_End": 1264.22,
+      "Text": " And the reason it was introduced is pretty interesting, because back in the golden age"
+    },
+    {
+      "Time_Start": 1264.22,
+      "Time_End": 1267.54,
+      "Text": " of rootkits, everyone just took the SSDT."
+    },
+    {
+      "Time_Start": 1267.54,
+      "Time_End": 1276.1000000000001,
+      "Text": " The SSDT is the table that maps between the Cisco number to the handler of that Cisco"
+    },
+    {
+      "Time_Start": 1276.1000000000001,
+      "Time_End": 1277.1000000000001,
+      "Text": " in the kernel."
+    },
+    {
+      "Time_Start": 1277.1000000000001,
+      "Time_End": 1285.9,
+      "Text": " Antivirus has used it to do detections and find out some problematic calls."
+    },
+    {
+      "Time_Start": 1285.9,
+      "Time_End": 1291.1000000000001,
+      "Text": " But so also rootkits did that, did the same thing."
+    },
+    {
+      "Time_Start": 1291.1000000000001,
+      "Time_End": 1300.14,
+      "Text": " So Microsoft decided to not allow anyone to do it and just did and just introduced PatchGuard"
+    },
+    {
+      "Time_Start": 1300.14,
+      "Time_End": 1302.7800000000002,
+      "Text": " that protects that object."
+    },
+    {
+      "Time_Start": 1302.7800000000002,
+      "Time_End": 1308.7,
+      "Text": " Of course, PatchGuard is which means that you can modify and then restore."
+    },
+    {
+      "Time_Start": 1308.7,
+      "Time_End": 1312.26,
+      "Text": " But in the case of SSDT, it works pretty well."
+    },
+    {
+      "Time_Start": 1312.26,
+      "Time_End": 1316.74,
+      "Text": " Because you can't really change the hook all the time."
+    },
+    {
+      "Time_Start": 1316.74,
+      "Time_End": 1324.02,
+      "Text": " And also it is heavily used by EDRs and antiviruses as a source for telemetry."
+    },
+    {
+      "Time_Start": 1324.02,
+      "Time_End": 1332.22,
+      "Text": " And like we said, what we want, our goal is to always narrow down the telemetry."
+    },
+    {
+      "Time_Start": 1332.22,
+      "Time_End": 1339.16,
+      "Text": " Before we talk about how to mitigate against it, let's learn how to temper it."
+    },
+    {
+      "Time_Start": 1339.5600000000002,
+      "Time_End": 1345.2,
+      "Text": " And better understand what is the problem and how we can fix it."
+    },
+    {
+      "Time_Start": 1345.2,
+      "Time_End": 1351.3200000000002,
+      "Text": " So what we're doing here is very similar to the credential dumping part."
+    },
+    {
+      "Time_Start": 1351.3200000000002,
+      "Time_End": 1356.46,
+      "Text": " And we just get the kinsert QAPC as an entry point."
+    },
+    {
+      "Time_Start": 1356.46,
+      "Time_End": 1363.0,
+      "Text": " And then we find the ETWTI handle using binary search."
+    },
+    {
+      "Time_Start": 1363.0,
+      "Time_End": 1368.76,
+      "Text": " From there, depends on the Windows version, we will have a handle log."
+    },
+    {
+      "Time_Start": 1368.76,
+      "Time_End": 1371.2,
+      "Text": " We will have a handle log or not."
+    },
+    {
+      "Time_Start": 1371.2,
+      "Time_End": 1373.46,
+      "Text": " And if we have, we will take that log."
+    },
+    {
+      "Time_Start": 1373.46,
+      "Time_End": 1378.84,
+      "Text": " Because we don't want to interfere with other processes."
+    },
+    {
+      "Time_Start": 1378.84,
+      "Time_End": 1383.6,
+      "Text": " If we want to disable it, we will simply copy zero to the enabled field."
+    },
+    {
+      "Time_Start": 1383.6,
+      "Time_End": 1385.44,
+      "Text": " It's that simple."
+    },
+    {
+      "Time_Start": 1385.44,
+      "Time_End": 1392.34,
+      "Text": " And if we want to restore it, we will simply restore the previous value."
+    },
+    {
+      "Time_Start": 1392.34,
+      "Time_End": 1402.6999999999998,
+      "Text": " So from the defensive aspect and from the defensive part, what we would want is to check"
+    },
+    {
+      "Time_Start": 1402.6999999999998,
+      "Time_End": 1404.86,
+      "Text": " if the enabled field is zero."
+    },
+    {
+      "Time_Start": 1404.86,
+      "Time_End": 1409.1799999999998,
+      "Text": " Because there's no reason why it would be disabled."
+    },
+    {
+      "Time_Start": 1409.1799999999998,
+      "Time_End": 1416.1399999999999,
+      "Text": " And it doesn't really apply only to ETWTI, but also to all ETW providers."
+    },
+    {
+      "Time_Start": 1416.14,
+      "Time_End": 1422.94,
+      "Text": " So if you have the ETW security or what's not, if someone tries to disable it."
+    },
+    {
+      "Time_Start": 1422.94,
+      "Time_End": 1432.8000000000002,
+      "Text": " Because ETW as a whole is a great source for telemetry."
+    },
+    {
+      "Time_Start": 1432.8000000000002,
+      "Time_End": 1439.3000000000002,
+      "Text": " And before we're going to the demo, and before we're going to my proposition for detection,"
+    },
+    {
+      "Time_Start": 1439.3000000000002,
+      "Time_End": 1442.74,
+      "Text": " let's cover the last thing."
+    },
+    {
+      "Time_Start": 1442.74,
+      "Time_End": 1444.74,
+      "Text": " Which is IRP hooking."
+    },
+    {
+      "Time_Start": 1445.34,
+      "Time_End": 1452.66,
+      "Text": " IRP hooking is when one driver replaces the IRP handler of another one."
+    },
+    {
+      "Time_Start": 1452.66,
+      "Time_End": 1453.94,
+      "Text": " It's pretty simple."
+    },
+    {
+      "Time_Start": 1453.94,
+      "Time_End": 1462.86,
+      "Text": " And a very good example of it would be when you replace the IRP ng create of the antifest"
+    },
+    {
+      "Time_Start": 1462.86,
+      "Time_End": 1463.98,
+      "Text": " driver."
+    },
+    {
+      "Time_Start": 1463.98,
+      "Time_End": 1471.3,
+      "Text": " So it means that you control when someone calls the create file function."
+    },
+    {
+      "Time_Start": 1471.3,
+      "Time_End": 1480.5,
+      "Text": " So you can control if they so you can control if they open a handle, if they try to create"
+    },
+    {
+      "Time_Start": 1480.5,
+      "Time_End": 1481.5,
+      "Text": " certain file."
+    },
+    {
+      "Time_Start": 1481.5,
+      "Time_End": 1487.1399999999999,
+      "Text": " And you can disallow it if you want or change the permissions."
+    },
+    {
+      "Time_Start": 1487.1399999999999,
+      "Time_End": 1492.74,
+      "Text": " And another very common hooks are IRP ng device control."
+    },
+    {
+      "Time_Start": 1492.74,
+      "Time_End": 1496.28,
+      "Text": " Which is used to send ICTLs to the driver."
+    },
+    {
+      "Time_Start": 1496.28,
+      "Time_End": 1503.6399999999999,
+      "Text": " And we will see an example of IRP hooking of the device IO control of the NSI proxy"
+    },
+    {
+      "Time_Start": 1503.6399999999999,
+      "Time_End": 1504.6399999999999,
+      "Text": " driver."
+    },
+    {
+      "Time_Start": 1504.6399999999999,
+      "Time_End": 1515.8,
+      "Text": " And the hook is being done to hide communication from Netstat and tools like it."
+    },
+    {
+      "Time_Start": 1515.8,
+      "Time_End": 1520.8799999999999,
+      "Text": " And we have another communication method, which is via IRP read and write."
+    },
+    {
+      "Time_Start": 1520.88,
+      "Time_End": 1528.0,
+      "Text": " Because you can also simply read and write to the driver."
+    },
+    {
+      "Time_Start": 1528.0,
+      "Time_End": 1533.48,
+      "Text": " Here we have on one side the debugging window."
+    },
+    {
+      "Time_Start": 1533.48,
+      "Time_End": 1536.5600000000002,
+      "Text": " And on the other side we have the console."
+    },
+    {
+      "Time_Start": 1536.5600000000002,
+      "Time_End": 1541.5600000000002,
+      "Text": " So here we can see that we have the debugging running."
+    },
+    {
+      "Time_Start": 1541.5600000000002,
+      "Time_End": 1545.8600000000001,
+      "Text": " And the IRP hook detector scanning and didn't find anything."
+    },
+    {
+      "Time_Start": 1545.8600000000001,
+      "Time_End": 1557.6200000000001,
+      "Text": " Now we will use the client to hide port 80 on local and see that now it is being detected."
+    },
+    {
+      "Time_Start": 1557.6200000000001,
+      "Time_End": 1572.98,
+      "Text": " And after we will restore it, we will see that it is no longer detected."
+    },
+    {
+      "Time_Start": 1572.98,
+      "Time_End": 1578.58,
+      "Text": " I didn't want to just tell you, yeah, this thing works, trust me."
+    },
+    {
+      "Time_Start": 1578.58,
+      "Time_End": 1586.66,
+      "Text": " I wanted to also give you the code and what I actually did here."
+    },
+    {
+      "Time_Start": 1586.66,
+      "Time_End": 1594.3,
+      "Text": " So what we first what we're doing first is we want to iterate all the driver object."
+    },
+    {
+      "Time_Start": 1594.3,
+      "Time_End": 1602.18,
+      "Text": " The reason being that the driver object contained a major IRP function, major IRP table, sorry."
+    },
+    {
+      "Time_Start": 1602.18,
+      "Time_End": 1609.7,
+      "Text": " And this contains all the IRP handlers for all kind of IRPs."
+    },
+    {
+      "Time_Start": 1609.7,
+      "Time_End": 1619.1000000000001,
+      "Text": " After we got that directory object, we can just lock it and then iterate all the items."
+    },
+    {
+      "Time_Start": 1619.1000000000001,
+      "Time_End": 1622.5,
+      "Text": " Like I said, we care only about driver object."
+    },
+    {
+      "Time_Start": 1622.5,
+      "Time_End": 1633.22,
+      "Text": " So what we will do is check if the item is really driver object by using the OB get type,"
+    },
+    {
+      "Time_Start": 1633.22,
+      "Time_End": 1636.98,
+      "Text": " get object type function."
+    },
+    {
+      "Time_Start": 1636.98,
+      "Time_End": 1642.82,
+      "Text": " And if it is really a driver object, we will simply iterate the IRP handlers and do a very"
+    },
+    {
+      "Time_Start": 1642.82,
+      "Time_End": 1649.1,
+      "Text": " similar thing to what we did in the match address before."
+    },
+    {
+      "Time_Start": 1649.1000000000001,
+      "Time_End": 1657.18,
+      "Text": " And if it isn't in the range of the driver, we just need to find the driver's name and"
+    },
+    {
+      "Time_Start": 1657.18,
+      "Time_End": 1658.8200000000002,
+      "Text": " report it."
+    },
+    {
+      "Time_Start": 1658.8200000000002,
+      "Time_End": 1660.9,
+      "Text": " But there's a caveat."
+    },
+    {
+      "Time_Start": 1660.9,
+      "Time_End": 1670.1000000000001,
+      "Text": " Because as you can see, we have a should report because when I first made this, I saw that"
+    },
+    {
+      "Time_Start": 1670.1000000000001,
+      "Time_End": 1676.7,
+      "Text": " there is a lot of drivers that naturally just hook IRP of another driver."
+    },
+    {
+      "Time_Start": 1676.7,
+      "Time_End": 1685.54,
+      "Text": " So I made a certain list that just contains all the drivers and it isn't the best."
+    },
+    {
+      "Time_Start": 1685.54,
+      "Time_End": 1692.3400000000001,
+      "Text": " So the best thing would be not to make a list of all the drivers but also which exact functions"
+    },
+    {
+      "Time_Start": 1692.3400000000001,
+      "Time_End": 1700.46,
+      "Text": " they will hook because if not, you can just inject your code to the driver and hook from"
+    },
+    {
+      "Time_Start": 1700.46,
+      "Time_End": 1704.5800000000002,
+      "Text": " there and be undetected from this tool."
+    },
+    {
+      "Time_Start": 1704.62,
+      "Time_End": 1712.8999999999999,
+      "Text": " And the report is also a bit problematic because we just print it out to the console and the"
+    },
+    {
+      "Time_Start": 1712.8999999999999,
+      "Time_End": 1721.86,
+      "Text": " best thing might be to write it to ETW and then get it to a scene."
+    },
+    {
+      "Time_Start": 1721.86,
+      "Time_End": 1730.46,
+      "Text": " The reason I'm saying ETW and not ICTL is because I think ICTL or filter or what not"
+    },
+    {
+      "Time_Start": 1730.58,
+      "Time_End": 1739.3,
+      "Text": " is because I think that it is a better thing for defenders to not have the dependency of"
+    },
+    {
+      "Time_Start": 1739.3,
+      "Time_End": 1745.94,
+      "Text": " something that will listen and also to prevent malicious actors from just listening and hijacking"
+    },
+    {
+      "Time_Start": 1745.94,
+      "Time_End": 1752.14,
+      "Text": " that communication to get the information."
+    },
+    {
+      "Time_Start": 1752.14,
+      "Time_End": 1757.46,
+      "Text": " And I came to the end of the talk."
+    },
+    {
+      "Time_Start": 1757.46,
+      "Time_End": 1760.7,
+      "Text": " And let's see what we learned today."
+    },
+    {
+      "Time_Start": 1760.7,
+      "Time_End": 1765.58,
+      "Text": " So we saw how to hide a module, a loaded module."
+    },
+    {
+      "Time_Start": 1765.58,
+      "Time_End": 1771.74,
+      "Text": " We saw how to dump credentials from the kernel directly without the need of another external"
+    },
+    {
+      "Time_Start": 1771.74,
+      "Time_End": 1780.3,
+      "Text": " tool after we disabled the EDR's callbacks."
+    },
+    {
+      "Time_Start": 1780.3,
+      "Time_End": 1787.94,
+      "Text": " We learned how to remove callbacks of antiviruses in EDR and I hope understood the real meaning"
+    },
+    {
+      "Time_Start": 1787.94,
+      "Time_End": 1790.7,
+      "Text": " of why to do it."
+    },
+    {
+      "Time_Start": 1790.7,
+      "Time_End": 1797.6599999999999,
+      "Text": " And then we saw a real demo with Mythic and Athena, great project, you should definitely"
+    },
+    {
+      "Time_Start": 1797.6599999999999,
+      "Time_End": 1800.3799999999999,
+      "Text": " check them out."
+    },
+    {
+      "Time_Start": 1800.3799999999999,
+      "Time_End": 1807.18,
+      "Text": " And in the end, we wrapped it all and saw how to detect several modern capabilities"
+    },
+    {
+      "Time_Start": 1807.3,
+      "Time_End": 1809.6200000000001,
+      "Text": " of rootkits."
+    },
+    {
+      "Time_Start": 1809.6200000000001,
+      "Time_End": 1814.22,
+      "Text": " And so a demo and the code will be released later on."
+    },
+    {
+      "Time_Start": 1814.22,
+      "Time_End": 1816.78,
+      "Text": " So basically that's it."
+    },
+    {
+      "Time_Start": 1816.78,
+      "Time_End": 1817.5,
+      "Text": " Any questions?"
+    }
+  ]
+}

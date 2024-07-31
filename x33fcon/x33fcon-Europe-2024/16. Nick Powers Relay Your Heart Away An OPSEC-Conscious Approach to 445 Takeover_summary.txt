@@ -1,0 +1,22 @@
+**Nick Powers' Talk: Relay Your Heart Away**
+
+- Introduction: Nick Powers, from the adversary simulation team at SpectreOps, presents a new technique for red teamers and penetration testers to control inbound SMB traffic without leaving obvious indicators of compromise.
+- Problem Statement: Conducting SMB-based NTLM relays over Command-and-Control (C2) infrastructure is challenging due to the Windows kernel binding to port 445/TCP. Existing solutions, such as loading drivers or manipulating LSASS, come with operational security risks and may not be stealthy enough for certain engagements.
+- Existing Solutions: 
+  - WinDivert driver: User-mode packet interception library, used by tools like Port Bender and Sharp Relay. 
+  - Custom LSA authentication providers: Hook into NTLM and Negotiate authentication packages, but can't be unloaded until a reboot, posing stability risks. 
+  - Disabling LanMan Server service: Requires a reboot, which is often not an option during assessments.
+- Reverse Engineering Approach: 
+  - Static and dynamic analysis of drivers associated with port 445 binding. 
+  - Identification of relevant functions and call stacks using IDA, WinDbg, and system tools. 
+  - Discovery of `INetAcquirePort` and `INetReleasePort` functions in the TCP/IP driver, which are triggered when re-enabling the LanMan Server service. 
+  - Understanding service dependencies and their impact on port binding/unbinding.
+- Unbinding Port 445: 
+  - Through dynamic analysis, Powers identifies a series of service control manager interactions that lead to unbinding port 445. 
+  - By disabling and stopping specific services in a particular order, based on their dependencies, the `servnet.sys` driver is unloaded, releasing port 445. 
+  - This process can be automated with a simple BOF or Python script, allowing for remote unbinding and re-enabling of the port.
+- Demonstration: 
+  - Powers demonstrates the technique's effectiveness by combining it with SCCM takeover primitives to compromise a privileged server. 
+  - Using Cobalt Strike and existing tools like SCCM Hunter, he shows how unbinding port 445 simplifies the process of setting up a reverse port forward for NTLM relays. 
+  - By coercing NTLM authentication with tools like Petit Potam and PrinterBug, the traffic is tunneled out of the network and relayed back to compromise the SCCM site database and primary site server.
+- Conclusion: The presented technique provides a lower-touch, OPSEC-conscious solution for controlling inbound SMB traffic during red team engagements, making NTLM relays over C2 more accessible and stealthy. The Python script for automation will be released on GitHub soon.

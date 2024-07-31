@@ -1,0 +1,2284 @@
+{
+  "segments": [
+    {
+      "Time_Start": 0.0,
+      "Time_End": 13.120000000000001,
+      "Text": "This text was transcribed using whisper model: large-v2\n\n Hello everyone, I'm really happy to have the opportunity to talk here today."
+    },
+    {
+      "Time_Start": 13.120000000000001,
+      "Time_End": 23.080000000000002,
+      "Text": " My talk is to name Cat and Mouse or Chess and the agenda looks as follows."
+    },
+    {
+      "Time_Start": 23.080000000000002,
+      "Time_End": 29.6,
+      "Text": " First I will give a short introduction on who I am, then I'm going to give a short overview"
+    },
+    {
+      "Time_Start": 29.64,
+      "Time_End": 38.64,
+      "Text": " over how EDRs, so Endpoint Detection and Response Systems, typically detect malicious payloads."
+    },
+    {
+      "Time_Start": 38.64,
+      "Time_End": 44.56,
+      "Text": " Afterwards I'm going to give an overview over the techniques that were published within"
+    },
+    {
+      "Time_Start": 44.56,
+      "Time_End": 52.32,
+      "Text": " the last years to bypass these user-learned hooking techniques or detection techniques."
+    },
+    {
+      "Time_Start": 53.32,
+      "Time_End": 61.0,
+      "Text": " After doing that I'm going to show you first an idea I had for a new approach on how to"
+    },
+    {
+      "Time_Start": 61.0,
+      "Time_End": 65.84,
+      "Text": " bypass these user-learned hooking techniques."
+    },
+    {
+      "Time_Start": 65.84,
+      "Time_End": 71.28,
+      "Text": " I'm going to talk a little bit about the challenges I personally faced when implementing a proof"
+    },
+    {
+      "Time_Start": 71.28,
+      "Time_End": 78.96000000000001,
+      "Text": " of concept for this idea and afterwards I'm actually going to show this proof of concept"
+    },
+    {
+      "Time_Start": 78.96000000000001,
+      "Time_End": 86.16000000000001,
+      "Text": " and we'll release a tool on GitHub for it so that everyone can take a look at it."
+    },
+    {
+      "Time_Start": 86.16000000000001,
+      "Time_End": 91.08000000000001,
+      "Text": " So first things first, who am I?"
+    },
+    {
+      "Time_Start": 91.08000000000001,
+      "Time_End": 97.4,
+      "Text": " Actually or currently I'm a team leader at a pentest slash red team at Artec Cyber Security"
+    },
+    {
+      "Time_Start": 97.4,
+      "Time_End": 100.52000000000001,
+      "Text": " which is a company located in Germany."
+    },
+    {
+      "Time_Start": 100.52000000000001,
+      "Time_End": 106.48,
+      "Text": " So it's pretty much a red talk."
+    },
+    {
+      "Time_Start": 106.48,
+      "Time_End": 112.76,
+      "Text": " At work I really like to break into company environments and to move laterally there and"
+    },
+    {
+      "Time_Start": 112.76,
+      "Time_End": 120.0,
+      "Text": " to escalate privileges so this is the thing which I typically like the most."
+    },
+    {
+      "Time_Start": 120.0,
+      "Time_End": 124.48,
+      "Text": " And inspired by the community I started over the recent years to also share all the knowledge"
+    },
+    {
+      "Time_Start": 124.48,
+      "Time_End": 125.48,
+      "Text": " that I gained."
+    },
+    {
+      "Time_Start": 125.48,
+      "Time_End": 132.56,
+      "Text": " So I have published many tool scripts on GitHub for example, I have a personal blog post where"
+    },
+    {
+      "Time_Start": 132.64000000000001,
+      "Time_End": 138.6,
+      "Text": " I wrote about specific different topics and I also made some YouTube videos or initially"
+    },
+    {
+      "Time_Start": 138.6,
+      "Time_End": 143.74,
+      "Text": " it was Twitch streams and the recordings are on YouTube."
+    },
+    {
+      "Time_Start": 143.74,
+      "Time_End": 151.44,
+      "Text": " But most things that I ever published were somehow related to AV evasion or to EDR evasion"
+    },
+    {
+      "Time_Start": 151.44,
+      "Time_End": 159.94,
+      "Text": " just because this is the topic which I'm specifically interested in and what I always like the most."
+    },
+    {
+      "Time_Start": 159.94,
+      "Time_End": 166.82,
+      "Text": " So how do EDRs actually detect malicious payloads?"
+    },
+    {
+      "Time_Start": 166.82,
+      "Time_End": 172.7,
+      "Text": " So we have two, let's say, levels or main things where they act or where they have detections."
+    },
+    {
+      "Time_Start": 172.7,
+      "Time_End": 175.57999999999998,
+      "Text": " This is the user land and the kernel land."
+    },
+    {
+      "Time_Start": 175.57999999999998,
+      "Time_End": 180.54,
+      "Text": " And in the user land for example they could do like static analysis or dynamic analysis"
+    },
+    {
+      "Time_Start": 180.54,
+      "Time_End": 185.34,
+      "Text": " for any binary or for any process that is in the user land."
+    },
+    {
+      "Time_Start": 185.34,
+      "Time_End": 189.64,
+      "Text": " This could be looking for certificates as we heard before in other talks."
+    },
+    {
+      "Time_Start": 189.64000000000001,
+      "Time_End": 194.08,
+      "Text": " It could also be a signature-based scan or it could be a memory scan or it could be any"
+    },
+    {
+      "Time_Start": 194.08,
+      "Time_End": 196.98000000000002,
+      "Text": " sandbox-based detection for example."
+    },
+    {
+      "Time_Start": 196.98000000000002,
+      "Time_End": 198.24,
+      "Text": " Then there is another thing."
+    },
+    {
+      "Time_Start": 198.24,
+      "Time_End": 203.08,
+      "Text": " This is I think the main difference between classic antivirus vendors and EDR vendors,"
+    },
+    {
+      "Time_Start": 203.08,
+      "Time_End": 205.32000000000002,
+      "Text": " namely user land hooking."
+    },
+    {
+      "Time_Start": 205.32000000000002,
+      "Time_End": 212.08,
+      "Text": " I'm going to explain that on a dedicated slide because it's the main topic here."
+    },
+    {
+      "Time_Start": 212.08,
+      "Time_End": 219.52,
+      "Text": " For example they could also check the threat stack to detect malicious activities or payloads"
+    },
+    {
+      "Time_Start": 219.56,
+      "Time_End": 225.12,
+      "Text": " and in the kernel land the most important detections that are used are kernel callbacks"
+    },
+    {
+      "Time_Start": 225.12,
+      "Time_End": 230.52,
+      "Text": " on the one hand side or it's ETW threat intelligence."
+    },
+    {
+      "Time_Start": 230.52,
+      "Time_End": 237.12,
+      "Text": " So I'm only giving a short overview about these two techniques here in one slide because"
+    },
+    {
+      "Time_Start": 237.12,
+      "Time_End": 245.32000000000002,
+      "Text": " the main focus is on user land hooking-based detections and on how to bypass them."
+    },
+    {
+      "Time_Start": 245.32000000000002,
+      "Time_End": 247.88,
+      "Text": " So what is user land hook?"
+    },
+    {
+      "Time_Start": 247.88,
+      "Time_End": 251.48,
+      "Text": " How could a user land hook look like?"
+    },
+    {
+      "Time_Start": 251.48,
+      "Time_End": 255.68,
+      "Text": " Oh, shit."
+    },
+    {
+      "Time_Start": 255.68,
+      "Time_End": 256.68,
+      "Text": " What did I do?"
+    },
+    {
+      "Time_Start": 256.68,
+      "Time_End": 257.68,
+      "Text": " Okay."
+    },
+    {
+      "Time_Start": 257.68,
+      "Time_End": 264.98,
+      "Text": " This is not my presenter but I'm not going to try to make the red blinking light again."
+    },
+    {
+      "Time_Start": 264.98,
+      "Time_End": 267.04,
+      "Text": " So what are user land hooks about?"
+    },
+    {
+      "Time_Start": 267.04,
+      "Time_End": 275.32,
+      "Text": " User land hooks are in the very end the EDRs typically inject or load their own DLL into"
+    },
+    {
+      "Time_Start": 275.32,
+      "Time_End": 280.15999999999997,
+      "Text": " any newly spawned process at least in the user land."
+    },
+    {
+      "Time_Start": 280.15999999999997,
+      "Time_End": 282.2,
+      "Text": " And what do they do there?"
+    },
+    {
+      "Time_Start": 282.2,
+      "Time_End": 288.4,
+      "Text": " In the very end as you can see in the screenshot on the right-hand side they place a jump instruction"
+    },
+    {
+      "Time_Start": 288.4,
+      "Time_End": 295.24,
+      "Text": " into the memory so that every time when the specific Windows APIs are called that the"
+    },
+    {
+      "Time_Start": 295.24,
+      "Time_End": 301.36,
+      "Text": " jump goes to the EDR DLL and that the EDR DLL can then do input argument analysis."
+    },
+    {
+      "Time_Start": 301.36,
+      "Time_End": 306.68,
+      "Text": " So they can in the very end check what is this API going to do?"
+    },
+    {
+      "Time_Start": 306.68,
+      "Time_End": 310.40000000000003,
+      "Text": " And these checks are done on runtime."
+    },
+    {
+      "Time_Start": 310.40000000000003,
+      "Time_End": 316.64,
+      "Text": " So if the payload is already running or if the executable is already running, then EDRs"
+    },
+    {
+      "Time_Start": 316.64,
+      "Time_End": 325.2,
+      "Text": " can with this technique get an overview about what is happening on runtime."
+    },
+    {
+      "Time_Start": 325.2,
+      "Time_End": 331.08000000000004,
+      "Text": " I'm going to give one more example here because I think it's not that easy to understand if"
+    },
+    {
+      "Time_Start": 331.08,
+      "Time_End": 336.24,
+      "Text": " you never faced this kind of detection or if you're not working on that level."
+    },
+    {
+      "Time_Start": 336.24,
+      "Time_End": 339.21999999999997,
+      "Text": " It's not that easy to understand in the first moment."
+    },
+    {
+      "Time_Start": 339.21999999999997,
+      "Time_End": 346.36,
+      "Text": " So let's imagine we have a malware that wants to inject a malicious payload into a remote"
+    },
+    {
+      "Time_Start": 346.36,
+      "Time_End": 348.36,
+      "Text": " process."
+    },
+    {
+      "Time_Start": 348.36,
+      "Time_End": 354.56,
+      "Text": " This malware could do it by first calling open process, the Windows API, to get a handle"
+    },
+    {
+      "Time_Start": 354.56,
+      "Time_End": 355.84,
+      "Text": " to the process."
+    },
+    {
+      "Time_Start": 355.84000000000003,
+      "Time_End": 361.72,
+      "Text": " Then it could call VirtualAllocX to allocate memory in this remote process."
+    },
+    {
+      "Time_Start": 361.72,
+      "Time_End": 365.96000000000004,
+      "Text": " Afterwards it could write actually the malware into the remote process with write process"
+    },
+    {
+      "Time_Start": 365.96000000000004,
+      "Time_End": 371.76000000000005,
+      "Text": " memory and then it could call createRemoteThread to start the malware that was injected into"
+    },
+    {
+      "Time_Start": 371.76000000000005,
+      "Time_End": 374.08000000000004,
+      "Text": " the remote process."
+    },
+    {
+      "Time_Start": 374.08000000000004,
+      "Time_End": 382.14000000000004,
+      "Text": " And createRemoteThread calls the NTDLL function NTCreateThreadX in the very end before the"
+    },
+    {
+      "Time_Start": 382.14000000000004,
+      "Time_End": 385.6,
+      "Text": " execution is going into the kernel end."
+    },
+    {
+      "Time_Start": 385.6,
+      "Time_End": 392.32000000000005,
+      "Text": " So this is the very last point where an EDR could do analysis in the user land."
+    },
+    {
+      "Time_Start": 392.32000000000005,
+      "Time_End": 397.48,
+      "Text": " And an example definition for NTCreateThreadX looks as follows."
+    },
+    {
+      "Time_Start": 397.48,
+      "Time_End": 404.84000000000003,
+      "Text": " And as you can see, there is a start address as an input parameter for NTCreateThreadX."
+    },
+    {
+      "Time_Start": 404.84000000000003,
+      "Time_End": 411.46000000000004,
+      "Text": " And an EDR could, for example, check what is happening at this specific start address."
+    },
+    {
+      "Time_Start": 411.46000000000004,
+      "Time_End": 414.04,
+      "Text": " So if you imagine there is a malware which is encrypted."
+    },
+    {
+      "Time_Start": 414.04,
+      "Time_End": 416.28000000000003,
+      "Text": " It's decrypting itself on runtime."
+    },
+    {
+      "Time_Start": 416.28000000000003,
+      "Time_End": 421.76000000000005,
+      "Text": " It's then injecting itself into a different process and calling NTCreateThreadX."
+    },
+    {
+      "Time_Start": 421.76000000000005,
+      "Time_End": 424.40000000000003,
+      "Text": " Then there is a jump to the EDRDLL."
+    },
+    {
+      "Time_Start": 424.40000000000003,
+      "Time_End": 430.18,
+      "Text": " The EDRDLL can check what is happening at the start address."
+    },
+    {
+      "Time_Start": 430.18,
+      "Time_End": 438.1,
+      "Text": " It could then, for example, do memory scan for the location for this specific start address."
+    },
+    {
+      "Time_Start": 438.1,
+      "Time_End": 443.38,
+      "Text": " And if it then finds because at this moment the malware is actually already decrypted."
+    },
+    {
+      "Time_Start": 443.4,
+      "Time_End": 448.8,
+      "Text": " So at this moment it could find any known malicious payload such as a CobaltStrikeBeacon,"
+    },
+    {
+      "Time_Start": 448.8,
+      "Time_End": 454.6,
+      "Text": " SliverBeacon, CovenantShareCode, or whatever else."
+    },
+    {
+      "Time_Start": 454.6,
+      "Time_End": 455.6,
+      "Text": " So this is how it's working."
+    },
+    {
+      "Time_Start": 455.6,
+      "Time_End": 460.82,
+      "Text": " And if it finds something malicious, then it can, for example, kill the process on runtime"
+    },
+    {
+      "Time_Start": 460.82,
+      "Time_End": 466.76,
+      "Text": " because it verified actually that this is malicious."
+    },
+    {
+      "Time_Start": 466.76,
+      "Time_End": 468.96,
+      "Text": " Kernel callbacks."
+    },
+    {
+      "Time_Start": 468.96000000000004,
+      "Time_End": 474.08000000000004,
+      "Text": " You can imagine kernel callbacks are a little bit like hooks, but from the kernel end."
+    },
+    {
+      "Time_Start": 474.08000000000004,
+      "Time_End": 482.50000000000006,
+      "Text": " So the EDRs can, with their own driver, also on specific events, do a live analysis of"
+    },
+    {
+      "Time_Start": 482.50000000000006,
+      "Time_End": 484.56000000000006,
+      "Text": " what is happening here."
+    },
+    {
+      "Time_Start": 484.56000000000006,
+      "Time_End": 491.1,
+      "Text": " But kernel callbacks are by far not used as much as userland hooks."
+    },
+    {
+      "Time_Start": 491.1,
+      "Time_End": 497.52000000000004,
+      "Text": " This is also the reason why I personally think userland-based detections are still mainly"
+    },
+    {
+      "Time_Start": 497.52000000000004,
+      "Time_End": 502.40000000000003,
+      "Text": " more used than kernel callbacks, for example."
+    },
+    {
+      "Time_Start": 502.40000000000003,
+      "Time_End": 508.40000000000003,
+      "Text": " Event tracing for Windows Threat Intelligence is somehow different because this is an event-based"
+    },
+    {
+      "Time_Start": 508.40000000000003,
+      "Time_End": 509.94000000000005,
+      "Text": " subscription."
+    },
+    {
+      "Time_Start": 509.94000000000005,
+      "Time_End": 516.98,
+      "Text": " So any EDR or AV vendor can more or less subscribe for these events."
+    },
+    {
+      "Time_Start": 516.98,
+      "Time_End": 522.08,
+      "Text": " And these events can also indicate, like, memory allocation, there was something written"
+    },
+    {
+      "Time_Start": 522.08,
+      "Time_End": 526.2,
+      "Text": " into a remote process, there was a threat created or something else."
+    },
+    {
+      "Time_Start": 526.2,
+      "Time_End": 530.32,
+      "Text": " And they can then interact after this specific event has been captured."
+    },
+    {
+      "Time_Start": 530.32,
+      "Time_End": 537.76,
+      "Text": " So this is not live compared to kernel callbacks, but it is, yeah, analysis done afterwards."
+    },
+    {
+      "Time_Start": 537.76,
+      "Time_End": 543.44,
+      "Text": " And then they could check, for example, afterwards the stack trace to see is there anything malicious,"
+    },
+    {
+      "Time_Start": 543.44,
+      "Time_End": 549.9000000000001,
+      "Text": " is there unbacked memory or do memory scans or whatever else."
+    },
+    {
+      "Time_Start": 549.9,
+      "Time_End": 558.4599999999999,
+      "Text": " So what was actually published in the recent years to bypass userland-based detections?"
+    },
+    {
+      "Time_Start": 558.4599999999999,
+      "Time_End": 560.74,
+      "Text": " On the one hand side, there is unhooking."
+    },
+    {
+      "Time_Start": 560.74,
+      "Time_End": 564.1,
+      "Text": " I'm giving a short explanation about how that works."
+    },
+    {
+      "Time_Start": 564.1,
+      "Time_End": 570.38,
+      "Text": " Then there is the usage of direct syscalls, which I'm also going to explain very shortly"
+    },
+    {
+      "Time_Start": 570.38,
+      "Time_End": 572.86,
+      "Text": " because the focus here is on a new technique."
+    },
+    {
+      "Time_Start": 572.86,
+      "Time_End": 578.42,
+      "Text": " So I'm only giving a rough overview, but you can find material on GitHub and everywhere"
+    },
+    {
+      "Time_Start": 578.5799999999999,
+      "Time_End": 581.2199999999999,
+      "Text": " about all of these topics and look that up."
+    },
+    {
+      "Time_Start": 581.2199999999999,
+      "Time_End": 586.06,
+      "Text": " I'm going to give a short overview about how hardware breakpoints can be used to detect"
+    },
+    {
+      "Time_Start": 586.06,
+      "Time_End": 594.14,
+      "Text": " no, how hardware breakpoints can be used to evade userland-based hooking detections."
+    },
+    {
+      "Time_Start": 594.14,
+      "Time_End": 601.2199999999999,
+      "Text": " And I'm also giving an example and explain how DLL entry point patching works."
+    },
+    {
+      "Time_Start": 601.2199999999999,
+      "Time_End": 605.54,
+      "Text": " So first things first, unhooking."
+    },
+    {
+      "Time_Start": 605.54,
+      "Time_End": 611.86,
+      "Text": " As we saw in the screenshot, the EDR typically places a jump instruction into specific Windows"
+    },
+    {
+      "Time_Start": 611.86,
+      "Time_End": 619.42,
+      "Text": " APIs to jump to itself's DLL and to make an analysis there."
+    },
+    {
+      "Time_Start": 619.42,
+      "Time_End": 624.12,
+      "Text": " This hook is typically in the text section of the DLL in memory."
+    },
+    {
+      "Time_Start": 624.12,
+      "Time_End": 631.98,
+      "Text": " So if we grab a fresh NTDL copy from disk, for example, or from any other location like"
+    },
+    {
+      "Time_Start": 632.1,
+      "Time_End": 638.22,
+      "Text": " known DLLs or something like that, and if we override the text section of our memory"
+    },
+    {
+      "Time_Start": 638.22,
+      "Time_End": 644.82,
+      "Text": " from the process with that new fresh copy, then we're going to remove the hooks."
+    },
+    {
+      "Time_Start": 644.82,
+      "Time_End": 650.38,
+      "Text": " And after doing that, when they are removed, the EDR will not jump to itself's DLL."
+    },
+    {
+      "Time_Start": 650.38,
+      "Time_End": 656.66,
+      "Text": " It cannot do an analysis, and therefore these detections are bypassed."
+    },
+    {
+      "Time_Start": 656.66,
+      "Time_End": 661.46,
+      "Text": " The usage of direct syscalls is another technique."
+    },
+    {
+      "Time_Start": 661.46,
+      "Time_End": 668.9000000000001,
+      "Text": " In the variant, this concept is that instead of using NTDL like an application would normally"
+    },
+    {
+      "Time_Start": 668.9000000000001,
+      "Time_End": 678.14,
+      "Text": " do, we are going to embed the specific NTDL functions completely in our own code."
+    },
+    {
+      "Time_Start": 678.14,
+      "Time_End": 681.26,
+      "Text": " And this can be done, for example, like in the image on the right-hand side."
+    },
+    {
+      "Time_Start": 681.26,
+      "Time_End": 688.34,
+      "Text": " This is assembly code, how a syscall would typically look like."
+    },
+    {
+      "Time_Start": 688.34,
+      "Time_End": 693.22,
+      "Text": " And these functions could be either retrieved or the syscall numbers could be retrieved"
+    },
+    {
+      "Time_Start": 693.22,
+      "Time_End": 694.58,
+      "Text": " from memory."
+    },
+    {
+      "Time_Start": 694.58,
+      "Time_End": 699.26,
+      "Text": " This would be proof of concepts like health gate, recycle gate, and all the other gate"
+    },
+    {
+      "Time_Start": 699.26,
+      "Time_End": 706.34,
+      "Text": " techniques, and NTDL functions could be retrieved from disk."
+    },
+    {
+      "Time_Start": 706.34,
+      "Time_End": 711.26,
+      "Text": " So you could grab, again, a fresh copy from disk and directly push that into your own"
+    },
+    {
+      "Time_Start": 711.26,
+      "Time_End": 714.62,
+      "Text": " process memory and call the functions from there."
+    },
+    {
+      "Time_Start": 714.62,
+      "Time_End": 720.14,
+      "Text": " An example would be D invoke, which is a C sharp example on GitHub."
+    },
+    {
+      "Time_Start": 720.14,
+      "Time_End": 726.7,
+      "Text": " And there is an option to partially or fully embed the direct syscalls into your own process."
+    },
+    {
+      "Time_Start": 726.7,
+      "Time_End": 734.38,
+      "Text": " This would be proof of concepts like syswhispers version 1, 2, and 3."
+    },
+    {
+      "Time_Start": 734.38,
+      "Time_End": 737.86,
+      "Text": " So this would be an alternative, again."
+    },
+    {
+      "Time_Start": 737.86,
+      "Time_End": 744.44,
+      "Text": " In this case, if we have the syscall embedded in our own process, there is no jump instruction."
+    },
+    {
+      "Time_Start": 744.44,
+      "Time_End": 749.1600000000001,
+      "Text": " When there's no jump, the EDR will not do an analysis, and therefore, we can bypass"
+    },
+    {
+      "Time_Start": 749.1600000000001,
+      "Time_End": 752.6,
+      "Text": " these detections."
+    },
+    {
+      "Time_Start": 752.6,
+      "Time_End": 757.96,
+      "Text": " Hardware breakpoints, this one was also for me, again, not that easy to understand in"
+    },
+    {
+      "Time_Start": 757.96,
+      "Time_End": 758.96,
+      "Text": " the very first moment."
+    },
+    {
+      "Time_Start": 758.96,
+      "Time_End": 763.5600000000001,
+      "Text": " It took some time to read through all the papers and through the code."
+    },
+    {
+      "Time_Start": 763.5600000000001,
+      "Time_End": 767.0,
+      "Text": " But I think in the meanwhile, I got it."
+    },
+    {
+      "Time_Start": 767.0,
+      "Time_End": 773.12,
+      "Text": " And in the very end, it's about that we're going to set hardware breakpoints to specific"
+    },
+    {
+      "Time_Start": 773.12,
+      "Time_End": 775.68,
+      "Text": " syscall start addresses."
+    },
+    {
+      "Time_Start": 775.68,
+      "Time_End": 781.6,
+      "Text": " So if we want to, for example, call NT or ZV protect virtual memory, then we're going"
+    },
+    {
+      "Time_Start": 781.6,
+      "Time_End": 784.88,
+      "Text": " to set a hardware breakpoint to this address."
+    },
+    {
+      "Time_Start": 784.88,
+      "Time_End": 791.6,
+      "Text": " And when this hardware breakpoint is hit, because we want to actually execute this API,"
+    },
+    {
+      "Time_Start": 791.6,
+      "Time_End": 797.72,
+      "Text": " then we are going to hide or the code which is behind our hardware breakpoint will hide"
+    },
+    {
+      "Time_Start": 797.72,
+      "Time_End": 802.58,
+      "Text": " all the input parameters for NT protect virtual memory from the stack."
+    },
+    {
+      "Time_Start": 802.58,
+      "Time_End": 806.24,
+      "Text": " So they will be removed and will be put to another location."
+    },
+    {
+      "Time_Start": 806.24,
+      "Time_End": 810.9200000000001,
+      "Text": " And then the execution will continue with single steps."
+    },
+    {
+      "Time_Start": 810.9200000000001,
+      "Time_End": 817.32,
+      "Text": " And we're doing that until the moment when we actually hit the syscall instruction itself."
+    },
+    {
+      "Time_Start": 817.32,
+      "Time_End": 826.2800000000001,
+      "Text": " Because when we are at the syscall instruction, then the jump to the EDR DLL was already done."
+    },
+    {
+      "Time_Start": 826.2800000000001,
+      "Time_End": 831.5200000000001,
+      "Text": " The EDR was not able to find any malicious code, because all input parameters were hidden."
+    },
+    {
+      "Time_Start": 831.5200000000001,
+      "Time_End": 833.5200000000001,
+      "Text": " They were not on the stack."
+    },
+    {
+      "Time_Start": 833.5200000000001,
+      "Time_End": 840.0400000000001,
+      "Text": " And before actually executing the syscall, we are restoring the parameters from where"
+    },
+    {
+      "Time_Start": 840.0400000000001,
+      "Time_End": 841.9200000000001,
+      "Text": " we backed them up."
+    },
+    {
+      "Time_Start": 841.9200000000001,
+      "Time_End": 849.5600000000001,
+      "Text": " And then we continue execution so that the NT DLL function is properly working."
+    },
+    {
+      "Time_Start": 849.5600000000001,
+      "Time_End": 854.96,
+      "Text": " And one example which is already on GitHub and I think which was the first one doing"
+    },
+    {
+      "Time_Start": 854.96,
+      "Time_End": 859.32,
+      "Text": " that is tempering syscalls version 2."
+    },
+    {
+      "Time_Start": 859.32,
+      "Time_End": 867.5400000000001,
+      "Text": " So if you want to check that out, you can also go on this page and take a look at it."
+    },
+    {
+      "Time_Start": 867.5400000000001,
+      "Time_End": 871.6400000000001,
+      "Text": " Another technique which was published is DLL entry point patching."
+    },
+    {
+      "Time_Start": 871.64,
+      "Time_End": 878.84,
+      "Text": " The corresponding proof of concept is the tool sharp block from C Corp."
+    },
+    {
+      "Time_Start": 878.84,
+      "Time_End": 883.18,
+      "Text": " And there are also some blog posts about this technique, which is linked here."
+    },
+    {
+      "Time_Start": 883.18,
+      "Time_End": 888.6,
+      "Text": " And the idea for this technique is to create a new process."
+    },
+    {
+      "Time_Start": 888.6,
+      "Time_End": 890.8,
+      "Text": " So a child process."
+    },
+    {
+      "Time_Start": 890.8,
+      "Time_End": 895.24,
+      "Text": " And to debug it with the debug only this process flag."
+    },
+    {
+      "Time_Start": 895.24,
+      "Time_End": 902.6800000000001,
+      "Text": " And if we set this flag for a new process, then our own, namely the parent process, can"
+    },
+    {
+      "Time_Start": 902.6800000000001,
+      "Time_End": 905.52,
+      "Text": " act as a debugger for the child process."
+    },
+    {
+      "Time_Start": 905.52,
+      "Time_End": 911.64,
+      "Text": " So we can receive specific events related to our child process."
+    },
+    {
+      "Time_Start": 911.64,
+      "Time_End": 917.84,
+      "Text": " And one event would be the load DLL debug event."
+    },
+    {
+      "Time_Start": 917.84,
+      "Time_End": 924.16,
+      "Text": " And if this occurs, the execution, for example, then stops."
+    },
+    {
+      "Time_Start": 924.16,
+      "Time_End": 929.3199999999999,
+      "Text": " And we can do some stuff before actually continuing execution."
+    },
+    {
+      "Time_Start": 929.3199999999999,
+      "Time_End": 933.78,
+      "Text": " So we can see that the EDR DLL has loaded for our child process."
+    },
+    {
+      "Time_Start": 933.78,
+      "Time_End": 941.68,
+      "Text": " And directly after it was loaded, we can, from the parent process, patch the entry point"
+    },
+    {
+      "Time_Start": 941.68,
+      "Time_End": 947.48,
+      "Text": " in the newly spawned process so that it looks like on the screenshot on the left bottom"
+    },
+    {
+      "Time_Start": 947.48,
+      "Time_End": 948.48,
+      "Text": " side."
+    },
+    {
+      "Time_Start": 948.48,
+      "Time_End": 954.52,
+      "Text": " And basically we're patching it with a single byte, namely 0XC3."
+    },
+    {
+      "Time_Start": 954.52,
+      "Time_End": 960.9200000000001,
+      "Text": " And this leads to when DLL main is called to, like, return true."
+    },
+    {
+      "Time_Start": 960.9200000000001,
+      "Time_End": 965.04,
+      "Text": " And it will do nothing but returning and then exit."
+    },
+    {
+      "Time_Start": 965.04,
+      "Time_End": 969.86,
+      "Text": " And this technique in the variant leads to the fact that the EDR DLL is loaded."
+    },
+    {
+      "Time_Start": 969.86,
+      "Time_End": 974.24,
+      "Text": " And instantly after it's loaded, it will exit and will be removed from the process and it"
+    },
+    {
+      "Time_Start": 974.24,
+      "Time_End": 979.48,
+      "Text": " will never create the hooks and there will never be an analysis done."
+    },
+    {
+      "Time_Start": 979.48,
+      "Time_End": 981.0,
+      "Text": " Yeah."
+    },
+    {
+      "Time_Start": 981.0,
+      "Time_End": 986.5600000000001,
+      "Text": " And then this is at least from my point of view and from what I know, the existing approaches"
+    },
+    {
+      "Time_Start": 986.5600000000001,
+      "Time_End": 989.84,
+      "Text": " on how to bypass user-based detections."
+    },
+    {
+      "Time_Start": 989.84,
+      "Time_End": 996.76,
+      "Text": " And now I'm going to show you what my idea, initially idea, for a new approach."
+    },
+    {
+      "Time_Start": 996.76,
+      "Time_End": 1000.92,
+      "Text": " I was actually reading the following blog post, which is linked here from Alejandro"
+    },
+    {
+      "Time_Start": 1000.9200000000001,
+      "Time_End": 1002.2800000000001,
+      "Text": " Pena."
+    },
+    {
+      "Time_Start": 1002.2800000000001,
+      "Time_End": 1009.1600000000001,
+      "Text": " And I don't know if the name is pronounced correctly, but, yeah."
+    },
+    {
+      "Time_Start": 1009.1600000000001,
+      "Time_End": 1016.3600000000001,
+      "Text": " This proof of concept was initially used to bypass AMSI for a new process by preventing"
+    },
+    {
+      "Time_Start": 1016.3600000000001,
+      "Time_End": 1020.96,
+      "Text": " AMSI DLL from loading into that process."
+    },
+    {
+      "Time_Start": 1020.96,
+      "Time_End": 1031.24,
+      "Text": " And this is done by, in the variant, hooking a DLL from the sorry, by hooking an API function"
+    },
+    {
+      "Time_Start": 1031.24,
+      "Time_End": 1036.28,
+      "Text": " from the DLL loading process, namely, for example, NT create section."
+    },
+    {
+      "Time_Start": 1036.28,
+      "Time_End": 1044.6000000000001,
+      "Text": " And if we hook ourself this function, then we can basically check the input parameters"
+    },
+    {
+      "Time_Start": 1044.6000000000001,
+      "Time_End": 1050.3600000000001,
+      "Text": " ourself as a attacker and can find out if specific DLLs are going to be loaded."
+    },
+    {
+      "Time_Start": 1050.3600000000001,
+      "Time_End": 1056.96,
+      "Text": " And if these DLLs are going to be loaded, then we return the NT status fail, for example,"
+    },
+    {
+      "Time_Start": 1056.96,
+      "Time_End": 1061.6000000000001,
+      "Text": " so that the new section will not get created for the DLL."
+    },
+    {
+      "Time_Start": 1061.6000000000001,
+      "Time_End": 1067.44,
+      "Text": " And if the section is not created, then the target DLL cannot get mapped into memory,"
+    },
+    {
+      "Time_Start": 1067.44,
+      "Time_End": 1069.48,
+      "Text": " and it will never be loaded at all."
+    },
+    {
+      "Time_Start": 1069.48,
+      "Time_End": 1073.8000000000002,
+      "Text": " So this is the initial idea of this proof of concept."
+    },
+    {
+      "Time_Start": 1073.8,
+      "Time_End": 1080.6399999999999,
+      "Text": " And I had the idea, why not trying to block EDR DLLs from loading into a new process instead"
+    },
+    {
+      "Time_Start": 1080.6399999999999,
+      "Time_End": 1084.0,
+      "Text": " of AMSI DLL?"
+    },
+    {
+      "Time_Start": 1084.0,
+      "Time_End": 1088.52,
+      "Text": " One thing which is important to mention for this technique is the target DLL has to be"
+    },
+    {
+      "Time_Start": 1088.52,
+      "Time_End": 1095.44,
+      "Text": " not loaded yet into the remote process, because if it's already loaded, we cannot intercept"
+    },
+    {
+      "Time_Start": 1095.44,
+      "Time_End": 1097.04,
+      "Text": " the DLL loading process."
+    },
+    {
+      "Time_Start": 1097.04,
+      "Time_End": 1101.52,
+      "Text": " So this is a prerequirement for it to work."
+    },
+    {
+      "Time_Start": 1101.52,
+      "Time_End": 1107.72,
+      "Text": " And the problem, the main problem we have with EDRs is that the EDRs basically act like"
+    },
+    {
+      "Time_Start": 1107.72,
+      "Time_End": 1115.08,
+      "Text": " the white player in a chess game, namely by doing the very first moves by placing the"
+    },
+    {
+      "Time_Start": 1115.08,
+      "Time_End": 1119.84,
+      "Text": " hook and the DLL is typically loaded directly from kernel."
+    },
+    {
+      "Time_Start": 1119.84,
+      "Time_End": 1124.92,
+      "Text": " So they receive a kernel callback that a process was created, and they initially load their"
+    },
+    {
+      "Time_Start": 1124.92,
+      "Time_End": 1130.76,
+      "Text": " own EDR DLL directly after NTDLL.DLL."
+    },
+    {
+      "Time_Start": 1130.76,
+      "Time_End": 1137.5600000000002,
+      "Text": " And so in the very end, we can say every process which is already started has the EDR DLL loaded,"
+    },
+    {
+      "Time_Start": 1137.5600000000002,
+      "Time_End": 1140.0,
+      "Text": " and every process has the hooks already."
+    },
+    {
+      "Time_Start": 1140.0,
+      "Time_End": 1146.3600000000001,
+      "Text": " So this is a problem, because the prerequirement is the DLL is not loaded yet."
+    },
+    {
+      "Time_Start": 1147.0800000000002,
+      "Time_End": 1148.0800000000002,
+      "Text": " Yeah."
+    },
+    {
+      "Time_Start": 1148.0800000000002,
+      "Time_End": 1154.2800000000002,
+      "Text": " But there is some things that we could use."
+    },
+    {
+      "Time_Start": 1154.2800000000002,
+      "Time_End": 1160.88,
+      "Text": " For example, or one example which I'm mainly relying on is that if we create a suspended"
+    },
+    {
+      "Time_Start": 1160.88,
+      "Time_End": 1166.0400000000002,
+      "Text": " process, then only NTDLL will be loaded in that suspended process."
+    },
+    {
+      "Time_Start": 1166.0400000000002,
+      "Time_End": 1170.0000000000002,
+      "Text": " So there will be no EDR DLL at all."
+    },
+    {
+      "Time_Start": 1170.0,
+      "Time_End": 1176.68,
+      "Text": " So if we specify this specific flag, create suspended, then our newly created process"
+    },
+    {
+      "Time_Start": 1176.68,
+      "Time_End": 1180.72,
+      "Text": " will only have NTDLL loaded and nothing else."
+    },
+    {
+      "Time_Start": 1180.72,
+      "Time_End": 1182.04,
+      "Text": " And yeah."
+    },
+    {
+      "Time_Start": 1182.04,
+      "Time_End": 1191.04,
+      "Text": " The resulting idea, I hope it's big enough here, was then to create a new suspended process."
+    },
+    {
+      "Time_Start": 1191.04,
+      "Time_End": 1196.08,
+      "Text": " Afterwards we're going to allocate memory in that remote newly created process and inject"
+    },
+    {
+      "Time_Start": 1196.08,
+      "Time_End": 1200.36,
+      "Text": " custom self-written shellcode into that remote process."
+    },
+    {
+      "Time_Start": 1200.36,
+      "Time_End": 1208.34,
+      "Text": " And then we're going to remotely hook NT create section and place so the hook is a jump instruction,"
+    },
+    {
+      "Time_Start": 1208.34,
+      "Time_End": 1212.84,
+      "Text": " and this jump instruction is placed to our shellcode entry point."
+    },
+    {
+      "Time_Start": 1212.84,
+      "Time_End": 1220.84,
+      "Text": " And if we then resume the process, then other DLLs are trying to be loaded."
+    },
+    {
+      "Time_Start": 1220.84,
+      "Time_End": 1223.5,
+      "Text": " For example, EDR DLLs."
+    },
+    {
+      "Time_Start": 1223.5,
+      "Time_End": 1228.78,
+      "Text": " But we are already in control of the DLL loading process because our shellcode is already"
+    },
+    {
+      "Time_Start": 1228.78,
+      "Time_End": 1229.78,
+      "Text": " there."
+    },
+    {
+      "Time_Start": 1229.78,
+      "Time_End": 1231.62,
+      "Text": " The jump instruction is already there."
+    },
+    {
+      "Time_Start": 1231.62,
+      "Time_End": 1236.9,
+      "Text": " And for this reason, we can control any newly loaded DLL and we can also prevent them from"
+    },
+    {
+      "Time_Start": 1236.9,
+      "Time_End": 1239.32,
+      "Text": " being loaded."
+    },
+    {
+      "Time_Start": 1239.32,
+      "Time_End": 1240.86,
+      "Text": " So this is the idea."
+    },
+    {
+      "Time_Start": 1240.86,
+      "Time_End": 1241.86,
+      "Text": " Yeah."
+    },
+    {
+      "Time_Start": 1241.86,
+      "Time_End": 1247.34,
+      "Text": " I had this idea, like, more than a half year ago and didn't start implementing it."
+    },
+    {
+      "Time_Start": 1247.34,
+      "Time_End": 1253.02,
+      "Text": " And when I did, I had several challenges or problems, let's say, like this."
+    },
+    {
+      "Time_Start": 1253.54,
+      "Time_End": 1257.34,
+      "Text": " One was writing position independent code because we need custom shellcode."
+    },
+    {
+      "Time_Start": 1257.34,
+      "Time_End": 1260.18,
+      "Text": " I never did that before, actually."
+    },
+    {
+      "Time_Start": 1260.18,
+      "Time_End": 1267.18,
+      "Text": " One requirement to write position independent code is everything that we're doing has to"
+    },
+    {
+      "Time_Start": 1267.18,
+      "Time_End": 1271.18,
+      "Text": " be placed into the text section of the executable."
+    },
+    {
+      "Time_Start": 1271.18,
+      "Time_End": 1277.3799999999999,
+      "Text": " Otherwise it's not dynamic and otherwise it will not act like shellcode because shellcode"
+    },
+    {
+      "Time_Start": 1277.3799999999999,
+      "Time_End": 1280.62,
+      "Text": " is doing everything on runtime dynamically."
+    },
+    {
+      "Time_Start": 1280.6200000000001,
+      "Time_End": 1283.5400000000002,
+      "Text": " We cannot use any global variables, for example."
+    },
+    {
+      "Time_Start": 1283.5400000000002,
+      "Time_End": 1287.8600000000001,
+      "Text": " Because global variables are not stored in the text section."
+    },
+    {
+      "Time_Start": 1287.8600000000001,
+      "Time_End": 1293.2600000000002,
+      "Text": " We have, for example, to remove or resolve all APIs on runtime."
+    },
+    {
+      "Time_Start": 1293.2600000000002,
+      "Time_End": 1299.6200000000001,
+      "Text": " Because if we do not do it like this, then our shellcode actually is not working."
+    },
+    {
+      "Time_Start": 1299.6200000000001,
+      "Time_End": 1306.0600000000002,
+      "Text": " And then one more thing is we have to replace the main CRT startup routine with our entry"
+    },
+    {
+      "Time_Start": 1306.06,
+      "Time_End": 1314.26,
+      "Text": " point and to more or less jump above all the code that is typically called when an"
+    },
+    {
+      "Time_Start": 1314.26,
+      "Time_End": 1317.1,
+      "Text": " executable is started."
+    },
+    {
+      "Time_Start": 1317.1,
+      "Time_End": 1319.5,
+      "Text": " Yeah."
+    },
+    {
+      "Time_Start": 1319.5,
+      "Time_End": 1324.86,
+      "Text": " There were more problems, at least for me, when writing position independent code."
+    },
+    {
+      "Time_Start": 1324.86,
+      "Time_End": 1326.7,
+      "Text": " Especially for this proof of concept."
+    },
+    {
+      "Time_Start": 1326.7,
+      "Time_End": 1330.74,
+      "Text": " Because when our shellcode is called, then only NTDLL is loaded."
+    },
+    {
+      "Time_Start": 1330.74,
+      "Time_End": 1335.32,
+      "Text": " And we cannot load other DLLs because the process is not even initialized yet."
+    },
+    {
+      "Time_Start": 1335.32,
+      "Time_End": 1336.8,
+      "Text": " It's not fully initialized."
+    },
+    {
+      "Time_Start": 1336.8,
+      "Time_End": 1342.0,
+      "Text": " So we have to write the complete shellcode with NTDLL DLL functions only."
+    },
+    {
+      "Time_Start": 1342.0,
+      "Time_End": 1346.3999999999999,
+      "Text": " We cannot use anything else because nothing else is loaded."
+    },
+    {
+      "Time_Start": 1346.3999999999999,
+      "Time_End": 1348.1,
+      "Text": " This is a prerequirement."
+    },
+    {
+      "Time_Start": 1348.1,
+      "Time_End": 1356.08,
+      "Text": " And then many functions which someone would maybe typically use when programming something"
+    },
+    {
+      "Time_Start": 1356.08,
+      "Time_End": 1362.96,
+      "Text": " such as char compare, string length and so on are not really usable."
+    },
+    {
+      "Time_Start": 1363.96,
+      "Time_End": 1365.6000000000001,
+      "Text": " Let's just stay with it."
+    },
+    {
+      "Time_Start": 1365.6000000000001,
+      "Time_End": 1366.6000000000001,
+      "Text": " They are not usable."
+    },
+    {
+      "Time_Start": 1366.6000000000001,
+      "Time_End": 1374.3600000000001,
+      "Text": " So in my case, I was for every of these functions writing them manually in the proof of concept."
+    },
+    {
+      "Time_Start": 1374.3600000000001,
+      "Time_End": 1379.08,
+      "Text": " So that, yeah, I have more or less my own implementation for these functions."
+    },
+    {
+      "Time_Start": 1379.08,
+      "Time_End": 1383.88,
+      "Text": " I also had the big problem of debugging this proof of concept."
+    },
+    {
+      "Time_Start": 1383.88,
+      "Time_End": 1388.92,
+      "Text": " And for that reason, I also implemented a little logger function into the proof of concept"
+    },
+    {
+      "Time_Start": 1388.92,
+      "Time_End": 1391.72,
+      "Text": " to log everything into a file."
+    },
+    {
+      "Time_Start": 1391.76,
+      "Time_End": 1397.52,
+      "Text": " And doing that with only NTDLL functions was at least for me a big challenge when doing"
+    },
+    {
+      "Time_Start": 1397.52,
+      "Time_End": 1399.16,
+      "Text": " the proof of concept."
+    },
+    {
+      "Time_Start": 1399.16,
+      "Time_End": 1400.16,
+      "Text": " Yeah."
+    },
+    {
+      "Time_Start": 1400.16,
+      "Time_End": 1404.04,
+      "Text": " Then there's one more problem or challenge."
+    },
+    {
+      "Time_Start": 1404.04,
+      "Time_End": 1410.24,
+      "Text": " Namely, when the process is resumed, then NT create section is already overwritten."
+    },
+    {
+      "Time_Start": 1410.24,
+      "Time_End": 1413.14,
+      "Text": " Because we have the jump instruction to our shellcode there."
+    },
+    {
+      "Time_Start": 1413.14,
+      "Time_End": 1420.24,
+      "Text": " But the function still needs to be called because if we don't want to block any DLL,"
+    },
+    {
+      "Time_Start": 1420.24,
+      "Time_End": 1427.44,
+      "Text": " but only ER DLLs, and to call the original function, we have to somehow restore NT create"
+    },
+    {
+      "Time_Start": 1427.44,
+      "Time_End": 1432.56,
+      "Text": " section value, the NT create section value on runtime."
+    },
+    {
+      "Time_Start": 1432.56,
+      "Time_End": 1438.78,
+      "Text": " And the solution I found for this proof of concept was the host process, namely the process"
+    },
+    {
+      "Time_Start": 1438.78,
+      "Time_End": 1443.84,
+      "Text": " which spawns the child process, already knows about the original value."
+    },
+    {
+      "Time_Start": 1443.84,
+      "Time_End": 1448.0,
+      "Text": " And it can, in the shellcode, replace an egg."
+    },
+    {
+      "Time_Start": 1448.0,
+      "Time_End": 1451.88,
+      "Text": " So we're basically building an egg hunter with bytes that we know."
+    },
+    {
+      "Time_Start": 1451.88,
+      "Time_End": 1456.72,
+      "Text": " And the host process can then replace these egg bytes with the original value of NT create"
+    },
+    {
+      "Time_Start": 1456.72,
+      "Time_End": 1463.24,
+      "Text": " section so that this function can be restored on runtime."
+    },
+    {
+      "Time_Start": 1463.24,
+      "Time_End": 1464.84,
+      "Text": " Yeah."
+    },
+    {
+      "Time_Start": 1464.84,
+      "Time_End": 1468.4,
+      "Text": " Then there's one more thing which I faced."
+    },
+    {
+      "Time_Start": 1468.4,
+      "Time_End": 1474.8,
+      "Text": " Namely, if you take a look at any position independent code examples which are published"
+    },
+    {
+      "Time_Start": 1474.8,
+      "Time_End": 1481.56,
+      "Text": " on GitHub, then they will probably have this kind of assembler code here at some point."
+    },
+    {
+      "Time_Start": 1481.56,
+      "Time_End": 1484.44,
+      "Text": " And this is for aligning the stack."
+    },
+    {
+      "Time_Start": 1484.44,
+      "Time_End": 1488.76,
+      "Text": " Because if we don't properly align the stack with shellcode, then we may have the situation"
+    },
+    {
+      "Time_Start": 1488.76,
+      "Time_End": 1492.08,
+      "Text": " that it will not run correctly."
+    },
+    {
+      "Time_Start": 1492.08,
+      "Time_End": 1494.8,
+      "Text": " But this is a problem for us."
+    },
+    {
+      "Time_Start": 1494.8,
+      "Time_End": 1501.2,
+      "Text": " Because this code modifies the stack, and if the stack is modified, then the input parameters"
+    },
+    {
+      "Time_Start": 1501.2,
+      "Time_End": 1505.8600000000001,
+      "Text": " for NT create section are also modified, which leads to a crash."
+    },
+    {
+      "Time_Start": 1505.8600000000001,
+      "Time_End": 1511.64,
+      "Text": " So instead of using this code, which all other proof of concepts use with position independent"
+    },
+    {
+      "Time_Start": 1511.64,
+      "Time_End": 1516.68,
+      "Text": " code, we're directly jumping to our specific entry point function."
+    },
+    {
+      "Time_Start": 1516.68,
+      "Time_End": 1519.3600000000001,
+      "Text": " We are not aligning the stack at all."
+    },
+    {
+      "Time_Start": 1519.3600000000001,
+      "Time_End": 1521.26,
+      "Text": " And we also don't need to do this."
+    },
+    {
+      "Time_Start": 1521.26,
+      "Time_End": 1529.04,
+      "Text": " Because the function which calls NT create section is already doing that for us."
+    },
+    {
+      "Time_Start": 1529.92,
+      "Time_End": 1531.44,
+      "Text": " Yeah."
+    },
+    {
+      "Time_Start": 1531.44,
+      "Time_End": 1536.1599999999999,
+      "Text": " These were the problems which I faced and which were all solved."
+    },
+    {
+      "Time_Start": 1536.1599999999999,
+      "Time_End": 1541.32,
+      "Text": " So in the very end, I can go and give you a short overview about the proof of concept"
+    },
+    {
+      "Time_Start": 1541.32,
+      "Time_End": 1543.36,
+      "Text": " and how it works."
+    },
+    {
+      "Time_Start": 1543.36,
+      "Time_End": 1551.56,
+      "Text": " The proof of concept is written to because it's a proof of concept to not block EDR DLLs"
+    },
+    {
+      "Time_Start": 1551.56,
+      "Time_End": 1552.72,
+      "Text": " directly."
+    },
+    {
+      "Time_Start": 1552.72,
+      "Time_End": 1558.16,
+      "Text": " But instead, I wrote it to check if this is working."
+    },
+    {
+      "Time_Start": 1566.0,
+      "Time_End": 1569.28,
+      "Text": " This is my handle on GitHub, if you didn't know it."
+    },
+    {
+      "Time_Start": 1570.4,
+      "Time_End": 1571.76,
+      "Text": " Okay."
+    },
+    {
+      "Time_Start": 1573.72,
+      "Time_End": 1580.56,
+      "Text": " So instead, I'm going to, with the proof of concept, block AMSI DLL from loading into"
+    },
+    {
+      "Time_Start": 1580.56,
+      "Time_End": 1584.44,
+      "Text": " newly spawned PowerShell process."
+    },
+    {
+      "Time_Start": 1584.44,
+      "Time_End": 1588.96,
+      "Text": " And we can see if that works."
+    },
+    {
+      "Time_Start": 1588.96,
+      "Time_End": 1592.0,
+      "Text": " So first, we're creating a new process."
+    },
+    {
+      "Time_Start": 1592.0,
+      "Time_End": 1595.28,
+      "Text": " And we're getting the address for NT create section."
+    },
+    {
+      "Time_Start": 1595.28,
+      "Time_End": 1600.6399999999999,
+      "Text": " And then we are allocating memory for our shellcode in the newly spawned process."
+    },
+    {
+      "Time_Start": 1600.6399999999999,
+      "Time_End": 1607.44,
+      "Text": " Afterwards, we're going to write a jump into the NT create section address to place our"
+    },
+    {
+      "Time_Start": 1607.44,
+      "Time_End": 1608.6799999999998,
+      "Text": " hook."
+    },
+    {
+      "Time_Start": 1608.76,
+      "Time_End": 1613.8,
+      "Text": " And afterwards, we are going to call write process memory to write our shellcode into"
+    },
+    {
+      "Time_Start": 1613.8,
+      "Time_End": 1615.8400000000001,
+      "Text": " the remote process."
+    },
+    {
+      "Time_Start": 1615.8400000000001,
+      "Time_End": 1619.0,
+      "Text": " Before doing that, we are modifying the egg."
+    },
+    {
+      "Time_Start": 1619.0,
+      "Time_End": 1622.76,
+      "Text": " So the original value of NT create section."
+    },
+    {
+      "Time_Start": 1622.76,
+      "Time_End": 1625.88,
+      "Text": " And then we're going to resume the process."
+    },
+    {
+      "Time_Start": 1625.88,
+      "Time_End": 1635.28,
+      "Text": " And as you can see here, the process is resumed."
+    },
+    {
+      "Time_Start": 1635.28,
+      "Time_End": 1643.16,
+      "Text": " And if we try to execute AMSI scan buffer, which should typically be detected by Defender"
+    },
+    {
+      "Time_Start": 1643.16,
+      "Time_End": 1650.32,
+      "Text": " as malicious, because there is a signature for it, we see that in this case, it was not"
+    },
+    {
+      "Time_Start": 1650.32,
+      "Time_End": 1652.08,
+      "Text": " recognized as a command."
+    },
+    {
+      "Time_Start": 1652.08,
+      "Time_End": 1662.2,
+      "Text": " And if I start the PowerShell the default way, and enter the same command, we can see"
+    },
+    {
+      "Time_Start": 1662.32,
+      "Time_End": 1666.64,
+      "Text": " this script contains malicious content and has been blocked by your antivirus software."
+    },
+    {
+      "Time_Start": 1666.64,
+      "Time_End": 1669.72,
+      "Text": " So normally, this is blocked."
+    },
+    {
+      "Time_Start": 1669.72,
+      "Time_End": 1673.8,
+      "Text": " In our case, for the newly spawned process, this is not blocked."
+    },
+    {
+      "Time_Start": 1673.8,
+      "Time_End": 1683.2,
+      "Text": " And we can verify for our newly created process that NTDLL is actually really not loaded by"
+    },
+    {
+      "Time_Start": 1683.2,
+      "Time_End": 1687.3600000000001,
+      "Text": " taking a look at the loaded modules."
+    },
+    {
+      "Time_Start": 1687.3600000000001,
+      "Time_End": 1691.0,
+      "Text": " And we can check or we can sort by name."
+    },
+    {
+      "Time_Start": 1691.0,
+      "Time_End": 1695.48,
+      "Text": " And usually, AMSI should be somewhere here with the A. But AMSI is not there."
+    },
+    {
+      "Time_Start": 1695.48,
+      "Time_End": 1698.28,
+      "Text": " So AMSI was tried to be loaded."
+    },
+    {
+      "Time_Start": 1698.28,
+      "Time_End": 1699.72,
+      "Text": " But it couldn't."
+    },
+    {
+      "Time_Start": 1699.72,
+      "Time_End": 1707.6,
+      "Text": " And if I ask you, did you ever see a PowerShell process which had AMSI not loaded, I'm assuming"
+    },
+    {
+      "Time_Start": 1707.6,
+      "Time_End": 1709.16,
+      "Text": " that no one of you did."
+    },
+    {
+      "Time_Start": 1709.16,
+      "Time_End": 1711.06,
+      "Text": " Because typically, this will not happen."
+    },
+    {
+      "Time_Start": 1711.06,
+      "Time_End": 1716.04,
+      "Text": " Because it will directly be loaded on process creation."
+    },
+    {
+      "Time_Start": 1716.04,
+      "Time_End": 1718.12,
+      "Text": " Maybe the AV is disabled."
+    },
+    {
+      "Time_Start": 1718.12,
+      "Time_End": 1720.26,
+      "Text": " But AMSI DLL will still be there."
+    },
+    {
+      "Time_Start": 1720.26,
+      "Time_End": 1725.14,
+      "Text": " And this is actually in PowerShell, which has no AMSI DLL loaded at all."
+    },
+    {
+      "Time_Start": 1725.14,
+      "Time_End": 1731.74,
+      "Text": " So AMSI DLL was prevented from being loaded into the newly created process."
+    },
+    {
+      "Time_Start": 1731.74,
+      "Time_End": 1738.3799999999999,
+      "Text": " And this proof of concept, indeed, worked."
+    },
+    {
+      "Time_Start": 1738.38,
+      "Time_End": 1751.0200000000002,
+      "Text": " I think I'm really good in the time."
+    },
+    {
+      "Time_Start": 1751.0200000000002,
+      "Time_End": 1754.46,
+      "Text": " I may have been a little bit too fast with all the other topics."
+    },
+    {
+      "Time_Start": 1754.46,
+      "Time_End": 1759.42,
+      "Text": " But then we have more time for question and answer."
+    },
+    {
+      "Time_Start": 1759.42,
+      "Time_End": 1761.1200000000001,
+      "Text": " Okay."
+    },
+    {
+      "Time_Start": 1761.1200000000001,
+      "Time_End": 1765.3400000000001,
+      "Text": " So I tested this proof of concept against multiple EDR vendors."
+    },
+    {
+      "Time_Start": 1765.3400000000001,
+      "Time_End": 1776.0800000000002,
+      "Text": " And not from any single vendor I received either an alert or the DLL blocking was prevented."
+    },
+    {
+      "Time_Start": 1776.0800000000002,
+      "Time_End": 1782.68,
+      "Text": " And so I said mainly there was mainly a successful block of target DLLs."
+    },
+    {
+      "Time_Start": 1782.68,
+      "Time_End": 1786.3400000000001,
+      "Text": " Because some DLLs are not loaded the normal way."
+    },
+    {
+      "Time_Start": 1786.3400000000001,
+      "Time_End": 1791.5800000000002,
+      "Text": " Like for example, in this screenshot, SyInject DLL is not loaded the normal way."
+    },
+    {
+      "Time_Start": 1791.5800000000002,
+      "Time_End": 1794.5000000000002,
+      "Text": " But it's instead injected by the EDR."
+    },
+    {
+      "Time_Start": 1794.5,
+      "Time_End": 1800.46,
+      "Text": " And if the EDR is injecting the DLL itself, then we cannot prevent it from loading."
+    },
+    {
+      "Time_Start": 1800.46,
+      "Time_End": 1805.94,
+      "Text": " Not with this technique, at least."
+    },
+    {
+      "Time_Start": 1805.94,
+      "Time_End": 1812.3,
+      "Text": " Also as an information for those who may not know it, this proof of concept cannot be used"
+    },
+    {
+      "Time_Start": 1812.3,
+      "Time_End": 1818.06,
+      "Text": " against Microsoft Defender for Endpoint, because Microsoft Defender for Endpoint is not using"
+    },
+    {
+      "Time_Start": 1818.06,
+      "Time_End": 1826.22,
+      "Text": " end user hooks compared to all other EDR vendors, which mainly do that."
+    },
+    {
+      "Time_Start": 1826.22,
+      "Time_End": 1830.5,
+      "Text": " And if there is no DLL loaded, and if there are no hooks, we also cannot prevent a DLL"
+    },
+    {
+      "Time_Start": 1830.5,
+      "Time_End": 1832.3999999999999,
+      "Text": " from being loaded."
+    },
+    {
+      "Time_Start": 1832.3999999999999,
+      "Time_End": 1836.06,
+      "Text": " So this is not working against MDE."
+    },
+    {
+      "Time_Start": 1836.06,
+      "Time_End": 1838.22,
+      "Text": " One more thing to mention."
+    },
+    {
+      "Time_Start": 1838.22,
+      "Time_End": 1840.78,
+      "Text": " Because there are, let's say, some limitations."
+    },
+    {
+      "Time_Start": 1840.78,
+      "Time_End": 1845.4199999999998,
+      "Text": " You might face a situation where you want to prevent a DLL from being loaded."
+    },
+    {
+      "Time_Start": 1846.26,
+      "Time_End": 1847.26,
+      "Text": " I faced one."
+    },
+    {
+      "Time_Start": 1847.26,
+      "Time_End": 1852.26,
+      "Text": " For one specific EDR vendor and one specific DLL, the process crashed."
+    },
+    {
+      "Time_Start": 1852.26,
+      "Time_End": 1857.66,
+      "Text": " And I think this was due to the EDR vendor never expecting that its own DLL will not"
+    },
+    {
+      "Time_Start": 1857.66,
+      "Time_End": 1858.66,
+      "Text": " be loaded."
+    },
+    {
+      "Time_Start": 1858.66,
+      "Time_End": 1860.28,
+      "Text": " Because typically this should not happen."
+    },
+    {
+      "Time_Start": 1860.28,
+      "Time_End": 1863.42,
+      "Text": " It's loaded from kernel and there should not be any problem."
+    },
+    {
+      "Time_Start": 1863.42,
+      "Time_End": 1865.14,
+      "Text": " But it was blocked."
+    },
+    {
+      "Time_Start": 1865.14,
+      "Time_End": 1866.74,
+      "Text": " It was not loaded at all."
+    },
+    {
+      "Time_Start": 1866.74,
+      "Time_End": 1870.8600000000001,
+      "Text": " And the EDR vendor still somehow tried to interact with this process."
+    },
+    {
+      "Time_Start": 1870.8600000000001,
+      "Time_End": 1874.78,
+      "Text": " And this led to a crash in this specific situation."
+    },
+    {
+      "Time_Start": 1874.78,
+      "Time_End": 1882.66,
+      "Text": " So you may have to adjust this proof of concept for those DLLs to do something different."
+    },
+    {
+      "Time_Start": 1882.66,
+      "Time_End": 1889.82,
+      "Text": " Or to instead block the entry point like sharp block does, for example."
+    },
+    {
+      "Time_Start": 1889.82,
+      "Time_End": 1891.94,
+      "Text": " Is that implementation OPSEC safe?"
+    },
+    {
+      "Time_Start": 1891.94,
+      "Time_End": 1898.12,
+      "Text": " I think this is a question which is important for many of the red people here especially."
+    },
+    {
+      "Time_Start": 1898.1200000000001,
+      "Time_End": 1905.0800000000002,
+      "Text": " So injection and hooking in general have well documented IOCs, indicators of compromise."
+    },
+    {
+      "Time_Start": 1905.0800000000002,
+      "Time_End": 1908.4,
+      "Text": " And they are not hard to detect."
+    },
+    {
+      "Time_Start": 1908.4,
+      "Time_End": 1911.5600000000002,
+      "Text": " So we have, for example, privately committed memory."
+    },
+    {
+      "Time_Start": 1911.5600000000002,
+      "Time_End": 1915.4,
+      "Text": " We have a modified NTDL version with a jump."
+    },
+    {
+      "Time_Start": 1915.4,
+      "Time_End": 1916.8000000000002,
+      "Text": " And this should typically not happen."
+    },
+    {
+      "Time_Start": 1916.8000000000002,
+      "Time_End": 1919.8000000000002,
+      "Text": " And this is a big IOC."
+    },
+    {
+      "Time_Start": 1919.8000000000002,
+      "Time_End": 1925.2800000000002,
+      "Text": " But and especially if you have any blue teams or hunters in your company, then they should"
+    },
+    {
+      "Time_Start": 1925.28,
+      "Time_End": 1931.24,
+      "Text": " easily be able to find those IOCs because the initial proof of concept is not resolving"
+    },
+    {
+      "Time_Start": 1931.24,
+      "Time_End": 1932.36,
+      "Text": " these issues."
+    },
+    {
+      "Time_Start": 1932.36,
+      "Time_End": 1935.6,
+      "Text": " It's just a proof of concept."
+    },
+    {
+      "Time_Start": 1935.6,
+      "Time_End": 1940.36,
+      "Text": " So it could easily be found out that this technique was used."
+    },
+    {
+      "Time_Start": 1940.36,
+      "Time_End": 1946.8,
+      "Text": " However, in this moment or when I was testing, no one prevented this technique or alerted"
+    },
+    {
+      "Time_Start": 1946.8,
+      "Time_End": 1949.8799999999999,
+      "Text": " on it because no one was looking for it."
+    },
+    {
+      "Time_Start": 1949.8799999999999,
+      "Time_End": 1951.92,
+      "Text": " Because it was not published anywhere."
+    },
+    {
+      "Time_Start": 1951.92,
+      "Time_End": 1955.44,
+      "Text": " And if you don't know what to look for, you're not going to do it."
+    },
+    {
+      "Time_Start": 1955.44,
+      "Time_End": 1962.9,
+      "Text": " And therefore, I guess, it was not blocked, although it could easily be identified."
+    },
+    {
+      "Time_Start": 1962.9,
+      "Time_End": 1967.8400000000001,
+      "Text": " So I personally expect detections to come up after releasing the proof of concept."
+    },
+    {
+      "Time_Start": 1967.8400000000001,
+      "Time_End": 1974.5600000000002,
+      "Text": " Because for example, an EDR vendor could if they receive the process creation callback,"
+    },
+    {
+      "Time_Start": 1974.5600000000002,
+      "Time_End": 1981.72,
+      "Text": " they could take a look at NTDL and if it was modified, they could instantly block the process"
+    },
+    {
+      "Time_Start": 1981.72,
+      "Time_End": 1988.88,
+      "Text": " because in the usual process started, there should not be any modifications in NTDL."
+    },
+    {
+      "Time_Start": 1988.88,
+      "Time_End": 1997.6000000000001,
+      "Text": " So this would be one way to check or prevent this from the vendor point of view."
+    },
+    {
+      "Time_Start": 1997.6000000000001,
+      "Time_End": 2001.24,
+      "Text": " There are potential OPSEC improvements for the proof of concept."
+    },
+    {
+      "Time_Start": 2001.24,
+      "Time_End": 2005.96,
+      "Text": " Namely you could use user land hook evasion for the host process."
+    },
+    {
+      "Time_Start": 2005.96,
+      "Time_End": 2012.68,
+      "Text": " My proof of concept is using plain Windows 32 APIs like open process, allocate memory,"
+    },
+    {
+      "Time_Start": 2012.68,
+      "Time_End": 2014.4,
+      "Text": " write process memory, and so on."
+    },
+    {
+      "Time_Start": 2014.4,
+      "Time_End": 2015.56,
+      "Text": " I'm not using this call."
+    },
+    {
+      "Time_Start": 2015.56,
+      "Time_End": 2019.96,
+      "Text": " You could adjust the proof of concept to use this call instead or to unhook or whatever"
+    },
+    {
+      "Time_Start": 2019.96,
+      "Time_End": 2020.96,
+      "Text": " else."
+    },
+    {
+      "Time_Start": 2020.96,
+      "Time_End": 2027.64,
+      "Text": " The shell code currently needs RWX permissions to work because it's doing some self modifications."
+    },
+    {
+      "Time_Start": 2027.64,
+      "Time_End": 2034.08,
+      "Text": " But it's not that hard to actually remove these specific parts or rewrite them in the"
+    },
+    {
+      "Time_Start": 2034.0800000000002,
+      "Time_End": 2038.7800000000002,
+      "Text": " shell code so that you could also use RX permissions instead, which is a little bit"
+    },
+    {
+      "Time_Start": 2038.7800000000002,
+      "Time_End": 2041.5200000000002,
+      "Text": " more OPSEC safe."
+    },
+    {
+      "Time_Start": 2041.5200000000002,
+      "Time_End": 2045.88,
+      "Text": " The hook itself is also using RWX permissions in the moment."
+    },
+    {
+      "Time_Start": 2045.88,
+      "Time_End": 2053.76,
+      "Text": " I faced the situation that sometimes the process crashed on specific OS versions when changing"
+    },
+    {
+      "Time_Start": 2053.76,
+      "Time_End": 2056.06,
+      "Text": " the RWX permissions to RX."
+    },
+    {
+      "Time_Start": 2056.06,
+      "Time_End": 2063.48,
+      "Text": " So I made the proof of concept more stable, but with less OPSEC."
+    },
+    {
+      "Time_Start": 2063.48,
+      "Time_End": 2069.92,
+      "Text": " People would need to investigate why these crashes occur, but in the moment it's pretty"
+    },
+    {
+      "Time_Start": 2069.92,
+      "Time_End": 2076.2,
+      "Text": " obvious that this function is hooked because it also has different memory permissions."
+    },
+    {
+      "Time_Start": 2076.2,
+      "Time_End": 2081.76,
+      "Text": " The hook is also currently using the plain DLL names to block them instead of like RP"
+    },
+    {
+      "Time_Start": 2081.76,
+      "Time_End": 2082.76,
+      "Text": " hashing."
+    },
+    {
+      "Time_Start": 2082.76,
+      "Time_End": 2087.52,
+      "Text": " So you could also replace that with RP hashing to make it more OPSEC safe."
+    },
+    {
+      "Time_Start": 2087.52,
+      "Time_End": 2093.2400000000002,
+      "Text": " Or you could, for example, use hardware breakpoints instead of hooking for the newly created process"
+    },
+    {
+      "Time_Start": 2093.76,
+      "Time_End": 2098.1600000000003,
+      "Text": " then you would not have any IOCs for injection."
+    },
+    {
+      "Time_Start": 2098.1600000000003,
+      "Time_End": 2102.2400000000002,
+      "Text": " You would still have the injection IOC, but you would not have the userland hook IOC."
+    },
+    {
+      "Time_Start": 2102.2400000000002,
+      "Time_End": 2108.4,
+      "Text": " So you would get rid of the userland hook IOC by using hardware breakpoints instead."
+    },
+    {
+      "Time_Start": 2108.4,
+      "Time_End": 2110.1600000000003,
+      "Text": " This was the proof of concept."
+    },
+    {
+      "Time_Start": 2110.1600000000003,
+      "Time_End": 2116.32,
+      "Text": " I named it Rui Lopez because I said that the EDRs act like the white player in a chess"
+    },
+    {
+      "Time_Start": 2116.32,
+      "Time_End": 2117.32,
+      "Text": " game."
+    },
+    {
+      "Time_Start": 2117.32,
+      "Time_End": 2124.76,
+      "Text": " And Rui Lopez is a technique in the chess where from the white player's perspective"
+    },
+    {
+      "Time_Start": 2124.76,
+      "Time_End": 2130.84,
+      "Text": " and our proof of concept removes the white player position for the EDR, but we are instead"
+    },
+    {
+      "Time_Start": 2130.84,
+      "Time_End": 2132.2000000000003,
+      "Text": " getting the white player."
+    },
+    {
+      "Time_Start": 2132.2000000000003,
+      "Time_End": 2136.6400000000003,
+      "Text": " So we can do the very first moves and we can prevent the EDR from loading."
+    },
+    {
+      "Time_Start": 2136.6400000000003,
+      "Time_End": 2139.2400000000002,
+      "Text": " So I named it like that."
+    },
+    {
+      "Time_Start": 2139.2400000000002,
+      "Time_End": 2142.52,
+      "Text": " And the proof of concept will be published on this URL."
+    },
+    {
+      "Time_Start": 2142.52,
+      "Time_End": 2148.7599999999998,
+      "Text": " It's not online yet, but I will do it like five to ten minutes after the talk."
+    },
+    {
+      "Time_Start": 2148.7599999999998,
+      "Time_End": 2150.08,
+      "Text": " Alternative usage IDs."
+    },
+    {
+      "Time_Start": 2150.08,
+      "Time_End": 2155.08,
+      "Text": " You could block WLDP DLL to bypass device guard or trust checks."
+    },
+    {
+      "Time_Start": 2155.08,
+      "Time_End": 2160.6,
+      "Text": " You could block custom AMSI provider DLLs to bypass AMSI."
+    },
+    {
+      "Time_Start": 2160.6,
+      "Time_End": 2162.28,
+      "Text": " I also did that already."
+    },
+    {
+      "Time_Start": 2162.28,
+      "Time_End": 2168.6,
+      "Text": " You could modify the proof of concept shellcode to afterwards decrypt and execute shellcode"
+    },
+    {
+      "Time_Start": 2168.6,
+      "Time_End": 2171.0,
+      "Text": " threadless inject style."
+    },
+    {
+      "Time_Start": 2171.0,
+      "Time_End": 2172.7999999999997,
+      "Text": " Yeah."
+    },
+    {
+      "Time_Start": 2172.7999999999997,
+      "Time_End": 2178.36,
+      "Text": " Or there may be additional ideas, whichever you come up with."
+    },
+    {
+      "Time_Start": 2178.36,
+      "Time_End": 2183.96,
+      "Text": " I also have to give credits to several people who helped me building this proof of concept."
+    },
+    {
+      "Time_Start": 2183.96,
+      "Time_End": 2190.2799999999997,
+      "Text": " On the one hand, Cherry Colburn, because he helped me all over the way and answered questions"
+    },
+    {
+      "Time_Start": 2190.2799999999997,
+      "Time_End": 2195.2,
+      "Text": " and also made a short telephone call with me in which I introduced him to the technique"
+    },
+    {
+      "Time_Start": 2195.7200000000003,
+      "Time_End": 2198.28,
+      "Text": " and he gave some hints."
+    },
+    {
+      "Time_Start": 2198.28,
+      "Time_End": 2204.32,
+      "Text": " Sven Rath from my own team, who initially inspired me to build the proof of concept"
+    },
+    {
+      "Time_Start": 2204.32,
+      "Time_End": 2206.92,
+      "Text": " instead of just having the idea in my head."
+    },
+    {
+      "Time_Start": 2206.92,
+      "Time_End": 2211.9600000000005,
+      "Text": " Alejandro Pinna, because he gave me this idea with his blog post."
+    },
+    {
+      "Time_Start": 2211.9600000000005,
+      "Time_End": 2216.6000000000004,
+      "Text": " Charles Hamilton and Chetan Nayak, because they both helped me when I faced problems"
+    },
+    {
+      "Time_Start": 2216.6000000000004,
+      "Time_End": 2219.7200000000003,
+      "Text": " with writing position independent shellcode."
+    },
+    {
+      "Time_Start": 2220.7200000000003,
+      "Time_End": 2227.4,
+      "Text": " Also, GitHub Copilot and ChetGPT, because I was always using them all over the way for"
+    },
+    {
+      "Time_Start": 2227.4,
+      "Time_End": 2228.84,
+      "Text": " different things."
+    }
+  ]
+}
