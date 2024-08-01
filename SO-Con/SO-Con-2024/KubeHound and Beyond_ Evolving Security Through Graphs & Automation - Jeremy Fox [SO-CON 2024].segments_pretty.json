@@ -1,0 +1,3849 @@
+{
+  "segments": [
+    {
+      "Time_Start": 0.0,
+      "Time_End": 12.32,
+      "Text": "This text was transcribed using whisper model: large-v2\n\n Hi everyone, so I'm Jeremy Fox, and I'm going to be talking today about Kubehound, a tool"
+    },
+    {
+      "Time_Start": 12.32,
+      "Time_End": 16.56,
+      "Text": " I developed which is Bloodhound for Kubernetes."
+    },
+    {
+      "Time_Start": 16.56,
+      "Time_End": 21.240000000000002,
+      "Text": " But I'm going to be talking less about the tool and more using it to kind of showcase"
+    },
+    {
+      "Time_Start": 21.240000000000002,
+      "Time_End": 24.88,
+      "Text": " why graphs are awesome in security."
+    },
+    {
+      "Time_Start": 24.88,
+      "Time_End": 27.36,
+      "Text": " So a little bit about me very quickly."
+    },
+    {
+      "Time_Start": 27.36,
+      "Time_End": 31.16,
+      "Text": " So I've been doing cybersecurity for about 10 years, a majority of my time has been in"
+    },
+    {
+      "Time_Start": 31.16,
+      "Time_End": 32.16,
+      "Text": " government."
+    },
+    {
+      "Time_Start": 32.16,
+      "Time_End": 37.64,
+      "Text": " For the last two years, I've been working for Datadog as a security engineer."
+    },
+    {
+      "Time_Start": 37.64,
+      "Time_End": 46.760000000000005,
+      "Text": " Datadog has got a very big Kubernetes deployment and hundreds of thousands of pods, and we're"
+    },
+    {
+      "Time_Start": 46.760000000000005,
+      "Time_End": 50.28,
+      "Text": " keen to have a tool that would help them kind of get to grips with the security challenges"
+    },
+    {
+      "Time_Start": 50.28,
+      "Time_End": 51.84,
+      "Text": " around that."
+    },
+    {
+      "Time_Start": 51.84,
+      "Time_End": 54.120000000000005,
+      "Text": " And that's why I got to build Kubehound."
+    },
+    {
+      "Time_Start": 54.120000000000005,
+      "Time_End": 58.24,
+      "Text": " So I'm going to do a very brief introduction and try and get everybody up to speed a little"
+    },
+    {
+      "Time_Start": 58.24,
+      "Time_End": 64.12,
+      "Text": " bit on Kubernetes so you can at least understand like 60% of what I'm saying."
+    },
+    {
+      "Time_Start": 64.12,
+      "Time_End": 67.16000000000001,
+      "Text": " And then we'll get into the meat of the presentation."
+    },
+    {
+      "Time_Start": 67.16000000000001,
+      "Time_End": 71.68,
+      "Text": " We'll talk about some problems, probably problems with which you're all familiar."
+    },
+    {
+      "Time_Start": 71.68,
+      "Time_End": 75.80000000000001,
+      "Text": " Then we're going to talk about how graphs will help solve those problems."
+    },
+    {
+      "Time_Start": 75.80000000000001,
+      "Time_End": 80.36000000000001,
+      "Text": " Then we're going to use Kubehound for a couple of live demos and show how it solves those"
+    },
+    {
+      "Time_Start": 80.36000000000001,
+      "Time_End": 82.24000000000001,
+      "Text": " problems."
+    },
+    {
+      "Time_Start": 82.24,
+      "Time_End": 85.72,
+      "Text": " And then I'll talk a little bit about the development process for this tool and kind"
+    },
+    {
+      "Time_Start": 85.72,
+      "Time_End": 88.64,
+      "Text": " of help you understand how you might be able to build something like this for other use"
+    },
+    {
+      "Time_Start": 88.64,
+      "Time_End": 90.03999999999999,
+      "Text": " cases."
+    },
+    {
+      "Time_Start": 90.03999999999999,
+      "Time_End": 93.56,
+      "Text": " And then we'll do a sort of wrap up and Q&A at the end."
+    },
+    {
+      "Time_Start": 93.56,
+      "Time_End": 99.0,
+      "Text": " So let's get right into it with some Kubernetes 101."
+    },
+    {
+      "Time_Start": 99.0,
+      "Time_End": 102.84,
+      "Text": " So let's try this."
+    },
+    {
+      "Time_Start": 102.84,
+      "Time_End": 107.52,
+      "Text": " Kubernetes, it's an open source container orchestration platform."
+    },
+    {
+      "Time_Start": 107.52,
+      "Time_End": 108.52,
+      "Text": " What does that mean?"
+    },
+    {
+      "Time_Start": 108.8,
+      "Time_End": 113.19999999999999,
+      "Text": " It automates the deployment, scaling, and management of containerized applications with"
+    },
+    {
+      "Time_Start": 113.19999999999999,
+      "Time_End": 117.08,
+      "Text": " a particular focus on high ability and auto scaling."
+    },
+    {
+      "Time_Start": 117.08,
+      "Time_End": 118.6,
+      "Text": " So what's a container?"
+    },
+    {
+      "Time_Start": 118.6,
+      "Time_End": 123.52,
+      "Text": " A container is a lightweight, standalone, executable software package."
+    },
+    {
+      "Time_Start": 123.52,
+      "Time_End": 128.0,
+      "Text": " It basically takes an application and all its dependencies and puts it in one nice little"
+    },
+    {
+      "Time_Start": 128.0,
+      "Time_End": 130.72,
+      "Text": " bundle that's very easy to deploy."
+    },
+    {
+      "Time_Start": 130.72,
+      "Time_End": 135.51999999999998,
+      "Text": " What's particularly useful for security applications is you can sandbox the execution of that application"
+    },
+    {
+      "Time_Start": 135.51999999999998,
+      "Time_End": 136.51999999999998,
+      "Text": " very carefully."
+    },
+    {
+      "Time_Start": 137.52,
+      "Time_End": 142.12,
+      "Text": " Now, a pod is the smallest deployable unit in Kubernetes."
+    },
+    {
+      "Time_Start": 142.12,
+      "Time_End": 147.44,
+      "Text": " And it's made up of a bunch of containers that share certain things like network access"
+    },
+    {
+      "Time_Start": 147.44,
+      "Time_End": 149.4,
+      "Text": " storage."
+    },
+    {
+      "Time_Start": 149.4,
+      "Time_End": 154.08,
+      "Text": " And a pod is basically designed to run a single instance of an application made up of several"
+    },
+    {
+      "Time_Start": 154.08,
+      "Time_End": 155.08,
+      "Text": " containers."
+    },
+    {
+      "Time_Start": 155.08,
+      "Time_End": 160.72,
+      "Text": " So you might have like a web server container with a database container and a monitoring"
+    },
+    {
+      "Time_Start": 160.72,
+      "Time_End": 166.52,
+      "Text": " container all together in one pod, and that's your app."
+    },
+    {
+      "Time_Start": 166.52,
+      "Time_End": 173.0,
+      "Text": " And then finally, a node is an actual physical virtual machine, which is the work of machines"
+    },
+    {
+      "Time_Start": 173.0,
+      "Time_End": 174.88,
+      "Text": " in the Kubernetes clusters."
+    },
+    {
+      "Time_Start": 174.88,
+      "Time_End": 180.76,
+      "Text": " And that will host a bunch of pods and provide them their resources, so CPU, memory, storage,"
+    },
+    {
+      "Time_Start": 180.76,
+      "Time_End": 182.68,
+      "Text": " for running those containers."
+    },
+    {
+      "Time_Start": 182.68,
+      "Time_End": 186.16,
+      "Text": " A bunch of nodes are grouped together in what's called a cluster, which would be basically"
+    },
+    {
+      "Time_Start": 186.16,
+      "Time_End": 191.68,
+      "Text": " like a data center in the on-prem world."
+    },
+    {
+      "Time_Start": 191.68,
+      "Time_End": 196.12,
+      "Text": " Now let's talk about what's Kubernetes security and a few things that are relevant."
+    },
+    {
+      "Time_Start": 196.12,
+      "Time_End": 198.84,
+      "Text": " So the big one's a container escape."
+    },
+    {
+      "Time_Start": 198.84,
+      "Time_End": 201.84,
+      "Text": " As I mentioned, containers are sandboxed applications."
+    },
+    {
+      "Time_Start": 201.84,
+      "Time_End": 206.76,
+      "Text": " If they are misconfigured, you can use a container escape to gain access to the node."
+    },
+    {
+      "Time_Start": 206.76,
+      "Time_End": 211.56,
+      "Text": " Because the node is running a bunch of different pods and a bunch of different containers,"
+    },
+    {
+      "Time_Start": 211.56,
+      "Time_End": 213.76,
+      "Text": " and you will have access to all of those immediately."
+    },
+    {
+      "Time_Start": 213.76,
+      "Time_End": 217.28,
+      "Text": " So it's a very powerful primitive."
+    },
+    {
+      "Time_Start": 217.28,
+      "Time_End": 218.64,
+      "Text": " Then identity."
+    },
+    {
+      "Time_Start": 218.64,
+      "Time_End": 225.64,
+      "Text": " So Kubernetes has a concept of identity, so pretty standard with all these kind of systems."
+    },
+    {
+      "Time_Start": 225.64,
+      "Time_End": 229.67999999999998,
+      "Text": " The important thing is service accounts, sort of robot accounts."
+    },
+    {
+      "Time_Start": 229.67999999999998,
+      "Time_End": 235.88,
+      "Text": " User accounts represent human users, and groups just put all these together in a bundle."
+    },
+    {
+      "Time_Start": 235.88,
+      "Time_End": 239.51999999999998,
+      "Text": " And pods run under a particular service account."
+    },
+    {
+      "Time_Start": 240.48000000000002,
+      "Time_End": 241.84,
+      "Text": " Kubernetes roles."
+    },
+    {
+      "Time_Start": 241.84,
+      "Time_End": 246.8,
+      "Text": " There are a set of permissions granted to an identity on a specific resource."
+    },
+    {
+      "Time_Start": 246.8,
+      "Time_End": 251.68,
+      "Text": " Much less kind of flexible and fine-grained than things like Windows permissions."
+    },
+    {
+      "Time_Start": 251.68,
+      "Time_End": 254.36,
+      "Text": " The big thing is you cannot deny."
+    },
+    {
+      "Time_Start": 254.36,
+      "Time_End": 260.28000000000003,
+      "Text": " So it's default deny everything, but you grant access, and there's no way to take it away."
+    },
+    {
+      "Time_Start": 260.28000000000003,
+      "Time_End": 262.12,
+      "Text": " And certain permissions are very powerful."
+    },
+    {
+      "Time_Start": 262.12,
+      "Time_End": 267.24,
+      "Text": " So for example, secrets lists means you can pull all the secrets of every service account"
+    },
+    {
+      "Time_Start": 267.24,
+      "Time_End": 268.96000000000004,
+      "Text": " that's running on the cluster."
+    },
+    {
+      "Time_Start": 268.96,
+      "Time_End": 275.71999999999997,
+      "Text": " Podexec means you can run a shell on any pod in the cluster, and so on and so forth."
+    },
+    {
+      "Time_Start": 275.71999999999997,
+      "Time_End": 277.2,
+      "Text": " And finally, mount and volumes."
+    },
+    {
+      "Time_Start": 277.2,
+      "Time_End": 283.64,
+      "Text": " So containers can mount volumes from the node into themselves to get access to data."
+    },
+    {
+      "Time_Start": 283.64,
+      "Time_End": 286.28,
+      "Text": " Can be read-only or read-write."
+    },
+    {
+      "Time_Start": 286.28,
+      "Time_End": 289.56,
+      "Text": " If you mess that up, it's usually a container escape."
+    },
+    {
+      "Time_Start": 289.56,
+      "Time_End": 294.0,
+      "Text": " So very, very common kind of misconfiguration."
+    },
+    {
+      "Time_Start": 294.0,
+      "Time_End": 298.2,
+      "Text": " So now you know everything about container security in Kubernetes, we're going to talk"
+    },
+    {
+      "Time_Start": 298.2,
+      "Time_End": 301.88,
+      "Text": " about the problem space."
+    },
+    {
+      "Time_Start": 301.88,
+      "Time_End": 308.24,
+      "Text": " So this is just a collection of problems that probably everyone's had at least some of them."
+    },
+    {
+      "Time_Start": 308.24,
+      "Time_End": 310.92,
+      "Text": " And the first one is vulnerability context."
+    },
+    {
+      "Time_Start": 310.92,
+      "Time_End": 313.48,
+      "Text": " So imagine here I've got two findings."
+    },
+    {
+      "Time_Start": 313.48,
+      "Time_End": 316.88,
+      "Text": " On the left, I've got a finding of an overprivileged container."
+    },
+    {
+      "Time_Start": 316.88,
+      "Time_End": 321.8,
+      "Text": " In this case, it's a web application that's exposed to the internet running inside a container"
+    },
+    {
+      "Time_Start": 321.8,
+      "Time_End": 324.88,
+      "Text": " which has been configured with privileged equals true."
+    },
+    {
+      "Time_Start": 324.88,
+      "Time_End": 329.48,
+      "Text": " What that does is it basically turns off all the sandboxing, making every container"
+    },
+    {
+      "Time_Start": 329.48,
+      "Time_End": 332.08,
+      "Text": " escape possible."
+    },
+    {
+      "Time_Start": 332.08,
+      "Time_End": 334.32,
+      "Text": " This container's internet-facing."
+    },
+    {
+      "Time_Start": 334.32,
+      "Time_End": 338.56,
+      "Text": " The privilege isn't really required, because you should just be running a web server."
+    },
+    {
+      "Time_Start": 338.56,
+      "Time_End": 342.4,
+      "Text": " And because it's supposed to service a high volume of traffic, there's limited ability"
+    },
+    {
+      "Time_Start": 342.4,
+      "Time_End": 345.15999999999997,
+      "Text": " to audit that without generating too much noise."
+    },
+    {
+      "Time_Start": 345.15999999999997,
+      "Time_End": 349.2,
+      "Text": " So that, in my eyes, is bad."
+    },
+    {
+      "Time_Start": 349.2,
+      "Time_End": 351.6,
+      "Text": " On the other hand, we have another overprivileged container."
+    },
+    {
+      "Time_Start": 351.6,
+      "Time_End": 353.15999999999997,
+      "Text": " Same finding."
+    },
+    {
+      "Time_Start": 353.16,
+      "Time_End": 359.28000000000003,
+      "Text": " This is actually a control plane DNS container that's running with capsys module enabled."
+    },
+    {
+      "Time_Start": 359.28000000000003,
+      "Time_End": 363.68,
+      "Text": " This basically means that you have the ability to load kernel modules."
+    },
+    {
+      "Time_Start": 363.68,
+      "Time_End": 368.36,
+      "Text": " This means you could load a kernel module, get kernel access, bypass all the sandboxing."
+    },
+    {
+      "Time_Start": 368.36,
+      "Time_End": 371.04,
+      "Text": " But this is an internal service."
+    },
+    {
+      "Time_Start": 371.04,
+      "Time_End": 376.20000000000005,
+      "Text": " The access to it is quite restricted, only from inside the cluster."
+    },
+    {
+      "Time_Start": 376.20000000000005,
+      "Time_End": 381.68,
+      "Text": " And you actually need this privilege, which is a bit more fine-grained, to run the application."
+    },
+    {
+      "Time_Start": 381.68,
+      "Time_End": 388.08,
+      "Text": " Now, if you only look at it from the perspective of a single point finding, it's very difficult"
+    },
+    {
+      "Time_Start": 388.08,
+      "Time_End": 392.64,
+      "Text": " to differentiate between those two without doing a bunch of things like horrible allow"
+    },
+    {
+      "Time_Start": 392.64,
+      "Time_End": 393.64,
+      "Text": " listings."
+    },
+    {
+      "Time_Start": 393.64,
+      "Time_End": 395.12,
+      "Text": " Like, oh, this is DNS, so it's OK."
+    },
+    {
+      "Time_Start": 395.12,
+      "Time_End": 397.92,
+      "Text": " But this is web server, so it's not OK."
+    },
+    {
+      "Time_Start": 397.92,
+      "Time_End": 400.32,
+      "Text": " That gets very, very messy very quickly."
+    },
+    {
+      "Time_Start": 400.32,
+      "Time_End": 405.56,
+      "Text": " So this is something we're going to try and look to address."
+    },
+    {
+      "Time_Start": 405.56,
+      "Time_End": 409.8,
+      "Text": " The next thing is actually what seems like a simple question, but is very difficult to"
+    },
+    {
+      "Time_Start": 409.8,
+      "Time_End": 416.08,
+      "Text": " answer, is how secure is your cluster on a scale of 1 to 10?"
+    },
+    {
+      "Time_Start": 416.08,
+      "Time_End": 420.64,
+      "Text": " I think most people have a sort of intuitive feeling for how secure their environment is,"
+    },
+    {
+      "Time_Start": 420.64,
+      "Time_End": 426.04,
+      "Text": " but actually quantifying that is exceptionally hard."
+    },
+    {
+      "Time_Start": 426.04,
+      "Time_End": 430.24,
+      "Text": " Here are some questions that might be nice to be able to answer, which might let us actually"
+    },
+    {
+      "Time_Start": 430.24,
+      "Time_End": 431.92,
+      "Text": " measure some of this."
+    },
+    {
+      "Time_Start": 431.92,
+      "Time_End": 436.0,
+      "Text": " Probably still stolen a few of these off Bloodhound, but here we go."
+    },
+    {
+      "Time_Start": 436.0,
+      "Time_End": 440.28,
+      "Text": " So for example, what's the shortest exploitable path between an internet-facing service and"
+    },
+    {
+      "Time_Start": 440.28,
+      "Time_End": 442.44,
+      "Text": " full admin on the cluster?"
+    },
+    {
+      "Time_Start": 442.44,
+      "Time_End": 447.92,
+      "Text": " What percentage of internet-facing services have an exploitable path to cluster admin?"
+    },
+    {
+      "Time_Start": 447.92,
+      "Time_End": 452.08,
+      "Text": " And also, we might want to measure change, so see whether all the work that we're putting"
+    },
+    {
+      "Time_Start": 452.08,
+      "Time_End": 456.12,
+      "Text": " in is actually meaningfully improving our security posture."
+    },
+    {
+      "Time_Start": 456.12,
+      "Time_End": 460.12,
+      "Text": " So things like, what type of control would cut off the largest number of attack paths"
+    },
+    {
+      "Time_Start": 460.12,
+      "Time_End": 463.32,
+      "Text": " to see where we might want to focus our investment?"
+    },
+    {
+      "Time_Start": 463.32,
+      "Time_End": 467.28,
+      "Text": " By what percentage did the introduction of a particular security control reduce the attack"
+    },
+    {
+      "Time_Start": 467.28,
+      "Time_End": 468.28,
+      "Text": " surface?"
+    },
+    {
+      "Time_Start": 468.28,
+      "Time_End": 476.6,
+      "Text": " We put all this work on potentially introducing friction, but what did it actually achieve?"
+    },
+    {
+      "Time_Start": 476.6,
+      "Time_End": 479.88,
+      "Text": " The next thing is about democratizing offensive security."
+    },
+    {
+      "Time_Start": 479.88,
+      "Time_End": 482.84,
+      "Text": " So attack is hard."
+    },
+    {
+      "Time_Start": 482.84,
+      "Time_End": 489.08,
+      "Text": " We were just talking earlier saying that just understanding Kubernetes is hard enough, and"
+    },
+    {
+      "Time_Start": 489.08,
+      "Time_End": 494.0,
+      "Text": " to do an offensive assessment on a modern environment, you need to know Kubernetes."
+    },
+    {
+      "Time_Start": 494.0,
+      "Time_End": 498.08,
+      "Text": " You need to know OS security to understand things like container escapes."
+    },
+    {
+      "Time_Start": 498.08,
+      "Time_End": 503.2,
+      "Text": " You need that sort of evil bit attacker mindset to be able to chain these things together,"
+    },
+    {
+      "Time_Start": 503.2,
+      "Time_End": 505.88,
+      "Text": " and you need time as well."
+    },
+    {
+      "Time_Start": 505.88,
+      "Time_End": 511.44,
+      "Text": " Now I think generally it's agreed that having some kind of offensive mindset or offensive"
+    },
+    {
+      "Time_Start": 511.44,
+      "Time_End": 516.12,
+      "Text": " knowledge helps defenders, but as we said, attack is hard, and defenders have a day job,"
+    },
+    {
+      "Time_Start": 516.16,
+      "Time_End": 520.4,
+      "Text": " but offense changes really quickly, especially in this space."
+    },
+    {
+      "Time_Start": 520.4,
+      "Time_End": 524.0,
+      "Text": " When I was doing the research for Kubehounds for the attacks, I was reading blogs that"
+    },
+    {
+      "Time_Start": 524.0,
+      "Time_End": 529.72,
+      "Text": " were a year or 18 months old, and what they were describing just didn't work anymore because"
+    },
+    {
+      "Time_Start": 529.72,
+      "Time_End": 532.6,
+      "Text": " it had changed so much."
+    },
+    {
+      "Time_Start": 532.6,
+      "Time_End": 533.6,
+      "Text": " So that's fast."
+    },
+    {
+      "Time_Start": 533.6,
+      "Time_End": 538.04,
+      "Text": " It's barely time to learn the thing, and it's out of date already."
+    },
+    {
+      "Time_Start": 538.04,
+      "Time_End": 541.8,
+      "Text": " Now the other thing is scale."
+    },
+    {
+      "Time_Start": 542.4,
+      "Time_End": 546.8399999999999,
+      "Text": " I'll take Datadog as an example of a sort of modern tech company."
+    },
+    {
+      "Time_Start": 546.8399999999999,
+      "Time_End": 550.92,
+      "Text": " Exactly how big the environment is is technically confidential, but I have some corporately"
+    },
+    {
+      "Time_Start": 550.92,
+      "Time_End": 554.0,
+      "Text": " authorized talking points here."
+    },
+    {
+      "Time_Start": 554.0,
+      "Time_End": 560.4399999999999,
+      "Text": " So we have tens of thousands of nodes, hundreds of thousands of pods, and multi-cloud, and"
+    },
+    {
+      "Time_Start": 560.4399999999999,
+      "Time_End": 564.56,
+      "Text": " the traditional kind of pentest methodology just doesn't scale to this level."
+    },
+    {
+      "Time_Start": 564.56,
+      "Time_End": 571.5999999999999,
+      "Text": " I think I did some napkin math, and it would take our pentest team six months of just"
+    },
+    {
+      "Time_Start": 572.4,
+      "Time_End": 578.0400000000001,
+      "Text": " continuously only doing Kubernetes infrastructure assessment all the time to do all of our clusters,"
+    },
+    {
+      "Time_Start": 578.0400000000001,
+      "Time_End": 581.72,
+      "Text": " and then they'd have to start again, and they'd probably all quit after about three months,"
+    },
+    {
+      "Time_Start": 581.72,
+      "Time_End": 585.88,
+      "Text": " but that's a different case."
+    },
+    {
+      "Time_Start": 585.88,
+      "Time_End": 587.6800000000001,
+      "Text": " So those were our problems."
+    },
+    {
+      "Time_Start": 587.6800000000001,
+      "Time_End": 594.72,
+      "Text": " Now let's talk a little bit about solutions, and the solution is the insection of graph"
+    },
+    {
+      "Time_Start": 594.72,
+      "Time_End": 597.12,
+      "Text": " theory with offensive security."
+    },
+    {
+      "Time_Start": 597.12,
+      "Time_End": 599.64,
+      "Text": " I think everyone here knows that when I talk about graphs, I don't mean these."
+    },
+    {
+      "Time_Start": 599.64,
+      "Time_End": 602.36,
+      "Text": " I mean these."
+    },
+    {
+      "Time_Start": 602.36,
+      "Time_End": 608.92,
+      "Text": " So mathematical structures used to model objects and their relationships."
+    },
+    {
+      "Time_Start": 608.92,
+      "Time_End": 611.0,
+      "Text": " So let's do a quick refresher on graph theory."
+    },
+    {
+      "Time_Start": 611.0,
+      "Time_End": 614.6,
+      "Text": " I'm going to whiz through this because I think everyone here is pretty up to speed with this"
+    },
+    {
+      "Time_Start": 614.6,
+      "Time_End": 620.4399999999999,
+      "Text": " kind of thing, but a graph is a data type used to represent complex non-linear relationships."
+    },
+    {
+      "Time_Start": 620.4399999999999,
+      "Time_End": 625.16,
+      "Text": " So in Kubehound, our graph will represent a Kubernetes cluster."
+    },
+    {
+      "Time_Start": 625.16,
+      "Time_End": 628.68,
+      "Text": " A vertex is the fundamental unit of which graphs are formed."
+    },
+    {
+      "Time_Start": 628.72,
+      "Time_End": 632.6400000000001,
+      "Text": " It's also known as a node, but we have nodes in Kubernetes, so that gets very confusing."
+    },
+    {
+      "Time_Start": 632.6400000000001,
+      "Time_End": 635.32,
+      "Text": " So I'm always going to say vertex."
+    },
+    {
+      "Time_Start": 635.32,
+      "Time_End": 641.8000000000001,
+      "Text": " And in Kubehound, they would represent things like containers or pods or service endpoints."
+    },
+    {
+      "Time_Start": 641.8000000000001,
+      "Time_End": 645.1600000000001,
+      "Text": " An edge is a connection between vertices."
+    },
+    {
+      "Time_Start": 645.1600000000001,
+      "Time_End": 647.96,
+      "Text": " It's just a relationship between those two objects."
+    },
+    {
+      "Time_Start": 647.96,
+      "Time_End": 656.2800000000001,
+      "Text": " So in Kubehound, for example, a container escape edge would connect a container to a node."
+    },
+    {
+      "Time_Start": 656.28,
+      "Time_End": 661.24,
+      "Text": " Finally, a path is just a sequence of edges which joins a sequence of vertices, and we'll"
+    },
+    {
+      "Time_Start": 661.24,
+      "Time_End": 664.92,
+      "Text": " have an example of that in a second."
+    },
+    {
+      "Time_Start": 664.92,
+      "Time_End": 670.1999999999999,
+      "Text": " The idea of attack graphs is we're trying to model attacker behavior as a data structure."
+    },
+    {
+      "Time_Start": 670.1999999999999,
+      "Time_End": 672.12,
+      "Text": " I've got a simple example here."
+    },
+    {
+      "Time_Start": 672.12,
+      "Time_End": 677.88,
+      "Text": " So on the top left, we've got an endpoint that's running JavaJNX, which, if you haven't"
+    },
+    {
+      "Time_Start": 677.88,
+      "Time_End": 682.1999999999999,
+      "Text": " used it before, is a very exploitable, fun thing to play with."
+    },
+    {
+      "Time_Start": 682.2,
+      "Time_End": 686.44,
+      "Text": " So you can exploit that fairly easily if it's not been locked down."
+    },
+    {
+      "Time_Start": 686.44,
+      "Time_End": 692.36,
+      "Text": " So we draw an edge, exploit JavaJNX RMI, towards our container, which is running a web server."
+    },
+    {
+      "Time_Start": 692.36,
+      "Time_End": 696.2,
+      "Text": " We know that container is running on a node, so if it's misconfigured, as in our previous"
+    },
+    {
+      "Time_Start": 696.2,
+      "Time_End": 702.9200000000001,
+      "Text": " example, we can draw an edge of container escape NSEnter between the container and the node."
+    },
+    {
+      "Time_Start": 702.9200000000001,
+      "Time_End": 707.24,
+      "Text": " The node, as we discussed, is hosting all the storage for all the containers."
+    },
+    {
+      "Time_Start": 707.96,
+      "Time_End": 712.84,
+      "Text": " The node, we can draw a volume read edge, which represents the ability to read the var lib"
+    },
+    {
+      "Time_Start": 712.84,
+      "Time_End": 719.72,
+      "Text": " directory, and the var lib directory contains the tokens for all the service accounts for"
+    },
+    {
+      "Time_Start": 719.72,
+      "Time_End": 720.28,
+      "Text": " the pods."
+    },
+    {
+      "Time_Start": 721.0,
+      "Time_End": 726.36,
+      "Text": " Because we can read that volume, we can then steal the token, and we can link volume to"
+    },
+    {
+      "Time_Start": 726.36,
+      "Time_End": 732.6800000000001,
+      "Text": " identity via token steal edge, which represents us going essentially from an endpoint exploits"
+    },
+    {
+      "Time_Start": 732.6800000000001,
+      "Time_End": 736.6800000000001,
+      "Text": " to being able to run as an identity, in this case, admin within our cluster."
+    },
+    {
+      "Time_Start": 737.64,
+      "Time_End": 744.84,
+      "Text": " So I'm just going to cover quickly some Kubehoundisms, and then we'll get to some more"
+    },
+    {
+      "Time_Start": 744.84,
+      "Time_End": 745.8,
+      "Text": " interesting demos."
+    },
+    {
+      "Time_Start": 746.36,
+      "Time_End": 752.44,
+      "Text": " So we talk about entities, and that's the vertices of Kubehound."
+    },
+    {
+      "Time_Start": 753.4,
+      "Time_End": 757.88,
+      "Text": " Most of the time, these kind of map one-to-one with Kubernetes stuff."
+    },
+    {
+      "Time_Start": 757.88,
+      "Time_End": 761.5600000000001,
+      "Text": " So Kubernetes has containers, Kubehound has containers."
+    },
+    {
+      "Time_Start": 761.5600000000001,
+      "Time_End": 766.36,
+      "Text": " There are a couple of times where the Kubernetes abstraction didn't quite work in our model,"
+    },
+    {
+      "Time_Start": 766.36,
+      "Time_End": 769.08,
+      "Text": " so we had to kind of change it slightly."
+    },
+    {
+      "Time_Start": 769.08,
+      "Time_End": 776.28,
+      "Text": " So for example, in Kubernetes, you have roles and role bindings, and role bindings link"
+    },
+    {
+      "Time_Start": 776.28,
+      "Time_End": 777.64,
+      "Text": " a role to an identity."
+    },
+    {
+      "Time_Start": 778.6800000000001,
+      "Time_End": 783.32,
+      "Text": " There's some complexities around that, so we created a permission set entity, which"
+    },
+    {
+      "Time_Start": 783.32,
+      "Time_End": 786.6800000000001,
+      "Text": " just represents permissions that somebody has on a resource."
+    },
+    {
+      "Time_Start": 787.32,
+      "Time_End": 788.76,
+      "Text": " So they don't always map one-to-one."
+    },
+    {
+      "Time_Start": 790.52,
+      "Time_End": 791.88,
+      "Text": " The next is attacks."
+    },
+    {
+      "Time_Start": 791.88,
+      "Time_End": 798.52,
+      "Text": " So inspired by Bloodhound, all the edges in the Kubehound graph represent attacks and"
+    },
+    {
+      "Time_Start": 798.52,
+      "Time_End": 802.92,
+      "Text": " a kind of net improvement in an attacker's position or a lateral movement opportunity."
+    },
+    {
+      "Time_Start": 804.36,
+      "Time_End": 806.76,
+      "Text": " And then we have this concept of critical assets."
+    },
+    {
+      "Time_Start": 806.76,
+      "Time_End": 809.64,
+      "Text": " So again, in Bloodhound, you might have domain admin."
+    },
+    {
+      "Time_Start": 810.2,
+      "Time_End": 814.76,
+      "Text": " We call critical asset anything that would give you cluster admin or equivalent."
+    },
+    {
+      "Time_Start": 814.76,
+      "Time_End": 818.04,
+      "Text": " The equivalent is doing a lot of work here, level access."
+    },
+    {
+      "Time_Start": 818.92,
+      "Time_End": 824.68,
+      "Text": " And then a critical path is just anything that you start with and ends with a critical"
+    },
+    {
+      "Time_Start": 824.68,
+      "Time_End": 825.56,
+      "Text": " asset."
+    },
+    {
+      "Time_Start": 825.56,
+      "Time_End": 829.88,
+      "Text": " And we kind of mostly work with critical paths, because that's what's interesting to us."
+    },
+    {
+      "Time_Start": 830.76,
+      "Time_End": 834.36,
+      "Text": " So let's jump into what actually is Kubehound."
+    },
+    {
+      "Time_Start": 836.5999999999999,
+      "Time_End": 842.5999999999999,
+      "Text": " So Kubehound will basically create a graph of attack paths in your cluster, and that"
+    },
+    {
+      "Time_Start": 842.6800000000001,
+      "Time_End": 848.52,
+      "Text": " allow you to identify the paths an attacker can take visually or through graph queries."
+    },
+    {
+      "Time_Start": 848.52,
+      "Time_End": 851.96,
+      "Text": " You have an example here of a very simplified graph."
+    },
+    {
+      "Time_Start": 854.52,
+      "Time_End": 858.36,
+      "Text": " And everything is calculated at query time."
+    },
+    {
+      "Time_Start": 858.36,
+      "Time_End": 863.96,
+      "Text": " And because all our edges are attacks, it means that if any entity is connected to a"
+    },
+    {
+      "Time_Start": 863.96,
+      "Time_End": 869.72,
+      "Text": " critical asset, it means that that entity, a compromise of that could result in complete"
+    },
+    {
+      "Time_Start": 869.72,
+      "Time_End": 871.1600000000001,
+      "Text": " control of your cluster."
+    },
+    {
+      "Time_Start": 871.16,
+      "Time_End": 877.0,
+      "Text": " So at the bottom there, you have an endpoint in blue."
+    },
+    {
+      "Time_Start": 878.12,
+      "Time_End": 882.04,
+      "Text": " That endpoint has paths to these three red dots here."
+    },
+    {
+      "Time_Start": 882.04,
+      "Time_End": 884.52,
+      "Text": " Those three red dots represent critical assets."
+    },
+    {
+      "Time_Start": 885.24,
+      "Time_End": 891.24,
+      "Text": " And so you have a critical path to various different ways that get you cluster admin."
+    },
+    {
+      "Time_Start": 895.64,
+      "Time_End": 898.04,
+      "Text": " So demo time."
+    },
+    {
+      "Time_Start": 899.0,
+      "Time_End": 902.28,
+      "Text": " So what we're going to do is we're going to do a couple of case studies with Kubehound"
+    },
+    {
+      "Time_Start": 902.28,
+      "Time_End": 907.16,
+      "Text": " to show how it works in a little bit more detail and how it solves those problems that"
+    },
+    {
+      "Time_Start": 907.16,
+      "Time_End": 907.88,
+      "Text": " we've discussed."
+    },
+    {
+      "Time_Start": 909.24,
+      "Time_End": 914.8399999999999,
+      "Text": " And the first one is, can we use Kubehound to find a very complex path?"
+    },
+    {
+      "Time_Start": 915.4,
+      "Time_End": 919.0799999999999,
+      "Text": " So 10 hops from exposed service to a critical asset."
+    },
+    {
+      "Time_Start": 919.8,
+      "Time_End": 924.4399999999999,
+      "Text": " So this is something that would be very difficult and time consuming to find manually."
+    },
+    {
+      "Time_Start": 924.4399999999999,
+      "Time_End": 926.8399999999999,
+      "Text": " And we're just going to do it in a few seconds with our queries."
+    },
+    {
+      "Time_Start": 928.36,
+      "Time_End": 930.8399999999999,
+      "Text": " And if this doesn't work, I do have a backup video."
+    },
+    {
+      "Time_Start": 933.3199999999999,
+      "Time_End": 940.4399999999999,
+      "Text": " So the interface that we have is Jupyter Notebooks."
+    },
+    {
+      "Time_Start": 941.8,
+      "Time_End": 946.8399999999999,
+      "Text": " It doesn't necessarily look so pretty at the start, but it does let you share pretty complex"
+    },
+    {
+      "Time_Start": 946.8399999999999,
+      "Time_End": 949.8,
+      "Text": " snippets of code and workflows between the teams."
+    },
+    {
+      "Time_Start": 949.8,
+      "Time_End": 952.8399999999999,
+      "Text": " And it works well in the Datadog DevOps environment."
+    },
+    {
+      "Time_Start": 953.56,
+      "Time_End": 957.4,
+      "Text": " But you can plug in any kind of graph UI that you'd like into this product."
+    },
+    {
+      "Time_Start": 957.8,
+      "Time_End": 959.3199999999999,
+      "Text": " Because ultimately, it's just an API."
+    },
+    {
+      "Time_Start": 960.76,
+      "Time_End": 962.92,
+      "Text": " So here, I've got a little notebook that I've set up."
+    },
+    {
+      "Time_Start": 963.8,
+      "Time_End": 967.0799999999999,
+      "Text": " So I'm just connecting and setting up my visualization options."
+    },
+    {
+      "Time_Start": 967.8,
+      "Time_End": 969.56,
+      "Text": " And now we're going to get to the fun bit."
+    },
+    {
+      "Time_Start": 969.56,
+      "Time_End": 974.1999999999999,
+      "Text": " So what we're going to do here is just an initial recon of the environment."
+    },
+    {
+      "Time_Start": 974.92,
+      "Time_End": 976.76,
+      "Text": " This query language is called Gremlin."
+    },
+    {
+      "Time_Start": 978.04,
+      "Time_End": 981.96,
+      "Text": " It's an open source thing released by Apache."
+    },
+    {
+      "Time_Start": 981.96,
+      "Time_End": 986.12,
+      "Text": " It's a bit of a steeper learning curve than Cipher."
+    },
+    {
+      "Time_Start": 986.76,
+      "Time_End": 988.04,
+      "Text": " But it is very powerful."
+    },
+    {
+      "Time_Start": 988.04,
+      "Time_End": 992.6,
+      "Text": " And we have augmented it with our own DSL to try and simplify things a bit."
+    },
+    {
+      "Time_Start": 992.6,
+      "Time_End": 995.32,
+      "Text": " I'm kind of showcasing quite complex workflows here."
+    },
+    {
+      "Time_Start": 995.32,
+      "Time_End": 999.8,
+      "Text": " But you can just do kh.services.criticalpaths to get you"
+    },
+    {
+      "Time_Start": 1001.08,
+      "Time_End": 1003.16,
+      "Text": " some pretty interesting information straight away."
+    },
+    {
+      "Time_Start": 1004.04,
+      "Time_End": 1009.88,
+      "Text": " So if I run this, I've got my sample data, which is in the repo, and you can use."
+    },
+    {
+      "Time_Start": 1009.88,
+      "Time_End": 1015.64,
+      "Text": " And this is just going to give me the name of the port and the container image"
+    },
+    {
+      "Time_Start": 1016.28,
+      "Time_End": 1022.76,
+      "Text": " of every service endpoint in my cluster, which has a path to a critical asset."
+    },
+    {
+      "Time_Start": 1023.48,
+      "Time_End": 1029.72,
+      "Text": " So what I can do now is I can kind of compare these to my notional red team exploit catalog."
+    },
+    {
+      "Time_Start": 1029.72,
+      "Time_End": 1032.2,
+      "Text": " And I can say, OK, if I've got an exploit for any of these,"
+    },
+    {
+      "Time_Start": 1032.76,
+      "Time_End": 1037.32,
+      "Text": " I can pretty much go to cluster admin using the path that Kubehound's going to show me."
+    },
+    {
+      "Time_Start": 1037.96,
+      "Time_End": 1042.52,
+      "Text": " So we're going to focus on this web proxy service port."
+    },
+    {
+      "Time_Start": 1043.08,
+      "Time_End": 1045.96,
+      "Text": " So that's running on port 80 on an Ubuntu container."
+    },
+    {
+      "Time_Start": 1046.9199999999998,
+      "Time_End": 1050.04,
+      "Text": " Now, imagine we have an exploit for this."
+    },
+    {
+      "Time_Start": 1051.3999999999999,
+      "Time_End": 1054.12,
+      "Text": " What we can do is then use this query to say,"
+    },
+    {
+      "Time_Start": 1054.76,
+      "Time_End": 1058.2,
+      "Text": " so if I start with this port, show me the critical paths"
+    },
+    {
+      "Time_Start": 1059.32,
+      "Time_End": 1062.12,
+      "Text": " that I can work through to get to cluster admin on this."
+    },
+    {
+      "Time_Start": 1063.0800000000002,
+      "Time_End": 1069.88,
+      "Text": " So this is what that graph looks like, just giving you a high-level view."
+    },
+    {
+      "Time_Start": 1069.88,
+      "Time_End": 1073.0000000000002,
+      "Text": " But you'll have an endpoint that you start with, terminate,"
+    },
+    {
+      "Time_Start": 1073.0000000000002,
+      "Time_End": 1076.2,
+      "Text": " and lots of different paths that terminate in these red dots,"
+    },
+    {
+      "Time_Start": 1076.2,
+      "Time_End": 1079.4,
+      "Text": " which are our critical assets, so complete taker of the cluster."
+    },
+    {
+      "Time_Start": 1080.1200000000001,
+      "Time_End": 1083.8000000000002,
+      "Text": " So we're not going to look at that because it's a bit too complex right now."
+    },
+    {
+      "Time_Start": 1083.8000000000002,
+      "Time_End": 1086.92,
+      "Text": " But what we're going to do is we're going to tease out a single attack path."
+    },
+    {
+      "Time_Start": 1086.92,
+      "Time_End": 1090.1200000000001,
+      "Text": " In this case, we're going to tease out a very complicated attack path"
+    },
+    {
+      "Time_Start": 1090.1200000000001,
+      "Time_End": 1094.52,
+      "Text": " to kind of show off the tool using a fairly complex query"
+    },
+    {
+      "Time_Start": 1094.52,
+      "Time_End": 1096.1200000000001,
+      "Text": " that you would never use in real life."
+    },
+    {
+      "Time_Start": 1098.1200000000001,
+      "Time_End": 1101.3200000000002,
+      "Text": " But this is our actual attack path."
+    },
+    {
+      "Time_Start": 1104.04,
+      "Time_End": 1107.24,
+      "Text": " So let's just get this up."
+    },
+    {
+      "Time_Start": 1109.0800000000002,
+      "Time_End": 1110.92,
+      "Text": " So we start here with our endpoint."
+    },
+    {
+      "Time_Start": 1112.1200000000001,
+      "Time_End": 1114.6000000000001,
+      "Text": " And we're going to say, well, I'm going to start with this endpoint."
+    },
+    {
+      "Time_Start": 1114.8400000000001,
+      "Time_End": 1116.6000000000001,
+      "Text": " So we start here with our endpoint."
+    },
+    {
+      "Time_Start": 1117.4,
+      "Time_End": 1121.8000000000002,
+      "Text": " So this is our, let me zoom in a little bit more,"
+    },
+    {
+      "Time_Start": 1127.5600000000002,
+      "Time_End": 1128.8400000000001,
+      "Text": " and a little bit more."
+    },
+    {
+      "Time_Start": 1128.8400000000001,
+      "Time_End": 1129.8000000000002,
+      "Text": " That's probably too much."
+    },
+    {
+      "Time_Start": 1130.92,
+      "Time_End": 1133.0000000000002,
+      "Text": " But so yeah, this is our endpoint."
+    },
+    {
+      "Time_Start": 1133.88,
+      "Time_End": 1135.3200000000002,
+      "Text": " We know we have an exploit for it."
+    },
+    {
+      "Time_Start": 1135.3200000000002,
+      "Time_End": 1136.44,
+      "Text": " So we can exploit that."
+    },
+    {
+      "Time_Start": 1136.44,
+      "Time_End": 1141.16,
+      "Text": " And we end up here, which is our container, which is running that service."
+    },
+    {
+      "Time_Start": 1142.1200000000001,
+      "Time_End": 1144.76,
+      "Text": " This container has been misconfigured."
+    },
+    {
+      "Time_Start": 1144.76,
+      "Time_End": 1150.1200000000001,
+      "Text": " So we have a cnsEnter edge here, which represents a container escape."
+    },
+    {
+      "Time_Start": 1150.92,
+      "Time_End": 1153.5600000000002,
+      "Text": " So if you're not familiar with what that is,"
+    },
+    {
+      "Time_Start": 1153.5600000000002,
+      "Time_End": 1158.76,
+      "Text": " we've kind of documented all of these on our website."
+    },
+    {
+      "Time_Start": 1158.76,
+      "Time_End": 1165.72,
+      "Text": " So kubernetes.io, sorry, kubehound.io."
+    },
+    {
+      "Time_Start": 1168.1200000000001,
+      "Time_End": 1168.8400000000001,
+      "Text": " So here we go."
+    },
+    {
+      "Time_Start": 1169.56,
+      "Time_End": 1171.3999999999999,
+      "Text": " So we can just go and look it up on here."
+    },
+    {
+      "Time_Start": 1172.28,
+      "Time_End": 1175.0,
+      "Text": " And this is all the details about what the attack is,"
+    },
+    {
+      "Time_Start": 1175.0,
+      "Time_End": 1179.24,
+      "Text": " what you need to execute it, the command line that you need to exploit it,"
+    },
+    {
+      "Time_Start": 1180.12,
+      "Time_End": 1183.6399999999999,
+      "Text": " some stuff about defenses and how you could find it,"
+    },
+    {
+      "Time_Start": 1183.6399999999999,
+      "Time_End": 1189.8799999999999,
+      "Text": " and then some references to more in-depth kind of security blogs or documentation,"
+    },
+    {
+      "Time_Start": 1189.8799999999999,
+      "Time_End": 1192.6799999999998,
+      "Text": " and also how we go and calculate that within our tool."
+    },
+    {
+      "Time_Start": 1193.56,
+      "Time_End": 1198.04,
+      "Text": " So every single edge that you see here is going to have a corresponding entry in that"
+    },
+    {
+      "Time_Start": 1198.04,
+      "Time_End": 1200.68,
+      "Text": " that you can use to kind of figure out the details."
+    },
+    {
+      "Time_Start": 1201.8,
+      "Time_End": 1202.36,
+      "Text": " It's OK."
+    },
+    {
+      "Time_Start": 1202.36,
+      "Time_End": 1204.12,
+      "Text": " Now we've escaped the container."
+    },
+    {
+      "Time_Start": 1204.12,
+      "Time_End": 1205.08,
+      "Text": " We're on a node."
+    },
+    {
+      "Time_Start": 1205.6399999999999,
+      "Time_End": 1209.72,
+      "Text": " So because we're on a node, we can access all the volumes."
+    },
+    {
+      "Time_Start": 1209.72,
+      "Time_End": 1215.08,
+      "Text": " So we're going to access this volume, which is the var lib kubelet pods volume."
+    },
+    {
+      "Time_Start": 1215.6399999999999,
+      "Time_End": 1223.8,
+      "Text": " So that represents the file system that holds all the secret tokens for the pods."
+    },
+    {
+      "Time_Start": 1224.36,
+      "Time_End": 1228.6,
+      "Text": " So we can then steal a token, and that will get us this,"
+    },
+    {
+      "Time_Start": 1228.6,
+      "Time_End": 1230.6,
+      "Text": " which is this pod exec service account."
+    },
+    {
+      "Time_Start": 1231.72,
+      "Time_End": 1234.52,
+      "Text": " This will have, we can discover its permissions,"
+    },
+    {
+      "Time_Start": 1234.52,
+      "Time_End": 1238.36,
+      "Text": " and this will have this particular permission here,"
+    },
+    {
+      "Time_Start": 1239.1599999999999,
+      "Time_End": 1241.32,
+      "Text": " which is the ability to exec pods,"
+    },
+    {
+      "Time_Start": 1241.8799999999999,
+      "Time_End": 1247.48,
+      "Text": " which means we can do a pod exec and get onto this other pod."
+    },
+    {
+      "Time_Start": 1248.68,
+      "Time_End": 1250.9199999999998,
+      "Text": " This other pod is running this container."
+    },
+    {
+      "Time_Start": 1250.92,
+      "Time_End": 1253.16,
+      "Text": " This container is also misconfigured."
+    },
+    {
+      "Time_Start": 1253.72,
+      "Time_End": 1256.68,
+      "Text": " So you can use the cns enter attack,"
+    },
+    {
+      "Time_Start": 1257.48,
+      "Time_End": 1260.52,
+      "Text": " which will get you onto this second node,"
+    },
+    {
+      "Time_Start": 1260.52,
+      "Time_End": 1262.3600000000001,
+      "Text": " which is different to the original node."
+    },
+    {
+      "Time_Start": 1262.92,
+      "Time_End": 1267.88,
+      "Text": " And finally, this node, sorry, this table's a bit wobbly."
+    },
+    {
+      "Time_Start": 1269.0,
+      "Time_End": 1271.88,
+      "Text": " And finally, this second node is running under an identity,"
+    },
+    {
+      "Time_Start": 1272.76,
+      "Time_End": 1276.6000000000001,
+      "Text": " which has some permissions, and those permissions are"
+    },
+    {
+      "Time_Start": 1281.72,
+      "Time_End": 1285.5600000000002,
+      "Text": " basically are these very powerful certificate-based permissions,"
+    },
+    {
+      "Time_Start": 1285.5600000000002,
+      "Time_End": 1287.5600000000002,
+      "Text": " which give you the equivalent of cluster admin."
+    },
+    {
+      "Time_Start": 1289.3200000000002,
+      "Time_End": 1295.5600000000002,
+      "Text": " So that is a 10-hop attack chain going from an initial export of a service"
+    },
+    {
+      "Time_Start": 1295.5600000000002,
+      "Time_End": 1299.0,
+      "Text": " to full cluster admin, going through multiple container escapes."
+    },
+    {
+      "Time_Start": 1300.04,
+      "Time_End": 1303.96,
+      "Text": " That would take a very experienced red team a long time to find by hand,"
+    },
+    {
+      "Time_Start": 1303.96,
+      "Time_End": 1305.72,
+      "Text": " and we've just kind of teased it out."
+    },
+    {
+      "Time_Start": 1305.72,
+      "Time_End": 1309.0,
+      "Text": " And hopefully, most people will be able to do that."
+    },
+    {
+      "Time_Start": 1309.0,
+      "Time_End": 1312.76,
+      "Text": " And hopefully, most people with just the baseline knowledge of security"
+    },
+    {
+      "Time_Start": 1312.76,
+      "Time_End": 1316.36,
+      "Text": " could kind of follow that roadmap and the documentation"
+    },
+    {
+      "Time_Start": 1316.36,
+      "Time_End": 1319.96,
+      "Text": " to really understand how that attack works, what's possible,"
+    },
+    {
+      "Time_Start": 1319.96,
+      "Time_End": 1322.2,
+      "Text": " and also think about the defenses that you could implement."
+    },
+    {
+      "Time_Start": 1332.04,
+      "Time_End": 1335.72,
+      "Text": " So in terms of our demo, I think what we've done there"
+    },
+    {
+      "Time_Start": 1335.72,
+      "Time_End": 1338.12,
+      "Text": " is we've shown some vulnerability context"
+    },
+    {
+      "Time_Start": 1338.1200000000001,
+      "Time_End": 1341.0800000000002,
+      "Text": " because we've seen that a vulnerability on that endpoint"
+    },
+    {
+      "Time_Start": 1342.2,
+      "Time_End": 1343.64,
+      "Text": " does have a path to an admin."
+    },
+    {
+      "Time_Start": 1344.2800000000002,
+      "Time_End": 1347.48,
+      "Text": " We've shown scale. We don't need to hire a red team to do that."
+    },
+    {
+      "Time_Start": 1347.48,
+      "Time_End": 1349.16,
+      "Text": " We can just run the queries."
+    },
+    {
+      "Time_Start": 1349.16,
+      "Time_End": 1351.3200000000002,
+      "Text": " And we're kind of democratizing offense as well"
+    },
+    {
+      "Time_Start": 1351.3200000000002,
+      "Time_End": 1353.72,
+      "Text": " because that was a really very complicated attack"
+    },
+    {
+      "Time_Start": 1353.72,
+      "Time_End": 1354.68,
+      "Text": " that we just went through."
+    },
+    {
+      "Time_Start": 1355.48,
+      "Time_End": 1358.2,
+      "Text": " And hopefully, that's something that you can, to some extent,"
+    },
+    {
+      "Time_Start": 1358.2,
+      "Time_End": 1361.72,
+      "Text": " follow along just doing the steps that I did a bit more slowly."
+    },
+    {
+      "Time_Start": 1365.3200000000002,
+      "Time_End": 1367.24,
+      "Text": " So let's jump straight into the second question,"
+    },
+    {
+      "Time_Start": 1367.24,
+      "Time_End": 1369.64,
+      "Text": " which is trying to answer that."
+    },
+    {
+      "Time_Start": 1369.64,
+      "Time_End": 1371.32,
+      "Text": " How secure is my cluster?"
+    },
+    {
+      "Time_Start": 1371.32,
+      "Time_End": 1373.08,
+      "Text": " I'm trying to track that metric over time."
+    },
+    {
+      "Time_Start": 1375.0,
+      "Time_End": 1378.1200000000001,
+      "Text": " So we're going to do a much shorter, simpler demo,"
+    },
+    {
+      "Time_Start": 1379.16,
+      "Time_End": 1381.56,
+      "Text": " doing some security metrics calculation"
+    },
+    {
+      "Time_Start": 1381.56,
+      "Time_End": 1382.68,
+      "Text": " on our vulnerable cluster."
+    },
+    {
+      "Time_Start": 1383.8,
+      "Time_End": 1386.28,
+      "Text": " Spoiler, this is the sample cluster."
+    },
+    {
+      "Time_Start": 1386.28,
+      "Time_End": 1387.48,
+      "Text": " So it's not going to be good."
+    },
+    {
+      "Time_Start": 1389.4,
+      "Time_End": 1391.72,
+      "Text": " So this is another workbook."
+    },
+    {
+      "Time_Start": 1393.64,
+      "Time_End": 1396.92,
+      "Text": " These workbooks are in the Kubehound repo."
+    },
+    {
+      "Time_Start": 1397.16,
+      "Time_End": 1400.28,
+      "Text": " You can just go download this, run a couple of commands,"
+    },
+    {
+      "Time_Start": 1400.28,
+      "Time_End": 1402.44,
+      "Text": " get up and running, and go through all of this yourselves."
+    },
+    {
+      "Time_Start": 1405.0,
+      "Time_End": 1406.04,
+      "Text": " Let's look at the first one."
+    },
+    {
+      "Time_Start": 1406.04,
+      "Time_End": 1407.24,
+      "Text": " This is a very simple metric."
+    },
+    {
+      "Time_Start": 1408.04,
+      "Time_End": 1412.3600000000001,
+      "Text": " What is the shortest number of hops that I can go from"
+    },
+    {
+      "Time_Start": 1412.3600000000001,
+      "Time_End": 1414.6000000000001,
+      "Text": " an exposed services to a critical asset?"
+    },
+    {
+      "Time_Start": 1415.88,
+      "Time_End": 1418.3600000000001,
+      "Text": " This is this Kubehound DSL here that we have."
+    },
+    {
+      "Time_Start": 1419.0800000000002,
+      "Time_End": 1422.28,
+      "Text": " This is just going to give me back a number, in this case, 4."
+    },
+    {
+      "Time_Start": 1423.8000000000002,
+      "Time_End": 1425.5600000000002,
+      "Text": " That's generally quite bad because that means"
+    },
+    {
+      "Time_Start": 1425.5600000000002,
+      "Time_End": 1426.68,
+      "Text": " it's pretty much straight there."
+    },
+    {
+      "Time_Start": 1427.88,
+      "Time_End": 1430.68,
+      "Text": " The next thing that we can do is we can just"
+    },
+    {
+      "Time_Start": 1430.68,
+      "Time_End": 1432.1200000000001,
+      "Text": " count up the critical paths."
+    },
+    {
+      "Time_Start": 1432.68,
+      "Time_End": 1434.76,
+      "Text": " This is not super useful by itself,"
+    },
+    {
+      "Time_Start": 1434.76,
+      "Time_End": 1437.0800000000002,
+      "Text": " but it's a pretty good way to kind of track progress"
+    },
+    {
+      "Time_Start": 1437.0800000000002,
+      "Time_End": 1439.16,
+      "Text": " because you can kind of see the reduction"
+    },
+    {
+      "Time_Start": 1439.16,
+      "Time_End": 1441.5600000000002,
+      "Text": " as you try and implement various security controls."
+    },
+    {
+      "Time_Start": 1442.52,
+      "Time_End": 1445.0800000000002,
+      "Text": " So again, this is just a number,"
+    },
+    {
+      "Time_Start": 1445.0800000000002,
+      "Time_End": 1447.5600000000002,
+      "Text": " but it might be an interesting one to track the progress of."
+    },
+    {
+      "Time_Start": 1449.16,
+      "Time_End": 1452.04,
+      "Text": " What's more interesting is this."
+    },
+    {
+      "Time_Start": 1452.76,
+      "Time_End": 1455.4,
+      "Text": " This is super complicated because I've done it as a one shot."
+    },
+    {
+      "Time_Start": 1455.4,
+      "Time_End": 1457.24,
+      "Text": " If you break it into two, it's a lot easier."
+    },
+    {
+      "Time_Start": 1458.1200000000001,
+      "Time_End": 1461.24,
+      "Text": " But what this is going to do is basically tell me"
+    },
+    {
+      "Time_Start": 1461.24,
+      "Time_End": 1463.96,
+      "Text": " what percentage of my services that are exposed"
+    },
+    {
+      "Time_Start": 1463.96,
+      "Time_End": 1466.2800000000002,
+      "Text": " outside the cluster have a path to a critical asset."
+    },
+    {
+      "Time_Start": 1469.0800000000002,
+      "Time_End": 1470.68,
+      "Text": " 100%, so that's not great."
+    },
+    {
+      "Time_Start": 1472.52,
+      "Time_End": 1474.3600000000001,
+      "Text": " OK, that's not good."
+    },
+    {
+      "Time_Start": 1474.3600000000001,
+      "Time_End": 1476.76,
+      "Text": " So let's actually think about how we might"
+    },
+    {
+      "Time_Start": 1476.76,
+      "Time_End": 1478.2800000000002,
+      "Text": " want to go about and fix this."
+    },
+    {
+      "Time_Start": 1479.4,
+      "Time_End": 1481.3200000000002,
+      "Text": " So what I'm going to do here is I'm"
+    },
+    {
+      "Time_Start": 1481.3200000000002,
+      "Time_End": 1483.48,
+      "Text": " going to look at those paths."
+    },
+    {
+      "Time_Start": 1484.04,
+      "Time_End": 1486.76,
+      "Text": " I'm going to stop at five hops to try and find the easiest"
+    },
+    {
+      "Time_Start": 1486.76,
+      "Time_End": 1488.28,
+      "Text": " paths for an attacker."
+    },
+    {
+      "Time_Start": 1488.28,
+      "Time_End": 1492.04,
+      "Text": " And I'm just going to look at how frequently each thing comes"
+    },
+    {
+      "Time_Start": 1492.04,
+      "Time_End": 1494.2,
+      "Text": " up and whether I can see some patterns."
+    },
+    {
+      "Time_Start": 1495.08,
+      "Time_End": 1496.6,
+      "Text": " So this hasn't rendered very well,"
+    },
+    {
+      "Time_Start": 1496.6,
+      "Time_End": 1499.8,
+      "Text": " but this is basically a map which has the attack paths"
+    },
+    {
+      "Time_Start": 1499.8,
+      "Time_End": 1501.48,
+      "Text": " and how often they come up in the cluster."
+    },
+    {
+      "Time_Start": 1502.6,
+      "Time_End": 1505.48,
+      "Text": " What we can do is do a bit of analysis here."
+    },
+    {
+      "Time_Start": 1506.3600000000001,
+      "Time_End": 1510.04,
+      "Text": " And we can say, OK, I kind of see these container escapes"
+    },
+    {
+      "Time_Start": 1510.12,
+      "Time_End": 1514.04,
+      "Text": " here come up in almost all the attack paths."
+    },
+    {
+      "Time_Start": 1515.08,
+      "Time_End": 1519.08,
+      "Text": " So the question is, is it worth my security team spending"
+    },
+    {
+      "Time_Start": 1519.08,
+      "Time_End": 1520.52,
+      "Text": " some time to try and fix these?"
+    },
+    {
+      "Time_Start": 1521.1599999999999,
+      "Time_End": 1523.3999999999999,
+      "Text": " Maybe cause a bit of friction with the developers,"
+    },
+    {
+      "Time_Start": 1523.3999999999999,
+      "Time_End": 1525.72,
+      "Text": " but actually, is that worth the effort in the reduction"
+    },
+    {
+      "Time_Start": 1525.72,
+      "Time_End": 1526.92,
+      "Text": " that we'll see in attack paths?"
+    },
+    {
+      "Time_Start": 1528.36,
+      "Time_End": 1530.04,
+      "Text": " And we can actually get a very good answer"
+    },
+    {
+      "Time_Start": 1530.04,
+      "Time_End": 1531.56,
+      "Text": " with this in KubeHand very quickly"
+    },
+    {
+      "Time_Start": 1532.2,
+      "Time_End": 1535.72,
+      "Text": " by calculating the number of attack paths,"
+    },
+    {
+      "Time_Start": 1535.72,
+      "Time_End": 1536.52,
+      "Text": " which we did before."
+    },
+    {
+      "Time_Start": 1537.32,
+      "Time_End": 1538.68,
+      "Text": " Now what we can do here is we can"
+    },
+    {
+      "Time_Start": 1538.68,
+      "Time_End": 1542.44,
+      "Text": " calculate all the paths but exclude those two attacks"
+    },
+    {
+      "Time_Start": 1542.44,
+      "Time_End": 1543.3200000000002,
+      "Text": " that we talked about."
+    },
+    {
+      "Time_Start": 1545.3200000000002,
+      "Time_End": 1548.1200000000001,
+      "Text": " So we can see there, and then we compare those two numbers."
+    },
+    {
+      "Time_Start": 1548.68,
+      "Time_End": 1551.88,
+      "Text": " And we basically see that by taking out those two attacks,"
+    },
+    {
+      "Time_Start": 1551.88,
+      "Time_End": 1554.8400000000001,
+      "Text": " we've got a 65% reduction in attack paths"
+    },
+    {
+      "Time_Start": 1554.8400000000001,
+      "Time_End": 1558.04,
+      "Text": " from exposed services to critical assets,"
+    },
+    {
+      "Time_Start": 1558.04,
+      "Time_End": 1560.28,
+      "Text": " which, for me, would then be a very good investment"
+    },
+    {
+      "Time_Start": 1560.28,
+      "Time_End": 1561.8,
+      "Text": " to try and lock those down."
+    },
+    {
+      "Time_Start": 1562.44,
+      "Time_End": 1564.68,
+      "Text": " And that's the kind of analysis that you could just"
+    },
+    {
+      "Time_Start": 1564.68,
+      "Time_End": 1565.64,
+      "Text": " repeat again and again."
+    },
+    {
+      "Time_Start": 1569.0800000000002,
+      "Time_End": 1570.92,
+      "Text": " So if we go back to our slideshow."
+    },
+    {
+      "Time_Start": 1575.5600000000002,
+      "Time_End": 1576.52,
+      "Text": " So there we have it."
+    },
+    {
+      "Time_Start": 1576.52,
+      "Time_End": 1579.0800000000002,
+      "Text": " We've quantified the security posture"
+    },
+    {
+      "Time_Start": 1579.64,
+      "Time_End": 1580.68,
+      "Text": " using our little workbook."
+    },
+    {
+      "Time_Start": 1583.0800000000002,
+      "Time_End": 1584.8400000000001,
+      "Text": " This works very well at scale."
+    },
+    {
+      "Time_Start": 1585.72,
+      "Time_End": 1589.16,
+      "Text": " If you have to render the graph and kind of churn"
+    },
+    {
+      "Time_Start": 1589.16,
+      "Time_End": 1592.28,
+      "Text": " through all that data, that gets quite memory intensive"
+    },
+    {
+      "Time_Start": 1592.28,
+      "Time_End": 1593.72,
+      "Text": " for really big environments."
+    },
+    {
+      "Time_Start": 1593.72,
+      "Time_End": 1596.76,
+      "Text": " But these kind of metrics scale really, really well."
+    },
+    {
+      "Time_Start": 1596.84,
+      "Time_End": 1601.32,
+      "Text": " And let you kind of track things in a kind of quantitative way"
+    },
+    {
+      "Time_Start": 1601.32,
+      "Time_End": 1602.12,
+      "Text": " as well."
+    },
+    {
+      "Time_Start": 1602.12,
+      "Time_End": 1604.44,
+      "Text": " And finally, again, we're kind of democratizing offense"
+    },
+    {
+      "Time_Start": 1604.44,
+      "Time_End": 1608.6,
+      "Text": " because we're able to distill a kind of picture of what"
+    },
+    {
+      "Time_Start": 1608.6,
+      "Time_End": 1610.76,
+      "Text": " an attacker could do into your cluster"
+    },
+    {
+      "Time_Start": 1610.76,
+      "Time_End": 1612.92,
+      "Text": " in some kind of easy to understand sort of maps"
+    },
+    {
+      "Time_Start": 1612.92,
+      "Time_End": 1614.2,
+      "Text": " and metrics for the offenders."
+    },
+    {
+      "Time_Start": 1618.76,
+      "Time_End": 1620.36,
+      "Text": " And so I think what we showcased there"
+    },
+    {
+      "Time_Start": 1620.36,
+      "Time_End": 1621.48,
+      "Text": " is that, can you do this?"
+    },
+    {
+      "Time_Start": 1621.48,
+      "Time_End": 1622.2,
+      "Text": " Can you do this?"
+    },
+    {
+      "Time_Start": 1622.2,
+      "Time_End": 1622.84,
+      "Text": " Can you do this?"
+    },
+    {
+      "Time_Start": 1622.84,
+      "Time_End": 1623.48,
+      "Text": " Can you do this?"
+    },
+    {
+      "Time_Start": 1623.48,
+      "Time_End": 1624.04,
+      "Text": " Can you do this?"
+    },
+    {
+      "Time_Start": 1624.04,
+      "Time_End": 1624.52,
+      "Text": " Can you do this?"
+    },
+    {
+      "Time_Start": 1624.52,
+      "Time_End": 1625.0,
+      "Text": " Can you do this?"
+    },
+    {
+      "Time_Start": 1625.0,
+      "Time_End": 1625.48,
+      "Text": " Can you do this?"
+    },
+    {
+      "Time_Start": 1625.48,
+      "Time_End": 1625.96,
+      "Text": " Can you do this?"
+    },
+    {
+      "Time_Start": 1625.96,
+      "Time_End": 1626.44,
+      "Text": " Can you do this?"
+    },
+    {
+      "Time_Start": 1626.44,
+      "Time_End": 1627.64,
+      "Text": " Whereas that KubeHand can actually"
+    },
+    {
+      "Time_Start": 1627.64,
+      "Time_End": 1629.0800000000002,
+      "Text": " solve a lot of these problems that we"
+    },
+    {
+      "Time_Start": 1629.0800000000002,
+      "Time_End": 1630.52,
+      "Text": " discussed at the beginning."
+    },
+    {
+      "Time_Start": 1633.64,
+      "Time_End": 1636.44,
+      "Text": " And so what I wanted to do here is just kind of take"
+    },
+    {
+      "Time_Start": 1636.44,
+      "Time_End": 1637.96,
+      "Text": " a little bit of a step back."
+    },
+    {
+      "Time_Start": 1637.96,
+      "Time_End": 1639.16,
+      "Text": " We've shown the tool."
+    },
+    {
+      "Time_Start": 1639.16,
+      "Time_End": 1640.52,
+      "Text": " What I wanted to talk through is a little bit"
+    },
+    {
+      "Time_Start": 1640.52,
+      "Time_End": 1642.76,
+      "Text": " of how the development process works to do something"
+    },
+    {
+      "Time_Start": 1642.76,
+      "Time_End": 1643.64,
+      "Text": " like this."
+    },
+    {
+      "Time_Start": 1643.64,
+      "Time_End": 1646.76,
+      "Text": " Because you could pretty much apply these steps"
+    },
+    {
+      "Time_Start": 1646.76,
+      "Time_End": 1648.52,
+      "Text": " to any kind of system."
+    },
+    {
+      "Time_Start": 1648.52,
+      "Time_End": 1653.48,
+      "Text": " So yeah, it's a very powerful approach."
+    },
+    {
+      "Time_Start": 1653.48,
+      "Time_End": 1654.96,
+      "Text": " Here's a couple of other ideas that"
+    },
+    {
+      "Time_Start": 1654.96,
+      "Time_End": 1656.16,
+      "Text": " have been kicked around of where we'd"
+    },
+    {
+      "Time_Start": 1656.16,
+      "Time_End": 1657.2,
+      "Text": " like to do this as well."
+    },
+    {
+      "Time_Start": 1657.2,
+      "Time_End": 1659.8400000000001,
+      "Text": " But you could model a workstation endpoint"
+    },
+    {
+      "Time_Start": 1659.8400000000001,
+      "Time_End": 1663.2,
+      "Text": " with all your apps and see how they could lead to admin"
+    },
+    {
+      "Time_Start": 1663.2,
+      "Time_End": 1664.8,
+      "Text": " through privilege escalation."
+    },
+    {
+      "Time_Start": 1664.8,
+      "Time_End": 1666.32,
+      "Text": " You could look at SAS identity, which"
+    },
+    {
+      "Time_Start": 1666.32,
+      "Time_End": 1668.16,
+      "Text": " we've talked about a lot here."
+    },
+    {
+      "Time_Start": 1668.16,
+      "Time_End": 1670.48,
+      "Text": " HashiCorp Vault, we use a lot of data."
+    },
+    {
+      "Time_Start": 1670.48,
+      "Time_End": 1672.72,
+      "Text": " It was another good candidate for this kind of thing"
+    },
+    {
+      "Time_Start": 1672.72,
+      "Time_End": 1675.76,
+      "Text": " with lots of groups and permissions and things."
+    },
+    {
+      "Time_Start": 1675.76,
+      "Time_End": 1678.64,
+      "Text": " And AWS and a whole cloud environment as well."
+    },
+    {
+      "Time_Start": 1679.64,
+      "Time_End": 1683.76,
+      "Text": " So the first stage of this was I didn't know a whole lot"
+    },
+    {
+      "Time_Start": 1683.76,
+      "Time_End": 1688.24,
+      "Text": " about Kubernetes, so I just did a whole bunch of research."
+    },
+    {
+      "Time_Start": 1688.24,
+      "Time_End": 1691.5200000000002,
+      "Text": " We looked at basically any conference talks, blogs,"
+    },
+    {
+      "Time_Start": 1691.5200000000002,
+      "Time_End": 1694.0,
+      "Text": " tooling, and videos of the last five years"
+    },
+    {
+      "Time_Start": 1694.0,
+      "Time_End": 1696.24,
+      "Text": " and pretty much read them all and tried"
+    },
+    {
+      "Time_Start": 1696.24,
+      "Time_End": 1701.8400000000001,
+      "Text": " to kind of break them down a little bit and categorize them."
+    },
+    {
+      "Time_Start": 1701.8400000000001,
+      "Time_End": 1705.0400000000002,
+      "Text": " I've got an attack here, which was one of the examples that"
+    },
+    {
+      "Time_Start": 1705.0400000000002,
+      "Time_End": 1706.64,
+      "Text": " came from our last talk."
+    },
+    {
+      "Time_Start": 1707.0400000000002,
+      "Time_End": 1708.48,
+      "Text": " Which was one of the examples that"
+    },
+    {
+      "Time_Start": 1708.48,
+      "Time_End": 1713.3600000000001,
+      "Text": " came from our research from CyberArk in RSA 2020."
+    },
+    {
+      "Time_Start": 1713.3600000000001,
+      "Time_End": 1715.5200000000002,
+      "Text": " And I'll show you how we basically took the research"
+    },
+    {
+      "Time_Start": 1715.5200000000002,
+      "Time_End": 1719.24,
+      "Text": " and then we turned it into a basic graph."
+    },
+    {
+      "Time_Start": 1719.24,
+      "Time_End": 1722.64,
+      "Text": " The idea here is an attacker compromises,"
+    },
+    {
+      "Time_Start": 1722.64,
+      "Time_End": 1726.0,
+      "Text": " gets credentials which let them get pod create permission."
+    },
+    {
+      "Time_Start": 1726.0,
+      "Time_End": 1728.5600000000002,
+      "Text": " So they can create new pods in the cluster."
+    },
+    {
+      "Time_Start": 1728.5600000000002,
+      "Time_End": 1730.0400000000002,
+      "Text": " What they're going to do is they're"
+    },
+    {
+      "Time_Start": 1730.0400000000002,
+      "Time_End": 1733.3200000000002,
+      "Text": " going to create a custom container with a script that"
+    },
+    {
+      "Time_Start": 1733.3200000000002,
+      "Time_End": 1734.76,
+      "Text": " will run on startup."
+    },
+    {
+      "Time_Start": 1734.76,
+      "Time_End": 1736.6,
+      "Text": " And what that script is going to do"
+    },
+    {
+      "Time_Start": 1736.6,
+      "Time_End": 1738.8,
+      "Text": " is it's going to query the Kubernetes API"
+    },
+    {
+      "Time_Start": 1738.8,
+      "Time_End": 1740.56,
+      "Text": " and try and steal all of the secrets"
+    },
+    {
+      "Time_Start": 1740.56,
+      "Time_End": 1744.36,
+      "Text": " and then post them to some attacker-controlled endpoint."
+    },
+    {
+      "Time_Start": 1744.36,
+      "Time_End": 1748.12,
+      "Text": " The attacker is then, if you haven't added additional"
+    },
+    {
+      "Time_Start": 1748.12,
+      "Time_End": 1750.64,
+      "Text": " security to your cluster, anybody can do this."
+    },
+    {
+      "Time_Start": 1750.64,
+      "Time_End": 1753.92,
+      "Text": " The attacker can create a pod with an identity"
+    },
+    {
+      "Time_Start": 1753.92,
+      "Time_End": 1758.32,
+      "Text": " that has the ability to read those secrets from the API."
+    },
+    {
+      "Time_Start": 1758.32,
+      "Time_End": 1760.8799999999999,
+      "Text": " And so they're going to create the pod with that identity"
+    },
+    {
+      "Time_Start": 1760.8799999999999,
+      "Time_End": 1762.48,
+      "Text": " that's going to run the script."
+    },
+    {
+      "Time_Start": 1762.48,
+      "Time_End": 1764.6,
+      "Text": " And that's just going to run, take all the secrets"
+    },
+    {
+      "Time_Start": 1764.6000000000001,
+      "Time_End": 1767.0400000000002,
+      "Text": " to their endpoints, and that's it."
+    },
+    {
+      "Time_Start": 1767.0400000000002,
+      "Time_End": 1769.0800000000002,
+      "Text": " It's actually a very simple attack, but incredibly"
+    },
+    {
+      "Time_Start": 1769.0800000000002,
+      "Time_End": 1770.96,
+      "Text": " powerful."
+    },
+    {
+      "Time_Start": 1770.96,
+      "Time_End": 1773.0000000000002,
+      "Text": " I picked it because it was quite interesting."
+    },
+    {
+      "Time_Start": 1773.0000000000002,
+      "Time_End": 1774.44,
+      "Text": " It's had lots of different bits."
+    },
+    {
+      "Time_Start": 1774.44,
+      "Time_End": 1775.3200000000002,
+      "Text": " You create a pod."
+    },
+    {
+      "Time_Start": 1775.3200000000002,
+      "Time_End": 1776.92,
+      "Text": " There's identity."
+    },
+    {
+      "Time_Start": 1776.92,
+      "Time_End": 1777.68,
+      "Text": " There's RBAC."
+    },
+    {
+      "Time_Start": 1777.68,
+      "Time_End": 1779.6000000000001,
+      "Text": " There's secrets."
+    },
+    {
+      "Time_Start": 1779.6000000000001,
+      "Time_End": 1782.4800000000002,
+      "Text": " And so what we start with is sketch a little thing"
+    },
+    {
+      "Time_Start": 1782.4800000000002,
+      "Time_End": 1783.0800000000002,
+      "Text": " like this."
+    },
+    {
+      "Time_Start": 1783.0800000000002,
+      "Time_End": 1785.2800000000002,
+      "Text": " Bear in mind, we're doing this for every single thing"
+    },
+    {
+      "Time_Start": 1785.2800000000002,
+      "Time_End": 1788.92,
+      "Text": " that we researched, of what are the bits that are involved?"
+    },
+    {
+      "Time_Start": 1788.92,
+      "Time_End": 1791.3200000000002,
+      "Text": " How do they relate together?"
+    },
+    {
+      "Time_Start": 1791.32,
+      "Time_End": 1796.12,
+      "Text": " And just do that for every attack that we have."
+    },
+    {
+      "Time_Start": 1796.12,
+      "Time_End": 1797.52,
+      "Text": " Once we've done that a few times,"
+    },
+    {
+      "Time_Start": 1797.52,
+      "Time_End": 1799.8,
+      "Text": " we start to see some commonality."
+    },
+    {
+      "Time_Start": 1799.8,
+      "Time_End": 1801.32,
+      "Text": " We refine our model a bit, and then we"
+    },
+    {
+      "Time_Start": 1801.32,
+      "Time_End": 1804.1599999999999,
+      "Text": " can port it to a graph database."
+    },
+    {
+      "Time_Start": 1804.1599999999999,
+      "Time_End": 1806.8799999999999,
+      "Text": " I actually initially wrote this in Neo4j."
+    },
+    {
+      "Time_Start": 1806.8799999999999,
+      "Time_End": 1810.32,
+      "Text": " I just had a Neo4j script that was creating these things"
+    },
+    {
+      "Time_Start": 1810.32,
+      "Time_End": 1812.2,
+      "Text": " in the graph database."
+    },
+    {
+      "Time_Start": 1812.2,
+      "Time_End": 1815.76,
+      "Text": " This is the same attack, but in Neo4j with our things."
+    },
+    {
+      "Time_Start": 1818.9199999999998,
+      "Time_End": 1821.0,
+      "Text": " And then what we do is we just do it again"
+    },
+    {
+      "Time_Start": 1821.0,
+      "Time_End": 1821.92,
+      "Text": " for all the attacks."
+    },
+    {
+      "Time_Start": 1821.92,
+      "Time_End": 1824.64,
+      "Text": " So these are all the edges that we have in CubeHound right now."
+    },
+    {
+      "Time_Start": 1824.64,
+      "Time_End": 1827.48,
+      "Text": " And we just iterate and make sure that the model works."
+    },
+    {
+      "Time_Start": 1827.48,
+      "Time_End": 1828.92,
+      "Text": " And sometimes it didn't quite fit,"
+    },
+    {
+      "Time_Start": 1828.92,
+      "Time_End": 1830.96,
+      "Text": " so we'd change something to make it work,"
+    },
+    {
+      "Time_Start": 1830.96,
+      "Time_End": 1832.36,
+      "Text": " and just keep doing that until we"
+    },
+    {
+      "Time_Start": 1832.36,
+      "Time_End": 1835.24,
+      "Text": " could model all of these attacks using our graph model."
+    },
+    {
+      "Time_Start": 1835.24,
+      "Time_End": 1838.88,
+      "Text": " And then we had a lot of confidence at that point"
+    },
+    {
+      "Time_Start": 1838.88,
+      "Time_End": 1841.72,
+      "Text": " that our model was along the right track."
+    },
+    {
+      "Time_Start": 1841.72,
+      "Time_End": 1843.72,
+      "Text": " The two things we really wanted to make sure of"
+    },
+    {
+      "Time_Start": 1843.72,
+      "Time_End": 1846.52,
+      "Text": " is that the model was complete, and also that we're not"
+    },
+    {
+      "Time_Start": 1846.52,
+      "Time_End": 1850.8,
+      "Text": " processing unnecessary data, because there's"
+    },
+    {
+      "Time_Start": 1850.8,
+      "Time_End": 1853.12,
+      "Text": " a lot of performance considerations around this,"
+    },
+    {
+      "Time_Start": 1853.12,
+      "Time_End": 1854.8,
+      "Text": " given the scale that we're operating at,"
+    },
+    {
+      "Time_Start": 1854.8,
+      "Time_End": 1858.56,
+      "Text": " and we wanted to minimize doing unnecessary work."
+    },
+    {
+      "Time_Start": 1858.56,
+      "Time_End": 1862.24,
+      "Text": " So once we've done that, we've got a lot of confidence"
+    },
+    {
+      "Time_Start": 1862.24,
+      "Time_End": 1863.68,
+      "Text": " that we're along the right track,"
+    },
+    {
+      "Time_Start": 1863.68,
+      "Time_End": 1865.8,
+      "Text": " and we can move on to the design phase, which"
+    },
+    {
+      "Time_Start": 1865.8,
+      "Time_End": 1867.6399999999999,
+      "Text": " is translation of source data to graph."
+    },
+    {
+      "Time_Start": 1870.36,
+      "Time_End": 1873.6399999999999,
+      "Text": " So first thing we do is we take those sketches,"
+    },
+    {
+      "Time_Start": 1873.6399999999999,
+      "Time_End": 1876.0,
+      "Text": " and we really formalize them into our graph model,"
+    },
+    {
+      "Time_Start": 1876.0,
+      "Time_End": 1877.68,
+      "Text": " like a database schema."
+    },
+    {
+      "Time_Start": 1877.68,
+      "Time_End": 1879.72,
+      "Text": " What the vertices are, what their properties are,"
+    },
+    {
+      "Time_Start": 1879.72,
+      "Time_End": 1881.88,
+      "Text": " what the edges are, but specifically"
+    },
+    {
+      "Time_Start": 1881.88,
+      "Time_End": 1886.52,
+      "Text": " how we go and calculate the vertices and the edges"
+    },
+    {
+      "Time_Start": 1886.52,
+      "Time_End": 1889.0,
+      "Text": " from the data that we're pulling in,"
+    },
+    {
+      "Time_Start": 1889.0,
+      "Time_End": 1890.28,
+      "Text": " which is the trickiest part."
+    },
+    {
+      "Time_Start": 1890.28,
+      "Time_End": 1892.16,
+      "Text": " So what data do we need, and what algorithm"
+    },
+    {
+      "Time_Start": 1892.16,
+      "Time_End": 1894.28,
+      "Text": " are we going to run over that to create our graph?"
+    },
+    {
+      "Time_Start": 1897.92,
+      "Time_End": 1901.16,
+      "Text": " The next bit was trying to understand that data pipeline."
+    },
+    {
+      "Time_Start": 1901.16,
+      "Time_End": 1903.56,
+      "Text": " So how do we get that data?"
+    },
+    {
+      "Time_Start": 1903.56,
+      "Time_End": 1906.56,
+      "Text": " Which resources do we need to get to create the vertexes"
+    },
+    {
+      "Time_Start": 1906.56,
+      "Time_End": 1907.92,
+      "Text": " that we need?"
+    },
+    {
+      "Time_Start": 1908.0,
+      "Time_End": 1911.0,
+      "Text": " Do we have all the data we need to support these algorithms"
+    },
+    {
+      "Time_Start": 1911.0,
+      "Time_End": 1912.28,
+      "Text": " that we've decided?"
+    },
+    {
+      "Time_Start": 1912.28,
+      "Time_End": 1914.52,
+      "Text": " And also everything about dependencies."
+    },
+    {
+      "Time_Start": 1914.52,
+      "Time_End": 1916.0800000000002,
+      "Text": " The big thing about dependencies was"
+    },
+    {
+      "Time_Start": 1916.0800000000002,
+      "Time_End": 1918.2,
+      "Text": " trying to do as much work in parallel"
+    },
+    {
+      "Time_Start": 1918.2,
+      "Time_End": 1921.64,
+      "Text": " as possible to try and, again, improve the perf,"
+    },
+    {
+      "Time_Start": 1921.64,
+      "Time_End": 1923.3200000000002,
+      "Text": " not block on anything, and try and make"
+    },
+    {
+      "Time_Start": 1923.3200000000002,
+      "Time_End": 1929.16,
+      "Text": " this run on pretty big environments very quickly."
+    },
+    {
+      "Time_Start": 1929.16,
+      "Time_End": 1931.76,
+      "Text": " And after all of that, we end up with something like this."
+    },
+    {
+      "Time_Start": 1931.76,
+      "Time_End": 1934.88,
+      "Text": " This is in the repo, which is actually"
+    },
+    {
+      "Time_Start": 1934.88,
+      "Time_End": 1937.48,
+      "Text": " very funny because it's very similar to what Andy was"
+    },
+    {
+      "Time_Start": 1937.52,
+      "Time_End": 1941.32,
+      "Text": " telling me about how they did Bloodhound Enterprise."
+    },
+    {
+      "Time_Start": 1941.32,
+      "Time_End": 1946.68,
+      "Text": " We basically pull in data, write it to a NoSQL database,"
+    },
+    {
+      "Time_Start": 1946.68,
+      "Time_End": 1948.44,
+      "Text": " so a MongoDB."
+    },
+    {
+      "Time_Start": 1948.44,
+      "Time_End": 1953.3600000000001,
+      "Text": " We then write into the graph, the vertices into the graph."
+    },
+    {
+      "Time_Start": 1953.3600000000001,
+      "Time_End": 1956.96,
+      "Text": " We then run queries on the DB."
+    },
+    {
+      "Time_Start": 1956.96,
+      "Time_End": 1958.76,
+      "Text": " We then run queries on the DB, which"
+    },
+    {
+      "Time_Start": 1958.76,
+      "Time_End": 1962.76,
+      "Text": " can all be run in parallel to try and create our edges."
+    },
+    {
+      "Time_Start": 1962.76,
+      "Time_End": 1966.0,
+      "Text": " So we can do things like give me all the containers which"
+    },
+    {
+      "Time_Start": 1966.04,
+      "Time_End": 1968.28,
+      "Text": " have privileged equals true flag,"
+    },
+    {
+      "Time_Start": 1968.28,
+      "Time_End": 1970.68,
+      "Text": " because then I know that that container will have an edge"
+    },
+    {
+      "Time_Start": 1970.68,
+      "Time_End": 1972.28,
+      "Text": " to the node that's running it."
+    },
+    {
+      "Time_Start": 1972.28,
+      "Time_End": 1973.96,
+      "Text": " And we just do all of that in parallel,"
+    },
+    {
+      "Time_Start": 1973.96,
+      "Time_End": 1978.4,
+      "Text": " and then we write it all to a GraphDB, and then we're done."
+    },
+    {
+      "Time_Start": 1978.4,
+      "Time_End": 1981.08,
+      "Text": " That's very fast, very simplified."
+    },
+    {
+      "Time_Start": 1981.08,
+      "Time_End": 1985.04,
+      "Text": " We do have a very comprehensive architecture doc in the repo"
+    },
+    {
+      "Time_Start": 1985.04,
+      "Time_End": 1986.36,
+      "Text": " if you are interested in this."
+    },
+    {
+      "Time_Start": 1986.72,
+      "Time_End": 1991.96,
+      "Text": " In terms of the implementation, the kind of things"
+    },
+    {
+      "Time_Start": 1991.96,
+      "Time_End": 1996.3600000000001,
+      "Text": " that we wanted to focus on was building for scale,"
+    },
+    {
+      "Time_Start": 1996.3600000000001,
+      "Time_End": 1999.6000000000001,
+      "Text": " focusing on performance, realizing that a lot of things"
+    },
+    {
+      "Time_Start": 1999.6000000000001,
+      "Time_End": 2000.8400000000001,
+      "Text": " are going to change."
+    },
+    {
+      "Time_Start": 2000.8400000000001,
+      "Time_End": 2002.48,
+      "Text": " We always knew we wanted to build this"
+    },
+    {
+      "Time_Start": 2002.48,
+      "Time_End": 2006.0400000000002,
+      "Text": " for an open source release."
+    },
+    {
+      "Time_Start": 2006.0400000000002,
+      "Time_End": 2008.5200000000002,
+      "Text": " And we wanted to make it really easy, in particular,"
+    },
+    {
+      "Time_Start": 2008.5200000000002,
+      "Time_End": 2011.3200000000002,
+      "Text": " for people to add new attacks."
+    },
+    {
+      "Time_Start": 2011.3200000000002,
+      "Time_End": 2012.8000000000002,
+      "Text": " So if a new attack is going to be"
+    },
+    {
+      "Time_Start": 2012.8,
+      "Time_End": 2015.9199999999998,
+      "Text": " in particular for people to add new attacks."
+    },
+    {
+      "Time_Start": 2015.9199999999998,
+      "Time_End": 2017.52,
+      "Text": " So if a new technique comes along,"
+    },
+    {
+      "Time_Start": 2017.52,
+      "Time_End": 2019.28,
+      "Text": " or particularly, that's where we're"
+    },
+    {
+      "Time_Start": 2019.28,
+      "Time_End": 2022.2,
+      "Text": " hoping most of the open source contributions would come from,"
+    },
+    {
+      "Time_Start": 2022.2,
+      "Time_End": 2024.72,
+      "Text": " is adding a new attack should be quite easy."
+    },
+    {
+      "Time_Start": 2024.72,
+      "Time_End": 2027.48,
+      "Text": " And I think that we've actually managed to do most"
+    },
+    {
+      "Time_Start": 2027.48,
+      "Time_End": 2028.76,
+      "Text": " of these things."
+    },
+    {
+      "Time_Start": 2028.76,
+      "Time_End": 2032.32,
+      "Text": " In particular, the performance was the biggest thing,"
+    },
+    {
+      "Time_Start": 2032.32,
+      "Time_End": 2034.44,
+      "Text": " and where we put the most amount of work"
+    },
+    {
+      "Time_Start": 2034.44,
+      "Time_End": 2035.9199999999998,
+      "Text": " and had the most iterations."
+    },
+    {
+      "Time_Start": 2035.9199999999998,
+      "Time_End": 2039.48,
+      "Text": " But if we look at a cluster of 25,000 pods,"
+    },
+    {
+      "Time_Start": 2039.52,
+      "Time_End": 2043.32,
+      "Text": " which is like a typical cluster size of Datadog,"
+    },
+    {
+      "Time_Start": 2043.32,
+      "Time_End": 2045.92,
+      "Text": " the initial version, even with all the clever stuff"
+    },
+    {
+      "Time_Start": 2045.92,
+      "Time_End": 2049.04,
+      "Text": " we'd done about parallelizing stuff and writing it in,"
+    },
+    {
+      "Time_Start": 2049.04,
+      "Time_End": 2050.36,
+      "Text": " these graphs are pretty big."
+    },
+    {
+      "Time_Start": 2050.36,
+      "Time_End": 2052.48,
+      "Text": " They've got millions of components in."
+    },
+    {
+      "Time_Start": 2052.48,
+      "Time_End": 2054.88,
+      "Text": " That was taking 10 hours."
+    },
+    {
+      "Time_Start": 2054.88,
+      "Time_End": 2056.52,
+      "Text": " That was way too long."
+    },
+    {
+      "Time_Start": 2056.52,
+      "Time_End": 2060.8,
+      "Text": " V1 improved a bunch of things and streamlined it a bit."
+    },
+    {
+      "Time_Start": 2060.8,
+      "Time_End": 2062.88,
+      "Text": " We got it down to one hour."
+    },
+    {
+      "Time_Start": 2062.88,
+      "Time_End": 2067.36,
+      "Text": " And then I drank a lot of coffee and spent two days"
+    },
+    {
+      "Time_Start": 2067.36,
+      "Time_End": 2069.04,
+      "Text": " trying to get it really fast."
+    },
+    {
+      "Time_Start": 2069.04,
+      "Time_End": 2071.7599999999998,
+      "Text": " And I managed to get it down to five minutes."
+    },
+    {
+      "Time_Start": 2071.7599999999998,
+      "Time_End": 2074.32,
+      "Text": " And I think we'll probably write up a blog on all the things"
+    },
+    {
+      "Time_Start": 2074.32,
+      "Time_End": 2079.44,
+      "Text": " that we did to get to that, which"
+    },
+    {
+      "Time_Start": 2079.44,
+      "Time_End": 2080.72,
+      "Text": " we're very happy with."
+    },
+    {
+      "Time_Start": 2080.72,
+      "Time_End": 2082.4,
+      "Text": " Those five minutes are also mostly"
+    },
+    {
+      "Time_Start": 2082.4,
+      "Time_End": 2084.04,
+      "Text": " due to API rate limiting, because we"
+    },
+    {
+      "Time_Start": 2084.04,
+      "Time_End": 2086.68,
+      "Text": " don't want to knock over our Kubernetes APIs."
+    },
+    {
+      "Time_Start": 2086.68,
+      "Time_End": 2089.4,
+      "Text": " If you allow infinite rate limiting,"
+    },
+    {
+      "Time_Start": 2089.4,
+      "Time_End": 2092.0,
+      "Text": " which I wouldn't recommend, it takes about two minutes."
+    },
+    {
+      "Time_Start": 2093.0,
+      "Time_End": 2097.6,
+      "Text": " And, yeah, that is pretty much all I had to say."
+    },
+    {
+      "Time_Start": 2100.4,
+      "Time_End": 2103.28,
+      "Text": " But I really think that this kind of automated processing"
+    },
+    {
+      "Time_Start": 2103.28,
+      "Time_End": 2106.76,
+      "Text": " and graph creation is a real game changer."
+    },
+    {
+      "Time_Start": 2106.76,
+      "Time_End": 2109.0,
+      "Text": " Some of the things I've learned along the way"
+    },
+    {
+      "Time_Start": 2109.0,
+      "Time_End": 2112.04,
+      "Text": " from developing this is it's pretty good"
+    },
+    {
+      "Time_Start": 2112.04,
+      "Time_End": 2114.76,
+      "Text": " to have that very quick ability to get a high-level picture"
+    },
+    {
+      "Time_Start": 2114.76,
+      "Time_End": 2116.04,
+      "Text": " of your security posture."
+    },
+    {
+      "Time_Start": 2116.04,
+      "Time_End": 2117.48,
+      "Text": " And I think that's something that's"
+    },
+    {
+      "Time_Start": 2117.48,
+      "Time_End": 2119.64,
+      "Text": " really hard to do without some of the hardware"
+    },
+    {
+      "Time_Start": 2119.72,
+      "Time_End": 2121.92,
+      "Text": " And I think that's something that's really hard to do"
+    },
+    {
+      "Time_Start": 2121.92,
+      "Time_End": 2125.24,
+      "Text": " without something like this."
+    },
+    {
+      "Time_Start": 2125.24,
+      "Time_End": 2127.2,
+      "Text": " These kind of graph technologies can,"
+    },
+    {
+      "Time_Start": 2127.2,
+      "Time_End": 2129.6,
+      "Text": " if you build them correctly from the start,"
+    },
+    {
+      "Time_Start": 2129.6,
+      "Time_End": 2133.0,
+      "Text": " they can scale horizontally to any kind of size environment."
+    },
+    {
+      "Time_Start": 2133.0,
+      "Time_End": 2135.04,
+      "Text": " We've used a Janus graph as a back end"
+    },
+    {
+      "Time_Start": 2135.04,
+      "Time_End": 2139.24,
+      "Text": " here that can scale, we think, to the full size of Datadog"
+    },
+    {
+      "Time_Start": 2139.24,
+      "Time_End": 2140.3199999999997,
+      "Text": " with all their clusters."
+    },
+    {
+      "Time_Start": 2142.8399999999997,
+      "Time_End": 2144.96,
+      "Text": " And the biggest thing for me is they kind of"
+    },
+    {
+      "Time_Start": 2144.96,
+      "Time_End": 2146.72,
+      "Text": " act as a force multiplier."
+    },
+    {
+      "Time_Start": 2146.7200000000003,
+      "Time_End": 2150.92,
+      "Text": " You're kind of sharing the mindset of all the researchers"
+    },
+    {
+      "Time_Start": 2150.92,
+      "Time_End": 2153.1200000000003,
+      "Text": " who've created these great attacks"
+    },
+    {
+      "Time_Start": 2153.1200000000003,
+      "Time_End": 2155.5200000000004,
+      "Text": " and your own offensive security team."
+    },
+    {
+      "Time_Start": 2155.5200000000004,
+      "Time_End": 2157.4,
+      "Text": " And you're sharing that with defenders"
+    },
+    {
+      "Time_Start": 2157.4,
+      "Time_End": 2159.1200000000003,
+      "Text": " in a kind of very seamless way."
+    },
+    {
+      "Time_Start": 2159.1200000000003,
+      "Time_End": 2161.6800000000003,
+      "Text": " And I think that's incredibly powerful."
+    },
+    {
+      "Time_Start": 2161.6800000000003,
+      "Time_End": 2164.5200000000004,
+      "Text": " So TLDR, I think, attack graphs change the game."
+    },
+    {
+      "Time_Start": 2164.5200000000004,
+      "Time_End": 2166.5200000000004,
+      "Text": " And I think it will be the natural evolution"
+    },
+    {
+      "Time_Start": 2166.5200000000004,
+      "Time_End": 2171.2400000000002,
+      "Text": " of security tooling, although it might take some time."
+    },
+    {
+      "Time_Start": 2171.2400000000002,
+      "Time_End": 2172.6400000000003,
+      "Text": " And that is everything for today."
+    },
+    {
+      "Time_Start": 2172.6400000000003,
+      "Time_End": 2174.8,
+      "Text": " So thank you for coming to the talk."
+    },
+    {
+      "Time_Start": 2174.8,
+      "Time_End": 2176.44,
+      "Text": " I hope it was good."
+    },
+    {
+      "Time_Start": 2176.44,
+      "Time_End": 2176.92,
+      "Text": " Thank you."
+    },
+    {
+      "Time_Start": 2176.92,
+      "Time_End": 2177.42,
+      "Text": " Thank you."
+    },
+    {
+      "Time_Start": 2177.42,
+      "Time_End": 2177.92,
+      "Text": " Thank you."
+    },
+    {
+      "Time_Start": 2177.92,
+      "Time_End": 2178.42,
+      "Text": " Thank you."
+    },
+    {
+      "Time_Start": 2178.42,
+      "Time_End": 2178.92,
+      "Text": " Thank you."
+    },
+    {
+      "Time_Start": 2178.92,
+      "Time_End": 2179.42,
+      "Text": " Thank you."
+    },
+    {
+      "Time_Start": 2179.42,
+      "Time_End": 2179.92,
+      "Text": " Thank you."
+    },
+    {
+      "Time_Start": 2179.92,
+      "Time_End": 2180.92,
+      "Text": " Thank you."
+    },
+    {
+      "Time_Start": 2180.92,
+      "Time_End": 2182.1600000000003,
+      "Text": " Thank you."
+    },
+    {
+      "Time_Start": 2182.1600000000003,
+      "Time_End": 2184.28,
+      "Text": " We do have a little bit of time for questions."
+    },
+    {
+      "Time_Start": 2188.0,
+      "Time_End": 2191.0600000000004,
+      "Text": " Yeah, I just had a quick question for you."
+    },
+    {
+      "Time_Start": 2191.0600000000004,
+      "Time_End": 2193.2000000000003,
+      "Text": " It was nice to hear the methodology and the thought"
+    },
+    {
+      "Time_Start": 2193.2000000000003,
+      "Time_End": 2197.2000000000003,
+      "Text": " process through the entire development of Kubehound."
+    },
+    {
+      "Time_Start": 2197.2000000000003,
+      "Time_End": 2200.52,
+      "Text": " What level of effort would you say that is?"
+    },
+    {
+      "Time_Start": 2200.52,
+      "Time_End": 2203.76,
+      "Text": " Is this like a six-month project with five people, or like?"
+    },
+    {
+      "Time_Start": 2204.8,
+      "Time_End": 2212.6400000000003,
+      "Text": " So the V1 was six months of one and a half people,"
+    },
+    {
+      "Time_Start": 2212.6400000000003,
+      "Time_End": 2215.1200000000003,
+      "Text": " I would say, to give you."
+    },
+    {
+      "Time_Start": 2215.1200000000003,
+      "Time_End": 2215.8,
+      "Text": " Yeah, wow."
+    },
+    {
+      "Time_Start": 2215.8,
+      "Time_End": 2216.3,
+      "Text": " Thank you."
+    },
+    {
+      "Time_Start": 2222.96,
+      "Time_End": 2225.32,
+      "Text": " How have you operationalized this at Datadog?"
+    },
+    {
+      "Time_Start": 2225.32,
+      "Time_End": 2229.1200000000003,
+      "Text": " So is it wired up to all your clusters into perpetuity?"
+    },
+    {
+      "Time_Start": 2229.1200000000003,
+      "Time_End": 2231.28,
+      "Text": " Do you have a representative cluster?"
+    },
+    {
+      "Time_Start": 2231.28,
+      "Time_End": 2233.0800000000004,
+      "Text": " Is it something that somebody takes time"
+    },
+    {
+      "Time_Start": 2233.08,
+      "Time_End": 2235.64,
+      "Text": " to go do periodically?"
+    },
+    {
+      "Time_Start": 2235.64,
+      "Time_End": 2237.56,
+      "Text": " Or is it fed in continuously?"
+    },
+    {
+      "Time_Start": 2237.56,
+      "Time_End": 2240.04,
+      "Text": " I'm just curious how you've made use of it."
+    },
+    {
+      "Time_Start": 2240.04,
+      "Time_End": 2244.0,
+      "Text": " Yeah, so this is kind of what we're building to."
+    },
+    {
+      "Time_Start": 2244.0,
+      "Time_End": 2247.16,
+      "Text": " The end state vision that we wanted to get to"
+    },
+    {
+      "Time_Start": 2247.16,
+      "Time_End": 2250.52,
+      "Text": " was these things run on all of our clusters,"
+    },
+    {
+      "Time_Start": 2250.52,
+      "Time_End": 2254.44,
+      "Text": " basically every 24 hours, and build a big graph."
+    },
+    {
+      "Time_Start": 2254.44,
+      "Time_End": 2256.6,
+      "Text": " And that graph is centrally hosted"
+    },
+    {
+      "Time_Start": 2256.6,
+      "Time_End": 2258.68,
+      "Text": " so anyone can then query it."
+    },
+    {
+      "Time_Start": 2258.68,
+      "Time_End": 2260.7599999999998,
+      "Text": " And we'll also run the kind of metrics"
+    },
+    {
+      "Time_Start": 2260.76,
+      "Time_End": 2262.92,
+      "Text": " that we talked about automatically"
+    },
+    {
+      "Time_Start": 2262.92,
+      "Time_End": 2265.1200000000003,
+      "Text": " and alert on any significant deviations."
+    },
+    {
+      "Time_Start": 2265.1200000000003,
+      "Time_End": 2267.5600000000004,
+      "Text": " For example, if something changed in the environment,"
+    },
+    {
+      "Time_Start": 2267.5600000000004,
+      "Time_End": 2271.6400000000003,
+      "Text": " the attack path count doubled or something, an alert on that."
+    },
+    {
+      "Time_Start": 2271.6400000000003,
+      "Time_End": 2274.1600000000003,
+      "Text": " We haven't quite got there."
+    },
+    {
+      "Time_Start": 2274.1600000000003,
+      "Time_End": 2278.0,
+      "Text": " That's being worked on because it needs some additional dev"
+    },
+    {
+      "Time_Start": 2278.0,
+      "Time_End": 2279.88,
+      "Text": " from what's in the open source projects"
+    },
+    {
+      "Time_Start": 2279.88,
+      "Time_End": 2281.6000000000004,
+      "Text": " to deal with all the internal stuff."
+    },
+    {
+      "Time_Start": 2281.6000000000004,
+      "Time_End": 2284.28,
+      "Text": " But that's what the team are working on right now."
+    },
+    {
+      "Time_Start": 2284.28,
+      "Time_End": 2287.36,
+      "Text": " So at the moment, it's being used by the offensive security"
+    },
+    {
+      "Time_Start": 2287.36,
+      "Time_End": 2291.4,
+      "Text": " team for their pen tests, when they're pen testing a cluster,"
+    },
+    {
+      "Time_Start": 2291.4,
+      "Time_End": 2294.96,
+      "Text": " being used manually on our very high priority clusters,"
+    },
+    {
+      "Time_Start": 2294.96,
+      "Time_End": 2297.2000000000003,
+      "Text": " for example, like our PCI clusters."
+    },
+    {
+      "Time_Start": 2297.2000000000003,
+      "Time_End": 2299.88,
+      "Text": " And it's also being used by things like threat detection"
+    },
+    {
+      "Time_Start": 2299.88,
+      "Time_End": 2303.48,
+      "Text": " teams to try and understand a sort of representative cluster"
+    },
+    {
+      "Time_Start": 2303.48,
+      "Time_End": 2305.6800000000003,
+      "Text": " in the threats that are there, using that map"
+    },
+    {
+      "Time_Start": 2305.6800000000003,
+      "Time_End": 2308.44,
+      "Text": " that I showed earlier, and try and focus"
+    },
+    {
+      "Time_Start": 2308.44,
+      "Time_End": 2309.7200000000003,
+      "Text": " on the detection efforts."
+    },
+    {
+      "Time_Start": 2313.48,
+      "Time_End": 2317.08,
+      "Text": " Very quick one about the data collection."
+    },
+    {
+      "Time_Start": 2317.08,
+      "Time_End": 2318.88,
+      "Text": " So what type of permissions are required"
+    },
+    {
+      "Time_Start": 2318.88,
+      "Time_End": 2323.04,
+      "Text": " to see all this in a Kubernetes cluster?"
+    },
+    {
+      "Time_Start": 2323.04,
+      "Time_End": 2324.92,
+      "Text": " There's two modes."
+    },
+    {
+      "Time_Start": 2324.92,
+      "Time_End": 2327.92,
+      "Text": " The connected mode is querying directly the API."
+    },
+    {
+      "Time_Start": 2327.92,
+      "Time_End": 2335.68,
+      "Text": " So you basically need read on pods, nodes, endpoints, roles,"
+    },
+    {
+      "Time_Start": 2335.68,
+      "Time_End": 2337.68,
+      "Text": " and role bindings."
+    },
+    {
+      "Time_Start": 2337.68,
+      "Time_End": 2339.88,
+      "Text": " You can do it in offline mode, where you basically"
+    },
+    {
+      "Time_Start": 2339.88,
+      "Time_End": 2343.88,
+      "Text": " dump JSON files using whatever permissions you have."
+    },
+    {
+      "Time_Start": 2343.88,
+      "Time_End": 2345.96,
+      "Text": " And then it will just ingest the data."
+    },
+    {
+      "Time_Start": 2345.96,
+      "Time_End": 2348.88,
+      "Text": " That's obviously, the data can get quite big there."
+    },
+    {
+      "Time_Start": 2348.88,
+      "Time_End": 2350.64,
+      "Text": " But if you're not comfortable hooking it up"
+    },
+    {
+      "Time_Start": 2350.64,
+      "Time_End": 2353.36,
+      "Text": " to your environment, that's kind of why we have that."
+    },
+    {
+      "Time_Start": 2353.36,
+      "Time_End": 2355.12,
+      "Text": " And that will be one of the building blocks"
+    },
+    {
+      "Time_Start": 2355.12,
+      "Time_End": 2357.36,
+      "Text": " for the service offering that I was talking about,"
+    },
+    {
+      "Time_Start": 2357.36,
+      "Time_End": 2359.88,
+      "Text": " so that we're not directly linking it to the APIs."
+    },
+    {
+      "Time_Start": 2362.64,
+      "Time_End": 2363.76,
+      "Text": " Other questions?"
+    },
+    {
+      "Time_Start": 2367.68,
+      "Time_End": 2370.08,
+      "Text": " For development, what kind of tooling are you using?"
+    },
+    {
+      "Time_Start": 2370.08,
+      "Time_End": 2371.8,
+      "Text": " Are you using any operators?"
+    },
+    {
+      "Time_Start": 2371.8,
+      "Time_End": 2375.08,
+      "Text": " Are you using a Kubernetes SDK or anything like that?"
+    },
+    {
+      "Time_Start": 2375.08,
+      "Time_End": 2377.6,
+      "Text": " Yeah, so it's all written in Golang."
+    },
+    {
+      "Time_Start": 2377.6,
+      "Time_End": 2379.72,
+      "Text": " Use the Golang SDK."
+    },
+    {
+      "Time_Start": 2379.72,
+      "Time_End": 2382.16,
+      "Text": " And Kubernetes is all written in Go,"
+    },
+    {
+      "Time_Start": 2382.16,
+      "Time_End": 2384.44,
+      "Text": " so you plug in really nicely to all that tooling."
+    },
+    {
+      "Time_Start": 2387.92,
+      "Time_End": 2391.44,
+      "Text": " Yeah, the main dependencies are Kubernetes,"
+    },
+    {
+      "Time_Start": 2391.44,
+      "Time_End": 2394.88,
+      "Text": " the different storage solutions, so JanusGraph and MongoDB."
+    },
+    {
+      "Time_Start": 2394.88,
+      "Time_End": 2397.72,
+      "Text": " And the rest is pretty much all kind of custom code."
+    },
+    {
+      "Time_Start": 2397.72,
+      "Time_End": 2403.52,
+      "Text": " It's not a very big code base, actually, when you look at it."
+    },
+    {
+      "Time_Start": 2403.52,
+      "Time_End": 2405.7599999999998,
+      "Text": " It's one of those where the design and the research"
+    },
+    {
+      "Time_Start": 2405.7599999999998,
+      "Time_End": 2409.16,
+      "Text": " bit with the real bulk of the effort and the implementation,"
+    },
+    {
+      "Time_Start": 2409.16,
+      "Time_End": 2411.96,
+      "Text": " once you get it right, is reasonably streamlined."
+    },
+    {
+      "Time_Start": 2411.96,
+      "Time_End": 2412.56,
+      "Text": " OK, thank you."
+    },
+    {
+      "Time_Start": 2415.52,
+      "Time_End": 2419.4,
+      "Text": " And it's all the codes on GitHub, if you're interested."
+    },
+    {
+      "Time_Start": 2419.4,
+      "Time_End": 2421.08,
+      "Text": " Great talk."
+    },
+    {
+      "Time_Start": 2421.08,
+      "Time_End": 2422.48,
+      "Text": " Have you been in any conversations"
+    },
+    {
+      "Time_Start": 2422.48,
+      "Time_End": 2426.6,
+      "Text": " where a finding from Coupound is being presented to an admin,"
+    },
+    {
+      "Time_Start": 2426.6,
+      "Time_End": 2429.88,
+      "Text": " and the admin is being asked to change a permission,"
+    },
+    {
+      "Time_Start": 2429.88,
+      "Time_End": 2432.56,
+      "Text": " change a setting to remediate the attack path?"
+    },
+    {
+      "Time_Start": 2432.56,
+      "Time_End": 2434.68,
+      "Text": " And if so, how do those conversations go?"
+    },
+    {
+      "Time_Start": 2437.52,
+      "Time_End": 2439.92,
+      "Text": " Yeah, we definitely have that."
+    },
+    {
+      "Time_Start": 2439.92,
+      "Time_End": 2443.52,
+      "Text": " We had some very interesting ones on some of the PCI"
+    },
+    {
+      "Time_Start": 2443.52,
+      "Time_End": 2447.64,
+      "Text": " clusters, where some very slightly overly loose"
+    },
+    {
+      "Time_Start": 2447.64,
+      "Time_End": 2452.16,
+      "Text": " permissions, based on what the team had visibility on,"
+    },
+    {
+      "Time_Start": 2452.16,
+      "Time_End": 2453.68,
+      "Text": " they were totally fine."
+    },
+    {
+      "Time_Start": 2453.68,
+      "Time_End": 2457.0,
+      "Text": " It basically gave you the ability to update pods,"
+    },
+    {
+      "Time_Start": 2457.0,
+      "Time_End": 2458.4,
+      "Text": " but they didn't have any pods that"
+    },
+    {
+      "Time_Start": 2458.4,
+      "Time_End": 2460.52,
+      "Text": " run with elevated permissions, so it effectively"
+    },
+    {
+      "Time_Start": 2460.52,
+      "Time_End": 2461.72,
+      "Text": " didn't matter."
+    },
+    {
+      "Time_Start": 2461.7200000000003,
+      "Time_End": 2464.0400000000004,
+      "Text": " The problem is they were sharing nodes"
+    },
+    {
+      "Time_Start": 2464.0400000000004,
+      "Time_End": 2467.32,
+      "Text": " with a team that did have those, and because their permissions"
+    },
+    {
+      "Time_Start": 2467.32,
+      "Time_End": 2470.6400000000003,
+      "Text": " were slightly too loose, you could basically"
+    },
+    {
+      "Time_Start": 2470.6400000000003,
+      "Time_End": 2473.44,
+      "Text": " update another team's pod, and then get a container escape,"
+    },
+    {
+      "Time_Start": 2473.44,
+      "Time_End": 2477.2000000000003,
+      "Text": " and then get on the node, and then you got admin."
+    },
+    {
+      "Time_Start": 2477.2000000000003,
+      "Time_End": 2481.28,
+      "Text": " So yeah, we presented the findings."
+    },
+    {
+      "Time_Start": 2481.28,
+      "Time_End": 2484.2000000000003,
+      "Text": " Actually, it went surprisingly well."
+    },
+    {
+      "Time_Start": 2484.2000000000003,
+      "Time_End": 2486.32,
+      "Text": " Some things they were able to fix instantly,"
+    },
+    {
+      "Time_Start": 2486.32,
+      "Time_End": 2487.7200000000003,
+      "Text": " because they were just like, oh, we should never"
+    },
+    {
+      "Time_Start": 2487.7200000000003,
+      "Time_End": 2489.5200000000004,
+      "Text": " have done that in the first place."
+    },
+    {
+      "Time_Start": 2489.52,
+      "Time_End": 2492.04,
+      "Text": " Others kind of highlighted that certain design"
+    },
+    {
+      "Time_Start": 2492.04,
+      "Time_End": 2494.92,
+      "Text": " patterns were suboptimal, but they've definitely then"
+    },
+    {
+      "Time_Start": 2494.92,
+      "Time_End": 2496.96,
+      "Text": " had efforts to go and tackle those."
+    },
+    {
+      "Time_Start": 2496.96,
+      "Time_End": 2499.48,
+      "Text": " I think they were generally very receptive once they"
+    },
+    {
+      "Time_Start": 2499.48,
+      "Time_End": 2501.16,
+      "Text": " saw the findings."
+    },
+    {
+      "Time_Start": 2501.16,
+      "Time_End": 2502.88,
+      "Text": " Before, they were a bit skeptical,"
+    },
+    {
+      "Time_Start": 2502.88,
+      "Time_End": 2505.24,
+      "Text": " but when you presented them with some concrete stuff,"
+    },
+    {
+      "Time_Start": 2505.24,
+      "Time_End": 2508.32,
+      "Text": " it was a lot easier."
+    },
+    {
+      "Time_Start": 2508.32,
+      "Time_End": 2509.12,
+      "Text": " Time for one more."
+    },
+    {
+      "Time_Start": 2516.72,
+      "Time_End": 2517.52,
+      "Text": " Thank you."
+    },
+    {
+      "Time_Start": 2517.52,
+      "Time_End": 2519.16,
+      "Text": " Are you actually, do you just need"
+    },
+    {
+      "Time_Start": 2519.2,
+      "Time_End": 2521.3199999999997,
+      "Text": " read on the API server, or are you running something"
+    },
+    {
+      "Time_Start": 2521.3199999999997,
+      "Time_End": 2523.7599999999998,
+      "Text": " in the cluster?"
+    },
+    {
+      "Time_Start": 2523.7599999999998,
+      "Time_End": 2526.64,
+      "Text": " So you just need read to the API server."
+    },
+    {
+      "Time_Start": 2526.64,
+      "Time_End": 2529.2799999999997,
+      "Text": " OK, awesome."
+    },
+    {
+      "Time_Start": 2529.2799999999997,
+      "Time_End": 2531.64,
+      "Text": " We probably, when we deployed it as a service,"
+    },
+    {
+      "Time_Start": 2531.64,
+      "Time_End": 2533.24,
+      "Text": " would run something in a cluster,"
+    },
+    {
+      "Time_Start": 2533.24,
+      "Time_End": 2536.2799999999997,
+      "Text": " just because that's how we deploy software,"
+    },
+    {
+      "Time_Start": 2536.2799999999997,
+      "Time_End": 2537.2,
+      "Text": " but you don't have to."
+    },
+    {
+      "Time_Start": 2540.2799999999997,
+      "Time_End": 2541.44,
+      "Text": " Thank you very much, Jeremy."
+    },
+    {
+      "Time_Start": 2541.44,
+      "Time_End": 2542.52,
+      "Text": " That was fantastic."
+    },
+    {
+      "Time_Start": 2542.52,
+      "Time_End": 2544.24,
+      "Text": " Let's give him another round of applause."
+    },
+    {
+      "Time_Start": 2544.32,
+      "Time_End": 2545.0800000000004,
+      "Text": " Thank you."
+    },
+    {
+      "Time_Start": 2545.0800000000004,
+      "Time_End": 2547.0400000000004,
+      "Text": " Thank you."
+    }
+  ]
+}

@@ -1,0 +1,2054 @@
+{
+  "segments": [
+    {
+      "Time_Start": 0.0,
+      "Time_End": 11.92,
+      "Text": "This text was transcribed using whisper model: large-v2\n\n All right. Hi, y'all. Super excited to be here doing the first talk at our first in-person"
+    },
+    {
+      "Time_Start": 11.92,
+      "Time_End": 17.48,
+      "Text": " SOCON, so that's pretty cool. I feel honored. I'm here today to talk about ApeMan, which"
+    },
+    {
+      "Time_Start": 17.48,
+      "Time_End": 23.88,
+      "Text": " is a project I've been working on, to do AWS attack path management. And so first I'm just"
+    },
+    {
+      "Time_Start": 23.88,
+      "Time_End": 32.239999999999995,
+      "Text": " going to go over, like, why? Why are we doing this? And hopefully we'll convey the problem"
+    },
+    {
+      "Time_Start": 32.239999999999995,
+      "Time_End": 39.879999999999995,
+      "Text": " so that you can understand why we need a solution for this. So at Spectrops, we do a lot of"
+    },
+    {
+      "Time_Start": 39.879999999999995,
+      "Time_End": 46.68,
+      "Text": " or we end up doing some amount of AWS policy evaluation in our assessments. And right now"
+    },
+    {
+      "Time_Start": 46.68,
+      "Time_End": 52.68,
+      "Text": " what that looks like is we pull down this JSON file, if we're lucky, and we get the"
+    },
+    {
+      "Time_Start": 52.68,
+      "Time_End": 58.84,
+      "Text": " permissions to do this, we'll pull down this JSON file that has all of the users, all of"
+    },
+    {
+      "Time_Start": 58.84,
+      "Time_End": 65.88,
+      "Text": " the groups, all of the roles, all of the policies, and we'll evaluate what we can do. And that's"
+    },
+    {
+      "Time_Start": 65.88,
+      "Time_End": 73.44,
+      "Text": " if we're lucky. And if we're not lucky, we have about 300 of these. That's I think the"
+    },
+    {
+      "Time_Start": 73.44,
+      "Time_End": 80.92,
+      "Text": " biggest one we've had is had 300 AWS accounts. And really what we're looking for is ways"
+    },
+    {
+      "Time_Start": 80.92,
+      "Time_End": 86.64,
+      "Text": " to pivot from accounts from, you know, if it's like a dev to staging to prod or something"
+    },
+    {
+      "Time_Start": 86.64,
+      "Time_End": 92.16,
+      "Text": " like that. But every environment has been different. We're doing a lot of string matching,"
+    },
+    {
+      "Time_Start": 92.16,
+      "Time_End": 99.04,
+      "Text": " a lot of manual, like, kind of in our head just remembering who can do what. And so,"
+    },
+    {
+      "Time_Start": 99.04,
+      "Time_End": 101.8,
+      "Text": " you know, after a while, we got kind of used to it. We're like, okay, you know, grep works"
+    },
+    {
+      "Time_Start": 101.8,
+      "Time_End": 106.04,
+      "Text": " pretty well. We're pretty good at this. But it gets really difficult to keep all of this"
+    },
+    {
+      "Time_Start": 106.16000000000001,
+      "Time_End": 111.32000000000001,
+      "Text": " in your head. And so, it became really apparent that we need to have some sort of automated"
+    },
+    {
+      "Time_Start": 111.32000000000001,
+      "Time_End": 118.12,
+      "Text": " tooling for this. And then a couple years ago, we had a client and I'm kind of ballparking"
+    },
+    {
+      "Time_Start": 118.12,
+      "Time_End": 126.28,
+      "Text": " these numbers because I can't really remember exactly. They had about 50 AWS accounts. And"
+    },
+    {
+      "Time_Start": 126.28,
+      "Time_End": 130.28,
+      "Text": " I think part of the reason why we drove like drilled in on this problem is we couldn't"
+    },
+    {
+      "Time_Start": 130.28,
+      "Time_End": 135.6,
+      "Text": " prove ask. So, we're like, well, we have to show some sort of value. And they said"
+    },
+    {
+      "Time_Start": 135.6,
+      "Time_End": 142.84,
+      "Text": " that they had about 10 org admins. So, they're using an AWS org. And with manual analysis"
+    },
+    {
+      "Time_Start": 142.84,
+      "Time_End": 147.6,
+      "Text": " of like going through those JSON files, we found that they probably had about 200. And"
+    },
+    {
+      "Time_Start": 147.6,
+      "Time_End": 151.84,
+      "Text": " that was a surprise to them. And so, you know, we got to put that in a report and be like,"
+    },
+    {
+      "Time_Start": 151.84,
+      "Time_End": 159.84,
+      "Text": " okay, we did our job. But it became we were kind of floating around this question of like"
+    },
+    {
+      "Time_Start": 159.84,
+      "Time_End": 163.84,
+      "Text": " what is an admin? What is an admin in AWS? Because it's not the same thing as one in"
+    },
+    {
+      "Time_Start": 163.84,
+      "Time_End": 169.96,
+      "Text": " Active Directory. In Active Directory, you have an actual admin user and you have enterprise"
+    },
+    {
+      "Time_Start": 169.96,
+      "Time_End": 176.92000000000002,
+      "Text": " admin group. And these are things that Microsoft provides for you. And they're very defined."
+    },
+    {
+      "Time_Start": 176.92000000000002,
+      "Time_End": 185.64000000000001,
+      "Text": " But with AWS, it's not so defined, right? It's you have like an admin policy. But even"
+    },
+    {
+      "Time_Start": 185.64000000000001,
+      "Time_End": 190.56,
+      "Text": " if that's not used, you can have admin users. And what we found is that, you know, there's"
+    },
+    {
+      "Time_Start": 190.56,
+      "Time_End": 195.60000000000002,
+      "Text": " not really words for it, but we found clumps. We found clusterings of roles. So, there might"
+    },
+    {
+      "Time_Start": 195.60000000000002,
+      "Time_End": 201.20000000000002,
+      "Text": " be a cluster of something you would call admin. And there might be a cluster of something"
+    },
+    {
+      "Time_Start": 201.20000000000002,
+      "Time_End": 208.04000000000002,
+      "Text": " that you would might consider maybe your like DevOps and a cluster of users. And our goal"
+    },
+    {
+      "Time_Start": 208.04000000000002,
+      "Time_End": 213.48000000000002,
+      "Text": " was to say, how do we how do we automate that so we can find these clusters and build borders"
+    },
+    {
+      "Time_Start": 213.48000000000002,
+      "Time_End": 218.12,
+      "Text": " between them and say, these are your security boundaries, right? And so, that was kind of"
+    },
+    {
+      "Time_Start": 218.12,
+      "Time_End": 225.00000000000003,
+      "Text": " the impetus of this idea where we would automatically evaluate all of the role assumptions in AWS."
+    },
+    {
+      "Time_Start": 225.00000000000003,
+      "Time_End": 232.52,
+      "Text": " That's what we started off with was role assumptions and go from there, right? And so, we went"
+    },
+    {
+      "Time_Start": 232.52,
+      "Time_End": 238.40000000000003,
+      "Text": " through this is like our third iteration of prototypes where we actually started giving"
+    },
+    {
+      "Time_Start": 238.4,
+      "Time_End": 246.12,
+      "Text": " it a name, picked 8-man. But our goals were to be able to effectively analyze an AWS environment"
+    },
+    {
+      "Time_Start": 246.12,
+      "Time_End": 251.92000000000002,
+      "Text": " and identify attack paths. So, the first thing is just we want to be able to not have to"
+    },
+    {
+      "Time_Start": 251.92000000000002,
+      "Time_End": 256.44,
+      "Text": " grep anymore for these things. I want quick information at my fingertips so that when"
+    },
+    {
+      "Time_Start": 256.44,
+      "Time_End": 262.08,
+      "Text": " we get this data, we can, you know, say like, oh, what policies are attached to this role?"
+    },
+    {
+      "Time_Start": 262.08,
+      "Time_End": 267.6,
+      "Text": " Or which roles use this policy? Like very quickly so that we can, you know, assess properly."
+    },
+    {
+      "Time_Start": 267.6,
+      "Time_End": 275.96000000000004,
+      "Text": " Use our time efficiently. And then the second is what is tier 0 and what are our attack"
+    },
+    {
+      "Time_Start": 275.96000000000004,
+      "Time_End": 284.0,
+      "Text": " paths to tier 0? So, we'll cover this a little bit. But tier 0 is different in AWS than it"
+    },
+    {
+      "Time_Start": 284.0,
+      "Time_End": 289.6,
+      "Text": " is in Active Directory. So, you know, we've had a lot of discourse on what tier 0 means."
+    },
+    {
+      "Time_Start": 289.6,
+      "Time_End": 295.16,
+      "Text": " And we could call this anything. I mean, I kind of picked tier 0 because it's the nomenclature"
+    },
+    {
+      "Time_Start": 295.16,
+      "Time_End": 301.52000000000004,
+      "Text": " that we've already been using. We could call it admins, gold, platinum, status, select."
+    },
+    {
+      "Time_Start": 301.52000000000004,
+      "Time_End": 308.12,
+      "Text": " I don't care, right? Just whatever. Whatever that most privileged core of your environment"
+    },
+    {
+      "Time_Start": 308.12,
+      "Time_End": 315.84000000000003,
+      "Text": " is. So, there are two reasons why building this out is difficult. Right? And the first"
+    },
+    {
+      "Time_Start": 315.84000000000003,
+      "Time_End": 321.8,
+      "Text": " of which is this idea of resultant set of policy. And that's a Microsoft term, too."
+    },
+    {
+      "Time_Start": 321.8,
+      "Time_End": 329.08,
+      "Text": " But it's this idea that you can have conflicting statements on a given principle. So, a principle"
+    },
+    {
+      "Time_Start": 329.08,
+      "Time_End": 335.6,
+      "Text": " might say or I'm sorry, a policy might say you can do X number of actions on Y set of"
+    },
+    {
+      "Time_Start": 335.6,
+      "Time_End": 341.16,
+      "Text": " resources. And then another statement says you can do a subset of X on a subset of Y"
+    },
+    {
+      "Time_Start": 341.16,
+      "Time_End": 346.24,
+      "Text": " or that's denied. And so, there has to be this synthesis of what can I actually do?"
+    },
+    {
+      "Time_Start": 346.24,
+      "Time_End": 350.7,
+      "Text": " After all is said and done, after all the denied statements are taken into account,"
+    },
+    {
+      "Time_Start": 350.7,
+      "Time_End": 355.46,
+      "Text": " after all the conditions are solved, what can I actually do? Right? So, that's the resultant"
+    },
+    {
+      "Time_Start": 355.46,
+      "Time_End": 361.21999999999997,
+      "Text": " set of policy. That's the first difficult problem. And then there's this idea of conditions."
+    },
+    {
+      "Time_Start": 361.21999999999997,
+      "Time_End": 367.78,
+      "Text": " Right? So, a lot of statements. I've seen some AWS environments never use a single condition."
+    },
+    {
+      "Time_Start": 367.78,
+      "Time_End": 372.41999999999996,
+      "Text": " And then there's other AWS environments that are like attribute based access control that"
+    },
+    {
+      "Time_Start": 372.41999999999996,
+      "Time_End": 377.62,
+      "Text": " are all conditions. Right? So, it's really environment specific. But we need to be able"
+    },
+    {
+      "Time_Start": 377.66,
+      "Time_End": 383.82,
+      "Text": " to demonstrate or to show to the user that this attack path is conditional. Right? Some"
+    },
+    {
+      "Time_Start": 383.82,
+      "Time_End": 389.14,
+      "Text": " things have to be true for this attack path to exist. Right? And that's a pretty difficult"
+    },
+    {
+      "Time_Start": 389.14,
+      "Time_End": 397.7,
+      "Text": " problem to solve. And so, you might be wondering, well, hasn't this been done before? And kind"
+    },
+    {
+      "Time_Start": 397.7,
+      "Time_End": 403.18,
+      "Text": " of. Right? And even if it has, we still want to enter on graphs so we can answer some bigger"
+    },
+    {
+      "Time_Start": 403.22,
+      "Time_End": 409.42,
+      "Text": " questions that we'll talk about later. But they have been kind of done before. So, AWS will let"
+    },
+    {
+      "Time_Start": 409.42,
+      "Time_End": 416.02,
+      "Text": " you simulate. So, there's like an access simulator. They'll let you simulate individual calls from an"
+    },
+    {
+      "Time_Start": 416.02,
+      "Time_End": 421.78000000000003,
+      "Text": " individual resource. I'm sorry. From an individual principle on a set of resources. But we don't"
+    },
+    {
+      "Time_Start": 421.78000000000003,
+      "Time_End": 427.06,
+      "Text": " want that. I don't want to sit there at a terminal and say, can user A do this? Can user B do this?"
+    },
+    {
+      "Time_Start": 427.06,
+      "Time_End": 431.42,
+      "Text": " Can role C do this? I want to know all the users that can do all the things on all the stuff."
+    },
+    {
+      "Time_Start": 431.86,
+      "Time_End": 440.3,
+      "Text": " And then about an hour ago, thanks, Lee, I learned about Zelkova. I just threw that in there real"
+    },
+    {
+      "Time_Start": 440.3,
+      "Time_End": 446.18,
+      "Text": " quick. So, AWS, this is something that AWS has been tackling internally. But it hasn't been"
+    },
+    {
+      "Time_Start": 446.18,
+      "Time_End": 452.06,
+      "Text": " externalized yet, to my knowledge. Although I do want to do a little more research on that. And"
+    },
+    {
+      "Time_Start": 452.06,
+      "Time_End": 458.18,
+      "Text": " then there's Access Advisor. And I'll have a screenshot of why we kind of want to dig deeper"
+    },
+    {
+      "Time_Start": 458.18,
+      "Time_End": 466.54,
+      "Text": " than what Access Advisor is giving us. And Policy Simulator as well. Right? So, it has been done in"
+    },
+    {
+      "Time_Start": 466.54,
+      "Time_End": 474.06,
+      "Text": " parts. But we kind of just we want to do it to serve our purposes. And specifically, we want to"
+    },
+    {
+      "Time_Start": 474.06,
+      "Time_End": 479.9,
+      "Text": " be able to solve this offline. Right? So, if we're from an attacker's perspective, if we get that"
+    },
+    {
+      "Time_Start": 479.9,
+      "Time_End": 484.86,
+      "Text": " account authorization details, that JSON file, we want to be able to take it offline and do our"
+    },
+    {
+      "Time_Start": 484.86,
+      "Time_End": 493.66,
+      "Text": " analysis without making a bunch of calls to AWS. Right? So, we have three kind of like six big"
+    },
+    {
+      "Time_Start": 493.66,
+      "Time_End": 499.86,
+      "Text": " questions. And I say they're three because they're kind of like inverses of each other. Right? So, the"
+    },
+    {
+      "Time_Start": 499.86,
+      "Time_End": 505.18,
+      "Text": " first is given a resource, what principles can perform what actions on that resource? So, I want"
+    },
+    {
+      "Time_Start": 505.18,
+      "Time_End": 512.78,
+      "Text": " definitive. I don't want kind of... I want, you know, resultant set of policy, condition solved,"
+    },
+    {
+      "Time_Start": 512.78,
+      "Time_End": 520.22,
+      "Text": " SCP, everything applied. What can this like what users can perform what actions on this exact"
+    },
+    {
+      "Time_Start": 520.22,
+      "Time_End": 526.5799999999999,
+      "Text": " resource? And then conversely, given a principle, what are all the things it can do? And this is"
+    },
+    {
+      "Time_Start": 526.5799999999999,
+      "Time_End": 533.02,
+      "Text": " this is actually not a tough problem. It's difficult to present that information in a usable way. Right?"
+    },
+    {
+      "Time_Start": 533.02,
+      "Time_End": 539.54,
+      "Text": " Because there's about 20,000 actions in AWS. Right? And so, I'm not going to give you a list of like"
+    },
+    {
+      "Time_Start": 539.54,
+      "Time_End": 545.66,
+      "Text": " 18,000 actions and then a matrix with 20,000 resources. Like that's not feasible. Right? So,"
+    },
+    {
+      "Time_Start": 545.66,
+      "Time_End": 551.3,
+      "Text": " having a clean way to display that has been a challenge. And then secondly, we want to know"
+    },
+    {
+      "Time_Start": 551.3,
+      "Time_End": 555.9399999999999,
+      "Text": " what roles can a principle assume and what principles can assume a role. So, inbound and"
+    },
+    {
+      "Time_Start": 555.9399999999999,
+      "Time_End": 562.3,
+      "Text": " outbound role. So, if you're familiar with Bloodhound, this would be similar to, you know,"
+    },
+    {
+      "Time_Start": 562.3000000000001,
+      "Time_End": 570.3800000000001,
+      "Text": " users like your identity chaining. Right? So, AWS provides a way to a transitive identity function"
+    },
+    {
+      "Time_Start": 570.3800000000001,
+      "Time_End": 575.3000000000001,
+      "Text": " by role assumption. And we'll take advantage of that in our attack paths. And they often do take"
+    },
+    {
+      "Time_Start": 575.3000000000001,
+      "Time_End": 582.86,
+      "Text": " take part in our attack paths. Right? We're usually chaining role assumptions from A to B to C. Lastly,"
+    },
+    {
+      "Time_Start": 582.86,
+      "Time_End": 587.8600000000001,
+      "Text": " the third question is what principles are tier zero? And what identity paths are tier zero? And"
+    },
+    {
+      "Time_Start": 587.86,
+      "Time_End": 594.38,
+      "Text": " we'll get into like how we define tier zero in just a sec. So, I don't want to leave too many"
+    },
+    {
+      "Time_Start": 594.38,
+      "Time_End": 599.42,
+      "Text": " people in the dust if you're new with AWS and you have no idea what I'm talking about. I want to"
+    },
+    {
+      "Time_Start": 599.42,
+      "Time_End": 607.3000000000001,
+      "Text": " spend like two slides just to cover some of the basics so that you can follow along. So, the key"
+    },
+    {
+      "Time_Start": 607.3000000000001,
+      "Time_End": 614.22,
+      "Text": " things with AWS permissions is that you have these sets of principles. So, you have users, roles,"
+    },
+    {
+      "Time_Start": 614.22,
+      "Time_End": 621.46,
+      "Text": " and groups. And they get their privileges from policies that are attached to them. Right? And so,"
+    },
+    {
+      "Time_Start": 621.46,
+      "Time_End": 629.14,
+      "Text": " a policy or I'm sorry, a role or a user can have zero or more policies attached to them. And each"
+    },
+    {
+      "Time_Start": 629.14,
+      "Time_End": 635.46,
+      "Text": " policy has one or more statement with allow and deny. Right? And the whole point here, and this"
+    },
+    {
+      "Time_Start": 635.46,
+      "Time_End": 640.1800000000001,
+      "Text": " is the big contrast to Active Directory, is that if you don't have a principle attached to you,"
+    },
+    {
+      "Time_Start": 640.1800000000001,
+      "Time_End": 646.74,
+      "Text": " you can do absolutely nothing. You can't even figure out what you can do if you don't have any"
+    },
+    {
+      "Time_Start": 646.74,
+      "Time_End": 654.3000000000001,
+      "Text": " policies attached. No API call will succeed. Right? And so, everything has to be explicitly"
+    },
+    {
+      "Time_Start": 654.3000000000001,
+      "Time_End": 661.6600000000001,
+      "Text": " permitted. And then the second is that if there's a conflicting statement, deny always override. So,"
+    },
+    {
+      "Time_Start": 661.6600000000001,
+      "Time_End": 668.5000000000001,
+      "Text": " this isn't a firewall kind of scenario where the first rule takes precedence. Deny always takes"
+    },
+    {
+      "Time_Start": 668.54,
+      "Time_End": 676.22,
+      "Text": " precedence. Right? So, if you're to look at an actual AWS policy, it's kind of structured like"
+    },
+    {
+      "Time_Start": 676.22,
+      "Time_End": 683.3,
+      "Text": " this. And there's some stuff that we won't really care so much about. But the three main takeaways"
+    },
+    {
+      "Time_Start": 683.3,
+      "Time_End": 688.54,
+      "Text": " is that there's an effect, an action, and a resource. Right? So, it's the effect is either"
+    },
+    {
+      "Time_Start": 688.54,
+      "Time_End": 693.46,
+      "Text": " allow or deny. It's one of those two. Right? And then the action is the things that you can do. And"
+    },
+    {
+      "Time_Start": 693.46,
+      "Time_End": 699.62,
+      "Text": " then the resources on which resources are you acting on. Right? So, pretty straightforward. So,"
+    },
+    {
+      "Time_Start": 699.62,
+      "Time_End": 708.02,
+      "Text": " in this case, we have an example resource. I'm sorry. An example policy. And what this says is"
+    },
+    {
+      "Time_Start": 708.02,
+      "Time_End": 718.82,
+      "Text": " you can call EC2 get anything on any EC2 instance that has the letters ZZZ in it. And the things I"
+    },
+    {
+      "Time_Start": 718.82,
+      "Time_End": 723.5,
+      "Text": " want to highlight here is that you can use this asterisk as a wildcard. So, all of a sudden,"
+    },
+    {
+      "Time_Start": 723.5,
+      "Time_End": 731.84,
+      "Text": " our conditional... I'm sorry. Our policy evaluation needs to take into account wildcard expansion."
+    },
+    {
+      "Time_Start": 731.84,
+      "Time_End": 739.2600000000001,
+      "Text": " Right? So, now we're doing a lot of string matching. Which becomes even more difficult. Right? So,"
+    },
+    {
+      "Time_Start": 739.2600000000001,
+      "Time_End": 746.82,
+      "Text": " in this case, this is an example of result instead of policy. So, we might have one statement that"
+    },
+    {
+      "Time_Start": 746.82,
+      "Time_End": 754.0200000000001,
+      "Text": " says you can call EC2 get star. So, that means get EC2 instance, get instance profile, whatever."
+    },
+    {
+      "Time_Start": 754.0200000000001,
+      "Time_End": 761.34,
+      "Text": " If it starts with get, you can call it on any EC2 instance that has the letter ZZZ. But then you"
+    },
+    {
+      "Time_Start": 761.34,
+      "Time_End": 768.62,
+      "Text": " could say... But I want to deny get console output specifically for any instance that has ZZZCCC in"
+    },
+    {
+      "Time_Start": 768.62,
+      "Time_End": 776.1,
+      "Text": " it. So, now we kind of have this hole in our matrix that we can't call. Right? And we need to be able"
+    },
+    {
+      "Time_Start": 776.1,
+      "Time_End": 784.22,
+      "Text": " to model that up in our graph. Right? So, it's at this point where we are like... Okay. This is"
+    },
+    {
+      "Time_Start": 784.22,
+      "Time_End": 791.02,
+      "Text": " starting to feel like a graph problem. You could see, like, if it was any other of these EC2 function"
+    },
+    {
+      "Time_Start": 791.02,
+      "Time_End": 796.58,
+      "Text": " calls, we can call... They would succeed on all three of these. But specifically get console"
+    },
+    {
+      "Time_Start": 796.58,
+      "Time_End": 806.0600000000001,
+      "Text": " output on ZZZCCC is blocked. Right? So, hopefully we're tracking. So, then we wanted to model"
+    },
+    {
+      "Time_Start": 806.0600000000001,
+      "Time_End": 812.1,
+      "Text": " this up. And our first thought was... Okay. Well, let's just throw this into Bloodhound. Right? That's"
+    },
+    {
+      "Time_Start": 812.1,
+      "Time_End": 822.4200000000001,
+      "Text": " easy. And it turns out that because of these... Just the granular nature of AWS in general, it became"
+    },
+    {
+      "Time_Start": 822.4200000000001,
+      "Time_End": 826.62,
+      "Text": " clear that this is more of a research project. This is something that we wanted to spend time on."
+    },
+    {
+      "Time_Start": 826.62,
+      "Time_End": 831.86,
+      "Text": " Like, let's figure out what this problem is before we make any big engineering efforts to, like,"
+    },
+    {
+      "Time_Start": 831.86,
+      "Time_End": 837.82,
+      "Text": " integrate it into something else. Right? And that's really what this is. This 8-man is, I think,"
+    },
+    {
+      "Time_Start": 837.82,
+      "Time_End": 843.7,
+      "Text": " either, like, the third or fourth iteration of this prototype of trying to model up this path."
+    },
+    {
+      "Time_Start": 843.7,
+      "Time_End": 850.22,
+      "Text": " This attack path finder. Right? And the cool part with this is unlike Bloodhound, we don't need a"
+    },
+    {
+      "Time_Start": 850.22,
+      "Time_End": 856.34,
+      "Text": " collector. We don't need an agent running on any device. We can just make these API calls to AWS."
+    },
+    {
+      "Time_Start": 856.34,
+      "Time_End": 862.1,
+      "Text": " We can even say, hey, get us this JSON file and we'll ingest it from there and we can extrapolate"
+    },
+    {
+      "Time_Start": 862.1,
+      "Time_End": 869.38,
+      "Text": " everything. Because unlike Active Directory environments, every single resource is tracked"
+    },
+    {
+      "Time_Start": 869.38,
+      "Time_End": 875.98,
+      "Text": " in AWS. Right? Because obviously they want to bill you for it. Right? So, we have a really clear,"
+    },
+    {
+      "Time_Start": 875.98,
+      "Time_End": 884.02,
+      "Text": " nicely defined manifest where we can make very concrete decisions on what a user can do. So,"
+    },
+    {
+      "Time_Start": 884.02,
+      "Time_End": 892.14,
+      "Text": " for example, if a policy says resource star and we get all the ARNs in that account, we know what"
+    },
+    {
+      "Time_Start": 892.14,
+      "Time_End": 896.3,
+      "Text": " star is. We know what everything is because we have that manifest of all the ARNs. Right? So,"
+    },
+    {
+      "Time_Start": 896.3,
+      "Time_End": 903.06,
+      "Text": " we can define our universe in this graph and say this is definitively our universe. Right?"
+    },
+    {
+      "Time_Start": 903.0600000000001,
+      "Time_End": 921.82,
+      "Text": " Yeah, sure. Oh, good question. So, the question was what privileges are required to run that?"
+    },
+    {
+      "Time_Start": 921.82,
+      "Time_End": 928.6200000000001,
+      "Text": " There is a specific so that the call is get account authorization details. So,"
+    },
+    {
+      "Time_Start": 928.62,
+      "Time_End": 934.82,
+      "Text": " whatever role that you're using to collect that needs to have specifically that action listed in"
+    },
+    {
+      "Time_Start": 934.82,
+      "Time_End": 940.98,
+      "Text": " some policy. Right? And if they don't have that permission, then it won't succeed. Kind of to my"
+    },
+    {
+      "Time_Start": 940.98,
+      "Time_End": 946.5,
+      "Text": " point where if you don't have permissions to call it, then it'll some policy has to say you can call"
+    },
+    {
+      "Time_Start": 946.5,
+      "Time_End": 951.0600000000001,
+      "Text": " get account authorization details. So, usually it would be like a read only role or something like"
+    },
+    {
+      "Time_Start": 951.0600000000001,
+      "Time_End": 964.22,
+      "Text": " that. No, no, no. It'll never. So, the question was is it possible to run it and get holes like"
+    },
+    {
+      "Time_Start": 964.22,
+      "Time_End": 979.98,
+      "Text": " get missing data in the output? And the answer is no. Oh, you say kind of? Oh. So,"
+    },
+    {
+      "Time_Start": 980.1,
+      "Time_End": 985.26,
+      "Text": " yeah. With get account authorization details, it's not going to give you the ARNs of like your"
+    },
+    {
+      "Time_Start": 985.26,
+      "Time_End": 991.74,
+      "Text": " lambdas and your EC2s and whatever. It's just the IAM. Right? What's up? If we could hold questions"
+    },
+    {
+      "Time_Start": 991.74,
+      "Time_End": 997.1,
+      "Text": " until we towards the end of the speak. Yeah. And I'll clear that up towards the end. We'll have"
+    },
+    {
+      "Time_Start": 997.1,
+      "Time_End": 1002.38,
+      "Text": " time for questions afterwards. Thank you very much. Okay. Cool. Yeah. And so, we started to"
+    },
+    {
+      "Time_Start": 1002.38,
+      "Time_End": 1010.9,
+      "Text": " build out this graph. And I think this is kind of like the key or the nugget of 8-man and what"
+    },
+    {
+      "Time_Start": 1010.9,
+      "Time_End": 1017.38,
+      "Text": " gives us the power to solve these questions. Right? So, we've got kind of usual suspects group, user"
+    },
+    {
+      "Time_Start": 1017.38,
+      "Time_End": 1024.94,
+      "Text": " role. I know you can't read this. Apologies. But we have managed policies and inline role policies."
+    },
+    {
+      "Time_Start": 1024.94,
+      "Time_End": 1032.02,
+      "Text": " And this is kind of like how things are defined in AWS. And then underneath. So, this is the bottom"
+    },
+    {
+      "Time_Start": 1032.02,
+      "Time_End": 1038.26,
+      "Text": " half of the graph. Everything kind of stems from the statement. So, the statement is kind of the"
+    },
+    {
+      "Time_Start": 1038.26,
+      "Time_End": 1044.18,
+      "Text": " atomic block of our permission model. And then everything goes from there. So, another key"
+    },
+    {
+      "Time_Start": 1044.18,
+      "Time_End": 1049.42,
+      "Text": " takeaway here is that when you use a wildcard, like a star, we actually create a node for that."
+    },
+    {
+      "Time_Start": 1049.42,
+      "Time_End": 1056.66,
+      "Text": " So, if you say like EC2 star, there's a node for that. And then that will expand out to every EC2"
+    },
+    {
+      "Time_Start": 1056.7,
+      "Time_End": 1065.02,
+      "Text": " action that AWS defines. And AWS has documentation for all of the actions and all of the resource"
+    },
+    {
+      "Time_Start": 1065.02,
+      "Time_End": 1070.38,
+      "Text": " types and everything. And then I kind of want to highlight this one. This is really like the"
+    },
+    {
+      "Time_Start": 1070.38,
+      "Time_End": 1075.1000000000001,
+      "Text": " linchpin of why we can make these queries and make them performant. Is because there's this"
+    },
+    {
+      "Time_Start": 1075.1000000000001,
+      "Time_End": 1085.22,
+      "Text": " resource type that AWS defines. So, when you have like an action, let's say create instance. And so,"
+    },
+    {
+      "Time_Start": 1085.22,
+      "Time_End": 1089.94,
+      "Text": " let's say my policy is create instance on resource star. Obviously, it doesn't make sense that I"
+    },
+    {
+      "Time_Start": 1089.94,
+      "Time_End": 1096.06,
+      "Text": " would call create instance on an S3 bucket or a lambda function. So, that star isn't really every"
+    },
+    {
+      "Time_Start": 1096.06,
+      "Time_End": 1101.9,
+      "Text": " resource. It's like every resource that makes sense. And what AWS does is they say, there is"
+    },
+    {
+      "Time_Start": 1101.9,
+      "Time_End": 1107.42,
+      "Text": " actually a specific set of resource types that this can act on. So, when we expand out these wildcards,"
+    },
+    {
+      "Time_Start": 1107.42,
+      "Time_End": 1116.8600000000001,
+      "Text": " they actually don't create all the edges to all the things. We can make very educated like edges"
+    },
+    {
+      "Time_Start": 1116.8600000000001,
+      "Time_End": 1123.22,
+      "Text": " to only the things they apply to. And that keeps it pretty performant. And then the last part of"
+    },
+    {
+      "Time_Start": 1123.22,
+      "Time_End": 1128.9,
+      "Text": " this graph is the conditions. We have to be able to model up conditions, right? So, altogether,"
+    },
+    {
+      "Time_Start": 1128.9,
+      "Time_End": 1135.46,
+      "Text": " this is our graph. And with this graph, we could answer all of those six questions that we mentioned"
+    },
+    {
+      "Time_Start": 1135.46,
+      "Time_End": 1140.54,
+      "Text": " earlier, right? And we could stop here. We could just say, here's our graph, you figure out the"
+    },
+    {
+      "Time_Start": 1140.54,
+      "Time_End": 1145.26,
+      "Text": " Cypher queries, you answer your own questions. But we didn't want to do that. We wanted to have a way"
+    },
+    {
+      "Time_Start": 1145.26,
+      "Time_End": 1151.02,
+      "Text": " to present useful information to you so that you didn't have to learn Cypher, right? Similar with"
+    },
+    {
+      "Time_Start": 1151.02,
+      "Time_End": 1157.58,
+      "Text": " Blithound, right? So, we're gonna go through kind of a concrete example, then I'll do a demo. So, in"
+    },
+    {
+      "Time_Start": 1157.58,
+      "Time_End": 1166.4199999999998,
+      "Text": " this case, let's say we have two roles. We have LambdaAdminProd and LambdaAdminDev. And LambdaAdminProd"
+    },
+    {
+      "Time_Start": 1166.4199999999998,
+      "Time_End": 1173.22,
+      "Text": " has a LambdaAdmin policy, which acts on this Lambda function called prod user authentication. And then"
+    },
+    {
+      "Time_Start": 1173.22,
+      "Time_End": 1178.82,
+      "Text": " we have a LambdaDev policy that's additionally attached to LambdaAdminDev. So, that has two"
+    },
+    {
+      "Time_Start": 1178.82,
+      "Time_End": 1186.02,
+      "Text": " policies attached to it, but they both act on prod user authentication, right? And those policies"
+    },
+    {
+      "Time_Start": 1186.02,
+      "Time_End": 1191.02,
+      "Text": " look like this. So, the first one is really simple. It says, you can do any Lambda action on any"
+    },
+    {
+      "Time_Start": 1191.02,
+      "Time_End": 1195.26,
+      "Text": " resource. And we know because of like resource types, that's not any resource, it's just any"
+    },
+    {
+      "Time_Start": 1195.26,
+      "Time_End": 1201.58,
+      "Text": " Lambda resource. And then we have a deny statement saying, I don't want you to do any write operations"
+    },
+    {
+      "Time_Start": 1201.58,
+      "Time_End": 1206.22,
+      "Text": " if the function starts with the word, I know you probably can't read this, if the function starts"
+    },
+    {
+      "Time_Start": 1206.22,
+      "Time_End": 1212.66,
+      "Text": " with the word prod. And that's a really common pattern that we've seen is grant a lot of things"
+    },
+    {
+      "Time_Start": 1212.7,
+      "Time_End": 1217.98,
+      "Text": " and then deny access to maybe something sensitive like the word prod, right? So, this is a fairly"
+    },
+    {
+      "Time_Start": 1217.98,
+      "Time_End": 1226.94,
+      "Text": " realistic example. So, our pseudo query would look like this. We'd say, so, it's kind of a pain"
+    },
+    {
+      "Time_Start": 1226.94,
+      "Time_End": 1232.8600000000001,
+      "Text": " actually. The query itself is a nightmare. And I haven't mentioned this yet, but we're actually"
+    },
+    {
+      "Time_Start": 1232.8600000000001,
+      "Time_End": 1238.9,
+      "Text": " not making raw Cypher queries. We're using this API that the Bloodhound engineering team created"
+    },
+    {
+      "Time_Start": 1238.9,
+      "Time_End": 1246.94,
+      "Text": " called dogs, which is an abstraction layer that kind of lets us use whatever database on the"
+    },
+    {
+      "Time_Start": 1246.94,
+      "Time_End": 1252.0600000000002,
+      "Text": " backend. So, eventually we could use like Postgres or whatever. So, in dogs, we'll say, give me all"
+    },
+    {
+      "Time_Start": 1252.0600000000002,
+      "Time_End": 1256.7,
+      "Text": " the statements that have the target resource and scope. So, let's forget about users, let's forget"
+    },
+    {
+      "Time_Start": 1256.7,
+      "Time_End": 1263.38,
+      "Text": " about roles. Give me every statement in this graph where that prod user authentication"
+    },
+    {
+      "Time_Start": 1263.38,
+      "Time_End": 1270.14,
+      "Text": " lambda function is resolvable as a resource. And like all allows, all denies, whatever. As long as"
+    },
+    {
+      "Time_Start": 1270.14,
+      "Time_End": 1276.18,
+      "Text": " it's in the resource, we'll give it to me. So, now we have this bundle of statements. And it's like,"
+    },
+    {
+      "Time_Start": 1276.18,
+      "Time_End": 1281.66,
+      "Text": " okay, well, give me all the effective statements. And that means if the statement is like EC2 star"
+    },
+    {
+      "Time_Start": 1281.66,
+      "Time_End": 1286.5800000000002,
+      "Text": " and resource star, that would resolve in the first one, but it wouldn't resolve in the second because"
+    },
+    {
+      "Time_Start": 1286.5800000000002,
+      "Time_End": 1292.1000000000001,
+      "Text": " EC2 can't act on a lambda function. So, I'm saying give me of all those statements, give me all the"
+    },
+    {
+      "Time_Start": 1292.1000000000001,
+      "Time_End": 1297.94,
+      "Text": " statements that have an action where I can actually act on this lambda function. So, those would be"
+    },
+    {
+      "Time_Start": 1297.94,
+      "Time_End": 1301.8200000000002,
+      "Text": " our effective statements. And then from the effective statements, we have to crawl up the"
+    },
+    {
+      "Time_Start": 1301.8200000000002,
+      "Time_End": 1307.1000000000001,
+      "Text": " graph and say, give me all the principles that have this statement attached to them in some policy."
+    },
+    {
+      "Time_Start": 1307.1000000000001,
+      "Time_End": 1313.7400000000002,
+      "Text": " And then we have to go through each principle and say, do you deny this? Like, is there a mix?"
+    },
+    {
+      "Time_Start": 1313.7400000000002,
+      "Time_End": 1320.5000000000002,
+      "Text": " So, we actually do four matrices. We do matrices. We do a allow matrix, a conditional allow matrix,"
+    },
+    {
+      "Time_Start": 1320.54,
+      "Time_End": 1327.86,
+      "Text": " a conditional deny matrix, and a deny matrix, right? And then we flag it if it's conditional."
+    },
+    {
+      "Time_Start": 1327.86,
+      "Time_End": 1335.26,
+      "Text": " So, this is what it looks like in IAM Policy Simulator. And I kind of want to highlight why"
+    },
+    {
+      "Time_Start": 1335.26,
+      "Time_End": 1341.98,
+      "Text": " this is an incomplete view. So, this is the role. So, this is in my test account. And we have our"
+    },
+    {
+      "Time_Start": 1341.98,
+      "Time_End": 1348.18,
+      "Text": " two policies attached, deny write and lambda admin. And you'll see here for resource star,"
+    },
+    {
+      "Time_Start": 1348.3,
+      "Time_End": 1355.14,
+      "Text": " it says everything's allowed. Which we know is not...it's not wrong, but it's not right."
+    },
+    {
+      "Time_Start": 1355.14,
+      "Time_End": 1359.7,
+      "Text": " Right? It's incomplete. The information is incomplete and that's what we want to solve."
+    },
+    {
+      "Time_Start": 1359.7,
+      "Time_End": 1367.74,
+      "Text": " So, let's check out a demo. And I'll kind of show you how we solve this in 8-man."
+    },
+    {
+      "Time_Start": 1367.74,
+      "Time_End": 1377.38,
+      "Text": " Okay. So, don't be overwhelmed by the amount of information on the screen here."
+    },
+    {
+      "Time_Start": 1377.38,
+      "Time_End": 1385.9,
+      "Text": " We got...so, let's look up...was it prod user...let's clear this out."
+    },
+    {
+      "Time_Start": 1385.9,
+      "Time_End": 1395.6200000000001,
+      "Text": " Prod user authentication. So, this is our lambda function, right? And it's getting its inbound."
+    },
+    {
+      "Time_Start": 1395.6200000000001,
+      "Time_End": 1400.18,
+      "Text": " So, these are...this is our resultant set of policy. So, this is after all the deny statements"
+    },
+    {
+      "Time_Start": 1400.18,
+      "Time_End": 1406.8200000000002,
+      "Text": " are taken into account. This is the list of users that can perform on action on this, right? And a"
+    },
+    {
+      "Time_Start": 1406.82,
+      "Time_End": 1412.3,
+      "Text": " lot of times what we'll do is we'll say, like, we'd be evaluating these and I'll see, like,"
+    },
+    {
+      "Time_Start": 1412.3,
+      "Time_End": 1416.58,
+      "Text": " that admin policy is attached to a role I'm interested in. And I'll forget that there's"
+    },
+    {
+      "Time_Start": 1416.58,
+      "Time_End": 1422.54,
+      "Text": " multiple, right? So, in this case, I would say, okay, let me filter out...let me look for any of"
+    },
+    {
+      "Time_Start": 1422.54,
+      "Time_End": 1428.74,
+      "Text": " these that have create function. Right? And we have...here's all my list of roles of create"
+    },
+    {
+      "Time_Start": 1428.74,
+      "Time_End": 1433.98,
+      "Text": " function. Or I'm sorry, all the principles that can call create function on this resource. And"
+    },
+    {
+      "Time_Start": 1433.98,
+      "Time_End": 1439.82,
+      "Text": " I'm wondering, okay, where's lambda admin dev? Lambda admin dev has lambda admin policy. Why"
+    },
+    {
+      "Time_Start": 1439.82,
+      "Time_End": 1448.14,
+      "Text": " can't it write to this? So, what we can do is...let's close this out. I can't see my mouse. We can do"
+    },
+    {
+      "Time_Start": 1448.14,
+      "Time_End": 1456.18,
+      "Text": " pathfinding, right? So, I tried to model this like some popular map programs online. And it should"
+    },
+    {
+      "Time_Start": 1456.18,
+      "Time_End": 1462.78,
+      "Text": " look kind of like Bloodhound a little bit. But we have these path selectors here, right? So,"
+    },
+    {
+      "Time_Start": 1462.78,
+      "Time_End": 1467.86,
+      "Text": " because the way we did our graph, it doesn't always make sense to do shortest path. So, we"
+    },
+    {
+      "Time_Start": 1467.86,
+      "Time_End": 1472.98,
+      "Text": " have an identity path, permission path, shortest path. So, we want a permission path. So, we're"
+    },
+    {
+      "Time_Start": 1472.98,
+      "Time_End": 1488.3,
+      "Text": " gonna say lambda admin dev. Where are we at? If I could type. So, let's go to lambda admin dev. And"
+    },
+    {
+      "Time_Start": 1488.98,
+      "Time_End": 1497.4199999999998,
+      "Text": " I want to do a path, a permission path to prod user auth. Okay. Of course, it puts this out here."
+    },
+    {
+      "Time_Start": 1497.4199999999998,
+      "Time_End": 1504.4199999999998,
+      "Text": " So, this is the resource. And we'll immediately see why. This is why we're getting blocked. Because"
+    },
+    {
+      "Time_Start": 1504.4199999999998,
+      "Time_End": 1510.46,
+      "Text": " we have two paths. One, you can see all the way out. So, we have a policy. And this is the version."
+    },
+    {
+      "Time_Start": 1510.46,
+      "Time_End": 1516.02,
+      "Text": " So, of course, like AWS has to make things complicated and we have like version policies."
+    },
+    {
+      "Time_Start": 1516.1399999999999,
+      "Time_End": 1521.62,
+      "Text": " This is the policy document. This is the statement. And it... So, it says this statement acts on this"
+    },
+    {
+      "Time_Start": 1521.62,
+      "Time_End": 1525.82,
+      "Text": " resource. And that's an allow. So, green is an allow. Red is a deny. So, we see that there's"
+    },
+    {
+      "Time_Start": 1525.82,
+      "Time_End": 1530.78,
+      "Text": " a deny statement on this. So, we already know. So, we can click on this and it'll say exactly,"
+    },
+    {
+      "Time_Start": 1530.78,
+      "Time_End": 1536.42,
+      "Text": " you have deny actions on this resource. And that's why we can't call create function, right? So,"
+    },
+    {
+      "Time_Start": 1536.42,
+      "Time_End": 1541.34,
+      "Text": " when I was modeling this out... Actually, I was getting this talk ready a couple days ago. And"
+    },
+    {
+      "Time_Start": 1541.5400000000002,
+      "Time_End": 1545.7,
+      "Text": " there's a demo later on where we're doing a Sumerill. And I was wondering, like, why the"
+    },
+    {
+      "Time_Start": 1545.7,
+      "Time_End": 1551.0600000000002,
+      "Text": " hell can't A call B call C? This exact thing came up. So, I was actually able to use this"
+    },
+    {
+      "Time_Start": 1551.0600000000002,
+      "Time_End": 1555.8600000000001,
+      "Text": " functionality debugging this talk, which I think is pretty cool. So, that's demo one."
+    },
+    {
+      "Time_Start": 1555.8600000000001,
+      "Time_End": 1566.38,
+      "Text": " So, that answers our first two questions, effectively. And then we have the idea of"
+    },
+    {
+      "Time_Start": 1566.42,
+      "Time_End": 1573.98,
+      "Text": " role chaining. So, role chaining, if you're new to AWS, the idea here is that a role can get"
+    },
+    {
+      "Time_Start": 1573.98,
+      "Time_End": 1579.2600000000002,
+      "Text": " credentials for another role and assume that role, right? So, there's a function called STS"
+    },
+    {
+      "Time_Start": 1579.2600000000002,
+      "Time_End": 1585.8600000000001,
+      "Text": " AssumeRole. And AssumeRole with SAML and AssumeRole with Web Identity. But the idea is that a role"
+    },
+    {
+      "Time_Start": 1585.8600000000001,
+      "Time_End": 1593.0200000000002,
+      "Text": " can change its permission set. And this is a built-in feature for AWS, right? So, in this case,"
+    },
+    {
+      "Time_Start": 1593.02,
+      "Time_End": 1599.26,
+      "Text": " there's actually two policies that have to be evaluated. A permission policy and a resource"
+    },
+    {
+      "Time_Start": 1599.26,
+      "Time_End": 1605.82,
+      "Text": " policy. And the resource policy is a special one called a trust policy. So, it's not enough that"
+    },
+    {
+      "Time_Start": 1605.82,
+      "Time_End": 1614.02,
+      "Text": " role A has permissions to assume role B. Role B has to explicitly say, I trust role A to assume me."
+    },
+    {
+      "Time_Start": 1614.02,
+      "Time_End": 1620.62,
+      "Text": " Right? And all the same things hold true for this. You can use wildcards. You can specify multiple"
+    },
+    {
+      "Time_Start": 1620.6200000000001,
+      "Time_End": 1625.14,
+      "Text": " accounts, multiple roles, whatever. But this trust has to be set up. So, that's something that we"
+    },
+    {
+      "Time_Start": 1625.14,
+      "Time_End": 1631.66,
+      "Text": " have to evaluate when we calculate who can assume what, right? But here's the really cool part. And"
+    },
+    {
+      "Time_Start": 1631.66,
+      "Time_End": 1637.8200000000002,
+      "Text": " something that sets it apart from Active Directory and Entra is that they don't have to be in the"
+    },
+    {
+      "Time_Start": 1637.8200000000002,
+      "Time_End": 1643.3000000000002,
+      "Text": " same account. They can be a completely separate AWS account, right? And there's no key exchange"
+    },
+    {
+      "Time_Start": 1643.3000000000002,
+      "Time_End": 1649.3400000000001,
+      "Text": " that happens. There's no trust that has to be set up. All you have to do is specify a different"
+    },
+    {
+      "Time_Start": 1649.3400000000001,
+      "Time_End": 1654.5000000000002,
+      "Text": " account number. And of course, like, role B in the other account has to say, I trust this account to"
+    },
+    {
+      "Time_Start": 1654.5000000000002,
+      "Time_End": 1660.7800000000002,
+      "Text": " assume me. But there's no more mechanism there. That's it. Right? And you'll see this a lot in"
+    },
+    {
+      "Time_Start": 1660.7800000000002,
+      "Time_End": 1667.0200000000002,
+      "Text": " client environments where they have, like, maybe a dev account that goes to a staging account that"
+    },
+    {
+      "Time_Start": 1667.0200000000002,
+      "Time_End": 1673.5400000000002,
+      "Text": " goes to a prod account. Like, these are built in features that we can abuse, right? So, let's take"
+    },
+    {
+      "Time_Start": 1673.54,
+      "Time_End": 1685.3,
+      "Text": " a look at how we do assume role. So, we have... And I think I'm stealing from Bloodhound terminology,"
+    },
+    {
+      "Time_Start": 1685.3,
+      "Time_End": 1692.46,
+      "Text": " but it's a post-process edge. And the idea there is that these edges that you're gonna see are not"
+    },
+    {
+      "Time_Start": 1692.46,
+      "Time_End": 1698.6599999999999,
+      "Text": " they're not structural. Like, there's no document that defines it. We infer it from the privileges"
+    },
+    {
+      "Time_Start": 1698.66,
+      "Time_End": 1706.38,
+      "Text": " that we evaluate. So, if we go to our identity path, I'll just show you. Here's a quick example. So, we"
+    },
+    {
+      "Time_Start": 1706.38,
+      "Time_End": 1719.7,
+      "Text": " have A role, right? And I want to know if A role can get to C role. And you'll see here we have our can"
+    },
+    {
+      "Time_Start": 1719.7,
+      "Time_End": 1726.1000000000001,
+      "Text": " assumes that kind of build this out, right? And these are bigger edges because you can click on"
+    },
+    {
+      "Time_Start": 1726.1000000000001,
+      "Time_End": 1731.7400000000002,
+      "Text": " them. I mean, not right now because this is a demo and I'm not gonna try it. But ideally, you click on"
+    },
+    {
+      "Time_Start": 1731.7400000000002,
+      "Time_End": 1736.5000000000002,
+      "Text": " it and it would show you exactly why you can assume, right? So, here are the statements that"
+    },
+    {
+      "Time_Start": 1736.5000000000002,
+      "Time_End": 1742.46,
+      "Text": " say... Here's the trust policy statement. Here's the assume role policy statement, etc., right? So, we have"
+    },
+    {
+      "Time_Start": 1742.46,
+      "Time_End": 1751.9800000000002,
+      "Text": " that part solved. Or mostly solved. We're still working on conditions. So, we can do our role"
+    },
+    {
+      "Time_Start": 1751.98,
+      "Time_End": 1758.74,
+      "Text": " assumptions and we've got ourself figured out. So, now the fun part begins, right? We've arrived at"
+    },
+    {
+      "Time_Start": 1758.74,
+      "Time_End": 1764.06,
+      "Text": " the start. We can now start solving really interesting problems. Like, going back to a"
+    },
+    {
+      "Time_Start": 1764.06,
+      "Time_End": 1771.78,
+      "Text": " couple years ago, what is tier zero? What do we... How do we even define what this admin"
+    },
+    {
+      "Time_Start": 1771.78,
+      "Time_End": 1777.18,
+      "Text": " policy is that we want to path towards? Like, you can't really have an attack path if you don't know"
+    },
+    {
+      "Time_Start": 1777.18,
+      "Time_End": 1781.54,
+      "Text": " where you're going, right? And a lot had a really good observation when we're talking about this,"
+    },
+    {
+      "Time_Start": 1781.62,
+      "Time_End": 1788.58,
+      "Text": " that AWS is not about identity. It's about policy, right? I mean, identity in the big term, but when"
+    },
+    {
+      "Time_Start": 1788.58,
+      "Time_End": 1795.54,
+      "Text": " we're focusing on the mechanics, it's about policy. So, an example is, you know, you might have an"
+    },
+    {
+      "Time_Start": 1795.54,
+      "Time_End": 1800.02,
+      "Text": " identity provider hooked up in your AWS. So, you could say, like, you know, my identity provider"
+    },
+    {
+      "Time_Start": 1800.02,
+      "Time_End": 1806.46,
+      "Text": " can assume a role. If you compromise that identity provider, you only really compromise the specific"
+    },
+    {
+      "Time_Start": 1806.54,
+      "Time_End": 1812.8600000000001,
+      "Text": " roles that that identity provider is trusted to. So, it's not the end-all be-all of the account."
+    },
+    {
+      "Time_Start": 1812.8600000000001,
+      "Time_End": 1821.66,
+      "Text": " And so, the first question was, okay, well, at first glance, what's admin? And so, well, AWS gives you"
+    },
+    {
+      "Time_Start": 1821.66,
+      "Time_End": 1826.58,
+      "Text": " this administrator policy. It's an action star on resource star. That seems pretty obvious. That"
+    },
+    {
+      "Time_Start": 1826.58,
+      "Time_End": 1832.98,
+      "Text": " seems like a good start for admin. And then the next, like, silly question is, okay, well, let's"
+    },
+    {
+      "Time_Start": 1832.98,
+      "Time_End": 1841.42,
+      "Text": " say I have action star, resource star, but I deny bracket star on resource star. And, like, brackets"
+    },
+    {
+      "Time_Start": 1841.42,
+      "Time_End": 1847.94,
+      "Text": " like some quantum computing API or something. I don't know what bracket is. But the point is, like,"
+    },
+    {
+      "Time_Start": 1847.94,
+      "Time_End": 1853.06,
+      "Text": " if I give you everything and then I take away a little bit, are you still admin? It's like, yeah,"
+    },
+    {
+      "Time_Start": 1853.06,
+      "Time_End": 1858.54,
+      "Text": " you could still take over this account. You're still admin. And then, obviously, you could probably"
+    },
+    {
+      "Time_Start": 1858.58,
+      "Time_End": 1862.6599999999999,
+      "Text": " see where I'm going with this. How much can we whittle away before it's not tier zero? Or it's"
+    },
+    {
+      "Time_Start": 1862.6599999999999,
+      "Time_End": 1870.62,
+      "Text": " not admin? Or more properly put, what does it mean to be admin? What is the essence of it? And so,"
+    },
+    {
+      "Time_Start": 1870.62,
+      "Time_End": 1877.3799999999999,
+      "Text": " we kind of came down to this first definition. It's gonna be probably the first of many. Which"
+    },
+    {
+      "Time_Start": 1877.3799999999999,
+      "Time_End": 1882.8999999999999,
+      "Text": " is, you know, what's the bare minimum that I can have where I can guarantee an account takeover?"
+    },
+    {
+      "Time_Start": 1883.38,
+      "Time_End": 1894.66,
+      "Text": " And we came to attach role policy and detach role policy. And the ability to authenticate as the"
+    },
+    {
+      "Time_Start": 1894.66,
+      "Time_End": 1901.02,
+      "Text": " principle where we can attach and detach that role policy. And the reason why this is is because,"
+    },
+    {
+      "Time_Start": 1901.02,
+      "Time_End": 1909.22,
+      "Text": " remember, deny takes precedence. So, if we can detach any deny policies and attach all the"
+    },
+    {
+      "Time_Start": 1909.22,
+      "Time_End": 1915.94,
+      "Text": " policies we want, then we are guaranteed account takeover. And for the time being, let's just..."
+    },
+    {
+      "Time_Start": 1915.94,
+      "Time_End": 1921.22,
+      "Text": " When I say attach role policy, detach role policy, that is result instead of policy. So,"
+    },
+    {
+      "Time_Start": 1921.22,
+      "Time_End": 1926.34,
+      "Text": " that means that you passed all your SCPs and your session based policies. If you can call"
+    },
+    {
+      "Time_Start": 1926.34,
+      "Time_End": 1930.94,
+      "Text": " these things on a principle and you can assume that principle, you are guaranteed to take over"
+    },
+    {
+      "Time_Start": 1930.94,
+      "Time_End": 1936.98,
+      "Text": " that account. Right? And that's just a very narrow definition. And we want there to be more. Right?"
+    },
+    {
+      "Time_Start": 1936.98,
+      "Time_End": 1943.78,
+      "Text": " This is where we want to expand research and say, here's the list of all known guaranteed takeovers"
+    },
+    {
+      "Time_Start": 1943.78,
+      "Time_End": 1950.6200000000001,
+      "Text": " of an account. Right? And the cool part is what we're talking about is not context-specific. But"
+    },
+    {
+      "Time_Start": 1950.6200000000001,
+      "Time_End": 1958.34,
+      "Text": " of course, like, any AWS environment can have their own context-specific tier zero. So, similar"
+    },
+    {
+      "Time_Start": 1958.34,
+      "Time_End": 1963.14,
+      "Text": " to Bloodhound, you could say, well, I know that there are sensitive creds in this S3 bucket. So,"
+    },
+    {
+      "Time_Start": 1963.14,
+      "Time_End": 1970.18,
+      "Text": " I'm gonna mark read access on this S3 bucket as tier zero. And that's fine. You can define"
+    },
+    {
+      "Time_Start": 1970.18,
+      "Time_End": 1977.3000000000002,
+      "Text": " that and then you can build your paths to that action resource combo. Right? And then more"
+    },
+    {
+      "Time_Start": 1977.3000000000002,
+      "Time_End": 1983.0200000000002,
+      "Text": " importantly, we have this subset of our tier zero definition, which is self-contained. And what that"
+    },
+    {
+      "Time_Start": 1983.0200000000002,
+      "Time_End": 1989.18,
+      "Text": " means is that a principle can attach and detach policies on themselves. And so, if you have a"
+    },
+    {
+      "Time_Start": 1989.22,
+      "Time_End": 1994.9,
+      "Text": " principle that can attach and detach policies on themselves, then you are tier zero. And this is"
+    },
+    {
+      "Time_Start": 1994.9,
+      "Time_End": 2001.26,
+      "Text": " just kind of a flex brag. But this is the... I was excited about this because this is the first time"
+    },
+    {
+      "Time_Start": 2001.26,
+      "Time_End": 2008.1000000000001,
+      "Text": " we actually got to use 8-man. And it actually provided, like, valuable results. But we had a"
+    },
+    {
+      "Time_Start": 2008.1000000000001,
+      "Time_End": 2016.46,
+      "Text": " client that had all these AWS roles and they had this one that they called admin. Right? And admin"
+    },
+    {
+      "Time_Start": 2016.46,
+      "Time_End": 2024.46,
+      "Text": " had a specific deny statement on it saying, if your name is admin, you can't attach or detach"
+    },
+    {
+      "Time_Start": 2024.46,
+      "Time_End": 2029.9,
+      "Text": " policies to yourself. Because it's admin. And the word admin is scary. And they said, okay, I don't"
+    },
+    {
+      "Time_Start": 2029.9,
+      "Time_End": 2035.14,
+      "Text": " want admin changing their permission. Which is fair. But then there was like a dozen other roles"
+    },
+    {
+      "Time_Start": 2035.14,
+      "Time_End": 2040.74,
+      "Text": " that can attach and detach policies to themselves and effectively take over the account. So, in effect,"
+    },
+    {
+      "Time_Start": 2040.74,
+      "Time_End": 2045.74,
+      "Text": " of these like maybe dozen or so roles, the admin was the least privileged. Because it was the only"
+    },
+    {
+      "Time_Start": 2045.74,
+      "Time_End": 2049.62,
+      "Text": " one that couldn't take over the account. Because they had other deny statements attached to them"
+    },
+    {
+      "Time_Start": 2049.62,
+      "Time_End": 2055.46,
+      "Text": " that would block specific IAM things. Right? And that was identified with 8-man. Because we ran that"
+    },
+    {
+      "Time_Start": 2055.46,
+      "Time_End": 2064.38,
+      "Text": " query saying, okay, give me all the roles that can perform these actions. Right? And then it gets"
+    },
+    {
+      "Time_Start": 2064.38,
+      "Time_End": 2069.98,
+      "Text": " really interesting. And this is where I think the bulk of our research is going forward. So, this is"
+    },
+    {
+      "Time_Start": 2069.98,
+      "Time_End": 2076.26,
+      "Text": " not something that's implemented in Bloodhound yet. But we have this idea of Tier 0 paths. And the"
+    },
+    {
+      "Time_Start": 2076.26,
+      "Time_End": 2083.62,
+      "Text": " idea is that a principle can be Tier 0, but so can a path. And that means a path in aggregate. So,"
+    },
+    {
+      "Time_Start": 2083.62,
+      "Time_End": 2090.9,
+      "Text": " maybe one principle of this path can do part of the Tier 0 escalation. And another principle can"
+    },
+    {
+      "Time_Start": 2090.9,
+      "Time_End": 2097.18,
+      "Text": " do part of it. And another principle can do part of it. And in aggregate, they can be Tier 0. Which"
+    },
+    {
+      "Time_Start": 2097.22,
+      "Time_End": 2104.2999999999997,
+      "Text": " I think is a really fun and difficult problem to solve. Right? And we can do it manually. And I"
+    },
+    {
+      "Time_Start": 2104.2999999999997,
+      "Time_End": 2108.74,
+      "Text": " know that we can solve this with Cypher. But we want to do it in a way that's performant. So,"
+    },
+    {
+      "Time_Start": 2108.74,
+      "Time_End": 2114.98,
+      "Text": " I'll give you an example. How am I doing on time? Good? Okay. Cool. Plenty of time. I think we're"
+    },
+    {
+      "Time_Start": 2114.98,
+      "Time_End": 2122.14,
+      "Text": " doing all right. So, let's say we have an account A. We have a role called Jenkins dev. And Jenkins"
+    },
+    {
+      "Time_Start": 2122.14,
+      "Time_End": 2126.46,
+      "Text": " dev can assume CloudFormation prod. And I gave these real names to make it feel a little more"
+    },
+    {
+      "Time_Start": 2126.46,
+      "Time_End": 2134.78,
+      "Text": " real. And so, like ZZZ. And then CloudFormation prod can assume read-only role. And they can also"
+    },
+    {
+      "Time_Start": 2134.78,
+      "Time_End": 2142.58,
+      "Text": " attach a role policy to that. And Jenkins dev can also assume Jenkins staging. Which can assume"
+    },
+    {
+      "Time_Start": 2142.58,
+      "Time_End": 2149.58,
+      "Text": " Terraform prod. Which can call detach role policy on this read-only role. So, over the span of three"
+    },
+    {
+      "Time_Start": 2149.58,
+      "Time_End": 2155.1,
+      "Text": " separate accounts, we can build out a path that's Tier 0 on this read-only role. Because at this"
+    },
+    {
+      "Time_Start": 2155.22,
+      "Time_End": 2161.7,
+      "Text": " point, we can attach and detach arbitrary policies to read-only role and take over our account C."
+    },
+    {
+      "Time_Start": 2161.7,
+      "Time_End": 2168.42,
+      "Text": " Which is like our... Let's say it's our production account. Right? So, I'm gonna get into the last"
+    },
+    {
+      "Time_Start": 2168.42,
+      "Time_End": 2180.66,
+      "Text": " demo here. Which is just showing off the Tier 0 access. So... And forgive me. I'm not a UI dev."
+    },
+    {
+      "Time_Start": 2180.66,
+      "Time_End": 2188.3399999999997,
+      "Text": " And this UI will change. So, here... Like in every account, we'll have a list of the direct Tier 0"
+    },
+    {
+      "Time_Start": 2188.3399999999997,
+      "Time_End": 2196.2999999999997,
+      "Text": " principles. So, these are principles that have this Tier 0 access. But on top of that, we have"
+    },
+    {
+      "Time_Start": 2196.2999999999997,
+      "Time_End": 2201.3799999999997,
+      "Text": " our indirect. Right? So, this should feel pretty familiar. And for any one of these, I'm gonna pick"
+    },
+    {
+      "Time_Start": 2201.3799999999997,
+      "Time_End": 2207.14,
+      "Text": " on a role again. We can graph them out. Let's do a different one. Let's do admin. Let's do a role."
+    },
+    {
+      "Time_Start": 2207.14,
+      "Time_End": 2221.02,
+      "Text": " We can graph them out and see why a role is a Tier 0 role. Right? We can graph out more. Let's"
+    },
+    {
+      "Time_Start": 2221.02,
+      "Time_End": 2226.8599999999997,
+      "Text": " do Tier 0 part 1. I actually don't know what this is gonna show. I can just assume C role. Okay."
+    },
+    {
+      "Time_Start": 2226.8599999999997,
+      "Time_End": 2232.62,
+      "Text": " Well, that's not fun. All right. But that's the point. Is that we can demonstrate or we can show"
+    },
+    {
+      "Time_Start": 2232.7799999999997,
+      "Time_End": 2240.5,
+      "Text": " why specific roles are Tier 0 in the account. And that'll give us a good clue on, you know,"
+    },
+    {
+      "Time_Start": 2240.5,
+      "Time_End": 2245.5,
+      "Text": " which roles we want to attack from an attacker's perspective. And of course, from a defender's"
+    },
+    {
+      "Time_Start": 2245.5,
+      "Time_End": 2253.8199999999997,
+      "Text": " perspective, you want to know your path's incoming to your privilege principles. Right? So, at this"
+    },
+    {
+      "Time_Start": 2253.8199999999997,
+      "Time_End": 2260.38,
+      "Text": " point, once we get all this working... So, I plan on releasing ApeMan, putting it on GitHub,"
+    },
+    {
+      "Time_Start": 2260.38,
+      "Time_End": 2265.42,
+      "Text": " open sourcing it within the next few months. I want it out before August. But at that point,"
+    },
+    {
+      "Time_Start": 2265.42,
+      "Time_End": 2270.7400000000002,
+      "Text": " I feel like the real work begins. So, we have this tool to map all this stuff out. And then"
+    },
+    {
+      "Time_Start": 2270.7400000000002,
+      "Time_End": 2280.7000000000003,
+      "Text": " we have really cool research. Right? So, we have... We want to have a way to categorize access in any"
+    },
+    {
+      "Time_Start": 2280.7000000000003,
+      "Time_End": 2289.02,
+      "Text": " given account. And we want our... Like, my dream is to have like this JSON set that's in a public"
+    },
+    {
+      "Time_Start": 2289.1,
+      "Time_End": 2296.06,
+      "Text": " repository saying, here's all of the known Tier 0 paths or Tier 0 combinations for AWS that you can"
+    },
+    {
+      "Time_Start": 2296.06,
+      "Time_End": 2303.42,
+      "Text": " ingest and run. And we want to have context templates. So, actually, I'm gonna show you one"
+    },
+    {
+      "Time_Start": 2303.42,
+      "Time_End": 2312.2599999999998,
+      "Text": " quick thing real quick. I know we're running low. I cut a section on conditional access. But as a"
+    },
+    {
+      "Time_Start": 2312.26,
+      "Time_End": 2317.46,
+      "Text": " part of this... So, like any one of these policies can have conditions attached to them. Right?"
+    },
+    {
+      "Time_Start": 2318.9,
+      "Time_End": 2323.46,
+      "Text": " And that makes it really difficult. Because we might have a path from A role to B role. But we"
+    },
+    {
+      "Time_Start": 2323.46,
+      "Time_End": 2329.94,
+      "Text": " need a way to say... This isn't guaranteed. Certain conditions have to be met for this to happen."
+    },
+    {
+      "Time_Start": 2329.94,
+      "Time_End": 2336.1000000000004,
+      "Text": " Right? And some of those conditions can be resolved. Like, for example, if we're comparing"
+    },
+    {
+      "Time_Start": 2336.1,
+      "Time_End": 2342.58,
+      "Text": " like a policy tag, like on role A, we can do that at graph time. We can say the tag on role A"
+    },
+    {
+      "Time_Start": 2342.58,
+      "Time_End": 2347.2999999999997,
+      "Text": " matches the tag that's being inspected in the condition. But sometimes conditions can't be"
+    },
+    {
+      "Time_Start": 2347.2999999999997,
+      "Time_End": 2353.54,
+      "Text": " resolved. It might be something like the IP address has to be this. Or the time has to be this. And so,"
+    },
+    {
+      "Time_Start": 2353.54,
+      "Time_End": 2360.3399999999997,
+      "Text": " what we'll have... Or what we do have is a context manager to kind of fill in those variables. So,"
+    },
+    {
+      "Time_Start": 2360.34,
+      "Time_End": 2366.6600000000003,
+      "Text": " over here, we're gonna go through and we evaluate every statement. And we look at the condition"
+    },
+    {
+      "Time_Start": 2366.6600000000003,
+      "Time_End": 2370.98,
+      "Text": " keys that are being used and we populate them in this list. And then we say, you can override these"
+    },
+    {
+      "Time_Start": 2370.98,
+      "Time_End": 2376.34,
+      "Text": " so that we can actually resolve these conditions. And how I see that being useful is that if you"
+    },
+    {
+      "Time_Start": 2376.34,
+      "Time_End": 2382.34,
+      "Text": " deploy this in your environment, you can actually define templates. You can say, like, this context"
+    },
+    {
+      "Time_Start": 2382.34,
+      "Time_End": 2388.98,
+      "Text": " state is my developer template. And this context state is my DevOps template or my workstation"
+    },
+    {
+      "Time_Start": 2388.98,
+      "Time_End": 2394.82,
+      "Text": " template or whatever, right? And so, when I referenced that in the slide, that's kind of what"
+    },
+    {
+      "Time_Start": 2394.82,
+      "Time_End": 2402.26,
+      "Text": " I meant. Is that we'll have these context templates where you can define attack paths from different"
+    },
+    {
+      "Time_Start": 2402.26,
+      "Time_End": 2407.86,
+      "Text": " norms in your environment. And then lastly, we just want to expand the vocabulary for discussing"
+    },
+    {
+      "Time_Start": 2407.86,
+      "Time_End": 2416.18,
+      "Text": " AWS attack paths. So, having a consistent way to talk about this is our goal. So, next steps."
+    },
+    {
+      "Time_Start": 2416.2599999999998,
+      "Time_End": 2423.06,
+      "Text": " One of the things that we engineered for, but we just haven't implemented yet, is SCPs, session"
+    },
+    {
+      "Time_Start": 2423.06,
+      "Time_End": 2428.5,
+      "Text": " policies. Those are really easy from our graph model. We just have to program them up. Our"
+    },
+    {
+      "Time_Start": 2428.5,
+      "Time_End": 2436.02,
+      "Text": " condition resolver engine, there's a lot of work to do there. But we're getting there. UI needs to"
+    },
+    {
+      "Time_Start": 2436.02,
+      "Time_End": 2441.94,
+      "Text": " be a little bit better. And then just productizing, unit tests, testing, releasing. And then our plan"
+    },
+    {
+      "Time_Start": 2441.94,
+      "Time_End": 2448.58,
+      "Text": " is to have it out before August. So, yeah. I think that's about it. And I'll take any quick"
+    },
+    {
+      "Time_Start": 2448.58,
+      "Time_End": 2452.66,
+      "Text": " questions if you have. How are we doing on time? We're doing great. We've got about eight minutes"
+    },
+    {
+      "Time_Start": 2452.66,
+      "Time_End": 2460.18,
+      "Text": " for questions. So, if you have a question, I will run over with the mic to you. Yeah, sure."
+    },
+    {
+      "Time_Start": 2463.62,
+      "Time_End": 2470.26,
+      "Text": " Sorry. With respect to the concept of effective or aggregate tier zero, is that something that"
+    },
+    {
+      "Time_Start": 2470.26,
+      "Time_End": 2476.6600000000003,
+      "Text": " you've seen or heard of attackers exploiting in the wild to do a count takeover?"
+    },
+    {
+      "Time_Start": 2476.6600000000003,
+      "Time_End": 2479.86,
+      "Text": " This is another humble, not so humble, brag flex, but we've done it."
+    },
+    {
+      "Time_Start": 2482.5,
+      "Time_End": 2489.86,
+      "Text": " Because that was the original reason why it came up, was that we had one environment where"
+    },
+    {
+      "Time_Start": 2489.86,
+      "Time_End": 2495.2200000000003,
+      "Text": " it wasn't tier zero, like guaranteed, like it wasn't attached role, detached role. But"
+    },
+    {
+      "Time_Start": 2495.2200000000003,
+      "Time_End": 2501.6200000000003,
+      "Text": " in aggregate, this path got us the access we needed to act on. It was like a lambda function"
+    },
+    {
+      "Time_Start": 2501.6200000000003,
+      "Time_End": 2507.1400000000003,
+      "Text": " that was running in a privileged context that we then abused. So, in this aggregate of paths,"
+    },
+    {
+      "Time_Start": 2507.1400000000003,
+      "Time_End": 2514.7400000000002,
+      "Text": " we got a right primitive out of it. So, yeah. We've done it. I can't speak to if legit attackers"
+    },
+    {
+      "Time_Start": 2514.7400000000002,
+      "Time_End": 2518.26,
+      "Text": " are doing it. But it's also something I'd want to know in a network I'm defending."
+    },
+    {
+      "Time_Start": 2518.34,
+      "Time_End": 2518.82,
+      "Text": " For sure."
+    },
+    {
+      "Time_Start": 2524.6600000000003,
+      "Time_End": 2525.2200000000003,
+      "Text": " Anyone else?"
+    },
+    {
+      "Time_Start": 2531.5400000000004,
+      "Time_End": 2538.7400000000002,
+      "Text": " So, is any of the activity that you conduct during this enumeration phase or even like taking"
+    },
+    {
+      "Time_Start": 2539.94,
+      "Time_End": 2546.34,
+      "Text": " ownership of certain roles, is that stuff first audible in CloudTrail or something like that? And"
+    },
+    {
+      "Time_Start": 2546.34,
+      "Time_End": 2551.2200000000003,
+      "Text": " then does like Amazon's logic detect like, hey, somebody's doing enumeration of key roles or"
+    },
+    {
+      "Time_Start": 2551.2200000000003,
+      "Time_End": 2556.6600000000003,
+      "Text": " something like that? Is there any kind of detection going on? Yeah, there's no doubt that you can write"
+    },
+    {
+      "Time_Start": 2558.58,
+      "Time_End": 2564.58,
+      "Text": " alerts to detect on that. So, the one... So, ApeMan and Jest, that account authorization"
+    },
+    {
+      "Time_Start": 2564.58,
+      "Time_End": 2570.6600000000003,
+      "Text": " details document, that's just one API call, right? So, it's one API call to get all of the IAM stuff."
+    },
+    {
+      "Time_Start": 2570.6600000000003,
+      "Time_End": 2574.9,
+      "Text": " And then like, depending on how you want to enumerate the rest of the resources, like there's..."
+    },
+    {
+      "Time_Start": 2575.86,
+      "Time_End": 2581.94,
+      "Text": " I forget what I used. There's... It was like, it wasn't config, but it was something similar to get"
+    },
+    {
+      "Time_Start": 2581.94,
+      "Time_End": 2588.42,
+      "Text": " the rest of the errands. You can do it however you want. But yeah, you can alert on that for sure."
+    },
+    {
+      "Time_Start": 2588.42,
+      "Time_End": 2594.02,
+      "Text": " And like I said, if you are privileged enough to call get account authorization details,"
+    },
+    {
+      "Time_Start": 2594.02,
+      "Time_End": 2599.2200000000003,
+      "Text": " like that's not something that I've seen pretty prevalent in most accounts."
+    },
+    {
+      "Time_Start": 2599.86,
+      "Time_End": 2605.94,
+      "Text": " So, that's already pretty privileged. So, I wouldn't call this a defender tool because"
+    },
+    {
+      "Time_Start": 2605.94,
+      "Time_End": 2610.9800000000005,
+      "Text": " it's useful for attackers, but I might say that this is... The utility for this is probably more"
+    },
+    {
+      "Time_Start": 2610.9800000000005,
+      "Time_End": 2617.94,
+      "Text": " useful for a defender. But all that to say too, if you even get a little bit of this data,"
+    },
+    {
+      "Time_Start": 2617.94,
+      "Time_End": 2622.1800000000003,
+      "Text": " you could always just throw it in ApeMan. Like, ApeMan is opportunistic. It's not going to require"
+    },
+    {
+      "Time_Start": 2622.1800000000003,
+      "Time_End": 2626.82,
+      "Text": " that you know... Like, do you have the whole picture? It'll infer these relationships on"
+    },
+    {
+      "Time_Start": 2626.82,
+      "Time_End": 2632.98,
+      "Text": " whatever nodes it has. So, and then yeah, with the role assumption stuff, like that's something"
+    },
+    {
+      "Time_Start": 2632.98,
+      "Time_End": 2637.46,
+      "Text": " we talk about a lot is a lot of times with our attack paths, you'll have like role A goes to"
+    },
+    {
+      "Time_Start": 2637.46,
+      "Time_End": 2643.38,
+      "Text": " role B goes to role C. It'll often be the first time that that chain has ever happened. So, what"
+    },
+    {
+      "Time_Start": 2643.38,
+      "Time_End": 2648.6600000000003,
+      "Text": " we'll say is like, you know, it's helpful to write alerts to say like, is this the first time role B"
+    },
+    {
+      "Time_Start": 2648.6600000000003,
+      "Time_End": 2653.06,
+      "Text": " has ever assumed role C? If that's the case, then like maybe just tell someone. Tell someone that"
+    },
+    {
+      "Time_Start": 2653.06,
+      "Time_End": 2656.82,
+      "Text": " this has happened for the first time, right? Yeah."
+    },
+    {
+      "Time_Start": 2660.02,
+      "Time_End": 2662.18,
+      "Text": " Okay, Daniel, thank you very much for speaking. Thanks, y'all."
+    },
+    {
+      "Time_Start": 2662.18,
+      "Time_End": 2664.82,
+      "Text": " Let's give him a round of applause."
+    }
+  ]
+}

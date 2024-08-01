@@ -1,0 +1,4229 @@
+{
+  "segments": [
+    {
+      "Time_Start": 0.0,
+      "Time_End": 10.52,
+      "Text": "This text was transcribed using whisper model: large-v2\n\n Graphs are hard because the number of times that John and I have talked to each other"
+    },
+    {
+      "Time_Start": 10.52,
+      "Time_End": 15.0,
+      "Text": " and just said graphs are hard is uncountable at this point."
+    },
+    {
+      "Time_Start": 15.0,
+      "Time_End": 20.46,
+      "Text": " We've made a lot of mistakes over the time that we have been working on Bloodhound."
+    },
+    {
+      "Time_Start": 20.46,
+      "Time_End": 23.48,
+      "Text": " So we wanted to share some of those mistakes with you so if you ever decide to put graphs"
+    },
+    {
+      "Time_Start": 23.48,
+      "Time_End": 27.64,
+      "Text": " in something you're working on, you can avoid those mistakes because they've caused us a"
+    },
+    {
+      "Time_Start": 27.64,
+      "Time_End": 33.88,
+      "Text": " lot of pain and we'd like to prevent you from having to deal with that same pain."
+    },
+    {
+      "Time_Start": 33.88,
+      "Time_End": 38.58,
+      "Text": " Just a quick round of introductions, I'm Rohan Buzurkar, I'm a senior software developer"
+    },
+    {
+      "Time_Start": 38.58,
+      "Time_End": 45.519999999999996,
+      "Text": " at SpectraOps, I work on the Bloodhound Enterprise team, I was one of the original co-creators"
+    },
+    {
+      "Time_Start": 45.519999999999996,
+      "Time_End": 51.64,
+      "Text": " of Bloodhound, so I've been working with this since, well, it existed."
+    },
+    {
+      "Time_Start": 51.64,
+      "Time_End": 56.34,
+      "Text": " I'm John Hopper, I've been working on Bloodhound for the last three and a half years."
+    },
+    {
+      "Time_Start": 56.34,
+      "Time_End": 60.660000000000004,
+      "Text": " My claim to fame is that I have a very thick forehead, which if you know any software engineers,"
+    },
+    {
+      "Time_Start": 60.660000000000004,
+      "Time_End": 62.580000000000005,
+      "Text": " thick forehead is a necessity."
+    },
+    {
+      "Time_Start": 62.580000000000005,
+      "Time_End": 67.12,
+      "Text": " It's not necessarily how hard the problem is, but rather how thick your skull is because"
+    },
+    {
+      "Time_Start": 67.12,
+      "Time_End": 69.46000000000001,
+      "Text": " there are a lot of walls to meet."
+    },
+    {
+      "Time_Start": 69.46000000000001,
+      "Time_End": 77.02000000000001,
+      "Text": " Just as a side note, John is incredibly smart and half the crazy stuff you've seen in Bloodhound"
+    },
+    {
+      "Time_Start": 77.02000000000001,
+      "Time_End": 81.42,
+      "Text": " in the past couple of years has been his guy's work."
+    },
+    {
+      "Time_Start": 81.42,
+      "Time_End": 85.26,
+      "Text": " So just kind of like a quick overview of what we're talking about, we're going to talk about"
+    },
+    {
+      "Time_Start": 85.26,
+      "Time_End": 89.66000000000001,
+      "Text": " problems with graph modeling in general, a lot of what we're going to talk about is"
+    },
+    {
+      "Time_Start": 89.66000000000001,
+      "Time_End": 96.34,
+      "Text": " problems in graph scaling, because when we started we were just doing open source, collect"
+    },
+    {
+      "Time_Start": 96.34,
+      "Time_End": 102.10000000000001,
+      "Text": " whatever we can, throw it in the graph database, but over time our graph model has expanded"
+    },
+    {
+      "Time_Start": 102.10000000000001,
+      "Time_End": 106.9,
+      "Text": " a lot, and you're going to see some of the fallout from that."
+    },
+    {
+      "Time_Start": 106.9,
+      "Time_End": 111.9,
+      "Text": " But mostly this is going to be lessons learned from what at this point is eight years of"
+    },
+    {
+      "Time_Start": 111.9,
+      "Time_End": 115.94000000000001,
+      "Text": " development."
+    },
+    {
+      "Time_Start": 115.94000000000001,
+      "Time_End": 124.14,
+      "Text": " So if there's one key takeaway that you take from this talk, is that the graph is always"
+    },
+    {
+      "Time_Start": 124.14,
+      "Time_End": 125.42,
+      "Text": " bigger than you think it is."
+    },
+    {
+      "Time_Start": 125.42,
+      "Time_End": 128.34,
+      "Text": " We're going to talk about scale first."
+    },
+    {
+      "Time_Start": 128.34,
+      "Time_End": 132.46,
+      "Text": " My goal with this portion of the talk is to give you a more visceral understanding of"
+    },
+    {
+      "Time_Start": 132.46,
+      "Time_End": 133.46,
+      "Text": " scale."
+    },
+    {
+      "Time_Start": 133.46,
+      "Time_End": 137.62,
+      "Text": " When you look at graphs, they're pretty, they're fun, they fit on your screen, you can zoom"
+    },
+    {
+      "Time_Start": 137.62,
+      "Time_End": 141.18,
+      "Text": " in, zoom out, but the reality is horrific."
+    },
+    {
+      "Time_Start": 141.18,
+      "Time_End": 142.70000000000002,
+      "Text": " So let's dive into the reality a little bit."
+    },
+    {
+      "Time_Start": 142.70000000000002,
+      "Time_End": 145.3,
+      "Text": " Let's talk about what drives graph scale."
+    },
+    {
+      "Time_Start": 145.3,
+      "Time_End": 148.22,
+      "Text": " Let's talk about interconnectivity."
+    },
+    {
+      "Time_Start": 148.22,
+      "Time_End": 153.58,
+      "Text": " So one of my favorite things that I've seen as an engineer in my time was the stack of"
+    },
+    {
+      "Time_Start": 153.58,
+      "Time_End": 154.58,
+      "Text": " latencies."
+    },
+    {
+      "Time_Start": 154.58,
+      "Time_End": 158.3,
+      "Text": " If you're not familiar with what I'm talking about, it basically put from the top, which"
+    },
+    {
+      "Time_Start": 158.3,
+      "Time_End": 164.62,
+      "Text": " is at the CPU inner cache, all the way down to the disk, to the network, to cross-country"
+    },
+    {
+      "Time_Start": 164.62,
+      "Time_End": 167.5,
+      "Text": " network, how long it takes for things to get done."
+    },
+    {
+      "Time_Start": 167.5,
+      "Time_End": 171.06,
+      "Text": " And so I thought, wow, well, let's do some stacking here."
+    },
+    {
+      "Time_Start": 171.94,
+      "Time_End": 178.58,
+      "Text": " So the graph can have as many edges as there are nodes, plus one if we're including loops"
+    },
+    {
+      "Time_Start": 178.58,
+      "Time_End": 183.58,
+      "Text": " because that adds a degree to each vertices, divided by two because we're not looking for"
+    },
+    {
+      "Time_Start": 183.58,
+      "Time_End": 184.58,
+      "Text": " vertex degrees."
+    },
+    {
+      "Time_Start": 184.58,
+      "Time_End": 186.38,
+      "Text": " We're looking for the maximum number of edges."
+    },
+    {
+      "Time_Start": 186.38,
+      "Time_End": 192.74,
+      "Text": " And when you look here, 10 nodes, easy, it's 55 edges, that's not bad, it fits on your"
+    },
+    {
+      "Time_Start": 192.74,
+      "Time_End": 193.74,
+      "Text": " screen."
+    },
+    {
+      "Time_Start": 193.74,
+      "Time_End": 201.02,
+      "Text": " About 100 nodes, 5,050 edges, okay, that's still kind of fits on the screen."
+    },
+    {
+      "Time_Start": 201.02,
+      "Time_End": 205.42000000000002,
+      "Text": " We're starting to get into the territory of, is that something my cat threw up or is that"
+    },
+    {
+      "Time_Start": 205.42000000000002,
+      "Time_End": 206.42000000000002,
+      "Text": " a graph?"
+    },
+    {
+      "Time_Start": 206.42000000000002,
+      "Time_End": 212.38,
+      "Text": " 1,000 nodes, now we're talking, we're talking big numbers, 500,000 edges is the maximum"
+    },
+    {
+      "Time_Start": 212.38,
+      "Time_End": 214.74,
+      "Text": " interconnectivity for 1,000 nodes."
+    },
+    {
+      "Time_Start": 214.74,
+      "Time_End": 218.3,
+      "Text": " How many domains have you interacted with that just has 1,000 users?"
+    },
+    {
+      "Time_Start": 218.3,
+      "Time_End": 221.70000000000002,
+      "Text": " That's right, nobody's raising their hand because most Active Directory domains have"
+    },
+    {
+      "Time_Start": 221.70000000000002,
+      "Time_End": 223.5,
+      "Text": " more than 1,000 users."
+    },
+    {
+      "Time_Start": 223.5,
+      "Time_End": 226.38,
+      "Text": " So 1,000 nodes, 500,000 edges."
+    },
+    {
+      "Time_Start": 226.38,
+      "Time_End": 231.57999999999998,
+      "Text": " So when we talk about scale in graphs, the scale gets scary really quickly."
+    },
+    {
+      "Time_Start": 231.57999999999998,
+      "Time_End": 232.57999999999998,
+      "Text": " It's exponential, right?"
+    },
+    {
+      "Time_Start": 232.57999999999998,
+      "Time_End": 238.06,
+      "Text": " If you look at this equation up here, what about 10,000 nodes, well, now we're talking"
+    },
+    {
+      "Time_Start": 238.06,
+      "Time_End": 239.06,
+      "Text": " 50 million edges."
+    },
+    {
+      "Time_Start": 239.06,
+      "Time_End": 240.06,
+      "Text": " How about 100,000 nodes?"
+    },
+    {
+      "Time_Start": 240.06,
+      "Time_End": 245.7,
+      "Text": " You got 100,000 users in your domain, well if they're fully interconnected, it's 5 billion"
+    },
+    {
+      "Time_Start": 245.7,
+      "Time_End": 246.7,
+      "Text": " edges."
+    },
+    {
+      "Time_Start": 246.7,
+      "Time_End": 249.32,
+      "Text": " That's big numbers, we like big numbers here."
+    },
+    {
+      "Time_Start": 249.32,
+      "Time_End": 254.01999999999998,
+      "Text": " So when we talk about scale of graphs, it's important to remember that when you think"
+    },
+    {
+      "Time_Start": 254.02,
+      "Time_End": 257.86,
+      "Text": " about interconnectivity, the impact is extreme."
+    },
+    {
+      "Time_Start": 257.86,
+      "Time_End": 265.46000000000004,
+      "Text": " If all you take away from this talk is that graphs grow exponentially, you're a winner."
+    },
+    {
+      "Time_Start": 265.46000000000004,
+      "Time_End": 270.58,
+      "Text": " But let's put this into more practical terms, let's talk about interconnectivity in size."
+    },
+    {
+      "Time_Start": 270.58,
+      "Time_End": 274.38,
+      "Text": " Okay, so you've got 5 billion edges, what does that mean?"
+    },
+    {
+      "Time_Start": 274.38,
+      "Time_End": 278.06,
+      "Text": " Well, let's take a simple example."
+    },
+    {
+      "Time_Start": 278.06,
+      "Time_End": 283.3,
+      "Text": " No properties, no names, no domain SIDs, none of that, just numbers."
+    },
+    {
+      "Time_Start": 283.3,
+      "Time_End": 287.7,
+      "Text": " If I'm connecting entities in a graph with just numbers, and we're going to take 64-bit"
+    },
+    {
+      "Time_Start": 287.7,
+      "Time_End": 294.46000000000004,
+      "Text": " images because I like big numbers, how big is a fully connected graph of just 64-bit"
+    },
+    {
+      "Time_Start": 294.46000000000004,
+      "Time_End": 295.46000000000004,
+      "Text": " images?"
+    },
+    {
+      "Time_Start": 295.46000000000004,
+      "Time_End": 303.46000000000004,
+      "Text": " 10 fully connected nodes, 0.001 megabytes, tiny, 100 fully connected nodes."
+    },
+    {
+      "Time_Start": 303.46000000000004,
+      "Time_End": 304.46000000000004,
+      "Text": " We're getting somewhere."
+    },
+    {
+      "Time_Start": 304.46000000000004,
+      "Time_End": 310.74,
+      "Text": " Still, a tenth of a megabyte, not scary, it fits in RAM, computers have a couple of megs"
+    },
+    {
+      "Time_Start": 310.74,
+      "Time_End": 311.74,
+      "Text": " of RAM."
+    },
+    {
+      "Time_Start": 311.98,
+      "Time_End": 314.62,
+      "Text": " How about a thousand fully connected nodes?"
+    },
+    {
+      "Time_Start": 314.62,
+      "Time_End": 319.26,
+      "Text": " Well, ooh, there's that creep again, you're starting to feel that existential dread that"
+    },
+    {
+      "Time_Start": 319.26,
+      "Time_End": 322.06,
+      "Text": " I feel every time I log into a database."
+    },
+    {
+      "Time_Start": 322.06,
+      "Time_End": 328.38,
+      "Text": " 10,000 fully connected nodes, well now we're getting somewhere, 1,200 megabytes, but you"
+    },
+    {
+      "Time_Start": 328.38,
+      "Time_End": 331.90000000000003,
+      "Text": " can't guess what 1,200 megabytes is, it's 1.2 gigs."
+    },
+    {
+      "Time_Start": 331.90000000000003,
+      "Time_End": 335.90000000000003,
+      "Text": " So when you look at your laptop and you go, hmm, 16 gigs, that sounds reasonable, I can"
+    },
+    {
+      "Time_Start": 335.90000000000003,
+      "Time_End": 340.54,
+      "Text": " work with 16 gigs, that's one sixteenth of my available workspace memory, and I still"
+    },
+    {
+      "Time_Start": 340.54,
+      "Time_End": 344.46000000000004,
+      "Text": " have to run Linux and a DE, there's not a lot of space left."
+    },
+    {
+      "Time_Start": 344.46000000000004,
+      "Time_End": 348.78000000000003,
+      "Text": " Okay, well, hmm, what about 100,000 fully connected nodes?"
+    },
+    {
+      "Time_Start": 348.78000000000003,
+      "Time_End": 357.82000000000005,
+      "Text": " Now, now we're getting somewhere, 120,000 megabytes, that's a lot of data."
+    },
+    {
+      "Time_Start": 357.82000000000005,
+      "Time_End": 364.3,
+      "Text": " So we're talking, in terms of an active directory domain, 100,000 users is not that uncommon,"
+    },
+    {
+      "Time_Start": 364.3,
+      "Time_End": 368.94,
+      "Text": " and if those users are fully connected, if you have an admin that just went black wild"
+    },
+    {
+      "Time_Start": 368.94,
+      "Time_End": 375.5,
+      "Text": " with group membership, the size of your graph gets really big, really fast."
+    },
+    {
+      "Time_Start": 375.5,
+      "Time_End": 385.34,
+      "Text": " We're talking here, this is a, if you'll excuse my brain map, 1.2 petabytes, right, 1,200 gigs,"
+    },
+    {
+      "Time_Start": 385.34,
+      "Time_End": 387.98,
+      "Text": " that's a lot, a lot of data."
+    },
+    {
+      "Time_Start": 387.98,
+      "Time_End": 389.98,
+      "Text": " No, is that petabytes, terabytes?"
+    },
+    {
+      "Time_Start": 389.98,
+      "Time_End": 396.78,
+      "Text": " I missed a place, sorry, four hours of sleep, five hour flight."
+    },
+    {
+      "Time_Start": 396.78000000000003,
+      "Time_End": 404.78000000000003,
+      "Text": " So when we talk about why graphs are hard, this underlies the reality of domains in general"
+    },
+    {
+      "Time_Start": 404.78000000000003,
+      "Time_End": 406.38000000000005,
+      "Text": " when you graph them."
+    },
+    {
+      "Time_Start": 406.38000000000005,
+      "Time_End": 413.02000000000004,
+      "Text": " The interconnectivity drives how much data there is, the interconnectivity drives how"
+    },
+    {
+      "Time_Start": 413.02000000000004,
+      "Time_End": 415.54,
+      "Text": " many edges there are."
+    },
+    {
+      "Time_Start": 415.54,
+      "Time_End": 416.54,
+      "Text": " So what does this mean?"
+    },
+    {
+      "Time_Start": 416.54,
+      "Time_End": 419.66,
+      "Text": " We go even further, let's talk about latency."
+    },
+    {
+      "Time_Start": 419.66,
+      "Time_End": 425.98,
+      "Text": " So if we're stupid, because I like to be stupid, it makes me feel smarter when I actually successfully"
+    },
+    {
+      "Time_Start": 425.98,
+      "Time_End": 427.42,
+      "Text": " solve a problem."
+    },
+    {
+      "Time_Start": 427.42,
+      "Time_End": 433.70000000000005,
+      "Text": " So if I'm stupid, I'm going to look at the database and say, hmm, well, every naive traversal"
+    },
+    {
+      "Time_Start": 433.70000000000005,
+      "Time_End": 436.82,
+      "Text": " I do of a graph results in a round trip."
+    },
+    {
+      "Time_Start": 436.82,
+      "Time_End": 440.14000000000004,
+      "Text": " So I start at node one, so I fetch all the outbound edges from node one."
+    },
+    {
+      "Time_Start": 440.14000000000004,
+      "Time_End": 441.14000000000004,
+      "Text": " That's a round trip."
+    },
+    {
+      "Time_Start": 441.14000000000004,
+      "Time_End": 445.5,
+      "Text": " I talk to the database, database comes back and says, okay, two and three."
+    },
+    {
+      "Time_Start": 445.5,
+      "Time_End": 450.46000000000004,
+      "Text": " So I take that back to the database, okay, expand two and three, tell me what's next."
+    },
+    {
+      "Time_Start": 450.46000000000004,
+      "Time_End": 454.82,
+      "Text": " Database comes back, four and five, okay, well, I'm not done yet, I haven't exhausted"
+    },
+    {
+      "Time_Start": 454.82,
+      "Time_End": 458.42,
+      "Text": " this little graph, nice, succinct, small graph."
+    },
+    {
+      "Time_Start": 458.42,
+      "Time_End": 462.74,
+      "Text": " So we go back to the database for a third round trip, third suck at the salve, I get"
+    },
+    {
+      "Time_Start": 462.74,
+      "Time_End": 464.18,
+      "Text": " number six back."
+    },
+    {
+      "Time_Start": 464.18,
+      "Time_End": 467.42,
+      "Text": " So three round trips, what does that mean?"
+    },
+    {
+      "Time_Start": 467.42,
+      "Time_End": 468.54,
+      "Text": " And why is that important?"
+    },
+    {
+      "Time_Start": 468.54,
+      "Time_End": 469.54,
+      "Text": " Round trips are evil."
+    },
+    {
+      "Time_Start": 469.54,
+      "Time_End": 473.1,
+      "Text": " Repeat after me, round trips are evil."
+    },
+    {
+      "Time_Start": 473.1,
+      "Time_End": 474.1,
+      "Text": " Why are they evil?"
+    },
+    {
+      "Time_Start": 474.1,
+      "Time_End": 479.14,
+      "Text": " Well, let's talk about, I started off with the stack of latencies in your computer and"
+    },
+    {
+      "Time_Start": 479.14,
+      "Time_End": 480.86,
+      "Text": " the network."
+    },
+    {
+      "Time_Start": 480.86,
+      "Time_End": 483.86,
+      "Text": " Random access time for memory, nanoseconds."
+    },
+    {
+      "Time_Start": 483.90000000000003,
+      "Time_End": 487.1,
+      "Text": " It's faster than you can blink, faster than you can think, doesn't matter."
+    },
+    {
+      "Time_Start": 487.1,
+      "Time_End": 488.1,
+      "Text": " What about SSDs?"
+    },
+    {
+      "Time_Start": 488.1,
+      "Time_End": 493.14,
+      "Text": " Well, modern SSDs are pretty quick, they're about a tenth of a millisecond, it's nice,"
+    },
+    {
+      "Time_Start": 493.14,
+      "Time_End": 494.14,
+      "Text": " it's real nice."
+    },
+    {
+      "Time_Start": 494.14,
+      "Time_End": 496.34000000000003,
+      "Text": " What about a modern good network?"
+    },
+    {
+      "Time_Start": 496.34000000000003,
+      "Time_End": 502.78000000000003,
+      "Text": " Half a millisecond, maybe a fifth of a millisecond if you're really spending money."
+    },
+    {
+      "Time_Start": 502.78000000000003,
+      "Time_End": 509.06,
+      "Text": " Average networks, the stuff that you pay, you know, mid-tier dollar for on AWS, five"
+    },
+    {
+      "Time_Start": 509.06,
+      "Time_End": 510.74,
+      "Text": " to one milliseconds."
+    },
+    {
+      "Time_Start": 510.74,
+      "Time_End": 511.74,
+      "Text": " So what's this mean?"
+    },
+    {
+      "Time_Start": 511.82,
+      "Time_End": 515.26,
+      "Text": " Well, if we're doing naive traversal, if I keep having to talk back to the database,"
+    },
+    {
+      "Time_Start": 515.26,
+      "Time_End": 519.1,
+      "Text": " I'm eating this whole stack, every query."
+    },
+    {
+      "Time_Start": 519.1,
+      "Time_End": 520.1,
+      "Text": " This is bad."
+    },
+    {
+      "Time_Start": 520.1,
+      "Time_End": 522.58,
+      "Text": " This is bad because it multiplies."
+    },
+    {
+      "Time_Start": 522.58,
+      "Time_End": 533.62,
+      "Text": " A thousand queries at five milliseconds, that's five seconds of just waiting for your data."
+    },
+    {
+      "Time_Start": 533.62,
+      "Time_End": 536.0600000000001,
+      "Text": " Did that hurt you?"
+    },
+    {
+      "Time_Start": 536.0600000000001,
+      "Time_End": 540.46,
+      "Text": " Because it hurts me inside, the operator in me hates to wait."
+    },
+    {
+      "Time_Start": 540.46,
+      "Time_End": 545.5,
+      "Text": " So when you think about scale, it's not just enough to think about how big the graph is,"
+    },
+    {
+      "Time_Start": 545.5,
+      "Time_End": 548.96,
+      "Text": " it's also how you access that data."
+    },
+    {
+      "Time_Start": 548.96,
+      "Time_End": 552.5,
+      "Text": " So let's talk about graph databases."
+    },
+    {
+      "Time_Start": 552.5,
+      "Time_End": 555.02,
+      "Text": " This is the crux of why we use graph databases."
+    },
+    {
+      "Time_Start": 555.02,
+      "Time_End": 559.7,
+      "Text": " If I do naive traversal and I'm doing a thousand queries, I am waiting."
+    },
+    {
+      "Time_Start": 559.7,
+      "Time_End": 560.7,
+      "Text": " That sucks."
+    },
+    {
+      "Time_Start": 560.7,
+      "Time_End": 561.7,
+      "Text": " I don't like that."
+    },
+    {
+      "Time_Start": 561.7,
+      "Time_End": 564.1,
+      "Text": " So instead, we build systems."
+    },
+    {
+      "Time_Start": 564.1,
+      "Time_End": 569.0600000000001,
+      "Text": " This is Cypher, but there are other languages out there like Gremlin, for example, that"
+    },
+    {
+      "Time_Start": 569.0600000000001,
+      "Time_End": 572.1800000000001,
+      "Text": " allow you to push that criteria down to the database."
+    },
+    {
+      "Time_Start": 572.1800000000001,
+      "Time_End": 577.4200000000001,
+      "Text": " If you were a DBA in a past life, or if you are a DBA now, I'm sorry, but you'll be very"
+    },
+    {
+      "Time_Start": 577.4200000000001,
+      "Time_End": 579.74,
+      "Text": " familiar with this concept, right?"
+    },
+    {
+      "Time_Start": 579.74,
+      "Time_End": 583.5000000000001,
+      "Text": " The fewer queries you have to write, the more that you can make the database operate on"
+    },
+    {
+      "Time_Start": 583.5000000000001,
+      "Time_End": 588.62,
+      "Text": " the data because it's closer to it, talking about latency, the better."
+    },
+    {
+      "Time_Start": 588.62,
+      "Time_End": 591.0200000000001,
+      "Text": " So do we need graph databases?"
+    },
+    {
+      "Time_Start": 591.0200000000001,
+      "Time_End": 597.46,
+      "Text": " Yeah, they're kind of a necessary evil because the alternative is waiting even longer."
+    },
+    {
+      "Time_Start": 597.46,
+      "Time_End": 599.1800000000001,
+      "Text": " So why am I going over all of this?"
+    },
+    {
+      "Time_Start": 599.1800000000001,
+      "Time_End": 605.3000000000001,
+      "Text": " My goal here is to give you not just an understanding of scale, of how big these things can get,"
+    },
+    {
+      "Time_Start": 605.3000000000001,
+      "Time_End": 610.22,
+      "Text": " but also some of the solutions that we have available as engineers to tackle these problems."
+    },
+    {
+      "Time_Start": 610.22,
+      "Time_End": 611.7800000000001,
+      "Text": " One of them is using a good graph database."
+    },
+    {
+      "Time_Start": 611.7800000000001,
+      "Time_End": 615.94,
+      "Text": " Hope you picked the right one."
+    },
+    {
+      "Time_Start": 615.94,
+      "Time_End": 619.82,
+      "Text": " So all of this kind of comes back to our problems."
+    },
+    {
+      "Time_Start": 619.82,
+      "Time_End": 621.22,
+      "Text": " We've laid the stage."
+    },
+    {
+      "Time_Start": 621.22,
+      "Time_End": 623.3000000000001,
+      "Text": " We know why graphs get big."
+    },
+    {
+      "Time_Start": 623.3000000000001,
+      "Time_End": 625.08,
+      "Text": " We know how they get big."
+    },
+    {
+      "Time_Start": 625.08,
+      "Time_End": 628.84,
+      "Text": " We know the weight, the gravity of it."
+    },
+    {
+      "Time_Start": 628.84,
+      "Time_End": 629.84,
+      "Text": " Where does this become a problem?"
+    },
+    {
+      "Time_Start": 629.84,
+      "Time_End": 633.48,
+      "Text": " If we've got a graph database, and I'm not incurring round trips, what else could trip"
+    },
+    {
+      "Time_Start": 633.48,
+      "Time_End": 634.48,
+      "Text": " me up?"
+    },
+    {
+      "Time_Start": 634.48,
+      "Time_End": 638.12,
+      "Text": " Well, interconnectivity results in what they call subgraphs."
+    },
+    {
+      "Time_Start": 638.12,
+      "Time_End": 641.64,
+      "Text": " It's a whole bunch of mathematical terminology in the graph landscape."
+    },
+    {
+      "Time_Start": 641.64,
+      "Time_End": 642.64,
+      "Text": " I don't get it."
+    },
+    {
+      "Time_Start": 642.64,
+      "Time_End": 643.64,
+      "Text": " I'm an engineer."
+    },
+    {
+      "Time_Start": 643.64,
+      "Time_End": 644.76,
+      "Text": " I don't do math."
+    },
+    {
+      "Time_Start": 644.76,
+      "Time_End": 646.5200000000001,
+      "Text": " But I do know what a subgraph is."
+    },
+    {
+      "Time_Start": 646.5200000000001,
+      "Time_End": 651.72,
+      "Text": " And when you think about interconnectivity in a graph, you'll have little neighborhoods,"
+    },
+    {
+      "Time_Start": 651.72,
+      "Time_End": 655.36,
+      "Text": " little portions of the graph that are highly interconnected."
+    },
+    {
+      "Time_Start": 655.36,
+      "Time_End": 659.72,
+      "Text": " In Active Directory, one of those highly interconnected nodes is domain users."
+    },
+    {
+      "Time_Start": 659.72,
+      "Time_End": 664.4,
+      "Text": " By the definition of the name of the node, domain users contains all of the users."
+    },
+    {
+      "Time_Start": 664.4,
+      "Time_End": 669.36,
+      "Text": " And if we want to graph that reality, if there are 350,000 users in that domain, then that"
+    },
+    {
+      "Time_Start": 669.36,
+      "Time_End": 677.72,
+      "Text": " one group in my graph now has 350,000 edges just to represent the reality that all those"
+    },
+    {
+      "Time_Start": 677.72,
+      "Time_End": 679.5600000000001,
+      "Text": " users are part of that group."
+    },
+    {
+      "Time_Start": 680.48,
+      "Time_End": 685.9200000000001,
+      "Text": " When we talk about scale, when we talk about traversing the data set, these are what we"
+    },
+    {
+      "Time_Start": 685.9200000000001,
+      "Time_End": 688.2800000000001,
+      "Text": " call landmines."
+    },
+    {
+      "Time_Start": 688.2800000000001,
+      "Time_End": 692.0000000000001,
+      "Text": " These are parts of the database that are highly interconnected."
+    },
+    {
+      "Time_Start": 692.0000000000001,
+      "Time_End": 698.84,
+      "Text": " So if you write a naive query, and you end up expanding that 10 times, I hate waiting."
+    },
+    {
+      "Time_Start": 698.84,
+      "Time_End": 702.2800000000001,
+      "Text": " That's going to be a lesson in waiting, and I would hate that."
+    },
+    {
+      "Time_Start": 702.2800000000001,
+      "Time_End": 706.6,
+      "Text": " Other examples of this, things to kind of get you thinking about it."
+    },
+    {
+      "Time_Start": 706.6,
+      "Time_End": 708.1200000000001,
+      "Text": " What about bastion hosts, right?"
+    },
+    {
+      "Time_Start": 708.16,
+      "Time_End": 710.28,
+      "Text": " RDP bastion hosts are very common, right?"
+    },
+    {
+      "Time_Start": 710.28,
+      "Time_End": 715.2,
+      "Text": " They represent a convergence of flow in your domain."
+    },
+    {
+      "Time_Start": 715.2,
+      "Time_End": 717.48,
+      "Text": " When you see convergence and expansion, what is that?"
+    },
+    {
+      "Time_Start": 717.48,
+      "Time_End": 719.32,
+      "Text": " It's a choke point."
+    },
+    {
+      "Time_Start": 719.32,
+      "Time_End": 720.32,
+      "Text": " It's interconnectivity."
+    },
+    {
+      "Time_Start": 720.32,
+      "Time_End": 727.96,
+      "Text": " Interconnectivity results in another landmine, just like expanding domain users."
+    },
+    {
+      "Time_Start": 727.96,
+      "Time_End": 730.64,
+      "Text": " GPO enforcement's another great one."
+    },
+    {
+      "Time_Start": 730.64,
+      "Time_End": 735.84,
+      "Text": " So one of the problems that we run into pretty frequently when we deal with large-scale domains,"
+    },
+    {
+      "Time_Start": 735.84,
+      "Time_End": 739.6800000000001,
+      "Text": " it's not just the scale of the data, it's not just the scale of the interconnectivity,"
+    },
+    {
+      "Time_Start": 739.6800000000001,
+      "Time_End": 749.08,
+      "Text": " it's also the nuance of extracting interesting insights out of the graph and doing that performantly."
+    },
+    {
+      "Time_Start": 749.08,
+      "Time_End": 752.36,
+      "Text": " At the very bottom here, any other expansion landmine is just waiting for you."
+    },
+    {
+      "Time_Start": 752.36,
+      "Time_End": 757.0400000000001,
+      "Text": " You'll find them, and when you do, your machine crashes because you run out of memory."
+    },
+    {
+      "Time_Start": 757.0400000000001,
+      "Time_End": 759.2,
+      "Text": " Sad times."
+    },
+    {
+      "Time_Start": 759.2,
+      "Time_End": 763.6800000000001,
+      "Text": " So here's a nice common example of what I call the revisiting problem."
+    },
+    {
+      "Time_Start": 763.6800000000001,
+      "Time_End": 764.6800000000001,
+      "Text": " Here's a graph."
+    },
+    {
+      "Time_Start": 765.6400000000001,
+      "Time_End": 770.5200000000001,
+      "Text": " Hope it's pretty legible, but imagine we have some really boneheaded..."
+    },
+    {
+      "Time_Start": 770.5200000000001,
+      "Time_End": 774.2,
+      "Text": " Imagine if I were to design an Active Directory domain, because I am not an Active Directory"
+    },
+    {
+      "Time_Start": 774.2,
+      "Time_End": 775.2,
+      "Text": " admin."
+    },
+    {
+      "Time_Start": 775.2,
+      "Time_End": 777.08,
+      "Text": " I don't even use Windows."
+    },
+    {
+      "Time_Start": 777.08,
+      "Time_End": 780.8800000000001,
+      "Text": " So let's say I design this domain, and I've got this setup here."
+    },
+    {
+      "Time_Start": 780.8800000000001,
+      "Time_End": 782.72,
+      "Text": " So who can control the PCI database?"
+    },
+    {
+      "Time_Start": 782.72,
+      "Time_End": 784.72,
+      "Text": " Well, let's take a look."
+    },
+    {
+      "Time_Start": 784.72,
+      "Time_End": 787.6800000000001,
+      "Text": " Domain users has generic all on it."
+    },
+    {
+      "Time_Start": 787.6800000000001,
+      "Time_End": 790.24,
+      "Text": " Oh, there's that landmine right there."
+    },
+    {
+      "Time_Start": 790.24,
+      "Time_End": 793.7600000000001,
+      "Text": " So that automatically expands all of the users in the domain."
+    },
+    {
+      "Time_Start": 793.8,
+      "Time_End": 796.8,
+      "Text": " Gross."
+    },
+    {
+      "Time_Start": 796.8,
+      "Time_End": 798.8,
+      "Text": " What about who can control the domain?"
+    },
+    {
+      "Time_Start": 798.8,
+      "Time_End": 804.04,
+      "Text": " Well, somebody asked me to fix a permissions problem, and I panicked because it was Friday."
+    },
+    {
+      "Time_Start": 804.04,
+      "Time_End": 806.8,
+      "Text": " It was 4.30 in the afternoon."
+    },
+    {
+      "Time_Start": 806.8,
+      "Time_End": 808.2,
+      "Text": " I just wanted to go home."
+    },
+    {
+      "Time_Start": 808.2,
+      "Time_End": 809.4399999999999,
+      "Text": " So you know what I did?"
+    },
+    {
+      "Time_Start": 809.4399999999999,
+      "Time_End": 813.16,
+      "Text": " I made domain users a member of domain admins."
+    },
+    {
+      "Time_Start": 813.16,
+      "Time_End": 815.16,
+      "Text": " This has never happened before."
+    },
+    {
+      "Time_Start": 815.16,
+      "Time_End": 816.16,
+      "Text": " Never."
+    },
+    {
+      "Time_Start": 816.16,
+      "Time_End": 817.92,
+      "Text": " We've never seen this in a live environment."
+    },
+    {
+      "Time_Start": 817.92,
+      "Time_End": 821.6,
+      "Text": " Wink, wink, ow."
+    },
+    {
+      "Time_Start": 821.6,
+      "Time_End": 824.84,
+      "Text": " So in this particular case, what can control the domain?"
+    },
+    {
+      "Time_Start": 824.84,
+      "Time_End": 826.2,
+      "Text": " Ah, well, here we go."
+    },
+    {
+      "Time_Start": 826.2,
+      "Time_End": 828.24,
+      "Text": " There's that expansion problem again."
+    },
+    {
+      "Time_Start": 828.24,
+      "Time_End": 829.96,
+      "Text": " So why am I showing you these two graphs?"
+    },
+    {
+      "Time_Start": 829.96,
+      "Time_End": 830.96,
+      "Text": " Why this?"
+    },
+    {
+      "Time_Start": 830.96,
+      "Time_End": 836.84,
+      "Text": " Well, the common point I'm trying to point out is right here."
+    },
+    {
+      "Time_Start": 836.84,
+      "Time_End": 837.84,
+      "Text": " Domain users."
+    },
+    {
+      "Time_Start": 837.84,
+      "Time_End": 841.12,
+      "Text": " Domain users is a revisiting problem."
+    },
+    {
+      "Time_Start": 841.12,
+      "Time_End": 845.64,
+      "Text": " Node revisiting, because of that expansion, it becomes a complexity issue that we have"
+    },
+    {
+      "Time_Start": 845.64,
+      "Time_End": 848.0,
+      "Text": " to grapple with every day."
+    },
+    {
+      "Time_Start": 848.0,
+      "Time_End": 852.48,
+      "Text": " Self-traversals in this example had to expand the same group."
+    },
+    {
+      "Time_Start": 852.48,
+      "Time_End": 858.04,
+      "Text": " So if I ran those queries back-to-back, I'd expand that group twice."
+    },
+    {
+      "Time_Start": 858.04,
+      "Time_End": 859.04,
+      "Text": " Hmm."
+    },
+    {
+      "Time_Start": 859.04,
+      "Time_End": 861.64,
+      "Text": " Let's think about that for a second."
+    },
+    {
+      "Time_Start": 861.64,
+      "Time_End": 867.04,
+      "Text": " So in a domain that has 350,000 users, it can become a huge bottleneck."
+    },
+    {
+      "Time_Start": 867.04,
+      "Time_End": 868.04,
+      "Text": " 350,000 users."
+    },
+    {
+      "Time_Start": 868.04,
+      "Time_End": 876.44,
+      "Text": " We just talked about the cost of that scale, 350,000 int64s."
+    },
+    {
+      "Time_Start": 876.44,
+      "Time_End": 879.2,
+      "Text": " That's not insignificant amount of data."
+    },
+    {
+      "Time_Start": 879.2,
+      "Time_End": 881.2,
+      "Text": " So we're making the database sweat."
+    },
+    {
+      "Time_Start": 881.2,
+      "Time_End": 886.72,
+      "Text": " And then if it takes one second, let's be naive here and say one second to expand domain"
+    },
+    {
+      "Time_Start": 886.72,
+      "Time_End": 887.72,
+      "Text": " users."
+    },
+    {
+      "Time_Start": 887.72,
+      "Time_End": 891.1600000000001,
+      "Text": " And I have 60 assets that I want to look at attack paths for."
+    },
+    {
+      "Time_Start": 891.1600000000001,
+      "Time_End": 897.0400000000001,
+      "Text": " And each of those 60 assets, you guessed it, touches domain users."
+    },
+    {
+      "Time_Start": 897.0400000000001,
+      "Time_End": 901.12,
+      "Text": " That's one whole minute of waiting for all those queries to finish in serial."
+    },
+    {
+      "Time_Start": 901.12,
+      "Time_End": 905.44,
+      "Text": " And you might be thinking in the back of your head, well, what about parallelism, John?"
+    },
+    {
+      "Time_Start": 905.44,
+      "Time_End": 907.5200000000001,
+      "Text": " We talked about size and scale."
+    },
+    {
+      "Time_Start": 907.5200000000001,
+      "Time_End": 912.6800000000001,
+      "Text": " When you look at the size of the data, that data's got to live somewhere."
+    },
+    {
+      "Time_Start": 912.6800000000001,
+      "Time_End": 918.6,
+      "Text": " And if it lives in memory and you query all 60 of those in parallel, you kill the machine."
+    },
+    {
+      "Time_Start": 918.6,
+      "Time_End": 921.36,
+      "Text": " Bad time."
+    },
+    {
+      "Time_Start": 921.36,
+      "Time_End": 925.5600000000001,
+      "Text": " Another thing to think about when you think about the expansion of complexity, node revisiting"
+    },
+    {
+      "Time_Start": 925.5600000000001,
+      "Time_End": 928.2800000000001,
+      "Text": " is also a cardinality problem."
+    },
+    {
+      "Time_Start": 928.2800000000001,
+      "Time_End": 929.6800000000001,
+      "Text": " Sorry for throwing a big mathematical term."
+    },
+    {
+      "Time_Start": 929.6800000000001,
+      "Time_End": 933.7600000000001,
+      "Text": " I didn't know what cardinality really was until about 12 months ago."
+    },
+    {
+      "Time_Start": 933.76,
+      "Time_End": 937.68,
+      "Text": " But cardinality is the number of elements in a set or other grouping as a property of"
+    },
+    {
+      "Time_Start": 937.68,
+      "Time_End": 938.68,
+      "Text": " that grouping."
+    },
+    {
+      "Time_Start": 938.68,
+      "Time_End": 939.68,
+      "Text": " Oh, God, what does that mean?"
+    },
+    {
+      "Time_Start": 939.68,
+      "Time_End": 944.68,
+      "Text": " Well, let's say you have these four numbers, 1, 1, 2, and 3."
+    },
+    {
+      "Time_Start": 944.68,
+      "Time_End": 947.08,
+      "Text": " How many unique numbers are in that set?"
+    },
+    {
+      "Time_Start": 947.08,
+      "Time_End": 950.04,
+      "Text": " There are three unique numbers, 1, 2, and 3."
+    },
+    {
+      "Time_Start": 950.04,
+      "Time_End": 952.16,
+      "Text": " But John, one was in that set twice."
+    },
+    {
+      "Time_Start": 952.16,
+      "Time_End": 953.16,
+      "Text": " Don't care."
+    },
+    {
+      "Time_Start": 953.16,
+      "Time_End": 954.16,
+      "Text": " I want to know what's unique."
+    },
+    {
+      "Time_Start": 954.16,
+      "Time_End": 957.52,
+      "Text": " I want to know the cardinality of that data set."
+    },
+    {
+      "Time_Start": 957.52,
+      "Time_End": 961.8,
+      "Text": " And that cardinality is three because there are three unique numbers in that group of"
+    },
+    {
+      "Time_Start": 961.8,
+      "Time_End": 963.08,
+      "Text": " four."
+    },
+    {
+      "Time_Start": 963.08,
+      "Time_End": 964.88,
+      "Text": " Keep that in mind."
+    },
+    {
+      "Time_Start": 964.88,
+      "Time_End": 971.4000000000001,
+      "Text": " In the traversal example, when we ask what asset can control another, it results in querying"
+    },
+    {
+      "Time_Start": 971.4000000000001,
+      "Time_End": 976.44,
+      "Text": " the graph for cardinality of nodes that have inbound paths to the assets being queried."
+    },
+    {
+      "Time_Start": 976.44,
+      "Time_End": 984.1600000000001,
+      "Text": " If I go back one more time, the inbound assets to PCIL-1, domain users, all domain users."
+    },
+    {
+      "Time_Start": 984.1600000000001,
+      "Time_End": 991.24,
+      "Text": " Inbound assets to the test domain, the domain object itself, admins, domain users."
+    },
+    {
+      "Time_Start": 991.24,
+      "Time_End": 996.32,
+      "Text": " We're looking at the cardinality of what can control the asset."
+    },
+    {
+      "Time_Start": 996.32,
+      "Time_End": 1004.28,
+      "Text": " I am collapsing the reality here to get a view of how many unique assets in this graph"
+    },
+    {
+      "Time_Start": 1004.28,
+      "Time_End": 1006.4,
+      "Text": " can control the asset I care about."
+    },
+    {
+      "Time_Start": 1006.4,
+      "Time_End": 1010.92,
+      "Text": " In this case, domain happens to be tier 0, which is why it's interesting to us."
+    },
+    {
+      "Time_Start": 1010.92,
+      "Time_End": 1015.0,
+      "Text": " Control the domain, control reality."
+    },
+    {
+      "Time_Start": 1015.52,
+      "Time_End": 1023.96,
+      "Text": " I come back to the size equation, storing 350,000 users in 64-bit integers is 2.67 megabytes."
+    },
+    {
+      "Time_Start": 1023.96,
+      "Time_End": 1026.0,
+      "Text": " It's not that scary."
+    },
+    {
+      "Time_Start": 1026.0,
+      "Time_End": 1037.08,
+      "Text": " But if you store it 60 times, that's 160.21, just for mathematical rounding sake, 160 megabytes."
+    },
+    {
+      "Time_Start": 1037.08,
+      "Time_End": 1038.92,
+      "Text": " Let's store that in memory."
+    },
+    {
+      "Time_Start": 1038.92,
+      "Time_End": 1045.1200000000001,
+      "Text": " This is a problem, because if your domain ends up with, let's say you want to analyze"
+    },
+    {
+      "Time_Start": 1045.1200000000001,
+      "Time_End": 1049.76,
+      "Text": " 1,000 assets, numbers add up quickly."
+    },
+    {
+      "Time_Start": 1049.76,
+      "Time_End": 1056.0800000000002,
+      "Text": " So tracking inbound impact for common nodes, we took a couple of stabs at this."
+    },
+    {
+      "Time_Start": 1056.0800000000002,
+      "Time_End": 1057.6000000000001,
+      "Text": " We failed a few times."
+    },
+    {
+      "Time_Start": 1057.6000000000001,
+      "Time_End": 1058.6000000000001,
+      "Text": " We first started with bitmaps."
+    },
+    {
+      "Time_Start": 1058.6000000000001,
+      "Time_End": 1062.88,
+      "Text": " If you don't know what a bitmap is, it's a really fancy way of storing cardinality."
+    },
+    {
+      "Time_Start": 1062.88,
+      "Time_End": 1067.76,
+      "Text": " It's all numbers and binary, it goes in memory, it's great."
+    },
+    {
+      "Time_Start": 1067.76,
+      "Time_End": 1069.8799999999999,
+      "Text": " I also recommend looking up the data structures."
+    },
+    {
+      "Time_Start": 1069.8799999999999,
+      "Time_End": 1074.8,
+      "Text": " If you have an old, dusty computer science book that you relegated to your monitor stand,"
+    },
+    {
+      "Time_Start": 1074.8,
+      "Time_End": 1079.44,
+      "Text": " which I have, this is one of the few circumstances where I've had to dust that thing off and"
+    },
+    {
+      "Time_Start": 1079.44,
+      "Time_End": 1081.2,
+      "Text": " actually read it again."
+    },
+    {
+      "Time_Start": 1081.2,
+      "Time_End": 1085.4,
+      "Text": " For small domains, bitmaps resulted in expedient tracking of unique nodes that could control"
+    },
+    {
+      "Time_Start": 1085.4,
+      "Time_End": 1087.12,
+      "Text": " assets."
+    },
+    {
+      "Time_Start": 1087.12,
+      "Time_End": 1091.32,
+      "Text": " One of the nifty things about bitmaps is that you can compress them for minimal CPU costs."
+    },
+    {
+      "Time_Start": 1091.32,
+      "Time_End": 1093.92,
+      "Text": " So we compressed them, and this worked great."
+    },
+    {
+      "Time_Start": 1093.92,
+      "Time_End": 1097.92,
+      "Text": " It worked great for hundreds of thousands of users, but did compressed bitmaps work"
+    },
+    {
+      "Time_Start": 1097.92,
+      "Time_End": 1103.68,
+      "Text": " for tracking inbound cardinality for domains with millions of users?"
+    },
+    {
+      "Time_Start": 1103.68,
+      "Time_End": 1107.0,
+      "Text": " Law of questions being asked, no."
+    },
+    {
+      "Time_Start": 1107.0,
+      "Time_End": 1108.0,
+      "Text": " We ran out of memory."
+    },
+    {
+      "Time_Start": 1108.0,
+      "Time_End": 1109.16,
+      "Text": " We killed the box."
+    },
+    {
+      "Time_Start": 1109.16,
+      "Time_End": 1110.72,
+      "Text": " I can't tell you how many times."
+    },
+    {
+      "Time_Start": 1110.72,
+      "Time_End": 1114.64,
+      "Text": " We have alert managers set up to track oomkill events in our fleet."
+    },
+    {
+      "Time_Start": 1114.64,
+      "Time_End": 1117.3200000000002,
+      "Text": " I can't tell you how many times that trigger has gone off."
+    },
+    {
+      "Time_Start": 1117.3200000000002,
+      "Time_End": 1121.3200000000002,
+      "Text": " It has become the bane of my existence in many ways."
+    },
+    {
+      "Time_Start": 1121.3200000000002,
+      "Time_End": 1123.72,
+      "Text": " So we took another stab at it."
+    },
+    {
+      "Time_Start": 1123.72,
+      "Time_End": 1131.68,
+      "Text": " This time, we decided, OK, well, if we want to know relative risk, how exposed an asset"
+    },
+    {
+      "Time_Start": 1131.68,
+      "Time_End": 1137.2,
+      "Text": " is to the rest of the domain, do I need to know the exact number?"
+    },
+    {
+      "Time_Start": 1137.2,
+      "Time_End": 1140.68,
+      "Text": " Does it matter if my number is off by two?"
+    },
+    {
+      "Time_Start": 1140.68,
+      "Time_End": 1149.84,
+      "Text": " Well, if there's a million users in that number, and I'm off by two, and it's 999,998, is that"
+    },
+    {
+      "Time_Start": 1149.84,
+      "Time_End": 1153.8,
+      "Text": " loss of precision really that important?"
+    },
+    {
+      "Time_Start": 1153.8,
+      "Time_End": 1158.28,
+      "Text": " We decided, OK, well, the alternative is killing the database, so let's use a different data"
+    },
+    {
+      "Time_Start": 1158.28,
+      "Time_End": 1159.28,
+      "Text": " structure."
+    },
+    {
+      "Time_Start": 1159.28,
+      "Time_End": 1163.6,
+      "Text": " So we used something called HyperLogLog to actually store the cardinality this time."
+    },
+    {
+      "Time_Start": 1163.6,
+      "Time_End": 1167.56,
+      "Text": " For those of you unfamiliar with HyperLogLog, I don't really understand it that well."
+    },
+    {
+      "Time_Start": 1167.56,
+      "Time_End": 1170.0,
+      "Text": " I highly recommend reading up on it."
+    },
+    {
+      "Time_Start": 1170.0,
+      "Time_End": 1171.0,
+      "Text": " I'm an engineer."
+    },
+    {
+      "Time_Start": 1171.0,
+      "Time_End": 1173.04,
+      "Text": " I just use tools."
+    },
+    {
+      "Time_Start": 1173.04,
+      "Time_End": 1177.12,
+      "Text": " But what I can tell you is that it's a type of data structure called a probabilistic data"
+    },
+    {
+      "Time_Start": 1177.12,
+      "Time_End": 1178.12,
+      "Text": " structure."
+    },
+    {
+      "Time_Start": 1178.12,
+      "Time_End": 1179.12,
+      "Text": " It is inexact."
+    },
+    {
+      "Time_Start": 1179.4,
+      "Time_End": 1180.88,
+      "Text": " It gives you estimates."
+    },
+    {
+      "Time_Start": 1180.88,
+      "Time_End": 1184.3600000000001,
+      "Text": " But we just said, hey, the alternative is killing the database."
+    },
+    {
+      "Time_Start": 1184.3600000000001,
+      "Time_End": 1189.0000000000002,
+      "Text": " So I'd rather have an answer that's actionable than no answer at all."
+    },
+    {
+      "Time_Start": 1189.0000000000002,
+      "Time_End": 1190.0000000000002,
+      "Text": " We did some research."
+    },
+    {
+      "Time_Start": 1190.0000000000002,
+      "Time_End": 1194.44,
+      "Text": " We did a little bit of analysis, and we found out that the way we're using HyperLogLog gives"
+    },
+    {
+      "Time_Start": 1194.44,
+      "Time_End": 1197.22,
+      "Text": " us an answer to within half a percent."
+    },
+    {
+      "Time_Start": 1197.22,
+      "Time_End": 1200.0800000000002,
+      "Text": " That is our maximum acceptable deviation."
+    },
+    {
+      "Time_Start": 1200.0800000000002,
+      "Time_End": 1204.5200000000002,
+      "Text": " So within half a percent of the true cardinality for three million users in a highly interconnected"
+    },
+    {
+      "Time_Start": 1204.5200000000002,
+      "Time_End": 1205.5200000000002,
+      "Text": " domain."
+    },
+    {
+      "Time_Start": 1205.84,
+      "Time_End": 1209.84,
+      "Text": " Did HyperLogLog work for tracking inbound control cardinality for domains with tens"
+    },
+    {
+      "Time_Start": 1209.84,
+      "Time_End": 1211.84,
+      "Text": " of millions of users?"
+    },
+    {
+      "Time_Start": 1211.84,
+      "Time_End": 1212.84,
+      "Text": " Yes!"
+    },
+    {
+      "Time_Start": 1212.84,
+      "Time_End": 1218.32,
+      "Text": " But it still eats up about 62 gigs of working memory at its peak."
+    },
+    {
+      "Time_Start": 1218.32,
+      "Time_End": 1221.4,
+      "Text": " So that's expensive, but it does work."
+    },
+    {
+      "Time_Start": 1221.4,
+      "Time_End": 1224.56,
+      "Text": " Remember, answer is better than no answer."
+    },
+    {
+      "Time_Start": 1224.56,
+      "Time_End": 1229.96,
+      "Text": " So when you think about scale, I hope that this gives you some mental model to think"
+    },
+    {
+      "Time_Start": 1229.96,
+      "Time_End": 1230.96,
+      "Text": " about, wow."
+    },
+    {
+      "Time_Start": 1231.96,
+      "Time_End": 1235.88,
+      "Text": " Look at a domain, think about the graph for it."
+    },
+    {
+      "Time_Start": 1235.88,
+      "Time_End": 1239.32,
+      "Text": " That's complex, and that complexity has a lot of nuance."
+    },
+    {
+      "Time_Start": 1239.32,
+      "Time_End": 1244.04,
+      "Text": " Has a lot of nuance rooted in computer science, and has a lot of nuance rooted in physics"
+    },
+    {
+      "Time_Start": 1244.04,
+      "Time_End": 1245.6200000000001,
+      "Text": " of reality."
+    },
+    {
+      "Time_Start": 1245.6200000000001,
+      "Time_End": 1247.44,
+      "Text": " So dust off those computer science books."
+    },
+    {
+      "Time_Start": 1247.44,
+      "Time_End": 1250.44,
+      "Text": " It's time to get weird with data structures."
+    },
+    {
+      "Time_Start": 1250.44,
+      "Time_End": 1254.4,
+      "Text": " This is one of those few circumstances where it's necessary to really take a look at what"
+    },
+    {
+      "Time_Start": 1254.4,
+      "Time_End": 1257.56,
+      "Text": " you're asking and the answers you want."
+    },
+    {
+      "Time_Start": 1257.56,
+      "Time_End": 1261.12,
+      "Text": " Push as much criteria as you can down to the database to minimize round trips."
+    },
+    {
+      "Time_Start": 1261.12,
+      "Time_End": 1262.12,
+      "Text": " Repeat after me."
+    },
+    {
+      "Time_Start": 1262.12,
+      "Time_End": 1263.12,
+      "Text": " Round trips are evil!"
+    },
+    {
+      "Time_Start": 1263.12,
+      "Time_End": 1265.12,
+      "Text": " Round trips are evil."
+    },
+    {
+      "Time_Start": 1265.12,
+      "Time_End": 1266.12,
+      "Text": " Yes!"
+    },
+    {
+      "Time_Start": 1266.12,
+      "Time_End": 1268.48,
+      "Text": " Don't store what you don't need."
+    },
+    {
+      "Time_Start": 1268.48,
+      "Time_End": 1271.6399999999999,
+      "Text": " Nodes are happy to be represented as integers, right?"
+    },
+    {
+      "Time_Start": 1271.6399999999999,
+      "Time_End": 1275.1599999999999,
+      "Text": " Very naively, we would store all of the node properties."
+    },
+    {
+      "Time_Start": 1275.1599999999999,
+      "Time_End": 1276.1599999999999,
+      "Text": " Right?"
+    },
+    {
+      "Time_Start": 1276.1599999999999,
+      "Time_End": 1279.1599999999999,
+      "Text": " Well, okay, this user has 13 properties."
+    },
+    {
+      "Time_Start": 1279.1599999999999,
+      "Time_End": 1284.76,
+      "Text": " Oh, there's a certificate, because I've got PKI, and that certificate's a K worth of text"
+    },
+    {
+      "Time_Start": 1284.76,
+      "Time_End": 1285.76,
+      "Text": " data."
+    },
+    {
+      "Time_Start": 1285.96,
+      "Time_End": 1289.2,
+      "Text": " Oh, wow, the traversal blew up memory again."
+    },
+    {
+      "Time_Start": 1289.2,
+      "Time_End": 1291.0,
+      "Text": " Don't store it!"
+    },
+    {
+      "Time_Start": 1291.0,
+      "Time_End": 1292.64,
+      "Text": " The database is there for a reason."
+    },
+    {
+      "Time_Start": 1292.64,
+      "Time_End": 1294.8799999999999,
+      "Text": " Talk to the database when you need that actual data."
+    },
+    {
+      "Time_Start": 1294.8799999999999,
+      "Time_End": 1300.36,
+      "Text": " But if you're going to be doing large scale traversals, store only what you need."
+    },
+    {
+      "Time_Start": 1300.36,
+      "Time_End": 1305.8,
+      "Text": " And we just talked about all you need to represent a graph are integers, numbers."
+    },
+    {
+      "Time_Start": 1305.8,
+      "Time_End": 1307.72,
+      "Text": " So only store numbers."
+    },
+    {
+      "Time_Start": 1307.72,
+      "Time_End": 1310.0,
+      "Text": " They fit in bit sets really well."
+    },
+    {
+      "Time_Start": 1310.0,
+      "Time_End": 1311.04,
+      "Text": " Don't be afraid to eat memory."
+    },
+    {
+      "Time_Start": 1311.04,
+      "Time_End": 1312.46,
+      "Text": " It's delicious."
+    },
+    {
+      "Time_Start": 1312.46,
+      "Time_End": 1314.24,
+      "Text": " Don't be afraid to consume memory."
+    },
+    {
+      "Time_Start": 1314.24,
+      "Time_End": 1315.24,
+      "Text": " It's there for a reason."
+    },
+    {
+      "Time_Start": 1315.72,
+      "Time_End": 1317.64,
+      "Text": " We don't have to be hyper-efficient all the time."
+    },
+    {
+      "Time_Start": 1317.64,
+      "Time_End": 1322.36,
+      "Text": " Like I said, our current solution for the largest domains, 62 gigs of RAM."
+    },
+    {
+      "Time_Start": 1322.36,
+      "Time_End": 1324.36,
+      "Text": " But that's okay."
+    },
+    {
+      "Time_Start": 1324.36,
+      "Time_End": 1326.52,
+      "Text": " The alternative is no answer."
+    },
+    {
+      "Time_Start": 1326.52,
+      "Time_End": 1328.08,
+      "Text": " So don't be afraid to use memory."
+    },
+    {
+      "Time_Start": 1328.08,
+      "Time_End": 1333.84,
+      "Text": " Just know what you're doing, and make sure you provision your pods really, really well."
+    },
+    {
+      "Time_Start": 1333.84,
+      "Time_End": 1335.32,
+      "Text": " Choose your database wisely."
+    },
+    {
+      "Time_Start": 1335.32,
+      "Time_End": 1343.36,
+      "Text": " One of the difficulties we're facing is that Neo4j has this certain penchant to store everything"
+    },
+    {
+      "Time_Start": 1343.3600000000001,
+      "Time_End": 1345.92,
+      "Text": " in memory when you're in a transaction."
+    },
+    {
+      "Time_Start": 1345.92,
+      "Time_End": 1348.2,
+      "Text": " We just talked about scale of graphs."
+    },
+    {
+      "Time_Start": 1348.2,
+      "Time_End": 1351.72,
+      "Text": " Memory, graphs, meh."
+    },
+    {
+      "Time_Start": 1351.72,
+      "Time_End": 1352.72,
+      "Text": " Crashes the database."
+    },
+    {
+      "Time_Start": 1352.72,
+      "Time_End": 1353.72,
+      "Text": " Bad time."
+    },
+    {
+      "Time_Start": 1353.72,
+      "Time_End": 1356.4,
+      "Text": " Choose your database wisely and know the scale you're targeting."
+    },
+    {
+      "Time_Start": 1356.4,
+      "Time_End": 1361.3600000000001,
+      "Text": " So the last point in this part of the talk, which is know your scale."
+    },
+    {
+      "Time_Start": 1361.3600000000001,
+      "Time_End": 1363.72,
+      "Text": " Understand the problem that you're trying to tackle."
+    },
+    {
+      "Time_Start": 1363.72,
+      "Time_End": 1368.16,
+      "Text": " One of the interesting things I've seen about a lot of talks regarding adding novel security"
+    },
+    {
+      "Time_Start": 1368.16,
+      "Time_End": 1373.3200000000002,
+      "Text": " domains to graphs, it all starts with understanding the architecture that you're"
+    },
+    {
+      "Time_Start": 1373.32,
+      "Time_End": 1374.32,
+      "Text": " trying to model."
+    },
+    {
+      "Time_Start": 1374.32,
+      "Time_End": 1376.32,
+      "Text": " You don't need to model it."
+    },
+    {
+      "Time_Start": 1376.32,
+      "Time_End": 1377.8799999999999,
+      "Text": " Don't model it."
+    },
+    {
+      "Time_Start": 1377.8799999999999,
+      "Time_End": 1379.8799999999999,
+      "Text": " Your scale will come out of it organically."
+    },
+    {
+      "Time_Start": 1379.8799999999999,
+      "Time_End": 1385.52,
+      "Text": " I'm going to hand this off to Rohan for some real world fun scenes."
+    },
+    {
+      "Time_Start": 1385.52,
+      "Time_End": 1390.24,
+      "Text": " Now that John's kind of melted your brain with lots of numbers, I'm going to show you"
+    },
+    {
+      "Time_Start": 1390.24,
+      "Time_End": 1395.04,
+      "Text": " some actual real world screw ups that we've done."
+    },
+    {
+      "Time_Start": 1395.04,
+      "Time_End": 1396.1599999999999,
+      "Text": " And they're pretty fun."
+    },
+    {
+      "Time_Start": 1396.1599999999999,
+      "Time_End": 1400.08,
+      "Text": " And I just want you to know, every time John talked about killing the database, there was"
+    },
+    {
+      "Time_Start": 1400.08,
+      "Time_End": 1403.0,
+      "Text": " an actual thing behind it where we killed the database."
+    },
+    {
+      "Time_Start": 1403.68,
+      "Time_End": 1405.68,
+      "Text": " So those weren't just anecdotes."
+    },
+    {
+      "Time_Start": 1405.68,
+      "Time_End": 1406.68,
+      "Text": " All right."
+    },
+    {
+      "Time_Start": 1406.68,
+      "Time_End": 1410.48,
+      "Text": " So one of the big pieces of work that we've done recently is ADCS."
+    },
+    {
+      "Time_Start": 1410.48,
+      "Time_End": 1414.44,
+      "Text": " If you're familiar with it, super, super cool."
+    },
+    {
+      "Time_Start": 1414.44,
+      "Time_End": 1419.32,
+      "Text": " Far and away the most complex thing we've ever put in the graph by an order of magnitude."
+    },
+    {
+      "Time_Start": 1419.32,
+      "Time_End": 1425.12,
+      "Text": " It required us to re-architect significant portions of our application to support both"
+    },
+    {
+      "Time_Start": 1425.12,
+      "Time_End": 1429.64,
+      "Text": " the complexity and also the scale, because we quickly found that we were blowing up the"
+    },
+    {
+      "Time_Start": 1429.64,
+      "Time_End": 1432.0,
+      "Text": " database a lot."
+    },
+    {
+      "Time_Start": 1432.0,
+      "Time_End": 1440.6,
+      "Text": " A really, really common scenario in ADCS is taking the cross product of two sets of entities."
+    },
+    {
+      "Time_Start": 1440.6,
+      "Time_End": 1444.0,
+      "Text": " Really good example in this tiny cipher, just because I wanted to show off how long some"
+    },
+    {
+      "Time_Start": 1444.0,
+      "Time_End": 1446.4,
+      "Text": " of these stupid cipher queries get."
+    },
+    {
+      "Time_Start": 1446.4,
+      "Time_End": 1450.96,
+      "Text": " We started a user, and we track out to a domain."
+    },
+    {
+      "Time_Start": 1450.96,
+      "Time_End": 1455.56,
+      "Text": " And then we take that same user, and we track out to a domain using two different sets of"
+    },
+    {
+      "Time_Start": 1455.56,
+      "Time_End": 1457.16,
+      "Text": " privileges."
+    },
+    {
+      "Time_Start": 1457.16,
+      "Time_End": 1460.4,
+      "Text": " And we have to calculate the cross of those two."
+    },
+    {
+      "Time_Start": 1460.4,
+      "Time_End": 1461.4,
+      "Text": " Who has both privileges?"
+    },
+    {
+      "Time_Start": 1461.8000000000002,
+      "Time_End": 1464.68,
+      "Text": " Because if you only have one, you don't have the permission."
+    },
+    {
+      "Time_Start": 1464.68,
+      "Time_End": 1469.44,
+      "Text": " So we need to do both at the same time."
+    },
+    {
+      "Time_Start": 1469.44,
+      "Time_End": 1470.44,
+      "Text": " So there's an easy way, right?"
+    },
+    {
+      "Time_Start": 1470.44,
+      "Time_End": 1477.3200000000002,
+      "Text": " The easy way is we get all the first degree controllers of node A and node B. We expand"
+    },
+    {
+      "Time_Start": 1477.3200000000002,
+      "Time_End": 1479.2,
+      "Text": " those out recursively."
+    },
+    {
+      "Time_Start": 1479.2,
+      "Time_End": 1483.52,
+      "Text": " So I take all the groups that have control, and I say, all right, who's a member of this"
+    },
+    {
+      "Time_Start": 1483.52,
+      "Time_End": 1487.48,
+      "Text": " no matter how many layers down we need to go."
+    },
+    {
+      "Time_Start": 1487.48,
+      "Time_End": 1489.52,
+      "Text": " And then you find all the intersections between the two."
+    },
+    {
+      "Time_Start": 1489.6399999999999,
+      "Time_End": 1493.56,
+      "Text": " And then for each principle that you find, you make an attack guy."
+    },
+    {
+      "Time_Start": 1493.56,
+      "Time_End": 1494.56,
+      "Text": " It's naive."
+    },
+    {
+      "Time_Start": 1494.56,
+      "Time_End": 1495.56,
+      "Text": " It's easy."
+    },
+    {
+      "Time_Start": 1495.56,
+      "Time_End": 1498.76,
+      "Text": " If you're paying attention to John's part of the talk, you immediately know why that's"
+    },
+    {
+      "Time_Start": 1498.76,
+      "Time_End": 1501.16,
+      "Text": " a horrible idea."
+    },
+    {
+      "Time_Start": 1501.16,
+      "Time_End": 1507.6399999999999,
+      "Text": " So the initial prototypes of ADCS post-processing were blowing out RAM and crashing our pods"
+    },
+    {
+      "Time_Start": 1507.6399999999999,
+      "Time_End": 1510.0,
+      "Text": " completely."
+    },
+    {
+      "Time_Start": 1510.0,
+      "Time_End": 1514.92,
+      "Text": " Even runs where we were successful, we blew out our post-processing time by an exponential"
+    },
+    {
+      "Time_Start": 1514.92,
+      "Time_End": 1517.4,
+      "Text": " margin."
+    },
+    {
+      "Time_Start": 1517.4,
+      "Time_End": 1525.2800000000002,
+      "Text": " It turns out that the root cause of this was group membership expansion."
+    },
+    {
+      "Time_Start": 1525.2800000000002,
+      "Time_End": 1532.48,
+      "Text": " As John illustrated, it's very easy for you to have groups that have 300, 400,000 users,"
+    },
+    {
+      "Time_Start": 1532.48,
+      "Time_End": 1534.3600000000001,
+      "Text": " the domain users group."
+    },
+    {
+      "Time_Start": 1534.3600000000001,
+      "Time_End": 1539.52,
+      "Text": " And unfortunately, more often than not, those domain users groups end up in permissions"
+    },
+    {
+      "Time_Start": 1539.52,
+      "Time_End": 1541.0,
+      "Text": " in places."
+    },
+    {
+      "Time_Start": 1541.0,
+      "Time_End": 1547.24,
+      "Text": " And when you're, for example, processing 180 CS nodes in parallel, and they all go to expand"
+    },
+    {
+      "Time_Start": 1548.08,
+      "Time_End": 1554.16,
+      "Text": " the domain user membership at the same time, you very quickly run out of memory and Neo4j"
+    },
+    {
+      "Time_Start": 1554.16,
+      "Time_End": 1558.48,
+      "Text": " cries bitter, bitter tears, and then you cry bitter, bitter tears because your database"
+    },
+    {
+      "Time_Start": 1558.48,
+      "Time_End": 1560.32,
+      "Text": " just crashed on you."
+    },
+    {
+      "Time_Start": 1560.32,
+      "Time_End": 1565.16,
+      "Text": " So we had to kind of come up with a whole different idea on how to solve this."
+    },
+    {
+      "Time_Start": 1565.16,
+      "Time_End": 1571.1200000000001,
+      "Text": " And one of the things we ended up doing is before we do any post-processing, we actually"
+    },
+    {
+      "Time_Start": 1571.1200000000001,
+      "Time_End": 1576.0,
+      "Text": " recursively expand the group membership of the entire environment all at once."
+    },
+    {
+      "Time_Start": 1576.0,
+      "Time_End": 1580.8,
+      "Text": " So we are pushing all our traversal time for group membership to the beginning of post-processing."
+    },
+    {
+      "Time_Start": 1580.8,
+      "Time_End": 1583.36,
+      "Text": " And we store all that as bitmaps."
+    },
+    {
+      "Time_Start": 1583.36,
+      "Time_End": 1587.44,
+      "Text": " We just take the IDs of every single node that is a member of a group recursively."
+    },
+    {
+      "Time_Start": 1587.44,
+      "Time_End": 1592.76,
+      "Text": " So now at any time in post-processing, I can say, give me all the IDs that are a member"
+    },
+    {
+      "Time_Start": 1592.76,
+      "Time_End": 1598.68,
+      "Text": " of this group A, and it will tell me all the IDs expanded all the way out down the graph."
+    },
+    {
+      "Time_Start": 1598.68,
+      "Time_End": 1600.0,
+      "Text": " But now this is all in memory."
+    },
+    {
+      "Time_Start": 1600.0,
+      "Time_End": 1601.72,
+      "Text": " There's no traversal time involved."
+    },
+    {
+      "Time_Start": 1601.72,
+      "Time_End": 1603.74,
+      "Text": " And memory is cheap and it's quick."
+    },
+    {
+      "Time_Start": 1603.74,
+      "Time_End": 1611.6200000000001,
+      "Text": " So putting all this in memory here saved us, I can't even quantify how much traversal time."
+    },
+    {
+      "Time_Start": 1611.6200000000001,
+      "Time_End": 1615.14,
+      "Text": " Traversals are always the most expensive part of post-processing for us."
+    },
+    {
+      "Time_Start": 1615.14,
+      "Time_End": 1617.9,
+      "Text": " So anytime we're reducing traversal, it's good."
+    },
+    {
+      "Time_Start": 1617.9,
+      "Time_End": 1624.6200000000001,
+      "Text": " And it's also a big source of memory because if you do 10 queries in parallel, Neo4j loads"
+    },
+    {
+      "Time_Start": 1624.6200000000001,
+      "Time_End": 1627.7,
+      "Text": " the result set of all those 10 queries in the memory."
+    },
+    {
+      "Time_Start": 1627.7,
+      "Time_End": 1631.18,
+      "Text": " It doesn't do any kind of like, oh, this is in this query and this query."
+    },
+    {
+      "Time_Start": 1631.18,
+      "Time_End": 1632.86,
+      "Text": " You can just store them at the same time."
+    },
+    {
+      "Time_Start": 1633.3400000000001,
+      "Time_End": 1635.66,
+      "Text": " It's like I am loading everything in both queries."
+    },
+    {
+      "Time_Start": 1637.9,
+      "Time_End": 1640.18,
+      "Text": " Then there's the second part of the equation."
+    },
+    {
+      "Time_Start": 1640.18,
+      "Time_End": 1649.14,
+      "Text": " So as I said in the easy way, take every single principle and make a path from that to the target."
+    },
+    {
+      "Time_Start": 1649.14,
+      "Time_End": 1655.8600000000001,
+      "Text": " Well, it turns out when you add 350,000 edges for a single attack and you're doing that multiple times,"
+    },
+    {
+      "Time_Start": 1655.8600000000001,
+      "Time_End": 1660.94,
+      "Text": " the number of edges you're creating in your database blows up really, really, really fast."
+    },
+    {
+      "Time_Start": 1660.98,
+      "Time_End": 1668.46,
+      "Text": " We ran into this problem with RDP post-processing where a lot of RDP groups had domain users in them"
+    },
+    {
+      "Time_Start": 1668.46,
+      "Time_End": 1674.06,
+      "Text": " because Citrix is cool and it kind of does that by default in case you didn't know."
+    },
+    {
+      "Time_Start": 1674.06,
+      "Time_End": 1678.26,
+      "Text": " It has compensatory controls, but it's easy to mess it up."
+    },
+    {
+      "Time_Start": 1678.26,
+      "Time_End": 1684.46,
+      "Text": " But imagine 100 computers in an environment with 600,000 domain users."
+    },
+    {
+      "Time_Start": 1684.46,
+      "Time_End": 1686.8600000000001,
+      "Text": " That's 6 million edges right there."
+    },
+    {
+      "Time_Start": 1686.8600000000001,
+      "Time_End": 1688.5800000000002,
+      "Text": " Sorry, not even close."
+    },
+    {
+      "Time_Start": 1688.58,
+      "Time_End": 1692.58,
+      "Text": " That's 60 million edges just in RDP."
+    },
+    {
+      "Time_Start": 1692.58,
+      "Time_End": 1695.58,
+      "Text": " So, you know, you might say, all right, it's just an edge,"
+    },
+    {
+      "Time_Start": 1695.58,
+      "Time_End": 1698.78,
+      "Text": " but if you're doing post-processing and you have to delete those edges,"
+    },
+    {
+      "Time_Start": 1698.78,
+      "Time_End": 1701.54,
+      "Text": " every single time we were doing post-processing,"
+    },
+    {
+      "Time_Start": 1701.54,
+      "Time_End": 1706.26,
+      "Text": " we were deleting 60 million CAN RDP edges and then re-adding them into the database."
+    },
+    {
+      "Time_Start": 1706.26,
+      "Time_End": 1709.3799999999999,
+      "Text": " And as John said, round trips are evil."
+    },
+    {
+      "Time_Start": 1709.3799999999999,
+      "Time_End": 1714.06,
+      "Text": " And all that time spent waiting for the database to delete all this information"
+    },
+    {
+      "Time_Start": 1714.06,
+      "Time_End": 1721.86,
+      "Text": " and then adding it in was adding like tens, maybe even an hour plus to our post-processing time."
+    },
+    {
+      "Time_Start": 1721.86,
+      "Time_End": 1724.94,
+      "Text": " And that's just not OK."
+    },
+    {
+      "Time_Start": 1724.94,
+      "Time_End": 1727.6599999999999,
+      "Text": " So what was our solution?"
+    },
+    {
+      "Time_Start": 1727.6599999999999,
+      "Time_End": 1731.06,
+      "Text": " We came up with something which we call shortcutting."
+    },
+    {
+      "Time_Start": 1731.06,
+      "Time_End": 1736.58,
+      "Text": " So basically the idea is you track up the graph to the highest level you possibly can"
+    },
+    {
+      "Time_Start": 1736.58,
+      "Time_End": 1740.58,
+      "Text": " and you make your edge from the highest level"
+    },
+    {
+      "Time_Start": 1740.58,
+      "Time_End": 1745.26,
+      "Text": " and then everything below that level, you take it out of the graph."
+    },
+    {
+      "Time_Start": 1745.26,
+      "Time_End": 1749.82,
+      "Text": " I made some pretty graphs for you just to show in very simple terms what this looks like."
+    },
+    {
+      "Time_Start": 1749.82,
+      "Time_End": 1754.1799999999998,
+      "Text": " So these two graphs mean the exact same thing to our database."
+    },
+    {
+      "Time_Start": 1754.1799999999998,
+      "Time_End": 1758.26,
+      "Text": " Because member of is a transitive relationship for us,"
+    },
+    {
+      "Time_Start": 1758.26,
+      "Time_End": 1764.6599999999999,
+      "Text": " when you go from A to the domain, whether the DC-sync edges in the first one are there or not,"
+    },
+    {
+      "Time_Start": 1764.6599999999999,
+      "Time_End": 1768.98,
+      "Text": " it still means the same thing because A has the DC-sync permission on the domain."
+    },
+    {
+      "Time_Start": 1768.98,
+      "Time_End": 1773.58,
+      "Text": " In the second graph, A still has a DC-sync permission on the domain, but it's just through member up."
+    },
+    {
+      "Time_Start": 1773.58,
+      "Time_End": 1779.6200000000001,
+      "Text": " But just by removing all those edges, I mean, we go from, what, four, seven?"
+    },
+    {
+      "Time_Start": 1779.6200000000001,
+      "Time_End": 1783.06,
+      "Text": " There's seven edges on the first one, four edges on the second one."
+    },
+    {
+      "Time_Start": 1783.06,
+      "Time_End": 1788.5,
+      "Text": " We almost cut half of the graph complexity out just by doing the shortcutting."
+    },
+    {
+      "Time_Start": 1788.5,
+      "Time_End": 1790.74,
+      "Text": " There is a trade-off there, though."
+    },
+    {
+      "Time_Start": 1790.74,
+      "Time_End": 1797.5,
+      "Text": " A little bit of accuracy is lost on multiple paths leading to the same target."
+    },
+    {
+      "Time_Start": 1797.5,
+      "Time_End": 1803.62,
+      "Text": " By going further up the chain, it's possible for a principal to have the permission two different ways,"
+    },
+    {
+      "Time_Start": 1803.62,
+      "Time_End": 1805.46,
+      "Text": " but we only show you the first one."
+    },
+    {
+      "Time_Start": 1805.46,
+      "Time_End": 1811.54,
+      "Text": " So what that ends up looking like is, once you remediate the first one, the second one will show up."
+    },
+    {
+      "Time_Start": 1811.54,
+      "Time_End": 1820.54,
+      "Text": " That is unfortunately just a problem we had to deal with because, again, scale is a big, big issue in graphs."
+    },
+    {
+      "Time_Start": 1820.54,
+      "Time_End": 1829.26,
+      "Text": " This saved us a lot of edges, which I'm going to show you in the next example."
+    },
+    {
+      "Time_Start": 1829.26,
+      "Time_End": 1833.34,
+      "Text": " If you're familiar with sync-lapse-password, this is an edge we added a long time ago,"
+    },
+    {
+      "Time_Start": 1833.34,
+      "Time_End": 1835.46,
+      "Text": " and we were like, oh, yeah, there's not going to be any problems with this."
+    },
+    {
+      "Time_Start": 1835.46,
+      "Time_End": 1837.5,
+      "Text": " Like, these are rare, rare permissions."
+    },
+    {
+      "Time_Start": 1837.5,
+      "Time_End": 1843.26,
+      "Text": " Like, who is granting replication rights to, like, lots of principals?"
+    },
+    {
+      "Time_Start": 1843.26,
+      "Time_End": 1847.86,
+      "Text": " Well, long story short, we were very, very, very wrong about that."
+    },
+    {
+      "Time_Start": 1847.8600000000001,
+      "Time_End": 1854.66,
+      "Text": " If you can see that, that is 31 million sync-lapse-password edges we found in one of our customer environments."
+    },
+    {
+      "Time_Start": 1854.66,
+      "Time_End": 1861.7800000000002,
+      "Text": " We were trying to figure out why our post-processing time was taking, like, 40, 50 minutes longer than we expected."
+    },
+    {
+      "Time_Start": 1861.7800000000002,
+      "Time_End": 1868.46,
+      "Text": " It turns out it was just deleting all these edges, and then in post-processing, adding all those edges right back in."
+    },
+    {
+      "Time_Start": 1868.46,
+      "Time_End": 1872.7800000000002,
+      "Text": " It's very, very easy for complexity to spiral with group membership expansion."
+    },
+    {
+      "Time_Start": 1872.7800000000002,
+      "Time_End": 1877.6200000000001,
+      "Text": " In this particular case, it was because the two privileges ended at a domain user's group,"
+    },
+    {
+      "Time_Start": 1877.6200000000001,
+      "Time_End": 1887.2600000000002,
+      "Text": " and they had it on multiple lapse computers, and every single computer that had lapse was getting all these edges from every single member of domain users."
+    },
+    {
+      "Time_Start": 1887.2600000000002,
+      "Time_End": 1890.3000000000002,
+      "Text": " So these are really hard lessons to learn."
+    },
+    {
+      "Time_Start": 1890.3000000000002,
+      "Time_End": 1892.7800000000002,
+      "Text": " They feel really, really, really bad when you run into them."
+    },
+    {
+      "Time_Start": 1892.7800000000002,
+      "Time_End": 1897.14,
+      "Text": " Trust me."
+    },
+    {
+      "Time_Start": 1897.14,
+      "Time_End": 1902.5400000000002,
+      "Text": " Here's one that's still biting us to this day, az-reset-password."
+    },
+    {
+      "Time_Start": 1902.58,
+      "Time_End": 1911.98,
+      "Text": " Anybody who's worked with Azure knows that Azure is just an absolute gold mine for complexity and heartbreak."
+    },
+    {
+      "Time_Start": 1911.98,
+      "Time_End": 1918.42,
+      "Text": " I think everybody on our team who's ever worked with Azure comes out of it looking like they have PTSD."
+    },
+    {
+      "Time_Start": 1918.42,
+      "Time_End": 1923.1399999999999,
+      "Text": " They basically need, like, a week-long break just to, like, exist again."
+    },
+    {
+      "Time_Start": 1923.1399999999999,
+      "Time_End": 1925.26,
+      "Text": " Yeah, yeah, you get it."
+    },
+    {
+      "Time_Start": 1925.26,
+      "Time_End": 1933.66,
+      "Text": " Azure is a horrifying, horrifying place, and I'm not going to pretend anyone understands the complexity of it, including Microsoft,"
+    },
+    {
+      "Time_Start": 1933.66,
+      "Time_End": 1942.7,
+      "Text": " because they seem to just willingly change stuff, but az-reset-password is an edge that exists in one app."
+    },
+    {
+      "Time_Start": 1942.7,
+      "Time_End": 1948.14,
+      "Text": " The post-processing logic for it is horrifyingly complex, because the reality of it is horrifyingly complex,"
+    },
+    {
+      "Time_Start": 1948.14,
+      "Time_End": 1953.46,
+      "Text": " and if you've looked at Bark, which Andy released a long time ago that lets you track the matrix of the two,"
+    },
+    {
+      "Time_Start": 1953.46,
+      "Time_End": 1957.82,
+      "Text": " there's a lot of different scenarios."
+    },
+    {
+      "Time_Start": 1957.82,
+      "Time_End": 1965.02,
+      "Text": " We've seen environments where we have upwards of 60 million az-reset-password edges, if not more."
+    },
+    {
+      "Time_Start": 1965.02,
+      "Time_End": 1968.54,
+      "Text": " It's, again, one of the complexity issues where it blows out."
+    },
+    {
+      "Time_Start": 1968.54,
+      "Time_End": 1970.54,
+      "Text": " We're still trying to figure out what the best way to deal with this is,"
+    },
+    {
+      "Time_Start": 1970.54,
+      "Time_End": 1977.14,
+      "Text": " but I just want to hammer home that the scale of what you're dealing with will always be more than what you're expecting."
+    },
+    {
+      "Time_Start": 1977.14,
+      "Time_End": 1984.1000000000001,
+      "Text": " Our worst possible estimates for az-reset-password were off by an order of magnitude, at least."
+    },
+    {
+      "Time_Start": 1984.1000000000001,
+      "Time_End": 1985.1000000000001,
+      "Text": " Yeah, order of magnitude."
+    },
+    {
+      "Time_Start": 1985.1000000000001,
+      "Time_End": 1995.7,
+      "Text": " Yeah, so whatever you think is bad, just know that there is worse out there, and someone is going to do it in their environment."
+    },
+    {
+      "Time_Start": 1995.7,
+      "Time_End": 1999.7800000000002,
+      "Text": " Case in point, if you've ever seen domain users with generic all over the domain,"
+    },
+    {
+      "Time_Start": 1999.7800000000002,
+      "Time_End": 2006.9,
+      "Text": " which I've totally never seen in four environments, things get bad."
+    },
+    {
+      "Time_Start": 2006.9,
+      "Time_End": 2012.66,
+      "Text": " All right, so last thing we want to talk about here is software stacks in Vue."
+    },
+    {
+      "Time_Start": 2012.66,
+      "Time_End": 2022.02,
+      "Text": " We have also made many mistakes in the software stack that we decided to make, and we're going to talk about some of those."
+    },
+    {
+      "Time_Start": 2022.02,
+      "Time_End": 2025.66,
+      "Text": " Sometimes what is easy is not scalable."
+    },
+    {
+      "Time_Start": 2025.66,
+      "Time_End": 2029.66,
+      "Text": " We learned this mistake very badly."
+    },
+    {
+      "Time_Start": 2029.66,
+      "Time_End": 2033.5,
+      "Text": " When we originally built Bloodhound, we started with Neo4j,"
+    },
+    {
+      "Time_Start": 2033.5,
+      "Time_End": 2037.98,
+      "Text": " and we started with Neo4j because we were relatively new to the environment."
+    },
+    {
+      "Time_Start": 2037.98,
+      "Time_End": 2044.62,
+      "Text": " We didn't know what the landscape was, and the landscape of graph databases in 2016 is very different than what it is today."
+    },
+    {
+      "Time_Start": 2044.62,
+      "Time_End": 2049.38,
+      "Text": " There's a lot more options, but back then, Neo4j was kind of the option."
+    },
+    {
+      "Time_Start": 2049.38,
+      "Time_End": 2054.22,
+      "Text": " So we prototyped with Neo4j, and we were like, this is cool, and Neo4j worked for us for a long time."
+    },
+    {
+      "Time_Start": 2054.22,
+      "Time_End": 2060.82,
+      "Text": " Then we started getting into scale, and that's when Neo4j started getting a little dicey, to say the least."
+    },
+    {
+      "Time_Start": 2060.82,
+      "Time_End": 2070.1800000000003,
+      "Text": " As John mentioned before, it loves to store a lot of stuff in memory, and blowing out memory and crashing your pods is not good, especially in enterprise environments."
+    },
+    {
+      "Time_Start": 2070.1800000000003,
+      "Time_End": 2077.38,
+      "Text": " But a big part of what we learned is that libraries that can start as prototyping convenience can become basically anchors around your neck"
+    },
+    {
+      "Time_Start": 2077.38,
+      "Time_End": 2084.46,
+      "Text": " as you're trying to float yourself out of the tech debt that you've created by using these quick, easy libraries."
+    },
+    {
+      "Time_Start": 2084.46,
+      "Time_End": 2087.42,
+      "Text": " I'm going to give you three examples of exactly this."
+    },
+    {
+      "Time_Start": 2087.42,
+      "Time_End": 2089.7000000000003,
+      "Text": " The first one is Neo4j."
+    },
+    {
+      "Time_Start": 2090.1,
+      "Time_End": 2098.46,
+      "Text": " We are currently in a very, very large effort to get rid of Neo4j, because we have hit the limits of what we can do with it."
+    },
+    {
+      "Time_Start": 2098.46,
+      "Time_End": 2110.2999999999997,
+      "Text": " It makes me very sad to say it, but we have been bitten by Neo4j so many times because of very, very simple mistakes that you wouldn't expect from an enterprise product."
+    },
+    {
+      "Time_Start": 2110.2999999999997,
+      "Time_End": 2112.14,
+      "Text": " Good example is indexing."
+    },
+    {
+      "Time_Start": 2112.14,
+      "Time_End": 2113.66,
+      "Text": " Indexing is great."
+    },
+    {
+      "Time_Start": 2113.66,
+      "Time_End": 2116.18,
+      "Text": " You should use indexes heavily wherever you can."
+    },
+    {
+      "Time_Start": 2116.18,
+      "Time_End": 2125.02,
+      "Text": " Turns out if you miss an index in Neo4j, you go from a very, very quick 0.6 millisecond query to something like six or seven seconds."
+    },
+    {
+      "Time_Start": 2125.02,
+      "Time_End": 2130.3399999999997,
+      "Text": " And Neo4j will happily not tell you anything about that."
+    },
+    {
+      "Time_Start": 2130.3399999999997,
+      "Time_End": 2133.7799999999997,
+      "Text": " This has been kind of a really long-running problem."
+    },
+    {
+      "Time_Start": 2133.7799999999997,
+      "Time_End": 2143.8999999999996,
+      "Text": " If you could see our JIRA, you will see that the ticket for migrating to PostgreSQL has probably been there for close to two years now."
+    },
+    {
+      "Time_Start": 2143.9,
+      "Time_End": 2151.86,
+      "Text": " But it turns out migrating wholesale from one graph database to a different one is not easy, especially when you've built your entire product around it."
+    },
+    {
+      "Time_Start": 2151.86,
+      "Time_End": 2160.1800000000003,
+      "Text": " So it's a lot of tech debt, and this is something we've been trying to dig ourselves out of for two years now."
+    },
+    {
+      "Time_Start": 2160.1800000000003,
+      "Time_End": 2168.62,
+      "Text": " We keep coming back to it, and we keep pushing it because it keeps getting harder."
+    },
+    {
+      "Time_Start": 2168.62,
+      "Time_End": 2171.5,
+      "Text": " Another one we did is Regraph."
+    },
+    {
+      "Time_Start": 2171.54,
+      "Time_End": 2177.7,
+      "Text": " Regraph is the graph visualization library we use in Bloodhound Enterprise."
+    },
+    {
+      "Time_Start": 2177.7,
+      "Time_End": 2179.1,
+      "Text": " It's really, really fast."
+    },
+    {
+      "Time_Start": 2179.1,
+      "Time_End": 2186.54,
+      "Text": " We've got tons of great features, beautiful WebGL accelerated, like anything we could have asked for was there."
+    },
+    {
+      "Time_Start": 2186.54,
+      "Time_End": 2198.22,
+      "Text": " Well, we didn't consider the fact that Regraph is a commercial license, and when you're dealing with a product that is both open source and commercial, licensing matters."
+    },
+    {
+      "Time_Start": 2198.2200000000003,
+      "Time_End": 2205.9800000000005,
+      "Text": " Turns out they hard-told us to go away when we wanted to use Regraph in VHCE."
+    },
+    {
+      "Time_Start": 2205.9800000000005,
+      "Time_End": 2208.78,
+      "Text": " As is their prerogative, it's their product."
+    },
+    {
+      "Time_Start": 2208.78,
+      "Time_End": 2218.26,
+      "Text": " I'm not saying they did anything wrong, but it did force us to go back to the drawing board, and we had to start with SigmaJS, which was something we'd never used before, to get the performance."
+    },
+    {
+      "Time_Start": 2218.7000000000003,
+      "Time_End": 2233.0600000000004,
+      "Text": " Now we've actually devoted a significant number of dev hours just to try to understand SigmaJS and figure out how to re-implement features that are already in Regraph that we were getting essentially by just using the library."
+    },
+    {
+      "Time_Start": 2233.0600000000004,
+      "Time_End": 2235.5800000000004,
+      "Text": " Again, this is more dev hours. This is more tech debt."
+    },
+    {
+      "Time_Start": 2235.5800000000004,
+      "Time_End": 2246.78,
+      "Text": " This is just stuff that happens, but by not properly having our licensing and our libraries chosen early, we have bitten ourselves with a lot more tech debt now."
+    },
+    {
+      "Time_Start": 2249.26,
+      "Time_End": 2256.0600000000004,
+      "Text": " This isn't Graph-related at all, but I wanted to add this to here because I hate it so much."
+    },
+    {
+      "Time_Start": 2256.0600000000004,
+      "Time_End": 2260.6600000000003,
+      "Text": " I want to make sure nobody here ever makes the mistake of using this giant piece of Graph."
+    },
+    {
+      "Time_Start": 2260.6600000000003,
+      "Time_End": 2266.6600000000003,
+      "Text": " GORM is an ORM in Go, as you would expect from the name."
+    },
+    {
+      "Time_Start": 2266.6600000000003,
+      "Time_End": 2272.6600000000003,
+      "Text": " It's supposed to be very easy to use, and we prototyped with it, and it worked great."
+    },
+    {
+      "Time_Start": 2272.6600000000003,
+      "Time_End": 2274.98,
+      "Text": " Then we started running into issues."
+    },
+    {
+      "Time_Start": 2275.78,
+      "Time_End": 2279.18,
+      "Text": " Migrations don't work the way you expect."
+    },
+    {
+      "Time_Start": 2279.18,
+      "Time_End": 2282.86,
+      "Text": " Random stuff happens with database consistency."
+    },
+    {
+      "Time_Start": 2282.86,
+      "Time_End": 2286.34,
+      "Text": " Indexes start recreating themselves for no reason."
+    },
+    {
+      "Time_Start": 2286.34,
+      "Time_End": 2301.34,
+      "Text": " I could go on and on and on about how much this thing has sucked our souls away, but it took us over two weeks just to migrate migrations from GORM to our own stuff."
+    },
+    {
+      "Time_Start": 2301.7000000000003,
+      "Time_End": 2306.7000000000003,
+      "Text": " There is so much GORM in our codebase that we still have to get rid of."
+    },
+    {
+      "Time_Start": 2306.7000000000003,
+      "Time_End": 2312.7000000000003,
+      "Text": " I'm estimating it's probably going to be at least two months of work just to strip this stupid thing out of our project."
+    },
+    {
+      "Time_Start": 2312.7000000000003,
+      "Time_End": 2315.7000000000003,
+      "Text": " It's still biting us to this day."
+    },
+    {
+      "Time_Start": 2315.7000000000003,
+      "Time_End": 2321.7000000000003,
+      "Text": " On a month-by-month basis, we run into something new and horrifying that GORM has done to our database."
+    },
+    {
+      "Time_Start": 2321.7000000000003,
+      "Time_End": 2324.7000000000003,
+      "Text": " Don't ever use GORM if you value your sanity."
+    },
+    {
+      "Time_Start": 2324.7000000000003,
+      "Time_End": 2328.7000000000003,
+      "Text": " I cannot describe to you how much our entire dev team hates this thing."
+    },
+    {
+      "Time_Start": 2328.7000000000003,
+      "Time_End": 2333.7000000000003,
+      "Text": " If you are a software engineer and you think you need an ORM, no, you don't!"
+    },
+    {
+      "Time_Start": 2333.7000000000003,
+      "Time_End": 2336.7000000000003,
+      "Text": " Asterisk, asterisk."
+    },
+    {
+      "Time_Start": 2336.7000000000003,
+      "Time_End": 2339.7000000000003,
+      "Text": " Again, easy prototyping."
+    },
+    {
+      "Time_Start": 2339.7000000000003,
+      "Time_End": 2344.7000000000003,
+      "Text": " In the future, there's a good chance it's going to bite you in some way."
+    },
+    {
+      "Time_Start": 2344.7000000000003,
+      "Time_End": 2348.7000000000003,
+      "Text": " Conclusion. Graphs are hard. They're very, very hard."
+    },
+    {
+      "Time_Start": 2348.7000000000003,
+      "Time_End": 2352.7000000000003,
+      "Text": " If you're getting into using graphs, be prepared for that hardness."
+    },
+    {
+      "Time_Start": 2352.7000000000003,
+      "Time_End": 2357.7000000000003,
+      "Text": " I don't want to discourage people from using graphs because I think they solve a super unique problem."
+    },
+    {
+      "Time_Start": 2357.7000000000003,
+      "Time_End": 2360.7000000000003,
+      "Text": " And the visualization capabilities of graphs is incredible."
+    },
+    {
+      "Time_Start": 2360.7000000000003,
+      "Time_End": 2365.7000000000003,
+      "Text": " The first time we walked into a presentation with a CISO and we showed them a bloodhound graph,"
+    },
+    {
+      "Time_Start": 2365.7000000000003,
+      "Time_End": 2368.7000000000003,
+      "Text": " they were like, I get it. This makes sense."
+    },
+    {
+      "Time_Start": 2368.7000000000003,
+      "Time_End": 2372.7000000000003,
+      "Text": " Graphs let you explore data in such a unique and interesting way."
+    },
+    {
+      "Time_Start": 2372.7000000000003,
+      "Time_End": 2376.7000000000003,
+      "Text": " But just be prepared. If you're going to work in anything big, they're going to hurt you."
+    },
+    {
+      "Time_Start": 2376.7000000000003,
+      "Time_End": 2378.7000000000003,
+      "Text": " They're going to hurt you a lot."
+    },
+    {
+      "Time_Start": 2378.7000000000003,
+      "Time_End": 2383.7000000000003,
+      "Text": " I think, again, driving back to the very beginning of the talk,"
+    },
+    {
+      "Time_Start": 2383.7000000000003,
+      "Time_End": 2385.7000000000003,
+      "Text": " there's one thing you take away from this."
+    },
+    {
+      "Time_Start": 2385.7000000000003,
+      "Time_End": 2390.7000000000003,
+      "Text": " Take your time to understand the problem you are tackling."
+    },
+    {
+      "Time_Start": 2390.7000000000003,
+      "Time_End": 2396.7000000000003,
+      "Text": " Scale is not something that just comes out of the closet at night to terrorize you"
+    },
+    {
+      "Time_Start": 2396.7000000000003,
+      "Time_End": 2399.7000000000003,
+      "Text": " because you're a child and monsters live in your closet."
+    },
+    {
+      "Time_Start": 2399.7000000000003,
+      "Time_End": 2402.7000000000003,
+      "Text": " Scale is always going to be part of the problem."
+    },
+    {
+      "Time_Start": 2402.7000000000003,
+      "Time_End": 2406.7000000000003,
+      "Text": " Walk in with both eyes wide open and take your time."
+    },
+    {
+      "Time_Start": 2406.7000000000003,
+      "Time_End": 2410.7000000000003,
+      "Text": " It will save you many, many dev hours and many, many tears."
+    },
+    {
+      "Time_Start": 2414.7000000000003,
+      "Time_End": 2416.7000000000003,
+      "Text": " Any questions?"
+    },
+    {
+      "Time_Start": 2420.7000000000003,
+      "Time_End": 2422.7000000000003,
+      "Text": " Let's get you a mic."
+    },
+    {
+      "Time_Start": 2422.7000000000003,
+      "Time_End": 2425.7000000000003,
+      "Text": " We've got about ten minutes left, so we've got some time for questions."
+    },
+    {
+      "Time_Start": 2427.7000000000003,
+      "Time_End": 2434.7000000000003,
+      "Text": " I was just wondering, one of the usability issues that I find,"
+    },
+    {
+      "Time_Start": 2434.7000000000003,
+      "Time_End": 2440.7000000000003,
+      "Text": " at least somewhat, with bloodhound was it would be nice to be able to grab a piece of a graph"
+    },
+    {
+      "Time_Start": 2440.7000000000003,
+      "Time_End": 2446.7000000000003,
+      "Text": " and move it all over and have it dynamically resize like some of the virus total stuff does."
+    },
+    {
+      "Time_Start": 2446.7000000000003,
+      "Time_End": 2450.7000000000003,
+      "Text": " Is that a scaling problem or is that just something that hasn't been important?"
+    },
+    {
+      "Time_Start": 2452.7000000000003,
+      "Time_End": 2456.7000000000003,
+      "Text": " What's harder than doing data processing on a graph?"
+    },
+    {
+      "Time_Start": 2456.7000000000003,
+      "Time_End": 2459.7000000000003,
+      "Text": " Drawing the graph afterward."
+    },
+    {
+      "Time_Start": 2459.7000000000003,
+      "Time_End": 2466.7000000000003,
+      "Text": " The reality of your web browser is a horrible reality where graphics acceleration"
+    },
+    {
+      "Time_Start": 2466.7000000000003,
+      "Time_End": 2469.7000000000003,
+      "Text": " kind of sort of exists if you do things just right."
+    },
+    {
+      "Time_Start": 2469.7000000000003,
+      "Time_End": 2473.7000000000003,
+      "Text": " But if you're going to do that, WebGL has its own coordinate system."
+    },
+    {
+      "Time_Start": 2473.7000000000003,
+      "Time_End": 2476.7000000000003,
+      "Text": " You've got the 2D canvas and then you've got WebGL."
+    },
+    {
+      "Time_Start": 2476.7000000000003,
+      "Time_End": 2478.7000000000003,
+      "Text": " They're layered on top, but they're two different coordinate systems."
+    },
+    {
+      "Time_Start": 2478.7000000000003,
+      "Time_End": 2482.7000000000003,
+      "Text": " You have to reconcile both of them, which is a nightmare."
+    },
+    {
+      "Time_Start": 2482.7000000000003,
+      "Time_End": 2486.7000000000003,
+      "Text": " It's why there aren't many good WebGL accelerated graph frameworks out there right now."
+    },
+    {
+      "Time_Start": 2486.7000000000003,
+      "Time_End": 2490.7000000000003,
+      "Text": " It's why Regraph can charge whatever they want for their product"
+    },
+    {
+      "Time_Start": 2490.7000000000003,
+      "Time_End": 2492.7000000000003,
+      "Text": " because it is an extremely hard problem."
+    },
+    {
+      "Time_Start": 2492.7000000000003,
+      "Time_End": 2495.7000000000003,
+      "Text": " So never mind just drawing the graph, right?"
+    },
+    {
+      "Time_Start": 2495.7000000000003,
+      "Time_End": 2496.7000000000003,
+      "Text": " Where's the mouse?"
+    },
+    {
+      "Time_Start": 2496.7000000000003,
+      "Time_End": 2497.7000000000003,
+      "Text": " Are you actually clicking on an edge?"
+    },
+    {
+      "Time_Start": 2497.7000000000003,
+      "Time_End": 2498.7000000000003,
+      "Text": " Is that a node?"
+    },
+    {
+      "Time_Start": 2498.7000000000003,
+      "Time_End": 2499.7000000000003,
+      "Text": " That's tough."
+    },
+    {
+      "Time_Start": 2499.7000000000003,
+      "Time_End": 2503.7000000000003,
+      "Text": " The other side of that that's really hard is laying the graph out."
+    },
+    {
+      "Time_Start": 2503.7000000000003,
+      "Time_End": 2507.7000000000003,
+      "Text": " Once you get past 100 nodes, a couple thousand edges,"
+    },
+    {
+      "Time_Start": 2507.7000000000003,
+      "Time_End": 2508.7000000000003,
+      "Text": " what did I say?"
+    },
+    {
+      "Time_Start": 2508.7000000000003,
+      "Time_End": 2511.7000000000003,
+      "Text": " It's hard to tell whether or not it's a graph or something your cat threw up."
+    },
+    {
+      "Time_Start": 2511.7000000000003,
+      "Time_End": 2515.7000000000003,
+      "Text": " That hairball problem is solved by layouts."
+    },
+    {
+      "Time_Start": 2515.7000000000003,
+      "Time_End": 2518.7000000000003,
+      "Text": " Layouts are computationally expensive because it has to do..."
+    },
+    {
+      "Time_Start": 2518.7000000000003,
+      "Time_End": 2521.7000000000003,
+      "Text": " There's one methodology called force directed,"
+    },
+    {
+      "Time_Start": 2521.7000000000003,
+      "Time_End": 2527.7000000000003,
+      "Text": " which is a literal physics simulation to try and spread the nodes out real nice for you"
+    },
+    {
+      "Time_Start": 2527.7000000000003,
+      "Time_End": 2528.7000000000003,
+      "Text": " so that you can see everything."
+    },
+    {
+      "Time_Start": 2528.7000000000003,
+      "Time_End": 2530.7000000000003,
+      "Text": " That's really hard."
+    },
+    {
+      "Time_Start": 2530.7000000000003,
+      "Time_End": 2535.7000000000003,
+      "Text": " And it surprised even me because I keep my head in the data science back,"
+    },
+    {
+      "Time_Start": 2535.7000000000003,
+      "Time_End": 2537.7000000000003,
+      "Text": " like reality back end,"
+    },
+    {
+      "Time_Start": 2537.7000000000003,
+      "Time_End": 2542.7000000000003,
+      "Text": " but then coming to look at how absolutely hard it is to just draw the graphs"
+    },
+    {
+      "Time_Start": 2542.7000000000003,
+      "Time_End": 2545.7000000000003,
+      "Text": " and do it at a performance rate."
+    },
+    {
+      "Time_Start": 2545.7000000000003,
+      "Time_End": 2547.7000000000003,
+      "Text": " There's a reason why most open source libraries,"
+    },
+    {
+      "Time_Start": 2547.7000000000003,
+      "Time_End": 2550.7000000000003,
+      "Text": " they don't do just in time layout."
+    },
+    {
+      "Time_Start": 2550.7000000000003,
+      "Time_End": 2552.7000000000003,
+      "Text": " They're not cute, bouncy graphs."
+    },
+    {
+      "Time_Start": 2552.7000000000003,
+      "Time_End": 2553.7000000000003,
+      "Text": " They're very static."
+    },
+    {
+      "Time_Start": 2553.7000000000003,
+      "Time_End": 2556.7000000000003,
+      "Text": " If you're familiar with, like, what is it, D3JS?"
+    },
+    {
+      "Time_Start": 2556.7000000000003,
+      "Time_End": 2558.7000000000003,
+      "Text": " I hope I said that right."
+    },
+    {
+      "Time_Start": 2558.7000000000003,
+      "Time_End": 2560.7000000000003,
+      "Text": " Somebody's going to shoot me."
+    },
+    {
+      "Time_Start": 2560.7000000000003,
+      "Time_End": 2562.7000000000003,
+      "Text": " Or there's a couple of other frameworks out there,"
+    },
+    {
+      "Time_Start": 2562.7000000000003,
+      "Time_End": 2566.7000000000003,
+      "Text": " but they look like Fisher Price LOL graph time, right?"
+    },
+    {
+      "Time_Start": 2566.7000000000003,
+      "Time_End": 2568.7000000000003,
+      "Text": " It's not really that beautiful, and that's why."
+    },
+    {
+      "Time_Start": 2568.7000000000003,
+      "Time_End": 2571.7000000000003,
+      "Text": " It's because it's actually surprisingly difficult."
+    },
+    {
+      "Time_Start": 2571.7000000000003,
+      "Time_End": 2573.7000000000003,
+      "Text": " Even doing something like clicking on the edge,"
+    },
+    {
+      "Time_Start": 2573.7000000000003,
+      "Time_End": 2575.7000000000003,
+      "Text": " you have to reconcile the two coordinate systems,"
+    },
+    {
+      "Time_Start": 2575.7000000000003,
+      "Time_End": 2578.7000000000003,
+      "Text": " and you have to make sure that, oh, well, Firefox does it this way,"
+    },
+    {
+      "Time_Start": 2578.7000000000003,
+      "Time_End": 2580.7000000000003,
+      "Text": " and Safari, well, Safari doesn't have support"
+    },
+    {
+      "Time_Start": 2580.7000000000003,
+      "Time_End": 2582.7000000000003,
+      "Text": " for the other coordinate systems,"
+    },
+    {
+      "Time_Start": 2582.7000000000003,
+      "Time_End": 2584.7000000000003,
+      "Text": " so you have to do coordinate translations"
+    },
+    {
+      "Time_Start": 2584.7000000000003,
+      "Time_End": 2588.7000000000003,
+      "Text": " and make sure that that polyfills for edge and chromium."
+    },
+    {
+      "Time_Start": 2588.7000000000003,
+      "Time_End": 2590.7000000000003,
+      "Text": " So the problem's actually really nuanced,"
+    },
+    {
+      "Time_Start": 2590.7000000000003,
+      "Time_End": 2594.7000000000003,
+      "Text": " and that's why some of those usability snags,"
+    },
+    {
+      "Time_Start": 2594.7000000000003,
+      "Time_End": 2600.7000000000003,
+      "Text": " they do take us quite a bit of time and dev hours to fix."
+    },
+    {
+      "Time_Start": 2600.7000000000003,
+      "Time_End": 2603.7000000000003,
+      "Text": " There's a reason the legacy version of Bloodhound"
+    },
+    {
+      "Time_Start": 2603.7000000000003,
+      "Time_End": 2607.7000000000003,
+      "Text": " was using a graph library that had been deprecated for, like, eight years."
+    },
+    {
+      "Time_Start": 2607.7000000000003,
+      "Time_End": 2610.7000000000003,
+      "Text": " It's because the cost of reimplementing it was so high"
+    },
+    {
+      "Time_Start": 2610.7000000000003,
+      "Time_End": 2612.7000000000003,
+      "Text": " that we were just like, it's working."
+    },
+    {
+      "Time_Start": 2612.7000000000003,
+      "Time_End": 2614.7000000000003,
+      "Text": " I'm not worried about it right now."
+    },
+    {
+      "Time_Start": 2614.7000000000003,
+      "Time_End": 2618.7000000000003,
+      "Text": " There's much bigger fish to fry."
+    },
+    {
+      "Time_Start": 2618.7000000000003,
+      "Time_End": 2622.7000000000003,
+      "Text": " Any other questions?"
+    },
+    {
+      "Time_Start": 2622.7000000000003,
+      "Time_End": 2624.7000000000003,
+      "Text": " All right. Yep."
+    },
+    {
+      "Time_Start": 2624.7000000000003,
+      "Time_End": 2627.7000000000003,
+      "Text": " Give it to us."
+    },
+    {
+      "Time_Start": 2627.7000000000003,
+      "Time_End": 2633.7000000000003,
+      "Text": " I don't know if it's a long answer, but why Postgres?"
+    },
+    {
+      "Time_Start": 2633.7000000000003,
+      "Time_End": 2635.7000000000003,
+      "Text": " Well, that's a fun question."
+    },
+    {
+      "Time_Start": 2636.7000000000003,
+      "Time_End": 2640.7000000000003,
+      "Text": " Oh."
+    },
+    {
+      "Time_Start": 2640.7000000000003,
+      "Time_End": 2644.7000000000003,
+      "Text": " Is anybody familiar with the current software engineering meme,"
+    },
+    {
+      "Time_Start": 2644.7000000000003,
+      "Time_End": 2647.7000000000003,
+      "Text": " why not Postgres?"
+    },
+    {
+      "Time_Start": 2647.7000000000003,
+      "Time_End": 2650.7000000000003,
+      "Text": " So the reason why that meme is a thing,"
+    },
+    {
+      "Time_Start": 2650.7000000000003,
+      "Time_End": 2655.7000000000003,
+      "Text": " when we talk about data, data is just ones and zeros, right?"
+    },
+    {
+      "Time_Start": 2655.7000000000003,
+      "Time_End": 2659.7000000000003,
+      "Text": " There's nothing special about a database like Mongo"
+    },
+    {
+      "Time_Start": 2659.7000000000003,
+      "Time_End": 2663.7000000000003,
+      "Text": " compared to Postgres, compared to Cassandra,"
+    },
+    {
+      "Time_Start": 2663.7000000000003,
+      "Time_End": 2665.7000000000003,
+      "Text": " but at the most fundamental level, right,"
+    },
+    {
+      "Time_Start": 2665.7000000000003,
+      "Time_End": 2667.7000000000003,
+      "Text": " the shape of the data is just ones and zeros."
+    },
+    {
+      "Time_Start": 2667.7000000000003,
+      "Time_End": 2669.7000000000003,
+      "Text": " Now, they store things differently, right?"
+    },
+    {
+      "Time_Start": 2669.7000000000003,
+      "Time_End": 2671.7000000000003,
+      "Text": " Cassandra will use, I think it's S tables,"
+    },
+    {
+      "Time_Start": 2671.7000000000003,
+      "Time_End": 2673.7000000000003,
+      "Text": " and they'll dump whole pages to disk,"
+    },
+    {
+      "Time_Start": 2673.7000000000003,
+      "Time_End": 2678.7000000000003,
+      "Text": " and Postgres will do eight-page caching and flush to disk,"
+    },
+    {
+      "Time_Start": 2678.7000000000003,
+      "Time_End": 2681.7000000000003,
+      "Text": " and Mongo has, I haven't interacted with Mongo in a while,"
+    },
+    {
+      "Time_Start": 2681.7000000000003,
+      "Time_End": 2683.7000000000003,
+      "Text": " but it does have its own storage hierarchy."
+    },
+    {
+      "Time_Start": 2683.7000000000003,
+      "Time_End": 2687.7000000000003,
+      "Text": " But at the end of the day, right, graph data is just data."
+    },
+    {
+      "Time_Start": 2687.7000000000003,
+      "Time_End": 2690.7000000000003,
+      "Text": " The most fundamental way of representing a graph,"
+    },
+    {
+      "Time_Start": 2690.7000000000003,
+      "Time_End": 2692.7000000000003,
+      "Text": " if you're not familiar or you're like me,"
+    },
+    {
+      "Time_Start": 2692.7000000000003,
+      "Time_End": 2695.7000000000003,
+      "Text": " you don't know math that well, it's a matrix, right?"
+    },
+    {
+      "Time_Start": 2695.7000000000003,
+      "Time_End": 2698.7000000000003,
+      "Text": " A matrix is just, if you think about computer science land,"
+    },
+    {
+      "Time_Start": 2698.7000000000003,
+      "Time_End": 2700.7000000000003,
+      "Text": " RAM is not a box."
+    },
+    {
+      "Time_Start": 2700.7000000000003,
+      "Time_End": 2702.7000000000003,
+      "Text": " It's not a 3D volume."
+    },
+    {
+      "Time_Start": 2702.7000000000003,
+      "Time_End": 2704.7000000000003,
+      "Text": " It is a literal tape."
+    },
+    {
+      "Time_Start": 2704.7000000000003,
+      "Time_End": 2706.7000000000003,
+      "Text": " And so that matrix is going to be stacked end-to-end"
+    },
+    {
+      "Time_Start": 2706.7000000000003,
+      "Time_End": 2708.7000000000003,
+      "Text": " on that piece of tape."
+    },
+    {
+      "Time_Start": 2708.7000000000003,
+      "Time_End": 2711.7000000000003,
+      "Text": " So the data is just ones and zeros,"
+    },
+    {
+      "Time_Start": 2711.7000000000003,
+      "Time_End": 2714.7000000000003,
+      "Text": " and if you have a system that can store those ones and zeros"
+    },
+    {
+      "Time_Start": 2714.7000000000003,
+      "Time_End": 2716.7000000000003,
+      "Text": " effectively and store them efficiently,"
+    },
+    {
+      "Time_Start": 2716.7000000000003,
+      "Time_End": 2718.7000000000003,
+      "Text": " give you access to them effectively, right,"
+    },
+    {
+      "Time_Start": 2718.7000000000003,
+      "Time_End": 2721.7000000000003,
+      "Text": " Postgres is interesting because I have geospatial indexing."
+    },
+    {
+      "Time_Start": 2721.7000000000003,
+      "Time_End": 2724.7000000000003,
+      "Text": " Postgres is interesting because I have native read-write"
+    },
+    {
+      "Time_Start": 2724.7000000000003,
+      "Time_End": 2726.7000000000003,
+      "Text": " replication, I have multi-master mode,"
+    },
+    {
+      "Time_Start": 2726.7000000000003,
+      "Time_End": 2730.7000000000003,
+      "Text": " I have all manner of different community-supported plugins"
+    },
+    {
+      "Time_Start": 2730.7000000000003,
+      "Time_End": 2732.7000000000003,
+      "Text": " that I can plug into that architecture to make it do"
+    },
+    {
+      "Time_Start": 2732.7000000000003,
+      "Time_End": 2734.7000000000003,
+      "Text": " really fancy stuff."
+    },
+    {
+      "Time_Start": 2734.7000000000003,
+      "Time_End": 2737.7000000000003,
+      "Text": " And at the end of the day, a B-tree index is a B-tree index"
+    },
+    {
+      "Time_Start": 2737.7000000000003,
+      "Time_End": 2739.7000000000003,
+      "Text": " is a B-tree index."
+    },
+    {
+      "Time_Start": 2739.7000000000003,
+      "Time_End": 2742.7000000000003,
+      "Text": " Mongo's B-tree index isn't any fancier than Postgres'"
+    },
+    {
+      "Time_Start": 2742.7000000000003,
+      "Time_End": 2745.7000000000003,
+      "Text": " B-tree index, and even for Neo4j,"
+    },
+    {
+      "Time_Start": 2745.7000000000003,
+      "Time_End": 2747.7000000000003,
+      "Text": " their B-tree index operates the same because the data"
+    },
+    {
+      "Time_Start": 2747.7000000000003,
+      "Time_End": 2748.7000000000003,
+      "Text": " structure is the same."
+    },
+    {
+      "Time_Start": 2748.7000000000003,
+      "Time_End": 2753.7000000000003,
+      "Text": " And so what matters more to us as deployers is when we look"
+    },
+    {
+      "Time_Start": 2753.7000000000003,
+      "Time_End": 2756.7000000000003,
+      "Text": " at the deployment cost of a technology."
+    },
+    {
+      "Time_Start": 2756.7000000000003,
+      "Time_End": 2759.7000000000003,
+      "Text": " Now, Neo4j, and I'm going to kind of pull the curtain"
+    },
+    {
+      "Time_Start": 2759.7000000000003,
+      "Time_End": 2762.7000000000003,
+      "Text": " back a little bit, we could use Neptune,"
+    },
+    {
+      "Time_Start": 2762.7000000000003,
+      "Time_End": 2764.7000000000003,
+      "Text": " but I like money."
+    },
+    {
+      "Time_Start": 2764.7000000000003,
+      "Time_End": 2768.7000000000003,
+      "Text": " I don't want to pay through the nose for an as-a-service"
+    },
+    {
+      "Time_Start": 2768.7000000000003,
+      "Time_End": 2771.7000000000003,
+      "Text": " that is an order of magnitude more expensive than running"
+    },
+    {
+      "Time_Start": 2771.7000000000003,
+      "Time_End": 2774.7000000000003,
+      "Text": " Neo4j on EC2, not bare metal, but you get what I mean."
+    },
+    {
+      "Time_Start": 2774.7000000000003,
+      "Time_End": 2778.7000000000003,
+      "Text": " So we run Neo4j on EC2, and it's horrible."
+    },
+    {
+      "Time_Start": 2778.7000000000003,
+      "Time_End": 2779.7000000000003,
+      "Text": " I hate it."
+    },
+    {
+      "Time_Start": 2779.7000000000003,
+      "Time_End": 2780.7000000000003,
+      "Text": " It's a lot of management overhead,"
+    },
+    {
+      "Time_Start": 2780.7000000000003,
+      "Time_End": 2784.7000000000003,
+      "Text": " and it requires a lot of operational machinery."
+    },
+    {
+      "Time_Start": 2784.7000000000003,
+      "Time_End": 2786.7000000000003,
+      "Text": " So what do we want to do?"
+    },
+    {
+      "Time_Start": 2786.7000000000003,
+      "Time_End": 2790.7000000000003,
+      "Text": " Well, AWS has a service called RDS,"
+    },
+    {
+      "Time_Start": 2790.7000000000003,
+      "Time_End": 2793.7000000000003,
+      "Text": " and we're already using RDS because we have to store"
+    },
+    {
+      "Time_Start": 2793.7000000000003,
+      "Time_End": 2798.7000000000003,
+      "Text": " relational data as part of Bloodhound Enterprise."
+    },
+    {
+      "Time_Start": 2798.7000000000003,
+      "Time_End": 2804.7000000000003,
+      "Text": " If we can just squeeze that graph into Postgres,"
+    },
+    {
+      "Time_Start": 2804.7000000000003,
+      "Time_End": 2807.7000000000003,
+      "Text": " I get deployment efficiency out of it for free."
+    },
+    {
+      "Time_Start": 2807.7000000000003,
+      "Time_End": 2809.7000000000003,
+      "Text": " And so we did a couple of tests, and it turns out"
+    },
+    {
+      "Time_Start": 2809.7000000000003,
+      "Time_End": 2814.7000000000003,
+      "Text": " that Postgres, you can do a real fancy job with it"
+    },
+    {
+      "Time_Start": 2814.7000000000003,
+      "Time_End": 2817.7000000000003,
+      "Text": " as long as you're smart about how you lay the data out,"
+    },
+    {
+      "Time_Start": 2817.7000000000003,
+      "Time_End": 2818.7000000000003,
+      "Text": " you're smart about your indexes."
+    },
+    {
+      "Time_Start": 2818.7000000000003,
+      "Time_End": 2820.7000000000003,
+      "Text": " And remember, round trips are evil,"
+    },
+    {
+      "Time_Start": 2820.7000000000003,
+      "Time_End": 2823.7000000000003,
+      "Text": " so Postgres has a built-in procedural programming language."
+    },
+    {
+      "Time_Start": 2823.7000000000003,
+      "Time_End": 2825.7000000000003,
+      "Text": " It's called PLPGSQL."
+    },
+    {
+      "Time_Start": 2825.7000000000003,
+      "Time_End": 2827.7000000000003,
+      "Text": " It's a mouthful."
+    },
+    {
+      "Time_Start": 2827.7000000000003,
+      "Time_End": 2829.7000000000003,
+      "Text": " But it stands for procedural language"
+    },
+    {
+      "Time_Start": 2829.7000000000003,
+      "Time_End": 2830.7000000000003,
+      "Text": " because it's programming language."
+    },
+    {
+      "Time_Start": 2830.7000000000003,
+      "Time_End": 2833.7000000000003,
+      "Text": " PG for Postgres' flavor of it,"
+    },
+    {
+      "Time_Start": 2833.7000000000003,
+      "Time_End": 2836.7000000000003,
+      "Text": " because, oh, God, there are flavors of SQL."
+    },
+    {
+      "Time_Start": 2836.7000000000003,
+      "Time_End": 2837.7000000000003,
+      "Text": " SQL."
+    },
+    {
+      "Time_Start": 2837.7000000000003,
+      "Time_End": 2842.7000000000003,
+      "Text": " And so we actually wrote native traversals in PLPGSQL."
+    },
+    {
+      "Time_Start": 2842.7000000000003,
+      "Time_End": 2844.7000000000003,
+      "Text": " Say that 10 times faster."
+    },
+    {
+      "Time_Start": 2844.7000000000003,
+      "Time_End": 2848.7000000000003,
+      "Text": " And the time delta, especially when we start exercising"
+    },
+    {
+      "Time_Start": 2848.7000000000003,
+      "Time_End": 2852.7000000000003,
+      "Text": " property indexes, is faster on average."
+    },
+    {
+      "Time_Start": 2852.7000000000003,
+      "Time_End": 2856.7000000000003,
+      "Text": " Now, big asterisk because it's not fully in production yet."
+    },
+    {
+      "Time_Start": 2856.7000000000003,
+      "Time_End": 2858.7000000000003,
+      "Text": " I will probably eat my left shoe."
+    },
+    {
+      "Time_Start": 2858.7000000000003,
+      "Time_End": 2861.7000000000003,
+      "Text": " But it is faster than what we can appreciably get"
+    },
+    {
+      "Time_Start": 2861.7000000000003,
+      "Time_End": 2862.7000000000003,
+      "Text": " out of Neo4j right now."
+    },
+    {
+      "Time_Start": 2862.7000000000003,
+      "Time_End": 2866.7000000000003,
+      "Text": " And that was enough, because from our perspective,"
+    },
+    {
+      "Time_Start": 2866.7000000000003,
+      "Time_End": 2871.7000000000003,
+      "Text": " our deployment model is built around customer enclaves."
+    },
+    {
+      "Time_Start": 2871.7000000000003,
+      "Time_End": 2876.7000000000003,
+      "Text": " We can't, for example, Jeremy was up here talking about"
+    },
+    {
+      "Time_Start": 2876.7000000000003,
+      "Time_End": 2880.7000000000003,
+      "Text": " how Datadog stores all of their graph data in Mongo."
+    },
+    {
+      "Time_Start": 2880.7000000000003,
+      "Time_End": 2883.7000000000003,
+      "Text": " Well, if you don't have to worry about really hard"
+    },
+    {
+      "Time_Start": 2883.7000000000003,
+      "Time_End": 2886.7000000000003,
+      "Text": " multi-tenancy network segregation and stuff"
+    },
+    {
+      "Time_Start": 2886.7000000000003,
+      "Time_End": 2889.7000000000003,
+      "Text": " like that, using a horizontally scalable database"
+    },
+    {
+      "Time_Start": 2889.7000000000003,
+      "Time_End": 2893.7000000000003,
+      "Text": " like Mongo or Cassandra, man, that's the bee's knees."
+    },
+    {
+      "Time_Start": 2893.7000000000003,
+      "Time_End": 2895.7000000000003,
+      "Text": " It'll fly."
+    },
+    {
+      "Time_Start": 2895.7000000000003,
+      "Time_End": 2898.7000000000003,
+      "Text": " I almost said some uncouth words."
+    },
+    {
+      "Time_Start": 2898.7000000000003,
+      "Time_End": 2901.7000000000003,
+      "Text": " But those technologies are really powerful."
+    },
+    {
+      "Time_Start": 2901.7000000000003,
+      "Time_End": 2903.7000000000003,
+      "Text": " But for us, because of how we have to deploy,"
+    },
+    {
+      "Time_Start": 2903.7000000000003,
+      "Time_End": 2905.7000000000003,
+      "Text": " because of our security concerns and the way"
+    },
+    {
+      "Time_Start": 2905.7000000000003,
+      "Time_End": 2909.7000000000003,
+      "Text": " that we bulkhead installations, having a giant database"
+    },
+    {
+      "Time_Start": 2909.7000000000003,
+      "Time_End": 2912.7000000000003,
+      "Text": " like that and relying on software policy controls"
+    },
+    {
+      "Time_Start": 2912.7000000000003,
+      "Time_End": 2915.7000000000003,
+      "Text": " to control data segregation was just not an option for us."
+    },
+    {
+      "Time_Start": 2915.7000000000003,
+      "Time_End": 2918.7000000000003,
+      "Text": " And that left very few other options,"
+    },
+    {
+      "Time_Start": 2918.7000000000003,
+      "Time_End": 2921.7000000000003,
+      "Text": " because Mongo, Cassandra, and its ilk, they require,"
+    },
+    {
+      "Time_Start": 2921.7000000000003,
+      "Time_End": 2923.7000000000003,
+      "Text": " and if you're familiar with cap theorem,"
+    },
+    {
+      "Time_Start": 2923.7000000000003,
+      "Time_End": 2925.7000000000003,
+      "Text": " they do require scale."
+    },
+    {
+      "Time_Start": 2925.7000000000003,
+      "Time_End": 2927.7000000000003,
+      "Text": " They require multiple instances."
+    },
+    {
+      "Time_Start": 2927.7000000000003,
+      "Time_End": 2928.7000000000003,
+      "Text": " You can run them single instance,"
+    },
+    {
+      "Time_Start": 2928.7000000000003,
+      "Time_End": 2931.7000000000003,
+      "Text": " but then your HA story kind of sucks."
+    },
+    {
+      "Time_Start": 2931.7000000000003,
+      "Time_End": 2933.7000000000003,
+      "Text": " And that's really kind of the birth of why"
+    },
+    {
+      "Time_Start": 2933.7000000000003,
+      "Time_End": 2935.7000000000003,
+      "Text": " we're moving to Postgres."
+    },
+    {
+      "Time_Start": 2935.7000000000003,
+      "Time_End": 2937.7000000000003,
+      "Text": " And believe me, it's hard."
+    },
+    {
+      "Time_Start": 2937.7000000000003,
+      "Time_End": 2940.7000000000003,
+      "Text": " We're bringing Cypher along for the ride."
+    },
+    {
+      "Time_Start": 2941.7000000000003,
+      "Time_End": 2943.7000000000003,
+      "Text": " But we're going to make it work."
+    },
+    {
+      "Time_Start": 2943.7000000000003,
+      "Time_End": 2945.7000000000003,
+      "Text": " It's actually kind of cool."
+    },
+    {
+      "Time_Start": 2945.7000000000003,
+      "Time_End": 2947.7000000000003,
+      "Text": " We haven't really talked about it very much publicly,"
+    },
+    {
+      "Time_Start": 2947.7000000000003,
+      "Time_End": 2952.7000000000003,
+      "Text": " but in VHCE right now, when you run Cypher,"
+    },
+    {
+      "Time_Start": 2952.7000000000003,
+      "Time_End": 2954.7000000000003,
+      "Text": " if you don't have a certain flag set,"
+    },
+    {
+      "Time_Start": 2954.7000000000003,
+      "Time_End": 2956.7000000000003,
+      "Text": " it's actually all getting translated"
+    },
+    {
+      "Time_Start": 2956.7000000000003,
+      "Time_End": 2960.7000000000003,
+      "Text": " through an interface called DOBS, which is the"
+    },
+    {
+      "Time_Start": 2960.7000000000003,
+      "Time_End": 2961.7000000000003,
+      "Text": " Database"
+    },
+    {
+      "Time_Start": 2961.7000000000003,
+      "Time_End": 2964.7000000000003,
+      "Text": " Agnostic Graph Wrapper for"
+    },
+    {
+      "Time_Start": 2964.7000000000003,
+      "Time_End": 2965.7000000000003,
+      "Text": " Graph Wrapper System."
+    },
+    {
+      "Time_Start": 2965.7000000000003,
+      "Time_End": 2966.7000000000003,
+      "Text": " System, there we go."
+    },
+    {
+      "Time_Start": 2966.7000000000003,
+      "Time_End": 2969.7000000000003,
+      "Text": " So we actually came up with this because"
+    },
+    {
+      "Time_Start": 2969.7000000000003,
+      "Time_End": 2971.7000000000003,
+      "Text": " we knew we were eventually going to be migrating up"
+    },
+    {
+      "Time_Start": 2971.7000000000003,
+      "Time_End": 2973.7000000000003,
+      "Text": " to Neo4j."
+    },
+    {
+      "Time_Start": 2973.7000000000003,
+      "Time_End": 2975.7000000000003,
+      "Text": " So what DOBS actually does is it translates"
+    },
+    {
+      "Time_Start": 2975.7000000000003,
+      "Time_End": 2977.7000000000003,
+      "Text": " Cypher into raw database calls,"
+    },
+    {
+      "Time_Start": 2977.7000000000003,
+      "Time_End": 2979.7000000000003,
+      "Text": " and then we pass that to the database."
+    },
+    {
+      "Time_Start": 2979.7000000000003,
+      "Time_End": 2981.7000000000003,
+      "Text": " And because we've abstracted it,"
+    },
+    {
+      "Time_Start": 2981.7000000000003,
+      "Time_End": 2983.7000000000003,
+      "Text": " when we go to Postgres, Cypher's still going to work"
+    },
+    {
+      "Time_Start": 2983.7000000000003,
+      "Time_End": 2986.7000000000003,
+      "Text": " because it's going to translate Cypher"
+    },
+    {
+      "Time_Start": 2986.7000000000003,
+      "Time_End": 2987.7000000000003,
+      "Text": " into Postgres instead."
+    },
+    {
+      "Time_Start": 2987.7000000000003,
+      "Time_End": 2989.7000000000003,
+      "Text": " This is actually open source in VHCE,"
+    },
+    {
+      "Time_Start": 2989.7000000000003,
+      "Time_End": 2991.7000000000003,
+      "Text": " and no one's really looked at it,"
+    },
+    {
+      "Time_Start": 2991.7000000000003,
+      "Time_End": 2993.7000000000003,
+      "Text": " but it's there, and you can take a look."
+    },
+    {
+      "Time_Start": 2993.7000000000003,
+      "Time_End": 2995.7000000000003,
+      "Text": " I'm pretty sure some of the Postgres code is on there,"
+    },
+    {
+      "Time_Start": 2995.7000000000003,
+      "Time_End": 2996.7000000000003,
+      "Text": " because..."
+    },
+    {
+      "Time_Start": 2996.7000000000003,
+      "Time_End": 2998.7000000000003,
+      "Text": " Yeah, the Postgres code is up there."
+    },
+    {
+      "Time_Start": 2998.7000000000003,
+      "Time_End": 3000.7000000000003,
+      "Text": " We're doing it all in the open."
+    },
+    {
+      "Time_Start": 3000.7000000000003,
+      "Time_End": 3002.7000000000003,
+      "Text": " The reason for doing it in the open, too,"
+    },
+    {
+      "Time_Start": 3002.7000000000003,
+      "Time_End": 3004.7000000000003,
+      "Text": " is, for example, we had, like,"
+    },
+    {
+      "Time_Start": 3004.7000000000003,
+      "Time_End": 3007.7000000000003,
+      "Text": " Kubehound runs on JanusGraph and Mongo."
+    },
+    {
+      "Time_Start": 3007.7000000000003,
+      "Time_End": 3009.7000000000003,
+      "Text": " I would love to see Bloodhound on Mongo."
+    },
+    {
+      "Time_Start": 3009.7000000000003,
+      "Time_End": 3011.7000000000003,
+      "Text": " I don't want to ever..."
+    },
+    {
+      "Time_Start": 3011.7000000000003,
+      "Time_End": 3014.7000000000003,
+      "Text": " A lot of good engineering decisions are built around"
+    },
+    {
+      "Time_Start": 3014.7000000000003,
+      "Time_End": 3016.7000000000003,
+      "Text": " not painting yourself into a corner,"
+    },
+    {
+      "Time_Start": 3016.7000000000003,
+      "Time_End": 3017.7000000000003,
+      "Text": " and this is an exercise in that."
+    },
+    {
+      "Time_Start": 3017.7000000000003,
+      "Time_End": 3019.7000000000003,
+      "Text": " A lot of upfront cost,"
+    },
+    {
+      "Time_Start": 3019.7000000000003,
+      "Time_End": 3021.7000000000003,
+      "Text": " but the output is, well, hey,"
+    },
+    {
+      "Time_Start": 3021.7000000000003,
+      "Time_End": 3023.7000000000003,
+      "Text": " maybe one day we do want to support Gremlin."
+    },
+    {
+      "Time_Start": 3023.7000000000003,
+      "Time_End": 3025.7000000000003,
+      "Text": " Great, let's write a dog's front end"
+    },
+    {
+      "Time_Start": 3025.7000000000003,
+      "Time_End": 3026.7000000000003,
+      "Text": " and have that translate to SQL"
+    },
+    {
+      "Time_Start": 3026.7000000000003,
+      "Time_End": 3027.7000000000003,
+      "Text": " and cry a million tears,"
+    },
+    {
+      "Time_Start": 3027.7000000000003,
+      "Time_End": 3030.7000000000003,
+      "Text": " because now we have to write a fricking compiler."
+    },
+    {
+      "Time_Start": 3030.7000000000003,
+      "Time_End": 3032.7000000000003,
+      "Text": " But it's kind of fun."
+    },
+    {
+      "Time_Start": 3032.7000000000003,
+      "Time_End": 3036.7000000000003,
+      "Text": " If you ever take a look at the post-processing logic in VHCE,"
+    },
+    {
+      "Time_Start": 3036.7000000000003,
+      "Time_End": 3039.7000000000003,
+      "Text": " you'll actually see where we're using dogs."
+    },
+    {
+      "Time_Start": 3039.7000000000003,
+      "Time_End": 3044.7000000000003,
+      "Text": " We basically wrote what looks like an AST,"
+    },
+    {
+      "Time_Start": 3044.7000000000003,
+      "Time_End": 3047.7000000000003,
+      "Text": " and you wrap queries using ANDs and ORs,"
+    },
+    {
+      "Time_Start": 3047.7000000000003,
+      "Time_End": 3049.7000000000003,
+      "Text": " and underneath the hood,"
+    },
+    {
+      "Time_Start": 3049.7000000000003,
+      "Time_End": 3051.7000000000003,
+      "Text": " it just translates Cypher for you,"
+    },
+    {
+      "Time_Start": 3051.7000000000003,
+      "Time_End": 3053.7000000000003,
+      "Text": " and it just goes to native like that."
+    },
+    {
+      "Time_Start": 3053.7000000000003,
+      "Time_End": 3054.7000000000003,
+      "Text": " It's pretty cool."
+    },
+    {
+      "Time_Start": 3054.7000000000003,
+      "Time_End": 3058.7000000000003,
+      "Text": " Native dogs is kind of Gremlin meets Hibernate,"
+    },
+    {
+      "Time_Start": 3058.7000000000003,
+      "Time_End": 3061.7000000000003,
+      "Text": " which if any of you know what those two technologies are"
+    },
+    {
+      "Time_Start": 3061.7000000000003,
+      "Time_End": 3065.7000000000003,
+      "Text": " and you feel that existential dread creep in the back of your mind,"
+    },
+    {
+      "Time_Start": 3065.7000000000003,
+      "Time_End": 3066.7000000000003,
+      "Text": " it's interesting,"
+    },
+    {
+      "Time_Start": 3066.7000000000003,
+      "Time_End": 3069.7000000000003,
+      "Text": " but it's all in an attempt to give us the flexibility"
+    },
+    {
+      "Time_Start": 3069.7000000000003,
+      "Time_End": 3071.7000000000003,
+      "Text": " we need to answer to future scale needs"
+    },
+    {
+      "Time_Start": 3071.7000000000003,
+      "Time_End": 3074.7000000000003,
+      "Text": " or future user requirements."
+    },
+    {
+      "Time_Start": 3074.7000000000003,
+      "Time_End": 3075.7000000000003,
+      "Text": " This is a side note."
+    },
+    {
+      "Time_Start": 3075.7000000000003,
+      "Time_End": 3079.7000000000003,
+      "Text": " We have a really bad habit of acronyming everything around dog names,"
+    },
+    {
+      "Time_Start": 3079.7000000000003,
+      "Time_End": 3083.7000000000003,
+      "Text": " so don't expect that to change anytime soon."
+    },
+    {
+      "Time_Start": 3083.7000000000003,
+      "Time_End": 3084.7000000000003,
+      "Text": " All right."
+    },
+    {
+      "Time_Start": 3084.7000000000003,
+      "Time_End": 3087.7000000000003,
+      "Text": " Let's have a round of applause for John and Rohan."
+    },
+    {
+      "Time_Start": 3087.7000000000003,
+      "Time_End": 3089.7000000000003,
+      "Text": " Thank you."
+    }
+  ]
+}
