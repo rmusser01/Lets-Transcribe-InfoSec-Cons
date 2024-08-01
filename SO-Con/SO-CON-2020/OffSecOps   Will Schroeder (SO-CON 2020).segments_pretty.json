@@ -1,0 +1,1229 @@
+{
+  "segments": [
+    {
+      "Time_Start": 0.0,
+      "Time_End": 20.92,
+      "Text": "This text was transcribed using whisper model: large-v2\n\n Hi, welcome to AuthSecOps. My name is Will Schroeder. My handle is harmjoy on Twitter"
+    },
+    {
+      "Time_Start": 20.92,
+      "Time_End": 26.080000000000002,
+      "Text": " and GitHub. I'm a technical architect here at SpectreOps. I've written a lot of code"
+    },
+    {
+      "Time_Start": 26.080000000000002,
+      "Time_End": 30.92,
+      "Text": " over the past several years, most of it offensive in nature. I was one of the primary developers"
+    },
+    {
+      "Time_Start": 30.92,
+      "Time_End": 35.760000000000005,
+      "Text": " of the Vail framework, as well as the Empire project. I wrote the PowerView and PowerUp"
+    },
+    {
+      "Time_Start": 35.760000000000005,
+      "Time_End": 41.92,
+      "Text": " tool sets. I was a co-founder for the Bloodhound project and the primary author on the Ghostpack"
+    },
+    {
+      "Time_Start": 41.92,
+      "Time_End": 47.6,
+      "Text": " C-Sharp exploitation, post-exploitation type tool set, including things like SharpDP API,"
+    },
+    {
+      "Time_Start": 47.6,
+      "Time_End": 51.84,
+      "Text": " Rubius, Seapult, and more. I've talked at a lot of conferences over the past several"
+    },
+    {
+      "Time_Start": 51.84,
+      "Time_End": 58.120000000000005,
+      "Text": " years, everything from DerbyCon to Troopers, and I am a veteran trainer. So I'm the principal"
+    },
+    {
+      "Time_Start": 58.120000000000005,
+      "Time_End": 64.28,
+      "Text": " architect for our Adversary Tactics Red Team Operations course. I was a developer on the"
+    },
+    {
+      "Time_Start": 64.28,
+      "Time_End": 69.84,
+      "Text": " Offensive PowerShell course that we retired last year, and I sometimes blog at blog.harmjoy.net."
+    },
+    {
+      "Time_Start": 69.84,
+      "Time_End": 76.24000000000001,
+      "Text": " So TLDR, what we're going to cover today. Essentially, this whole presentation is about"
+    },
+    {
+      "Time_Start": 76.24,
+      "Time_End": 82.08,
+      "Text": " why you should consider integrating DevOps practices into your offsec pipelines or offensive"
+    },
+    {
+      "Time_Start": 82.08,
+      "Time_End": 87.56,
+      "Text": " security operations. I'm going to cover previous work, a lot of it from Adam Chester, XPN,"
+    },
+    {
+      "Time_Start": 87.56,
+      "Time_End": 93.67999999999999,
+      "Text": " as well as other people at MDSec. Now I'm going to touch on our architecture, specifically"
+    },
+    {
+      "Time_Start": 93.67999999999999,
+      "Time_End": 98.44,
+      "Text": " declarative Jenkins pipelines, including structure, how we build them, how we store them, common"
+    },
+    {
+      "Time_Start": 98.44,
+      "Time_End": 105.8,
+      "Text": " library functions of files, parameter pass-throughs, and meta jobs. Also, artifactory, so artifact"
+    },
+    {
+      "Time_Start": 105.8,
+      "Time_End": 110.56,
+      "Text": " storage, couple strike integration, artifact tracking, all these types of fun things. And"
+    },
+    {
+      "Time_Start": 110.56,
+      "Time_End": 115.72,
+      "Text": " then how we can actually apply this architecture to do interesting things. So things like proactive"
+    },
+    {
+      "Time_Start": 115.72,
+      "Time_End": 121.2,
+      "Text": " checksum scanning to see if any of your artifacts leaked. Do offset checks on any artifacts"
+    },
+    {
+      "Time_Start": 121.2,
+      "Time_End": 126.44,
+      "Text": " before you actually deploy these artifacts to real customer environments. Artifact fingerprinting"
+    },
+    {
+      "Time_Start": 126.44,
+      "Time_End": 133.44,
+      "Text": " to get custom IOCs from things, or proactive stamping out of known IOCs from public tool"
+    },
+    {
+      "Time_Start": 133.48,
+      "Time_End": 140.0,
+      "Text": " sets for source code repos that you don't actually control. Lots of cool things that we'll touch on."
+    },
+    {
+      "Time_Start": 140.0,
+      "Time_End": 146.35999999999999,
+      "Text": " So why offset needs DevOps? And with DevOps, I'm generally talking about this process that's come"
+    },
+    {
+      "Time_Start": 146.35999999999999,
+      "Time_End": 151.12,
+      "Text": " up over the last 10 years for software engineering of that kind of plan, code, build, test, release,"
+    },
+    {
+      "Time_Start": 151.12,
+      "Time_End": 155.92,
+      "Text": " deploy, operate, monitor type classic cycle that feeds into each other. Or essentially, this is a"
+    },
+    {
+      "Time_Start": 156.28000000000003,
+      "Time_End": 164.48000000000002,
+      "Text": " process and a series of practices that try to facilitate the rapid deployment of code through"
+    },
+    {
+      "Time_Start": 164.48000000000002,
+      "Time_End": 169.16000000000003,
+      "Text": " software engineering. So there's no reason this can't apply to offensive security as well. So this"
+    },
+    {
+      "Time_Start": 169.16000000000003,
+      "Time_End": 174.84000000000003,
+      "Text": " tweet from Adam, XPN, is saying, you know, this is your monthly reminder that with offensive"
+    },
+    {
+      "Time_Start": 174.84000000000003,
+      "Time_End": 180.8,
+      "Text": " security DevOps is your friend. So this is a screenshot of some Azure DevOps pipelines for"
+    },
+    {
+      "Time_Start": 180.8,
+      "Time_End": 185.20000000000002,
+      "Text": " building things like Ruby, Sharpnum, Seapelt, and others. And we're going to get into why some of"
+    },
+    {
+      "Time_Start": 185.20000000000002,
+      "Time_End": 191.60000000000002,
+      "Text": " these things matter and why they can be an advantage to you. Because offset code, offensive"
+    },
+    {
+      "Time_Start": 191.60000000000002,
+      "Time_End": 196.8,
+      "Text": " code is just like any other code. It needs proper testing, version control, validation, all that kind"
+    },
+    {
+      "Time_Start": 196.8,
+      "Time_End": 201.96,
+      "Text": " of fun stuff. But there's also some special considerations for offensive focus, focus tool"
+    },
+    {
+      "Time_Start": 201.96,
+      "Time_End": 208.84000000000003,
+      "Text": " sets. Specifically, things like obfuscation, whether it's C Sharp, C and C++, or some C learning"
+    },
+    {
+      "Time_Start": 208.84000000000003,
+      "Time_End": 213.44000000000003,
+      "Text": " stuff, you know, PowerShell, obfuscation with evoke obfuscation, or comment stripping, any of those"
+    },
+    {
+      "Time_Start": 213.44,
+      "Time_End": 218.68,
+      "Text": " types of things. Then also things like indicator stripping. Like I mentioned, there might be known"
+    },
+    {
+      "Time_Start": 218.72,
+      "Time_End": 223.4,
+      "Text": " IOCs or indicators for public tool sets. Or if you don't want to keep a private branch, maybe you"
+    },
+    {
+      "Time_Start": 223.4,
+      "Time_End": 230.28,
+      "Text": " can just patch out those known IOCs or change them up on build. We also care about per op tracking"
+    },
+    {
+      "Time_Start": 230.28,
+      "Time_End": 235.56,
+      "Text": " of artifacts, which we'll get into why that matters and how you can actually do this. Also"
+    },
+    {
+      "Time_Start": 235.56,
+      "Time_End": 240.48,
+      "Text": " vetting, like how much you actually trust all this offensive tool authors, right? Have you read"
+    },
+    {
+      "Time_Start": 240.48000000000002,
+      "Time_End": 244.4,
+      "Text": " through any of the code? Or how do you control updates? You know, someone pushes an update to a"
+    },
+    {
+      "Time_Start": 244.4,
+      "Time_End": 248.08,
+      "Text": " new tool set, does that just get deployed off in your builds and all those types of things. And"
+    },
+    {
+      "Time_Start": 248.08,
+      "Time_End": 254.88000000000002,
+      "Text": " we'll cover ways to kind of try to mitigate some of these concerns. But also an idea here is that"
+    },
+    {
+      "Time_Start": 254.88000000000002,
+      "Time_End": 260.16,
+      "Text": " if you build this process, you're able to kind of transparently insert yourself into an engagement"
+    },
+    {
+      "Time_Start": 260.16,
+      "Time_End": 265.32,
+      "Text": " critical process and standardize your tool set across all engagements. So if you want to update"
+    },
+    {
+      "Time_Start": 265.32,
+      "Time_End": 270.28000000000003,
+      "Text": " something like obfuscation, or IOC collection, or whatever else, you're already hooked into all"
+    },
+    {
+      "Time_Start": 270.28000000000003,
+      "Time_End": 275.40000000000003,
+      "Text": " these things. And you're able to update those little bits without interrupting the normal flow"
+    },
+    {
+      "Time_Start": 275.40000000000003,
+      "Time_End": 280.36,
+      "Text": " of operations or with operators even knowing. So there's definitely some previous work here. A lot"
+    },
+    {
+      "Time_Start": 280.36,
+      "Time_End": 287.0,
+      "Text": " of it is from XPN, Domjel, and some other people at MDSec. For all this, the kind of specifically"
+    },
+    {
+      "Time_Start": 287.0,
+      "Time_End": 290.96000000000004,
+      "Text": " normally like Azure DevOps type stuff, there's a little bit from Revershall as well. And there's a"
+    },
+    {
+      "Time_Start": 290.96000000000004,
+      "Time_End": 295.08000000000004,
+      "Text": " bit of Jenkins stuff and REST Transfer. I'm sure there's plenty more that I've missed. You know, I"
+    },
+    {
+      "Time_Start": 295.08000000000004,
+      "Time_End": 299.24,
+      "Text": " just tried to do my best to kind of pull up some of these references. So you might be thinking,"
+    },
+    {
+      "Time_Start": 299.28000000000003,
+      "Time_End": 304.2,
+      "Text": " like, why are you reinventing the wheel? Why not just reuse some of the existing Azure DevOps"
+    },
+    {
+      "Time_Start": 304.2,
+      "Time_End": 308.24,
+      "Text": " approaches that are already out there and already been published? The short answer is that we don't"
+    },
+    {
+      "Time_Start": 308.24,
+      "Time_End": 315.6,
+      "Text": " trust organizations to not collect telemetry in our offensive tools and or operations. Our general"
+    },
+    {
+      "Time_Start": 315.6,
+      "Time_End": 322.04,
+      "Text": " philosophy tends to be, we want to host as much of our offensive infrastructure, including DevOps"
+    },
+    {
+      "Time_Start": 322.04,
+      "Time_End": 327.84000000000003,
+      "Text": " pipelines, on hardware that we own and control. We're not saying that using Azure DevOps is wrong."
+    },
+    {
+      "Time_Start": 327.84000000000003,
+      "Time_End": 332.84000000000003,
+      "Text": " We're not saying that it doesn't have advantages over this approach, which it definitely does. It's"
+    },
+    {
+      "Time_Start": 332.84000000000003,
+      "Time_End": 338.20000000000005,
+      "Text": " just a philosophical reason that we took this approach of saying, we want to control everything"
+    },
+    {
+      "Time_Start": 338.24,
+      "Time_End": 343.32000000000005,
+      "Text": " as much as we can within reason. We started from that point and then built the architecture from"
+    },
+    {
+      "Time_Start": 343.32000000000005,
+      "Time_End": 347.96000000000004,
+      "Text": " there. So this is what we came up with. We have on the top left there, we're going to have Git,"
+    },
+    {
+      "Time_Start": 348.24,
+      "Time_End": 353.72,
+      "Text": " USB, Bitbucket, now moving to GitLab. This is where we store all of our, you know, build pipelines"
+    },
+    {
+      "Time_Start": 353.72,
+      "Time_End": 359.36,
+      "Text": " and everything as code. We have the Jenkins kind of master build server along with the master"
+    },
+    {
+      "Time_Start": 359.36,
+      "Time_End": 364.0,
+      "Text": " Jenkins control server, along with the Jenkins build servers for different OSs underneath. Our"
+    },
+    {
+      "Time_Start": 364.16,
+      "Time_End": 369.16,
+      "Text": " Spectros VMs have different ways to interface in that will trigger jobs to build all our specific"
+    },
+    {
+      "Time_Start": 369.16,
+      "Time_End": 373.6,
+      "Text": " tools. Those artifacts are stored in Artifactory, which are retrieved from VMs as well. This is all"
+    },
+    {
+      "Time_Start": 373.6,
+      "Time_End": 378.44000000000005,
+      "Text": " kind of our VPN enclave, those types of things. We also have connections at the Slack for"
+    },
+    {
+      "Time_Start": 378.44,
+      "Time_End": 383.36,
+      "Text": " monitoring stuff about artifacts presented and things that got leaked and all that. So we can do"
+    },
+    {
+      "Time_Start": 383.36,
+      "Time_End": 388.6,
+      "Text": " alerts. We have ways that we need to actually pull down public repositories into the different"
+    },
+    {
+      "Time_Start": 388.6,
+      "Time_End": 394.04,
+      "Text": " Jenkins build servers. We have some API hash check stuff, which we'll touch on in a bit. Another"
+    },
+    {
+      "Time_Start": 394.04,
+      "Time_End": 398.12,
+      "Text": " great thing is everything here is free. So the hardware isn't free, but all the software you can"
+    },
+    {
+      "Time_Start": 398.12,
+      "Time_End": 402.56,
+      "Text": " do for free. You have free versions of GitLab. Jenkins is open source is free. There's a free"
+    },
+    {
+      "Time_Start": 402.56,
+      "Time_End": 407.24,
+      "Text": " version of Artifactory. You can do free Slack instances and like, you know, hooks and all that"
+    },
+    {
+      "Time_Start": 407.24,
+      "Time_End": 412.28000000000003,
+      "Text": " kind of stuff. And GitHub allows free hosting. So, you know, there are ways that you can pay and get"
+    },
+    {
+      "Time_Start": 412.28000000000003,
+      "Time_End": 416.48,
+      "Text": " different products for this. But the way that we architected this didn't make it do exactly kind of"
+    },
+    {
+      "Time_Start": 416.48,
+      "Time_End": 420.92,
+      "Text": " what we wanted. We actually ended up just going with all these kind of free or open source"
+    },
+    {
+      "Time_Start": 420.92,
+      "Time_End": 426.52,
+      "Text": " solutions. So declarative Jenkins, what does that mean? Jenkins jobs are essentially like the"
+    },
+    {
+      "Time_Start": 426.52,
+      "Time_End": 431.6,
+      "Text": " instances that tell a Jenkins server how to build a project. They come in a few different flavors."
+    },
+    {
+      "Time_Start": 432.12,
+      "Time_End": 437.32000000000005,
+      "Text": " Some people are familiar, the classic or freestyle jobs, which are just kind of stored in the"
+    },
+    {
+      "Time_Start": 437.44,
+      "Time_End": 443.40000000000003,
+      "Text": " Jenkins server itself through the GUI. The more modern way to do these jobs are through scripted"
+    },
+    {
+      "Time_Start": 443.64000000000004,
+      "Time_End": 448.68,
+      "Text": " or kind of version two of that are declarative pipelines. What does this mean? These are"
+    },
+    {
+      "Time_Start": 448.68,
+      "Time_End": 455.40000000000003,
+      "Text": " essentially just pipelines as code through a specific language. And they allow you to construct"
+    },
+    {
+      "Time_Start": 455.40000000000003,
+      "Time_End": 460.76000000000005,
+      "Text": " your Jenkins builds properly as code that you can then store on some kind of SCM for us in"
+    },
+    {
+      "Time_Start": 461.0,
+      "Time_End": 467.92,
+      "Text": " GitLab into a single or multiple repos. You can also define and use common library functions"
+    },
+    {
+      "Time_Start": 468.15999999999997,
+      "Time_End": 472.92,
+      "Text": " through Jenkins, through declarative Jenkins, which we'll talk about here in a second. So what"
+    },
+    {
+      "Time_Start": 472.92,
+      "Time_End": 477.15999999999997,
+      "Text": " this repo actually looks like, we just have a single offensive tool set repo. Underneath is"
+    },
+    {
+      "Time_Start": 477.15999999999997,
+      "Time_End": 481.32,
+      "Text": " broken up by language and then by project. And under each project, there's a single Jenkins file"
+    },
+    {
+      "Time_Start": 481.32,
+      "Time_End": 486.15999999999997,
+      "Text": " that is then cloned down from the Jenkins declarative pipeline. So this lets us update and"
+    },
+    {
+      "Time_Start": 486.16,
+      "Time_End": 491.56,
+      "Text": " check and kind of track everything very, very easily in a central place. The language in"
+    },
+    {
+      "Time_Start": 491.56,
+      "Time_End": 495.64000000000004,
+      "Text": " declarative Jenkins files is groovy. It's a little bit weird. It can be a little bit annoying at"
+    },
+    {
+      "Time_Start": 495.64000000000004,
+      "Time_End": 499.12,
+      "Text": " times, but in general, it's not too bad. It's like code is code. It's not that different from"
+    },
+    {
+      "Time_Start": 499.12,
+      "Time_End": 503.40000000000003,
+      "Text": " other things. You have different steps and stages and things you can do with this. You see some of"
+    },
+    {
+      "Time_Start": 503.40000000000003,
+      "Time_End": 508.16,
+      "Text": " the code here, like obfuscating binaries or building them or testing the OPSEC. This is just"
+    },
+    {
+      "Time_Start": 508.16,
+      "Time_End": 512.12,
+      "Text": " kind of an example of giving an idea of what it looks like. At the end of this presentation, I"
+    },
+    {
+      "Time_Start": 512.12,
+      "Time_End": 518.72,
+      "Text": " have a POC or GTFO sample for kind of a declarative pipeline that we tend to use. Like I"
+    },
+    {
+      "Time_Start": 518.72,
+      "Time_End": 523.4,
+      "Text": " mentioned, one nice thing with Jenkins declarative pipeline files is they allow the use of"
+    },
+    {
+      "Time_Start": 523.4,
+      "Time_End": 530.08,
+      "Text": " library functions. So these reside in a single second internal GitLab repo, and they're cloned"
+    },
+    {
+      "Time_Start": 530.08,
+      "Time_End": 534.24,
+      "Text": " down and compiled for any project that references the library name. So this lets us"
+    },
+    {
+      "Time_Start": 534.24,
+      "Time_End": 540.0,
+      "Text": " centralize common functionality and update it across all builds. So let's say that you wanted"
+    },
+    {
+      "Time_Start": 540.0,
+      "Time_End": 544.2,
+      "Text": " to change the way you were doing obfuscation across all the builds. You had a common function"
+    },
+    {
+      "Time_Start": 544.2,
+      "Time_End": 549.84,
+      "Text": " built for that. Instead of having to go into dozens or 50 plus different declarative pipelines"
+    },
+    {
+      "Time_Start": 549.84,
+      "Time_End": 555.2,
+      "Text": " and changing different options or the method or whatever else, we can change it in the single"
+    },
+    {
+      "Time_Start": 555.2,
+      "Time_End": 559.36,
+      "Text": " common library repo function, and that's automatically pushed down to all the builds"
+    },
+    {
+      "Time_Start": 559.36,
+      "Time_End": 564.6,
+      "Text": " without us doing anything else. Also, obviously things like script comment stripping for like"
+    },
+    {
+      "Time_Start": 564.6,
+      "Time_End": 569.48,
+      "Text": " PowerShell, artifact fingerprint extraction, like we mentioned before, sRDI conversion,"
+    },
+    {
+      "Time_Start": 569.48,
+      "Time_End": 574.72,
+      "Text": " basically anything that we want to do more than once in any kind of repo for the offensive"
+    },
+    {
+      "Time_Start": 574.72,
+      "Time_End": 579.28,
+      "Text": " build pipeline stuff will tend to pull out to a common library function. This is one thing"
+    },
+    {
+      "Time_Start": 579.28,
+      "Time_End": 584.6800000000001,
+      "Text": " that Jenkins does really nicely versus some of the other approaches, I think, personal"
+    },
+    {
+      "Time_Start": 584.6800000000001,
+      "Time_End": 589.84,
+      "Text": " opinion. Also, I mentioned like kind of this parameter pass through stuff at the beginning. So"
+    },
+    {
+      "Time_Start": 589.84,
+      "Time_End": 594.8000000000001,
+      "Text": " declarative Jenkins jobs can take build parameters. Most CI pipeline stuff can take build"
+    },
+    {
+      "Time_Start": 594.8000000000001,
+      "Time_End": 599.48,
+      "Text": " parameters. So imagine just like a string that says, you know, op ID equals X or something."
+    },
+    {
+      "Time_Start": 600.36,
+      "Time_End": 605.9200000000001,
+      "Text": " Jenkins jobs can kick off other Jenkins jobs, and they can also pass through their parameters. So"
+    },
+    {
+      "Time_Start": 605.9200000000001,
+      "Time_End": 612.0400000000001,
+      "Text": " this allows us to basically construct a meta build that says offensive toolset, or it takes a an op"
+    },
+    {
+      "Time_Start": 612.0400000000001,
+      "Time_End": 618.0000000000001,
+      "Text": " ID or engagement ID parameter. And this will kick off all the other offensive toolset jobs and"
+    },
+    {
+      "Time_Start": 618.0000000000001,
+      "Time_End": 623.1600000000001,
+      "Text": " pass that parameter through. So it filters down to individual tool builds. We also insert a"
+    },
+    {
+      "Time_Start": 623.16,
+      "Time_End": 627.76,
+      "Text": " little bit of benign randomness into each tool, imagining like random GUIs or strings dependent or"
+    },
+    {
+      "Time_Start": 627.76,
+      "Time_End": 633.8399999999999,
+      "Text": " tweak just a little bit. So we can ensure the uniqueness of every single build of every single"
+    },
+    {
+      "Time_Start": 633.8399999999999,
+      "Time_End": 640.16,
+      "Text": " individual artifact. So the TLDR translation of all this is that we can produce for every"
+    },
+    {
+      "Time_Start": 640.16,
+      "Time_End": 645.8399999999999,
+      "Text": " engagement, a complete build of the entire offensive toolset in a way that each build artifact is"
+    },
+    {
+      "Time_Start": 645.84,
+      "Time_End": 654.12,
+      "Text": " unique for every engagement. So given a particular checksum, SHA-1 or MD5 of any artifact we've ever"
+    },
+    {
+      "Time_Start": 654.12,
+      "Time_End": 661.2,
+      "Text": " deployed, we can track that back to the exact tool name and op ID that we actually have that it came"
+    },
+    {
+      "Time_Start": 661.2,
+      "Time_End": 665.2800000000001,
+      "Text": " from. This is just an example of kind of a meta build to where you're passing through some of"
+    },
+    {
+      "Time_Start": 665.2800000000001,
+      "Time_End": 671.36,
+      "Text": " these project IDs, nothing too crazy. And that's the build side with Jenkins. Now, what do we do"
+    },
+    {
+      "Time_Start": 671.36,
+      "Time_End": 675.88,
+      "Text": " with these artifacts after they're built? We use artifactory. So this functions as the central"
+    },
+    {
+      "Time_Start": 675.88,
+      "Time_End": 681.36,
+      "Text": " artifact repository for all of our offensive artifacts and IOCs. So artifactory is a binary"
+    },
+    {
+      "Time_Start": 681.36,
+      "Time_End": 686.44,
+      "Text": " repository, just kind of a natural extension to a source code repo, and that it will store the"
+    },
+    {
+      "Time_Start": 686.44,
+      "Time_End": 693.36,
+      "Text": " outcome of build processes or artifacts. So any PowerShell PS1, any position independent shellcode"
+    },
+    {
+      "Time_Start": 693.36,
+      "Time_End": 700.04,
+      "Text": " blob bin, any C-sharp built assembly gets stored in artifactory after it's generated on the Jenkins"
+    },
+    {
+      "Time_Start": 700.04,
+      "Time_End": 706.9599999999999,
+      "Text": " side. That project ID or engagement ID that I mentioned, that metadata, is passed through to this"
+    },
+    {
+      "Time_Start": 706.9599999999999,
+      "Time_End": 712.0,
+      "Text": " build job and is used to tag and structure the resulting project folder in artifactory, which I'll"
+    },
+    {
+      "Time_Start": 712.0,
+      "Time_End": 716.64,
+      "Text": " give an example here in a sec. There's also the artifactory query language, AQL, and the"
+    },
+    {
+      "Time_Start": 716.64,
+      "Time_End": 721.4,
+      "Text": " artifactory API, which is very well documented and fleshed out. So you can use this to query and"
+    },
+    {
+      "Time_Start": 721.4,
+      "Time_End": 726.88,
+      "Text": " search for specific artifacts like per engagement or artifacts with certain characteristics. So"
+    },
+    {
+      "Time_Start": 726.88,
+      "Time_End": 731.08,
+      "Text": " combining this, there is a really nice interface and interplay between Jenkins and artifactory."
+    },
+    {
+      "Time_Start": 731.08,
+      "Time_End": 736.08,
+      "Text": " There's really nice plugins for it, makes it super easy. You just specify the exact built"
+    },
+    {
+      "Time_Start": 736.08,
+      "Time_End": 741.0,
+      "Text": " artifact in the folder that you want to deploy to artifactory in the artifactory instance, where"
+    },
+    {
+      "Time_Start": 741.0,
+      "Time_End": 745.2,
+      "Text": " you want to deploy it to, and you can add custom properties or metadata to it as well, with things"
+    },
+    {
+      "Time_Start": 745.2,
+      "Time_End": 750.48,
+      "Text": " like project ID or language or purpose of the artifact or something like that. This is what"
+    },
+    {
+      "Time_Start": 750.48,
+      "Time_End": 755.72,
+      "Text": " it'll tend to look like, or how we have it structured. We have our offensive tool kit"
+    },
+    {
+      "Time_Start": 755.72,
+      "Time_End": 762.0,
+      "Text": " folder, we have projects broken out with each different project ID, and we have all the actual"
+    },
+    {
+      "Time_Start": 762.0,
+      "Time_End": 766.5600000000001,
+      "Text": " artifacts that are built underneath. So we have all the AXEs, everything else, and we have metadata"
+    },
+    {
+      "Time_Start": 766.5600000000001,
+      "Time_End": 770.48,
+      "Text": " over on the right, and you can download as you want. And how do operators actually download this"
+    },
+    {
+      "Time_Start": 770.48,
+      "Time_End": 777.0400000000001,
+      "Text": " stuff? We adapted MDSEC's execute GitHub assembly aggressor to pull artifacts from the local"
+    },
+    {
+      "Time_Start": 777.0400000000001,
+      "Time_End": 783.12,
+      "Text": " artifactory instance, or the specified engagement ID for the, for the op. So this allows operators"
+    },
+    {
+      "Time_Start": 783.12,
+      "Time_End": 788.08,
+      "Text": " to easily pull down any C-sharp, position independent shellcode, or PowerShell payload,"
+    },
+    {
+      "Time_Start": 788.08,
+      "Time_End": 793.08,
+      "Text": " through like the native beacon Cobalt strike interface. Once you load up the toolkit, you have"
+    },
+    {
+      "Time_Start": 793.08,
+      "Time_End": 797.8,
+      "Text": " a, that project or op ID that's synced with the main control server, then everything you're pulling"
+    },
+    {
+      "Time_Start": 797.8,
+      "Time_End": 802.6,
+      "Text": " down is going to automatically pull down just for your particular built project ID. We also have"
+    },
+    {
+      "Time_Start": 802.6,
+      "Time_End": 807.92,
+      "Text": " manual PowerShell and Python scripts that interact with the Jenkins API. API in air quotes because it"
+    },
+    {
+      "Time_Start": 807.9200000000001,
+      "Time_End": 813.6800000000001,
+      "Text": " is not a great API, but it's, you can still use it to trigger jobs and pulling down artifacts from"
+    },
+    {
+      "Time_Start": 813.6800000000001,
+      "Time_End": 819.4000000000001,
+      "Text": " the artifactory API is way, way nicer. So this is kind of how we, we built everything in. So the end"
+    },
+    {
+      "Time_Start": 819.4000000000001,
+      "Time_End": 823.48,
+      "Text": " result will be something like this, where you have different functions, for example, execute Jenkins"
+    },
+    {
+      "Time_Start": 823.48,
+      "Time_End": 827.9200000000001,
+      "Text": " assembly, you give the assembly name, you know, that has the version kind of a name there that will"
+    },
+    {
+      "Time_Start": 827.9200000000001,
+      "Time_End": 833.96,
+      "Text": " automatically pull down the appropriately tagged assembly from the artifactory server built from"
+    },
+    {
+      "Time_Start": 833.96,
+      "Time_End": 840.96,
+      "Text": " Jenkins, put into artifactory, downloaded to the engagement VM, to the temp folder, and then"
+    },
+    {
+      "Time_Start": 840.96,
+      "Time_End": 849.1600000000001,
+      "Text": " deployed through beacon with execute assembly. Pretty seamless. Okay, now that we have our offensive"
+    },
+    {
+      "Time_Start": 849.1600000000001,
+      "Time_End": 854.6800000000001,
+      "Text": " toolkit defined as code, what can we do with this architecture? So it's obviously really nice to"
+    },
+    {
+      "Time_Start": 854.6800000000001,
+      "Time_End": 860.0400000000001,
+      "Text": " have just a built in kind of standardized tool set across all your engagements. But that's just the"
+    },
+    {
+      "Time_Start": 860.04,
+      "Time_End": 864.5999999999999,
+      "Text": " first step. There's a lot more interesting things you can do with this now that you've kind of put"
+    },
+    {
+      "Time_Start": 864.5999999999999,
+      "Time_End": 868.48,
+      "Text": " yourself right into this, you know, part of the pipeline between your operators and everything"
+    },
+    {
+      "Time_Start": 868.48,
+      "Time_End": 876.8,
+      "Text": " being built. So submitted artifact detection. Remember that each artifact we're building is"
+    },
+    {
+      "Time_Start": 876.8,
+      "Time_End": 881.8399999999999,
+      "Text": " unique per engagement, every single time every project is built, the resulting artifact will be"
+    },
+    {
+      "Time_Start": 881.88,
+      "Time_End": 887.36,
+      "Text": " unique from a checksum or hash standpoint. We also have that engagement ID that's being passed"
+    },
+    {
+      "Time_Start": 887.36,
+      "Time_End": 893.44,
+      "Text": " through as metadata from the Jenkins meta build to the Jenkins project build pass through when it's"
+    },
+    {
+      "Time_Start": 893.44,
+      "Time_End": 900.52,
+      "Text": " actually registering the artifact in artifactory. But why don't we build another Jenkins declarative"
+    },
+    {
+      "Time_Start": 900.52,
+      "Time_End": 907.08,
+      "Text": " pipeline to periodically pulls all the checksums for all artifacts, say for the past two months from"
+    },
+    {
+      "Time_Start": 907.08,
+      "Time_End": 914.52,
+      "Text": " artifactory. And then scans, you know, a theoretical, theoretical, like online submission service to see"
+    },
+    {
+      "Time_Start": 914.52,
+      "Time_End": 920.88,
+      "Text": " if any artifact or checksums from recent engagements have been submitted to said online service. And if"
+    },
+    {
+      "Time_Start": 920.88,
+      "Time_End": 926.24,
+      "Text": " anything does match, we can alert Slack with the tool name and engagement ID of something that was"
+    },
+    {
+      "Time_Start": 926.24,
+      "Time_End": 932.12,
+      "Text": " leaked, you know, say by a blue team or the defies that decides to submit something up. You know, this"
+    },
+    {
+      "Time_Start": 932.12,
+      "Time_End": 937.12,
+      "Text": " is what this theoretic bot theoretical bot might kind of look like to where you're saying, okay, from"
+    },
+    {
+      "Time_Start": 937.12,
+      "Time_End": 942.4,
+      "Text": " this particular op ID, this tool with this hash scanned at this particular point was submitted by"
+    },
+    {
+      "Time_Start": 942.4,
+      "Time_End": 948.0,
+      "Text": " somebody to, you know, some kind of online service. Just saying, it's just, you know, an interesting idea."
+    },
+    {
+      "Time_Start": 948.9599999999999,
+      "Time_End": 955.92,
+      "Text": " Also, this is one of my favorites indicator stripping. So if any tools that we're using, like public tools,"
+    },
+    {
+      "Time_Start": 956.3199999999999,
+      "Time_End": 962.72,
+      "Text": " have any known indicators of compromise or like dirty terms, so say, you know, some project had a harm joy in"
+    },
+    {
+      "Time_Start": 962.72,
+      "Time_End": 967.4399999999999,
+      "Text": " the source code or something like that when it builds, and say that code is public, and you don't have"
+    },
+    {
+      "Time_Start": 967.44,
+      "Time_End": 973.2,
+      "Text": " control of it, your main options would be either to maintain an internal branch, which can get difficult if"
+    },
+    {
+      "Time_Start": 973.2,
+      "Time_End": 979.6800000000001,
+      "Text": " the project is being updated periodically. Or you can do that type of processing pre build processing on"
+    },
+    {
+      "Time_Start": 979.6800000000001,
+      "Time_End": 984.6,
+      "Text": " that build side. So when you clone the project down, why not just have a function that replaces out like"
+    },
+    {
+      "Time_Start": 984.6,
+      "Time_End": 990.7600000000001,
+      "Text": " known bad words, you know, or known words that might flag AV like obscure sec or harm joy or mimikatz or"
+    },
+    {
+      "Time_Start": 990.76,
+      "Time_End": 997.3199999999999,
+      "Text": " gentle kiwi, or something that replaces, you know, C sharp assembly info CSS, you know, those known kind of"
+    },
+    {
+      "Time_Start": 997.3199999999999,
+      "Time_End": 1004.4399999999999,
+      "Text": " little metadata bits with like clean ones or randomized ones. Just along this kind of line two is another kind of"
+    },
+    {
+      "Time_Start": 1004.4399999999999,
+      "Time_End": 1011.72,
+      "Text": " sanity check for us. We have another repo. That's a common repo, again, all this code all put into GitLab that"
+    },
+    {
+      "Time_Start": 1011.72,
+      "Time_End": 1018.36,
+      "Text": " has a series of OPSEC checks. These are constructed through Pester, it's like a set of PowerShell tests. And"
+    },
+    {
+      "Time_Start": 1018.36,
+      "Time_End": 1024.6,
+      "Text": " we'll do things like checking.net versions, whether PDB strings or debug stuff is actually present or not. But"
+    },
+    {
+      "Time_Start": 1024.6,
+      "Time_End": 1029.88,
+      "Text": " also all the strings in the binary for like dirty handles, author names, project names, harm joy and obscure"
+    },
+    {
+      "Time_Start": 1029.88,
+      "Time_End": 1035.56,
+      "Text": " sec and whatever else, because we're hooked into this whole kind of process, we can proactively scan every tool"
+    },
+    {
+      "Time_Start": 1035.56,
+      "Time_End": 1040.92,
+      "Text": " build for simple OPSEC failures. And the way we have this built and the way you can do it through Jenkins,"
+    },
+    {
+      "Time_Start": 1040.92,
+      "Time_End": 1048.92,
+      "Text": " that if any of these tests fail, then the artifact will not be the built artifact will not be put into"
+    },
+    {
+      "Time_Start": 1048.92,
+      "Time_End": 1053.88,
+      "Text": " artifactory. So this essentially ensures that as long as people are pulling artifacts from the final"
+    },
+    {
+      "Time_Start": 1053.88,
+      "Time_End": 1060.28,
+      "Text": " artifactory instance, there's no way for any of those artifacts to get through that accidentally"
+    },
+    {
+      "Time_Start": 1060.28,
+      "Time_End": 1066.8400000000001,
+      "Text": " have any of these known kind of bad IOCs in them. This is one of my favorite applications of having"
+    },
+    {
+      "Time_Start": 1066.84,
+      "Time_End": 1072.6,
+      "Text": " everything centralized in this process. You can also do your own custom fingerprinting of all the"
+    },
+    {
+      "Time_Start": 1072.6,
+      "Time_End": 1078.36,
+      "Text": " artifacts that are generated. So we have a series of IOC type collections that we pull from our"
+    },
+    {
+      "Time_Start": 1078.36,
+      "Time_End": 1082.9199999999998,
+      "Text": " artifacts. So we store that IOCs file for every single artifact that's ever been deployed in our"
+    },
+    {
+      "Time_Start": 1082.9199999999998,
+      "Time_End": 1088.36,
+      "Text": " engagements, that's stored up in artifactory as well. Again, we can update these really easily. If"
+    },
+    {
+      "Time_Start": 1088.36,
+      "Time_End": 1092.9199999999998,
+      "Text": " we want to pull a new thing from any artifact, we just update the fingerprinting repo and that's"
+    },
+    {
+      "Time_Start": 1092.92,
+      "Time_End": 1097.5600000000002,
+      "Text": " already cloned down. It's already part of the process. One of the last things, project vetting."
+    },
+    {
+      "Time_Start": 1098.52,
+      "Time_End": 1102.76,
+      "Text": " There's a lot of projects that we use on engagements that we don't control the source"
+    },
+    {
+      "Time_Start": 1102.76,
+      "Time_End": 1106.44,
+      "Text": " code of. This is pretty much the case for anyone in the entire offensive community."
+    },
+    {
+      "Time_Start": 1107.48,
+      "Time_End": 1114.1200000000001,
+      "Text": " So people have different risk tolerances for this, but in general, we try or don't want to just pull"
+    },
+    {
+      "Time_Start": 1114.1200000000001,
+      "Time_End": 1120.68,
+      "Text": " in master branches for any code that's pushed out because we don't want to pull these branches"
+    },
+    {
+      "Time_Start": 1120.68,
+      "Time_End": 1125.24,
+      "Text": " in and changes in without reviewing them to some degree. Because what if somebody with some"
+    },
+    {
+      "Time_Start": 1125.24,
+      "Time_End": 1130.3600000000001,
+      "Text": " offensive repo we're using decides to put some kind of subversive logic in and then we're building"
+    },
+    {
+      "Time_Start": 1130.3600000000001,
+      "Time_End": 1135.48,
+      "Text": " this automatically from master, like the master branch of anything, and these things are deployed"
+    },
+    {
+      "Time_Start": 1135.48,
+      "Time_End": 1141.5600000000002,
+      "Text": " down to sensitive customer systems. We're doing stuff sometimes on domain controllers or with"
+    },
+    {
+      "Time_Start": 1141.5600000000002,
+      "Time_End": 1146.44,
+      "Text": " credentials from the keys of the kingdom for a particular environment. So we're trying to be"
+    },
+    {
+      "Time_Start": 1147.3200000000002,
+      "Time_End": 1153.3200000000002,
+      "Text": " aware of what's the risk of doing this stuff. So we've come up with an update process where we"
+    },
+    {
+      "Time_Start": 1153.3200000000002,
+      "Time_End": 1157.3200000000002,
+      "Text": " don't audit every single line of every single tool we've ever used. That's pretty much impossible."
+    },
+    {
+      "Time_Start": 1158.6000000000001,
+      "Time_End": 1164.2,
+      "Text": " But we have our offensive toolkit, Jenkins file. We have one of these files."
+    },
+    {
+      "Time_Start": 1165.48,
+      "Time_End": 1170.6000000000001,
+      "Text": " Each project is tagged to a specific public SHA-1 commit. Then every Monday, we have another"
+    },
+    {
+      "Time_Start": 1170.6000000000001,
+      "Time_End": 1175.8,
+      "Text": " Jenkins job that clones down everything in the offensive toolkit repo, this internal repo."
+    },
+    {
+      "Time_Start": 1175.96,
+      "Time_End": 1181.1599999999999,
+      "Text": " It checks the commit in the file and compares it to the most recent public commit in the public"
+    },
+    {
+      "Time_Start": 1181.1599999999999,
+      "Time_End": 1186.68,
+      "Text": " repository. Then deltas are reported to Slack, and then we manually review and update stuff"
+    },
+    {
+      "Time_Start": 1186.68,
+      "Time_End": 1191.0,
+      "Text": " as appropriately. So like every morning, someone on one of the teams comes in, says, okay, these"
+    },
+    {
+      "Time_Start": 1191.0,
+      "Time_End": 1195.8799999999999,
+      "Text": " five tools are out of date. They'll review the commits, you know, since the newest commits,"
+    },
+    {
+      "Time_Start": 1195.8799999999999,
+      "Time_End": 1201.0,
+      "Text": " since that last week. Check the changes, do a sanity check if the code seems okay. Again,"
+    },
+    {
+      "Time_Start": 1201.0,
+      "Time_End": 1204.9199999999998,
+      "Text": " we can't do a full source code audit and review or something like that, but this is better than"
+    },
+    {
+      "Time_Start": 1204.92,
+      "Time_End": 1211.72,
+      "Text": " nothing. Then we update that public commit into our internal Jenkins file, push it out, and then"
+    },
+    {
+      "Time_Start": 1211.72,
+      "Time_End": 1217.0800000000002,
+      "Text": " every new build is going to use that updated bit of that code. Because again, how much do you"
+    },
+    {
+      "Time_Start": 1217.0800000000002,
+      "Time_End": 1222.2,
+      "Text": " really trust all these offensive tool developers, right? This is an example of the Slack bot that"
+    },
+    {
+      "Time_Start": 1222.2,
+      "Time_End": 1227.0,
+      "Text": " pops up every Monday morning that I have to deal with, but it'll tell us the particular project,"
+    },
+    {
+      "Time_Start": 1227.5600000000002,
+      "Time_End": 1231.64,
+      "Text": " you know, where it is internally, what the public types, the public repo is,"
+    },
+    {
+      "Time_Start": 1231.64,
+      "Time_End": 1235.8000000000002,
+      "Text": " the current commit that we have for our internal code, whatever the latest commit is for the public"
+    },
+    {
+      "Time_Start": 1235.8000000000002,
+      "Time_End": 1240.3600000000001,
+      "Text": " code and commit dates. So we can just really easily hyperlink, go out, figure out what the"
+    },
+    {
+      "Time_Start": 1240.3600000000001,
+      "Time_End": 1245.48,
+      "Text": " new updates are, and kind of do some sanity checks. Again, not perfect, but better than nothing."
+    },
+    {
+      "Time_Start": 1245.48,
+      "Time_End": 1251.16,
+      "Text": " So wrapping up, definitely consider integrating DevOps practices into your offensive operations"
+    },
+    {
+      "Time_Start": 1251.16,
+      "Time_End": 1256.0400000000002,
+      "Text": " if you haven't already. You know, you don't have to do it with our approach using that SCM,"
+    },
+    {
+      "Time_Start": 1256.0400000000002,
+      "Time_End": 1260.2,
+      "Text": " Jenkins artifactory, and kind of some of the sweat. It is a little bit more work. There's not"
+    },
+    {
+      "Time_Start": 1260.2,
+      "Time_End": 1264.76,
+      "Text": " just a, you know, run these scripts right out of the box or use the complete public examples."
+    },
+    {
+      "Time_Start": 1264.76,
+      "Time_End": 1269.72,
+      "Text": " Again, it depends on your risk tolerance. If you're okay using all the Azure DevOps type stuff,"
+    },
+    {
+      "Time_Start": 1269.72,
+      "Time_End": 1274.68,
+      "Text": " please go at it. If you'd rather do stuff completely in-house, you definitely can do that"
+    },
+    {
+      "Time_Start": 1274.68,
+      "Time_End": 1280.04,
+      "Text": " with Jenkins artifactory and an SCM repo. But beyond that, no matter how you actually do this,"
+    },
+    {
+      "Time_Start": 1280.04,
+      "Time_End": 1284.52,
+      "Text": " hooking into that tool build and generation deployment process for your engagements"
+    },
+    {
+      "Time_Start": 1284.52,
+      "Time_End": 1289.0800000000002,
+      "Text": " allows for some interesting creative applications across operations. Those"
+    },
+    {
+      "Time_Start": 1289.08,
+      "Time_End": 1293.48,
+      "Text": " OPSEC checks, you know, proactive checks on scanning, those types of things. And finally, kind of"
+    },
+    {
+      "Time_Start": 1293.48,
+      "Time_End": 1297.48,
+      "Text": " the current development, what we're looking at going forward. These approaches can also apply"
+    },
+    {
+      "Time_Start": 1297.48,
+      "Time_End": 1302.6799999999998,
+      "Text": " for payload generation. So we're converting a lot of our payload generation to like DevOps,"
+    },
+    {
+      "Time_Start": 1302.6799999999998,
+      "Time_End": 1307.32,
+      "Text": " essentially, to where the different repos or different payloads. Some of the things we want"
+    },
+    {
+      "Time_Start": 1307.32,
+      "Time_End": 1311.56,
+      "Text": " to build in are those OPSEC checks, those checks on scannings, but also like things like automatic"
+    },
+    {
+      "Time_Start": 1311.56,
+      "Time_End": 1316.6,
+      "Text": " detonation on like sample systems to see if like all the parts of the C2 and everything all kind"
+    },
+    {
+      "Time_Start": 1316.6000000000001,
+      "Time_End": 1320.8400000000001,
+      "Text": " of connect up properly. There's a lot more cool things we think we'll be able to do with this, or"
+    },
+    {
+      "Time_Start": 1320.8400000000001,
+      "Time_End": 1326.2800000000002,
+      "Text": " we hope we can. So thank you. If you have any questions, please ask. I also have a sample declarative"
+    },
+    {
+      "Time_Start": 1326.2800000000002,
+      "Time_End": 1332.2,
+      "Text": " Jenkins pipeline via POC or GTFO. It's up there at the bit.ly link. I'm harmjoy on Twitter and"
+    },
+    {
+      "Time_Start": 1332.2,
+      "Time_End": 1345.64,
+      "Text": " the Bloodhound Slack. And please, if anyone has any questions, please let me know. Thank you."
+    }
+  ]
+}

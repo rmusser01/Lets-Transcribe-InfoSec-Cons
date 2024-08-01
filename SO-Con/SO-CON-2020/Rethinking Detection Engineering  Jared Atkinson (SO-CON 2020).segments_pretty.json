@@ -1,0 +1,3619 @@
+{
+  "segments": [
+    {
+      "Time_Start": 0.0,
+      "Time_End": 15.280000000000001,
+      "Text": "This text was transcribed using whisper model: large-v2\n\n All right, thank you."
+    },
+    {
+      "Time_Start": 15.280000000000001,
+      "Time_End": 18.84,
+      "Text": " Welcome to my talk, Rethinking Detection Engineering."
+    },
+    {
+      "Time_Start": 18.84,
+      "Time_End": 21.96,
+      "Text": " False positives are bad, false negatives are worse."
+    },
+    {
+      "Time_Start": 21.96,
+      "Time_End": 26.44,
+      "Text": " My name is Jared Atkinson, and I'm the Technical Director for Adversary Detection Services"
+    },
+    {
+      "Time_Start": 26.44,
+      "Time_End": 28.28,
+      "Text": " at SpectreOps."
+    },
+    {
+      "Time_Start": 28.28,
+      "Time_End": 32.760000000000005,
+      "Text": " Before we begin, I want you to consider a situation in which you are a Tier 1 SOC analyst."
+    },
+    {
+      "Time_Start": 32.760000000000005,
+      "Time_End": 36.92,
+      "Text": " Your daily workload is predicated on triaging alerts generated from detections that are"
+    },
+    {
+      "Time_Start": 36.92,
+      "Time_End": 41.56,
+      "Text": " used to categorize events into two groups, malicious and benign."
+    },
+    {
+      "Time_Start": 41.56,
+      "Time_End": 46.540000000000006,
+      "Text": " These alerts are obviously best effort, but some are better than others in terms of accuracy."
+    },
+    {
+      "Time_Start": 46.540000000000006,
+      "Time_End": 50.94,
+      "Text": " Over time, you notice a pattern of a detection that commonly fires on events that are ultimately"
+    },
+    {
+      "Time_Start": 50.94,
+      "Time_End": 56.6,
+      "Text": " determined to be benign and rarely fires on events that are malicious."
+    },
+    {
+      "Time_Start": 56.6,
+      "Time_End": 60.36,
+      "Text": " As a SOC analyst, your perception tells you that this is a problem because you find yourself"
+    },
+    {
+      "Time_Start": 60.36,
+      "Time_End": 64.52,
+      "Text": " wasting time triaging events that are not malicious, and this ultimately limits the"
+    },
+    {
+      "Time_Start": 64.52,
+      "Time_End": 68.08,
+      "Text": " time you can dedicate to real malicious activity."
+    },
+    {
+      "Time_Start": 68.08,
+      "Time_End": 72.16,
+      "Text": " As such, you recommend that this particular detection be re-evaluated to reduce the prominence"
+    },
+    {
+      "Time_Start": 72.16,
+      "Time_End": 74.68,
+      "Text": " of false positives."
+    },
+    {
+      "Time_Start": 74.68,
+      "Time_End": 77.68,
+      "Text": " Does this sound like a familiar process?"
+    },
+    {
+      "Time_Start": 77.68,
+      "Time_End": 80.48,
+      "Text": " Is this a correct approach?"
+    },
+    {
+      "Time_Start": 80.48,
+      "Time_End": 84.0,
+      "Text": " Are there potential unintended consequences?"
+    },
+    {
+      "Time_Start": 84.0,
+      "Time_End": 89.24,
+      "Text": " I personally think the answer is yes, and this talk attempts to explore that problem"
+    },
+    {
+      "Time_Start": 89.24,
+      "Time_End": 92.64,
+      "Text": " and attempts to reason through a potential solution."
+    },
+    {
+      "Time_Start": 92.64,
+      "Time_End": 95.56,
+      "Text": " Please join me through this journey."
+    },
+    {
+      "Time_Start": 95.56,
+      "Time_End": 99.08,
+      "Text": " Before we analyze the elements of detection engineering, I think it's important to discuss"
+    },
+    {
+      "Time_Start": 99.08,
+      "Time_End": 101.12,
+      "Text": " binary classification."
+    },
+    {
+      "Time_Start": 101.12,
+      "Time_End": 105.44,
+      "Text": " This is important because binary classification is a key component of detection engineering"
+    },
+    {
+      "Time_Start": 105.44,
+      "Time_End": 106.44,
+      "Text": " decision making."
+    },
+    {
+      "Time_Start": 106.44,
+      "Time_End": 111.92,
+      "Text": " It is defined as the task of classifying the elements of a set into two groups, positive"
+    },
+    {
+      "Time_Start": 111.92,
+      "Time_End": 115.32000000000001,
+      "Text": " or negative, on the basis of a classification rule."
+    },
+    {
+      "Time_Start": 115.32000000000001,
+      "Time_End": 119.52,
+      "Text": " Now this is a fairly generic definition, but I want you to think about it from a detection"
+    },
+    {
+      "Time_Start": 119.52,
+      "Time_End": 121.28,
+      "Text": " engineering perspective."
+    },
+    {
+      "Time_Start": 121.28,
+      "Time_End": 126.28,
+      "Text": " Consider the elements of a set to represent the events collected from your enterprise,"
+    },
+    {
+      "Time_Start": 126.28,
+      "Time_End": 130.92000000000002,
+      "Text": " and the two groups, positive or negative, to equate to malicious and benign, respectively."
+    },
+    {
+      "Time_Start": 130.92000000000002,
+      "Time_End": 135.44,
+      "Text": " Lastly, this classification decision is made by a classification rule, which we can think"
+    },
+    {
+      "Time_Start": 135.44,
+      "Time_End": 138.48000000000002,
+      "Text": " of as a detection rule or series of detections."
+    },
+    {
+      "Time_Start": 138.48,
+      "Time_End": 142.67999999999998,
+      "Text": " So we are using a detection rule to determine if an event should be classified as malicious"
+    },
+    {
+      "Time_Start": 142.67999999999998,
+      "Time_End": 144.45999999999998,
+      "Text": " or benign."
+    },
+    {
+      "Time_Start": 144.45999999999998,
+      "Time_End": 148.07999999999998,
+      "Text": " As we are thinking about this problem, it is important to remember that we are making"
+    },
+    {
+      "Time_Start": 148.07999999999998,
+      "Time_End": 152.44,
+      "Text": " these decisions with imperfect knowledge, as in, we don't actually know the true state"
+    },
+    {
+      "Time_Start": 152.44,
+      "Time_End": 153.44,
+      "Text": " of the event."
+    },
+    {
+      "Time_Start": 153.44,
+      "Time_End": 158.38,
+      "Text": " But we are using our understanding of the situation to make the best decision possible."
+    },
+    {
+      "Time_Start": 158.38,
+      "Time_End": 162.07999999999998,
+      "Text": " For this reason, we will refer to this decision as a prediction."
+    },
+    {
+      "Time_Start": 162.07999999999998,
+      "Time_End": 165.88,
+      "Text": " This section will dive into many of the concepts of binary classification, which will help"
+    },
+    {
+      "Time_Start": 165.88,
+      "Time_End": 170.12,
+      "Text": " facilitate later discussions about some of the pitfalls that we might expect in our current"
+    },
+    {
+      "Time_Start": 170.12,
+      "Time_End": 173.04,
+      "Text": " detection engineering process."
+    },
+    {
+      "Time_Start": 173.04,
+      "Time_End": 176.4,
+      "Text": " Before we start discussing the individual concepts within binary classification, I want"
+    },
+    {
+      "Time_Start": 176.4,
+      "Time_End": 179.46,
+      "Text": " to explain how I plan to present these ideas."
+    },
+    {
+      "Time_Start": 179.46,
+      "Time_End": 181.68,
+      "Text": " Each concept will be accompanied by a graphic."
+    },
+    {
+      "Time_Start": 181.68,
+      "Time_End": 186.0,
+      "Text": " I'm a visual learner, so the graphic is really helpful for me to grasp these concepts."
+    },
+    {
+      "Time_Start": 186.0,
+      "Time_End": 189.72,
+      "Text": " Additionally, we will explore binary classification through two examples."
+    },
+    {
+      "Time_Start": 189.72,
+      "Time_End": 194.04,
+      "Text": " The first example is something we are all probably too familiar with in 2020, disease"
+    },
+    {
+      "Time_Start": 194.04,
+      "Time_End": 195.04,
+      "Text": " testing."
+    },
+    {
+      "Time_Start": 195.2,
+      "Time_End": 199.32,
+      "Text": " The second example is something more cybersecurity related, which is the detection of malicious"
+    },
+    {
+      "Time_Start": 199.32,
+      "Time_End": 200.98,
+      "Text": " service creation."
+    },
+    {
+      "Time_Start": 200.98,
+      "Time_End": 205.28,
+      "Text": " The first concept we will discuss in binary classification is population, which is defined"
+    },
+    {
+      "Time_Start": 205.28,
+      "Time_End": 211.2,
+      "Text": " as a set of similar items or events, which is of interest for some question or experiment."
+    },
+    {
+      "Time_Start": 211.2,
+      "Time_End": 214.94,
+      "Text": " I've represented the population as a circle on the right side of the slide."
+    },
+    {
+      "Time_Start": 214.94,
+      "Time_End": 220.34,
+      "Text": " This can be seen as all the people who have been tested for the disease, or as all telemetry"
+    },
+    {
+      "Time_Start": 220.34,
+      "Time_End": 225.14000000000001,
+      "Text": " collected from enterprise assets, respectively."
+    },
+    {
+      "Time_Start": 225.14000000000001,
+      "Time_End": 229.6,
+      "Text": " Next we can explore the idea of condition positive, which represents the real number"
+    },
+    {
+      "Time_Start": 229.6,
+      "Time_End": 232.22,
+      "Text": " of positive events in the collected data."
+    },
+    {
+      "Time_Start": 232.22,
+      "Time_End": 236.76,
+      "Text": " Here we see a red circle, which represents the objective state of positive elements."
+    },
+    {
+      "Time_Start": 236.76,
+      "Time_End": 240.82,
+      "Text": " In our example, this would be the objective subpopulation of sick people, or people that"
+    },
+    {
+      "Time_Start": 240.82,
+      "Time_End": 246.14000000000001,
+      "Text": " are positive for the disease, or the objective subpopulation of malicious events."
+    },
+    {
+      "Time_Start": 246.14000000000001,
+      "Time_End": 250.12,
+      "Text": " If we overlay our classification rule onto the condition positive, we see that there"
+    },
+    {
+      "Time_Start": 250.12,
+      "Time_End": 254.96,
+      "Text": " are some cases where the rule correctly predicts the positive classification, and some cases"
+    },
+    {
+      "Time_Start": 254.96,
+      "Time_End": 258.06,
+      "Text": " where it incorrectly predicts the positive condition."
+    },
+    {
+      "Time_Start": 258.06,
+      "Time_End": 261.84000000000003,
+      "Text": " This is representative of the two possible condition positive results, true positive"
+    },
+    {
+      "Time_Start": 261.84000000000003,
+      "Time_End": 264.14,
+      "Text": " and false negative."
+    },
+    {
+      "Time_Start": 264.14,
+      "Time_End": 266.54,
+      "Text": " The second possible result is a false negative."
+    },
+    {
+      "Time_Start": 266.54,
+      "Time_End": 271.46000000000004,
+      "Text": " This is defined as positive events that are classified as negative, or using our example,"
+    },
+    {
+      "Time_Start": 271.46000000000004,
+      "Time_End": 275.8,
+      "Text": " sick people incorrectly identified as healthy, or malicious services incorrectly identified"
+    },
+    {
+      "Time_Start": 275.8,
+      "Time_End": 277.84000000000003,
+      "Text": " as benign."
+    },
+    {
+      "Time_Start": 277.84000000000003,
+      "Time_End": 281.16,
+      "Text": " In the graphic, I have identified false negatives as yellow."
+    },
+    {
+      "Time_Start": 281.16,
+      "Time_End": 285.8,
+      "Text": " This is where our predicted negative events and condition positive events overlap."
+    },
+    {
+      "Time_Start": 285.8,
+      "Time_End": 289.72,
+      "Text": " False negatives represent a large societal or organizational risk."
+    },
+    {
+      "Time_Start": 289.72,
+      "Time_End": 294.62,
+      "Text": " Unfortunately, this failure is often silent, as a second test is often not applied."
+    },
+    {
+      "Time_Start": 294.62,
+      "Time_End": 298.64,
+      "Text": " We might see a sick person go about their life thinking they are healthy, or a malicious"
+    },
+    {
+      "Time_Start": 298.64,
+      "Time_End": 301.48,
+      "Text": " service will remain undetected."
+    },
+    {
+      "Time_Start": 301.48,
+      "Time_End": 304.8,
+      "Text": " Binary classification has a metric known as sensitivity, which measures the ability of"
+    },
+    {
+      "Time_Start": 304.8,
+      "Time_End": 308.34000000000003,
+      "Text": " the test to correctly detect events that meet the condition."
+    },
+    {
+      "Time_Start": 308.34000000000003,
+      "Time_End": 313.5,
+      "Text": " It answers the question of, how likely are you to identify sick people as being sick?"
+    },
+    {
+      "Time_Start": 313.5,
+      "Time_End": 317.36,
+      "Text": " In the picture, you see a yellow shape which represents the true positives, and the red"
+    },
+    {
+      "Time_Start": 317.36,
+      "Time_End": 320.24,
+      "Text": " circle which represents condition positive events."
+    },
+    {
+      "Time_Start": 320.24,
+      "Time_End": 325.2,
+      "Text": " By comparing these values, we can derive the sensitivity of our test."
+    },
+    {
+      "Time_Start": 325.2,
+      "Time_End": 328.76,
+      "Text": " Sensitivity of the test is often dictated by risk tolerance."
+    },
+    {
+      "Time_Start": 328.76,
+      "Time_End": 332.36,
+      "Text": " What is the risk of accidentally telling a person who is actually sick with COVID-19"
+    },
+    {
+      "Time_Start": 332.36,
+      "Time_End": 334.46000000000004,
+      "Text": " that they are healthy?"
+    },
+    {
+      "Time_Start": 334.46,
+      "Time_End": 338.62,
+      "Text": " If the risk of the situation is not acceptable, then it may be important to increase the sensitivity"
+    },
+    {
+      "Time_Start": 338.62,
+      "Time_End": 341.65999999999997,
+      "Text": " of our test."
+    },
+    {
+      "Time_Start": 341.65999999999997,
+      "Time_End": 345.26,
+      "Text": " Like condition positive, condition negative represents the real number of negative events"
+    },
+    {
+      "Time_Start": 345.26,
+      "Time_End": 346.91999999999996,
+      "Text": " in your collected data."
+    },
+    {
+      "Time_Start": 346.91999999999996,
+      "Time_End": 350.52,
+      "Text": " You can see that this is shown by the red donut shape in the graphic."
+    },
+    {
+      "Time_Start": 350.52,
+      "Time_End": 353.7,
+      "Text": " If you analyze the shape, you might realize that the red portion of the graphic is the"
+    },
+    {
+      "Time_Start": 353.7,
+      "Time_End": 357.28,
+      "Text": " population minus the condition positive circle."
+    },
+    {
+      "Time_Start": 357.28,
+      "Time_End": 361.46,
+      "Text": " If we apply the idea of condition negative to our examples, we can see that it represents"
+    },
+    {
+      "Time_Start": 361.46,
+      "Time_End": 366.41999999999996,
+      "Text": " the objective subpopulation of healthy people, people that are negative for the disease,"
+    },
+    {
+      "Time_Start": 366.41999999999996,
+      "Time_End": 370.29999999999995,
+      "Text": " or the objective subpopulation of benign events."
+    },
+    {
+      "Time_Start": 370.29999999999995,
+      "Time_End": 374.65999999999997,
+      "Text": " If we overlay our classification rule, we see that we have two possible situations relative"
+    },
+    {
+      "Time_Start": 374.65999999999997,
+      "Time_End": 376.68,
+      "Text": " to condition negative events."
+    },
+    {
+      "Time_Start": 376.68,
+      "Time_End": 380.34,
+      "Text": " These events can be referred to as true negatives and false positives."
+    },
+    {
+      "Time_Start": 380.34,
+      "Time_End": 383.82,
+      "Text": " We'll explore these categories in the next slides."
+    },
+    {
+      "Time_Start": 383.82,
+      "Time_End": 388.5,
+      "Text": " The true negative event is defined as the negative events that are classified as negative,"
+    },
+    {
+      "Time_Start": 388.5,
+      "Time_End": 392.82,
+      "Text": " or in terms of our examples, a healthy person correctly identified as healthy, or a benign"
+    },
+    {
+      "Time_Start": 392.82,
+      "Time_End": 395.42,
+      "Text": " service correctly identified as benign."
+    },
+    {
+      "Time_Start": 395.42,
+      "Time_End": 398.94,
+      "Text": " These are the events that we can happily ignore since we are not alerting on them and they"
+    },
+    {
+      "Time_Start": 398.94,
+      "Time_End": 401.82,
+      "Text": " are not malicious by nature."
+    },
+    {
+      "Time_Start": 401.82,
+      "Time_End": 405.14,
+      "Text": " If you've worked in a SOC or anywhere near a SOC, then this next concept is likely something"
+    },
+    {
+      "Time_Start": 405.14,
+      "Time_End": 407.14,
+      "Text": " you are intimately familiar with."
+    },
+    {
+      "Time_Start": 407.14,
+      "Time_End": 412.1,
+      "Text": " False positives are negative events, or non-malicious events, that are classified as positive or"
+    },
+    {
+      "Time_Start": 412.1,
+      "Time_End": 413.86,
+      "Text": " malicious."
+    },
+    {
+      "Time_Start": 413.86,
+      "Time_End": 416.86,
+      "Text": " This would be represented by healthy people that are incorrectly identified as sick or"
+    },
+    {
+      "Time_Start": 416.86,
+      "Time_End": 420.38,
+      "Text": " benign services that are incorrectly identified as malicious."
+    },
+    {
+      "Time_Start": 420.38,
+      "Time_End": 424.7,
+      "Text": " As I'm sure many of you know, false positives can be extremely costly from an individual"
+    },
+    {
+      "Time_Start": 424.7,
+      "Time_End": 427.1,
+      "Text": " perspective because they fail noisily."
+    },
+    {
+      "Time_Start": 427.1,
+      "Time_End": 431.54,
+      "Text": " A false positive alert typically must be triaged as if it is a true positive, and if too many"
+    },
+    {
+      "Time_Start": 431.54,
+      "Time_End": 437.06,
+      "Text": " false positives are alerted, it can cause major issues for the SOC."
+    },
+    {
+      "Time_Start": 437.06,
+      "Time_End": 441.02000000000004,
+      "Text": " Specificity is a metric in binary classification that measures the ability of the test to correctly"
+    },
+    {
+      "Time_Start": 441.02000000000004,
+      "Time_End": 443.42,
+      "Text": " reject events that do not meet the condition."
+    },
+    {
+      "Time_Start": 443.42,
+      "Time_End": 448.66,
+      "Text": " In other words, how likely are you to identify healthy people as being healthy?"
+    },
+    {
+      "Time_Start": 448.66,
+      "Time_End": 452.08000000000004,
+      "Text": " You'll notice that we again represent true negatives as a yellow shape and condition"
+    },
+    {
+      "Time_Start": 452.08000000000004,
+      "Time_End": 453.74,
+      "Text": " negative as a red shape."
+    },
+    {
+      "Time_Start": 453.74,
+      "Time_End": 457.94,
+      "Text": " To understand specificity, we must overlay these values to understand how specific our"
+    },
+    {
+      "Time_Start": 457.94,
+      "Time_End": 459.5,
+      "Text": " test actually is."
+    },
+    {
+      "Time_Start": 459.5,
+      "Time_End": 464.14,
+      "Text": " It is important to note that sensitivity and specificity are independent of each other,"
+    },
+    {
+      "Time_Start": 464.14,
+      "Time_End": 467.42,
+      "Text": " but in a situation with imperfect knowledge, it can be difficult to completely divorce"
+    },
+    {
+      "Time_Start": 467.42,
+      "Time_End": 469.42,
+      "Text": " these metrics."
+    },
+    {
+      "Time_Start": 469.42,
+      "Time_End": 472.66,
+      "Text": " When creating a test, it is important to understand the desired level of sensitivity"
+    },
+    {
+      "Time_Start": 472.66,
+      "Time_End": 473.66,
+      "Text": " and specificity."
+    },
+    {
+      "Time_Start": 473.66,
+      "Time_End": 476.1,
+      "Text": " The answer is typically related to risk tolerance."
+    },
+    {
+      "Time_Start": 476.1,
+      "Time_End": 481.02000000000004,
+      "Text": " To give an example, I'm a huge soccer fan and my favorite team is Bayern Munich."
+    },
+    {
+      "Time_Start": 481.02000000000004,
+      "Time_End": 485.22,
+      "Text": " Before each match, the players are tested for COVID-19 and recently one of the players,"
+    },
+    {
+      "Time_Start": 485.22,
+      "Time_End": 488.66,
+      "Text": " named Serge Gnabry, had a positive test result."
+    },
+    {
+      "Time_Start": 488.66,
+      "Time_End": 493.1,
+      "Text": " Now the rules in Bavaria, a state in Germany, require him to quarantine for 14 days as a"
+    },
+    {
+      "Time_Start": 493.1,
+      "Time_End": 495.22,
+      "Text": " result of the positive test."
+    },
+    {
+      "Time_Start": 495.22,
+      "Time_End": 500.14000000000004,
+      "Text": " Within those 14 days, he took four more tests, all of which produced a negative result."
+    },
+    {
+      "Time_Start": 500.14000000000004,
+      "Time_End": 505.1,
+      "Text": " The conclusion that was reached was that his first test had been a false positive."
+    },
+    {
+      "Time_Start": 505.1,
+      "Time_End": 508.98,
+      "Text": " This false positive caused him to miss three or four matches, which from his perspective"
+    },
+    {
+      "Time_Start": 508.98,
+      "Time_End": 512.9200000000001,
+      "Text": " as a professional athlete, is probably a pain."
+    },
+    {
+      "Time_Start": 512.9200000000001,
+      "Time_End": 516.72,
+      "Text": " But when it comes to infectious disease, especially regarding someone who is traveling internationally"
+    },
+    {
+      "Time_Start": 516.72,
+      "Time_End": 521.9,
+      "Text": " and interacting closely with others, it is likely more important to properly detect everyone"
+    },
+    {
+      "Time_Start": 521.9,
+      "Time_End": 524.98,
+      "Text": " with the disease than it is to avoid false positives."
+    },
+    {
+      "Time_Start": 524.98,
+      "Time_End": 528.46,
+      "Text": " Researchers should generally consider whether the risk of a false negative, which generally"
+    },
+    {
+      "Time_Start": 528.46,
+      "Time_End": 532.94,
+      "Text": " represents macro or societal risk, outweighs the risk of a false positive, which generally"
+    },
+    {
+      "Time_Start": 532.94,
+      "Time_End": 536.9,
+      "Text": " represents micro or individual risk."
+    },
+    {
+      "Time_Start": 536.9,
+      "Time_End": 541.34,
+      "Text": " We've now arrived at a situation that I alluded to in the introduction, the concept of false"
+    },
+    {
+      "Time_Start": 541.34,
+      "Time_End": 542.98,
+      "Text": " positive reduction."
+    },
+    {
+      "Time_Start": 542.98,
+      "Time_End": 546.98,
+      "Text": " Remember that false positives are tangible or apparent, while false negatives are invisible,"
+    },
+    {
+      "Time_Start": 546.98,
+      "Time_End": 550.62,
+      "Text": " which can lead analysts to conclude that the biggest problem they face is related to false"
+    },
+    {
+      "Time_Start": 550.62,
+      "Time_End": 551.62,
+      "Text": " positives."
+    },
+    {
+      "Time_Start": 551.62,
+      "Time_End": 555.38,
+      "Text": " In my experience working and consulting with detection engineering and SOC monitoring,"
+    },
+    {
+      "Time_Start": 555.38,
+      "Time_End": 560.38,
+      "Text": " I've observed the tendency to view false positives as a net negative."
+    },
+    {
+      "Time_Start": 560.38,
+      "Time_End": 565.86,
+      "Text": " In some cases, that's true, but in other cases, they can be the result of an increase in the"
+    },
+    {
+      "Time_Start": 565.86,
+      "Time_End": 568.28,
+      "Text": " sensitivity of the detection."
+    },
+    {
+      "Time_Start": 568.28,
+      "Time_End": 573.42,
+      "Text": " As a result, the tendency is to tune detections, which in practice typically means reduce false"
+    },
+    {
+      "Time_Start": 573.42,
+      "Time_End": 574.88,
+      "Text": " positives."
+    },
+    {
+      "Time_Start": 574.88,
+      "Time_End": 577.84,
+      "Text": " If you take anything away from this talk, I really want you to be aware of the specter"
+    },
+    {
+      "Time_Start": 577.84,
+      "Time_End": 582.24,
+      "Text": " of false negatives that are constantly looming over your detection engineering efforts."
+    },
+    {
+      "Time_Start": 582.24,
+      "Time_End": 586.24,
+      "Text": " When you are tuning a detection, ask yourself, in my effort to reduce false positives or"
+    },
+    {
+      "Time_Start": 586.24,
+      "Time_End": 592.22,
+      "Text": " increase specificity, am I accidentally introducing opportunities for false negatives to thrive?"
+    },
+    {
+      "Time_Start": 592.22,
+      "Time_End": 597.4,
+      "Text": " When you tune, think about how you can maintain sensitivity while increasing specificity."
+    },
+    {
+      "Time_Start": 597.4,
+      "Time_End": 599.96,
+      "Text": " I want to draw your attention to the graphic."
+    },
+    {
+      "Time_Start": 599.96,
+      "Time_End": 604.2,
+      "Text": " Notice that we have the population represented by the outer circle, the condition positive"
+    },
+    {
+      "Time_Start": 604.2,
+      "Time_End": 609.12,
+      "Text": " events represented by the red circle, and the classification rule where positive classification"
+    },
+    {
+      "Time_Start": 609.12,
+      "Time_End": 611.44,
+      "Text": " is represented by the green shape."
+    },
+    {
+      "Time_Start": 611.44,
+      "Time_End": 614.6400000000001,
+      "Text": " Also notice that we have a fair amount of false positives, which are represented by"
+    },
+    {
+      "Time_Start": 614.6400000000001,
+      "Time_End": 619.0,
+      "Text": " any area within the green shape that does not overlap with the red circle."
+    },
+    {
+      "Time_Start": 619.0,
+      "Time_End": 624.88,
+      "Text": " I often see efforts to reduce false positives that do something like this."
+    },
+    {
+      "Time_Start": 624.88,
+      "Time_End": 629.26,
+      "Text": " We see that our tuning efforts successfully reduce false positives or increase specificity,"
+    },
+    {
+      "Time_Start": 629.26,
+      "Time_End": 630.6800000000001,
+      "Text": " but at what cost?"
+    },
+    {
+      "Time_Start": 630.6800000000001,
+      "Time_End": 635.4000000000001,
+      "Text": " A quick analysis shows that our changes also increase the occurrence of false negatives,"
+    },
+    {
+      "Time_Start": 635.4000000000001,
+      "Time_End": 638.4000000000001,
+      "Text": " as in we decrease sensitivity."
+    },
+    {
+      "Time_Start": 638.4000000000001,
+      "Time_End": 641.7800000000001,
+      "Text": " This is a problem that I worry about on a daily basis with our customers, and it's something"
+    },
+    {
+      "Time_Start": 641.7800000000001,
+      "Time_End": 643.72,
+      "Text": " that is often overlooked."
+    },
+    {
+      "Time_Start": 643.72,
+      "Time_End": 648.8000000000001,
+      "Text": " Let's see if we can find a way to limit this type of unintended consequences going forward."
+    },
+    {
+      "Time_Start": 648.8000000000001,
+      "Time_End": 651.7600000000001,
+      "Text": " Now that we have a collective understanding of binary classification, we can begin to"
+    },
+    {
+      "Time_Start": 651.7600000000001,
+      "Time_End": 656.48,
+      "Text": " explore what I think of as a common detection engineering routine."
+    },
+    {
+      "Time_Start": 656.48,
+      "Time_End": 660.88,
+      "Text": " This example is, of course, not comprehensive, but kind of represents an aggregation of common"
+    },
+    {
+      "Time_Start": 660.88,
+      "Time_End": 664.6,
+      "Text": " practices I've observed in my work as a consultant."
+    },
+    {
+      "Time_Start": 664.6,
+      "Time_End": 668.5600000000001,
+      "Text": " This example can be applied agnostically, but I will continue to use malicious service"
+    },
+    {
+      "Time_Start": 668.5600000000001,
+      "Time_End": 673.32,
+      "Text": " creation as a tangible example for those that benefit from it."
+    },
+    {
+      "Time_Start": 673.32,
+      "Time_End": 677.4200000000001,
+      "Text": " In this section, we will explore how we can build a set of detections focused to this"
+    },
+    {
+      "Time_Start": 677.4200000000001,
+      "Time_End": 682.12,
+      "Text": " end and some of the common pitfalls that I've seen in current approaches."
+    },
+    {
+      "Time_Start": 682.12,
+      "Time_End": 685.76,
+      "Text": " A key component of any detection and response program is collection."
+    },
+    {
+      "Time_Start": 686.04,
+      "Time_End": 689.3199999999999,
+      "Text": " I view telemetry collection as a way to gain context about the events that are occurring"
+    },
+    {
+      "Time_Start": 689.3199999999999,
+      "Time_End": 690.3199999999999,
+      "Text": " in your enterprise."
+    },
+    {
+      "Time_Start": 690.3199999999999,
+      "Time_End": 695.48,
+      "Text": " It will tell you things like user account X logged on to computer Y, or a process called"
+    },
+    {
+      "Time_Start": 695.48,
+      "Time_End": 698.36,
+      "Text": " PowerShell.exe was created on computer A."
+    },
+    {
+      "Time_Start": 698.36,
+      "Time_End": 703.0,
+      "Text": " As you might have noticed by the graphic on this slide, the population that we are testing"
+    },
+    {
+      "Time_Start": 703.0,
+      "Time_End": 706.64,
+      "Text": " against is comprised of the telemetry that we collected from our environment."
+    },
+    {
+      "Time_Start": 706.64,
+      "Time_End": 710.64,
+      "Text": " Unfortunately, we live in a world where resources are constrained, so we can't afford to review"
+    },
+    {
+      "Time_Start": 710.64,
+      "Time_End": 712.6,
+      "Text": " every individual event that arises."
+    },
+    {
+      "Time_Start": 712.72,
+      "Time_End": 717.8000000000001,
+      "Text": " Instead, we must create detection rules, a test that helps us identify malicious events,"
+    },
+    {
+      "Time_Start": 717.8000000000001,
+      "Time_End": 722.08,
+      "Text": " in this case, our malicious service creation."
+    },
+    {
+      "Time_Start": 722.08,
+      "Time_End": 726.16,
+      "Text": " The first detection approach is to build what I refer to as precise detections."
+    },
+    {
+      "Time_Start": 726.16,
+      "Time_End": 729.88,
+      "Text": " These are detections that are very concerned with specificity, meaning they have a low"
+    },
+    {
+      "Time_Start": 729.88,
+      "Time_End": 733.5600000000001,
+      "Text": " false positive rate, but are also prone to false negatives."
+    },
+    {
+      "Time_Start": 733.5600000000001,
+      "Time_End": 737.12,
+      "Text": " The great thing about precise detections is that they reduce the burden of detection triage"
+    },
+    {
+      "Time_Start": 737.12,
+      "Time_End": 742.76,
+      "Text": " and investigation, since they are typically derived from some IOC of known bad activity."
+    },
+    {
+      "Time_Start": 742.76,
+      "Time_End": 749.84,
+      "Text": " For instance, known bad command lines, known bad hashes, known bad URLs, et cetera."
+    },
+    {
+      "Time_Start": 749.84,
+      "Time_End": 754.84,
+      "Text": " Any alerts are typically true positives, but the overall increase to organizational security"
+    },
+    {
+      "Time_Start": 754.84,
+      "Time_End": 757.28,
+      "Text": " posture is minimal."
+    },
+    {
+      "Time_Start": 757.28,
+      "Time_End": 760.84,
+      "Text": " For each concept, I will provide an example of a rule for detecting malicious service"
+    },
+    {
+      "Time_Start": 760.84,
+      "Time_End": 763.76,
+      "Text": " creation based on the concept of the slide."
+    },
+    {
+      "Time_Start": 763.76,
+      "Time_End": 768.12,
+      "Text": " An example of a precise detection might be to look for services with a specific name."
+    },
+    {
+      "Time_Start": 768.12,
+      "Time_End": 773.4399999999999,
+      "Text": " In this case, we're looking for MALSVC, which was observed to be used by an attacker as"
+    },
+    {
+      "Time_Start": 773.4399999999999,
+      "Time_End": 775.4,
+      "Text": " part of a malicious attack campaign."
+    },
+    {
+      "Time_Start": 775.4,
+      "Time_End": 780.6,
+      "Text": " It is unlikely for a legitimate service to use this name, so all alerts should be representative"
+    },
+    {
+      "Time_Start": 780.6,
+      "Time_End": 786.08,
+      "Text": " of malicious activity, but it is also trivial to avoid this detection for attackers."
+    },
+    {
+      "Time_Start": 786.08,
+      "Time_End": 789.76,
+      "Text": " The opposite case of a precise detection is a broad detection, focused on having high"
+    },
+    {
+      "Time_Start": 789.76,
+      "Time_End": 794.64,
+      "Text": " sensitivity, which leads to a low false negative rate, but also has a high false positive rate"
+    },
+    {
+      "Time_Start": 794.64,
+      "Time_End": 796.2,
+      "Text": " as a result."
+    },
+    {
+      "Time_Start": 796.2,
+      "Time_End": 800.16,
+      "Text": " The great news here is that we are more likely to capture all malicious events, but we're"
+    },
+    {
+      "Time_Start": 800.16,
+      "Time_End": 804.96,
+      "Text": " increasing the triage and investigation burden placed on the SOC."
+    },
+    {
+      "Time_Start": 804.96,
+      "Time_End": 808.84,
+      "Text": " An example of a broad detection might be to detect all services that are set to auto start"
+    },
+    {
+      "Time_Start": 808.84,
+      "Time_End": 810.28,
+      "Text": " on system boot."
+    },
+    {
+      "Time_Start": 810.28,
+      "Time_End": 814.36,
+      "Text": " Since services are often used for persistence, this may be a good way to detect that type"
+    },
+    {
+      "Time_Start": 814.36,
+      "Time_End": 820.5600000000001,
+      "Text": " of activity, but it is also likely to wrongly identify many legitimate services as well."
+    },
+    {
+      "Time_Start": 820.5600000000001,
+      "Time_End": 823.08,
+      "Text": " The next concept I'd like to talk about is inference."
+    },
+    {
+      "Time_Start": 823.08,
+      "Time_End": 826.48,
+      "Text": " We often deal in two types of inference, inductive and deductive."
+    },
+    {
+      "Time_Start": 826.48,
+      "Time_End": 831.12,
+      "Text": " In inductive inference, we identify a feature that is shared among a set of malicious events"
+    },
+    {
+      "Time_Start": 831.12,
+      "Time_End": 834.76,
+      "Text": " and assume that feature is common among all malicious events."
+    },
+    {
+      "Time_Start": 834.76,
+      "Time_End": 838.4,
+      "Text": " Deductive inference, on the other hand, is the process of reasoning from one or more"
+    },
+    {
+      "Time_Start": 838.4,
+      "Time_End": 843.0,
+      "Text": " logical statements referred to as premises to reach a conclusion."
+    },
+    {
+      "Time_Start": 843.0,
+      "Time_End": 847.6,
+      "Text": " In this case, we've set our detection to alert on services that were created by a process"
+    },
+    {
+      "Time_Start": 847.6,
+      "Time_End": 851.36,
+      "Text": " on a remote machine, as this may be indicative of lateral movement."
+    },
+    {
+      "Time_Start": 851.36,
+      "Time_End": 856.0,
+      "Text": " To arrive at this conclusion, inductively, we might analyze a few samples of known malicious"
+    },
+    {
+      "Time_Start": 856.0,
+      "Time_End": 860.56,
+      "Text": " services and notice that they were all created remotely, which would lead us to assume that"
+    },
+    {
+      "Time_Start": 860.56,
+      "Time_End": 863.52,
+      "Text": " all malicious services are created remotely."
+    },
+    {
+      "Time_Start": 863.52,
+      "Time_End": 867.2,
+      "Text": " If we reach this conclusion deductively, we might have considered something like the idea"
+    },
+    {
+      "Time_Start": 867.2,
+      "Time_End": 871.32,
+      "Text": " that services can be used for lateral movement and lateral movement is done via a remote"
+    },
+    {
+      "Time_Start": 871.32,
+      "Time_End": 876.44,
+      "Text": " means, so services used for lateral movement will be done remotely."
+    },
+    {
+      "Time_Start": 876.44,
+      "Time_End": 880.12,
+      "Text": " It's worth noting that both approaches are somewhat flawed."
+    },
+    {
+      "Time_Start": 880.12,
+      "Time_End": 884.0400000000001,
+      "Text": " Inductive inference is prone to confirmation bias and deductive inference relies on your"
+    },
+    {
+      "Time_Start": 884.0400000000001,
+      "Time_End": 887.88,
+      "Text": " understanding of the problem as a whole."
+    },
+    {
+      "Time_Start": 887.88,
+      "Time_End": 890.72,
+      "Text": " Next I'd like to talk about univariate detections."
+    },
+    {
+      "Time_Start": 890.72,
+      "Time_End": 894.36,
+      "Text": " These are represented by individual detections that only consider a single variable as part"
+    },
+    {
+      "Time_Start": 894.36,
+      "Time_End": 895.84,
+      "Text": " of their logic."
+    },
+    {
+      "Time_Start": 895.84,
+      "Time_End": 899.5600000000001,
+      "Text": " Until now, each detection that we've discussed is univariate."
+    },
+    {
+      "Time_Start": 899.5600000000001,
+      "Time_End": 903.0000000000001,
+      "Text": " We've alerted on the service name, the service type, and whether the service was created"
+    },
+    {
+      "Time_Start": 903.0000000000001,
+      "Time_End": 907.48,
+      "Text": " remotely, but for each individual detection, we've only used one variable."
+    },
+    {
+      "Time_Start": 907.48,
+      "Time_End": 911.2,
+      "Text": " The problem with this approach is that it is overly reductionist in nature and each"
+    },
+    {
+      "Time_Start": 911.2,
+      "Time_End": 915.8800000000001,
+      "Text": " new detection does not inherently increase coverage because there may be overlap."
+    },
+    {
+      "Time_Start": 915.8800000000001,
+      "Time_End": 920.6400000000001,
+      "Text": " An example of a new univariate detection that we may add would be to alert on services where"
+    },
+    {
+      "Time_Start": 920.6400000000001,
+      "Time_End": 926.4000000000001,
+      "Text": " the service registry key was created by a process other than services.exe."
+    },
+    {
+      "Time_Start": 926.4,
+      "Time_End": 931.36,
+      "Text": " This is strange because services.exe is the service control manager's RPC server, and"
+    },
+    {
+      "Time_Start": 931.36,
+      "Time_End": 936.16,
+      "Text": " all service creation that flowed through the provided Microsoft API would also flow through"
+    },
+    {
+      "Time_Start": 936.16,
+      "Time_End": 937.16,
+      "Text": " this server."
+    },
+    {
+      "Time_Start": 937.16,
+      "Time_End": 942.56,
+      "Text": " Later on, we will discuss the idea of multivariate detections, which is where numerous variables"
+    },
+    {
+      "Time_Start": 942.56,
+      "Time_End": 946.0799999999999,
+      "Text": " are considered together to reach a more complex conclusion."
+    },
+    {
+      "Time_Start": 946.0799999999999,
+      "Time_End": 951.76,
+      "Text": " This is something that I think we see in vendor threat scores related to malware, for example,"
+    },
+    {
+      "Time_Start": 951.76,
+      "Time_End": 955.84,
+      "Text": " but I think it can be applied to more specific situations like service creation."
+    },
+    {
+      "Time_Start": 955.84,
+      "Time_End": 960.4,
+      "Text": " Lastly, as you may have noticed, we have been building a layered detection approach for"
+    },
+    {
+      "Time_Start": 960.4,
+      "Time_End": 962.68,
+      "Text": " identifying malicious service creation."
+    },
+    {
+      "Time_Start": 962.68,
+      "Time_End": 966.4399999999999,
+      "Text": " To finish this approach, maybe we create a detection to alert on services that are executing"
+    },
+    {
+      "Time_Start": 966.4399999999999,
+      "Time_End": 968.16,
+      "Text": " unsigned binaries."
+    },
+    {
+      "Time_Start": 968.16,
+      "Time_End": 971.4,
+      "Text": " This may indicate that the service is not part of an approved enterprise application"
+    },
+    {
+      "Time_Start": 971.4,
+      "Time_End": 973.92,
+      "Text": " and may be suspicious."
+    },
+    {
+      "Time_Start": 973.92,
+      "Time_End": 977.68,
+      "Text": " At this point, we've completed our generic layered detection approach for identifying"
+    },
+    {
+      "Time_Start": 977.68,
+      "Time_End": 978.68,
+      "Text": " malicious service creation."
+    },
+    {
+      "Time_Start": 978.6800000000001,
+      "Time_End": 984.1200000000001,
+      "Text": " In the next few slides, we will investigate why this may or may not be sufficient."
+    },
+    {
+      "Time_Start": 984.1200000000001,
+      "Time_End": 988.0400000000001,
+      "Text": " In statistics, there's an idea called uncertainty, which basically says that we have limited"
+    },
+    {
+      "Time_Start": 988.0400000000001,
+      "Time_End": 992.6,
+      "Text": " or fallible knowledge, which makes it impossible for us to accurately describe the existing"
+    },
+    {
+      "Time_Start": 992.6,
+      "Time_End": 995.7600000000001,
+      "Text": " state, a future outcome, or more than one possible outcome."
+    },
+    {
+      "Time_Start": 995.7600000000001,
+      "Time_End": 999.44,
+      "Text": " This means we can't possibly quantify the volume of false negatives that we are left"
+    },
+    {
+      "Time_Start": 999.44,
+      "Time_End": 1001.8800000000001,
+      "Text": " with as a result of our detection efforts."
+    },
+    {
+      "Time_Start": 1001.8800000000001,
+      "Time_End": 1007.2600000000001,
+      "Text": " Additionally, it is common for organizations not to have a safety net for reviewing events"
+    },
+    {
+      "Time_Start": 1007.34,
+      "Time_End": 1013.54,
+      "Text": " that are not subject to an alert, like predicted negative events, for example."
+    },
+    {
+      "Time_Start": 1013.54,
+      "Time_End": 1018.02,
+      "Text": " We don't know where the condition positive is relative to our classification rule."
+    },
+    {
+      "Time_Start": 1018.02,
+      "Time_End": 1022.5,
+      "Text": " Maybe we get lucky and it's a situation like this where the majority of condition positive"
+    },
+    {
+      "Time_Start": 1022.5,
+      "Time_End": 1025.54,
+      "Text": " events will be classified as positive by our detection."
+    },
+    {
+      "Time_Start": 1025.54,
+      "Time_End": 1031.02,
+      "Text": " It is equally likely that we will have a situation like this where we are quite far away from"
+    },
+    {
+      "Time_Start": 1031.02,
+      "Time_End": 1035.98,
+      "Text": " the ideal state and a large portion of the condition positive events become false negatives."
+    },
+    {
+      "Time_Start": 1035.98,
+      "Time_End": 1038.58,
+      "Text": " This is a situation that constantly bothers me."
+    },
+    {
+      "Time_Start": 1038.58,
+      "Time_End": 1041.1,
+      "Text": " How can we account for this uncertainty?"
+    },
+    {
+      "Time_Start": 1041.1,
+      "Time_End": 1044.46,
+      "Text": " The rest of this talk is focused on sharing my current perspective of how I'd like to"
+    },
+    {
+      "Time_Start": 1044.46,
+      "Time_End": 1048.9,
+      "Text": " answer those questions and my current approach."
+    },
+    {
+      "Time_Start": 1048.9,
+      "Time_End": 1052.74,
+      "Text": " While I was pondering how we might solve the inherent uncertainty that is found in detection"
+    },
+    {
+      "Time_Start": 1052.74,
+      "Time_End": 1056.18,
+      "Text": " work, I was introduced to a famous psychologist named Jean Piaget."
+    },
+    {
+      "Time_Start": 1056.18,
+      "Time_End": 1060.66,
+      "Text": " Piaget is best known for his theory on childhood cognitive development, where he posited that"
+    },
+    {
+      "Time_Start": 1060.66,
+      "Time_End": 1063.82,
+      "Text": " we aren't born with the innate ability to deal with abstract thought."
+    },
+    {
+      "Time_Start": 1063.9399999999998,
+      "Time_End": 1067.98,
+      "Text": " Instead, we must learn this ability through stages of development."
+    },
+    {
+      "Time_Start": 1067.98,
+      "Time_End": 1071.82,
+      "Text": " Piaget identified four stages of cognitive development that children will experience"
+    },
+    {
+      "Time_Start": 1071.82,
+      "Time_End": 1073.58,
+      "Text": " from infancy to adulthood."
+    },
+    {
+      "Time_Start": 1073.58,
+      "Time_End": 1078.1,
+      "Text": " The first stage, sensorimotor, is commonly associated with newborns or infants."
+    },
+    {
+      "Time_Start": 1078.1,
+      "Time_End": 1082.1399999999999,
+      "Text": " In this stage, the baby's worldview is limited to what they can sense directly."
+    },
+    {
+      "Time_Start": 1082.1399999999999,
+      "Time_End": 1084.9399999999998,
+      "Text": " You may notice that babies put everything in their mouth because that is one of the"
+    },
+    {
+      "Time_Start": 1084.9399999999998,
+      "Time_End": 1087.98,
+      "Text": " ways in which they familiarize themselves with the world."
+    },
+    {
+      "Time_Start": 1087.98,
+      "Time_End": 1092.26,
+      "Text": " In the preoperational stage, children can begin to associate symbols with real things."
+    },
+    {
+      "Time_Start": 1092.26,
+      "Time_End": 1096.02,
+      "Text": " For instance, a child at this stage may be able to draw a picture of their family in"
+    },
+    {
+      "Time_Start": 1096.02,
+      "Time_End": 1097.54,
+      "Text": " the form of stick figures."
+    },
+    {
+      "Time_Start": 1097.54,
+      "Time_End": 1101.7,
+      "Text": " At this point, children begin to realize that they have accumulated knowledge."
+    },
+    {
+      "Time_Start": 1101.7,
+      "Time_End": 1104.6,
+      "Text": " But they may not understand how that accumulation happened."
+    },
+    {
+      "Time_Start": 1104.6,
+      "Time_End": 1108.62,
+      "Text": " If you've ever had a kid constantly ask you why, that is associated with them trying to"
+    },
+    {
+      "Time_Start": 1108.62,
+      "Time_End": 1110.84,
+      "Text": " understand where this knowledge came from."
+    },
+    {
+      "Time_Start": 1110.84,
+      "Time_End": 1115.74,
+      "Text": " The third stage is the concrete operational stage, where children are able to think logically,"
+    },
+    {
+      "Time_Start": 1115.74,
+      "Time_End": 1118.9,
+      "Text": " but they are generally limited to what they can physically manipulate."
+    },
+    {
+      "Time_Start": 1118.9,
+      "Time_End": 1122.74,
+      "Text": " Here we see that children are able to logically answer questions like, if Johnny ate twice"
+    },
+    {
+      "Time_Start": 1122.74,
+      "Time_End": 1126.8200000000002,
+      "Text": " as many candies as his sister, and together they ate nine pieces of candy, how many did"
+    },
+    {
+      "Time_Start": 1126.8200000000002,
+      "Time_End": 1127.8200000000002,
+      "Text": " his sister eat?"
+    },
+    {
+      "Time_Start": 1127.8200000000002,
+      "Time_End": 1132.46,
+      "Text": " This is especially true if the child is given physical objects to represent the candies."
+    },
+    {
+      "Time_Start": 1132.46,
+      "Time_End": 1137.38,
+      "Text": " Lastly, we reach the formal operational stage, where we can deal with abstract concepts and"
+    },
+    {
+      "Time_Start": 1137.38,
+      "Time_End": 1139.7800000000002,
+      "Text": " think logically in our own minds."
+    },
+    {
+      "Time_Start": 1139.7800000000002,
+      "Time_End": 1144.5800000000002,
+      "Text": " For instance, instead of a word problem, we would answer the question, 2x plus x equals"
+    },
+    {
+      "Time_Start": 1144.5800000000002,
+      "Time_End": 1145.5800000000002,
+      "Text": " 9."
+    },
+    {
+      "Time_Start": 1145.5800000000002,
+      "Time_End": 1146.9,
+      "Text": " Can you solve for x?"
+    },
+    {
+      "Time_Start": 1147.42,
+      "Time_End": 1151.3000000000002,
+      "Text": " Piaget was also very interested in the idea of abstractions and how we should be careful"
+    },
+    {
+      "Time_Start": 1151.3000000000002,
+      "Time_End": 1154.52,
+      "Text": " about how we use abstractions with certain audiences."
+    },
+    {
+      "Time_Start": 1154.52,
+      "Time_End": 1158.5800000000002,
+      "Text": " For instance, if you are the parent of a two-year-old and you ask them to clean their room, they"
+    },
+    {
+      "Time_Start": 1158.5800000000002,
+      "Time_End": 1161.7,
+      "Text": " likely won't complete the task in the manner that you desire."
+    },
+    {
+      "Time_Start": 1161.7,
+      "Time_End": 1165.66,
+      "Text": " This is because clean your room is an abstract concept, and they likely aren't ready to think"
+    },
+    {
+      "Time_Start": 1165.66,
+      "Time_End": 1166.66,
+      "Text": " that abstractly."
+    },
+    {
+      "Time_Start": 1166.66,
+      "Time_End": 1170.6200000000001,
+      "Text": " Instead, it may be beneficial to adjust your instructions to suit their current level of"
+    },
+    {
+      "Time_Start": 1170.6200000000001,
+      "Time_End": 1172.6200000000001,
+      "Text": " cognitive development."
+    },
+    {
+      "Time_Start": 1172.6200000000001,
+      "Time_End": 1176.22,
+      "Text": " They likely know what their teddy bear is and what a shelf is, so you may be better"
+    },
+    {
+      "Time_Start": 1176.22,
+      "Time_End": 1181.1000000000001,
+      "Text": " off by asking them to put their teddy bear on the shelf as this is a more concrete task"
+    },
+    {
+      "Time_Start": 1181.1000000000001,
+      "Time_End": 1182.1000000000001,
+      "Text": " that they can accomplish."
+    },
+    {
+      "Time_Start": 1182.1000000000001,
+      "Time_End": 1187.42,
+      "Text": " In a similar vein, I think that we often think too abstractly in cybersecurity."
+    },
+    {
+      "Time_Start": 1187.42,
+      "Time_End": 1190.98,
+      "Text": " Computers are an abstract concept by nature, but we often don't take the time to understand"
+    },
+    {
+      "Time_Start": 1190.98,
+      "Time_End": 1192.94,
+      "Text": " the technical implementation."
+    },
+    {
+      "Time_Start": 1192.94,
+      "Time_End": 1196.82,
+      "Text": " Abstract tasks such as find evil or tuner detection may be too abstracted for us to"
+    },
+    {
+      "Time_Start": 1196.82,
+      "Time_End": 1199.3,
+      "Text": " take action in a meaningful and consistent way."
+    },
+    {
+      "Time_Start": 1199.3,
+      "Time_End": 1203.54,
+      "Text": " Instead, it may be better to take a step back and analyze as an organization or as an entire"
+    },
+    {
+      "Time_Start": 1203.54,
+      "Time_End": 1207.62,
+      "Text": " community what these tasks actually mean."
+    },
+    {
+      "Time_Start": 1207.62,
+      "Time_End": 1213.06,
+      "Text": " As part of the formal operational stage, Piaget identified four reasoning skills, clarification,"
+    },
+    {
+      "Time_Start": 1213.06,
+      "Time_End": 1219.22,
+      "Text": " inference, evaluation, and application, which can help us understand abstract concepts."
+    },
+    {
+      "Time_Start": 1219.22,
+      "Time_End": 1222.7,
+      "Text": " Clarification is used to identify and analyze the individual elements of the problem to"
+    },
+    {
+      "Time_Start": 1222.7,
+      "Time_End": 1227.42,
+      "Text": " decipher what information is required to truly understand the task."
+    },
+    {
+      "Time_Start": 1227.42,
+      "Time_End": 1231.54,
+      "Text": " When asked to tune a detection, clarification helps to determine what specifically is being"
+    },
+    {
+      "Time_Start": 1231.54,
+      "Time_End": 1232.54,
+      "Text": " asked."
+    },
+    {
+      "Time_Start": 1232.54,
+      "Time_End": 1236.02,
+      "Text": " Does tune mean remove false positives at all costs?"
+    },
+    {
+      "Time_Start": 1236.02,
+      "Time_End": 1240.5,
+      "Text": " Or does it mean increase the specificity while maintaining the sensitivity of a detection?"
+    },
+    {
+      "Time_Start": 1240.5,
+      "Time_End": 1244.1,
+      "Text": " Inference, on the other hand, can be used to understand what tuning a detection might"
+    },
+    {
+      "Time_Start": 1244.1,
+      "Time_End": 1245.3,
+      "Text": " look like."
+    },
+    {
+      "Time_Start": 1245.3,
+      "Time_End": 1249.78,
+      "Text": " If we use deductive inference, we might reason that a tuned detection is both sensitive and"
+    },
+    {
+      "Time_Start": 1249.78,
+      "Time_End": 1250.78,
+      "Text": " specific."
+    },
+    {
+      "Time_Start": 1250.78,
+      "Time_End": 1256.18,
+      "Text": " So, we might work towards identifying ways to maintain sensitivity while increasing specificity."
+    },
+    {
+      "Time_Start": 1256.18,
+      "Time_End": 1261.1399999999999,
+      "Text": " Alternatively, using inductive inference, we might look at three examples of tuned detections"
+    },
+    {
+      "Time_Start": 1261.3000000000002,
+      "Time_End": 1263.46,
+      "Text": " and one untuned detection."
+    },
+    {
+      "Time_Start": 1263.46,
+      "Time_End": 1267.14,
+      "Text": " We can then draw conclusions based on the similarities between the tuned detections"
+    },
+    {
+      "Time_Start": 1267.14,
+      "Time_End": 1272.0600000000002,
+      "Text": " and the differences between the tuned and untuned detection to determine the characteristics"
+    },
+    {
+      "Time_Start": 1272.0600000000002,
+      "Time_End": 1275.6200000000001,
+      "Text": " of what a tuned detection actually are."
+    },
+    {
+      "Time_Start": 1275.6200000000001,
+      "Time_End": 1279.5,
+      "Text": " Evaluation allows you to create success criteria and work towards task completion, assuming"
+    },
+    {
+      "Time_Start": 1279.5,
+      "Time_End": 1282.1000000000001,
+      "Text": " you have identified the correct criteria."
+    },
+    {
+      "Time_Start": 1282.1000000000001,
+      "Time_End": 1286.46,
+      "Text": " Lastly, application involves applying your solution to improve the current state of detection"
+    },
+    {
+      "Time_Start": 1286.46,
+      "Time_End": 1288.22,
+      "Text": " within your enterprise."
+    },
+    {
+      "Time_Start": 1288.74,
+      "Time_End": 1293.66,
+      "Text": " Now we'll talk about the solution that I'm going to propose and maybe even show an example"
+    },
+    {
+      "Time_Start": 1293.66,
+      "Time_End": 1296.58,
+      "Text": " of how that might work."
+    },
+    {
+      "Time_Start": 1296.58,
+      "Time_End": 1302.8600000000001,
+      "Text": " As I was researching this talk, actually, Dr. Anton Shuvakin released a paper or a blog"
+    },
+    {
+      "Time_Start": 1302.8600000000001,
+      "Time_End": 1305.18,
+      "Text": " post called On Threat Detection Uncertainty."
+    },
+    {
+      "Time_Start": 1305.18,
+      "Time_End": 1309.5,
+      "Text": " This is really interesting because this is the main premise of what this talk is about."
+    },
+    {
+      "Time_Start": 1309.5,
+      "Time_End": 1314.14,
+      "Text": " The idea that there is uncertainty in whether our detections are actually doing what we"
+    },
+    {
+      "Time_Start": 1314.14,
+      "Time_End": 1320.6200000000001,
+      "Text": " hope they do or achieving that goal or whether they're sufficient in nature."
+    },
+    {
+      "Time_Start": 1320.6200000000001,
+      "Time_End": 1327.38,
+      "Text": " He actually proposed three different approaches to handle that uncertainty."
+    },
+    {
+      "Time_Start": 1327.38,
+      "Time_End": 1330.9,
+      "Text": " The first approach is to improve alert triage."
+    },
+    {
+      "Time_Start": 1330.9,
+      "Time_End": 1335.66,
+      "Text": " The general idea is make yourself more efficient in triage so that you can make decisions about"
+    },
+    {
+      "Time_Start": 1335.66,
+      "Time_End": 1337.3400000000001,
+      "Text": " more events."
+    },
+    {
+      "Time_Start": 1337.3400000000001,
+      "Time_End": 1342.9,
+      "Text": " This approach, if we're using the terms that we've established thus far, is increase the"
+    },
+    {
+      "Time_Start": 1342.9,
+      "Time_End": 1349.3400000000001,
+      "Text": " sensitivity of our detections because we're more efficient at triaging false positives."
+    },
+    {
+      "Time_Start": 1349.3400000000001,
+      "Time_End": 1352.02,
+      "Text": " We're able to handle more false positives as a result."
+    },
+    {
+      "Time_Start": 1352.02,
+      "Time_End": 1356.7,
+      "Text": " The second approach, which is probably the main premise that I'm building my approach"
+    },
+    {
+      "Time_Start": 1356.7,
+      "Time_End": 1360.5800000000002,
+      "Text": " off of, is this idea of use multi-stage detections."
+    },
+    {
+      "Time_Start": 1360.5800000000002,
+      "Time_End": 1366.38,
+      "Text": " The first stage would be maybe more sensitive because you want to have a more noisy signal"
+    },
+    {
+      "Time_Start": 1366.38,
+      "Time_End": 1370.3000000000002,
+      "Text": " to avoid false negatives at that first step."
+    },
+    {
+      "Time_Start": 1370.5,
+      "Time_End": 1375.62,
+      "Text": " Maybe have some sort of automation or additional scoring to be able to identify or prioritize"
+    },
+    {
+      "Time_Start": 1375.62,
+      "Time_End": 1377.78,
+      "Text": " those noisy signals."
+    },
+    {
+      "Time_Start": 1377.78,
+      "Time_End": 1379.8999999999999,
+      "Text": " Then the last one is split bad from interesting."
+    },
+    {
+      "Time_Start": 1379.8999999999999,
+      "Time_End": 1384.18,
+      "Text": " We talked about precise and brittle signals or detections."
+    },
+    {
+      "Time_Start": 1384.18,
+      "Time_End": 1390.1399999999999,
+      "Text": " Maybe there's value in differentiating precise or detections that are going to result in"
+    },
+    {
+      "Time_Start": 1390.1399999999999,
+      "Time_End": 1396.1399999999999,
+      "Text": " known bad versus things that are interesting or just like, hey, this is anomalous or this"
+    },
+    {
+      "Time_Start": 1396.1399999999999,
+      "Time_End": 1397.94,
+      "Text": " is something that we want to look into."
+    },
+    {
+      "Time_Start": 1398.5800000000002,
+      "Time_End": 1400.26,
+      "Text": " There may be value there as well."
+    },
+    {
+      "Time_Start": 1400.26,
+      "Time_End": 1404.5800000000002,
+      "Text": " I think in reality, you probably want to improve on all these things."
+    },
+    {
+      "Time_Start": 1404.5800000000002,
+      "Time_End": 1409.38,
+      "Text": " Maybe have a different workflow for bad events versus interesting events."
+    },
+    {
+      "Time_Start": 1409.38,
+      "Time_End": 1414.02,
+      "Text": " Maybe have some multi-staged approach that says, hey, we want to be overly sensitive"
+    },
+    {
+      "Time_Start": 1414.02,
+      "Time_End": 1418.6200000000001,
+      "Text": " at first and then maybe narrow in or establish some sort of score going forward."
+    },
+    {
+      "Time_Start": 1418.6200000000001,
+      "Time_End": 1423.26,
+      "Text": " Then lastly, we want to improve the efficiency of our alert triage so that we can triage"
+    },
+    {
+      "Time_Start": 1423.3799999999999,
+      "Time_End": 1428.9,
+      "Text": " more of those events that we're receiving."
+    },
+    {
+      "Time_Start": 1428.9,
+      "Time_End": 1433.3,
+      "Text": " As I was thinking about this, I came up with the six-step process."
+    },
+    {
+      "Time_Start": 1433.3,
+      "Time_End": 1439.3,
+      "Text": " The six-step process is identify the base condition, and I'll talk about that in a second,"
+    },
+    {
+      "Time_Start": 1439.3,
+      "Time_End": 1445.86,
+      "Text": " capture base instances, identify contextual factors, add necessary context, evaluate a"
+    },
+    {
+      "Time_Start": 1445.86,
+      "Time_End": 1451.5,
+      "Text": " multivariate detection, I told you we'd come back to that, and then basically tune or provide"
+    },
+    {
+      "Time_Start": 1451.5,
+      "Time_End": 1453.74,
+      "Text": " feedback."
+    },
+    {
+      "Time_Start": 1453.74,
+      "Time_End": 1457.3,
+      "Text": " The first step in our process is to identify the base condition."
+    },
+    {
+      "Time_Start": 1457.3,
+      "Time_End": 1462.02,
+      "Text": " This is where we determine the condition that must be fulfilled by all positive events."
+    },
+    {
+      "Time_Start": 1462.02,
+      "Time_End": 1466.1,
+      "Text": " For instance, is it possible to identify something that every malicious service must have in"
+    },
+    {
+      "Time_Start": 1466.1,
+      "Time_End": 1467.1,
+      "Text": " common?"
+    },
+    {
+      "Time_Start": 1467.1,
+      "Time_End": 1473.82,
+      "Text": " Ultimately, this will allow us to filter the population relative to all collective events,"
+    },
+    {
+      "Time_Start": 1473.82,
+      "Time_End": 1478.62,
+      "Text": " but also minimizes the likelihood of false negatives at this point."
+    },
+    {
+      "Time_Start": 1478.74,
+      "Time_End": 1485.94,
+      "Text": " If we capture all services, then we should be good to have no false negatives conceptually."
+    },
+    {
+      "Time_Start": 1485.94,
+      "Time_End": 1490.0600000000002,
+      "Text": " In order to identify the base condition for our detection, which is focused on identifying"
+    },
+    {
+      "Time_Start": 1490.0600000000002,
+      "Time_End": 1494.98,
+      "Text": " the creation of malicious services, it is important to understand the high-level sub-populations"
+    },
+    {
+      "Time_Start": 1494.98,
+      "Time_End": 1497.5400000000002,
+      "Text": " of telemetry that we are dealing with."
+    },
+    {
+      "Time_Start": 1497.5400000000002,
+      "Time_End": 1502.46,
+      "Text": " At this point, we have identified two groupings, the overall population, which represents all"
+    },
+    {
+      "Time_Start": 1502.46,
+      "Time_End": 1507.0200000000002,
+      "Text": " telemetry gathered from the enterprise, and condition positive, which represents all malicious"
+    },
+    {
+      "Time_Start": 1507.06,
+      "Time_End": 1510.78,
+      "Text": " services, or our detection target."
+    },
+    {
+      "Time_Start": 1510.78,
+      "Time_End": 1514.94,
+      "Text": " The overall population is represented by the white outer circle, and the condition positive"
+    },
+    {
+      "Time_Start": 1514.94,
+      "Time_End": 1517.42,
+      "Text": " is represented by the small red circle."
+    },
+    {
+      "Time_Start": 1517.42,
+      "Time_End": 1521.1,
+      "Text": " When it comes to identifying the base condition, I think it is important to narrow our focus"
+    },
+    {
+      "Time_Start": 1521.1,
+      "Time_End": 1525.86,
+      "Text": " from the overall population to a sub-population that is simultaneously small relative to the"
+    },
+    {
+      "Time_Start": 1525.86,
+      "Time_End": 1531.98,
+      "Text": " overall population, but big enough to conceptually contain the entire condition positive sub-population."
+    },
+    {
+      "Time_Start": 1531.98,
+      "Time_End": 1536.46,
+      "Text": " In this case, the sub-population can be represented by all service creation."
+    },
+    {
+      "Time_Start": 1536.46,
+      "Time_End": 1539.78,
+      "Text": " The idea being that all malicious services must be services."
+    },
+    {
+      "Time_Start": 1539.78,
+      "Time_End": 1544.42,
+      "Text": " So if we can identify a sub-population that represents all service creation, then it must"
+    },
+    {
+      "Time_Start": 1544.42,
+      "Time_End": 1547.54,
+      "Text": " also include malicious services."
+    },
+    {
+      "Time_Start": 1547.54,
+      "Time_End": 1551.02,
+      "Text": " So what do we do with this all service sub-population?"
+    },
+    {
+      "Time_Start": 1551.02,
+      "Time_End": 1554.82,
+      "Text": " We can use it as a first stage of our multi-stage detection strategy."
+    },
+    {
+      "Time_Start": 1554.82,
+      "Time_End": 1558.8600000000001,
+      "Text": " In the context of detecting malicious service creation, we can first reduce the problem"
+    },
+    {
+      "Time_Start": 1558.8600000000001,
+      "Time_End": 1563.42,
+      "Text": " set to only focus on events that could be indicative of malicious service creation."
+    },
+    {
+      "Time_Start": 1563.42,
+      "Time_End": 1568.8600000000001,
+      "Text": " We are thus breaking the problem into two parts, identifying service creation and differentiating"
+    },
+    {
+      "Time_Start": 1568.8600000000001,
+      "Time_End": 1572.3400000000001,
+      "Text": " between benign and malicious service creation."
+    },
+    {
+      "Time_Start": 1572.3400000000001,
+      "Time_End": 1576.3000000000002,
+      "Text": " Identifying service creation is a relatively easy step, while differentiating intent is"
+    },
+    {
+      "Time_Start": 1576.3000000000002,
+      "Time_End": 1579.9,
+      "Text": " often much more difficult and full of uncertainty."
+    },
+    {
+      "Time_Start": 1579.9,
+      "Time_End": 1582.78,
+      "Text": " I think it is valuable to demonstrate this idea visually."
+    },
+    {
+      "Time_Start": 1582.78,
+      "Time_End": 1589.94,
+      "Text": " The current trend is to focus efforts on detecting malicious services like this."
+    },
+    {
+      "Time_Start": 1589.98,
+      "Time_End": 1598.26,
+      "Text": " But I'd recommend opening up the focus like this to reduce the likelihood of false negatives"
+    },
+    {
+      "Time_Start": 1598.26,
+      "Time_End": 1601.14,
+      "Text": " in the initial detection stage."
+    },
+    {
+      "Time_Start": 1601.14,
+      "Time_End": 1604.94,
+      "Text": " Once we have successfully identified the base condition, we can focus on identifying an"
+    },
+    {
+      "Time_Start": 1604.94,
+      "Time_End": 1607.74,
+      "Text": " event which represents its occurrence."
+    },
+    {
+      "Time_Start": 1607.74,
+      "Time_End": 1611.3,
+      "Text": " It's great that we conceptually know that for every malicious service, there must be"
+    },
+    {
+      "Time_Start": 1611.3,
+      "Time_End": 1613.02,
+      "Text": " a service creation event."
+    },
+    {
+      "Time_Start": 1613.02,
+      "Time_End": 1617.6200000000001,
+      "Text": " But at some point, we need to actually convert this theory into the practical world, which"
+    },
+    {
+      "Time_Start": 1617.7,
+      "Time_End": 1620.42,
+      "Text": " includes leveraging our telemetry."
+    },
+    {
+      "Time_Start": 1620.42,
+      "Time_End": 1624.2600000000002,
+      "Text": " So let's take a moment to explore how we might go about identifying instances of the base"
+    },
+    {
+      "Time_Start": 1624.2600000000002,
+      "Time_End": 1626.0600000000002,
+      "Text": " condition being met."
+    },
+    {
+      "Time_Start": 1626.0600000000002,
+      "Time_End": 1630.14,
+      "Text": " Remember that capturing these instances should provide a high level of sensitivity or reduce"
+    },
+    {
+      "Time_Start": 1630.14,
+      "Time_End": 1636.5000000000002,
+      "Text": " false negatives, but will likely be low in specificity, which means increased false positives."
+    },
+    {
+      "Time_Start": 1636.5000000000002,
+      "Time_End": 1640.0400000000002,
+      "Text": " When considering how to identify service creation, it is important to think about how services"
+    },
+    {
+      "Time_Start": 1640.0400000000002,
+      "Time_End": 1644.0600000000002,
+      "Text": " are represented on the system and where our monitoring opportunities are."
+    },
+    {
+      "Time_Start": 1644.06,
+      "Time_End": 1648.1799999999998,
+      "Text": " When researching services, one might have come across an MSDN page that described the"
+    },
+    {
+      "Time_Start": 1648.1799999999998,
+      "Time_End": 1650.74,
+      "Text": " database of installed services in the registry."
+    },
+    {
+      "Time_Start": 1650.74,
+      "Time_End": 1654.5,
+      "Text": " Apparently, when a service is created, it is added to a database which is stored at"
+    },
+    {
+      "Time_Start": 1654.5,
+      "Time_End": 1658.1399999999999,
+      "Text": " hklm system current control set services."
+    },
+    {
+      "Time_Start": 1658.1399999999999,
+      "Time_End": 1660.94,
+      "Text": " And as far as I'm aware, this is a requirement."
+    },
+    {
+      "Time_Start": 1660.94,
+      "Time_End": 1664.94,
+      "Text": " So maybe monitoring for registry key creation events in this location would be a good starting"
+    },
+    {
+      "Time_Start": 1664.94,
+      "Time_End": 1669.5,
+      "Text": " point for identifying instances meeting the base condition."
+    },
+    {
+      "Time_Start": 1669.82,
+      "Time_End": 1673.7,
+      "Text": " Alternatively, listeners familiar with the Windows event log will know about event ID"
+    },
+    {
+      "Time_Start": 1673.7,
+      "Time_End": 1677.74,
+      "Text": " 4697, which identifies service creation."
+    },
+    {
+      "Time_Start": 1677.74,
+      "Time_End": 1681.14,
+      "Text": " Now we have two base events to choose from, so we need to think about the pros and cons"
+    },
+    {
+      "Time_Start": 1681.14,
+      "Time_End": 1682.14,
+      "Text": " of each."
+    },
+    {
+      "Time_Start": 1682.14,
+      "Time_End": 1685.94,
+      "Text": " In thinking about this problem, I've identified two concepts that are valuable in making this"
+    },
+    {
+      "Time_Start": 1685.94,
+      "Time_End": 1686.94,
+      "Text": " distinction."
+    },
+    {
+      "Time_Start": 1686.94,
+      "Time_End": 1690.7,
+      "Text": " The first is the initial contextual details provided by the event."
+    },
+    {
+      "Time_Start": 1690.7,
+      "Time_End": 1696.06,
+      "Text": " The event log provides the service name, file name to be executed, service type, and startup"
+    },
+    {
+      "Time_Start": 1696.06,
+      "Time_End": 1697.06,
+      "Text": " type."
+    },
+    {
+      "Time_Start": 1697.1799999999998,
+      "Time_End": 1700.6599999999999,
+      "Text": " While Sysmon's registry key creation event only provides the name of the process that"
+    },
+    {
+      "Time_Start": 1700.6599999999999,
+      "Time_End": 1705.4199999999998,
+      "Text": " created the key and the name of the service via the registry key name."
+    },
+    {
+      "Time_Start": 1705.4199999999998,
+      "Time_End": 1708.1399999999999,
+      "Text": " In this case, it seems that the event log is superior."
+    },
+    {
+      "Time_Start": 1708.1399999999999,
+      "Time_End": 1712.7,
+      "Text": " However, we must also investigate how the event is generated in the first place."
+    },
+    {
+      "Time_Start": 1712.7,
+      "Time_End": 1718.32,
+      "Text": " The event log is generated via the SCM RPC server in services.exe."
+    },
+    {
+      "Time_Start": 1718.32,
+      "Time_End": 1721.58,
+      "Text": " If you're interested in learning more about this, we will cover this concept in our capability"
+    },
+    {
+      "Time_Start": 1721.58,
+      "Time_End": 1724.22,
+      "Text": " abstraction workshop later today."
+    },
+    {
+      "Time_Start": 1724.22,
+      "Time_End": 1729.02,
+      "Text": " This means that the event is only generated as a result of service creation via the approved"
+    },
+    {
+      "Time_Start": 1729.02,
+      "Time_End": 1731.46,
+      "Text": " creation mechanism or API."
+    },
+    {
+      "Time_Start": 1731.46,
+      "Time_End": 1736.78,
+      "Text": " Alternatively, the registry key creation will fire in the case that the API is used, but"
+    },
+    {
+      "Time_Start": 1736.78,
+      "Time_End": 1740.82,
+      "Text": " will also work in other instances, like if an attacker creates a service by editing the"
+    },
+    {
+      "Time_Start": 1740.82,
+      "Time_End": 1742.54,
+      "Text": " registry directly."
+    },
+    {
+      "Time_Start": 1742.54,
+      "Time_End": 1747.3,
+      "Text": " For this reason, I decided to use the registry key creation event as my base event."
+    },
+    {
+      "Time_Start": 1747.3,
+      "Time_End": 1749.34,
+      "Text": " Let's dig into this registry key event."
+    },
+    {
+      "Time_Start": 1749.34,
+      "Time_End": 1752.98,
+      "Text": " You may notice that the contextual details included in this event are fairly sparse."
+    },
+    {
+      "Time_Start": 1753.46,
+      "Time_End": 1757.1,
+      "Text": " While this event doesn't tell us explicitly about service creation, we can use our knowledge"
+    },
+    {
+      "Time_Start": 1757.1,
+      "Time_End": 1761.66,
+      "Text": " from Microsoft documentation to understand that it is implicitly describing this activity"
+    },
+    {
+      "Time_Start": 1761.66,
+      "Time_End": 1764.0,
+      "Text": " based on the registry key itself."
+    },
+    {
+      "Time_Start": 1764.0,
+      "Time_End": 1768.1,
+      "Text": " One thing I think is important is to differentiate between fields reported in the event that"
+    },
+    {
+      "Time_Start": 1768.1,
+      "Time_End": 1772.26,
+      "Text": " are explicitly valuable to our use case and those that are not."
+    },
+    {
+      "Time_Start": 1772.26,
+      "Time_End": 1775.66,
+      "Text": " In doing this, I create what I refer to as a composite event."
+    },
+    {
+      "Time_Start": 1775.66,
+      "Time_End": 1779.66,
+      "Text": " This is an event that is built from numerous sources to describe the scenario I am interested"
+    },
+    {
+      "Time_Start": 1779.66,
+      "Time_End": 1780.66,
+      "Text": " in."
+    },
+    {
+      "Time_Start": 1780.66,
+      "Time_End": 1784.26,
+      "Text": " As mentioned in the consideration slide, our composite event, which is based on the registry"
+    },
+    {
+      "Time_Start": 1784.26,
+      "Time_End": 1786.6200000000001,
+      "Text": " key creation event, is fairly limited."
+    },
+    {
+      "Time_Start": 1786.6200000000001,
+      "Time_End": 1791.5,
+      "Text": " Currently, we are only aware of the process that created the event, services.exe, and"
+    },
+    {
+      "Time_Start": 1791.5,
+      "Time_End": 1797.02,
+      "Text": " the name of the service itself, which is tyliu so on and so forth."
+    },
+    {
+      "Time_Start": 1797.02,
+      "Time_End": 1801.5,
+      "Text": " While the name of the service may look suspicious, it is very difficult or almost impossible"
+    },
+    {
+      "Time_Start": 1801.5,
+      "Time_End": 1806.5400000000002,
+      "Text": " to make a decision on the nature of the service given the current known context."
+    },
+    {
+      "Time_Start": 1806.5400000000002,
+      "Time_End": 1810.02,
+      "Text": " Since our current understanding of the event, which is represented by the composite event,"
+    },
+    {
+      "Time_Start": 1810.02,
+      "Time_End": 1815.18,
+      "Text": " is so limited, it is important to add additional contextual factors to help us make a decision."
+    },
+    {
+      "Time_Start": 1815.18,
+      "Time_End": 1818.94,
+      "Text": " This is represented by a list of all of the other details you would like to know about"
+    },
+    {
+      "Time_Start": 1818.94,
+      "Time_End": 1820.3,
+      "Text": " the service."
+    },
+    {
+      "Time_Start": 1820.3,
+      "Time_End": 1824.74,
+      "Text": " In making this list, you may be able to identify a few different details that you know about,"
+    },
+    {
+      "Time_Start": 1824.74,
+      "Time_End": 1827.82,
+      "Text": " but you also want to learn about other factors which might be important."
+    },
+    {
+      "Time_Start": 1827.82,
+      "Time_End": 1829.54,
+      "Text": " Let's look at how we might do this."
+    },
+    {
+      "Time_Start": 1829.54,
+      "Time_End": 1834.34,
+      "Text": " Again, we might reference Microsoft documentation and stumble upon this page, which describes"
+    },
+    {
+      "Time_Start": 1834.34,
+      "Time_End": 1836.22,
+      "Text": " how to configure a service."
+    },
+    {
+      "Time_Start": 1836.22,
+      "Time_End": 1841.22,
+      "Text": " While reading this page, we see that Microsoft provides an API function called changeServiceConfigA"
+    },
+    {
+      "Time_Start": 1841.22,
+      "Time_End": 1843.8600000000001,
+      "Text": " that allows us to set this configuration."
+    },
+    {
+      "Time_Start": 1843.8600000000001,
+      "Time_End": 1847.46,
+      "Text": " While attackers don't necessarily have to use this API, it is a good starting point"
+    },
+    {
+      "Time_Start": 1847.46,
+      "Time_End": 1851.9,
+      "Text": " to understand how it is intended to work and what options might be present."
+    },
+    {
+      "Time_Start": 1851.9,
+      "Time_End": 1856.94,
+      "Text": " Upon investigating the function, we see that it allows you to specify a service via handle"
+    },
+    {
+      "Time_Start": 1856.94,
+      "Time_End": 1860.14,
+      "Text": " and then provide a number of different configuration settings."
+    },
+    {
+      "Time_Start": 1860.14,
+      "Time_End": 1863.78,
+      "Text": " Among those settings are the service type, is this a standalone service or something"
+    },
+    {
+      "Time_Start": 1863.78,
+      "Time_End": 1869.3,
+      "Text": " involved with svchost, the start type, will this service run on boot or require a manual"
+    },
+    {
+      "Time_Start": 1869.3,
+      "Time_End": 1874.62,
+      "Text": " start, the error control, what happens when an error occurs, the binary path name, what"
+    },
+    {
+      "Time_Start": 1874.62,
+      "Time_End": 1879.02,
+      "Text": " binary and arguments will be executed when the service starts, the load order group,"
+    },
+    {
+      "Time_Start": 1879.02,
+      "Time_End": 1883.82,
+      "Text": " tag ID, dependencies, service start name, password, and display name."
+    },
+    {
+      "Time_Start": 1883.82,
+      "Time_End": 1888.1399999999999,
+      "Text": " We now have an initial list of contextual details that we might want to collect."
+    },
+    {
+      "Time_Start": 1888.1399999999999,
+      "Time_End": 1891.62,
+      "Text": " Now analysts must find a way to gather that additional context and include it as part"
+    },
+    {
+      "Time_Start": 1891.6200000000001,
+      "Time_End": 1893.98,
+      "Text": " of our composite event."
+    },
+    {
+      "Time_Start": 1893.98,
+      "Time_End": 1897.2600000000002,
+      "Text": " What we found through dynamic testing was that these details were stored as registry"
+    },
+    {
+      "Time_Start": 1897.2600000000002,
+      "Time_End": 1900.38,
+      "Text": " values under the main service registry key."
+    },
+    {
+      "Time_Start": 1900.38,
+      "Time_End": 1904.0600000000002,
+      "Text": " While not every detail is required, we can enumerate the registry values for each service"
+    },
+    {
+      "Time_Start": 1904.0600000000002,
+      "Time_End": 1908.0600000000002,
+      "Text": " key through registry value monitoring and capture this context."
+    },
+    {
+      "Time_Start": 1908.0600000000002,
+      "Time_End": 1911.0200000000002,
+      "Text": " Let's first look at adding the start and image path values."
+    },
+    {
+      "Time_Start": 1911.0200000000002,
+      "Time_End": 1914.8600000000001,
+      "Text": " Notice that the start type is a numerical value that we would want to look up to understand"
+    },
+    {
+      "Time_Start": 1914.8600000000001,
+      "Time_End": 1920.0600000000002,
+      "Text": " its meaning and the image path in this case is powershell.exe with an encoded command."
+    },
+    {
+      "Time_Start": 1920.06,
+      "Time_End": 1925.1399999999999,
+      "Text": " It's worth noting that for visual purposes, I concatenated the command line, but an encoded"
+    },
+    {
+      "Time_Start": 1925.1399999999999,
+      "Time_End": 1927.46,
+      "Text": " command was originally included."
+    },
+    {
+      "Time_Start": 1927.46,
+      "Time_End": 1933.3799999999999,
+      "Text": " We can then add these values to our composite event as we see in this slide."
+    },
+    {
+      "Time_Start": 1933.3799999999999,
+      "Time_End": 1937.46,
+      "Text": " Now it's time to enumerate the remaining values and we find delete flag, which we didn't know"
+    },
+    {
+      "Time_Start": 1937.46,
+      "Time_End": 1944.1399999999999,
+      "Text": " about originally, object name, type, error control, and display name respectively."
+    },
+    {
+      "Time_Start": 1944.1399999999999,
+      "Time_End": 1947.78,
+      "Text": " The other configuration options appear to not have been used."
+    },
+    {
+      "Time_Start": 1947.78,
+      "Time_End": 1950.8999999999999,
+      "Text": " We can now build our final version of the composite event to represent this service"
+    },
+    {
+      "Time_Start": 1950.8999999999999,
+      "Time_End": 1952.18,
+      "Text": " creation event."
+    },
+    {
+      "Time_Start": 1952.18,
+      "Time_End": 1955.82,
+      "Text": " There are definitely other opportunities to add context, such as whether the event was"
+    },
+    {
+      "Time_Start": 1955.82,
+      "Time_End": 1960.3,
+      "Text": " created remotely and what process initially requested the service to be created."
+    },
+    {
+      "Time_Start": 1960.3,
+      "Time_End": 1965.3799999999999,
+      "Text": " For reference, services.exe created the registry key, but it's an RPC server, so it's likely"
+    },
+    {
+      "Time_Start": 1965.3799999999999,
+      "Time_End": 1970.54,
+      "Text": " that some other process like sc.exe made the initial request."
+    },
+    {
+      "Time_Start": 1970.54,
+      "Time_End": 1974.1399999999999,
+      "Text": " At this point, we haven't evaluated whether we believe this event represents a benign"
+    },
+    {
+      "Time_Start": 1974.1399999999999,
+      "Time_End": 1975.84,
+      "Text": " or malicious action."
+    },
+    {
+      "Time_Start": 1975.8400000000001,
+      "Time_End": 1980.2,
+      "Text": " We have simply identified that it is a service and thus could be representative of a malicious"
+    },
+    {
+      "Time_Start": 1980.2,
+      "Time_End": 1986.3200000000002,
+      "Text": " service and as such, we should build out as much context as we can about it."
+    },
+    {
+      "Time_Start": 1986.3200000000002,
+      "Time_End": 1990.1200000000001,
+      "Text": " Now we can start to identify ways to determine if this service is in fact malicious."
+    },
+    {
+      "Time_Start": 1990.1200000000001,
+      "Time_End": 1994.44,
+      "Text": " Ideally, we can do this as part of a multivariate detection, which considers many factors, which"
+    },
+    {
+      "Time_Start": 1994.44,
+      "Time_End": 1998.4,
+      "Text": " we've collected as part of our composite event."
+    },
+    {
+      "Time_Start": 1998.4,
+      "Time_End": 2002.16,
+      "Text": " I don't want to go into too much detail on how we can evaluate which threat factors are"
+    },
+    {
+      "Time_Start": 2002.16,
+      "Time_End": 2006.8000000000002,
+      "Text": " most important, since Josh Prager is discussing that immediately after this talk."
+    },
+    {
+      "Time_Start": 2006.8000000000002,
+      "Time_End": 2010.74,
+      "Text": " But generally, we'd want to use some combination of the details we've collected as part of"
+    },
+    {
+      "Time_Start": 2010.74,
+      "Time_End": 2015.3200000000002,
+      "Text": " our composite event to create some score that can represent our confidence in the likelihood"
+    },
+    {
+      "Time_Start": 2015.3200000000002,
+      "Time_End": 2018.46,
+      "Text": " that the service was indeed created for malicious purposes."
+    },
+    {
+      "Time_Start": 2018.46,
+      "Time_End": 2022.48,
+      "Text": " As we've discussed, a consistent problem that we face is related to the inherent uncertainty"
+    },
+    {
+      "Time_Start": 2022.48,
+      "Time_End": 2024.2,
+      "Text": " in threat detection."
+    },
+    {
+      "Time_Start": 2024.2,
+      "Time_End": 2026.2,
+      "Text": " How do we minimize that uncertainty?"
+    },
+    {
+      "Time_Start": 2026.2,
+      "Time_End": 2031.14,
+      "Text": " In April, John Hensinski from Expel.io wrote a Twitter thread for how they handle uncertainty"
+    },
+    {
+      "Time_Start": 2031.26,
+      "Time_End": 2033.0600000000002,
+      "Text": " in their operations."
+    },
+    {
+      "Time_Start": 2033.0600000000002,
+      "Time_End": 2037.0600000000002,
+      "Text": " He discussed the idea of quality assurance and quality control and how they operationalize"
+    },
+    {
+      "Time_Start": 2037.0600000000002,
+      "Time_End": 2039.7800000000002,
+      "Text": " those concepts for cybersecurity monitoring."
+    },
+    {
+      "Time_Start": 2039.7800000000002,
+      "Time_End": 2043.5,
+      "Text": " For those that are unfamiliar with these terms, quality assurance is focused on creating a"
+    },
+    {
+      "Time_Start": 2043.5,
+      "Time_End": 2047.94,
+      "Text": " process that prevents defects or errors from happening in the first place."
+    },
+    {
+      "Time_Start": 2047.94,
+      "Time_End": 2052.02,
+      "Text": " This might be accomplished by creating a detection process that uses multiple stages and multiple"
+    },
+    {
+      "Time_Start": 2052.02,
+      "Time_End": 2057.1800000000003,
+      "Text": " variables to evaluate the likelihood that an event represents malicious behavior."
+    },
+    {
+      "Time_Start": 2057.22,
+      "Time_End": 2062.4199999999996,
+      "Text": " Alternatively, quality control focuses on how one might identify defects or errors that"
+    },
+    {
+      "Time_Start": 2062.4199999999996,
+      "Time_End": 2065.7799999999997,
+      "Text": " occurred despite your best quality assurance efforts."
+    },
+    {
+      "Time_Start": 2065.7799999999997,
+      "Time_End": 2069.3399999999997,
+      "Text": " Because uncertainty is a real phenomenon, we have to assume that our quality assurance"
+    },
+    {
+      "Time_Start": 2069.3399999999997,
+      "Time_End": 2073.56,
+      "Text": " efforts will fail and that we will miss a malicious service despite our best efforts"
+    },
+    {
+      "Time_Start": 2073.56,
+      "Time_End": 2075.18,
+      "Text": " at classification."
+    },
+    {
+      "Time_Start": 2075.18,
+      "Time_End": 2079.46,
+      "Text": " So what John found is that in manufacturing, they account for this by investigating a sample"
+    },
+    {
+      "Time_Start": 2079.46,
+      "Time_End": 2083.2999999999997,
+      "Text": " set of events that were otherwise classified as benign."
+    },
+    {
+      "Time_Start": 2083.2999999999997,
+      "Time_End": 2086.1,
+      "Text": " We've talked about our approach to quality assurance."
+    },
+    {
+      "Time_Start": 2086.1,
+      "Time_End": 2089.54,
+      "Text": " Identify the base condition to limit false negatives at your starting point."
+    },
+    {
+      "Time_Start": 2089.54,
+      "Time_End": 2093.7,
+      "Text": " Identify factors that can be used to differentiate benign and malicious instances of the base"
+    },
+    {
+      "Time_Start": 2093.7,
+      "Time_End": 2094.7,
+      "Text": " condition."
+    },
+    {
+      "Time_Start": 2094.7,
+      "Time_End": 2099.24,
+      "Text": " Generate some sort of multivariate classification which might result in some score or rating."
+    },
+    {
+      "Time_Start": 2099.24,
+      "Time_End": 2101.74,
+      "Text": " But we also need to consider quality control."
+    },
+    {
+      "Time_Start": 2101.74,
+      "Time_End": 2105.98,
+      "Text": " Just because an event has a low score does not mean that it's 100% benign."
+    },
+    {
+      "Time_Start": 2105.98,
+      "Time_End": 2109.38,
+      "Text": " It may simply represent a flaw in our understanding of the problem."
+    },
+    {
+      "Time_Start": 2109.38,
+      "Time_End": 2113.52,
+      "Text": " To account for this, it is important to establish procedures for triaging and investigating"
+    },
+    {
+      "Time_Start": 2113.52,
+      "Time_End": 2115.98,
+      "Text": " events with different scores."
+    },
+    {
+      "Time_Start": 2115.98,
+      "Time_End": 2121.7,
+      "Text": " Given a set of events that meet the base condition, we may identify a group of high-threat events."
+    },
+    {
+      "Time_Start": 2121.7,
+      "Time_End": 2125.46,
+      "Text": " These events will represent events that are extremely likely to be malicious given our"
+    },
+    {
+      "Time_Start": 2125.46,
+      "Time_End": 2126.98,
+      "Text": " understanding of the problem."
+    },
+    {
+      "Time_Start": 2126.98,
+      "Time_End": 2131.76,
+      "Text": " Generally, this group should have a low false positive rate but will make a sacrifice by"
+    },
+    {
+      "Time_Start": 2131.76,
+      "Time_End": 2134.4,
+      "Text": " allowing some false negatives to exist."
+    },
+    {
+      "Time_Start": 2134.4,
+      "Time_End": 2138.54,
+      "Text": " We should triage all or at least the majority of the events in this category."
+    },
+    {
+      "Time_Start": 2138.54,
+      "Time_End": 2144.48,
+      "Text": " Next, we have medium-threat events, which is a bit less specific but more sensitive."
+    },
+    {
+      "Time_Start": 2144.48,
+      "Time_End": 2148.36,
+      "Text": " We probably don't want to investigate every alert generated at this level as there will"
+    },
+    {
+      "Time_Start": 2148.36,
+      "Time_End": 2152.46,
+      "Text": " be more false positives, but we should investigate a good portion of them as this covers the"
+    },
+    {
+      "Time_Start": 2152.46,
+      "Time_End": 2155.4,
+      "Text": " majority of the remaining false negatives."
+    },
+    {
+      "Time_Start": 2155.4,
+      "Time_End": 2162.16,
+      "Text": " Lastly, we have low-threat events, which include the remaining events in our base set."
+    },
+    {
+      "Time_Start": 2162.16,
+      "Time_End": 2166.58,
+      "Text": " I think it is important to determine a sufficient sample set within this group to help inform"
+    },
+    {
+      "Time_Start": 2166.58,
+      "Time_End": 2168.08,
+      "Text": " future scoring efforts."
+    },
+    {
+      "Time_Start": 2168.08,
+      "Time_End": 2171.82,
+      "Text": " For all we know, an analyst may discover a malicious service through manual analysis"
+    },
+    {
+      "Time_Start": 2171.82,
+      "Time_End": 2174.2400000000002,
+      "Text": " that our scoring system didn't account for."
+    },
+    {
+      "Time_Start": 2174.2400000000002,
+      "Time_End": 2179.32,
+      "Text": " The last step is to use the output of our investigations to tune our scoring going forward."
+    },
+    {
+      "Time_Start": 2179.32,
+      "Time_End": 2183.0400000000004,
+      "Text": " Did we determine that there were too many false positives in the high-threat category?"
+    },
+    {
+      "Time_Start": 2183.0400000000004,
+      "Time_End": 2187.0400000000004,
+      "Text": " If so, what commonalities did these false positives exhibit and how can we remove those"
+    },
+    {
+      "Time_Start": 2187.0400000000004,
+      "Time_End": 2190.6200000000003,
+      "Text": " without sacrificing the sensitivity that we currently have?"
+    },
+    {
+      "Time_Start": 2190.6200000000003,
+      "Time_End": 2194.26,
+      "Text": " Did we discover a malicious event within the low-threat category?"
+    },
+    {
+      "Time_Start": 2194.26,
+      "Time_End": 2197.82,
+      "Text": " Can we leverage what we learned about this to make our medium or high-threat category"
+    },
+    {
+      "Time_Start": 2197.82,
+      "Time_End": 2201.0200000000004,
+      "Text": " more sensitive without losing specificity?"
+    },
+    {
+      "Time_Start": 2201.02,
+      "Time_End": 2204.24,
+      "Text": " This is the end of my theoretical discussion on dealing with the inherent uncertainties"
+    },
+    {
+      "Time_Start": 2204.24,
+      "Time_End": 2208.32,
+      "Text": " involved in binary classification and specifically in threat detection."
+    },
+    {
+      "Time_Start": 2208.32,
+      "Time_End": 2212.7599999999998,
+      "Text": " You may be thinking that this approach will be difficult to implement within your environment."
+    },
+    {
+      "Time_Start": 2212.7599999999998,
+      "Time_End": 2216.92,
+      "Text": " I agree that it might be a paradigm shift, but it is worth considering whether this shift"
+    },
+    {
+      "Time_Start": 2216.92,
+      "Time_End": 2217.92,
+      "Text": " would be worthwhile."
+    },
+    {
+      "Time_Start": 2217.92,
+      "Time_End": 2223.24,
+      "Text": " One of my colleagues, Jonathan Johnson, took some time to build a POC using Jupyter notebooks"
+    },
+    {
+      "Time_Start": 2223.24,
+      "Time_End": 2226.6,
+      "Text": " and Splunk to show what this approach might look like in practice."
+    },
+    {
+      "Time_Start": 2226.6,
+      "Time_End": 2229.84,
+      "Text": " I'll now hand it over to Johnny to demo his solution."
+    },
+    {
+      "Time_Start": 2229.84,
+      "Time_End": 2232.88,
+      "Text": " Take it away, Johnny."
+    },
+    {
+      "Time_Start": 2232.88,
+      "Time_End": 2236.6200000000003,
+      "Text": " Within this notebook, the first thing we're going to do is connect to our Splunk instance."
+    },
+    {
+      "Time_Start": 2236.6200000000003,
+      "Time_End": 2241.42,
+      "Text": " In order to do that, I'm going to utilize a Splunk SDK to connect to the Splunk REST"
+    },
+    {
+      "Time_Start": 2241.42,
+      "Time_End": 2243.1400000000003,
+      "Text": " API to pull back data."
+    },
+    {
+      "Time_Start": 2243.1400000000003,
+      "Time_End": 2248.5,
+      "Text": " The first two columns, you can see that I'm going to be installing packages, importing"
+    },
+    {
+      "Time_Start": 2248.5,
+      "Time_End": 2252.26,
+      "Text": " those packages, and then connecting to my Splunk instance."
+    },
+    {
+      "Time_Start": 2252.26,
+      "Time_End": 2255.6600000000003,
+      "Text": " For this detection, our use case is going to be service creation."
+    },
+    {
+      "Time_Start": 2255.66,
+      "Time_End": 2261.02,
+      "Text": " One thing to note, as you will see amongst these different notebooks, is that documentation"
+    },
+    {
+      "Time_Start": 2261.02,
+      "Time_End": 2264.74,
+      "Text": " needs to lie around the code blocks that we have implemented."
+    },
+    {
+      "Time_Start": 2264.74,
+      "Time_End": 2269.8199999999997,
+      "Text": " The reason for this is to give contextual information to the detection engineer or the"
+    },
+    {
+      "Time_Start": 2269.8199999999997,
+      "Time_End": 2275.7,
+      "Text": " cert team member to let them know what we are trying to accomplish inside of each notebook."
+    },
+    {
+      "Time_Start": 2275.7,
+      "Time_End": 2282.06,
+      "Text": " Otherwise, it would be super hard for them to understand what we are trying to accomplish"
+    },
+    {
+      "Time_Start": 2282.06,
+      "Time_End": 2285.42,
+      "Text": " or update these notebooks in the future."
+    },
+    {
+      "Time_Start": 2285.42,
+      "Time_End": 2291.26,
+      "Text": " For our use case service creation, we want to identify what our base condition is."
+    },
+    {
+      "Time_Start": 2291.26,
+      "Time_End": 2296.58,
+      "Text": " In order to do that, we have to identify the one thing that an attacker or anyone really"
+    },
+    {
+      "Time_Start": 2296.58,
+      "Time_End": 2301.34,
+      "Text": " needs to accomplish to complete this task."
+    },
+    {
+      "Time_Start": 2301.34,
+      "Time_End": 2306.88,
+      "Text": " That is to create a subkey under the services key inside of the registry."
+    },
+    {
+      "Time_Start": 2306.88,
+      "Time_End": 2312.7400000000002,
+      "Text": " To find that data, we can utilize Sysmon Event ID 12, as you can see here in my query, which"
+    },
+    {
+      "Time_Start": 2312.82,
+      "Time_End": 2316.5000000000005,
+      "Text": " looks for registry key creates and registry key deletes."
+    },
+    {
+      "Time_Start": 2316.5000000000005,
+      "Time_End": 2322.78,
+      "Text": " Now, Jarrett came up with this nice regex, which will basically look for anything created"
+    },
+    {
+      "Time_Start": 2322.78,
+      "Time_End": 2330.7000000000003,
+      "Text": " under the services key, but then has an end anchor to stop right after the first key in"
+    },
+    {
+      "Time_Start": 2330.7000000000003,
+      "Time_End": 2335.98,
+      "Text": " the services, meaning that it won't look for any other keys created after that."
+    },
+    {
+      "Time_Start": 2335.98,
+      "Time_End": 2346.22,
+      "Text": " For example, it will not pick up services slash TCP IP slash parameters, but it would"
+    },
+    {
+      "Time_Start": 2346.22,
+      "Time_End": 2352.54,
+      "Text": " pick up on something, say, if there was a service created called SOCON, it would pick"
+    },
+    {
+      "Time_Start": 2352.54,
+      "Time_End": 2358.02,
+      "Text": " up services forward slash SOCON."
+    },
+    {
+      "Time_Start": 2358.02,
+      "Time_End": 2360.02,
+      "Text": " Then I want to document my base context."
+    },
+    {
+      "Time_Start": 2360.02,
+      "Time_End": 2364.94,
+      "Text": " This is the information I'm hoping to get back from this query, so I can utilize that"
+    },
+    {
+      "Time_Start": 2364.94,
+      "Time_End": 2367.66,
+      "Text": " inside of the next notebook."
+    },
+    {
+      "Time_Start": 2367.66,
+      "Time_End": 2373.3,
+      "Text": " Here you will see I'm doing basic transformation to pull the Splunk data and then transform"
+    },
+    {
+      "Time_Start": 2373.3,
+      "Time_End": 2379.14,
+      "Text": " it in a way that is easily manipulatable inside of data frames."
+    },
+    {
+      "Time_Start": 2379.14,
+      "Time_End": 2384.78,
+      "Text": " Then I'm going to be utilizing Panda SQL to look specifically for create keys, since we're"
+    },
+    {
+      "Time_Start": 2384.78,
+      "Time_End": 2387.66,
+      "Text": " looking for service creation."
+    },
+    {
+      "Time_Start": 2387.66,
+      "Time_End": 2392.02,
+      "Text": " Then that's going to correlate specifically with key creates."
+    },
+    {
+      "Time_Start": 2392.02,
+      "Time_End": 2394.7000000000003,
+      "Text": " After that, I'm going to store that data frame, and I'm just going to print it out just to"
+    },
+    {
+      "Time_Start": 2394.7000000000003,
+      "Time_End": 2401.1800000000003,
+      "Text": " show everyone what we have picked up, and here we can see we have seven events, and"
+    },
+    {
+      "Time_Start": 2401.1800000000003,
+      "Time_End": 2407.9800000000005,
+      "Text": " in here, we do have the test that I ran, which was SOCON, and then here is a visual representation"
+    },
+    {
+      "Time_Start": 2407.9800000000005,
+      "Time_End": 2410.1800000000003,
+      "Text": " of the data that we pulled back."
+    },
+    {
+      "Time_Start": 2410.1800000000003,
+      "Time_End": 2418.2200000000003,
+      "Text": " Since this notebook came back with more than zero events, the triage notebook would fire."
+    },
+    {
+      "Time_Start": 2418.7000000000003,
+      "Time_End": 2425.5600000000004,
+      "Text": " Keep in mind, this triage notebook, the point of that is to add contextual value to each"
+    },
+    {
+      "Time_Start": 2425.5600000000004,
+      "Time_End": 2429.5800000000004,
+      "Text": " data set to create a composite event."
+    },
+    {
+      "Time_Start": 2429.5800000000004,
+      "Time_End": 2433.82,
+      "Text": " Again, we're going to connect to Splunk, and then we're going to document what the goal"
+    },
+    {
+      "Time_Start": 2433.82,
+      "Time_End": 2440.5000000000005,
+      "Text": " is and what type of data we are trying to pull back with these queries that we are going"
+    },
+    {
+      "Time_Start": 2440.5000000000005,
+      "Time_End": 2441.5000000000005,
+      "Text": " to implement."
+    },
+    {
+      "Time_Start": 2441.5000000000005,
+      "Time_End": 2447.9,
+      "Text": " But before we can pull back any data, we have to collect that data, so I'm going to be pulling"
+    },
+    {
+      "Time_Start": 2447.98,
+      "Time_End": 2456.7000000000003,
+      "Text": " registry set values, network events, RPC host data for client and server side, Zeek data,"
+    },
+    {
+      "Time_Start": 2456.7000000000003,
+      "Time_End": 2459.02,
+      "Text": " and process creation events."
+    },
+    {
+      "Time_Start": 2459.02,
+      "Time_End": 2464.82,
+      "Text": " After that, I'm going to move through and do joins, and these joins are going to take"
+    },
+    {
+      "Time_Start": 2464.82,
+      "Time_End": 2471.34,
+      "Text": " data from the base condition and join them on some of the data frames and data sets that"
+    },
+    {
+      "Time_Start": 2471.34,
+      "Time_End": 2473.34,
+      "Text": " we collected up above."
+    },
+    {
+      "Time_Start": 2473.94,
+      "Time_End": 2479.06,
+      "Text": " Now, as you can see, one thing that we don't want is whenever a join is done, it automatically"
+    },
+    {
+      "Time_Start": 2479.06,
+      "Time_End": 2481.82,
+      "Text": " funnels and filters our events."
+    },
+    {
+      "Time_Start": 2481.82,
+      "Time_End": 2485.2200000000003,
+      "Text": " That can be a problem because now we're only looking at one event versus all seven that"
+    },
+    {
+      "Time_Start": 2485.2200000000003,
+      "Time_End": 2486.2200000000003,
+      "Text": " we had."
+    },
+    {
+      "Time_Start": 2486.2200000000003,
+      "Time_End": 2490.1800000000003,
+      "Text": " Well, I solved that problem here, as you will see below."
+    },
+    {
+      "Time_Start": 2490.1800000000003,
+      "Time_End": 2496.86,
+      "Text": " Again, more joins are being done and adding contextual information to create a composite"
+    },
+    {
+      "Time_Start": 2496.86,
+      "Time_End": 2497.86,
+      "Text": " event."
+    },
+    {
+      "Time_Start": 2497.86,
+      "Time_End": 2504.58,
+      "Text": " As you can see, instead of before over here where we had only UTC time, process GUID,"
+    },
+    {
+      "Time_Start": 2504.58,
+      "Time_End": 2508.86,
+      "Text": " process ID, image, and target object, after all the joins have been completed, we now"
+    },
+    {
+      "Time_Start": 2508.86,
+      "Time_End": 2510.3,
+      "Text": " have a lot more information."
+    },
+    {
+      "Time_Start": 2510.3,
+      "Time_End": 2518.34,
+      "Text": " We have the parent image of the application name that kicked off the service creation"
+    },
+    {
+      "Time_Start": 2518.34,
+      "Time_End": 2524.2200000000003,
+      "Text": " along with the network image that accepted that communication."
+    },
+    {
+      "Time_Start": 2524.2200000000003,
+      "Time_End": 2525.82,
+      "Text": " We have the target object that was created."
+    },
+    {
+      "Time_Start": 2525.82,
+      "Time_End": 2530.98,
+      "Text": " We have where it came from on the host, where it went to on the host, Zeek information,"
+    },
+    {
+      "Time_Start": 2530.98,
+      "Time_End": 2534.7400000000002,
+      "Text": " and the command line that was there as well."
+    },
+    {
+      "Time_Start": 2534.7400000000002,
+      "Time_End": 2539.1000000000004,
+      "Text": " We have to add this back into our base condition data frame because the reality is we want"
+    },
+    {
+      "Time_Start": 2539.1000000000004,
+      "Time_End": 2543.1000000000004,
+      "Text": " to send all of this data to the investigator."
+    },
+    {
+      "Time_Start": 2543.1000000000004,
+      "Time_End": 2548.94,
+      "Text": " We want to send not just one event, but all seven events."
+    },
+    {
+      "Time_Start": 2548.94,
+      "Time_End": 2553.1000000000004,
+      "Text": " They're going to dig through these events by categorization and prioritization, which"
+    },
+    {
+      "Time_Start": 2553.1,
+      "Time_End": 2557.18,
+      "Text": " comes from a severity score, which I'll show here in a moment."
+    },
+    {
+      "Time_Start": 2557.18,
+      "Time_End": 2563.7799999999997,
+      "Text": " I used list, and then I appended the information that I have from the joins to the lists, did"
+    },
+    {
+      "Time_Start": 2563.7799999999997,
+      "Time_End": 2571.14,
+      "Text": " a for loop to basically give the list the same length as the base condition data frame."
+    },
+    {
+      "Time_Start": 2571.14,
+      "Time_End": 2573.3399999999997,
+      "Text": " Once that was done, I updated the data frame."
+    },
+    {
+      "Time_Start": 2573.3399999999997,
+      "Time_End": 2575.18,
+      "Text": " Again, I have a severity."
+    },
+    {
+      "Time_Start": 2575.18,
+      "Time_End": 2579.2999999999997,
+      "Text": " I'm not going to get too deep inside of the severity, as Joshua Prager will talk about"
+    },
+    {
+      "Time_Start": 2579.2999999999997,
+      "Time_End": 2580.9,
+      "Text": " this inside of his talk."
+    },
+    {
+      "Time_Start": 2580.9,
+      "Time_End": 2588.86,
+      "Text": " However, this basically looks for if A and B are in this composite event, then give it"
+    },
+    {
+      "Time_Start": 2588.86,
+      "Time_End": 2594.34,
+      "Text": " this score, or this score, or this score, and those scores are low, medium, and high"
+    },
+    {
+      "Time_Start": 2594.34,
+      "Time_End": 2596.1800000000003,
+      "Text": " at this time."
+    },
+    {
+      "Time_Start": 2596.1800000000003,
+      "Time_End": 2604.78,
+      "Text": " As you can see here, the base condition has been updated with all of its information needed."
+    },
+    {
+      "Time_Start": 2604.78,
+      "Time_End": 2611.5,
+      "Text": " To create one big data set or one big data frame that has multiple composite events inside"
+    },
+    {
+      "Time_Start": 2611.5,
+      "Time_End": 2614.86,
+      "Text": " of it that surround each specific event."
+    },
+    {
+      "Time_Start": 2614.86,
+      "Time_End": 2621.6200000000003,
+      "Text": " Once that's done, I'm going to store that data frame, and I'm going to email these events"
+    },
+    {
+      "Time_Start": 2621.6200000000003,
+      "Time_End": 2625.46,
+      "Text": " as an alert to the cert team, and this is going to be my code block for that."
+    },
+    {
+      "Time_Start": 2625.46,
+      "Time_End": 2629.0600000000004,
+      "Text": " Now, once that is done, the email will look similar to something like this."
+    },
+    {
+      "Time_Start": 2629.06,
+      "Time_End": 2634.94,
+      "Text": " It will have the severity, the service time, the host that the service was created on,"
+    },
+    {
+      "Time_Start": 2634.94,
+      "Time_End": 2641.14,
+      "Text": " and all of those contextual data pieces that the investigator will need to know from that"
+    },
+    {
+      "Time_Start": 2641.14,
+      "Time_End": 2642.14,
+      "Text": " composite event."
+    },
+    {
+      "Time_Start": 2642.14,
+      "Time_End": 2648.34,
+      "Text": " It will also hold the link to the notebooks by which they can go and look into these."
+    },
+    {
+      "Time_Start": 2648.34,
+      "Time_End": 2656.02,
+      "Text": " Now, the investigation notebook should be where the cert team member comes to look through"
+    },
+    {
+      "Time_Start": 2656.02,
+      "Time_End": 2657.02,
+      "Text": " all of these events."
+    },
+    {
+      "Time_Start": 2657.02,
+      "Time_End": 2661.58,
+      "Text": " Again, it will have investigation notes to kind of walk them through step by step of"
+    },
+    {
+      "Time_Start": 2661.58,
+      "Time_End": 2667.74,
+      "Text": " how they go to deem these events as either malicious or benign."
+    },
+    {
+      "Time_Start": 2667.74,
+      "Time_End": 2672.82,
+      "Text": " It will pull back multiple data frames and other queries that were stored so they can"
+    },
+    {
+      "Time_Start": 2672.82,
+      "Time_End": 2679.1,
+      "Text": " look at these data sets from different perspectives."
+    },
+    {
+      "Time_Start": 2679.1,
+      "Time_End": 2681.7,
+      "Text": " As you can see here, I have the investigation notes."
+    },
+    {
+      "Time_Start": 2681.7,
+      "Time_End": 2686.46,
+      "Text": " I'm pulling back the base condition so they have everything they need to know as one big"
+    },
+    {
+      "Time_Start": 2686.78,
+      "Time_End": 2687.78,
+      "Text": " data set."
+    },
+    {
+      "Time_Start": 2687.78,
+      "Time_End": 2694.02,
+      "Text": " They can see all of these composite events, but I'm also going to pull the singular joins"
+    },
+    {
+      "Time_Start": 2694.02,
+      "Time_End": 2697.9,
+      "Text": " that I did so they can see all of those, and I'm going to give them a graphical representation"
+    },
+    {
+      "Time_Start": 2697.9,
+      "Time_End": 2702.82,
+      "Text": " because the key to looking at data is to look at it from different perspectives so you can"
+    },
+    {
+      "Time_Start": 2702.82,
+      "Time_End": 2706.7400000000002,
+      "Text": " understand what is happening with that data."
+    },
+    {
+      "Time_Start": 2706.7400000000002,
+      "Time_End": 2710.06,
+      "Text": " For example, here I'm looking at the registry join."
+    },
+    {
+      "Time_Start": 2710.06,
+      "Time_End": 2715.2200000000003,
+      "Text": " If that event came back with more than zero, then it's going to give us a bar chart of"
+    },
+    {
+      "Time_Start": 2715.34,
+      "Time_End": 2718.82,
+      "Text": " the target object, and so on and so forth."
+    },
+    {
+      "Time_Start": 2718.82,
+      "Time_End": 2725.5400000000004,
+      "Text": " Then we get into our advanced queries, which involve the Zeek, RPC, parent process data,"
+    },
+    {
+      "Time_Start": 2725.5400000000004,
+      "Time_End": 2727.26,
+      "Text": " all of that type of stuff."
+    },
+    {
+      "Time_Start": 2727.26,
+      "Time_End": 2729.82,
+      "Text": " Here's a mapping for the Zeek endpoints."
+    },
+    {
+      "Time_Start": 2729.82,
+      "Time_End": 2734.2200000000003,
+      "Text": " Here's a nice pie chart for all the Zeek operations, et cetera."
+    },
+    {
+      "Time_Start": 2734.2200000000003,
+      "Time_End": 2739.38,
+      "Text": " If any of these events have been deemed malicious, at the very end, there is a remediation process"
+    },
+    {
+      "Time_Start": 2739.38,
+      "Time_End": 2740.38,
+      "Text": " or notes."
+    },
+    {
+      "Time_Start": 2740.86,
+      "Time_End": 2748.2200000000003,
+      "Text": " Keep in mind, the remediation process is completely manual, so it's going to be different per"
+    },
+    {
+      "Time_Start": 2748.2200000000003,
+      "Time_End": 2751.2200000000003,
+      "Text": " scenario."
+    },
+    {
+      "Time_Start": 2751.2200000000003,
+      "Time_End": 2759.38,
+      "Text": " The question might be is how did I get these notebooks to run in a chain collectively in"
+    },
+    {
+      "Time_Start": 2759.38,
+      "Time_End": 2760.82,
+      "Text": " an automated fashion?"
+    },
+    {
+      "Time_Start": 2760.82,
+      "Time_End": 2768.1800000000003,
+      "Text": " How I did that was through this Python script right here, which can be set on a loop timer."
+    },
+    {
+      "Time_Start": 2768.18,
+      "Time_End": 2772.7799999999997,
+      "Text": " What it does is it runs the detection notebook, and if a specific data frame came back with"
+    },
+    {
+      "Time_Start": 2772.7799999999997,
+      "Time_End": 2778.1,
+      "Text": " more than zero events, then it would kick off the triage, and if the triage notebook"
+    },
+    {
+      "Time_Start": 2778.1,
+      "Time_End": 2782.14,
+      "Text": " had a specific data frame that came back with more than zero events, it would kick off the"
+    },
+    {
+      "Time_Start": 2782.14,
+      "Time_End": 2783.74,
+      "Text": " investigation notebook."
+    },
+    {
+      "Time_Start": 2783.74,
+      "Time_End": 2787.66,
+      "Text": " That way, by the time the investigator got the email, all they would have to do is go"
+    },
+    {
+      "Time_Start": 2787.66,
+      "Time_End": 2791.02,
+      "Text": " to the investigation notebook and start to dig through all the data."
+    },
+    {
+      "Time_Start": 2791.02,
+      "Time_End": 2797.54,
+      "Text": " I hope you all enjoyed this demo and walkthrough of this practical representation of Jared's"
+    },
+    {
+      "Time_Start": 2797.58,
+      "Time_End": 2799.1,
+      "Text": " concept."
+    },
+    {
+      "Time_Start": 2799.1,
+      "Time_End": 2803.66,
+      "Text": " At this time, the notebooks are not public, but they will be after a short while, so stay"
+    },
+    {
+      "Time_Start": 2803.66,
+      "Time_End": 2805.1,
+      "Text": " tuned for that."
+    },
+    {
+      "Time_Start": 2805.1,
+      "Time_End": 2806.1,
+      "Text": " Back to you, Jared."
+    },
+    {
+      "Time_Start": 2806.1,
+      "Time_End": 2807.1,
+      "Text": " All right."
+    },
+    {
+      "Time_Start": 2807.1,
+      "Time_End": 2808.1,
+      "Text": " Thank you, Johnny."
+    },
+    {
+      "Time_Start": 2808.1,
+      "Time_End": 2811.22,
+      "Text": " I appreciate that explanation."
+    },
+    {
+      "Time_Start": 2811.22,
+      "Time_End": 2815.94,
+      "Text": " And with that, that concludes the talk, Rethinking Detection Engineering, False Positives are"
+    },
+    {
+      "Time_Start": 2815.94,
+      "Time_End": 2817.74,
+      "Text": " Bad, False Negatives are Worse."
+    },
+    {
+      "Time_Start": 2817.74,
+      "Time_End": 2821.74,
+      "Text": " Again, my name is Jared Atkinson, and I'm the Technical Director for Adversary Detection"
+    },
+    {
+      "Time_Start": 2821.74,
+      "Time_End": 2823.54,
+      "Text": " Services here at SpecterOps."
+    },
+    {
+      "Time_Start": 2823.54,
+      "Time_End": 2827.5,
+      "Text": " I will stick around for a few minutes to take questions."
+    },
+    {
+      "Time_Start": 2827.5,
+      "Time_End": 2832.94,
+      "Text": " Otherwise, I'll be available on Twitter or anywhere to answer any questions that anybody"
+    },
+    {
+      "Time_Start": 2832.94,
+      "Time_End": 2833.94,
+      "Text": " may have."
+    },
+    {
+      "Time_Start": 2833.94,
+      "Time_End": 2837.26,
+      "Text": " And I would love to explore this topic more deeply with any of you."
+    },
+    {
+      "Time_Start": 2837.26,
+      "Time_End": 2848.62,
+      "Text": " I look forward to hearing from you and hope you have a good rest of your day."
+    }
+  ]
+}

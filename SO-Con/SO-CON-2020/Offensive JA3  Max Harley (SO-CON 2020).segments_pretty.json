@@ -1,0 +1,1309 @@
+{
+  "segments": [
+    {
+      "Time_Start": 0.0,
+      "Time_End": 16.6,
+      "Text": "This text was transcribed using whisper model: large-v2\n\n This is Offensive JAW 3 by Max Harley."
+    },
+    {
+      "Time_Start": 16.6,
+      "Time_End": 22.44,
+      "Text": " I'm an associate consultant at SpectreOps and formerly a student of Clemson University"
+    },
+    {
+      "Time_Start": 22.44,
+      "Time_End": 26.42,
+      "Text": " and ex-president of Clemson's security club, CU Cyber."
+    },
+    {
+      "Time_Start": 26.42,
+      "Time_End": 30.42,
+      "Text": " My goal for this talk is to show red teamers how they can improve their tradecraft by using"
+    },
+    {
+      "Time_Start": 30.42,
+      "Time_End": 36.38,
+      "Text": " the blue team technique known as JAW 3 both in their HTTPS communication channels, think"
+    },
+    {
+      "Time_Start": 36.38,
+      "Time_End": 41.06,
+      "Text": " security tools and implants, and to use JAW 3 to protect their payloads."
+    },
+    {
+      "Time_Start": 41.06,
+      "Time_End": 45.42,
+      "Text": " I want to give a big shout out to Lee Christensen who first introduced me to JAW 3 and gave"
+    },
+    {
+      "Time_Start": 45.42,
+      "Time_End": 50.36,
+      "Text": " me the idea for payload keying using this technique, as well as all of his contributions"
+    },
+    {
+      "Time_Start": 50.36,
+      "Time_End": 51.36,
+      "Text": " to Satellite."
+    },
+    {
+      "Time_Start": 52.06,
+      "Time_End": 56.98,
+      "Text": " Second, I want to shout out Matt Rinaldi, the current president of CU Cyber and binary"
+    },
+    {
+      "Time_Start": 56.98,
+      "Time_End": 61.94,
+      "Text": " exploitation champion, for co-writing the JAW 3 transport project."
+    },
+    {
+      "Time_Start": 61.94,
+      "Time_End": 68.38,
+      "Text": " A big thanks to John B. Althaus, Jeff Atkinson, Josh Atkins, the three JAs who developed JAW"
+    },
+    {
+      "Time_Start": 68.38,
+      "Time_End": 74.53999999999999,
+      "Text": " 3, and finally the Refraction.networking project for making Matt and my job easy when developing"
+    },
+    {
+      "Time_Start": 74.53999999999999,
+      "Time_End": 76.3,
+      "Text": " JAW 3 transport."
+    },
+    {
+      "Time_Start": 76.3,
+      "Time_End": 82.12,
+      "Text": " This project, as the title implies, is based on JAW 3, which is the research of three folks"
+    },
+    {
+      "Time_Start": 82.12,
+      "Time_End": 83.8,
+      "Text": " at Salesforce."
+    },
+    {
+      "Time_Start": 83.8,
+      "Time_End": 89.64,
+      "Text": " JAW 3 was originally designed as a way for blue teamers to profile SSL TLS clients hitting"
+    },
+    {
+      "Time_Start": 89.64,
+      "Time_End": 91.32,
+      "Text": " their network."
+    },
+    {
+      "Time_Start": 91.32,
+      "Time_End": 96.6,
+      "Text": " Here and for the rest of this talk, when I say client, I mean either a browser or HTTP"
+    },
+    {
+      "Time_Start": 96.6,
+      "Time_End": 102.32,
+      "Text": " library like Go's NetHTTP or Python's requests."
+    },
+    {
+      "Time_Start": 102.32,
+      "Time_End": 104.6,
+      "Text": " So what is JAW 3?"
+    },
+    {
+      "Time_Start": 104.60000000000001,
+      "Time_End": 107.62,
+      "Text": " To answer this, we need to know a bit about TLS."
+    },
+    {
+      "Time_Start": 107.62,
+      "Time_End": 111.74000000000001,
+      "Text": " The beautiful thing about TLS is that the encryption is not concrete."
+    },
+    {
+      "Time_Start": 111.74000000000001,
+      "Time_End": 116.14000000000001,
+      "Text": " If a client and server both implement a new cipher suite, they can start communicating"
+    },
+    {
+      "Time_Start": 116.14000000000001,
+      "Time_End": 120.58000000000001,
+      "Text": " using the new encryption mechanism, as long as both parties implement it."
+    },
+    {
+      "Time_Start": 120.58000000000001,
+      "Time_End": 125.62,
+      "Text": " As a result, before TLS communication begins, the client and server need to negotiate the"
+    },
+    {
+      "Time_Start": 125.62,
+      "Time_End": 128.22,
+      "Text": " encryption mechanism they're going to use."
+    },
+    {
+      "Time_Start": 128.22,
+      "Time_End": 133.14000000000001,
+      "Text": " The client begins this process by sending a client hello packet."
+    },
+    {
+      "Time_Start": 133.14000000000001,
+      "Time_End": 136.54000000000002,
+      "Text": " I opened up Wireshark and captured a TLS handshake."
+    },
+    {
+      "Time_Start": 136.54000000000002,
+      "Time_End": 141.22000000000003,
+      "Text": " As you can see, this is the client hello packet, which is attempting to negotiate the encryption"
+    },
+    {
+      "Time_Start": 141.22000000000003,
+      "Time_End": 144.70000000000002,
+      "Text": " mechanism both client and server will use."
+    },
+    {
+      "Time_Start": 144.70000000000002,
+      "Time_End": 151.52,
+      "Text": " The client wants to implement TLS 1.2, and it implements two cipher suites as shown here."
+    },
+    {
+      "Time_Start": 151.52,
+      "Time_End": 154.86,
+      "Text": " The server then responds with a server hello packet."
+    },
+    {
+      "Time_Start": 154.86,
+      "Time_End": 163.22000000000003,
+      "Text": " You can see it confirms TLS version 1.2 and uses the cipher suite 0xc030."
+    },
+    {
+      "Time_Start": 163.22000000000003,
+      "Time_End": 170.5,
+      "Text": " If we go back to the client hello packet, we can see that the cipher suite 0xc030 was"
+    },
+    {
+      "Time_Start": 170.5,
+      "Time_End": 174.42000000000002,
+      "Text": " one of the cipher suites that the client advertised."
+    },
+    {
+      "Time_Start": 174.42000000000002,
+      "Time_End": 178.92000000000002,
+      "Text": " The genius that the folks at Salesforce had was recognizing the client libraries typically"
+    },
+    {
+      "Time_Start": 178.92000000000002,
+      "Time_End": 182.06,
+      "Text": " use the same client hello parameters."
+    },
+    {
+      "Time_Start": 182.06,
+      "Time_End": 186.84,
+      "Text": " If enough client hello packet and client library pairs are gathered, a Blue Teamer"
+    },
+    {
+      "Time_Start": 186.84,
+      "Time_End": 191.74,
+      "Text": " can figure out what type of client is communicating with the server just using the client hello"
+    },
+    {
+      "Time_Start": 191.74,
+      "Time_End": 193.7,
+      "Text": " packet."
+    },
+    {
+      "Time_Start": 193.7,
+      "Time_End": 200.82,
+      "Text": " The parameters Jothru uses for its signature are the SSL version, the cipher, the SSL extension,"
+    },
+    {
+      "Time_Start": 200.82,
+      "Time_End": 204.4,
+      "Text": " elliptic curve, and elliptic curve point formats."
+    },
+    {
+      "Time_Start": 204.4,
+      "Time_End": 208.06,
+      "Text": " When there are multiple values, a hyphen is put in between them and the commas separate"
+    },
+    {
+      "Time_Start": 208.06,
+      "Time_End": 210.06,
+      "Text": " the fields."
+    },
+    {
+      "Time_Start": 210.06,
+      "Time_End": 213.1,
+      "Text": " This is an example of a Jothru string."
+    },
+    {
+      "Time_Start": 213.1,
+      "Time_End": 218.22,
+      "Text": " If you take the MD5 hash of that string, you get the Jothru signature."
+    },
+    {
+      "Time_Start": 218.22,
+      "Time_End": 222.32,
+      "Text": " You can think of Jothru like a better user agent string since it identifies the type"
+    },
+    {
+      "Time_Start": 222.32,
+      "Time_End": 226.94,
+      "Text": " of client being used and is very difficult to set because it's built into these client"
+    },
+    {
+      "Time_Start": 226.94,
+      "Time_End": 228.86,
+      "Text": " HTTP libraries."
+    },
+    {
+      "Time_Start": 228.86,
+      "Time_End": 233.22,
+      "Text": " This is a toy example of how Jothru works as a detection mechanism."
+    },
+    {
+      "Time_Start": 233.22,
+      "Time_End": 238.46,
+      "Text": " If the parameters discussed before were 1, 2, and 3, we could find the user agent that"
+    },
+    {
+      "Time_Start": 238.46,
+      "Time_End": 244.66,
+      "Text": " matches those parameters and be fairly sure that the real type of client is Metasploit."
+    },
+    {
+      "Time_Start": 244.66,
+      "Time_End": 250.86,
+      "Text": " And the same for the next two using different user agents with different client libraries."
+    },
+    {
+      "Time_Start": 250.86,
+      "Time_End": 257.64,
+      "Text": " In this case, 2, 3, and 4 match to Chrome version 68 and 6, 5, and 4 match to Safari"
+    },
+    {
+      "Time_Start": 257.64,
+      "Time_End": 259.18,
+      "Text": " version 601."
+    },
+    {
+      "Time_Start": 259.18,
+      "Time_End": 263.26,
+      "Text": " In the last example, we see that a client is attempting to hit our network using the"
+    },
+    {
+      "Time_Start": 263.26,
+      "Time_End": 267.06,
+      "Text": " same client hello parameters as Metasploit."
+    },
+    {
+      "Time_Start": 267.06,
+      "Time_End": 272.06,
+      "Text": " But it's advertising as the Safari version 601 user agent."
+    },
+    {
+      "Time_Start": 272.06,
+      "Time_End": 277.14,
+      "Text": " In this case, we can be suspicious of this traffic since we know that the Safari version"
+    },
+    {
+      "Time_Start": 277.14,
+      "Time_End": 282.54,
+      "Text": " 601 user agent is different and the client hello parameters match Metasploit."
+    },
+    {
+      "Time_Start": 282.54,
+      "Time_End": 286.38,
+      "Text": " Another example use case of Jothru that I really like, which relates more to quality"
+    },
+    {
+      "Time_Start": 286.38,
+      "Time_End": 291.98,
+      "Text": " of service instead of security, is finding the Jothru signature of the Python requests"
+    },
+    {
+      "Time_Start": 291.98,
+      "Time_End": 298.34000000000003,
+      "Text": " library to find all instances of users attempting to programmatically snipe items from an online"
+    },
+    {
+      "Time_Start": 298.34000000000003,
+      "Time_End": 302.78000000000003,
+      "Text": " store since most sniping software is made with Python."
+    },
+    {
+      "Time_Start": 302.78000000000003,
+      "Time_End": 306.34000000000003,
+      "Text": " Now we'll talk about the Jothru transport project."
+    },
+    {
+      "Time_Start": 306.34000000000003,
+      "Time_End": 311.62,
+      "Text": " It may be an obvious question, but it's important to ask, why would you want to spoof a Jothru"
+    },
+    {
+      "Time_Start": 311.62,
+      "Time_End": 312.62,
+      "Text": " signature?"
+    },
+    {
+      "Time_Start": 312.62,
+      "Time_End": 316.40000000000003,
+      "Text": " Well, it's the same answer as to why you'd want to change the user agent string."
+    },
+    {
+      "Time_Start": 316.40000000000003,
+      "Time_End": 318.5,
+      "Text": " It can identify clients."
+    },
+    {
+      "Time_Start": 318.5,
+      "Time_End": 322.62,
+      "Text": " If you can change the client hello packet, then blue teamers using Jothru as a detection"
+    },
+    {
+      "Time_Start": 322.62,
+      "Time_End": 326.66,
+      "Text": " mechanism wouldn't be confident in that value for detection purposes."
+    },
+    {
+      "Time_Start": 326.66,
+      "Time_End": 329.62,
+      "Text": " So this would be a huge win for the red teams."
+    },
+    {
+      "Time_Start": 329.62,
+      "Time_End": 331.98,
+      "Text": " So that's where Jothru transport comes in."
+    },
+    {
+      "Time_Start": 331.98,
+      "Time_End": 336.74,
+      "Text": " Jothru transport was actually the second Jothru project I worked on chronologically, but the"
+    },
+    {
+      "Time_Start": 336.74,
+      "Time_End": 340.1,
+      "Text": " easiest project to understand, so I thought I'd talk about it first."
+    },
+    {
+      "Time_Start": 340.1,
+      "Time_End": 344.14,
+      "Text": " Last semester, my teammate in the Clemson security club, Matt Rinaldi, and I were trying"
+    },
+    {
+      "Time_Start": 344.14,
+      "Time_End": 346.22,
+      "Text": " to come up with fun side projects."
+    },
+    {
+      "Time_Start": 346.22,
+      "Time_End": 350.38000000000005,
+      "Text": " I had done some research on Jothru already with Satellite, the project I'm going to show"
+    },
+    {
+      "Time_Start": 350.38000000000005,
+      "Time_End": 353.78000000000003,
+      "Text": " next, and I really wanted to do more work with Jothru."
+    },
+    {
+      "Time_Start": 353.78000000000003,
+      "Time_End": 357.70000000000005,
+      "Text": " So the project we came up with was to create a library that made spoofing Jothru signatures"
+    },
+    {
+      "Time_Start": 357.70000000000005,
+      "Time_End": 360.74,
+      "Text": " as easy as changing the user agent string."
+    },
+    {
+      "Time_Start": 360.74,
+      "Time_End": 362.66,
+      "Text": " That was our goal."
+    },
+    {
+      "Time_Start": 362.66,
+      "Time_End": 366.58000000000004,
+      "Text": " At the end of the day, we figured that those values were sent by the client, so spoofing"
+    },
+    {
+      "Time_Start": 366.58000000000004,
+      "Time_End": 368.76000000000005,
+      "Text": " them should at least be possible."
+    },
+    {
+      "Time_Start": 368.76000000000005,
+      "Time_End": 372.98,
+      "Text": " We ended up choosing Go because both Matt and I were very familiar with the language"
+    },
+    {
+      "Time_Start": 373.1,
+      "Time_End": 377.34000000000003,
+      "Text": " and a bit familiar with the implementation details of the standard library."
+    },
+    {
+      "Time_Start": 377.34000000000003,
+      "Time_End": 381.62,
+      "Text": " On the engineering side, our first thought was how could one change the client hello"
+    },
+    {
+      "Time_Start": 381.62,
+      "Time_End": 388.14000000000004,
+      "Text": " packet in Go's standard library without having to rewrite an entirely new HTTP library, because"
+    },
+    {
+      "Time_Start": 388.14000000000004,
+      "Time_End": 391.12,
+      "Text": " that's not something we wanted to take on."
+    },
+    {
+      "Time_Start": 391.12,
+      "Time_End": 394.42,
+      "Text": " After digging into the source, we figured out that Go exposes their implementation of"
+    },
+    {
+      "Time_Start": 394.42,
+      "Time_End": 398.56,
+      "Text": " a round tripper called the HTTP transport object."
+    },
+    {
+      "Time_Start": 398.56,
+      "Time_End": 403.72,
+      "Text": " So our goal was to create a transport object that could create custom Jothru signatures."
+    },
+    {
+      "Time_Start": 403.72,
+      "Time_End": 406.36,
+      "Text": " Using a transport object is actually very easy."
+    },
+    {
+      "Time_Start": 406.36,
+      "Time_End": 409.4,
+      "Text": " First, you create the transport object."
+    },
+    {
+      "Time_Start": 409.4,
+      "Time_End": 414.18,
+      "Text": " Then you create a new HTTP client that uses that transport."
+    },
+    {
+      "Time_Start": 414.18,
+      "Time_End": 419.56,
+      "Text": " And then once that client is created, you can do normal HTTP gets, posts, anything you'd"
+    },
+    {
+      "Time_Start": 419.56,
+      "Time_End": 421.28,
+      "Text": " like with that client."
+    },
+    {
+      "Time_Start": 421.28,
+      "Time_End": 427.22,
+      "Text": " Luckily, we discovered a library called utls written by refraction.network, which is an"
+    },
+    {
+      "Time_Start": 427.22,
+      "Time_End": 430.78000000000003,
+      "Text": " organization dedicated to circumventing censorship."
+    },
+    {
+      "Time_Start": 430.78000000000003,
+      "Time_End": 435.58000000000004,
+      "Text": " It provided us a way to use custom parameters in the client hello packet, and it would actually"
+    },
+    {
+      "Time_Start": 435.58000000000004,
+      "Time_End": 439.06,
+      "Text": " return a transport object."
+    },
+    {
+      "Time_Start": 439.06,
+      "Time_End": 443.1,
+      "Text": " The only problem we saw with the library was that it was fairly difficult to use since"
+    },
+    {
+      "Time_Start": 443.1,
+      "Time_End": 445.78000000000003,
+      "Text": " it provided so many options."
+    },
+    {
+      "Time_Start": 445.78000000000003,
+      "Time_End": 449.1,
+      "Text": " We really just wanted an interface for creating Jothru signatures."
+    },
+    {
+      "Time_Start": 449.1,
+      "Time_End": 454.58000000000004,
+      "Text": " So we wrote a wrapper library that allows users to simply type in a Jothru string, and"
+    },
+    {
+      "Time_Start": 454.58,
+      "Time_End": 458.41999999999996,
+      "Text": " it would configure an HTTP transport object for you."
+    },
+    {
+      "Time_Start": 458.41999999999996,
+      "Time_End": 461.65999999999997,
+      "Text": " We tried to make this as easy to use as possible."
+    },
+    {
+      "Time_Start": 461.65999999999997,
+      "Time_End": 466.32,
+      "Text": " All you need to do is call new transport and supply a Jothru string."
+    },
+    {
+      "Time_Start": 466.32,
+      "Time_End": 474.34,
+      "Text": " The library will then create a utls HTTP transport object that you can now supply to the transport"
+    },
+    {
+      "Time_Start": 474.34,
+      "Time_End": 477.21999999999997,
+      "Text": " argument in HTTP client."
+    },
+    {
+      "Time_Start": 477.21999999999997,
+      "Time_End": 484.53999999999996,
+      "Text": " Now use this client like you would any other golang HTTP client, and you'll have a replicated"
+    },
+    {
+      "Time_Start": 484.54,
+      "Time_End": 486.58000000000004,
+      "Text": " Jothru signature."
+    },
+    {
+      "Time_Start": 486.58000000000004,
+      "Time_End": 491.1,
+      "Text": " This is an example of using the Jothru transport project in practice."
+    },
+    {
+      "Time_Start": 491.1,
+      "Time_End": 495.78000000000003,
+      "Text": " On line 11, we're selecting Safari as the browser we'd like to imitate."
+    },
+    {
+      "Time_Start": 495.78000000000003,
+      "Time_End": 502.78000000000003,
+      "Text": " On line 14, we're creating the HTTP client object using the wrapper function new."
+    },
+    {
+      "Time_Start": 502.78000000000003,
+      "Time_End": 508.1,
+      "Text": " On line 15, we're making a request to Jothru.com, which is a helpful tool that finds the Jothru"
+    },
+    {
+      "Time_Start": 508.1,
+      "Time_End": 512.1,
+      "Text": " signature of an HTTP request sent to it."
+    },
+    {
+      "Time_Start": 512.1,
+      "Time_End": 517.66,
+      "Text": " Jothru.com will return to us the user agent it believes the request we're making us."
+    },
+    {
+      "Time_Start": 517.66,
+      "Time_End": 525.14,
+      "Text": " When we run this Go file, we can see that Jothru will return to us the user agent Safari"
+    },
+    {
+      "Time_Start": 525.14,
+      "Time_End": 530.28,
+      "Text": " that it believes that we actually are, when in fact, we're using the Go standard library."
+    },
+    {
+      "Time_Start": 530.28,
+      "Time_End": 536.5,
+      "Text": " The downside to this library is that utls still uses golang's crypto TLS for their extensions."
+    },
+    {
+      "Time_Start": 536.5,
+      "Time_End": 540.94,
+      "Text": " So you're limited to the TLS extensions that are implemented by crypto TLS."
+    },
+    {
+      "Time_Start": 540.94,
+      "Time_End": 545.86,
+      "Text": " But that's okay, since the subset implemented can successfully spoof versions of Chrome,"
+    },
+    {
+      "Time_Start": 545.86,
+      "Time_End": 547.86,
+      "Text": " Safari and Firefox."
+    },
+    {
+      "Time_Start": 547.86,
+      "Time_End": 552.46,
+      "Text": " We do throw an error if a user attempts to create a transport object with values that"
+    },
+    {
+      "Time_Start": 552.46,
+      "Time_End": 555.34,
+      "Text": " are not supported by crypto TLS."
+    },
+    {
+      "Time_Start": 555.34,
+      "Time_End": 562.58,
+      "Text": " In this example, we want to implement extensions 13, 21, 28 and 46."
+    },
+    {
+      "Time_Start": 562.58,
+      "Time_End": 569.0200000000001,
+      "Text": " So the problem is that crypto TLS only implements 13, 21 and 28."
+    },
+    {
+      "Time_Start": 569.1,
+      "Time_End": 574.54,
+      "Text": " Therefore, if we have a Jothru string that supplies these arguments as extensions, we"
+    },
+    {
+      "Time_Start": 574.54,
+      "Time_End": 579.98,
+      "Text": " won't be able to create a Jothru transport object that implements it."
+    },
+    {
+      "Time_Start": 579.98,
+      "Time_End": 585.34,
+      "Text": " To sum up, Jothru transport allows attackers to spoof Jothru signatures and trick defenders"
+    },
+    {
+      "Time_Start": 585.34,
+      "Time_End": 590.8199999999999,
+      "Text": " into thinking traffic is good when it actually is malicious."
+    },
+    {
+      "Time_Start": 590.8199999999999,
+      "Time_End": 593.38,
+      "Text": " The next project I want to talk about is Satellite."
+    },
+    {
+      "Time_Start": 593.38,
+      "Time_End": 598.42,
+      "Text": " I'm not going to discuss a whole lot about usage, but focus mostly on Jothru, given the"
+    },
+    {
+      "Time_Start": 598.42,
+      "Time_End": 599.78,
+      "Text": " title of the talk."
+    },
+    {
+      "Time_Start": 599.78,
+      "Time_End": 605.42,
+      "Text": " Satellite is a payload hosting web server similar to Apache with Mata Rewrite or CADI,"
+    },
+    {
+      "Time_Start": 605.42,
+      "Time_End": 610.9799999999999,
+      "Text": " but it's much easier to configure and has a lot more features, including Jothru support."
+    },
+    {
+      "Time_Start": 610.9799999999999,
+      "Time_End": 614.3,
+      "Text": " Another way of putting this is that it's a web server that allows you to perform payload"
+    },
+    {
+      "Time_Start": 614.3,
+      "Time_End": 617.2199999999999,
+      "Text": " keying with little headache."
+    },
+    {
+      "Time_Start": 617.2199999999999,
+      "Time_End": 620.9,
+      "Text": " If you've never heard of payload keying, it's a simple concept."
+    },
+    {
+      "Time_Start": 620.9,
+      "Time_End": 625.4399999999999,
+      "Text": " Basically an attacker wants a payload only to open on their target and not open when"
+    },
+    {
+      "Time_Start": 625.44,
+      "Time_End": 629.1600000000001,
+      "Text": " a member of the IR team or sandbox tool opens it."
+    },
+    {
+      "Time_Start": 629.1600000000001,
+      "Time_End": 633.82,
+      "Text": " For example, the attacker may know that the target's host name is Selden."
+    },
+    {
+      "Time_Start": 633.82,
+      "Time_End": 638.5600000000001,
+      "Text": " When the payload is executed, the program checks if the target's host is Selden."
+    },
+    {
+      "Time_Start": 638.5600000000001,
+      "Time_End": 644.08,
+      "Text": " If it isn't, then it returns exit success, but if it matches, then it executes the real"
+    },
+    {
+      "Time_Start": 644.08,
+      "Time_End": 645.08,
+      "Text": " payload."
+    },
+    {
+      "Time_Start": 645.08,
+      "Time_End": 650.5600000000001,
+      "Text": " Normally, the term payload keying is discussed in relation to the payloads themselves, but"
+    },
+    {
+      "Time_Start": 650.5600000000001,
+      "Time_End": 654.0400000000001,
+      "Text": " the same concept can be used for downloading payloads."
+    },
+    {
+      "Time_Start": 654.04,
+      "Time_End": 658.4,
+      "Text": " This isn't a new concept, and I'm sure many people watching have had to do this to bypass"
+    },
+    {
+      "Time_Start": 658.4,
+      "Time_End": 661.9599999999999,
+      "Text": " certain online mail sandboxes."
+    },
+    {
+      "Time_Start": 661.9599999999999,
+      "Time_End": 667.3199999999999,
+      "Text": " One common way to key payload network traffic is to whitelist user agents and IPs that are"
+    },
+    {
+      "Time_Start": 667.3199999999999,
+      "Time_End": 671.88,
+      "Text": " used by that organization after some reconnaissance."
+    },
+    {
+      "Time_Start": 671.88,
+      "Time_End": 676.24,
+      "Text": " Using Satellite, you can do IP and user agent block listing with ease."
+    },
+    {
+      "Time_Start": 676.24,
+      "Time_End": 683.36,
+      "Text": " In the var www.html directory, payload.exe is the file you want to send to the user."
+    },
+    {
+      "Time_Start": 683.36,
+      "Time_End": 688.6,
+      "Text": " To add keying rules to the payload, you can create a text file with .info appended to"
+    },
+    {
+      "Time_Start": 688.6,
+      "Time_End": 689.6,
+      "Text": " it."
+    },
+    {
+      "Time_Start": 689.6,
+      "Time_End": 693.4,
+      "Text": " In this case, it's payload.exe.info."
+    },
+    {
+      "Time_Start": 693.4,
+      "Time_End": 697.76,
+      "Text": " In this example, we found that the target was using a user agent that ties back to an"
+    },
+    {
+      "Time_Start": 697.76,
+      "Time_End": 702.86,
+      "Text": " Android phone, and we're sending them a payload for Android."
+    },
+    {
+      "Time_Start": 702.86,
+      "Time_End": 711.9200000000001,
+      "Text": " We also found that their internal mail filter is on IP address 123.123.123.123, so we can"
+    },
+    {
+      "Time_Start": 711.92,
+      "Time_End": 716.52,
+      "Text": " blacklist that IP from accessing the payload."
+    },
+    {
+      "Time_Start": 716.52,
+      "Time_End": 725.12,
+      "Text": " We also found that their internet mail filter is running on the subnet 40.41.42.1.24."
+    },
+    {
+      "Time_Start": 725.12,
+      "Time_End": 730.64,
+      "Text": " This way, we can ensure that our payload is only being accessed by the user we're trying"
+    },
+    {
+      "Time_Start": 730.64,
+      "Time_End": 734.64,
+      "Text": " to target, and not the mail filters we want to block from."
+    },
+    {
+      "Time_Start": 734.64,
+      "Time_End": 736.56,
+      "Text": " And that's how you use Satellite."
+    },
+    {
+      "Time_Start": 736.56,
+      "Time_End": 741.64,
+      "Text": " You use it like any other web server by placing payloads into the server root, then add .info"
+    },
+    {
+      "Time_Start": 741.64,
+      "Time_End": 745.84,
+      "Text": " files to your routes, and payload keying is done."
+    },
+    {
+      "Time_Start": 745.84,
+      "Time_End": 751.06,
+      "Text": " And just like with other web servers that allow some form of keying, ModReride or CADI,"
+    },
+    {
+      "Time_Start": 751.06,
+      "Time_End": 755.52,
+      "Text": " you can specify what happens to a client who requests a path but doesn't conform to the"
+    },
+    {
+      "Time_Start": 755.52,
+      "Time_End": 757.42,
+      "Text": " key you set."
+    },
+    {
+      "Time_Start": 757.42,
+      "Time_End": 761.68,
+      "Text": " This is done in Satellite with the onFailure keyword."
+    },
+    {
+      "Time_Start": 761.68,
+      "Time_End": 765.88,
+      "Text": " In the case on the left, we're authorizing the Mozilla user agent, anything that contains"
+    },
+    {
+      "Time_Start": 765.88,
+      "Time_End": 767.64,
+      "Text": " Mozilla."
+    },
+    {
+      "Time_Start": 767.64,
+      "Time_End": 775.48,
+      "Text": " And if the user agent doesn't conform to that, then we'll redirect them using a 301 to google.com."
+    },
+    {
+      "Time_Start": 775.48,
+      "Time_End": 783.04,
+      "Text": " On the right-hand side, instead of redirecting, we're going to render a page locally, 404."
+    },
+    {
+      "Time_Start": 783.04,
+      "Time_End": 788.68,
+      "Text": " This way, when an IR person who isn't using Mozilla tries to access the page, they won't"
+    },
+    {
+      "Time_Start": 788.68,
+      "Time_End": 794.68,
+      "Text": " be able to recognize that a payload is being downloaded, and instead see a 404 page."
+    },
+    {
+      "Time_Start": 794.6800000000001,
+      "Time_End": 798.5200000000001,
+      "Text": " There are also many other satellite options, including serve, which allows a payload to"
+    },
+    {
+      "Time_Start": 798.5200000000001,
+      "Time_End": 801.84,
+      "Text": " be served n number of times."
+    },
+    {
+      "Time_Start": 801.84,
+      "Time_End": 807.24,
+      "Text": " There's authorized or blacklist user agents, same with IP range."
+    },
+    {
+      "Time_Start": 807.24,
+      "Time_End": 810.6,
+      "Text": " You can blacklist headers."
+    },
+    {
+      "Time_Start": 810.6,
+      "Time_End": 816.6400000000001,
+      "Text": " And then using the MaxMine database for IP addresses, you can authorize or blacklist"
+    },
+    {
+      "Time_Start": 816.6400000000001,
+      "Time_End": 817.6400000000001,
+      "Text": " countries."
+    },
+    {
+      "Time_Start": 817.6400000000001,
+      "Time_End": 824.1600000000001,
+      "Text": " Finally, you can do credential capture with ease, and specify proxies if you want to do"
+    },
+    {
+      "Time_Start": 824.36,
+      "Time_End": 826.9599999999999,
+      "Text": " team server redirection."
+    },
+    {
+      "Time_Start": 826.9599999999999,
+      "Time_End": 830.6,
+      "Text": " Another great feature of Satellite is global conditionals."
+    },
+    {
+      "Time_Start": 830.6,
+      "Time_End": 834.88,
+      "Text": " If you have a set of conditions that your team always wants to constrain on, you can"
+    },
+    {
+      "Time_Start": 834.88,
+      "Time_End": 839.92,
+      "Text": " create conditional files in the etc satellite conditions directory."
+    },
+    {
+      "Time_Start": 839.92,
+      "Time_End": 843.42,
+      "Text": " These rules will be applied to all routes in the server route."
+    },
+    {
+      "Time_Start": 843.42,
+      "Time_End": 848.8,
+      "Text": " In this example, we're blacklisting two IPs from a known email filtering service, and"
+    },
+    {
+      "Time_Start": 848.8,
+      "Time_End": 853.48,
+      "Text": " also blacklisting two of Google's automated scanner user agents."
+    },
+    {
+      "Time_Start": 853.48,
+      "Time_End": 857.08,
+      "Text": " The great thing about this is that they're managed in two separate files that may be"
+    },
+    {
+      "Time_Start": 857.08,
+      "Time_End": 861.24,
+      "Text": " downloaded from GitHub, and therefore managed by different people without getting in the"
+    },
+    {
+      "Time_Start": 861.24,
+      "Time_End": 863.24,
+      "Text": " way of each other."
+    },
+    {
+      "Time_Start": 863.24,
+      "Time_End": 871.04,
+      "Text": " This would be extremely useful if integrated with 0xzdh's redirect.rules repository."
+    },
+    {
+      "Time_Start": 871.04,
+      "Time_End": 878.08,
+      "Text": " Currently, redirect.rules dynamically generates Apache mod rewrite rules to direct traffic"
+    },
+    {
+      "Time_Start": 878.08,
+      "Time_End": 881.4200000000001,
+      "Text": " away from known sandbox environments."
+    },
+    {
+      "Time_Start": 881.4200000000001,
+      "Time_End": 885.2600000000001,
+      "Text": " If you make your global conditionals well enough, you'll never have to reconfigure them,"
+    },
+    {
+      "Time_Start": 885.2600000000001,
+      "Time_End": 889.46,
+      "Text": " and the rules can easily be dropped into any new infrastructure you stand up."
+    },
+    {
+      "Time_Start": 889.46,
+      "Time_End": 895.5400000000001,
+      "Text": " Finally, and most importantly, is authorizing and blacklisting JAW3 signatures."
+    },
+    {
+      "Time_Start": 895.5400000000001,
+      "Time_End": 899.4200000000001,
+      "Text": " There's a very cool emergent technique that appears when you can control the value of"
+    },
+    {
+      "Time_Start": 899.4200000000001,
+      "Time_End": 907.1800000000001,
+      "Text": " a JAW3 signature using JAW3 transport, and when JAW3 values can be keyed using Satellite."
+    },
+    {
+      "Time_Start": 907.1800000000001,
+      "Time_End": 911.74,
+      "Text": " Think about a multi-stage payload like Dwight Honstein discusses in his Dynamic Module Loading"
+    },
+    {
+      "Time_Start": 911.74,
+      "Time_End": 914.58,
+      "Text": " in Go series of blog posts."
+    },
+    {
+      "Time_Start": 914.58,
+      "Time_End": 919.0200000000001,
+      "Text": " You have a loader and stages that contain logic for performing different tasks like"
+    },
+    {
+      "Time_Start": 919.0200000000001,
+      "Time_End": 922.0600000000001,
+      "Text": " downloading files or running shell commands."
+    },
+    {
+      "Time_Start": 922.0600000000001,
+      "Time_End": 926.7,
+      "Text": " You can protect these stages by making your loader use a specific JAW3 signature, and"
+    },
+    {
+      "Time_Start": 926.7,
+      "Time_End": 931.6600000000001,
+      "Text": " only allowing that JAW3 signature to access your second or third stage."
+    },
+    {
+      "Time_Start": 931.6600000000001,
+      "Time_End": 936.6600000000001,
+      "Text": " That way, defenders would only be able to pull the loader, and be unable to access the"
+    },
+    {
+      "Time_Start": 936.66,
+      "Time_End": 942.5799999999999,
+      "Text": " later stages of your payload unless they can replicate the JAW3 signature you provide."
+    },
+    {
+      "Time_Start": 942.5799999999999,
+      "Time_End": 946.18,
+      "Text": " This makes blue teamers jump through many more hoops if they want to reverse engineer"
+    },
+    {
+      "Time_Start": 946.18,
+      "Time_End": 948.26,
+      "Text": " your payload."
+    },
+    {
+      "Time_Start": 948.26,
+      "Time_End": 952.5,
+      "Text": " In the same vein, you can key proxy traffic so that it's much more difficult for blue"
+    },
+    {
+      "Time_Start": 952.5,
+      "Time_End": 956.8199999999999,
+      "Text": " teamers to discover your C2 infrastructure."
+    },
+    {
+      "Time_Start": 956.8199999999999,
+      "Time_End": 962.9,
+      "Text": " This project is packaged as a .DEB and .RPM file as well as source in the releases page,"
+    },
+    {
+      "Time_Start": 962.9,
+      "Time_End": 966.3399999999999,
+      "Text": " so it should be very easy to install on most machines."
+    },
+    {
+      "Time_Start": 966.5,
+      "Time_End": 970.58,
+      "Text": " Check out the blog post linked in the readme page, it has a video where I install and use"
+    },
+    {
+      "Time_Start": 970.58,
+      "Time_End": 974.58,
+      "Text": " the project on a Debian machine to get you started."
+    },
+    {
+      "Time_Start": 974.58,
+      "Time_End": 978.02,
+      "Text": " If you want more examples, check out the examples folder on github."
+    },
+    {
+      "Time_Start": 978.02,
+      "Time_End": 981.22,
+      "Text": " There are more options that I couldn't get to in this video that are well worth checking"
+    },
+    {
+      "Time_Start": 981.22,
+      "Time_End": 983.5400000000001,
+      "Text": " out."
+    },
+    {
+      "Time_Start": 983.5400000000001,
+      "Time_End": 987.4200000000001,
+      "Text": " There are a ton more features to add to Satellite, just look at how many github issues there"
+    },
+    {
+      "Time_Start": 987.4200000000001,
+      "Time_End": 988.4200000000001,
+      "Text": " are."
+    },
+    {
+      "Time_Start": 988.4200000000001,
+      "Time_End": 991.38,
+      "Text": " Here are a few examples of features I'm excited about."
+    },
+    {
+      "Time_Start": 991.38,
+      "Time_End": 995.02,
+      "Text": " First, there's some heavy work that needs to be done on this project."
+    },
+    {
+      "Time_Start": 995.02,
+      "Time_End": 999.78,
+      "Text": " It was originally a simple proof of concept, but more features kept being added instead"
+    },
+    {
+      "Time_Start": 999.78,
+      "Time_End": 1001.78,
+      "Text": " of rewriting the core."
+    },
+    {
+      "Time_Start": 1001.78,
+      "Time_End": 1008.22,
+      "Text": " The CryptoTLS and NetHTTP libraries are altered in order to capture the TLS extensions used,"
+    },
+    {
+      "Time_Start": 1008.22,
+      "Time_End": 1013.62,
+      "Text": " so before any new features are added, I need to fork the Go language to add those features"
+    },
+    {
+      "Time_Start": 1013.62,
+      "Time_End": 1019.86,
+      "Text": " in to use normal libraries that use NetHTTP and CryptoTLS."
+    },
+    {
+      "Time_Start": 1019.86,
+      "Time_End": 1025.54,
+      "Text": " I'd like to make Satellite a robust proxying service that surpasses other proxying services"
+    },
+    {
+      "Time_Start": 1025.54,
+      "Time_End": 1027.6200000000001,
+      "Text": " out there."
+    },
+    {
+      "Time_Start": 1027.6200000000001,
+      "Time_End": 1032.58,
+      "Text": " The first step to this would be to integrate JAW3 transport into Satellite and allow the"
+    },
+    {
+      "Time_Start": 1032.58,
+      "Time_End": 1038.34,
+      "Text": " outgoing proxy signature to match any JAW3 signature input from the user."
+    },
+    {
+      "Time_Start": 1038.34,
+      "Time_End": 1044.6200000000001,
+      "Text": " Next, and this is more of a quality of life update for anyone who's had to set up a"
+    },
+    {
+      "Time_Start": 1044.6200000000001,
+      "Time_End": 1049.1,
+      "Text": " redirector, is to add URI globbing to proxy paths."
+    },
+    {
+      "Time_Start": 1049.1,
+      "Time_End": 1052.1,
+      "Text": " Next would be HTML smuggling."
+    },
+    {
+      "Time_Start": 1052.1,
+      "Time_End": 1058.3,
+      "Text": " I think you can make HTML smuggling easier by allowing the attacker to specify an HTML"
+    },
+    {
+      "Time_Start": 1058.3,
+      "Time_End": 1065.4599999999998,
+      "Text": " template and payloads separately, and then automatically combine them into an HTML smuggling"
+    },
+    {
+      "Time_Start": 1065.4599999999998,
+      "Time_End": 1066.4599999999998,
+      "Text": " page."
+    },
+    {
+      "Time_Start": 1066.4599999999998,
+      "Time_End": 1072.3799999999999,
+      "Text": " Again, this is more of a quality of life update since you can already serve smuggling payloads."
+    },
+    {
+      "Time_Start": 1072.3799999999999,
+      "Time_End": 1076.82,
+      "Text": " I just think this feature would be really cool, and it's actually one that Lee Christensen"
+    },
+    {
+      "Time_Start": 1076.82,
+      "Time_End": 1079.82,
+      "Text": " recommended, so a huge shout out to him."
+    },
+    {
+      "Time_Start": 1079.82,
+      "Time_End": 1084.98,
+      "Text": " Finally would be to add authentication on the payload, so a user must type in a password"
+    },
+    {
+      "Time_Start": 1084.98,
+      "Time_End": 1087.86,
+      "Text": " in order to access the payload."
+    },
+    {
+      "Time_Start": 1087.86,
+      "Time_End": 1090.1399999999999,
+      "Text": " This is very useful for phishing."
+    },
+    {
+      "Time_Start": 1090.1399999999999,
+      "Time_End": 1096.34,
+      "Text": " It's another technique that can sometimes help attackers bypass sandbox or IR services."
+    },
+    {
+      "Time_Start": 1096.34,
+      "Time_End": 1101.96,
+      "Text": " In conclusion, JAW3 is a technique that can be used offensively as well as defensively."
+    },
+    {
+      "Time_Start": 1101.96,
+      "Time_End": 1106.76,
+      "Text": " Attackers should think about the JAW3 fingerprints they're leaving behind when performing attacks,"
+    },
+    {
+      "Time_Start": 1106.76,
+      "Time_End": 1111.0,
+      "Text": " and use tooling to change those fingerprints to avoid detection."
+    },
+    {
+      "Time_Start": 1111.0,
+      "Time_End": 1116.42,
+      "Text": " Using JAW3, we can also protect our payloads and proxy traffic."
+    },
+    {
+      "Time_Start": 1116.42,
+      "Time_End": 1118.4,
+      "Text": " So I have three call to actions."
+    },
+    {
+      "Time_Start": 1118.4,
+      "Time_End": 1122.3799999999999,
+      "Text": " First, JAW3 transport is a Go library."
+    },
+    {
+      "Time_Start": 1122.3799999999999,
+      "Time_End": 1126.76,
+      "Text": " This work should be done for all languages that Red Team tools are developed in."
+    },
+    {
+      "Time_Start": 1126.76,
+      "Time_End": 1131.34,
+      "Text": " The second is that if you're writing Red Team tools in Go, try implementing JAW3 transport"
+    },
+    {
+      "Time_Start": 1131.34,
+      "Time_End": 1134.18,
+      "Text": " in your project."
+    },
+    {
+      "Time_Start": 1134.18,
+      "Time_End": 1137.54,
+      "Text": " The only thing I can say about Satellite is to please use it and let me know if there's"
+    },
+    {
+      "Time_Start": 1137.54,
+      "Time_End": 1140.72,
+      "Text": " any issues or ideas you have with the project."
+    },
+    {
+      "Time_Start": 1140.72,
+      "Time_End": 1142.72,
+      "Text": " It's the only way I can make it better."
+    },
+    {
+      "Time_Start": 1142.72,
+      "Time_End": 1153.8,
+      "Text": " I hope you learned something from this presentation, and enjoy the rest of SOCON."
+    }
+  ]
+}
