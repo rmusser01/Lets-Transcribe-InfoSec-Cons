@@ -1,0 +1,4799 @@
+{
+  "segments": [
+    {
+      "Time_Start": 0.0,
+      "Time_End": 20.2,
+      "Text": "This text was transcribed using whisper model: large-v2\n\n I'm going to make some points about how you can abstractify your payload and separate"
+    },
+    {
+      "Time_Start": 20.2,
+      "Time_End": 24.76,
+      "Text": " it from your injection vector and I'll cover some stuff in that, it's kind of interesting."
+    },
+    {
+      "Time_Start": 24.76,
+      "Time_End": 28.26,
+      "Text": " The second part of the talk is towards the middle, I'm going to talk about injection"
+    },
+    {
+      "Time_Start": 28.26,
+      "Time_End": 33.300000000000004,
+      "Text": " vectors, which is how to get control of the instruction pointer on a target system and"
+    },
+    {
+      "Time_Start": 33.300000000000004,
+      "Time_End": 37.06,
+      "Text": " there's a lot of little tricks to do that and then finally the last part will be payload,"
+    },
+    {
+      "Time_Start": 37.06,
+      "Time_End": 40.02,
+      "Text": " which is of course the funnest, you know, all the nasty things you can do once you're"
+    },
+    {
+      "Time_Start": 40.02,
+      "Time_End": 41.02,
+      "Text": " on the system."
+    },
+    {
+      "Time_Start": 41.02,
+      "Time_End": 47.34,
+      "Text": " I'd like to thank Ryan Russell, I don't know if he's here, but he recently busted"
+    },
+    {
+      "Time_Start": 47.34,
+      "Time_End": 52.58,
+      "Text": " his ass to get this book printed and I believe they have copies of it here, about a hundred"
+    },
+    {
+      "Time_Start": 52.58,
+      "Time_End": 53.58,
+      "Text": " or so."
+    },
+    {
+      "Time_Start": 53.58,
+      "Time_End": 58.1,
+      "Text": " I wrote chapter 8, which is specifically on buffer overflows, the name of the book is"
+    },
+    {
+      "Time_Start": 58.1,
+      "Time_End": 66.9,
+      "Text": " Hack Proofing Your Network, RFP is in here, Elias from Bug Track, Cesar, if you know Riley,"
+    },
+    {
+      "Time_Start": 66.9,
+      "Time_End": 70.46,
+      "Text": " Cesar, he's pretty cool, he's in here too talking about stuff, Jeremy Roche, there's"
+    },
+    {
+      "Time_Start": 70.46,
+      "Time_End": 72.78,
+      "Text": " a lot of good authors in this book."
+    },
+    {
+      "Time_Start": 72.78,
+      "Time_End": 76.62,
+      "Text": " So anyways, if you want to come up after the talk, I can give you the ISP number or whatever"
+    },
+    {
+      "Time_Start": 76.62,
+      "Time_End": 80.22,
+      "Text": " or you can go find the security focus guys and then they should have a copy of it up"
+    },
+    {
+      "Time_Start": 80.22,
+      "Time_End": 81.22,
+      "Text": " there."
+    },
+    {
+      "Time_Start": 81.22,
+      "Time_End": 91.38000000000001,
+      "Text": " Oh, it's, the question was who's the publisher, Syngris."
+    },
+    {
+      "Time_Start": 91.38000000000001,
+      "Time_End": 100.62,
+      "Text": " Okay so, these slides are not posted, I can post them, I believe that Jeff has probably"
+    },
+    {
+      "Time_Start": 100.62,
+      "Time_End": 105.06,
+      "Text": " already got something set up on the website to post them, as well as this entire audio"
+    },
+    {
+      "Time_Start": 105.06,
+      "Time_End": 110.10000000000001,
+      "Text": " and video feeds are all of course posted as well, so you should be able to get to this."
+    },
+    {
+      "Time_Start": 110.10000000000001,
+      "Time_End": 115.10000000000001,
+      "Text": " Okay so this talk is going to talk about some ideas here, our first one is formalizing your"
+    },
+    {
+      "Time_Start": 115.10000000000001,
+      "Time_End": 116.10000000000001,
+      "Text": " attack method."
+    },
+    {
+      "Time_Start": 116.10000000000001,
+      "Time_End": 120.02000000000001,
+      "Text": " So I'm going to talk kind of like a military person for a little while and talk about if"
+    },
+    {
+      "Time_Start": 120.02000000000001,
+      "Time_End": 125.5,
+      "Text": " you were a military organization, how you would design your cyber warfare group to take"
+    },
+    {
+      "Time_Start": 125.5,
+      "Time_End": 131.82,
+      "Text": " advantage of buffer overflows and payloads and how you can reuse your attack code."
+    },
+    {
+      "Time_Start": 131.82,
+      "Time_End": 135.29999999999998,
+      "Text": " You can have a group of goons over here doing something like building a bunch of payloads,"
+    },
+    {
+      "Time_Start": 135.29999999999998,
+      "Time_End": 137.42,
+      "Text": " kind of like a missile with a warhead."
+    },
+    {
+      "Time_Start": 137.42,
+      "Time_End": 141.85999999999999,
+      "Text": " You don't have to always send a nuclear warhead, you can send a biological warhead or an EMP"
+    },
+    {
+      "Time_Start": 141.85999999999999,
+      "Time_End": 145.82,
+      "Text": " warhead, whatever it is, but the delivery mechanism is still the same missile."
+    },
+    {
+      "Time_Start": 145.82,
+      "Time_End": 151.22,
+      "Text": " So we're going to talk about how you can combine payloads and injection vectors in this way."
+    },
+    {
+      "Time_Start": 151.22,
+      "Time_End": 153.22,
+      "Text": " So that's separating deployment from the payload."
+    },
+    {
+      "Time_Start": 153.22,
+      "Time_End": 158.06,
+      "Text": " Of course, payloads can be chosen for desired effect and then when we get more technical"
+    },
+    {
+      "Time_Start": 158.06,
+      "Time_End": 161.78,
+      "Text": " later in the talk, I'm going to talk about the restraints and some of the details of"
+    },
+    {
+      "Time_Start": 161.78,
+      "Time_End": 165.94,
+      "Text": " getting around those restraints when you have, like for instance, limited size on the stack"
+    },
+    {
+      "Time_Start": 165.94,
+      "Time_End": 168.94,
+      "Text": " and things like that."
+    },
+    {
+      "Time_Start": 168.94,
+      "Time_End": 169.94,
+      "Text": " So what is an exploit?"
+    },
+    {
+      "Time_Start": 169.94,
+      "Time_End": 173.42000000000002,
+      "Text": " I'm not going to linger here because everybody knows what that is."
+    },
+    {
+      "Time_Start": 173.42000000000002,
+      "Time_End": 175.32,
+      "Text": " It's really easy to find bugs."
+    },
+    {
+      "Time_Start": 175.32,
+      "Time_End": 179.66,
+      "Text": " If you watch USSR labs, you see they post like, I don't know, three advisories a day or something."
+    },
+    {
+      "Time_Start": 179.66,
+      "Time_End": 180.66,
+      "Text": " It's ridiculous."
+    },
+    {
+      "Time_Start": 180.66,
+      "Time_End": 185.32,
+      "Text": " What they do is, or how you do it, is to simply run automated testing tools."
+    },
+    {
+      "Time_Start": 185.32,
+      "Time_End": 186.32,
+      "Text": " It's very simple to do this."
+    },
+    {
+      "Time_Start": 186.32,
+      "Time_End": 188.76,
+      "Text": " I've written several in the lab that I have."
+    },
+    {
+      "Time_Start": 188.76,
+      "Time_End": 192.6,
+      "Text": " I can download a bunch of software off of two cows and in one day find ten buffer overflows."
+    },
+    {
+      "Time_Start": 192.6,
+      "Time_End": 194.28,
+      "Text": " It's ridiculously simple."
+    },
+    {
+      "Time_Start": 194.28,
+      "Time_End": 196.79999999999998,
+      "Text": " All I have to say is code sucks."
+    },
+    {
+      "Time_Start": 196.79999999999998,
+      "Time_End": 201.88,
+      "Text": " The quality of code that you have on your systems is absolutely dreadful, horrible."
+    },
+    {
+      "Time_Start": 201.88,
+      "Time_End": 205.56,
+      "Text": " And that's why you're going to continue to see buffer overflows from now and years from"
+    },
+    {
+      "Time_Start": 205.56,
+      "Time_End": 206.56,
+      "Text": " now."
+    },
+    {
+      "Time_Start": 206.56,
+      "Time_End": 209.84,
+      "Text": " I think companies over the next few years are going to start to realize this and there"
+    },
+    {
+      "Time_Start": 209.84,
+      "Time_End": 213.92,
+      "Text": " will be a lot more attention paid to testing, due diligence and things like that in the"
+    },
+    {
+      "Time_Start": 213.92000000000002,
+      "Time_End": 218.4,
+      "Text": " labs before, you know, critical infrastructure software is released."
+    },
+    {
+      "Time_Start": 218.4,
+      "Time_End": 223.12,
+      "Text": " So okay, so obviously an exploit is a bug, takes advantage of a bug for some desired"
+    },
+    {
+      "Time_Start": 223.12,
+      "Time_End": 224.12,
+      "Text": " effect."
+    },
+    {
+      "Time_Start": 224.12,
+      "Time_End": 225.12,
+      "Text": " Okay."
+    },
+    {
+      "Time_Start": 225.12,
+      "Time_End": 228.98000000000002,
+      "Text": " So on a bad day, I can just crash my machine."
+    },
+    {
+      "Time_Start": 228.98000000000002,
+      "Time_End": 230.56,
+      "Text": " Machine crashing is getting harder to do these days."
+    },
+    {
+      "Time_Start": 230.56,
+      "Time_End": 234.64000000000001,
+      "Text": " I mean, obviously on Windows 95 it's really easy, but on Windows NT, it's slightly harder"
+    },
+    {
+      "Time_Start": 234.64000000000001,
+      "Time_End": 238.08,
+      "Text": " because typically you're going to be exploiting a user level process."
+    },
+    {
+      "Time_Start": 238.08,
+      "Time_End": 239.56,
+      "Text": " It's not going to crash the kernel generally."
+    },
+    {
+      "Time_Start": 239.56,
+      "Time_End": 243.36,
+      "Text": " However, a lot of times it's very simple to cause it to DOS the machine, which is lock"
+    },
+    {
+      "Time_Start": 243.36,
+      "Time_End": 245.76000000000002,
+      "Text": " it up, which is almost equivalent to crashing it."
+    },
+    {
+      "Time_Start": 245.76000000000002,
+      "Time_End": 251.52,
+      "Text": " If it's a VIP process, you know, very important process, such as, you know, CSRSS or something"
+    },
+    {
+      "Time_Start": 251.52,
+      "Time_End": 255.28,
+      "Text": " like that, and you manage to get into 100% CPU loop, that's pretty much crashing the"
+    },
+    {
+      "Time_Start": 255.28,
+      "Time_End": 257.52000000000004,
+      "Text": " machine because it's not going anywhere."
+    },
+    {
+      "Time_Start": 257.52000000000004,
+      "Time_End": 259.0,
+      "Text": " Most common, of course, is an application crash."
+    },
+    {
+      "Time_Start": 259.0,
+      "Time_End": 262.2,
+      "Text": " If I don't get my payload right, I'll bomb the application, the application just goes"
+    },
+    {
+      "Time_Start": 262.2,
+      "Time_End": 264.08000000000004,
+      "Text": " away."
+    },
+    {
+      "Time_Start": 264.08000000000004,
+      "Time_End": 266.76,
+      "Text": " Another possibility is recoverable exception."
+    },
+    {
+      "Time_Start": 266.76,
+      "Time_End": 270.52000000000004,
+      "Text": " So everybody here know what exception handling is all about?"
+    },
+    {
+      "Time_Start": 270.52,
+      "Time_End": 274.84,
+      "Text": " Exception handling does not prevent buffer overflow from working."
+    },
+    {
+      "Time_Start": 274.84,
+      "Time_End": 279.47999999999996,
+      "Text": " Exception handlers, the code that takes care of dealing with an exception is all on the"
+    },
+    {
+      "Time_Start": 279.47999999999996,
+      "Time_End": 280.47999999999996,
+      "Text": " stack."
+    },
+    {
+      "Time_Start": 280.47999999999996,
+      "Time_End": 283.44,
+      "Text": " So if I just keep going down the stack with my buffer overflow, just overwrite that, it"
+    },
+    {
+      "Time_Start": 283.44,
+      "Time_End": 286.15999999999997,
+      "Text": " actually makes it easier to exploit the buffer overflow because I don't have to worry about"
+    },
+    {
+      "Time_Start": 286.15999999999997,
+      "Time_End": 287.15999999999997,
+      "Text": " offsets."
+    },
+    {
+      "Time_Start": 287.15999999999997,
+      "Time_End": 290.79999999999995,
+      "Text": " I can have the EIP, which is the instruction pointer on it, it will go anywhere I want"
+    },
+    {
+      "Time_Start": 290.79999999999995,
+      "Time_End": 294.79999999999995,
+      "Text": " to go, and when it throws an exception, which it's obviously going to do, my exception handler"
+    },
+    {
+      "Time_Start": 294.79999999999995,
+      "Time_End": 298.68,
+      "Text": " that I just conveniently put in there before it gets called."
+    },
+    {
+      "Time_Start": 298.68,
+      "Time_End": 300.68,
+      "Text": " This all totally applies to Win32, absolutely."
+    },
+    {
+      "Time_Start": 300.68,
+      "Time_End": 304.92,
+      "Text": " Oh, no, the handler for it is on the stack."
+    },
+    {
+      "Time_Start": 304.92,
+      "Time_End": 305.92,
+      "Text": " You're right."
+    },
+    {
+      "Time_Start": 305.92,
+      "Time_End": 306.92,
+      "Text": " It is."
+    },
+    {
+      "Time_Start": 306.92,
+      "Time_End": 307.92,
+      "Text": " FS 0, offset 0."
+    },
+    {
+      "Time_Start": 307.92,
+      "Time_End": 311.12,
+      "Text": " From FS is where the exception handler structure is called, but the previous exception handler"
+    },
+    {
+      "Time_Start": 311.12,
+      "Time_End": 313.32,
+      "Text": " is right there on the stack."
+    },
+    {
+      "Time_Start": 313.32,
+      "Time_End": 314.76,
+      "Text": " There's code which explains that."
+    },
+    {
+      "Time_Start": 314.76,
+      "Time_End": 319.66,
+      "Text": " If you want to come up after I get done talking, I can give all that to you."
+    },
+    {
+      "Time_Start": 319.66,
+      "Time_End": 322.04,
+      "Text": " So recoverable exception is a possible thing that can happen."
+    },
+    {
+      "Time_Start": 322.04,
+      "Time_End": 325.28000000000003,
+      "Text": " Of course, if we're successful, we'll get mobile code onto the system."
+    },
+    {
+      "Time_Start": 325.28000000000003,
+      "Time_End": 326.8,
+      "Text": " Mobile code obviously is very, very deadly."
+    },
+    {
+      "Time_Start": 326.92,
+      "Time_End": 329.66,
+      "Text": " It can do a number of things."
+    },
+    {
+      "Time_Start": 329.66,
+      "Time_End": 333.96000000000004,
+      "Text": " You know, you're all familiar with viruses, and if you were around in the early scene,"
+    },
+    {
+      "Time_Start": 333.96000000000004,
+      "Time_End": 335.64,
+      "Text": " you saw lots of really cool stuff."
+    },
+    {
+      "Time_Start": 335.64,
+      "Time_End": 337.88,
+      "Text": " Viruses were doing all kinds of neat things back in the day."
+    },
+    {
+      "Time_Start": 337.88,
+      "Time_End": 339.24,
+      "Text": " This all can be done today."
+    },
+    {
+      "Time_Start": 339.24,
+      "Time_End": 343.0,
+      "Text": " There's no reason that, you know, you have to limit yourself."
+    },
+    {
+      "Time_Start": 343.0,
+      "Time_End": 346.42,
+      "Text": " Obviously reading and writing files on the system is another possibility, and of course"
+    },
+    {
+      "Time_Start": 346.42,
+      "Time_End": 353.6,
+      "Text": " it's done all sorts of tech."
+    },
+    {
+      "Time_Start": 353.6,
+      "Time_End": 357.92,
+      "Text": " I'm sorry I'm going so fast, but I've got to get through these slides."
+    },
+    {
+      "Time_Start": 357.92,
+      "Time_End": 359.52000000000004,
+      "Text": " Exploits can obviously be grouped."
+    },
+    {
+      "Time_Start": 359.52000000000004,
+      "Time_End": 361.48,
+      "Text": " There's certain bugs that keep coming back."
+    },
+    {
+      "Time_Start": 361.48,
+      "Time_End": 365.72,
+      "Text": " You know, if you go through all the lists, 8LGM, bug track, and you go through them all"
+    },
+    {
+      "Time_Start": 365.72,
+      "Time_End": 369.52000000000004,
+      "Text": " and classify the bugs, you're going to see, you know, certain groups of them."
+    },
+    {
+      "Time_Start": 369.52000000000004,
+      "Time_End": 373.6,
+      "Text": " This book actually covers chapter by chapter each one of these subjects."
+    },
+    {
+      "Time_Start": 373.6,
+      "Time_End": 380.20000000000005,
+      "Text": " Like improper filtering, content-based attacks, bounds, overflows, impersonation, bad authentication,"
+    },
+    {
+      "Time_Start": 380.8,
+      "Time_End": 383.0,
+      "Text": " which they call encryption, certain things like that."
+    },
+    {
+      "Time_Start": 383.0,
+      "Time_End": 386.84,
+      "Text": " In other words, we just need better testing on the software."
+    },
+    {
+      "Time_Start": 386.84,
+      "Time_End": 390.84,
+      "Text": " So what I was going to get to with this military missile thing, your attack payload is not"
+    },
+    {
+      "Time_Start": 390.84,
+      "Time_End": 392.08,
+      "Text": " the same as your entry point."
+    },
+    {
+      "Time_Start": 392.08,
+      "Time_End": 399.32,
+      "Text": " Let's say you have a given bug on a given version of exchange on a given service pack."
+    },
+    {
+      "Time_Start": 399.32,
+      "Time_End": 402.48,
+      "Text": " That's going to all dictate how your injection vector looks, and when I say injection vector,"
+    },
+    {
+      "Time_Start": 402.48,
+      "Time_End": 406.84,
+      "Text": " I mean the code that gets the instruction pointer owned by you."
+    },
+    {
+      "Time_Start": 406.84,
+      "Time_End": 410.03999999999996,
+      "Text": " Once you have that, however, the payload can be anything it wants."
+    },
+    {
+      "Time_Start": 410.04,
+      "Time_End": 414.44,
+      "Text": " So what you can have is a situation where you've got, like, a group of goons over here"
+    },
+    {
+      "Time_Start": 414.44,
+      "Time_End": 417.76000000000005,
+      "Text": " all writing injection vectors for all these qualified hosts."
+    },
+    {
+      "Time_Start": 417.76000000000005,
+      "Time_End": 423.40000000000003,
+      "Text": " I have 335 different buffer overflows in this collection over here, and it applies to these"
+    },
+    {
+      "Time_Start": 423.40000000000003,
+      "Time_End": 428.92,
+      "Text": " 2,048 machines, and I send out my scanner crew, and they scan out and find, like, 27"
+    },
+    {
+      "Time_Start": 428.92,
+      "Time_End": 433.12,
+      "Text": " eligible hosts on this network, and then I go over here, my other group of goons is all"
+    },
+    {
+      "Time_Start": 433.12,
+      "Time_End": 436.76,
+      "Text": " writing the payloads, and I can then select from the payloads that I want to use and deploy"
+    },
+    {
+      "Time_Start": 436.76,
+      "Time_End": 437.76,
+      "Text": " into their network."
+    },
+    {
+      "Time_Start": 437.76,
+      "Time_End": 441.64,
+      "Text": " Maybe I have a payload that shoots out ICMP redirects so I can screw with their switch."
+    },
+    {
+      "Time_Start": 441.64,
+      "Time_End": 445.28,
+      "Text": " Maybe I have another one that does an ARP spoof across the network and floods their"
+    },
+    {
+      "Time_Start": 445.28,
+      "Time_End": 446.28,
+      "Text": " entire subnet."
+    },
+    {
+      "Time_Start": 446.28,
+      "Time_End": 448.92,
+      "Text": " Maybe I have another one that DOSs their router."
+    },
+    {
+      "Time_Start": 448.92,
+      "Time_End": 452.28,
+      "Text": " So this is like missile versus warhead technology."
+    },
+    {
+      "Time_Start": 452.28,
+      "Time_End": 460.28,
+      "Text": " All of the governments of the world are investing time and money into doing this."
+    },
+    {
+      "Time_Start": 460.28,
+      "Time_End": 461.88,
+      "Text": " So I just talked about this."
+    },
+    {
+      "Time_Start": 461.88,
+      "Time_End": 465.4,
+      "Text": " Obviously there's a difference here, and you can keep them separate and match them as you"
+    },
+    {
+      "Time_Start": 465.40000000000003,
+      "Time_End": 468.40000000000003,
+      "Text": " need."
+    },
+    {
+      "Time_Start": 468.40000000000003,
+      "Time_End": 472.72,
+      "Text": " Yes, injection vectors."
+    },
+    {
+      "Time_Start": 472.72,
+      "Time_End": 473.72,
+      "Text": " They're target dependent."
+    },
+    {
+      "Time_Start": 473.72,
+      "Time_End": 477.72,
+      "Text": " What this means is that if you have a different service pack, for instance, you might have"
+    },
+    {
+      "Time_Start": 477.72,
+      "Time_End": 481.48,
+      "Text": " to have a completely different injection vector, but the payload can be the same."
+    },
+    {
+      "Time_Start": 481.48,
+      "Time_End": 485.68000000000006,
+      "Text": " So injection vectors are tied explicitly with the environment you're about to exploit."
+    },
+    {
+      "Time_Start": 485.68000000000006,
+      "Time_End": 490.48,
+      "Text": " A different version of exchange, a different version of IIS."
+    },
+    {
+      "Time_Start": 490.48,
+      "Time_End": 491.56000000000006,
+      "Text": " One service pack is different."
+    },
+    {
+      "Time_Start": 491.56000000000006,
+      "Time_End": 494.88000000000005,
+      "Text": " Maybe a different version of kernel 32 DLL in the system makes all the difference, and"
+    },
+    {
+      "Time_Start": 494.88,
+      "Time_End": 496.4,
+      "Text": " now I have to have a new injection vector."
+    },
+    {
+      "Time_Start": 496.4,
+      "Time_End": 498.8,
+      "Text": " But the payload all the time remains the same."
+    },
+    {
+      "Time_Start": 498.8,
+      "Time_End": 505.56,
+      "Text": " So it's very OS dependent, target dependent, and, oh, yes, encoding dependent, that's very"
+    },
+    {
+      "Time_Start": 505.56,
+      "Time_End": 506.56,
+      "Text": " important as well."
+    },
+    {
+      "Time_Start": 506.56,
+      "Time_End": 512.12,
+      "Text": " If I'm sending the exploit through anything that does content filtering, a URL request,"
+    },
+    {
+      "Time_Start": 512.12,
+      "Time_End": 516.48,
+      "Text": " for instance, only that has certain valid characters, MIME encoding as well, then that's"
+    },
+    {
+      "Time_Start": 516.48,
+      "Time_End": 521.92,
+      "Text": " going to limit the number of characters, character set, that is, that I can use."
+    },
+    {
+      "Time_Start": 521.9599999999999,
+      "Time_End": 525.24,
+      "Text": " Well, when I'm thinking about character set, what I'm really thinking about is the number"
+    },
+    {
+      "Time_Start": 525.24,
+      "Time_End": 528.92,
+      "Text": " of assembly language instructions which are available to me, right?"
+    },
+    {
+      "Time_Start": 528.92,
+      "Time_End": 535.68,
+      "Text": " So I might have a limited set of instructions that I can use for my injection vector."
+    },
+    {
+      "Time_Start": 535.68,
+      "Time_End": 539.8399999999999,
+      "Text": " The payload is independent of the injection vector in most cases."
+    },
+    {
+      "Time_Start": 539.8399999999999,
+      "Time_End": 542.64,
+      "Text": " It'll still depend on the architecture of the machine, of course."
+    },
+    {
+      "Time_Start": 542.64,
+      "Time_End": 544.06,
+      "Text": " You're going to have an Intel payload."
+    },
+    {
+      "Time_Start": 544.06,
+      "Time_End": 546.16,
+      "Text": " It may not work on a Spark machine."
+    },
+    {
+      "Time_Start": 546.16,
+      "Time_End": 550.64,
+      "Text": " However, I can tell you that there are payloads that will work on multiple hardware platforms,"
+    },
+    {
+      "Time_Start": 550.64,
+      "Time_End": 555.68,
+      "Text": " and that's a pretty elite trick."
+    },
+    {
+      "Time_Start": 555.68,
+      "Time_End": 556.68,
+      "Text": " Think of it like a virus."
+    },
+    {
+      "Time_Start": 556.68,
+      "Time_End": 557.68,
+      "Text": " Think payload."
+    },
+    {
+      "Time_Start": 557.68,
+      "Time_End": 558.68,
+      "Text": " Think virus."
+    },
+    {
+      "Time_Start": 558.68,
+      "Time_End": 559.68,
+      "Text": " It's almost the same thing."
+    },
+    {
+      "Time_Start": 559.68,
+      "Time_End": 562.92,
+      "Text": " Once it's established, it can spread by any means."
+    },
+    {
+      "Time_Start": 562.92,
+      "Time_End": 566.1999999999999,
+      "Text": " Trust relationships, obviously, are the easiest, and then another one is scanning for more"
+    },
+    {
+      "Time_Start": 566.1999999999999,
+      "Time_End": 567.1999999999999,
+      "Text": " bugs."
+    },
+    {
+      "Time_Start": 567.1999999999999,
+      "Time_End": 572.04,
+      "Text": " There are worms on the Internet now that are crawling all over the place using buffer overflows."
+    },
+    {
+      "Time_Start": 572.04,
+      "Time_End": 574.96,
+      "Text": " We don't hear about it very often, but if you read cert, you'll see that ADM worm has"
+    },
+    {
+      "Time_Start": 574.96,
+      "Time_End": 579.12,
+      "Text": " been rooting machines for almost a year now, and it's amazing, the same bind vulnerability"
+    },
+    {
+      "Time_Start": 579.12,
+      "Time_End": 581.88,
+      "Text": " can spin around forever, and, you know, you see that."
+    },
+    {
+      "Time_Start": 581.88,
+      "Time_End": 583.5600000000001,
+      "Text": " So there is evidence of this occurring."
+    },
+    {
+      "Time_Start": 583.5600000000001,
+      "Time_End": 589.52,
+      "Text": " The payload, these are some of the things you can do, denial of service, obviously."
+    },
+    {
+      "Time_Start": 589.52,
+      "Time_End": 594.28,
+      "Text": " I could use it as a machine I exploit, use it as a launching point for distributed \u2011\u2011"
+    },
+    {
+      "Time_Start": 594.28,
+      "Time_End": 598.48,
+      "Text": " I could get several of them, perhaps, and do a DDoS attack."
+    },
+    {
+      "Time_Start": 598.48,
+      "Time_End": 602.5600000000001,
+      "Text": " Remote shell is one you probably have all seen at some point or another."
+    },
+    {
+      "Time_Start": 602.5600000000001,
+      "Time_End": 605.72,
+      "Text": " The remote shell does not have to be Telnet\u2011like or Netcat\u2011like."
+    },
+    {
+      "Time_Start": 605.72,
+      "Time_End": 608.0,
+      "Text": " It can also just be some sort of covert channel."
+    },
+    {
+      "Time_Start": 608.0,
+      "Time_End": 609.28,
+      "Text": " I could put some code on the system."
+    },
+    {
+      "Time_Start": 609.28,
+      "Time_End": 614.08,
+      "Text": " For instance, it looks at offset 48 in any packet coming through the system and looks"
+    },
+    {
+      "Time_Start": 614.08,
+      "Time_End": 617.32,
+      "Text": " there for a special character, and if it sees that, it interprets the next five characters"
+    },
+    {
+      "Time_Start": 617.32,
+      "Time_End": 618.32,
+      "Text": " as some command."
+    },
+    {
+      "Time_Start": 618.32,
+      "Time_End": 619.32,
+      "Text": " It's a covert channel."
+    },
+    {
+      "Time_Start": 619.32,
+      "Time_End": 622.4,
+      "Text": " I could embed those in ICMP packets."
+    },
+    {
+      "Time_Start": 622.4,
+      "Time_End": 625.52,
+      "Text": " If I don't have access to kernel mode, in other words, I can't promiscuously sniff under"
+    },
+    {
+      "Time_Start": 625.52,
+      "Time_End": 627.6,
+      "Text": " NT, I could just patch IIS."
+    },
+    {
+      "Time_Start": 627.6,
+      "Time_End": 630.56,
+      "Text": " I could go into the IIS process space."
+    },
+    {
+      "Time_Start": 630.56,
+      "Time_End": 634.42,
+      "Text": " Let's say that's the one that I exploited, and I could just go and find where it does"
+    },
+    {
+      "Time_Start": 634.42,
+      "Time_End": 637.76,
+      "Text": " all the URL moniker, you know, where it parses all the URLs."
+    },
+    {
+      "Time_Start": 638.52,
+      "Time_End": 642.48,
+      "Text": " I could just use that as a covert channel and send all my commands through a URL, and"
+    },
+    {
+      "Time_Start": 642.48,
+      "Time_End": 644.84,
+      "Text": " nobody would be none the wiser."
+    },
+    {
+      "Time_Start": 644.84,
+      "Time_End": 652.28,
+      "Text": " Obviously the worms are the most dangerous of all, and rootkit is obviously for stealth."
+    },
+    {
+      "Time_Start": 652.28,
+      "Time_End": 655.64,
+      "Text": " You can see that an injector will only work on a certain number of qualified hosts."
+    },
+    {
+      "Time_Start": 655.64,
+      "Time_End": 661.24,
+      "Text": " I think when Barnaby Jack and EI wrote the IIS injector back last year about this time,"
+    },
+    {
+      "Time_Start": 661.24,
+      "Time_End": 664.68,
+      "Text": " actually, it worked about on 20% of the web hosts currently online."
+    },
+    {
+      "Time_Start": 664.6800000000001,
+      "Time_End": 669.8800000000001,
+      "Text": " That was enough to cause insane amounts of damage to the e-commerce world."
+    },
+    {
+      "Time_Start": 669.8800000000001,
+      "Time_End": 670.8800000000001,
+      "Text": " So it's real."
+    },
+    {
+      "Time_Start": 670.8800000000001,
+      "Time_End": 673.0000000000001,
+      "Text": " When you find a buffer overflow, it means something."
+    },
+    {
+      "Time_Start": 673.0000000000001,
+      "Time_End": 677.36,
+      "Text": " There are plenty of them out there that can root tons and tons of machines, a lot of them"
+    },
+    {
+      "Time_Start": 677.36,
+      "Time_End": 678.9200000000001,
+      "Text": " that nobody knows about."
+    },
+    {
+      "Time_Start": 678.9200000000001,
+      "Time_End": 679.9200000000001,
+      "Text": " Okay."
+    },
+    {
+      "Time_Start": 679.9200000000001,
+      "Time_End": 684.9200000000001,
+      "Text": " Obviously there's two types of injection."
+    },
+    {
+      "Time_Start": 684.9200000000001,
+      "Time_End": 687.1600000000001,
+      "Text": " The first type is content-based."
+    },
+    {
+      "Time_Start": 687.1600000000001,
+      "Time_End": 690.44,
+      "Text": " What that means is I'm sending some content that's being interpreted by an application"
+    },
+    {
+      "Time_Start": 690.44,
+      "Time_End": 694.32,
+      "Text": " server of some kind, and I'm going to bend its arm and say, hey, dude, I want you to"
+    },
+    {
+      "Time_Start": 694.96,
+      "Time_End": 695.96,
+      "Text": " do this over here."
+    },
+    {
+      "Time_Start": 695.96,
+      "Time_End": 696.96,
+      "Text": " The process remains in control."
+    },
+    {
+      "Time_Start": 696.96,
+      "Time_End": 699.6,
+      "Text": " It's doing something it shouldn't do, but it remains in control."
+    },
+    {
+      "Time_Start": 699.6,
+      "Time_End": 701.1600000000001,
+      "Text": " That's the content-based attack."
+    },
+    {
+      "Time_Start": 701.1600000000001,
+      "Time_End": 704.72,
+      "Text": " That's doing things like what Rainforest Puppy did with the RDS exploit."
+    },
+    {
+      "Time_Start": 704.72,
+      "Time_End": 705.84,
+      "Text": " Then there's buffer overflow."
+    },
+    {
+      "Time_Start": 705.84,
+      "Time_End": 709.6800000000001,
+      "Text": " This is different significantly because the process is no longer in control."
+    },
+    {
+      "Time_Start": 709.6800000000001,
+      "Time_End": 714.24,
+      "Text": " I have removed that process from the ability to control where it's going."
+    },
+    {
+      "Time_Start": 714.24,
+      "Time_End": 719.24,
+      "Text": " I've changed the instruction pointer on the chip, and I'm going to make it point to my"
+    },
+    {
+      "Time_Start": 719.24,
+      "Time_End": 722.5600000000001,
+      "Text": " own code."
+    },
+    {
+      "Time_Start": 722.9200000000001,
+      "Time_End": 728.36,
+      "Text": " Content-based stuff, trust-based spreading could be like any of the stuff you've known"
+    },
+    {
+      "Time_Start": 728.36,
+      "Time_End": 733.5200000000001,
+      "Text": " for years with the virus, you know, underground, you know, boot floppies, things like that."
+    },
+    {
+      "Time_Start": 733.5200000000001,
+      "Time_End": 735.48,
+      "Text": " Let me go through here."
+    },
+    {
+      "Time_Start": 735.48,
+      "Time_End": 740.5200000000001,
+      "Text": " Melissa is obviously another good example of a trust-based exploitation."
+    },
+    {
+      "Time_Start": 740.5200000000001,
+      "Time_End": 746.5600000000001,
+      "Text": " You know, I'm opening mail from somebody I thought, you know, I knew."
+    },
+    {
+      "Time_Start": 746.5600000000001,
+      "Time_End": 749.8800000000001,
+      "Text": " I have a couple slides talking about the government's stuff."
+    },
+    {
+      "Time_Start": 749.88,
+      "Time_End": 754.24,
+      "Text": " There's a couple declassified reports originally were classified, but they were released as"
+    },
+    {
+      "Time_Start": 754.24,
+      "Time_End": 755.24,
+      "Text": " early as 95."
+    },
+    {
+      "Time_Start": 755.24,
+      "Time_End": 759.56,
+      "Text": " They had evidence of Cuba doing virus teams."
+    },
+    {
+      "Time_Start": 759.56,
+      "Time_End": 763.12,
+      "Text": " You can bet your ass that today they're still doing it, and they're using buffer overflows."
+    },
+    {
+      "Time_Start": 763.12,
+      "Time_End": 767.2,
+      "Text": " The Russian KGB as early as 91 was involved in this type of stuff."
+    },
+    {
+      "Time_Start": 767.2,
+      "Time_End": 771.2,
+      "Text": " And then E&Y reports, I had a couple that came up just talking about virus and mobile"
+    },
+    {
+      "Time_Start": 771.2,
+      "Time_End": 772.2,
+      "Text": " code."
+    },
+    {
+      "Time_Start": 772.2,
+      "Time_End": 776.44,
+      "Text": " Over 50% of the people they interviewed reported this as a problem."
+    },
+    {
+      "Time_Start": 776.44,
+      "Time_End": 778.68,
+      "Text": " The U.K., same deal."
+    },
+    {
+      "Time_Start": 778.6800000000001,
+      "Time_End": 782.44,
+      "Text": " You know, almost $8,000 per incident on average to repair these things."
+    },
+    {
+      "Time_Start": 782.44,
+      "Time_End": 783.44,
+      "Text": " So it's very expensive."
+    },
+    {
+      "Time_Start": 783.44,
+      "Time_End": 787.5600000000001,
+      "Text": " Does everybody remember the Morris worm, or at least heard of it?"
+    },
+    {
+      "Time_Start": 787.5600000000001,
+      "Time_End": 789.32,
+      "Text": " Yeah, real famous."
+    },
+    {
+      "Time_Start": 789.32,
+      "Time_End": 790.32,
+      "Text": " It shut down most of the Internet."
+    },
+    {
+      "Time_Start": 790.32,
+      "Time_End": 793.48,
+      "Text": " Of course, most of the Internet back then wasn't very big."
+    },
+    {
+      "Time_Start": 793.48,
+      "Time_End": 795.08,
+      "Text": " So today we have the same problem."
+    },
+    {
+      "Time_Start": 795.08,
+      "Time_End": 799.5200000000001,
+      "Text": " See, the Morris worm worked really well because everything on the systems that it was attacking"
+    },
+    {
+      "Time_Start": 799.5200000000001,
+      "Time_End": 800.5200000000001,
+      "Text": " was all the same."
+    },
+    {
+      "Time_Start": 800.5200000000001,
+      "Time_End": 801.5200000000001,
+      "Text": " It was like a monoculture."
+    },
+    {
+      "Time_Start": 801.5200000000001,
+      "Time_End": 806.32,
+      "Text": " And I believe it was a single buffer overflow in Finger D and some send mail exploit."
+    },
+    {
+      "Time_Start": 806.48,
+      "Time_End": 810.2800000000001,
+      "Text": " They used both of them, if I remember correctly."
+    },
+    {
+      "Time_Start": 810.2800000000001,
+      "Time_End": 814.48,
+      "Text": " And it spread rapidly, and it took over most of the systems because there was this monoculture."
+    },
+    {
+      "Time_Start": 814.48,
+      "Time_End": 816.6,
+      "Text": " Well, today we still have that monoculture."
+    },
+    {
+      "Time_Start": 816.6,
+      "Time_End": 818.8000000000001,
+      "Text": " We have that Wintel platform out there."
+    },
+    {
+      "Time_Start": 818.8000000000001,
+      "Time_End": 821.6,
+      "Text": " And then we also have the Linux and Apache platform."
+    },
+    {
+      "Time_Start": 821.6,
+      "Time_End": 824.0400000000001,
+      "Text": " Together those two things make up most of the web server market."
+    },
+    {
+      "Time_Start": 824.0400000000001,
+      "Time_End": 827.5600000000001,
+      "Text": " And that's pretty amazing to think that if I had one really good buffer overflow, I could"
+    },
+    {
+      "Time_Start": 827.5600000000001,
+      "Time_End": 831.72,
+      "Text": " take out half of the web server market out there."
+    },
+    {
+      "Time_Start": 832.72,
+      "Time_End": 835.4,
+      "Text": " In 89, there was another worm."
+    },
+    {
+      "Time_Start": 835.4,
+      "Time_End": 838.6,
+      "Text": " I just did this just to show that there are worms and they've been reported."
+    },
+    {
+      "Time_Start": 838.6,
+      "Time_End": 840.0,
+      "Text": " It was called Wank."
+    },
+    {
+      "Time_Start": 840.0,
+      "Time_End": 847.6,
+      "Text": " It hit NASA, and it spread into HEPNET, which is a high energy physics network by the U.S."
+    },
+    {
+      "Time_Start": 847.6,
+      "Time_End": 848.6,
+      "Text": " DOE."
+    },
+    {
+      "Time_Start": 848.6,
+      "Time_End": 851.12,
+      "Text": " And it took two weeks to clean all those systems up."
+    },
+    {
+      "Time_Start": 851.12,
+      "Time_End": 852.8000000000001,
+      "Text": " So there's evidence of that."
+    },
+    {
+      "Time_Start": 852.8000000000001,
+      "Time_End": 860.32,
+      "Text": " Okay, so let's get into buffer overflows a little more."
+    },
+    {
+      "Time_Start": 860.32,
+      "Time_End": 862.5200000000001,
+      "Text": " There are a couple ways to do it."
+    },
+    {
+      "Time_Start": 862.5200000000001,
+      "Time_End": 865.96,
+      "Text": " Most common is a stack overflow, but I'm sure you've all heard of a heap overflow as well."
+    },
+    {
+      "Time_Start": 865.96,
+      "Time_End": 868.32,
+      "Text": " I'm going to talk about both of those."
+    },
+    {
+      "Time_Start": 868.32,
+      "Time_End": 872.7600000000001,
+      "Text": " The goal of a buffer overflow is to own the instruction pointer."
+    },
+    {
+      "Time_Start": 872.7600000000001,
+      "Time_End": 876.0,
+      "Text": " That is the goal."
+    },
+    {
+      "Time_Start": 876.0,
+      "Time_End": 878.4000000000001,
+      "Text": " So I'm going to get it to point to something that I control."
+    },
+    {
+      "Time_Start": 878.4000000000001,
+      "Time_End": 882.36,
+      "Text": " Now, how many of you here think that the only place you could put instruction code is on"
+    },
+    {
+      "Time_Start": 882.36,
+      "Time_End": 885.2,
+      "Text": " the stack itself?"
+    },
+    {
+      "Time_Start": 885.2,
+      "Time_End": 887.2,
+      "Text": " I could put my instruction code anywhere."
+    },
+    {
+      "Time_Start": 887.2,
+      "Time_End": 890.32,
+      "Text": " I could put my instruction code on the heap, on the stack."
+    },
+    {
+      "Time_Start": 890.32,
+      "Time_End": 894.84,
+      "Text": " Any transaction that's recently taken place in any form on the system is probably going"
+    },
+    {
+      "Time_Start": 894.84,
+      "Time_End": 897.5200000000001,
+      "Text": " to be floating around in memory somewhere."
+    },
+    {
+      "Time_Start": 897.5200000000001,
+      "Time_End": 899.48,
+      "Text": " That's usually going to be on the heap in many cases."
+    },
+    {
+      "Time_Start": 899.48,
+      "Time_End": 902.84,
+      "Text": " So there we have a lot of room to play if we can get at least some of our code into"
+    },
+    {
+      "Time_Start": 902.84,
+      "Time_End": 903.96,
+      "Text": " the system anywhere."
+    },
+    {
+      "Time_Start": 903.96,
+      "Time_End": 908.6800000000001,
+      "Text": " The stack portion of the overflow may just be enough information to get us to jump to"
+    },
+    {
+      "Time_Start": 908.6800000000001,
+      "Time_End": 913.88,
+      "Text": " the other place in the code where we have the rest of our goodies waiting to be run."
+    },
+    {
+      "Time_Start": 913.88,
+      "Time_End": 918.84,
+      "Text": " The challenges with all of this, just injecting and owning EIP, is there's obviously size"
+    },
+    {
+      "Time_Start": 918.84,
+      "Time_End": 921.04,
+      "Text": " restrictions many times."
+    },
+    {
+      "Time_Start": 921.04,
+      "Time_End": 924.56,
+      "Text": " And depending on those size restrictions, we might have to make some very tight code."
+    },
+    {
+      "Time_Start": 924.56,
+      "Time_End": 930.08,
+      "Text": " However, I can tell you it's amazing what you can do with 100 bytes."
+    },
+    {
+      "Time_Start": 930.08,
+      "Time_End": 934.56,
+      "Text": " Assembly language is very interesting in that you can do a lot with a few bytes."
+    },
+    {
+      "Time_Start": 934.56,
+      "Time_End": 937.08,
+      "Text": " Two bytes is a very important instruction."
+    },
+    {
+      "Time_Start": 937.08,
+      "Time_End": 942.2,
+      "Text": " Well, if I had every instruction with only two bytes long and I had 100 bytes, that's"
+    },
+    {
+      "Time_Start": 942.2,
+      "Time_End": 943.2,
+      "Text": " 50 instructions."
+    },
+    {
+      "Time_Start": 943.2,
+      "Time_End": 947.72,
+      "Text": " Believe me, I can do a lot with 50 instructions."
+    },
+    {
+      "Time_Start": 947.72,
+      "Time_End": 948.72,
+      "Text": " Somebody asking a question?"
+    },
+    {
+      "Time_Start": 948.72,
+      "Time_End": 949.72,
+      "Text": " Okay."
+    },
+    {
+      "Time_Start": 949.72,
+      "Time_End": 954.24,
+      "Text": " Obviously I'm going to be sending a payload as well."
+    },
+    {
+      "Time_Start": 954.24,
+      "Time_End": 959.2800000000001,
+      "Text": " If the injector part and the payload part are in the same buffer, for example, all on"
+    },
+    {
+      "Time_Start": 959.2800000000001,
+      "Time_End": 964.2,
+      "Text": " the stack together, which is typical in most of these that you see, we have to make sure"
+    },
+    {
+      "Time_Start": 964.2,
+      "Time_End": 965.6,
+      "Text": " that they don't step on each other."
+    },
+    {
+      "Time_Start": 965.6,
+      "Time_End": 967.6,
+      "Text": " So I'm going to talk about that a little bit."
+    },
+    {
+      "Time_Start": 967.6,
+      "Time_End": 970.1600000000001,
+      "Text": " Then there's this whole thing called offsets."
+    },
+    {
+      "Time_Start": 970.16,
+      "Time_End": 973.64,
+      "Text": " You typically see these under UNIX systems and not so much under NT."
+    },
+    {
+      "Time_Start": 973.64,
+      "Time_End": 976.4,
+      "Text": " When you don't know where you are in memory, you don't know where your code ended up, so"
+    },
+    {
+      "Time_Start": 976.4,
+      "Time_End": 977.7199999999999,
+      "Text": " you have to guess."
+    },
+    {
+      "Time_Start": 977.7199999999999,
+      "Time_End": 979.24,
+      "Text": " So I'm going to talk about that a little bit."
+    },
+    {
+      "Time_Start": 979.24,
+      "Time_End": 983.3199999999999,
+      "Text": " And then obviously you probably all know the issue with null characters."
+    },
+    {
+      "Time_Start": 983.3199999999999,
+      "Time_End": 986.64,
+      "Text": " If you're doing a stir copy and there's a null in there, the stir copy stops at the"
+    },
+    {
+      "Time_Start": 986.64,
+      "Time_End": 987.64,
+      "Text": " null."
+    },
+    {
+      "Time_Start": 987.64,
+      "Time_End": 990.7199999999999,
+      "Text": " So obviously we can't have a null character just floating around in the middle of our"
+    },
+    {
+      "Time_Start": 990.7199999999999,
+      "Time_End": 993.56,
+      "Text": " payload or we're going to have half a payload when we get done."
+    },
+    {
+      "Time_Start": 993.56,
+      "Time_End": 995.0799999999999,
+      "Text": " So there's a couple of encoding tricks."
+    },
+    {
+      "Time_Start": 995.0799999999999,
+      "Time_End": 996.56,
+      "Text": " You can go a little further with this."
+    },
+    {
+      "Time_Start": 996.56,
+      "Time_End": 998.9599999999999,
+      "Text": " I'm just going to talk about null characters today."
+    },
+    {
+      "Time_Start": 999.0,
+      "Time_End": 1001.2,
+      "Text": " In this book is some information on some other stuff."
+    },
+    {
+      "Time_Start": 1001.2,
+      "Time_End": 1005.6800000000001,
+      "Text": " If you have other types of encoding, for instance, URL or MIME, there are certain characters"
+    },
+    {
+      "Time_Start": 1005.6800000000001,
+      "Time_End": 1006.84,
+      "Text": " you cannot use."
+    },
+    {
+      "Time_Start": 1006.84,
+      "Time_End": 1010.0400000000001,
+      "Text": " So there's just some tricks for getting around this problem, and they're actually explained"
+    },
+    {
+      "Time_Start": 1010.0400000000001,
+      "Time_End": 1012.1600000000001,
+      "Text": " in Chapter 8 in this book here."
+    },
+    {
+      "Time_Start": 1012.1600000000001,
+      "Time_End": 1016.72,
+      "Text": " Okay, so, oh, Ryan, hi."
+    },
+    {
+      "Time_Start": 1016.72,
+      "Time_End": 1017.72,
+      "Text": " Thank you very much."
+    },
+    {
+      "Time_Start": 1017.72,
+      "Time_End": 1021.5600000000001,
+      "Text": " I'm going to ask a couple questions, I guess, sometime, and I'll try to think of good ones."
+    },
+    {
+      "Time_Start": 1021.5600000000001,
+      "Time_End": 1026.6000000000001,
+      "Text": " And then if you get the question right, I'll give you a book."
+    },
+    {
+      "Time_Start": 1026.6000000000001,
+      "Time_End": 1028.32,
+      "Text": " So this one, someone let me borrow."
+    },
+    {
+      "Time_Start": 1028.6799999999998,
+      "Time_End": 1031.6799999999998,
+      "Text": " I'm hiding it over here."
+    },
+    {
+      "Time_Start": 1031.6799999999998,
+      "Time_End": 1035.6,
+      "Text": " Okay, so I'm going to go through this."
+    },
+    {
+      "Time_Start": 1035.6,
+      "Time_End": 1037.76,
+      "Text": " I'm going to tell you why Stack Overflow works."
+    },
+    {
+      "Time_Start": 1037.76,
+      "Time_End": 1042.08,
+      "Text": " The stack keeps track of a lot more information than just user-supplied information."
+    },
+    {
+      "Time_Start": 1042.08,
+      "Time_End": 1045.3999999999999,
+      "Text": " It keeps track of what we might call housekeeping data."
+    },
+    {
+      "Time_Start": 1045.3999999999999,
+      "Time_End": 1049.3999999999999,
+      "Text": " And housekeeping data is essentially what we're going to try to overwrite in order to"
+    },
+    {
+      "Time_Start": 1049.3999999999999,
+      "Time_End": 1051.6799999999998,
+      "Text": " own the instruction pointer."
+    },
+    {
+      "Time_Start": 1051.6799999999998,
+      "Time_End": 1053.6799999999998,
+      "Text": " So there's a couple of issues there."
+    },
+    {
+      "Time_Start": 1053.6799999999998,
+      "Time_End": 1057.58,
+      "Text": " Obviously if we're filling a buffer, that buffer should be growing towards our housekeeping"
+    },
+    {
+      "Time_Start": 1057.58,
+      "Time_End": 1062.02,
+      "Text": " data that we want to nuke, right, and we then must overwrite it."
+    },
+    {
+      "Time_Start": 1062.02,
+      "Time_End": 1063.02,
+      "Text": " So I'm going to talk about that."
+    },
+    {
+      "Time_Start": 1063.02,
+      "Time_End": 1068.5,
+      "Text": " When we make a subroutine call on the architecture of any processor, we've got to store the location"
+    },
+    {
+      "Time_Start": 1068.5,
+      "Time_End": 1069.5,
+      "Text": " of where we just were."
+    },
+    {
+      "Time_Start": 1069.5,
+      "Time_End": 1071.6399999999999,
+      "Text": " Otherwise, we won't know how to get back."
+    },
+    {
+      "Time_Start": 1071.6399999999999,
+      "Time_End": 1074.86,
+      "Text": " So typically, we're moving along, we're running, dah, dah, dah, dah, you know, and we're jumping"
+    },
+    {
+      "Time_Start": 1074.86,
+      "Time_End": 1077.46,
+      "Text": " here, jumping there, jumping here, jumping there, jumping there, jumping there, oh, I'm"
+    },
+    {
+      "Time_Start": 1077.46,
+      "Time_End": 1079.02,
+      "Text": " done here, okay, so now I've got to get back."
+    },
+    {
+      "Time_Start": 1079.02,
+      "Time_End": 1081.32,
+      "Text": " I've got to remember how to get back to here, and then I've got to remember how to get back"
+    },
+    {
+      "Time_Start": 1081.32,
+      "Time_End": 1082.6999999999998,
+      "Text": " to here, to here, to here."
+    },
+    {
+      "Time_Start": 1082.6999999999998,
+      "Time_End": 1085.9399999999998,
+      "Text": " So all that information is what the stack is for."
+    },
+    {
+      "Time_Start": 1085.9399999999998,
+      "Time_End": 1087.3,
+      "Text": " It keeps track of all this information."
+    },
+    {
+      "Time_Start": 1088.02,
+      "Time_End": 1090.26,
+      "Text": " So let me do this little animation for you."
+    },
+    {
+      "Time_Start": 1090.26,
+      "Time_End": 1093.34,
+      "Text": " This IP up here, that's the instruction pointer."
+    },
+    {
+      "Time_Start": 1093.34,
+      "Time_End": 1097.3,
+      "Text": " This block right here is actually kind of my little version of the Intel processor."
+    },
+    {
+      "Time_Start": 1097.3,
+      "Time_End": 1101.02,
+      "Text": " It would look different depending on what processor you have, but the concept is the"
+    },
+    {
+      "Time_Start": 1101.02,
+      "Time_End": 1102.7,
+      "Text": " same."
+    },
+    {
+      "Time_Start": 1102.7,
+      "Time_End": 1105.22,
+      "Text": " So the instruction pointer is pointing out into a code page."
+    },
+    {
+      "Time_Start": 1105.22,
+      "Time_End": 1107.18,
+      "Text": " See that says code at the bottom?"
+    },
+    {
+      "Time_Start": 1107.18,
+      "Time_End": 1110.06,
+      "Text": " And that little pink square is supposed to mean there's some code there that's important"
+    },
+    {
+      "Time_Start": 1110.06,
+      "Time_End": 1111.34,
+      "Text": " to us, and we're running."
+    },
+    {
+      "Time_Start": 1111.34,
+      "Time_End": 1113.98,
+      "Text": " Now, let's say that code calls some other subroutine."
+    },
+    {
+      "Time_Start": 1114.02,
+      "Time_End": 1118.98,
+      "Text": " So we have to take the instruction pointer and put it on the stack, okay?"
+    },
+    {
+      "Time_Start": 1118.98,
+      "Time_End": 1123.78,
+      "Text": " Then the stack grows, oh, then the IP, of course, is updated to point to a new location."
+    },
+    {
+      "Time_Start": 1123.78,
+      "Time_End": 1129.1,
+      "Text": " The stack grows up, and that area up in here is going to be used as a temporary scratch"
+    },
+    {
+      "Time_Start": 1129.1,
+      "Time_End": 1132.22,
+      "Text": " pad while this other subroutine does its things."
+    },
+    {
+      "Time_Start": 1132.22,
+      "Time_End": 1136.02,
+      "Text": " All the automatic variables on that subroutine will be stored here on the stack, and that"
+    },
+    {
+      "Time_Start": 1136.02,
+      "Time_End": 1141.6200000000001,
+      "Text": " means, you know, arrays and buffers as well as, like, integers, you know, whatever it's"
+    },
+    {
+      "Time_Start": 1141.6200000000001,
+      "Time_End": 1142.54,
+      "Text": " using."
+    },
+    {
+      "Time_Start": 1142.54,
+      "Time_End": 1148.1,
+      "Text": " So then the stack pointer is updated to point to the top, and we run, and then when we're"
+    },
+    {
+      "Time_Start": 1148.1,
+      "Time_End": 1151.02,
+      "Text": " done, it goes away."
+    },
+    {
+      "Time_Start": 1151.02,
+      "Time_End": 1154.42,
+      "Text": " It's kind of like deallocation, even though it's really just adjusting the stack pointer"
+    },
+    {
+      "Time_Start": 1154.42,
+      "Time_End": 1159.74,
+      "Text": " back to where it was, and the old IP is put back, and we're originally where we were."
+    },
+    {
+      "Time_Start": 1159.74,
+      "Time_End": 1162.54,
+      "Text": " That's the essence of the stack operation here."
+    },
+    {
+      "Time_Start": 1162.54,
+      "Time_End": 1169.18,
+      "Text": " Now, obviously, what we're going to try to do is change this value."
+    },
+    {
+      "Time_Start": 1169.18,
+      "Time_End": 1170.82,
+      "Text": " So the stack overflow works like this."
+    },
+    {
+      "Time_Start": 1170.82,
+      "Time_End": 1174.78,
+      "Text": " Stores our housekeeping data, or return pointer, whatever you want to call it."
+    },
+    {
+      "Time_Start": 1174.78,
+      "Time_End": 1175.78,
+      "Text": " Stack grows."
+    },
+    {
+      "Time_Start": 1175.78,
+      "Time_End": 1179.6599999999999,
+      "Text": " Now, let's say it's going to fill a buffer, like a store copy, let's say."
+    },
+    {
+      "Time_Start": 1179.6599999999999,
+      "Time_End": 1183.74,
+      "Text": " The buffers grow down towards the information, towards the housekeeping data."
+    },
+    {
+      "Time_Start": 1183.74,
+      "Time_End": 1186.1799999999998,
+      "Text": " So it grows, see, right over the top."
+    },
+    {
+      "Time_Start": 1186.1799999999998,
+      "Time_End": 1187.58,
+      "Text": " That's how it works."
+    },
+    {
+      "Time_Start": 1187.58,
+      "Time_End": 1190.26,
+      "Text": " Now, the problem with a null character would be this."
+    },
+    {
+      "Time_Start": 1190.26,
+      "Time_End": 1192.58,
+      "Text": " Same exact slide, pretty much."
+    },
+    {
+      "Time_Start": 1192.58,
+      "Time_End": 1193.58,
+      "Text": " Store the housekeeping data."
+    },
+    {
+      "Time_Start": 1193.58,
+      "Time_End": 1194.58,
+      "Text": " It grows up."
+    },
+    {
+      "Time_Start": 1194.58,
+      "Time_End": 1195.58,
+      "Text": " We grow down."
+    },
+    {
+      "Time_Start": 1195.58,
+      "Time_End": 1197.74,
+      "Text": " When we hit a null character, guess what?"
+    },
+    {
+      "Time_Start": 1197.74,
+      "Time_End": 1198.82,
+      "Text": " We stop."
+    },
+    {
+      "Time_Start": 1198.82,
+      "Time_End": 1203.3,
+      "Text": " So essentially, we can't have a null character in our payload, and that's the problem."
+    },
+    {
+      "Time_Start": 1203.3,
+      "Time_End": 1208.1,
+      "Text": " Now I'm going to show you a trick, which will allow you to have a null character in one"
+    },
+    {
+      "Time_Start": 1208.1,
+      "Time_End": 1210.1,
+      "Text": " particular instance."
+    },
+    {
+      "Time_Start": 1210.1,
+      "Time_End": 1214.46,
+      "Text": " But, okay, so obviously, if we're going to have, or we're going to overwrite the housekeeping"
+    },
+    {
+      "Time_Start": 1214.46,
+      "Time_End": 1217.4199999999998,
+      "Text": " data, we need to be able to make sure the null is past that, right?"
+    },
+    {
+      "Time_Start": 1217.4199999999998,
+      "Time_End": 1218.4199999999998,
+      "Text": " Okay."
+    },
+    {
+      "Time_Start": 1218.4199999999998,
+      "Time_End": 1219.4199999999998,
+      "Text": " Does everybody get that?"
+    },
+    {
+      "Time_Start": 1219.4199999999998,
+      "Time_End": 1220.4199999999998,
+      "Text": " Okay."
+    },
+    {
+      "Time_Start": 1220.4199999999998,
+      "Time_End": 1221.4199999999998,
+      "Text": " Great."
+    },
+    {
+      "Time_Start": 1221.4199999999998,
+      "Time_End": 1222.4199999999998,
+      "Text": " Good."
+    },
+    {
+      "Time_Start": 1222.4199999999998,
+      "Time_End": 1223.4199999999998,
+      "Text": " Okay."
+    },
+    {
+      "Time_Start": 1223.4199999999998,
+      "Time_End": 1225.1,
+      "Text": " So I'm going to talk a little bit about little and big endian numbers."
+    },
+    {
+      "Time_Start": 1225.1000000000001,
+      "Time_End": 1230.5000000000002,
+      "Text": " Has everybody here at least heard of this term?"
+    },
+    {
+      "Time_Start": 1230.5000000000002,
+      "Time_End": 1234.8600000000001,
+      "Text": " This might be basic for some of you out there, and, you know, I know I said advanced buffer"
+    },
+    {
+      "Time_Start": 1234.8600000000001,
+      "Time_End": 1239.8600000000001,
+      "Text": " overflow techniques, but if you want to get some more insane stuff, I'll be around, you"
+    },
+    {
+      "Time_Start": 1239.8600000000001,
+      "Time_End": 1243.66,
+      "Text": " know, later on tonight, and I can show you some really insane stuff, but I'll just go"
+    },
+    {
+      "Time_Start": 1243.66,
+      "Time_End": 1245.14,
+      "Text": " over some of the things I have here."
+    },
+    {
+      "Time_Start": 1245.14,
+      "Time_End": 1246.14,
+      "Text": " Okay."
+    },
+    {
+      "Time_Start": 1246.14,
+      "Time_End": 1247.14,
+      "Text": " So big and little endian."
+    },
+    {
+      "Time_Start": 1247.14,
+      "Time_End": 1250.5800000000002,
+      "Text": " The Intel processor stores numbers backwards, in my opinion."
+    },
+    {
+      "Time_Start": 1250.58,
+      "Time_End": 1256.82,
+      "Text": " What this means is if I have a number, 004010FF, stored internally on the processor, it's actually"
+    },
+    {
+      "Time_Start": 1256.82,
+      "Time_End": 1261.26,
+      "Text": " FF10400."
+    },
+    {
+      "Time_Start": 1261.26,
+      "Time_End": 1266.5,
+      "Text": " Spark architecture, I believe, is big endian, which means it doesn't do that."
+    },
+    {
+      "Time_Start": 1266.5,
+      "Time_End": 1267.5,
+      "Text": " So okay."
+    },
+    {
+      "Time_Start": 1267.5,
+      "Time_End": 1268.5,
+      "Text": " The least significant byte goes first."
+    },
+    {
+      "Time_Start": 1268.5,
+      "Time_End": 1269.82,
+      "Text": " I think everybody can understand this, right?"
+    },
+    {
+      "Time_Start": 1269.82,
+      "Time_End": 1270.82,
+      "Text": " It's just backwards."
+    },
+    {
+      "Time_Start": 1270.82,
+      "Time_End": 1272.5,
+      "Text": " So I'm going to store an address somewhere."
+    },
+    {
+      "Time_Start": 1272.5,
+      "Time_End": 1274.78,
+      "Text": " I actually do have to store it this way on an Intel processor."
+    },
+    {
+      "Time_Start": 1274.78,
+      "Time_End": 1278.8999999999999,
+      "Text": " I have to store it in this reverse form here."
+    },
+    {
+      "Time_Start": 1278.9,
+      "Time_End": 1284.42,
+      "Text": " So let's say there's a \u2011\u2011 these colors might look a little screwed up."
+    },
+    {
+      "Time_Start": 1284.42,
+      "Time_End": 1286.94,
+      "Text": " I apologize if you can't read it from the back."
+    },
+    {
+      "Time_Start": 1286.94,
+      "Time_End": 1289.22,
+      "Text": " So here's our housekeeping data."
+    },
+    {
+      "Time_Start": 1289.22,
+      "Time_End": 1290.22,
+      "Text": " Same as before."
+    },
+    {
+      "Time_Start": 1290.22,
+      "Time_End": 1292.3000000000002,
+      "Text": " We have an original return address."
+    },
+    {
+      "Time_Start": 1292.3000000000002,
+      "Time_End": 1296.1000000000001,
+      "Text": " This one here up in 7F is probably talking in MTDLL somewhere."
+    },
+    {
+      "Time_Start": 1296.1000000000001,
+      "Time_End": 1297.1000000000001,
+      "Text": " Typical."
+    },
+    {
+      "Time_Start": 1297.1000000000001,
+      "Time_End": 1298.1000000000001,
+      "Text": " All right."
+    },
+    {
+      "Time_Start": 1298.1000000000001,
+      "Time_End": 1302.22,
+      "Text": " So our stack is going to grow, and then we're going to override it, and we're going to be"
+    },
+    {
+      "Time_Start": 1302.22,
+      "Time_End": 1303.22,
+      "Text": " able to put a null there."
+    },
+    {
+      "Time_Start": 1303.22,
+      "Time_End": 1304.22,
+      "Text": " Now, watch."
+    },
+    {
+      "Time_Start": 1304.22,
+      "Time_End": 1306.3400000000001,
+      "Text": " Now, I know that's really hard to see."
+    },
+    {
+      "Time_Start": 1306.34,
+      "Time_End": 1309.6999999999998,
+      "Text": " This says 0C20400."
+    },
+    {
+      "Time_Start": 1309.6999999999998,
+      "Time_End": 1312.78,
+      "Text": " This address, I believe, right here."
+    },
+    {
+      "Time_Start": 1312.78,
+      "Time_End": 1317.82,
+      "Text": " So does everybody see how I can put a null in there, and they still have it work?"
+    },
+    {
+      "Time_Start": 1317.82,
+      "Time_End": 1322.1399999999999,
+      "Text": " This stack starts in an address or runs in an address range, which starts with 00, but"
+    },
+    {
+      "Time_Start": 1322.1399999999999,
+      "Time_End": 1326.06,
+      "Text": " that doesn't prevent me because of the little endianness of the X86 processor."
+    },
+    {
+      "Time_Start": 1326.06,
+      "Time_End": 1331.3,
+      "Text": " I can now jump into that area and put an address in there that is valid."
+    },
+    {
+      "Time_Start": 1331.3,
+      "Time_End": 1333.74,
+      "Text": " So injection is complete."
+    },
+    {
+      "Time_Start": 1333.74,
+      "Time_End": 1335.66,
+      "Text": " We've put in an address."
+    },
+    {
+      "Time_Start": 1335.66,
+      "Time_End": 1341.06,
+      "Text": " Now, let's talk about where we can put the payload."
+    },
+    {
+      "Time_Start": 1341.06,
+      "Time_End": 1345.9,
+      "Text": " Does everybody get how, like, I guess I didn't explain that very well."
+    },
+    {
+      "Time_Start": 1345.9,
+      "Time_End": 1350.18,
+      "Text": " Because I put that there, when we return from the function that we were in and we replace"
+    },
+    {
+      "Time_Start": 1350.18,
+      "Time_End": 1354.02,
+      "Text": " EIP, that's going to be taken from the housekeeping data that we replaced."
+    },
+    {
+      "Time_Start": 1354.02,
+      "Time_End": 1355.02,
+      "Text": " Does everybody understand that?"
+    },
+    {
+      "Time_Start": 1355.02,
+      "Time_End": 1356.02,
+      "Text": " Okay."
+    },
+    {
+      "Time_Start": 1356.02,
+      "Time_End": 1357.02,
+      "Text": " What's that?"
+    },
+    {
+      "Time_Start": 1357.02,
+      "Time_End": 1363.02,
+      "Text": " How do I put the \u2011\u2011 you have to \u2011\u2011 you have to \u2011\u2011 you have to \u2011\u2011 you"
+    },
+    {
+      "Time_Start": 1363.02,
+      "Time_End": 1368.5,
+      "Text": " have to supply more \u2011\u2011 okay, the question was how do you actually overflow?"
+    },
+    {
+      "Time_Start": 1368.5,
+      "Time_End": 1372.18,
+      "Text": " What you have to do is depend on the fact that there's going to be some software out"
+    },
+    {
+      "Time_Start": 1372.18,
+      "Time_End": 1373.62,
+      "Text": " there that does no bounds checking."
+    },
+    {
+      "Time_Start": 1373.62,
+      "Time_End": 1377.34,
+      "Text": " It's going to look for a null character, like I showed you in the previous slide, to stop"
+    },
+    {
+      "Time_Start": 1377.34,
+      "Time_End": 1378.34,
+      "Text": " that overflow."
+    },
+    {
+      "Time_Start": 1378.34,
+      "Time_End": 1382.9,
+      "Text": " Now, if you don't supply that null character and it doesn't check for it, it happily will"
+    },
+    {
+      "Time_Start": 1382.9,
+      "Time_End": 1386.62,
+      "Text": " continue copying as long as it wants and as long as you want."
+    },
+    {
+      "Time_Start": 1386.62,
+      "Time_End": 1390.74,
+      "Text": " That's essentially the problem with some calls like S print F or stir copy."
+    },
+    {
+      "Time_Start": 1390.74,
+      "Time_End": 1394.86,
+      "Text": " They look for a null character and they don't allow you, the programmer, to specify the"
+    },
+    {
+      "Time_Start": 1394.86,
+      "Time_End": 1395.86,
+      "Text": " size of the buffer."
+    },
+    {
+      "Time_Start": 1395.86,
+      "Time_End": 1401.74,
+      "Text": " They assume that whatever you supply will be smaller than the buffer that was allocated."
+    },
+    {
+      "Time_Start": 1401.74,
+      "Time_End": 1404.82,
+      "Text": " So after we've done this, let's talk about where you can put the actual code that you"
+    },
+    {
+      "Time_Start": 1404.82,
+      "Time_End": 1406.68,
+      "Text": " want to run, okay?"
+    },
+    {
+      "Time_Start": 1406.68,
+      "Time_End": 1408.1,
+      "Text": " So here's our housekeeping data."
+    },
+    {
+      "Time_Start": 1408.1,
+      "Time_End": 1409.1,
+      "Text": " We have a stack."
+    },
+    {
+      "Time_Start": 1409.1,
+      "Time_End": 1410.1,
+      "Text": " We overflow."
+    },
+    {
+      "Time_Start": 1410.1,
+      "Time_End": 1411.1,
+      "Text": " There's our new address."
+    },
+    {
+      "Time_Start": 1411.1,
+      "Time_End": 1415.02,
+      "Text": " The null is okay."
+    },
+    {
+      "Time_Start": 1415.02,
+      "Time_End": 1417.5,
+      "Text": " So it jumps back into here."
+    },
+    {
+      "Time_Start": 1417.5,
+      "Time_End": 1418.94,
+      "Text": " And then that's our payload area."
+    },
+    {
+      "Time_Start": 1418.94,
+      "Time_End": 1421.42,
+      "Text": " We can put our instruction code in that."
+    },
+    {
+      "Time_Start": 1421.42,
+      "Time_End": 1423.94,
+      "Text": " That is the simplest form of stack overflow."
+    },
+    {
+      "Time_Start": 1423.94,
+      "Time_End": 1428.6200000000001,
+      "Text": " That's not going to give me a whole lot of room, unfortunately, but it would work."
+    },
+    {
+      "Time_Start": 1428.6200000000001,
+      "Time_End": 1441.74,
+      "Text": " So now let me talk about a little way to make some more room."
+    },
+    {
+      "Time_Start": 1441.74,
+      "Time_End": 1442.74,
+      "Text": " You find where the instruction..."
+    },
+    {
+      "Time_Start": 1442.74,
+      "Time_End": 1446.38,
+      "Text": " The question was, how do you find out where the instruction pointer is stored on the stack?"
+    },
+    {
+      "Time_Start": 1446.38,
+      "Time_End": 1447.94,
+      "Text": " It'll be in a known location."
+    },
+    {
+      "Time_Start": 1447.94,
+      "Time_End": 1449.22,
+      "Text": " You will have soft ice."
+    },
+    {
+      "Time_Start": 1449.22,
+      "Time_End": 1453.6200000000001,
+      "Text": " You will explode it, and you will know that it is exactly, you know, X number of characters"
+    },
+    {
+      "Time_Start": 1453.6200000000001,
+      "Time_End": 1455.94,
+      "Text": " in in this particular buffer."
+    },
+    {
+      "Time_Start": 1455.94,
+      "Time_End": 1460.06,
+      "Text": " A trick that I use is I send, when I'm sending the buffer overflow initially, kind of black"
+    },
+    {
+      "Time_Start": 1460.06,
+      "Time_End": 1464.18,
+      "Text": " box testing, I'm supplying large buffers, you know, with a Perl script or something"
+    },
+    {
+      "Time_Start": 1464.18,
+      "Time_End": 1465.18,
+      "Text": " into an application."
+    },
+    {
+      "Time_Start": 1465.18,
+      "Time_End": 1469.14,
+      "Text": " You know, I'm giving a user name that is 300 characters long."
+    },
+    {
+      "Time_Start": 1469.14,
+      "Time_End": 1471.8600000000001,
+      "Text": " The characters that I send, I alternate them in a predictable way."
+    },
+    {
+      "Time_Start": 1471.8600000000001,
+      "Time_End": 1474.44,
+      "Text": " And again, the algorithm for that is in this book."
+    },
+    {
+      "Time_Start": 1474.44,
+      "Time_End": 1479.44,
+      "Text": " And they alternate in a predictable way so that if I get a crash, you know, when I get"
+    },
+    {
+      "Time_Start": 1479.44,
+      "Time_End": 1482.0800000000002,
+      "Text": " a crash, it's going to tell me what address it crashed on."
+    },
+    {
+      "Time_Start": 1482.0800000000002,
+      "Time_End": 1485.5800000000002,
+      "Text": " So I see that, and I'll know exactly what four characters it crashed on, because it'll"
+    },
+    {
+      "Time_Start": 1485.5800000000002,
+      "Time_End": 1486.5800000000002,
+      "Text": " tell me."
+    },
+    {
+      "Time_Start": 1486.5800000000002,
+      "Time_End": 1487.88,
+      "Text": " And I'll know exactly what the offset is."
+    },
+    {
+      "Time_Start": 1487.88,
+      "Time_End": 1489.48,
+      "Text": " It's just a little trick for debugging."
+    },
+    {
+      "Time_Start": 1489.48,
+      "Time_End": 1490.48,
+      "Text": " Oh, probably."
+    },
+    {
+      "Time_Start": 1490.48,
+      "Time_End": 1491.48,
+      "Text": " Sorry."
+    },
+    {
+      "Time_Start": 1491.48,
+      "Time_End": 1494.48,
+      "Text": " As long as you get it."
+    },
+    {
+      "Time_Start": 1494.48,
+      "Time_End": 1495.48,
+      "Text": " Okay."
+    },
+    {
+      "Time_Start": 1495.48,
+      "Time_End": 1506.72,
+      "Text": " So let's say we were dealing with the previous slide here, and we have a very confined payload."
+    },
+    {
+      "Time_Start": 1506.72,
+      "Time_End": 1507.72,
+      "Text": " So we have a confined payload."
+    },
+    {
+      "Time_Start": 1507.72,
+      "Time_End": 1508.72,
+      "Text": " What are some of the things we can do?"
+    },
+    {
+      "Time_Start": 1508.72,
+      "Time_End": 1509.72,
+      "Text": " What are the restrictions?"
+    },
+    {
+      "Time_Start": 1509.72,
+      "Time_End": 1512.16,
+      "Text": " How can we get around this restriction?"
+    },
+    {
+      "Time_Start": 1512.16,
+      "Time_End": 1516.72,
+      "Text": " So we can compress our payload and then have a little decompressor in there that will grow"
+    },
+    {
+      "Time_Start": 1516.72,
+      "Time_End": 1521.8,
+      "Text": " it out larger somewhere else, maybe on the heap or further down the stack."
+    },
+    {
+      "Time_Start": 1521.8,
+      "Time_End": 1523.68,
+      "Text": " We can use preloaded functions."
+    },
+    {
+      "Time_Start": 1523.88,
+      "Time_End": 1528.8400000000001,
+      "Text": " Obviously, any process that's running on the computer is going to have a bazillion functions"
+    },
+    {
+      "Time_Start": 1528.8400000000001,
+      "Time_End": 1530.4,
+      "Text": " already loaded and ready to use."
+    },
+    {
+      "Time_Start": 1530.4,
+      "Time_End": 1531.4,
+      "Text": " That's how it works."
+    },
+    {
+      "Time_Start": 1531.4,
+      "Time_End": 1533.68,
+      "Text": " So as long as we know where they are, we can just call them."
+    },
+    {
+      "Time_Start": 1533.68,
+      "Time_End": 1536.1200000000001,
+      "Text": " We don't have to load them or do anything weird."
+    },
+    {
+      "Time_Start": 1536.1200000000001,
+      "Time_End": 1539.24,
+      "Text": " And oftentimes this works fine."
+    },
+    {
+      "Time_Start": 1539.24,
+      "Time_End": 1543.0,
+      "Text": " That means that my payload doesn't have to build what's called a jump table."
+    },
+    {
+      "Time_Start": 1543.0,
+      "Time_End": 1546.72,
+      "Text": " Of course, the key is that all these functions I want to use have to already be loaded."
+    },
+    {
+      "Time_Start": 1546.72,
+      "Time_End": 1548.48,
+      "Text": " I can use hardcoded addresses."
+    },
+    {
+      "Time_Start": 1548.48,
+      "Time_End": 1550.2,
+      "Text": " There's two ways to use a preloaded function."
+    },
+    {
+      "Time_Start": 1550.2,
+      "Time_End": 1553.48,
+      "Text": " I can either go scan for it and find it, because I don't trust that it's always going to be"
+    },
+    {
+      "Time_Start": 1553.48,
+      "Time_End": 1557.3600000000001,
+      "Text": " in the same place, or I'm just going to believe to myself that it's always going to be in"
+    },
+    {
+      "Time_Start": 1557.3600000000001,
+      "Time_End": 1558.3600000000001,
+      "Text": " the same place."
+    },
+    {
+      "Time_Start": 1558.3600000000001,
+      "Time_End": 1560.04,
+      "Text": " So I hardcode the address to it."
+    },
+    {
+      "Time_Start": 1560.04,
+      "Time_End": 1563.76,
+      "Text": " I wrote a buffer overflow about a year ago that had the hardcoded address for reg open"
+    },
+    {
+      "Time_Start": 1563.76,
+      "Time_End": 1566.4,
+      "Text": " key and reg write key, and those worked fine."
+    },
+    {
+      "Time_Start": 1566.4,
+      "Time_End": 1568.56,
+      "Text": " The hardcoded address worked fine."
+    },
+    {
+      "Time_Start": 1568.56,
+      "Time_End": 1570.72,
+      "Text": " So it was very small."
+    },
+    {
+      "Time_Start": 1570.72,
+      "Time_End": 1574.88,
+      "Text": " Once again, this has to be predictable and it has to always be there."
+    },
+    {
+      "Time_Start": 1574.88,
+      "Time_End": 1577.64,
+      "Text": " And of course, if you're sending a payload, you're going to also have data probably sent"
+    },
+    {
+      "Time_Start": 1577.64,
+      "Time_End": 1579.76,
+      "Text": " along with the payload, and I'm going to show that in a second."
+    },
+    {
+      "Time_Start": 1579.76,
+      "Time_End": 1586.08,
+      "Text": " You can't put very much data on something if you have this confined space problem."
+    },
+    {
+      "Time_Start": 1586.08,
+      "Time_End": 1588.0,
+      "Text": " So let's say we want to use more stack."
+    },
+    {
+      "Time_Start": 1588.0,
+      "Time_End": 1589.0,
+      "Text": " Okay."
+    },
+    {
+      "Time_Start": 1589.0,
+      "Time_End": 1591.0,
+      "Text": " Now, you were complaining about the typo."
+    },
+    {
+      "Time_Start": 1591.0,
+      "Time_End": 1592.48,
+      "Text": " I'll preempt you here."
+    },
+    {
+      "Time_Start": 1592.48,
+      "Time_End": 1593.74,
+      "Text": " This is also a typo."
+    },
+    {
+      "Time_Start": 1593.74,
+      "Time_End": 1597.12,
+      "Text": " Our stack should be 0040."
+    },
+    {
+      "Time_Start": 1597.12,
+      "Time_End": 1598.12,
+      "Text": " So ignore that 77."
+    },
+    {
+      "Time_Start": 1598.12,
+      "Time_End": 1601.3,
+      "Text": " We're going to use more stack."
+    },
+    {
+      "Time_Start": 1601.3,
+      "Time_End": 1602.3,
+      "Text": " So here we are."
+    },
+    {
+      "Time_Start": 1602.3,
+      "Time_End": 1603.3,
+      "Text": " Here's our data."
+    },
+    {
+      "Time_Start": 1603.3,
+      "Time_End": 1604.8,
+      "Text": " Da, da, da, da, da."
+    },
+    {
+      "Time_Start": 1604.8,
+      "Time_End": 1607.12,
+      "Text": " Now, we go down the stack."
+    },
+    {
+      "Time_Start": 1607.1200000000001,
+      "Time_End": 1609.0400000000002,
+      "Text": " We put a whole bunch of stuff on it."
+    },
+    {
+      "Time_Start": 1609.0400000000002,
+      "Time_End": 1614.7600000000002,
+      "Text": " Now, when we overwrite this address, notice I didn't put a 00 at the end."
+    },
+    {
+      "Time_Start": 1614.7600000000002,
+      "Time_End": 1616.5600000000002,
+      "Text": " We have to pick an address."
+    },
+    {
+      "Time_Start": 1616.5600000000002,
+      "Time_End": 1620.72,
+      "Text": " Now, the code page has plenty of stuff that's not in the 00 range, right?"
+    },
+    {
+      "Time_Start": 1620.72,
+      "Time_End": 1623.64,
+      "Text": " Most of it, in fact, I don't believe is in the 00 range."
+    },
+    {
+      "Time_Start": 1623.64,
+      "Time_End": 1627.0400000000002,
+      "Text": " We can pick an address out there anywhere and it will jump to it, right?"
+    },
+    {
+      "Time_Start": 1627.0400000000002,
+      "Time_End": 1628.0400000000002,
+      "Text": " So that's the key."
+    },
+    {
+      "Time_Start": 1628.0400000000002,
+      "Time_End": 1633.3600000000001,
+      "Text": " We cannot have a null in the address, and I'll show you the trick."
+    },
+    {
+      "Time_Start": 1633.3600000000001,
+      "Time_End": 1635.8400000000001,
+      "Text": " So here's our larger version of the stack."
+    },
+    {
+      "Time_Start": 1635.8400000000001,
+      "Time_End": 1637.7800000000002,
+      "Text": " We overflow a long ways."
+    },
+    {
+      "Time_Start": 1637.7800000000002,
+      "Time_End": 1642.4,
+      "Text": " You see we went quite a distance here, so we've got plenty of room."
+    },
+    {
+      "Time_Start": 1642.4,
+      "Time_End": 1646.3600000000001,
+      "Text": " We're still going to have to overwrite this guy, though, because it's a return pointer."
+    },
+    {
+      "Time_Start": 1646.3600000000001,
+      "Time_End": 1648.0000000000002,
+      "Text": " So we go down there, bonk."
+    },
+    {
+      "Time_Start": 1648.0000000000002,
+      "Time_End": 1649.4,
+      "Text": " We still overwrite this guy."
+    },
+    {
+      "Time_Start": 1649.4,
+      "Time_End": 1654.7600000000002,
+      "Text": " We make it point somewhere that ends up getting the instruction pointer to point back into"
+    },
+    {
+      "Time_Start": 1654.7600000000002,
+      "Time_End": 1656.2400000000002,
+      "Text": " this buffer."
+    },
+    {
+      "Time_Start": 1656.2400000000002,
+      "Time_End": 1658.8400000000001,
+      "Text": " I'll show that trick in a second."
+    },
+    {
+      "Time_Start": 1658.8400000000001,
+      "Time_End": 1663.7200000000003,
+      "Text": " Essentially, we jump to here, and then we begin execution."
+    },
+    {
+      "Time_Start": 1663.72,
+      "Time_End": 1665.48,
+      "Text": " Much more room now."
+    },
+    {
+      "Time_Start": 1665.48,
+      "Time_End": 1671.04,
+      "Text": " Does everybody get that?"
+    },
+    {
+      "Time_Start": 1671.04,
+      "Time_End": 1673.92,
+      "Text": " So when does the address contain a null character?"
+    },
+    {
+      "Time_Start": 1673.92,
+      "Time_End": 1675.96,
+      "Text": " I call it a low\u2011end address."
+    },
+    {
+      "Time_Start": 1675.96,
+      "Time_End": 1677.68,
+      "Text": " Under NT, the stack is stored in low\u2011end."
+    },
+    {
+      "Time_Start": 1677.68,
+      "Time_End": 1685.08,
+      "Text": " What that means is there's a 00 in the first part of the address."
+    },
+    {
+      "Time_Start": 1685.08,
+      "Time_End": 1686.56,
+      "Text": " Limits the size of our payload."
+    },
+    {
+      "Time_Start": 1686.56,
+      "Time_End": 1689.52,
+      "Text": " I believe the stack under Linux is not stored in low\u2011end, stored in high\u2011end."
+    },
+    {
+      "Time_Start": 1689.52,
+      "Time_End": 1693.0,
+      "Text": " I think it starts with 77 or BF or BB."
+    },
+    {
+      "Time_Start": 1693.0,
+      "Time_End": 1694.64,
+      "Text": " Hobbs was in the audience earlier."
+    },
+    {
+      "Time_Start": 1694.64,
+      "Time_End": 1696.2,
+      "Text": " He probably knows that."
+    },
+    {
+      "Time_Start": 1696.2,
+      "Time_End": 1697.2,
+      "Text": " BF?"
+    },
+    {
+      "Time_Start": 1697.2,
+      "Time_End": 1698.2,
+      "Text": " Okay."
+    },
+    {
+      "Time_Start": 1698.2,
+      "Time_End": 1703.64,
+      "Text": " So Linux wouldn't have this problem with the low\u2011end address."
+    },
+    {
+      "Time_Start": 1703.64,
+      "Time_End": 1707.2,
+      "Text": " I am an NT guy, so this is what I'm going to talk about mostly."
+    },
+    {
+      "Time_Start": 1707.2,
+      "Time_End": 1708.2,
+      "Text": " Yes, sir?"
+    },
+    {
+      "Time_Start": 1708.2,
+      "Time_End": 1722.92,
+      "Text": " The question was, if I populate the instruction pointer with an address which points into"
+    },
+    {
+      "Time_Start": 1723.04,
+      "Time_End": 1724.64,
+      "Text": " the stack, how do I know where I am?"
+    },
+    {
+      "Time_Start": 1724.64,
+      "Time_End": 1727.28,
+      "Text": " Remember when I was talking about guessing offsets?"
+    },
+    {
+      "Time_Start": 1727.28,
+      "Time_End": 1728.64,
+      "Text": " That's exactly what that's about."
+    },
+    {
+      "Time_Start": 1728.64,
+      "Time_End": 1729.64,
+      "Text": " I have to guess."
+    },
+    {
+      "Time_Start": 1729.64,
+      "Time_End": 1733.96,
+      "Text": " I'm going to show you a trick in a moment that makes guessing it very easy."
+    },
+    {
+      "Time_Start": 1733.96,
+      "Time_End": 1741.24,
+      "Text": " In some other cases, I'm going to actually grab that address out of a register or something"
+    },
+    {
+      "Time_Start": 1741.24,
+      "Time_End": 1743.2,
+      "Text": " else, and I'll show you that trick as well."
+    },
+    {
+      "Time_Start": 1743.2,
+      "Time_End": 1744.2,
+      "Text": " Okay."
+    },
+    {
+      "Time_Start": 1744.2,
+      "Time_End": 1747.28,
+      "Text": " So high\u2011end address is no zeros in the address."
+    },
+    {
+      "Time_Start": 1747.28,
+      "Time_End": 1748.28,
+      "Text": " You guys understand that."
+    },
+    {
+      "Time_Start": 1748.28,
+      "Time_End": 1749.28,
+      "Text": " It's no big deal."
+    },
+    {
+      "Time_Start": 1749.28,
+      "Time_End": 1750.28,
+      "Text": " Okay."
+    },
+    {
+      "Time_Start": 1750.28,
+      "Time_End": 1752.96,
+      "Text": " So under NT, you're going to be dealing with large payload, low\u2011end address."
+    },
+    {
+      "Time_Start": 1752.96,
+      "Time_End": 1758.44,
+      "Text": " We cannot use the low\u2011end address directly because it will limit our payload size, typically."
+    },
+    {
+      "Time_Start": 1758.44,
+      "Time_End": 1763.0,
+      "Text": " So we're going to have to figure out a way to get back to the stack without directly"
+    },
+    {
+      "Time_Start": 1763.0,
+      "Time_End": 1768.76,
+      "Text": " hard coding the address of a stack, of the stack itself in there."
+    },
+    {
+      "Time_Start": 1768.76,
+      "Time_End": 1769.76,
+      "Text": " Okay."
+    },
+    {
+      "Time_Start": 1769.76,
+      "Time_End": 1770.76,
+      "Text": " So I'm going to show a couple tricks."
+    },
+    {
+      "Time_Start": 1770.76,
+      "Time_End": 1772.92,
+      "Text": " I have a couple more that are in the slides, but I'll talk about them."
+    },
+    {
+      "Time_Start": 1772.92,
+      "Time_End": 1774.6,
+      "Text": " We can use a CPU register."
+    },
+    {
+      "Time_Start": 1774.6,
+      "Time_End": 1778.6,
+      "Text": " Typically the CPU is going to have a bunch of information stored in the registers, right?"
+    },
+    {
+      "Time_Start": 1778.92,
+      "Time_End": 1782.3200000000002,
+      "Text": " Oftentimes one of those registers or even more than one will be pointing to locations"
+    },
+    {
+      "Time_Start": 1782.3200000000002,
+      "Time_End": 1786.2,
+      "Text": " on the stack near or about the area I'm going to overflow."
+    },
+    {
+      "Time_Start": 1786.2,
+      "Time_End": 1790.2,
+      "Text": " And what this means is if I can get my payload or my overflow to cover that area, all I have"
+    },
+    {
+      "Time_Start": 1790.2,
+      "Time_End": 1793.6000000000001,
+      "Text": " to do is just make sure my payload starts right there, and it will jump to it."
+    },
+    {
+      "Time_Start": 1793.6000000000001,
+      "Time_End": 1794.8400000000001,
+      "Text": " I'll show that trick."
+    },
+    {
+      "Time_Start": 1794.8400000000001,
+      "Time_End": 1799.2800000000002,
+      "Text": " So we have a register pointing into the stack somewhere."
+    },
+    {
+      "Time_Start": 1799.2800000000002,
+      "Time_End": 1801.2800000000002,
+      "Text": " Let's say it's the D register."
+    },
+    {
+      "Time_Start": 1801.2800000000002,
+      "Time_End": 1808.5200000000002,
+      "Text": " I overflow far enough so that I can begin putting payload information here."
+    },
+    {
+      "Time_Start": 1808.52,
+      "Time_End": 1809.52,
+      "Text": " Here's our housekeeping data."
+    },
+    {
+      "Time_Start": 1809.52,
+      "Time_End": 1811.6,
+      "Text": " We overflow."
+    },
+    {
+      "Time_Start": 1811.6,
+      "Time_End": 1816.6,
+      "Text": " And we do something that makes the value of D end up in IP."
+    },
+    {
+      "Time_Start": 1816.6,
+      "Time_End": 1821.44,
+      "Text": " And what this does then is, boom, we're now executing right here."
+    },
+    {
+      "Time_Start": 1821.44,
+      "Time_End": 1823.76,
+      "Text": " That's the basics of the trick."
+    },
+    {
+      "Time_Start": 1823.76,
+      "Time_End": 1825.28,
+      "Text": " How do we really do that technically?"
+    },
+    {
+      "Time_Start": 1825.28,
+      "Time_End": 1830.8799999999999,
+      "Text": " Well, if I could find an FFD0, two bytes in there somewhere, that's call EAX."
+    },
+    {
+      "Time_Start": 1830.8799999999999,
+      "Time_End": 1837.08,
+      "Text": " That means if EAX has the address of something on the stack, if I can just get EIP to point"
+    },
+    {
+      "Time_Start": 1837.08,
+      "Time_End": 1842.24,
+      "Text": " to somewhere in location in memory somewhere that has these two bytes, then, boom, I'm"
+    },
+    {
+      "Time_Start": 1842.24,
+      "Time_End": 1845.52,
+      "Text": " now going to call through EAX and be on the stack."
+    },
+    {
+      "Time_Start": 1845.52,
+      "Time_End": 1848.6399999999999,
+      "Text": " The key thing to remember about this is I don't actually \u2011\u2011 when I put that address"
+    },
+    {
+      "Time_Start": 1848.6399999999999,
+      "Time_End": 1855.1599999999999,
+      "Text": " there in the housekeeping data, all it has to do, that address has to simply be the location"
+    },
+    {
+      "Time_Start": 1855.1599999999999,
+      "Time_End": 1856.1599999999999,
+      "Text": " of these two bytes."
+    },
+    {
+      "Time_Start": 1856.1599999999999,
+      "Time_End": 1857.1599999999999,
+      "Text": " It doesn't have to be in code."
+    },
+    {
+      "Time_Start": 1857.1599999999999,
+      "Time_End": 1858.72,
+      "Text": " It could be in data."
+    },
+    {
+      "Time_Start": 1858.72,
+      "Time_End": 1859.72,
+      "Text": " Okay?"
+    },
+    {
+      "Time_Start": 1859.72,
+      "Time_End": 1863.1599999999999,
+      "Text": " The computer doesn't care."
+    },
+    {
+      "Time_Start": 1863.1599999999999,
+      "Time_End": 1864.1599999999999,
+      "Text": " Call EBX, call ECX."
+    },
+    {
+      "Time_Start": 1864.24,
+      "Time_End": 1869.48,
+      "Text": " EAX is a couple of examples of the same thing."
+    },
+    {
+      "Time_Start": 1869.48,
+      "Time_End": 1874.76,
+      "Text": " Another way to do it is to find a push of the particular register we're interested in"
+    },
+    {
+      "Time_Start": 1874.76,
+      "Time_End": 1879.8000000000002,
+      "Text": " followed at some point in the future by a return, just as long as there's only one push."
+    },
+    {
+      "Time_Start": 1879.8000000000002,
+      "Time_End": 1883.3600000000001,
+      "Text": " That means the topmost value on the stack is going to be what we pushed, right?"
+    },
+    {
+      "Time_Start": 1883.3600000000001,
+      "Time_End": 1887.26,
+      "Text": " Let's say it's the D register, the one we just showed in the slide."
+    },
+    {
+      "Time_Start": 1887.26,
+      "Time_End": 1890.8200000000002,
+      "Text": " So now D is sitting on the top of the stack and then maybe a couple of instructions later"
+    },
+    {
+      "Time_Start": 1890.8200000000002,
+      "Time_End": 1892.3200000000002,
+      "Text": " we see a return."
+    },
+    {
+      "Time_Start": 1892.48,
+      "Time_End": 1897.52,
+      "Text": " Boom, it pops the top of the stack off what was the D register and puts it in EIP."
+    },
+    {
+      "Time_Start": 1897.52,
+      "Time_End": 1901.32,
+      "Text": " Same exact thing, just a different way to do it."
+    },
+    {
+      "Time_Start": 1901.32,
+      "Time_End": 1903.4399999999998,
+      "Text": " I don't have a slide for this one, but I'll talk about it."
+    },
+    {
+      "Time_Start": 1903.4399999999998,
+      "Time_End": 1905.24,
+      "Text": " It's another one I found."
+    },
+    {
+      "Time_Start": 1905.24,
+      "Time_End": 1908.36,
+      "Text": " If I \u2011\u2011 a couple of layers down on the stack, let's say it's not a register."
+    },
+    {
+      "Time_Start": 1908.36,
+      "Time_End": 1912.6,
+      "Text": " There's nothing in the registers we can use."
+    },
+    {
+      "Time_Start": 1912.6,
+      "Time_End": 1917.36,
+      "Text": " But let's say that a couple of 32\u2011bit values down on the stack, we have an address of something"
+    },
+    {
+      "Time_Start": 1917.36,
+      "Time_End": 1919.9199999999998,
+      "Text": " on the stack, self\u2011referencing in a way."
+    },
+    {
+      "Time_Start": 1919.92,
+      "Time_End": 1923.16,
+      "Text": " It happens all the time, especially if you're passing arguments from subroutine to subroutine"
+    },
+    {
+      "Time_Start": 1923.16,
+      "Time_End": 1924.16,
+      "Text": " to subroutine."
+    },
+    {
+      "Time_Start": 1924.16,
+      "Time_End": 1928.48,
+      "Text": " I pass the automatic variable of one subroutine to a parameter of a second subroutine, the"
+    },
+    {
+      "Time_Start": 1928.48,
+      "Time_End": 1931.44,
+      "Text": " original is going to point back into the first one, which has its own little area there on"
+    },
+    {
+      "Time_Start": 1931.44,
+      "Time_End": 1932.44,
+      "Text": " the stack frame."
+    },
+    {
+      "Time_Start": 1932.44,
+      "Time_End": 1935.44,
+      "Text": " Where was I going with this?"
+    },
+    {
+      "Time_Start": 1935.44,
+      "Time_End": 1936.44,
+      "Text": " Oh, yes."
+    },
+    {
+      "Time_Start": 1936.44,
+      "Time_End": 1939.3600000000001,
+      "Text": " So if it's down there a couple of layers, as long as I can go out there and code and"
+    },
+    {
+      "Time_Start": 1939.3600000000001,
+      "Time_End": 1944.3200000000002,
+      "Text": " I can find a bunch of pops, on or out, pop, pop, pop, pop, I can peel off the stack, if"
+    },
+    {
+      "Time_Start": 1944.3200000000002,
+      "Time_End": 1948.0800000000002,
+      "Text": " you will, until I get to the value I want and then there has to be a return."
+    },
+    {
+      "Time_Start": 1948.0800000000002,
+      "Time_End": 1949.0800000000002,
+      "Text": " This works all the time."
+    },
+    {
+      "Time_Start": 1949.24,
+      "Time_End": 1953.36,
+      "Text": " There's plenty of places in NTDLL where you can find code that will pop three or four"
+    },
+    {
+      "Time_Start": 1953.36,
+      "Time_End": 1955.36,
+      "Text": " and then you can get a return."
+    },
+    {
+      "Time_Start": 1955.36,
+      "Time_End": 1956.36,
+      "Text": " Okay."
+    },
+    {
+      "Time_Start": 1956.36,
+      "Time_End": 1963.6399999999999,
+      "Text": " So I'm going to talk a little bit about what you were saying about the offset and how we"
+    },
+    {
+      "Time_Start": 1963.6399999999999,
+      "Time_End": 1969.1599999999999,
+      "Text": " can reduce the precision of that a little bit."
+    },
+    {
+      "Time_Start": 1969.1599999999999,
+      "Time_End": 1970.1599999999999,
+      "Text": " We can use no\u2011ops."
+    },
+    {
+      "Time_Start": 1970.1599999999999,
+      "Time_End": 1972.8,
+      "Text": " Does everybody know what a no\u2011op is?"
+    },
+    {
+      "Time_Start": 1972.8,
+      "Time_End": 1979.1599999999999,
+      "Text": " It's a little byte instruction, hex 90, and it runs and does nothing, right?"
+    },
+    {
+      "Time_Start": 1979.1599999999999,
+      "Time_End": 1984.32,
+      "Text": " So there's this thing called a no\u2011op sled and what we can do is make an area of just"
+    },
+    {
+      "Time_Start": 1984.32,
+      "Time_End": 1988.08,
+      "Text": " no\u2011ops and if we jump anywhere in there, we can be sure we're going to kind of slide"
+    },
+    {
+      "Time_Start": 1988.08,
+      "Time_End": 1989.9199999999998,
+      "Text": " through it and end up somewhere else."
+    },
+    {
+      "Time_Start": 1989.9199999999998,
+      "Time_End": 1996.28,
+      "Text": " I call that a no\u2011op sled, excuse me."
+    },
+    {
+      "Time_Start": 1996.28,
+      "Time_End": 2002.68,
+      "Text": " So I illustrated we grow, there's our null, yeah, and then we're going to overwrite that"
+    },
+    {
+      "Time_Start": 2002.68,
+      "Time_End": 2009.3200000000002,
+      "Text": " data there, housekeeping data, and this area of the code down here that we filled would"
+    },
+    {
+      "Time_Start": 2009.3200000000002,
+      "Time_End": 2011.44,
+      "Text": " be all no\u2011ops, okay?"
+    },
+    {
+      "Time_Start": 2011.44,
+      "Time_End": 2013.92,
+      "Text": " This would be real payload up here and this would be all no\u2011ops."
+    },
+    {
+      "Time_Start": 2013.92,
+      "Time_End": 2017.92,
+      "Text": " We're going to guess, we know it kind of changes from system to system, but we're going to"
+    },
+    {
+      "Time_Start": 2017.92,
+      "Time_End": 2022.48,
+      "Text": " guess that within this range anywhere, if we can put an address in there, we're going"
+    },
+    {
+      "Time_Start": 2022.48,
+      "Time_End": 2023.48,
+      "Text": " to hit the no\u2011op sled."
+    },
+    {
+      "Time_Start": 2023.48,
+      "Time_End": 2025.16,
+      "Text": " So here's what will happen."
+    },
+    {
+      "Time_Start": 2025.16,
+      "Time_End": 2031.5600000000002,
+      "Text": " We guess, we hit the no\u2011op sled, and if we're successful, we then slide through it"
+    },
+    {
+      "Time_Start": 2031.6399999999999,
+      "Time_End": 2035.6,
+      "Text": " and boom, begin executing real payload right there."
+    },
+    {
+      "Time_Start": 2035.6,
+      "Time_End": 2036.6,
+      "Text": " Happiness."
+    },
+    {
+      "Time_Start": 2036.6,
+      "Time_End": 2047.12,
+      "Text": " If you're anything like I was last night, you probably didn't get any sleep and drank"
+    },
+    {
+      "Time_Start": 2047.12,
+      "Time_End": 2051.92,
+      "Text": " way too much, so forgive me, I'm a little slow, just guzzling this water down here."
+    },
+    {
+      "Time_Start": 2051.92,
+      "Time_End": 2055.2,
+      "Text": " Okay, so let's talk about heap a little bit."
+    },
+    {
+      "Time_Start": 2055.2,
+      "Time_End": 2056.2,
+      "Text": " Heap is kind of fun."
+    },
+    {
+      "Time_Start": 2056.2,
+      "Time_End": 2061.32,
+      "Text": " If we only have a limited size on the stack, we can probably use the stack enough to get"
+    },
+    {
+      "Time_Start": 2062.0800000000004,
+      "Time_End": 2063.0800000000004,
+      "Text": " to the heap."
+    },
+    {
+      "Time_Start": 2063.0800000000004,
+      "Time_End": 2064.0800000000004,
+      "Text": " That's one way to exploit the heap."
+    },
+    {
+      "Time_Start": 2064.0800000000004,
+      "Time_End": 2068.28,
+      "Text": " Which means if we can somehow put something in a recent transaction, perhaps, you know,"
+    },
+    {
+      "Time_Start": 2068.28,
+      "Time_End": 2072.0800000000004,
+      "Text": " in a URL request where you have all the weird MIME types and stuff that are passed right"
+    },
+    {
+      "Time_Start": 2072.0800000000004,
+      "Time_End": 2075.7200000000003,
+      "Text": " after the get, that might be stored on the heap, for instance, so we can put some shell"
+    },
+    {
+      "Time_Start": 2075.7200000000003,
+      "Time_End": 2079.9,
+      "Text": " code in there and just do the stack part enough to jump to it, and that's an interesting idea."
+    },
+    {
+      "Time_Start": 2079.9,
+      "Time_End": 2084.4,
+      "Text": " So we can store parts in different places in the program."
+    },
+    {
+      "Time_Start": 2084.4,
+      "Time_End": 2088.04,
+      "Text": " Interesting places to inject, of course, are like HTTP headers, for instance."
+    },
+    {
+      "Time_Start": 2088.04,
+      "Time_End": 2089.04,
+      "Text": " Other ones are files."
+    },
+    {
+      "Time_Start": 2089.04,
+      "Time_End": 2092.8,
+      "Text": " If files are being opened and closed, you can control those files."
+    },
+    {
+      "Time_Start": 2092.8,
+      "Time_End": 2097.36,
+      "Text": " Oftentimes information that was in those files will be stored on the heap somewhere."
+    },
+    {
+      "Time_Start": 2097.36,
+      "Time_End": 2104.88,
+      "Text": " And this is a simplistic slide, but we do enough to get EIP to point to the heap."
+    },
+    {
+      "Time_Start": 2104.88,
+      "Time_End": 2106.32,
+      "Text": " Here's another interesting thing."
+    },
+    {
+      "Time_Start": 2106.32,
+      "Time_End": 2110.96,
+      "Text": " Let's say we don't do a stack overflow at all, we do 100% homegrown heap overflow."
+    },
+    {
+      "Time_Start": 2110.96,
+      "Time_End": 2111.96,
+      "Text": " Here's an interesting one."
+    },
+    {
+      "Time_Start": 2111.96,
+      "Time_End": 2113.52,
+      "Text": " We have two C++ objects."
+    },
+    {
+      "Time_Start": 2113.52,
+      "Time_End": 2114.52,
+      "Text": " Anybody here program in C++?"
+    },
+    {
+      "Time_Start": 2114.52,
+      "Time_End": 2115.52,
+      "Text": " Okay."
+    },
+    {
+      "Time_Start": 2115.52,
+      "Time_End": 2119.44,
+      "Text": " So you know about inheritance and virtual, right?"
+    },
+    {
+      "Time_Start": 2119.44,
+      "Time_End": 2124.28,
+      "Text": " And operator overloading and V tables, because that's what we're going to talk about."
+    },
+    {
+      "Time_Start": 2124.28,
+      "Time_End": 2130.7599999999998,
+      "Text": " A C++ object stores its own function pointers if those functions can be modified by its"
+    },
+    {
+      "Time_Start": 2130.7599999999998,
+      "Time_End": 2131.7599999999998,
+      "Text": " children, okay?"
+    },
+    {
+      "Time_Start": 2131.7599999999998,
+      "Time_End": 2134.7599999999998,
+      "Text": " That's called inheritance and polymorphism."
+    },
+    {
+      "Time_Start": 2134.7599999999998,
+      "Time_End": 2136.12,
+      "Text": " I'll show a diagram of that."
+    },
+    {
+      "Time_Start": 2136.12,
+      "Time_End": 2140.48,
+      "Text": " The other thing to remember about C++ objects is that member variables, information stored"
+    },
+    {
+      "Time_Start": 2140.48,
+      "Time_End": 2145.68,
+      "Text": " within the object itself, is subject to the same types of buffer overflows as a stack"
+    },
+    {
+      "Time_Start": 2145.68,
+      "Time_End": 2148.2,
+      "Text": " object, okay?"
+    },
+    {
+      "Time_Start": 2148.2,
+      "Time_End": 2152.4,
+      "Text": " Here's the V table on a C++ object under NT."
+    },
+    {
+      "Time_Start": 2152.4,
+      "Time_End": 2156.0,
+      "Text": " So the V table is stored at the very beginning, and this is where all the member variables"
+    },
+    {
+      "Time_Start": 2156.0,
+      "Time_End": 2157.0,
+      "Text": " are stored."
+    },
+    {
+      "Time_Start": 2157.0,
+      "Time_End": 2159.12,
+      "Text": " Now, let's say we have a buffer in there."
+    },
+    {
+      "Time_Start": 2159.12,
+      "Time_End": 2163.92,
+      "Text": " Now if we fill that buffer, it's going to fill away from the V table."
+    },
+    {
+      "Time_Start": 2163.92,
+      "Time_End": 2168.68,
+      "Text": " Obviously this is going to be a problem, right, because we want to grow towards something"
+    },
+    {
+      "Time_Start": 2168.68,
+      "Time_End": 2172.96,
+      "Text": " that's important in housekeeping data."
+    },
+    {
+      "Time_Start": 2172.96,
+      "Time_End": 2177.68,
+      "Text": " So let's say we have two of them in an array or near each other somewhere on the heap."
+    },
+    {
+      "Time_Start": 2177.68,
+      "Time_End": 2178.68,
+      "Text": " This is very interesting."
+    },
+    {
+      "Time_Start": 2178.68,
+      "Time_End": 2179.68,
+      "Text": " See?"
+    },
+    {
+      "Time_Start": 2179.68,
+      "Time_End": 2181.68,
+      "Text": " I went over a second guy."
+    },
+    {
+      "Time_Start": 2181.68,
+      "Time_End": 2186.96,
+      "Text": " To show you again, I overflow over the V table pointer."
+    },
+    {
+      "Time_Start": 2186.96,
+      "Time_End": 2187.96,
+      "Text": " Okay."
+    },
+    {
+      "Time_Start": 2187.96,
+      "Time_End": 2191.48,
+      "Text": " So where do we make the V table pointer point?"
+    },
+    {
+      "Time_Start": 2191.48,
+      "Time_End": 2193.3999999999996,
+      "Text": " We have to supply our own V table pointer."
+    },
+    {
+      "Time_Start": 2193.3999999999996,
+      "Time_End": 2195.3999999999996,
+      "Text": " How kind of us."
+    },
+    {
+      "Time_Start": 2195.4,
+      "Time_End": 2202.36,
+      "Text": " We make a point back into the buffer we just overfilled."
+    },
+    {
+      "Time_Start": 2202.36,
+      "Time_End": 2207.64,
+      "Text": " If you were at Black Hat, you can't answer this question, okay, if you saw that."
+    },
+    {
+      "Time_Start": 2207.64,
+      "Time_End": 2213.1600000000003,
+      "Text": " But what would be a very convenient function to change if I was overflowing the V table"
+    },
+    {
+      "Time_Start": 2213.1600000000003,
+      "Time_End": 2214.1600000000003,
+      "Text": " pointer?"
+    },
+    {
+      "Time_Start": 2214.1600000000003,
+      "Time_End": 2216.48,
+      "Text": " Somebody please, don't, everybody yell it out, just raise your hands and I'll call on"
+    },
+    {
+      "Time_Start": 2216.48,
+      "Time_End": 2218.4,
+      "Text": " somebody and you can win this book."
+    },
+    {
+      "Time_Start": 2218.4,
+      "Time_End": 2222.8,
+      "Text": " What would be the most convenient function to overflow in the, or to change in the V"
+    },
+    {
+      "Time_Start": 2222.8,
+      "Time_End": 2223.8,
+      "Text": " table pointer?"
+    },
+    {
+      "Time_Start": 2223.92,
+      "Time_End": 2232.92,
+      "Text": " The destructor, absolutely."
+    },
+    {
+      "Time_Start": 2232.92,
+      "Time_End": 2241.04,
+      "Text": " Yep."
+    },
+    {
+      "Time_Start": 2241.04,
+      "Time_End": 2244.6000000000004,
+      "Text": " So the destructor is usually always virtual."
+    },
+    {
+      "Time_Start": 2244.6000000000004,
+      "Time_End": 2248.28,
+      "Text": " So it's almost guaranteed to be there no matter what."
+    },
+    {
+      "Time_Start": 2248.28,
+      "Time_End": 2251.92,
+      "Text": " And so that obviously makes the best choice."
+    },
+    {
+      "Time_Start": 2251.92,
+      "Time_End": 2256.04,
+      "Text": " You could overwrite any function that matters, but that just, I mean, why, I mean, that one's"
+    },
+    {
+      "Time_Start": 2256.04,
+      "Time_End": 2257.04,
+      "Text": " the best."
+    },
+    {
+      "Time_Start": 2257.04,
+      "Time_End": 2258.04,
+      "Text": " Yes."
+    },
+    {
+      "Time_Start": 2258.04,
+      "Time_End": 2270.08,
+      "Text": " Ryan mentioned that GCC always puts in a destructor even if you're only using it in C mode."
+    },
+    {
+      "Time_Start": 2270.08,
+      "Time_End": 2271.08,
+      "Text": " Okay."
+    },
+    {
+      "Time_Start": 2271.08,
+      "Time_End": 2272.08,
+      "Text": " Sounds interesting."
+    },
+    {
+      "Time_Start": 2272.08,
+      "Time_End": 2273.08,
+      "Text": " Okay."
+    },
+    {
+      "Time_Start": 2273.08,
+      "Time_End": 2276.5,
+      "Text": " So injection is complete at this point."
+    },
+    {
+      "Time_Start": 2276.5,
+      "Time_End": 2278.8,
+      "Text": " So here's some information."
+    },
+    {
+      "Time_Start": 2278.8,
+      "Time_End": 2282.6800000000003,
+      "Text": " These are things I'm not talking about in this talk here, but this is some of the stuff"
+    },
+    {
+      "Time_Start": 2282.6800000000003,
+      "Time_End": 2283.6800000000003,
+      "Text": " that can happen."
+    },
+    {
+      "Time_Start": 2283.6800000000003,
+      "Time_End": 2287.96,
+      "Text": " The first one I'd like you to all know is that kernel mode buffer overflows are a reality"
+    },
+    {
+      "Time_Start": 2287.96,
+      "Time_End": 2290.6000000000004,
+      "Text": " and they're all over in Windows NT."
+    },
+    {
+      "Time_Start": 2290.6000000000004,
+      "Time_End": 2296.36,
+      "Text": " It's mostly third\u2011party drivers with IOCTL calls which are not checked."
+    },
+    {
+      "Time_Start": 2296.36,
+      "Time_End": 2301.32,
+      "Text": " IOCTL calls can be made by anybody on the system usually because they put improper permissions"
+    },
+    {
+      "Time_Start": 2301.32,
+      "Time_End": 2303.96,
+      "Text": " on the device handle."
+    },
+    {
+      "Time_Start": 2303.96,
+      "Time_End": 2307.32,
+      "Text": " Kernel mode buffer overflows are very interesting considering I can put anything I want in there,"
+    },
+    {
+      "Time_Start": 2307.32,
+      "Time_End": 2308.32,
+      "Text": " right?"
+    },
+    {
+      "Time_Start": 2308.32,
+      "Time_End": 2311.2400000000002,
+      "Text": " Like the root kit and like Flint."
+    },
+    {
+      "Time_Start": 2311.2400000000002,
+      "Time_End": 2314.6400000000003,
+      "Text": " Another one I'm not really going to talk a whole lot about is the off\u2011by\u2011one errors"
+    },
+    {
+      "Time_Start": 2314.6400000000003,
+      "Time_End": 2318.44,
+      "Text": " caused by \u2011\u2011 an off\u2011by\u2011one error can cause a frame pointer overwrite, but there"
+    },
+    {
+      "Time_Start": 2318.44,
+      "Time_End": 2323.2000000000003,
+      "Text": " was an article in FRAC about that recently, FRAC 55, I believe, and I think the guy that"
+    },
+    {
+      "Time_Start": 2323.2000000000003,
+      "Time_End": 2324.2000000000003,
+      "Text": " wrote it was KLOG."
+    },
+    {
+      "Time_Start": 2324.2000000000003,
+      "Time_End": 2329.48,
+      "Text": " The other one is multistage attacks where you have to get the target into a particular"
+    },
+    {
+      "Time_Start": 2329.48,
+      "Time_End": 2331.4,
+      "Text": " state before you supply the buffer overflow."
+    },
+    {
+      "Time_Start": 2331.4,
+      "Time_End": 2334.96,
+      "Text": " Has everybody here heard of RSA ref, the overflow?"
+    },
+    {
+      "Time_Start": 2334.96,
+      "Time_End": 2335.96,
+      "Text": " That's how that worked."
+    },
+    {
+      "Time_Start": 2336.36,
+      "Time_End": 2338.2,
+      "Text": " It was complicated."
+    },
+    {
+      "Time_Start": 2338.2,
+      "Time_End": 2342.08,
+      "Text": " And then a little bit of this stuff, the URL and MIMA coding is actually covered in the"
+    },
+    {
+      "Time_Start": 2342.08,
+      "Time_End": 2343.08,
+      "Text": " book."
+    },
+    {
+      "Time_Start": 2343.08,
+      "Time_End": 2345.76,
+      "Text": " How to get around that."
+    },
+    {
+      "Time_Start": 2345.76,
+      "Time_End": 2346.76,
+      "Text": " So let's talk about payload."
+    },
+    {
+      "Time_Start": 2346.76,
+      "Time_End": 2349.12,
+      "Text": " Let me see where I am in time."
+    },
+    {
+      "Time_Start": 2349.12,
+      "Time_End": 2352.08,
+      "Text": " I'm five minutes from where I'm supposed to end."
+    },
+    {
+      "Time_Start": 2352.08,
+      "Time_End": 2353.96,
+      "Text": " So I've actually got a number of slides up."
+    },
+    {
+      "Time_Start": 2353.96,
+      "Time_End": 2356.96,
+      "Text": " I'm going to try to go as fast as I can."
+    },
+    {
+      "Time_Start": 2356.96,
+      "Time_End": 2357.96,
+      "Text": " Yeah."
+    },
+    {
+      "Time_Start": 2357.96,
+      "Time_End": 2363.68,
+      "Text": " So things with the payload."
+    },
+    {
+      "Time_Start": 2363.68,
+      "Time_End": 2366.96,
+      "Text": " You can use loaded functions, functions that are already located in memory."
+    },
+    {
+      "Time_Start": 2366.96,
+      "Time_End": 2371.2,
+      "Text": " I'm going to show you how to load your own functions and DOLs if you don't have the functionality"
+    },
+    {
+      "Time_Start": 2371.2,
+      "Time_End": 2372.2,
+      "Text": " you need."
+    },
+    {
+      "Time_Start": 2372.2,
+      "Time_End": 2378.44,
+      "Text": " How to encode your data portion and obviously things that the payload can do is make a shell."
+    },
+    {
+      "Time_Start": 2378.44,
+      "Time_End": 2383.16,
+      "Text": " I'm not actually going to show the actual process of making a shell up here, but I'll"
+    },
+    {
+      "Time_Start": 2383.16,
+      "Time_End": 2385.52,
+      "Text": " just talk about it a little bit."
+    },
+    {
+      "Time_Start": 2385.52,
+      "Time_End": 2387.52,
+      "Text": " So the payload typically will look something like this."
+    },
+    {
+      "Time_Start": 2387.52,
+      "Time_End": 2392.12,
+      "Text": " You'll have an ops sled, you'll have real code and you'll have a data portion."
+    },
+    {
+      "Time_Start": 2392.12,
+      "Time_End": 2397.44,
+      "Text": " This is stuff you're going to use later for arguments to function calls typically."
+    },
+    {
+      "Time_Start": 2397.44,
+      "Time_End": 2404.7999999999997,
+      "Text": " Or if you remember Dildog's paper, he stored in here a URL to go download a file from somewhere"
+    },
+    {
+      "Time_Start": 2404.7999999999997,
+      "Time_End": 2405.7999999999997,
+      "Text": " and execute it."
+    },
+    {
+      "Time_Start": 2405.7999999999997,
+      "Time_End": 2407.88,
+      "Text": " So the URL was stored in this part."
+    },
+    {
+      "Time_Start": 2407.88,
+      "Time_End": 2412.24,
+      "Text": " So there's lots of things you can store here in this data portion."
+    },
+    {
+      "Time_Start": 2412.24,
+      "Time_End": 2414.24,
+      "Text": " Okay."
+    },
+    {
+      "Time_Start": 2414.24,
+      "Time_End": 2416.74,
+      "Text": " So the first thing that has to happen when our payload is executing is we have to find"
+    },
+    {
+      "Time_Start": 2416.74,
+      "Time_End": 2418.3599999999997,
+      "Text": " out where we are in memory."
+    },
+    {
+      "Time_Start": 2418.3599999999997,
+      "Time_End": 2419.3599999999997,
+      "Text": " We could be anywhere."
+    },
+    {
+      "Time_Start": 2419.3599999999997,
+      "Time_End": 2420.92,
+      "Text": " We have no idea."
+    },
+    {
+      "Time_Start": 2420.92,
+      "Time_End": 2423.84,
+      "Text": " So once again, if you're a black hat, you can't answer this question."
+    },
+    {
+      "Time_Start": 2423.84,
+      "Time_End": 2426.88,
+      "Text": " I'm going to ask one in just a moment."
+    },
+    {
+      "Time_Start": 2426.88,
+      "Time_End": 2433.28,
+      "Text": " But what we can do is a short call, which means call forward one instruction and then"
+    },
+    {
+      "Time_Start": 2433.28,
+      "Time_End": 2434.6800000000003,
+      "Text": " that next instruction will be pop EDI."
+    },
+    {
+      "Time_Start": 2434.6800000000003,
+      "Time_End": 2439.04,
+      "Text": " When you do a call, the first thing that happens is it thinks you're going to do a subroutine"
+    },
+    {
+      "Time_Start": 2439.04,
+      "Time_End": 2440.04,
+      "Text": " call, right?"
+    },
+    {
+      "Time_Start": 2440.04,
+      "Time_End": 2443.48,
+      "Text": " So it takes the current instruction pointer and puts it on the stack."
+    },
+    {
+      "Time_Start": 2443.48,
+      "Time_End": 2448.8,
+      "Text": " Well, then when they get to where we called to, we pop it back off the stack and store"
+    },
+    {
+      "Time_Start": 2448.8,
+      "Time_End": 2450.44,
+      "Text": " it somewhere for later."
+    },
+    {
+      "Time_Start": 2450.96,
+      "Time_End": 2453.4,
+      "Text": " Let's say EDI is a convenient place to store it."
+    },
+    {
+      "Time_Start": 2453.4,
+      "Time_End": 2458.52,
+      "Text": " What we've done is we now know, let me go back to the previous slide, where this location"
+    },
+    {
+      "Time_Start": 2458.52,
+      "Time_End": 2460.12,
+      "Text": " is right here."
+    },
+    {
+      "Time_Start": 2460.12,
+      "Time_End": 2462.96,
+      "Text": " And because we know that, we can calculate the offset to get to our data."
+    },
+    {
+      "Time_Start": 2462.96,
+      "Time_End": 2465.96,
+      "Text": " This is very important because we have to use this data."
+    },
+    {
+      "Time_Start": 2465.96,
+      "Time_End": 2467.84,
+      "Text": " Okay."
+    },
+    {
+      "Time_Start": 2467.84,
+      "Time_End": 2470.12,
+      "Text": " So we've got our \u2011\u2011 I call it getting bearings."
+    },
+    {
+      "Time_Start": 2470.12,
+      "Time_End": 2475.12,
+      "Text": " The problem with this instruction, however, is that it's EB00000000."
+    },
+    {
+      "Time_Start": 2475.12,
+      "Time_End": 2477.12,
+      "Text": " That's how it's encoded."
+    },
+    {
+      "Time_Start": 2477.12,
+      "Time_End": 2480.12,
+      "Text": " Obviously four null characters isn't going to do our payload any good."
+    },
+    {
+      "Time_Start": 2480.7999999999997,
+      "Time_End": 2485.0,
+      "Text": " So the quiz question for the next book is, how would I change this such that there are"
+    },
+    {
+      "Time_Start": 2485.0,
+      "Time_End": 2487.0,
+      "Text": " no null characters but it's equivalent?"
+    },
+    {
+      "Time_Start": 2487.0,
+      "Time_End": 2490.0,
+      "Text": " You, sir, over there."
+    },
+    {
+      "Time_Start": 2490.0,
+      "Time_End": 2491.0,
+      "Text": " Yeah."
+    },
+    {
+      "Time_Start": 2491.0,
+      "Time_End": 2494.0,
+      "Text": " XOR the instruction with itself to receive zero."
+    },
+    {
+      "Time_Start": 2494.0,
+      "Time_End": 2497.0,
+      "Text": " XOR the instruction with itself to receive zero."
+    },
+    {
+      "Time_Start": 2497.88,
+      "Time_End": 2514.88,
+      "Text": " You're on a track that is good, but it wouldn't work in this case for this."
+    },
+    {
+      "Time_Start": 2514.88,
+      "Time_End": 2515.88,
+      "Text": " Somebody else."
+    },
+    {
+      "Time_Start": 2515.88,
+      "Time_End": 2516.88,
+      "Text": " Yes, sir."
+    },
+    {
+      "Time_Start": 2516.88,
+      "Time_End": 2538.28,
+      "Text": " The answer is, you make the call backwards, so the sign is different, and instead of"
+    },
+    {
+      "Time_Start": 2538.28,
+      "Time_End": 2539.28,
+      "Text": " zeros, we'll have Fs."
+    },
+    {
+      "Time_Start": 2539.28,
+      "Time_End": 2540.28,
+      "Text": " I'll show that in the next slide."
+    },
+    {
+      "Time_Start": 2540.28,
+      "Time_End": 2559.94,
+      "Text": " So no, no, no bites. We make a call backwards. I have it written down a little differently"
+    },
+    {
+      "Time_Start": 2559.94,
+      "Time_End": 2563.84,
+      "Text": " than you described it, but you're on exactly the same wavelength. The call goes backwards,"
+    },
+    {
+      "Time_Start": 2563.84,
+      "Time_End": 2568.52,
+      "Text": " see? And then I simply make the next instruction a jump to get over that part because we're"
+    },
+    {
+      "Time_Start": 2568.52,
+      "Time_End": 2574.08,
+      "Text": " done with that, right? We don't want to run that twice. And then we pop EDI. That translates"
+    },
+    {
+      "Time_Start": 2574.08,
+      "Time_End": 2581.16,
+      "Text": " EBFFFFFFE. No null characters. And we essentially have done exactly the same thing."
+    },
+    {
+      "Time_Start": 2581.16,
+      "Time_End": 2588.0,
+      "Text": " Okay. Now, like what you were talking about earlier, sir, is the XOR protection. We have"
+    },
+    {
+      "Time_Start": 2588.0,
+      "Time_End": 2591.84,
+      "Text": " a data payload, right? We can't have any null characters in that either, but we're going"
+    },
+    {
+      "Time_Start": 2591.84,
+      "Time_End": 2595.0,
+      "Text": " to probably put a lot of strings and weird stuff in there. And strings need to be null"
+    },
+    {
+      "Time_Start": 2595.0,
+      "Time_End": 2601.56,
+      "Text": " terminated. So here's the trick to make your payload safe from this. You simply XOR it,"
+    },
+    {
+      "Time_Start": 2601.56,
+      "Time_End": 2605.76,
+      "Text": " the entire thing with a bite, which then the result turns out not to have any null characters."
+    },
+    {
+      "Time_Start": 2605.76,
+      "Time_End": 2610.48,
+      "Text": " You have to choose a bite that works for the payload or the data portion that you have."
+    },
+    {
+      "Time_Start": 2610.48,
+      "Time_End": 2617.14,
+      "Text": " So we XOR every single bite and make it safe. There are no null characters. It looks garbly."
+    },
+    {
+      "Time_Start": 2617.14,
+      "Time_End": 2622.76,
+      "Text": " It's not encrypted, of course. It's just pseudo obfuscated, I guess, in a way. Everybody understand"
+    },
+    {
+      "Time_Start": 2622.76,
+      "Time_End": 2627.4,
+      "Text": " how XOR works here? We XOR every single bite across. And if there was a zero, it will now"
+    },
+    {
+      "Time_Start": 2627.4,
+      "Time_End": 2631.6000000000004,
+      "Text": " be the value of whatever XOR, whatever we're XORing it with. And it will just look kind"
+    },
+    {
+      "Time_Start": 2631.6000000000004,
+      "Time_End": 2635.28,
+      "Text": " of like gobbledygook when we're done. The key is, of course, we can XOR back to the"
+    },
+    {
+      "Time_Start": 2635.28,
+      "Time_End": 2642.0800000000004,
+      "Text": " original. So here's our typical payload. Our instruction code begins there. The first thing"
+    },
+    {
+      "Time_Start": 2642.0800000000004,
+      "Time_End": 2645.5600000000004,
+      "Text": " our instruction code is going to do, after, of course, it knows where it is in memory"
+    },
+    {
+      "Time_Start": 2645.5600000000004,
+      "Time_End": 2650.6000000000004,
+      "Text": " by doing that call, is going to begin to decode. So it will go down here and decode it back"
+    },
+    {
+      "Time_Start": 2650.6,
+      "Time_End": 2656.04,
+      "Text": " to the original. This is on the remote computer once we've already got it online."
+    },
+    {
+      "Time_Start": 2656.04,
+      "Time_End": 2662.44,
+      "Text": " Okay. So let's say we've decoded. We have a bunch of function names in here. Names like"
+    },
+    {
+      "Time_Start": 2662.44,
+      "Time_End": 2674.44,
+      "Text": " \u2011\u2011 what's a good function? What was that? System, yeah, that's a good one. All right."
+    },
+    {
+      "Time_Start": 2674.44,
+      "Time_End": 2680.92,
+      "Text": " So we don't know the address of that call yet. Because, remember, our compiler didn't \u2011\u2011"
+    },
+    {
+      "Time_Start": 2680.92,
+      "Time_End": 2684.28,
+      "Text": " the compiler that the remote system used to make this program didn't happily compile our"
+    },
+    {
+      "Time_Start": 2684.28,
+      "Time_End": 2688.64,
+      "Text": " non\u2011existent code into it. So we have to go find out where that function lives in memory."
+    },
+    {
+      "Time_Start": 2688.64,
+      "Time_End": 2694.36,
+      "Text": " So we can put the string system right here somewhere in this thing. And we can reference"
+    },
+    {
+      "Time_Start": 2694.36,
+      "Time_End": 2701.36,
+      "Text": " it to a call to get proc address, which is not the slide I wanted. Oh, no. Hold on. Okay."
+    },
+    {
+      "Time_Start": 2702.36,
+      "Time_End": 2707.32,
+      "Text": " I'm going to go back and forth here. Get proc address and give it the pointer to the name"
+    },
+    {
+      "Time_Start": 2707.32,
+      "Time_End": 2712.1200000000003,
+      "Text": " that we just supplied, and boom, we have the address. When we have the address, we can"
+    },
+    {
+      "Time_Start": 2712.1200000000003,
+      "Time_End": 2716.8,
+      "Text": " actually use it. Okay. Another way to do it is if we don't know"
+    },
+    {
+      "Time_Start": 2716.8,
+      "Time_End": 2720.1600000000003,
+      "Text": " where \u2011\u2011 or if we do know exactly where it is and we don't want to try to find it,"
+    },
+    {
+      "Time_Start": 2720.1600000000003,
+      "Time_End": 2727.1600000000003,
+      "Text": " we can just hard code it in. In this example, we just simply call the addresses directly."
+    },
+    {
+      "Time_Start": 2728.16,
+      "Time_End": 2735.16,
+      "Text": " Yes. I'll talk about that in a moment. Oh, yeah. So what this fellow said is in order"
+    },
+    {
+      "Time_Start": 2735.68,
+      "Time_End": 2742.12,
+      "Text": " to call get proc address, you have to know where it is clearly. And I'll talk about PE"
+    },
+    {
+      "Time_Start": 2742.12,
+      "Time_End": 2746.68,
+      "Text": " executable header to talk about that. Okay. So the pros and cons to hard coding."
+    },
+    {
+      "Time_Start": 2746.68,
+      "Time_End": 2751.96,
+      "Text": " Pros, it makes, obviously, the code smaller. If the function isn't in the same place, that's"
+    },
+    {
+      "Time_Start": 2751.96,
+      "Time_End": 2756.64,
+      "Text": " a con. If dynamically loaded DLLs are an example where it's typically not going to be in the"
+    },
+    {
+      "Time_Start": 2756.64,
+      "Time_End": 2761.2799999999997,
+      "Text": " same place. Some DLLs, however, are always in the same place, well, most of the time."
+    },
+    {
+      "Time_Start": 2761.2799999999997,
+      "Time_End": 2767.92,
+      "Text": " And kernel 32 is an example of one of those. Okay. So dynamic function loading. We're going"
+    },
+    {
+      "Time_Start": 2767.92,
+      "Time_End": 2773.7599999999998,
+      "Text": " to use load library and get proc address. Load library loads new DLLs, get proc address"
+    },
+    {
+      "Time_Start": 2773.7599999999998,
+      "Time_End": 2777.48,
+      "Text": " loads functions from DLLs which are currently loaded in memory."
+    },
+    {
+      "Time_Start": 2777.48,
+      "Time_End": 2782.72,
+      "Text": " Now, in reference to what you just said, load \u2011\u2011 the function calls load library and get proc"
+    },
+    {
+      "Time_Start": 2782.7200000000003,
+      "Time_End": 2787.0000000000005,
+      "Text": " address are always in the same place. So we can hard code the addresses of them. If"
+    },
+    {
+      "Time_Start": 2787.0000000000005,
+      "Time_End": 2790.2400000000002,
+      "Text": " we don't want to do that, we can go into the PE executable header and the first two entries"
+    },
+    {
+      "Time_Start": 2790.2400000000002,
+      "Time_End": 2795.5600000000004,
+      "Text": " in the IDATA table will be these two calls. Always. I've never seen it any other way."
+    },
+    {
+      "Time_Start": 2795.5600000000004,
+      "Time_End": 2800.9800000000005,
+      "Text": " So we can load a new DLL and find any function by its ASCII name. I will note that sometimes"
+    },
+    {
+      "Time_Start": 2800.9800000000005,
+      "Time_End": 2805.44,
+      "Text": " functions are loaded by ordinal and I'm not talking about that in this talk. Most of the"
+    },
+    {
+      "Time_Start": 2805.44,
+      "Time_End": 2810.2000000000003,
+      "Text": " time I've seen them by ASCII name. Okay. So this was the slide you saw. You call"
+    },
+    {
+      "Time_Start": 2810.2000000000003,
+      "Time_End": 2815.0800000000004,
+      "Text": " get proc address, pass it the ASCII of the function name you want to load. Now, this"
+    },
+    {
+      "Time_Start": 2815.0800000000004,
+      "Time_End": 2819.4,
+      "Text": " is called building a jump table. We do the same thing. Get proc address. When we get"
+    },
+    {
+      "Time_Start": 2819.4,
+      "Time_End": 2823.5600000000004,
+      "Text": " the address, we store it away for later. And we do this for all the functions we're planning"
+    },
+    {
+      "Time_Start": 2823.5600000000004,
+      "Time_End": 2827.8,
+      "Text": " on using. There might be six or seven. So we just keep storing them as we load them."
+    },
+    {
+      "Time_Start": 2827.8,
+      "Time_End": 2831.8,
+      "Text": " And we build a jump table. When we have the jump table complete, we begin doing useful"
+    },
+    {
+      "Time_Start": 2831.92,
+      "Time_End": 2838.92,
+      "Text": " things. Jump through it. Making the calls. Everybody kind of get that? Okay. Now, here's"
+    },
+    {
+      "Time_Start": 2846.0800000000004,
+      "Time_End": 2852.88,
+      "Text": " an elite thing. Hash loading. I don't like having payloads with data portions of these"
+    },
+    {
+      "Time_Start": 2852.88,
+      "Time_End": 2857.2000000000003,
+      "Text": " huge string names for every function I need to load. Well, it turns out you don't need"
+    },
+    {
+      "Time_Start": 2857.2000000000003,
+      "Time_End": 2861.6400000000003,
+      "Text": " to do that. What you can do is take a hash of the string itself, which turns out to be"
+    },
+    {
+      "Time_Start": 2861.64,
+      "Time_End": 2866.72,
+      "Text": " a 4 byte value in this case, and just store those. And then you can go into the process"
+    },
+    {
+      "Time_Start": 2866.72,
+      "Time_End": 2870.7999999999997,
+      "Text": " itself and just hash everything that's loaded. And if it matches, use it. There's almost"
+    },
+    {
+      "Time_Start": 2870.7999999999997,
+      "Time_End": 2876.08,
+      "Text": " no chance of a collision here. So we can locate any loaded function by checking the CRC of"
+    },
+    {
+      "Time_Start": 2876.08,
+      "Time_End": 2880.08,
+      "Text": " each loaded ASCII name. We don't send any ASCII names. We're just sending the hash equivalents"
+    },
+    {
+      "Time_Start": 2880.08,
+      "Time_End": 2886.7599999999998,
+      "Text": " of them. Makes our payload much smaller. So to talk about that for a moment, we have to"
+    },
+    {
+      "Time_Start": 2886.76,
+      "Time_End": 2891.2400000000002,
+      "Text": " know about the PE header. Does everybody know what that is? Every executable under"
+    },
+    {
+      "Time_Start": 2891.2400000000002,
+      "Time_End": 2896.84,
+      "Text": " NT almost are in this format called portable executable. And inside of this format is a"
+    },
+    {
+      "Time_Start": 2896.84,
+      "Time_End": 2902.0800000000004,
+      "Text": " table of all the functions that it loads. So we have to go find the information. So"
+    },
+    {
+      "Time_Start": 2902.0800000000004,
+      "Time_End": 2907.0400000000004,
+      "Text": " we go to this optional header. And then from there, we can get the ASCII name and the corresponding"
+    },
+    {
+      "Time_Start": 2907.0400000000004,
+      "Time_End": 2914.0400000000004,
+      "Text": " address of that function. That's all we need to do. It's already there for us. So over"
+    },
+    {
+      "Time_Start": 2915.04,
+      "Time_End": 2922.08,
+      "Text": " here on the right\u2011hand side, this is our payload. The yellow area down there is the"
+    },
+    {
+      "Time_Start": 2922.08,
+      "Time_End": 2927.12,
+      "Text": " actual CRCs or the hashes that we've made. So we load one of those up. And then we go"
+    },
+    {
+      "Time_Start": 2927.12,
+      "Time_End": 2931.92,
+      "Text": " into the PE header, which is over here. And we actually in realtime hash every single"
+    },
+    {
+      "Time_Start": 2931.92,
+      "Time_End": 2936.7599999999998,
+      "Text": " ASCII name. These are ASCII names, okay? We hash each one and match it against the CRC."
+    },
+    {
+      "Time_Start": 2936.7599999999998,
+      "Time_End": 2943.4,
+      "Text": " If it matches, then we go find the function address and then boom, put it back. Replacing"
+    },
+    {
+      "Time_Start": 2943.44,
+      "Time_End": 2949.32,
+      "Text": " the original CRC with a function address. It's nice and clean. If we want ten functions,"
+    },
+    {
+      "Time_Start": 2949.32,
+      "Time_End": 2953.0,
+      "Text": " we start out with ten hashes. And when we get done, we have ten function addresses in"
+    },
+    {
+      "Time_Start": 2953.0,
+      "Time_End": 2956.44,
+      "Text": " there. Doesn't change the size at all. It's nice and clean. So it's basically building"
+    },
+    {
+      "Time_Start": 2956.44,
+      "Time_End": 2963.44,
+      "Text": " another jump table. Boom, boom. And so forth. Okay. So there's our jump table. Much, much"
+    },
+    {
+      "Time_Start": 2964.0,
+      "Time_End": 2969.12,
+      "Text": " cleaner. Okay. Limited character sets. If you're mime encoding,"
+    },
+    {
+      "Time_Start": 2969.12,
+      "Time_End": 2972.92,
+      "Text": " URL encoding, whatever, it's going to limit the number of characters that you can send"
+    },
+    {
+      "Time_Start": 2972.92,
+      "Time_End": 2977.2400000000002,
+      "Text": " through, say, the content filter to the application. What this really means is that we've limited"
+    },
+    {
+      "Time_Start": 2977.2400000000002,
+      "Time_End": 2983.7200000000003,
+      "Text": " the number of instructions that we can use. It means that the opcode values that we're"
+    },
+    {
+      "Time_Start": 2983.7200000000003,
+      "Time_End": 2988.28,
+      "Text": " able to send is a limited set. So we have to work with that. Now, a couple of years"
+    },
+    {
+      "Time_Start": 2988.28,
+      "Time_End": 2995.28,
+      "Text": " ago, a friend, Caesar, and I had a party, came up with this solution for a problem."
+    },
+    {
+      "Time_Start": 2996.0,
+      "Time_End": 3000.6800000000003,
+      "Text": " The problem was mime encoding. We only had a number of instructions that we could work"
+    },
+    {
+      "Time_Start": 3000.72,
+      "Time_End": 3007.0,
+      "Text": " with if we had to pass only alphanumeric information. We couldn't pass anything weird. We only had"
+    },
+    {
+      "Time_Start": 3007.0,
+      "Time_End": 3012.3199999999997,
+      "Text": " short jumps, push and pop, and subtract. Now, the way this worked is we came up with this"
+    },
+    {
+      "Time_Start": 3012.3199999999997,
+      "Time_End": 3017.9199999999996,
+      "Text": " idea that we could just simply put a value on the stack, pop it, put it in a register"
+    },
+    {
+      "Time_Start": 3017.9199999999996,
+      "Time_End": 3022.3199999999997,
+      "Text": " like EAX, and then call subtract on it over and over and over again until it was the actual"
+    },
+    {
+      "Time_Start": 3022.3199999999997,
+      "Time_End": 3025.72,
+      "Text": " value we really needed for the payload that we wanted, and we pushed it back on the stack."
+    },
+    {
+      "Time_Start": 3025.72,
+      "Time_End": 3028.72,
+      "Text": " And we just did this over and over and over again. We actually built our payload in real"
+    },
+    {
+      "Time_Start": 3028.76,
+      "Time_End": 3035.5200000000004,
+      "Text": " time. It looked like a dream. Along with this technique, we also had the bridge. So if we"
+    },
+    {
+      "Time_Start": 3035.5200000000004,
+      "Time_End": 3041.2000000000003,
+      "Text": " couldn't jump, we had to avoid the jump instruction. So what we did is we had the stack with the"
+    },
+    {
+      "Time_Start": 3041.2000000000003,
+      "Time_End": 3047.6000000000004,
+      "Text": " code on it that's building our new payload. So it's popping stuff into EAX. It's subtracting"
+    },
+    {
+      "Time_Start": 3047.6000000000004,
+      "Time_End": 3052.6600000000003,
+      "Text": " until it's a real opcode that we want and then pushing it back. And then when it pushes"
+    },
+    {
+      "Time_Start": 3052.6600000000003,
+      "Time_End": 3058.4800000000005,
+      "Text": " it back, it pushes it down on the bottom, and it grows up. So as we execute down, the"
+    },
+    {
+      "Time_Start": 3058.48,
+      "Time_End": 3064.48,
+      "Text": " other side is growing up as we push on to it. And what happened was is we calculated"
+    },
+    {
+      "Time_Start": 3064.48,
+      "Time_End": 3069.2400000000002,
+      "Text": " the size exactly, no jump instruction required, so that as it's growing up, as soon as we"
+    },
+    {
+      "Time_Start": 3069.2400000000002,
+      "Time_End": 3074.8,
+      "Text": " got done, they met in the middle perfectly, and boom, we just began executing real instructions"
+    },
+    {
+      "Time_Start": 3074.8,
+      "Time_End": 3081.8,
+      "Text": " right off the bat. Backwards bridge. Okay. So let's talk about loading a new DLL."
+    },
+    {
+      "Time_Start": 3082.5600000000004,
+      "Time_End": 3089.48,
+      "Text": " Same as get proc address, just call it load library. I actually stole the same slide."
+    },
+    {
+      "Time_Start": 3089.48,
+      "Time_End": 3095.76,
+      "Text": " This is the name of the DLL we want to load. We call load library. And we end up passing"
+    },
+    {
+      "Time_Start": 3095.76,
+      "Time_End": 3099.36,
+      "Text": " \u2011\u2011 excuse me, no, this was the function address of load library, and then we pass"
+    },
+    {
+      "Time_Start": 3099.36,
+      "Time_End": 3104.0,
+      "Text": " the ASCII name of the DLL we want to load, and then boom, suddenly our process space"
+    },
+    {
+      "Time_Start": 3104.0,
+      "Time_End": 3107.8,
+      "Text": " becomes much larger because we just added a whole new DLL full of functions that we"
+    },
+    {
+      "Time_Start": 3107.8,
+      "Time_End": 3112.8,
+      "Text": " can use. What's a good function \u2011\u2011 what's a good DLL to load?"
+    },
+    {
+      "Time_Start": 3112.8,
+      "Time_End": 3118.8,
+      "Text": " That sounds good. I don't know what it exports, but it definitely sounds good. URL, mon, DLL."
+    },
+    {
+      "Time_Start": 3118.8,
+      "Time_End": 3125.8,
+      "Text": " Oh, okay. There's another one that actually I have on the slide next, which is called"
+    },
+    {
+      "Time_Start": 3125.88,
+      "Time_End": 3132.52,
+      "Text": " win inet, which does something similar as well. Winsock stuff is obviously good, so"
+    },
+    {
+      "Time_Start": 3132.52,
+      "Time_End": 3137.4,
+      "Text": " you might want to load that as well. This is thanks to Dildog's paper that I read. He"
+    },
+    {
+      "Time_Start": 3137.4,
+      "Time_End": 3141.12,
+      "Text": " just mentioned the win inet DLL, which comes with Internet Explorer. It's really useful"
+    },
+    {
+      "Time_Start": 3141.12,
+      "Time_End": 3145.6,
+      "Text": " for downloading files off the Internet with two or three calls. So I load win inet DLL"
+    },
+    {
+      "Time_Start": 3145.6,
+      "Time_End": 3151.1600000000003,
+      "Text": " and I use internet open URL and read file to download a file from anywhere on the Internet."
+    },
+    {
+      "Time_Start": 3151.1600000000003,
+      "Time_End": 3155.7200000000003,
+      "Text": " Takes two calls, very simple, no space, and it downloads it to the local system at which"
+    },
+    {
+      "Time_Start": 3155.7200000000003,
+      "Time_End": 3161.2400000000002,
+      "Text": " point I can execute it. Pretty scary. So win inet does all the hard work for me."
+    },
+    {
+      "Time_Start": 3161.6800000000003,
+      "Time_End": 3167.36,
+      "Text": " It makes my payload smaller. And the best part is I can store my file anonymously on"
+    },
+    {
+      "Time_Start": 3167.36,
+      "Time_End": 3172.36,
+      "Text": " Geocity somewhere, so even if you caught the download, you wouldn't know who I was."
+    },
+    {
+      "Time_Start": 3172.36,
+      "Time_End": 3179.36,
+      "Text": " Just as, for example, WS232 DLL has all the winsock functionality. If I'm going to make"
+    },
+    {
+      "Time_Start": 3179.88,
+      "Time_End": 3183.84,
+      "Text": " a back door or something like that, I'm going to need to open a socket perhaps, so I could"
+    },
+    {
+      "Time_Start": 3183.84,
+      "Time_End": 3187.6800000000003,
+      "Text": " load this up and do that. Another way to make calls on a system is through"
+    },
+    {
+      "Time_Start": 3187.6800000000003,
+      "Time_End": 3193.88,
+      "Text": " the use of what's called an interrupt call. Interrupt 2E under Windows NT is the system"
+    },
+    {
+      "Time_Start": 3193.88,
+      "Time_End": 3198.5200000000004,
+      "Text": " call. And I can make a whole plethora of calls that way, and it takes like two bytes to make"
+    },
+    {
+      "Time_Start": 3198.5200000000004,
+      "Time_End": 3202.8,
+      "Text": " each one. I just set up the registers to point to the parameters for that call and then I"
+    },
+    {
+      "Time_Start": 3202.8,
+      "Time_End": 3207.1200000000003,
+      "Text": " call interrupt 2E, boom, I just made a sys call. I can start processes that way, open"
+    },
+    {
+      "Time_Start": 3207.1200000000003,
+      "Time_End": 3211.4,
+      "Text": " and close files, all of it available directly through the sys call interface. No monkeying"
+    },
+    {
+      "Time_Start": 3211.4,
+      "Time_End": 3217.5200000000004,
+      "Text": " around with DLLs. And these are always guaranteed to work. They don't change locations. I won't"
+    },
+    {
+      "Time_Start": 3217.52,
+      "Time_End": 3222.32,
+      "Text": " make a caveat to that. Windows NT4 to Windows 2K, the sys call table changed slightly, so"
+    },
+    {
+      "Time_Start": 3222.32,
+      "Time_End": 3227.84,
+      "Text": " the sys call numbers slightly modified. That's important to know. Same with Linux. In fact,"
+    },
+    {
+      "Time_Start": 3227.84,
+      "Time_End": 3232.12,
+      "Text": " I believe you can do most of a remote shell just using this method. And under Linux I"
+    },
+    {
+      "Time_Start": 3232.12,
+      "Time_End": 3239.12,
+      "Text": " believe it's interrupt 80, and then under NT it's obviously interrupt 2E."
+    },
+    {
+      "Time_Start": 3239.4,
+      "Time_End": 3244.52,
+      "Text": " Responding to remote command shell, I can use create process under NT or a sys call"
+    },
+    {
+      "Time_Start": 3244.52,
+      "Time_End": 3251.08,
+      "Text": " under Linux. I can pipe the output through a socket to attach to the process and open"
+    },
+    {
+      "Time_Start": 3251.08,
+      "Time_End": 3255.28,
+      "Text": " up a TCP socket by loading the windsock DLL on my side and have two-way communications."
+    },
+    {
+      "Time_Start": 3255.28,
+      "Time_End": 3262.28,
+      "Text": " I've just created an instant Telnet server. If I want to get really crazy, I could not"
+    },
+    {
+      "Time_Start": 3263.08,
+      "Time_End": 3267.56,
+      "Text": " do it quite that way. I could make a covert channel. If I have access to the kernel, which"
+    },
+    {
+      "Time_Start": 3267.56,
+      "Time_End": 3271.64,
+      "Text": " most of the times I would, I could inject a TDI or Indus layer hook, which enables me"
+    },
+    {
+      "Time_Start": 3271.64,
+      "Time_End": 3276.92,
+      "Text": " to sniff all network traffic and send raw packets over the wire. I could watch ICMP"
+    },
+    {
+      "Time_Start": 3276.92,
+      "Time_End": 3281.8799999999997,
+      "Text": " packets, and if there's a certain option in there, I could detect the next five characters"
+    },
+    {
+      "Time_Start": 3281.8799999999997,
+      "Time_End": 3285.72,
+      "Text": " as a command like I was talking about earlier. It's covert. You would never know. Arnie"
+    },
+    {
+      "Time_Start": 3285.72,
+      "Time_End": 3288.7999999999997,
+      "Text": " Vidstrom, I don't know if you know him, but he has a site on the net where he distributes"
+    },
+    {
+      "Time_Start": 3288.7999999999997,
+      "Time_End": 3293.04,
+      "Text": " what he calls ACK command server. It's another kind of interesting idea. It just sends ACK"
+    },
+    {
+      "Time_Start": 3293.04,
+      "Time_End": 3296.08,
+      "Text": " packets. There's no three-way handshake. There's no real TCP session. It's just a bunch of"
+    },
+    {
+      "Time_Start": 3296.08,
+      "Time_End": 3301.62,
+      "Text": " ACK packets over port 80 going back and forth. But it looks just like a netcast session."
+    },
+    {
+      "Time_Start": 3301.62,
+      "Time_End": 3307.2599999999998,
+      "Text": " It's actually open and working. IIS, if I can't get into kernel mode, I can just patch"
+    },
+    {
+      "Time_Start": 3307.2599999999998,
+      "Time_End": 3310.14,
+      "Text": " something in the process I'm in. Obviously it's accepting network input or I wouldn't"
+    },
+    {
+      "Time_Start": 3310.14,
+      "Time_End": 3313.58,
+      "Text": " be there in the first place. So I obviously could patch the location where that network"
+    },
+    {
+      "Time_Start": 3313.58,
+      "Time_End": 3318.3399999999997,
+      "Text": " input is processed. No need to get into kernel mode. I could, for instance, on IIS just check"
+    },
+    {
+      "Time_Start": 3318.3399999999997,
+      "Time_End": 3325.3399999999997,
+      "Text": " where it looks at all the URL stuff. Worms, not going to go into detail on this. Just"
+    },
+    {
+      "Time_Start": 3325.9,
+      "Time_End": 3332.9,
+      "Text": " know that mobile code is mobile code. Lysine deficiency. I want to talk about this a little"
+    },
+    {
+      "Time_Start": 3336.02,
+      "Time_End": 3340.1800000000003,
+      "Text": " bit. In terms of worms, if you are playing with them in the lab, make sure you build"
+    },
+    {
+      "Time_Start": 3340.1800000000003,
+      "Time_End": 3345.06,
+      "Text": " a fail safe mechanism so they don't get out of your lab by mistake. What we do in our"
+    },
+    {
+      "Time_Start": 3345.06,
+      "Time_End": 3349.6600000000003,
+      "Text": " lab is we make it so you have to have a particular floppy disk in the drive. If the floppy is"
+    },
+    {
+      "Time_Start": 3349.6600000000003,
+      "Time_End": 3354.2200000000003,
+      "Text": " not there, the worm will not infect the machine. We call it lysine deficiency. It's a very,"
+    },
+    {
+      "Time_Start": 3354.2200000000003,
+      "Time_End": 3359.2200000000003,
+      "Text": " very important thing to do if you're designing worm technology to be responsible, especially"
+    },
+    {
+      "Time_Start": 3359.2200000000003,
+      "Time_End": 3363.78,
+      "Text": " if you're distributing it on a website somewhere. Make sure that the lysine deficiency exists."
+    },
+    {
+      "Time_Start": 3363.78,
+      "Time_End": 3366.34,
+      "Text": " It could do a number of things. If you don't want to deal with floppies, you can just make"
+    },
+    {
+      "Time_Start": 3366.34,
+      "Time_End": 3371.7400000000002,
+      "Text": " sure if like it only works if a particular machine responds to a ping or something like"
+    },
+    {
+      "Time_Start": 3371.7400000000002,
+      "Time_End": 3377.6200000000003,
+      "Text": " that. Okay, so to recap all this, the injection part is not the same as the payload part."
+    },
+    {
+      "Time_Start": 3377.6200000000003,
+      "Time_End": 3381.82,
+      "Text": " They can be separated. Payloads can do all kinds of things like DOS attacks, worm, remote"
+    },
+    {
+      "Time_Start": 3381.82,
+      "Time_End": 3386.9,
+      "Text": " shell, install a root kit. There's many challenges with the injection part. Obviously the way"
+    },
+    {
+      "Time_Start": 3386.9,
+      "Time_End": 3390.02,
+      "Text": " the characters are encoded, null characters is obviously a good example of that. The stack"
+    },
+    {
+      "Time_Start": 3390.02,
+      "Time_End": 3394.98,
+      "Text": " size, deal with that. Highline and lowline address, and obviously the result, we could"
+    },
+    {
+      "Time_Start": 3394.98,
+      "Time_End": 3398.82,
+      "Text": " actually call through CPU registers and whatnot to get back to the stack if we can't use a"
+    },
+    {
+      "Time_Start": 3398.82,
+      "Time_End": 3403.78,
+      "Text": " lowline address. Filters can limit what we can put in the payload or in the injection"
+    },
+    {
+      "Time_Start": 3403.78,
+      "Time_End": 3407.46,
+      "Text": " vector. They could limit our op code set, but I've demonstrated obviously with the push,"
+    },
+    {
+      "Time_Start": 3407.46,
+      "Time_End": 3410.86,
+      "Text": " pop, and subtracting that's not a problem. We can work around those and figure out how"
+    },
+    {
+      "Time_Start": 3410.86,
+      "Time_End": 3417.3,
+      "Text": " to make working code. Typically our payload's going to be encoded, XOR encoded some way."
+    },
+    {
+      "Time_Start": 3417.3,
+      "Time_End": 3421.7000000000003,
+      "Text": " We can build jump tables. We can load any DLL and any function we want to. We can hard"
+    },
+    {
+      "Time_Start": 3421.7000000000003,
+      "Time_End": 3426.9,
+      "Text": " code the addresses or we can load them dynamically and importantly also we should use lysine"
+    },
+    {
+      "Time_Start": 3426.9,
+      "Time_End": 3430.9,
+      "Text": " deficiency if we're doing worm stuff. Thank you very much."
+    }
+  ]
+}
