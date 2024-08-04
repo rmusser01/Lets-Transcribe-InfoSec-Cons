@@ -1,0 +1,64 @@
+**Introduction:**
+- **Bohan Liu**, a browser security researcher and Google Chrome bug hunter, presents alongside co-speakers **Zheng Wang** and **GuanCheng Li**, both of whom have extensive experience in browser and kernel security.
+- The talk focuses on the prevalence of Chromium in popular software and the potential security risks this poses.
+
+**Chromium's Integration into Popular Software:**
+- Chromium is widely integrated into software supply chains, with many popular software programs built on frameworks like CEF and Electron.
+- This means that **vulnerabilities in Chromium** can directly impact these software programs.
+- Google's vulnerability disclosure policy leads to the public disclosure of most Chromium vulnerability details **14 weeks after they are fixed**, creating a window of opportunity for attackers.
+
+**RCE Window Period:**
+- The "RCE window period" refers to the time between the **fix of a vulnerability in Chromium** and the completion of **fixes for affected popular software**.
+- This period provides a window of opportunity for attackers to exploit vulnerabilities in popular software.
+- The presenters conducted an experiment to evaluate the RCE window period for over 20 popular software programs.
+
+**Experiment Methodology:**
+- The experiment involved three steps:
+  1. Downloading old versions of popular software through Mirror State.
+  2. Identifying the browser component, its version, and release dates.
+  3. Calculating the **updateGap** (time difference between software and its Chromium component updates) to describe the RCE window period.
+
+**Experiment Results:**
+- The results showed varying updateGaps, ranging from 9 to 800 days for different software.
+- Software using the Electron or Libcf component generally had update periods of over 90 days.
+- Some software, like Discord, had longer update periods, while others, like Slack, had more frequent updates but still faced challenges with zero-day disclosures.
+
+**Analysis Conclusions:**
+- RCE window periods exist in most software, providing attackers with a window to exploit vulnerabilities.
+- Software built on the Electron framework tends to have shorter RCE window periods due to lower code complexity.
+- Increased update frequency by companies does not eliminate the existence of RCE window periods.
+
+**Attack Surface and Vulnerability Discovery:**
+- In most software, browser components are used to display specific pages and trigger client-side behavior, making client-side development more convenient.
+- During the RCE window period, attackers can easily launch zero-day RCE attacks when they can control the loaded page.
+- Scenarios that developers may overlook include:
+   - Vast lists of loaded URLs: Developers allow specific pages to be opened in the browser component, but other pages are opened by the default system browser. Attackers can bypass this check through page redirection techniques.
+   - Check itself: Incorrect regular expressions or triple checks can lead to vulnerabilities.
+   - Special URL handlers: Registered schemes in the system registry or custom domains in the browser component can be exploited.
+   - Paid code injection: XSS vulnerabilities in Chromium-based software can be exploited, especially when resources are stored locally.
+   - Data cache: Desktop software may use local cache to store data, and vulnerabilities can arise when data is updated without proper checks.
+   - Plugins: Browser components can be used to bypass plugin reviews, leading to potential waterhole attacks.
+
+**V8 Use-After-Free Exploit Method:**
+- Given the short duration of the RCE window period, developing exploits quickly is crucial.
+- A proposed universal exploit method for V8 32-bit use-after-free bugs involves creating inconsistencies through optimized functions, leading to type confusion.
+- This method is demonstrated in Chromium version 91.
+
+**Achieving RCE Without Sandbox Escape Bug:**
+- The Chromium sandbox is a security protection mechanism that restricts the execution permissions of a hacker even if they gain render RCE.
+- However, there is a lack of attention to the attack path of browser vulnerabilities, and the attack surface is relatively rudimentary.
+- To achieve RCE in sandbox-enabled software without a Chromium sandbox escape bug, the presenters propose two implementation logics for Privileged API:
+  1. Checking the URL loaded by the browser component during initialization and registering the Privileged API in the specific domain context.
+  2. Registering the Privileged API object during initialization, regardless of the domain, and allowing developers to check the domain when the Privileged API is called.
+- Both methods have their challenges, and further research has been conducted on bypassing sandbox protections.
+
+**Security Recommendations:**
+- Update to the latest version of Chromium.
+- For highly coupled software, use a stable development version and introduce security patches with updates.
+- Enable the Chromium sandbox and disable unused software functionalities or enable internal mitigations.
+- For developers, add backend and frontend validation, follow the principle of least privilege, enable universal mitigations like CSP, and be vigilant about unexpected input sources.
+
+**Conclusion:**
+- The presenters verify that a large number of Chromium-based software has RCE window periods, providing opportunities for zero-day attacks.
+- They provide real-world examples and share a general V8 use-after-free exploit method to help expedite the creation of exploits.
+- Security recommendations are offered to strengthen the security of Chromium-based software.

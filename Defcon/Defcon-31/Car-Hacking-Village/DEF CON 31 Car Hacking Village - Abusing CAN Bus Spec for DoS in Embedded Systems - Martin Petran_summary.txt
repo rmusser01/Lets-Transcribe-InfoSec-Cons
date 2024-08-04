@@ -1,0 +1,49 @@
+**Introduction**
+- The speaker has worked as a **security engineer** for **over 8 years** and is currently part of the **Accenture Embedded System Security Team** based in **Prague, Czech Republic**.
+- He is also a **big open-source enthusiast** and the **tools** he will be demonstrating are **available on GitHub**.
+
+**CAN Bus Description**
+- **CAN** (**Controller Area Network**) **bus** is a **standard** originally designed for **vehicles** to enable **reliable communication** between **multiple ECUs** (**Electronic Control Units**) in a **noisy environment**.
+- It utilizes **two wires** carrying a **differential signal** (data transmitted is identical, but the **polarity** is **inverted**).
+- Each bus is **terminated** by a **120-ohm resistor**, and modern vehicles typically contain **multiple buses** connected by a **security gateway**.
+- Due to its **robustness, flexibility, and ease of implementation**, CAN bus is also used in other industries, including **heavy industry equipment** and **medical devices**.
+- There are **multiple versions** of the CAN bus, starting with the **11-bit identifier CAN bus** with **8 bytes of data**, which evolved to the **extended CAN ID** with a **29-bit identifier** but retained the 8-byte data limit.
+- More recent versions include **CAN FD** with **64 bytes of data** and **CAN XL**, but the talk focuses on the **standard CAN ID frame** and **extended CAN ID frame**.
+- The speaker provides a visual representation of a **CAN bus message frame** and its **individual fields**, emphasizing the importance of the **CAN ID** and **DLC (Data Length Code)**.
+
+**Problem Definition**
+- The speaker raises a question about what happens when an **attacker ignores the protocol specification** and **uses metadata fields** within messages in an unexpected manner**.
+- He highlights the potential discrepancy between how **device manufacturers' libraries** handle such situations and how **developers** might assume the message format, leading to possible **vulnerabilities**.
+
+**First Demonstration: Using a Development Board**
+- The speaker introduces the **hardware setup** for the first demo, which includes a **victim NXP board** (with **source code** access) and an **attacker Arduino**.
+- He provides a **step-by-step explanation** of the **attacker's code**, where a **CAN ID of 600A** and a **DLC value of F** are set, along with a **dummy payload**.
+- On the **victim's side**, the speaker sets up **variables** and **CAN bus configuration** before entering an **endless loop** waiting for **CAN messages**.
+- When a **breakpoint** is hit, the speaker analyzes the **source and destination data** for the **memcpy operation**, noting the **suspicious DLC value** and **overwritten buffer content**.
+- By investigating the **MSCAN frame structure**, he confirms that the **overwrite** is occurring and discusses the **limited control** an attacker has over the overwritten data.
+- He suggests that this vulnerability could be exploited to **bypass null checks** and manipulate **local and global variables**, potentially leading to **undesired behavior** or a **denial of service**.
+
+**Second Demonstration: Simulated Security Assessment of a Real-Life ECU**
+- The speaker transitions to the second demo, which involves a **security controller ECU** from a **Tesla Model 3 vehicle**.
+- He unpacks the ECU and identifies an **STMicro SPC560B64 microcontroller** with a **working JTAG interface**, allowing him to **dump the firmware image** and proceed with the assessment.
+- The speaker connects to the microcontroller using a **J-Link debugger** and dumps the **firmware** from a specified **memory range**.
+- He opens the dumped binary in **IDA** and uses a custom **plugin, Firm Loader**, to facilitate **auto-analysis**, creating **memory sections** and marking the **code flash as executable**.
+- The speaker discusses two approaches to firmware analysis: **identifying standard functions** and a **combination of static and dynamic analysis**.
+- He manually identifies the **memcpy function** and demonstrates how to determine its **purpose** and **parameters** by examining the **assembly code**.
+- The speaker introduces a **plugin, Wolfie**, to automate the search for vulnerable memcpy functions by filtering based on **conditions** and **function call reachability**.
+- He focuses on a specific **CAN handler function** and identifies a **vulnerable memcpy operation** where the **destination** is a **local variable** and the **length specifier** is the **CAN DLC**.
+- By analyzing the surrounding code, he discovers the presence of a **stack canary** and an **endless while loop**, indicating a potential **fault handler** and **denial of service** vulnerability.
+- The speaker connects to the ECU using the **debugger** and sets **breakpoints** before and after the memcpy function to investigate **register values** and **memory content**.
+- He presses the **simulation button** to activate the ECU and sends the **attacker message**, triggering the breakpoints and allowing him to observe the **overwritten data** and **stack canary**.
+- The speaker introduces an **oscilloscope** connected to the **CAN bus** and **NFC field** to demonstrate **side-channel detection** of the vulnerability.
+- He presses the **attacker button**, causing a **reset** of the ECU and a subsequent **drop in the NFC field**, confirming the successful exploitation of the vulnerability.
+- The speaker mentions other **side-channel possibilities**, including **power consumption measurement** and **CAN bus message periodicity analysis**.
+- He also refers to a **fuzzer** he developed to detect **resets** based on **specific messages**.
+
+**Affected Parties and General Takeaways**
+- The speaker discusses who might be affected by this issue, highlighting that it could impact anyone who **blindly accepts the DLC field value** in memcpy operations.
+- He mentions that popular **SDKs and RTOSs**, such as **Armabed OS**, **STM32Qube SDK**, and **NXP MCU Express OSDK**, have been found to be vulnerable but have since been **reported and fixed**.
+- He notes that **default Linux kernel drivers** are **not vulnerable** and will not pass DLC values higher than 8.
+- Regarding other CAN bus versions, the speaker states that **CAN FD** is **not affected** due to its increased data payload, and **CAN XL** is **likely not affected** based on the specification.
+- He emphasizes the importance of **treating metadata as untrusted** and understanding how **libraries handle length values**.
+- For those on the **assessment side**, he suggests looking **one layer below** the application data into the **protocol world** for potential vulnerabilities.

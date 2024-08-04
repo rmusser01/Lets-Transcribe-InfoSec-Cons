@@ -1,0 +1,64 @@
+**Introduction:**
+- The talk focuses on **Automotive USB Forging** and how it can be used to discover **vulnerabilities** in real cars.
+- The speakers are **offensive security researchers** at **Autocrypt**, a mobility security company specializing in automotive security.
+
+**Current USB Forging Methods in the Automotive Industry:**
+- **Black Box Forging**: OEMs don't have access to the source code and completed vehicles have no debugger ports, making testing challenging.
+- **Lack of Direct Connection**: There is no commercial USB forger that can be directly connected to a car, requiring manual efforts from testers.
+- **Media Player Fuzzing**: Automakers test USB sticks with malformed media files, but this approach has limitations and is inefficient.
+
+**Proposed Efficient USB Fuzzing Method:**
+- **Direct Connection**: Connect the fuzzer directly to the car with a USB cable, reducing manual efforts and allowing for continuous fuzzing.
+- **Monitoring**: The fuzzer should monitor the car to detect failures caused by fuzzing.
+- **Kernel Fuzzing**: The fuzzer should be able to test the kernel area, not just the media player.
+
+**Requirements for the New Fuzzing Method:**
+- The fuzzer should transmit malicious files directly to the car.
+- The fuzzer should monitor the car to detect failures.
+- The fuzzer should be able to test the kernel area.
+
+**Main Contribution:**
+- The talk focuses on applying existing USB research to fuzzing cars, rather than developing new techniques.
+
+**How to Connect the Fuzzer to the Car:**
+- Use a **Linux USB gadget** to make the car recognize the device as USB storage.
+- Employ a **USB raw gadget** for corner fuzzing, allowing the transmission of arbitrary USB requests.
+
+**Summary of the Fuzzing Setup:**
+- A Linux device (Raspberry Pi) is connected to the car via a USB cable.
+- The Raspberry Pi is set up for USB fuzzing, emulating USB storage and using the raw gadget.
+
+**Media Player Fuzzing Process:**
+- Set up Raspberry Pi as a USB gadget.
+- Generate malformed media files and mount them on the Raspberry Pi.
+- The media player in the car recognizes the files and plays them.
+- The fuzzer monitors the Raspberry Pi's kernel log to detect failures.
+- After all files are played, remove them and repeat the process.
+
+**Generating Malformed Media Files:**
+- Collect normal media files as seed files.
+- Manipulate the seed files using bit flipping techniques, mutating only a small percentage of bits.
+- Avoid mutating the file signature part, as most media players won't play files with incorrect signatures.
+
+**Detecting Failures:**
+- Monitor the Raspberry Pi's kernel log (dmesg) to identify the target state and detect failures.
+- In case of a crash, the USB connection log will indicate a disconnection and reconnection, allowing the fuzzer to detect failures.
+- If the issue is shut down and not rebooted, the mount will fail, and the fuzzer can detect this as a failure.
+
+**Limitations of the Method:**
+- The fuzzer cannot determine which file caused the crash when playing multiple files.
+- Playing only one file at a time is inefficient due to the slow mount and unmount process.
+- Some issues may not reboot or shut down even if the media player crashes, making failure detection challenging.
+
+**Automotive Kernel Fuzzing:**
+- Existing research projects, like Shizkalo, provide tools for USB kernel stack fuzzing.
+- Shizkalo is a coverage-guided fuzzer that requires a kernel build, but we can use reproduction codes from reported bugs to generate fuzzing inputs.
+- Monitor the message log to detect failures caused by kernel fuzzing.
+
+**Testing with Real Cars:**
+- Renting cars for a short period allows for practical testing without causing serious damage.
+- Vulnerabilities were found in Renault, Chevrolet, Volkswagen, and AGL.
+
+**Conclusion:**
+- The proposed USB fuzzing method addresses the limitations of current industry practices by directly connecting the fuzzer to the car.
+- This approach reduces the workload on testers, enables kernel fuzzing, and facilitates the discovery of real-world vulnerabilities.

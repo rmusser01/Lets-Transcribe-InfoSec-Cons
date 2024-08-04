@@ -1,0 +1,4229 @@
+{
+  "segments": [
+    {
+      "Time_Start": 0.0,
+      "Time_End": 5.0,
+      "Text": "This text was transcribed using whisper model: large-v2\n\n So this is second breakfast implicit and mutation based"
+    },
+    {
+      "Time_Start": 7.7,
+      "Time_End": 10.44,
+      "Text": " serialization vulnerabilities in dot net."
+    },
+    {
+      "Time_Start": 10.44,
+      "Time_End": 13.94,
+      "Text": " I'm Jonathan Birch, I hack office for Microsoft."
+    },
+    {
+      "Time_Start": 13.94,
+      "Time_End": 15.780000000000001,
+      "Text": " And if you want to talk to me about this presentation,"
+    },
+    {
+      "Time_Start": 15.780000000000001,
+      "Time_End": 16.62,
+      "Text": " oh."
+    },
+    {
+      "Time_Start": 18.72,
+      "Time_End": 21.22,
+      "Text": " I'm Jonathan Birch, I hack office for Microsoft."
+    },
+    {
+      "Time_Start": 21.22,
+      "Time_End": 22.98,
+      "Text": " If you want to talk to me about this presentation"
+    },
+    {
+      "Time_Start": 22.98,
+      "Time_End": 24.62,
+      "Text": " or anything else security related,"
+    },
+    {
+      "Time_Start": 24.62,
+      "Time_End": 26.22,
+      "Text": " please contact me on Mastodon."
+    },
+    {
+      "Time_Start": 27.22,
+      "Time_End": 30.099999999999998,
+      "Text": " In this talk I'm going to explain"
+    },
+    {
+      "Time_Start": 30.099999999999998,
+      "Time_End": 31.5,
+      "Text": " remote code execution vulnerabilities"
+    },
+    {
+      "Time_Start": 31.5,
+      "Time_End": 33.82,
+      "Text": " I found in several dot net NoSQL engines."
+    },
+    {
+      "Time_Start": 33.82,
+      "Time_End": 35.06,
+      "Text": " I'll talk about what I'm calling"
+    },
+    {
+      "Time_Start": 35.06,
+      "Time_End": 37.66,
+      "Text": " a mutation based serialization vulnerability."
+    },
+    {
+      "Time_Start": 37.66,
+      "Time_End": 40.82,
+      "Text": " I'll explain how you can bypass serialization binders"
+    },
+    {
+      "Time_Start": 40.82,
+      "Time_End": 42.739999999999995,
+      "Text": " and how you can defend against all of that."
+    },
+    {
+      "Time_Start": 42.739999999999995,
+      "Time_End": 45.239999999999995,
+      "Text": " Also some bonus stuff just for DEF CON at the end."
+    },
+    {
+      "Time_Start": 46.58,
+      "Time_End": 50.34,
+      "Text": " So a lot of my day job is doing security design reviews."
+    },
+    {
+      "Time_Start": 50.34,
+      "Time_End": 52.42,
+      "Text": " I have a bunch of meetings every week"
+    },
+    {
+      "Time_Start": 52.42,
+      "Time_End": 54.58,
+      "Text": " where I'm looking at data flow diagrams,"
+    },
+    {
+      "Time_Start": 54.58,
+      "Time_End": 57.68,
+      "Text": " telling people do it this way instead, that kind of thing."
+    },
+    {
+      "Time_Start": 57.68,
+      "Time_End": 59.18,
+      "Text": " And something I do in those meetings anymore"
+    },
+    {
+      "Time_Start": 59.18,
+      "Time_End": 62.06,
+      "Text": " to sort of add value is I'll just open up the repo"
+    },
+    {
+      "Time_Start": 62.06,
+      "Time_End": 64.25999999999999,
+      "Text": " that I've never seen before and spend like a half hour"
+    },
+    {
+      "Time_Start": 64.25999999999999,
+      "Time_End": 65.17999999999999,
+      "Text": " while I'm talking to them,"
+    },
+    {
+      "Time_Start": 65.17999999999999,
+      "Time_End": 67.06,
+      "Text": " figuring out what are the actual vulnerabilities here"
+    },
+    {
+      "Time_Start": 67.06,
+      "Time_End": 69.52,
+      "Text": " so I can talk to them about that too."
+    },
+    {
+      "Time_Start": 69.52,
+      "Time_End": 72.06,
+      "Text": " And so the research that led to this talk"
+    },
+    {
+      "Time_Start": 72.06,
+      "Time_End": 74.75999999999999,
+      "Text": " happened because last fall I saw an article"
+    },
+    {
+      "Time_Start": 74.75999999999999,
+      "Time_End": 77.78,
+      "Text": " on a certain orange colored website about LightDB."
+    },
+    {
+      "Time_Start": 77.78,
+      "Time_End": 80.22,
+      "Text": " And it's a dot net open source library"
+    },
+    {
+      "Time_Start": 80.22,
+      "Time_End": 81.34,
+      "Text": " for a NoSQL engine."
+    },
+    {
+      "Time_Start": 81.34,
+      "Time_End": 82.98,
+      "Text": " I thought, okay, you know, I'll just go do"
+    },
+    {
+      "Time_Start": 82.98,
+      "Time_End": 85.66000000000001,
+      "Text": " a security review of their repo."
+    },
+    {
+      "Time_Start": 85.66000000000001,
+      "Time_End": 88.38000000000001,
+      "Text": " And so when I did that, I saw this code."
+    },
+    {
+      "Time_Start": 88.38000000000001,
+      "Time_End": 91.38000000000001,
+      "Text": " And what jumps out to me in this code specifically"
+    },
+    {
+      "Time_Start": 91.38000000000001,
+      "Time_End": 94.78,
+      "Text": " is this line, this call to type get type"
+    },
+    {
+      "Time_Start": 94.78,
+      "Time_End": 96.34,
+      "Text": " that's being passed a string."
+    },
+    {
+      "Time_Start": 96.34,
+      "Time_End": 99.60000000000001,
+      "Text": " And to me at least, that's a really bad sign."
+    },
+    {
+      "Time_Start": 99.60000000000001,
+      "Time_End": 101.18,
+      "Text": " But why is that a bad sign?"
+    },
+    {
+      "Time_Start": 101.18,
+      "Time_End": 106.18,
+      "Text": " So type get type in dot net is used to convert a string"
+    },
+    {
+      "Time_Start": 106.86,
+      "Time_End": 108.86,
+      "Text": " that's like the name of a dot net type"
+    },
+    {
+      "Time_Start": 108.86,
+      "Time_End": 111.10000000000001,
+      "Text": " into an actual type object."
+    },
+    {
+      "Time_Start": 111.10000000000001,
+      "Time_End": 113.74000000000001,
+      "Text": " And what that means is that someone's going to be"
+    },
+    {
+      "Time_Start": 113.74000000000001,
+      "Time_End": 115.14000000000001,
+      "Text": " giving you the name of a type,"
+    },
+    {
+      "Time_Start": 115.14000000000001,
+      "Time_End": 117.14000000000001,
+      "Text": " generally for an object you're then going to create."
+    },
+    {
+      "Time_Start": 117.14000000000001,
+      "Time_End": 119.30000000000001,
+      "Text": " So they're telling you what kinds of objects"
+    },
+    {
+      "Time_Start": 119.30000000000001,
+      "Time_End": 121.26,
+      "Text": " you're creating, which means they're telling you"
+    },
+    {
+      "Time_Start": 121.26,
+      "Time_End": 123.38000000000001,
+      "Text": " essentially what code you're going to run."
+    },
+    {
+      "Time_Start": 123.38000000000001,
+      "Time_End": 125.7,
+      "Text": " And that means that if someone malicious comes along"
+    },
+    {
+      "Time_Start": 125.7,
+      "Time_End": 127.22000000000001,
+      "Text": " and they give you a malicious type name"
+    },
+    {
+      "Time_Start": 127.22000000000001,
+      "Time_End": 128.9,
+      "Text": " and you're running malicious code."
+    },
+    {
+      "Time_Start": 129.8,
+      "Time_End": 132.38,
+      "Text": " And so how does that show up in LightDB?"
+    },
+    {
+      "Time_Start": 132.38,
+      "Time_End": 134.70000000000002,
+      "Text": " Well, LightDB is a NoSQL engine"
+    },
+    {
+      "Time_Start": 134.70000000000002,
+      "Time_End": 136.66000000000003,
+      "Text": " and generally when an application is using it,"
+    },
+    {
+      "Time_Start": 136.66000000000003,
+      "Time_End": 139.54000000000002,
+      "Text": " it's just saying to LightDB, store this object I've got"
+    },
+    {
+      "Time_Start": 139.54,
+      "Time_End": 141.5,
+      "Text": " and maybe at this index with these properties,"
+    },
+    {
+      "Time_Start": 141.5,
+      "Time_End": 142.57999999999998,
+      "Text": " that kind of thing."
+    },
+    {
+      "Time_Start": 142.57999999999998,
+      "Time_End": 144.82,
+      "Text": " And what LightDB is doing is it's going to put that"
+    },
+    {
+      "Time_Start": 144.82,
+      "Time_End": 147.7,
+      "Text": " in a file so it serializes it with a serializer"
+    },
+    {
+      "Time_Start": 147.7,
+      "Time_End": 150.22,
+      "Text": " called bsonMapper into a bsonStream"
+    },
+    {
+      "Time_Start": 150.22,
+      "Time_End": 152.45999999999998,
+      "Text": " and stores that bsonStream in a file."
+    },
+    {
+      "Time_Start": 152.45999999999998,
+      "Time_End": 154.85999999999999,
+      "Text": " And when the application wants the object back,"
+    },
+    {
+      "Time_Start": 154.85999999999999,
+      "Time_End": 158.29999999999998,
+      "Text": " it deserializes that bson back into an object again."
+    },
+    {
+      "Time_Start": 158.29999999999998,
+      "Time_End": 161.32,
+      "Text": " So bson is just a binary encoding of JSON."
+    },
+    {
+      "Time_Start": 161.32,
+      "Time_End": 163.78,
+      "Text": " So you can take that file LightDB makes,"
+    },
+    {
+      "Time_Start": 163.78,
+      "Time_End": 165.1,
+      "Text": " decode it back into JSON."
+    },
+    {
+      "Time_Start": 165.1,
+      "Time_End": 167.38,
+      "Text": " And if you do that, it looks about like this."
+    },
+    {
+      "Time_Start": 167.42,
+      "Time_End": 170.06,
+      "Text": " And if you look at this JSON here,"
+    },
+    {
+      "Time_Start": 170.06,
+      "Time_End": 173.1,
+      "Text": " it's got this underscore type key in it."
+    },
+    {
+      "Time_Start": 173.1,
+      "Time_End": 174.94,
+      "Text": " And after that, it's got the name"
+    },
+    {
+      "Time_Start": 174.94,
+      "Time_End": 176.7,
+      "Text": " of an actual dot in that type."
+    },
+    {
+      "Time_Start": 176.7,
+      "Time_End": 178.9,
+      "Text": " So what LightDB is doing with type get type"
+    },
+    {
+      "Time_Start": 178.9,
+      "Time_End": 181.06,
+      "Text": " is it's taking that type name,"
+    },
+    {
+      "Time_Start": 181.06,
+      "Time_End": 182.57999999999998,
+      "Text": " it's passing it to type get type"
+    },
+    {
+      "Time_Start": 182.57999999999998,
+      "Time_End": 185.57999999999998,
+      "Text": " to actually create the object during that deserialization."
+    },
+    {
+      "Time_Start": 185.57999999999998,
+      "Time_End": 188.4,
+      "Text": " So the data in that bson is telling LightDB"
+    },
+    {
+      "Time_Start": 188.4,
+      "Time_End": 190.18,
+      "Text": " what types it's going to make."
+    },
+    {
+      "Time_Start": 190.18,
+      "Time_End": 192.78,
+      "Text": " And that means that this is just a polymorphic serializer"
+    },
+    {
+      "Time_Start": 192.78,
+      "Time_End": 193.92,
+      "Text": " behind the scenes."
+    },
+    {
+      "Time_Start": 193.92,
+      "Time_End": 196.18,
+      "Text": " And that means it's got all of the classic vulnerabilities"
+    },
+    {
+      "Time_Start": 196.18,
+      "Time_End": 198.34,
+      "Text": " that polymorphic serializers have."
+    },
+    {
+      "Time_Start": 198.34,
+      "Time_End": 199.54000000000002,
+      "Text": " But let's explain a little bit"
+    },
+    {
+      "Time_Start": 199.54000000000002,
+      "Time_End": 200.74,
+      "Text": " what I'm talking about there."
+    },
+    {
+      "Time_Start": 200.74,
+      "Time_End": 203.78,
+      "Text": " So .NET serialization vulnerabilities."
+    },
+    {
+      "Time_Start": 203.78,
+      "Time_End": 205.22,
+      "Text": " .NET serialization vulnerabilities"
+    },
+    {
+      "Time_Start": 205.22,
+      "Time_End": 208.1,
+      "Text": " generally happen because you have a polymorphic serializer,"
+    },
+    {
+      "Time_Start": 208.1,
+      "Time_End": 210.02,
+      "Text": " a serializer where the data is telling you"
+    },
+    {
+      "Time_Start": 210.02,
+      "Time_End": 211.66,
+      "Text": " what type it wants to be."
+    },
+    {
+      "Time_Start": 211.66,
+      "Time_End": 213.3,
+      "Text": " So in this case, we've got a box,"
+    },
+    {
+      "Time_Start": 213.3,
+      "Time_End": 214.54000000000002,
+      "Text": " it's some self-describing data."
+    },
+    {
+      "Time_Start": 214.54000000000002,
+      "Time_End": 216.8,
+      "Text": " It says it's a cat, it's labeled cat."
+    },
+    {
+      "Time_Start": 216.8,
+      "Time_End": 218.10000000000002,
+      "Text": " When your serializer sees that label,"
+    },
+    {
+      "Time_Start": 218.10000000000002,
+      "Time_End": 220.06,
+      "Text": " it says, well, I guess I'm making a cat object."
+    },
+    {
+      "Time_Start": 220.06,
+      "Time_End": 221.22,
+      "Text": " And it just makes a cat object"
+    },
+    {
+      "Time_Start": 221.22,
+      "Time_End": 224.4,
+      "Text": " and then sets some properties from the contents of that box."
+    },
+    {
+      "Time_Start": 224.4,
+      "Time_End": 226.4,
+      "Text": " And the problem with this is someone malicious"
+    },
+    {
+      "Time_Start": 226.4,
+      "Time_End": 229.12,
+      "Text": " can come along and give you a box labeled pain."
+    },
+    {
+      "Time_Start": 229.12,
+      "Time_End": 231.94,
+      "Text": " Your serializer says, well, I guess I'm making some pain then"
+    },
+    {
+      "Time_Start": 231.94,
+      "Time_End": 233.44,
+      "Text": " and you're having a bad time."
+    },
+    {
+      "Time_Start": 235.32,
+      "Time_End": 238.56,
+      "Text": " So if you want a little more information in general"
+    },
+    {
+      "Time_Start": 238.56,
+      "Time_End": 241.48000000000002,
+      "Text": " on how .NET serialization works"
+    },
+    {
+      "Time_Start": 241.48000000000002,
+      "Time_End": 243.84,
+      "Text": " as far as for those sorts of serialization exploits,"
+    },
+    {
+      "Time_Start": 243.84,
+      "Time_End": 246.76,
+      "Text": " I suggest looking at the Friday the 13th Jason talks"
+    },
+    {
+      "Time_Start": 246.76,
+      "Time_End": 248.08,
+      "Text": " from Black Hat 17."
+    },
+    {
+      "Time_Start": 249.5,
+      "Time_End": 251.48000000000002,
+      "Text": " But I'll also give you a few examples"
+    },
+    {
+      "Time_Start": 251.48000000000002,
+      "Time_End": 253.16,
+      "Text": " of what this pain is here."
+    },
+    {
+      "Time_Start": 253.16,
+      "Time_End": 255.96,
+      "Text": " So in general, when I'm talking about pain here,"
+    },
+    {
+      "Time_Start": 255.96,
+      "Time_End": 257.68,
+      "Text": " what I'm talking about is types that were,"
+    },
+    {
+      "Time_Start": 257.68,
+      "Time_End": 259.64,
+      "Text": " if you tell an application to create them,"
+    },
+    {
+      "Time_Start": 259.64,
+      "Time_End": 261.42,
+      "Text": " they're gonna have side effects"
+    },
+    {
+      "Time_Start": 261.42,
+      "Time_End": 263.08,
+      "Text": " that can further exploit goals."
+    },
+    {
+      "Time_Start": 263.08,
+      "Time_End": 264.4,
+      "Text": " Either when you call their constructor,"
+    },
+    {
+      "Time_Start": 264.4,
+      "Time_End": 266.76,
+      "Text": " set their properties, maybe the destructor"
+    },
+    {
+      "Time_Start": 266.76,
+      "Time_End": 269.15999999999997,
+      "Text": " will do something that you want to have happen."
+    },
+    {
+      "Time_Start": 269.15999999999997,
+      "Time_End": 270.56,
+      "Text": " Here's a couple of classic ones."
+    },
+    {
+      "Time_Start": 270.56,
+      "Time_End": 272.86,
+      "Text": " Assembly installer has a path property."
+    },
+    {
+      "Time_Start": 272.86,
+      "Time_End": 274.32,
+      "Text": " When you set the path property,"
+    },
+    {
+      "Time_Start": 274.32,
+      "Time_End": 276.84,
+      "Text": " it just calls load library on whatever path you give it."
+    },
+    {
+      "Time_Start": 276.84,
+      "Time_End": 279.0,
+      "Text": " So if you've been able to drop a malicious DLL"
+    },
+    {
+      "Time_Start": 279.0,
+      "Time_End": 280.32,
+      "Text": " on a server somewhere,"
+    },
+    {
+      "Time_Start": 280.32,
+      "Time_End": 282.4,
+      "Text": " you're going to be able to do DLL injection."
+    },
+    {
+      "Time_Start": 282.40000000000003,
+      "Time_End": 284.72,
+      "Text": " It turns out that if you give it an HTTP URL,"
+    },
+    {
+      "Time_Start": 284.72,
+      "Time_End": 287.16,
+      "Text": " it will actually go and request the file from that URL."
+    },
+    {
+      "Time_Start": 287.16,
+      "Time_End": 289.44000000000005,
+      "Text": " It won't load it, but this is still really useful"
+    },
+    {
+      "Time_Start": 289.44000000000005,
+      "Time_End": 290.32000000000005,
+      "Text": " for getting pingbacks"
+    },
+    {
+      "Time_Start": 290.32000000000005,
+      "Time_End": 292.64000000000004,
+      "Text": " if you're attacking a server somewhere."
+    },
+    {
+      "Time_Start": 292.64000000000004,
+      "Time_End": 295.72,
+      "Text": " Object data provider is sort of the more classic"
+    },
+    {
+      "Time_Start": 295.72,
+      "Time_End": 298.42,
+      "Text": " RCE gadget for .NET serialization."
+    },
+    {
+      "Time_Start": 298.42,
+      "Time_End": 300.96000000000004,
+      "Text": " It's got properties where if you set the properties on it,"
+    },
+    {
+      "Time_Start": 300.96000000000004,
+      "Time_End": 303.84000000000003,
+      "Text": " you can call any static method on any type in .NET"
+    },
+    {
+      "Time_Start": 303.84000000000003,
+      "Time_End": 306.22,
+      "Text": " with whatever string and integer parameters you want."
+    },
+    {
+      "Time_Start": 306.22,
+      "Time_End": 308.28000000000003,
+      "Text": " So people usually call process.start"
+    },
+    {
+      "Time_Start": 308.28000000000003,
+      "Time_End": 310.68000000000006,
+      "Text": " just to pivot the shell injection."
+    },
+    {
+      "Time_Start": 310.68,
+      "Time_End": 313.38,
+      "Text": " Okay, so that's how .NET serialization vulnerabilities work."
+    },
+    {
+      "Time_Start": 313.38,
+      "Time_End": 314.84000000000003,
+      "Text": " Now I'll go back to LightDB"
+    },
+    {
+      "Time_Start": 314.84000000000003,
+      "Time_End": 316.12,
+      "Text": " and explain what I'm calling"
+    },
+    {
+      "Time_Start": 316.12,
+      "Time_End": 318.62,
+      "Text": " implicit serialization vulnerabilities."
+    },
+    {
+      "Time_Start": 318.62,
+      "Time_End": 322.16,
+      "Text": " So here's a remote code execution exploit for LightDB."
+    },
+    {
+      "Time_Start": 322.16,
+      "Time_End": 324.52,
+      "Text": " If you look at this JSON blob here,"
+    },
+    {
+      "Time_Start": 324.52,
+      "Time_End": 326.88,
+      "Text": " this is going to be the JSON we're going to put into LightDB."
+    },
+    {
+      "Time_Start": 326.88,
+      "Time_End": 328.74,
+      "Text": " It's got that underscore type key"
+    },
+    {
+      "Time_Start": 328.74,
+      "Time_End": 330.68,
+      "Text": " where it's telling you what type it wants to be."
+    },
+    {
+      "Time_Start": 330.68,
+      "Time_End": 332.36,
+      "Text": " It's going to be an object data provider."
+    },
+    {
+      "Time_Start": 332.36,
+      "Time_End": 334.36,
+      "Text": " That's that gadget that lets you call"
+    },
+    {
+      "Time_Start": 334.36,
+      "Time_End": 335.72,
+      "Text": " any static method you want."
+    },
+    {
+      "Time_Start": 335.72,
+      "Time_End": 338.64,
+      "Text": " We're going to call process.start and launch calc."
+    },
+    {
+      "Time_Start": 338.68,
+      "Time_End": 341.0,
+      "Text": " And all we're going to do with this JSON"
+    },
+    {
+      "Time_Start": 341.0,
+      "Time_End": 342.12,
+      "Text": " is convert it to bson"
+    },
+    {
+      "Time_Start": 342.12,
+      "Time_End": 345.68,
+      "Text": " and then pass it into bsonMapper to deserialize it."
+    },
+    {
+      "Time_Start": 345.68,
+      "Time_End": 346.52,
+      "Text": " It's worth noting that"
+    },
+    {
+      "Time_Start": 346.52,
+      "Time_End": 349.38,
+      "Text": " when you call the bsonMapper's deserialized method,"
+    },
+    {
+      "Time_Start": 349.38,
+      "Time_End": 352.65999999999997,
+      "Text": " you tell it what type you expect and it does not matter."
+    },
+    {
+      "Time_Start": 352.65999999999997,
+      "Time_End": 355.08,
+      "Text": " So LightDB will actually respect"
+    },
+    {
+      "Time_Start": 355.08,
+      "Time_End": 357.52,
+      "Text": " the type the data says it wants to be."
+    },
+    {
+      "Time_Start": 357.52,
+      "Time_End": 358.36,
+      "Text": " It'll go make it."
+    },
+    {
+      "Time_Start": 358.36,
+      "Time_End": 359.8,
+      "Text": " It'll set its properties."
+    },
+    {
+      "Time_Start": 359.8,
+      "Time_End": 362.26,
+      "Text": " Your serialization exploit gadget will run."
+    },
+    {
+      "Time_Start": 362.26,
+      "Time_End": 364.28,
+      "Text": " It will then try to do a cast that will fail"
+    },
+    {
+      "Time_Start": 364.28,
+      "Time_End": 366.03999999999996,
+      "Text": " and probably throw an exception, but it doesn't matter."
+    },
+    {
+      "Time_Start": 366.03999999999996,
+      "Time_End": 368.08,
+      "Text": " Your code is already run."
+    },
+    {
+      "Time_Start": 369.0,
+      "Time_End": 371.64,
+      "Text": " Going back to how LightDB works."
+    },
+    {
+      "Time_Start": 371.64,
+      "Time_End": 373.56,
+      "Text": " If you remember, LightDB uses bsonMapper"
+    },
+    {
+      "Time_Start": 373.56,
+      "Time_End": 375.26,
+      "Text": " to read its own storage."
+    },
+    {
+      "Time_Start": 375.26,
+      "Time_End": 377.52,
+      "Text": " So the problem here is that anything"
+    },
+    {
+      "Time_Start": 377.52,
+      "Time_End": 380.15999999999997,
+      "Text": " that can put malicious data in the database file"
+    },
+    {
+      "Time_Start": 380.15999999999997,
+      "Time_End": 382.15999999999997,
+      "Text": " can achieve RCE."
+    },
+    {
+      "Time_Start": 382.15999999999997,
+      "Time_End": 384.44,
+      "Text": " It's also worth noting that when a client's using LightDB,"
+    },
+    {
+      "Time_Start": 384.44,
+      "Time_End": 386.79999999999995,
+      "Text": " they don't know they're using a serializer probably."
+    },
+    {
+      "Time_Start": 386.79999999999995,
+      "Time_End": 389.52,
+      "Text": " They're almost never going to call bsonMapper directly."
+    },
+    {
+      "Time_Start": 389.52,
+      "Time_End": 393.18,
+      "Text": " So this is an implicit serialization vulnerability."
+    },
+    {
+      "Time_Start": 393.18,
+      "Time_End": 395.2,
+      "Text": " The client is vulnerable to the serialization"
+    },
+    {
+      "Time_Start": 395.2,
+      "Time_End": 396.03999999999996,
+      "Text": " that's in LightDB,"
+    },
+    {
+      "Time_Start": 396.04,
+      "Time_End": 399.12,
+      "Text": " even though they're not using the serializer LightDB is."
+    },
+    {
+      "Time_Start": 399.12,
+      "Time_End": 402.24,
+      "Text": " And this makes that client vulnerable in a lot of ways."
+    },
+    {
+      "Time_Start": 402.24,
+      "Time_End": 404.92,
+      "Text": " First of all, LightDB, when it stores a database file,"
+    },
+    {
+      "Time_Start": 404.92,
+      "Time_End": 406.40000000000003,
+      "Text": " it just stores a local file."
+    },
+    {
+      "Time_Start": 406.40000000000003,
+      "Time_End": 408.40000000000003,
+      "Text": " So a lot of applications use LightDB"
+    },
+    {
+      "Time_Start": 408.40000000000003,
+      "Time_End": 412.36,
+      "Text": " just to write document formats or save files for games."
+    },
+    {
+      "Time_Start": 412.36,
+      "Time_End": 414.68,
+      "Text": " So if you provide someone a document or a file"
+    },
+    {
+      "Time_Start": 414.68,
+      "Time_End": 416.40000000000003,
+      "Text": " that they're reading with LightDB,"
+    },
+    {
+      "Time_Start": 416.40000000000003,
+      "Time_End": 418.20000000000005,
+      "Text": " you can put an RCE payload in there"
+    },
+    {
+      "Time_Start": 418.20000000000005,
+      "Time_End": 420.44,
+      "Text": " and it'll run code when they open it."
+    },
+    {
+      "Time_Start": 420.44,
+      "Time_End": 422.12,
+      "Text": " LightDB is a NoSQL engine."
+    },
+    {
+      "Time_Start": 422.12,
+      "Time_End": 423.56,
+      "Text": " It also has queries,"
+    },
+    {
+      "Time_Start": 423.56,
+      "Time_End": 425.78000000000003,
+      "Text": " which means you can achieve query injection"
+    },
+    {
+      "Time_Start": 426.52000000000004,
+      "Time_End": 428.22,
+      "Text": " and then you can put a malicious record in the database."
+    },
+    {
+      "Time_Start": 428.22,
+      "Time_End": 431.02000000000004,
+      "Text": " And when someone reads that record, you've got RCE."
+    },
+    {
+      "Time_Start": 431.02000000000004,
+      "Time_End": 433.62,
+      "Text": " And there's one extra special exploit technique"
+    },
+    {
+      "Time_Start": 433.62,
+      "Time_End": 436.3,
+      "Text": " I figured out for this that I'll come back to."
+    },
+    {
+      "Time_Start": 436.3,
+      "Time_End": 437.70000000000005,
+      "Text": " So what do you do when you find"
+    },
+    {
+      "Time_Start": 437.70000000000005,
+      "Time_End": 439.3,
+      "Text": " a remote code execution vulnerability"
+    },
+    {
+      "Time_Start": 439.3,
+      "Time_End": 440.98,
+      "Text": " in a major open source library?"
+    },
+    {
+      "Time_Start": 440.98,
+      "Time_End": 443.06000000000006,
+      "Text": " Well, you look at all the other libraries that are like it"
+    },
+    {
+      "Time_Start": 443.06000000000006,
+      "Time_End": 444.78000000000003,
+      "Text": " and find the same vulnerability there."
+    },
+    {
+      "Time_Start": 444.78000000000003,
+      "Time_End": 448.70000000000005,
+      "Text": " So here's essentially the same vulnerability in MongoDB."
+    },
+    {
+      "Time_Start": 448.70000000000005,
+      "Time_End": 451.62,
+      "Text": " So here's a JSON payload."
+    },
+    {
+      "Time_Start": 451.62,
+      "Time_End": 453.48,
+      "Text": " It's got this underscore T key."
+    },
+    {
+      "Time_Start": 453.48,
+      "Time_End": 455.46000000000004,
+      "Text": " That's the type specifier Mongo uses."
+    },
+    {
+      "Time_Start": 456.14000000000004,
+      "Time_End": 458.50000000000006,
+      "Text": " That's the way the data says what type it wants to be."
+    },
+    {
+      "Time_Start": 458.50000000000006,
+      "Time_End": 461.22,
+      "Text": " We're again making an object data provider."
+    },
+    {
+      "Time_Start": 461.22,
+      "Time_End": 464.78000000000003,
+      "Text": " We're going to again call process.start and launch calc."
+    },
+    {
+      "Time_Start": 464.78000000000003,
+      "Time_End": 466.62000000000006,
+      "Text": " And again, all we're going to do with this"
+    },
+    {
+      "Time_Start": 466.62000000000006,
+      "Time_End": 470.34000000000003,
+      "Text": " is convert it into bson and then deserialize it"
+    },
+    {
+      "Time_Start": 470.34000000000003,
+      "Time_End": 473.42,
+      "Text": " with the bson serializer that MongoDB uses."
+    },
+    {
+      "Time_Start": 473.42,
+      "Time_End": 475.62000000000006,
+      "Text": " Now it's worth noting that you also tell"
+    },
+    {
+      "Time_Start": 475.62000000000006,
+      "Time_End": 477.90000000000003,
+      "Text": " the bson serializer what type you expect,"
+    },
+    {
+      "Time_Start": 477.90000000000003,
+      "Time_End": 479.50000000000006,
+      "Text": " and that does matter."
+    },
+    {
+      "Time_Start": 479.50000000000006,
+      "Time_End": 482.28000000000003,
+      "Text": " So in MongoDB, it will actually check"
+    },
+    {
+      "Time_Start": 482.28000000000003,
+      "Time_End": 484.18000000000006,
+      "Text": " that the type the data says it wants to be"
+    },
+    {
+      "Time_Start": 484.18,
+      "Time_End": 486.94,
+      "Text": " is assignable to the type it's expecting to get"
+    },
+    {
+      "Time_Start": 486.94,
+      "Time_End": 488.34000000000003,
+      "Text": " before it creates it."
+    },
+    {
+      "Time_Start": 488.34000000000003,
+      "Time_End": 490.06,
+      "Text": " So if you want to exploit MongoDB,"
+    },
+    {
+      "Time_Start": 490.06,
+      "Time_End": 491.94,
+      "Text": " you have to find something in the data structure"
+    },
+    {
+      "Time_Start": 491.94,
+      "Time_End": 494.52,
+      "Text": " the application's expecting that's open-ended"
+    },
+    {
+      "Time_Start": 494.52,
+      "Time_End": 496.86,
+      "Text": " so you can fit a serialization gadget into it."
+    },
+    {
+      "Time_Start": 496.86,
+      "Time_End": 498.90000000000003,
+      "Text": " That said, it's almost always there."
+    },
+    {
+      "Time_Start": 498.90000000000003,
+      "Time_End": 500.94,
+      "Text": " When I've looked at applications that use databases,"
+    },
+    {
+      "Time_Start": 500.94,
+      "Time_End": 503.02,
+      "Text": " there's almost always either an interface member"
+    },
+    {
+      "Time_Start": 503.02,
+      "Time_End": 505.66,
+      "Text": " on something or just a member of type object"
+    },
+    {
+      "Time_Start": 505.66,
+      "Time_End": 506.86,
+      "Text": " as like a catch-all."
+    },
+    {
+      "Time_Start": 506.86,
+      "Time_End": 508.66,
+      "Text": " And so you just put your serialization gadget"
+    },
+    {
+      "Time_Start": 508.66,
+      "Time_End": 510.8,
+      "Text": " in that slot and you still have RCE."
+    },
+    {
+      "Time_Start": 511.76,
+      "Time_End": 515.2,
+      "Text": " Because MongoDB again uses this bson serializer"
+    },
+    {
+      "Time_Start": 515.2,
+      "Time_End": 517.48,
+      "Text": " to read its own database,"
+    },
+    {
+      "Time_Start": 517.48,
+      "Time_End": 519.36,
+      "Text": " it means that anything that puts malicious data"
+    },
+    {
+      "Time_Start": 519.36,
+      "Time_End": 522.48,
+      "Text": " in the database gets your remote code execution."
+    },
+    {
+      "Time_Start": 522.48,
+      "Time_End": 525.88,
+      "Text": " MongoDB uses a client-server kind of architecture"
+    },
+    {
+      "Time_Start": 525.88,
+      "Time_End": 526.84,
+      "Text": " most of the time."
+    },
+    {
+      "Time_Start": 526.84,
+      "Time_End": 528.52,
+      "Text": " So you can have one malicious client"
+    },
+    {
+      "Time_Start": 528.52,
+      "Time_End": 530.96,
+      "Text": " that talks to the database, puts a bad record in there."
+    },
+    {
+      "Time_Start": 530.96,
+      "Time_End": 532.6800000000001,
+      "Text": " Some other client reads that you're running code"
+    },
+    {
+      "Time_Start": 532.6800000000001,
+      "Time_End": 534.28,
+      "Text": " on that other client."
+    },
+    {
+      "Time_Start": 534.28,
+      "Time_End": 537.38,
+      "Text": " You can also do, again, query injection."
+    },
+    {
+      "Time_Start": 537.38,
+      "Time_End": 539.24,
+      "Text": " I will say that I was only able to exploit"
+    },
+    {
+      "Time_Start": 539.24,
+      "Time_End": 542.28,
+      "Text": " the .NET driver for MongoDB, not Java or Python."
+    },
+    {
+      "Time_Start": 542.28,
+      "Time_End": 543.84,
+      "Text": " I won't say you can't,"
+    },
+    {
+      "Time_Start": 543.84,
+      "Time_End": 546.04,
+      "Text": " just that I couldn't figure out how to do it."
+    },
+    {
+      "Time_Start": 547.76,
+      "Time_End": 549.76,
+      "Text": " And then we're gonna move on to yet another"
+    },
+    {
+      "Time_Start": 549.76,
+      "Time_End": 551.1800000000001,
+      "Text": " remote code execution vulnerability"
+    },
+    {
+      "Time_Start": 551.1800000000001,
+      "Time_End": 553.08,
+      "Text": " for yet another NoSQL engine."
+    },
+    {
+      "Time_Start": 553.08,
+      "Time_End": 554.8,
+      "Text": " This one is RavenDB."
+    },
+    {
+      "Time_Start": 554.8,
+      "Time_End": 557.4,
+      "Text": " So once again, we've got a JSON payload."
+    },
+    {
+      "Time_Start": 557.4,
+      "Time_End": 559.36,
+      "Text": " This one, the type it says it wants to be"
+    },
+    {
+      "Time_Start": 559.36,
+      "Time_End": 561.04,
+      "Text": " is a Windows identity."
+    },
+    {
+      "Time_Start": 561.04,
+      "Time_End": 565.5600000000001,
+      "Text": " Windows identity is a JSON.NET RCE serialization gadget."
+    },
+    {
+      "Time_Start": 565.5600000000001,
+      "Time_End": 567.0,
+      "Text": " I suggest looking at YSO Serial"
+    },
+    {
+      "Time_Start": 567.0,
+      "Time_End": 568.88,
+      "Text": " for details of how it works."
+    },
+    {
+      "Time_Start": 569.52,
+      "Time_End": 570.36,
+      "Text": " But essentially, it lets you pivot"
+    },
+    {
+      "Time_Start": 570.36,
+      "Time_End": 572.1,
+      "Text": " to a binary formatter payload,"
+    },
+    {
+      "Time_Start": 572.1,
+      "Time_End": 573.64,
+      "Text": " which you then use to get RCE."
+    },
+    {
+      "Time_Start": 574.76,
+      "Time_End": 577.4399999999999,
+      "Text": " And in this case, what we're gonna do with this payload"
+    },
+    {
+      "Time_Start": 577.4399999999999,
+      "Time_End": 579.4,
+      "Text": " is we're just going to actually make a connection"
+    },
+    {
+      "Time_Start": 579.4,
+      "Time_End": 581.68,
+      "Text": " to the database server and then do a put request"
+    },
+    {
+      "Time_Start": 581.68,
+      "Time_End": 583.48,
+      "Text": " to stick the JSON in the database."
+    },
+    {
+      "Time_Start": 584.52,
+      "Time_End": 587.52,
+      "Text": " So RavenDB lets you interact with the database in two ways."
+    },
+    {
+      "Time_Start": 587.52,
+      "Time_End": 589.76,
+      "Text": " You can read or write JSON to it,"
+    },
+    {
+      "Time_Start": 589.76,
+      "Time_End": 592.02,
+      "Text": " or you can read or write objects from it."
+    },
+    {
+      "Time_Start": 592.02,
+      "Time_End": 594.46,
+      "Text": " And so what you can do is if you put malicious JSON"
+    },
+    {
+      "Time_Start": 594.46,
+      "Time_End": 596.36,
+      "Text": " in the database and it's read as an object,"
+    },
+    {
+      "Time_Start": 596.36,
+      "Time_End": 598.0,
+      "Text": " that gets you RCE."
+    },
+    {
+      "Time_Start": 598.0,
+      "Time_End": 600.16,
+      "Text": " Now, it's worth noting here again"
+    },
+    {
+      "Time_Start": 600.16,
+      "Time_End": 604.04,
+      "Text": " that the type that's being expected matters."
+    },
+    {
+      "Time_Start": 604.04,
+      "Time_End": 607.04,
+      "Text": " There's an assignability check like there was in MongoDB."
+    },
+    {
+      "Time_Start": 607.04,
+      "Time_End": 610.2,
+      "Text": " And so you have to actually have some way"
+    },
+    {
+      "Time_Start": 610.2,
+      "Time_End": 613.0,
+      "Text": " to fit your payload into the expected types."
+    },
+    {
+      "Time_Start": 613.96,
+      "Time_End": 616.36,
+      "Text": " This, again, is an implicit serialization vulnerability"
+    },
+    {
+      "Time_Start": 616.36,
+      "Time_End": 618.64,
+      "Text": " because RavenDB is just using JSON.NET"
+    },
+    {
+      "Time_Start": 618.64,
+      "Time_End": 620.72,
+      "Text": " with unsafe settings to read its own storage."
+    },
+    {
+      "Time_Start": 620.72,
+      "Time_End": 624.08,
+      "Text": " So anything that puts bad data in the database gets you RCE."
+    },
+    {
+      "Time_Start": 624.08,
+      "Time_End": 626.4,
+      "Text": " And that special attack pattern that I mentioned"
+    },
+    {
+      "Time_Start": 626.4,
+      "Time_End": 628.5799999999999,
+      "Text": " for LightDB works here also."
+    },
+    {
+      "Time_Start": 631.36,
+      "Time_End": 633.68,
+      "Text": " And I looked at some things that were NoSQL"
+    },
+    {
+      "Time_Start": 633.68,
+      "Time_End": 635.24,
+      "Text": " but not strictly databases."
+    },
+    {
+      "Time_Start": 635.24,
+      "Time_End": 637.8199999999999,
+      "Text": " So here is a remote code execution vulnerability"
+    },
+    {
+      "Time_Start": 637.8199999999999,
+      "Time_End": 639.64,
+      "Text": " for service.redis."
+    },
+    {
+      "Time_Start": 639.64,
+      "Time_End": 644.54,
+      "Text": " Service.redis is sort of a NoSQL wrapper for a Redis cache."
+    },
+    {
+      "Time_Start": 644.54,
+      "Time_End": 646.16,
+      "Text": " So here we've got some JSON."
+    },
+    {
+      "Time_Start": 646.16,
+      "Time_End": 647.9599999999999,
+      "Text": " It says what type it wants to be."
+    },
+    {
+      "Time_Start": 647.9599999999999,
+      "Time_End": 649.04,
+      "Text": " In this case, it's saying it's going to be"
+    },
+    {
+      "Time_Start": 649.04,
+      "Time_End": 649.92,
+      "Text": " an assembly installer."
+    },
+    {
+      "Time_Start": 649.92,
+      "Time_End": 651.56,
+      "Text": " That's the one that lets you call load library"
+    },
+    {
+      "Time_Start": 651.56,
+      "Time_End": 652.96,
+      "Text": " on an arbitrary path."
+    },
+    {
+      "Time_Start": 652.96,
+      "Time_End": 655.0,
+      "Text": " We're just going to say I dropped a malicious DLL"
+    },
+    {
+      "Time_Start": 655.04,
+      "Time_End": 656.68,
+      "Text": " somewhere for it to read."
+    },
+    {
+      "Time_Start": 656.68,
+      "Time_End": 658.48,
+      "Text": " And then what we're going to do with this JSON"
+    },
+    {
+      "Time_Start": 658.48,
+      "Time_End": 660.24,
+      "Text": " is we're going to stick it in the Redis cache"
+    },
+    {
+      "Time_Start": 660.24,
+      "Time_End": 661.82,
+      "Text": " and then read it back."
+    },
+    {
+      "Time_Start": 661.82,
+      "Time_End": 664.68,
+      "Text": " So when we stick the JSON in the Redis cache as JSON,"
+    },
+    {
+      "Time_Start": 664.68,
+      "Time_End": 667.2,
+      "Text": " it's just JSON, but when you read it back as an object"
+    },
+    {
+      "Time_Start": 667.2,
+      "Time_End": 669.84,
+      "Text": " using service.redis, it's going to turn into"
+    },
+    {
+      "Time_Start": 669.84,
+      "Time_End": 672.76,
+      "Text": " whatever object we say it wants to be and it can run code."
+    },
+    {
+      "Time_Start": 672.76,
+      "Time_End": 675.08,
+      "Text": " Now, again, the type matters."
+    },
+    {
+      "Time_Start": 675.08,
+      "Time_End": 677.04,
+      "Text": " So when you're using service.redis,"
+    },
+    {
+      "Time_Start": 677.04,
+      "Time_End": 678.96,
+      "Text": " you tell it what type you're expecting"
+    },
+    {
+      "Time_Start": 678.96,
+      "Time_End": 681.16,
+      "Text": " and the payload you're using has to fit"
+    },
+    {
+      "Time_Start": 681.16,
+      "Time_End": 683.56,
+      "Text": " into the object draft you're going to have there."
+    },
+    {
+      "Time_Start": 684.4000000000001,
+      "Time_End": 688.12,
+      "Text": " This is, again, an implicit serialization vulnerability."
+    },
+    {
+      "Time_Start": 688.12,
+      "Time_End": 692.36,
+      "Text": " So because service.redis is using unsafe serializer"
+    },
+    {
+      "Time_Start": 692.36,
+      "Time_End": 695.2,
+      "Text": " to read the Redis cache, anything that lets you"
+    },
+    {
+      "Time_Start": 695.2,
+      "Time_End": 699.2800000000001,
+      "Text": " put bad data in the Redis cache also gets you RCE."
+    },
+    {
+      "Time_Start": 699.2800000000001,
+      "Time_End": 701.62,
+      "Text": " And that extra pattern I keep talking about"
+    },
+    {
+      "Time_Start": 701.62,
+      "Time_End": 703.12,
+      "Text": " works here also."
+    },
+    {
+      "Time_Start": 703.12,
+      "Time_End": 704.72,
+      "Text": " And now I'm going to tell you a little bit"
+    },
+    {
+      "Time_Start": 704.72,
+      "Time_End": 705.7600000000001,
+      "Text": " about how I discovered it."
+    },
+    {
+      "Time_Start": 705.7600000000001,
+      "Time_End": 707.7600000000001,
+      "Text": " And that's because I was looking at"
+    },
+    {
+      "Time_Start": 707.7600000000001,
+      "Time_End": 712.0400000000001,
+      "Text": " one other NoSQL engine in .NET and that's MartinDB."
+    },
+    {
+      "Time_Start": 712.04,
+      "Time_End": 715.4,
+      "Text": " So MartinDB, like RavenDB, uses JSON.NET"
+    },
+    {
+      "Time_Start": 715.4,
+      "Time_End": 717.5999999999999,
+      "Text": " with unsafe settings to read its own storage."
+    },
+    {
+      "Time_Start": 717.5999999999999,
+      "Time_End": 719.92,
+      "Text": " But unlike RavenDB, it doesn't just let you write JSON."
+    },
+    {
+      "Time_Start": 719.92,
+      "Time_End": 722.4399999999999,
+      "Text": " You can only read and write objects from the database."
+    },
+    {
+      "Time_Start": 722.4399999999999,
+      "Time_End": 725.0799999999999,
+      "Text": " And when I tried to write an object to MartinDB"
+    },
+    {
+      "Time_Start": 725.0799999999999,
+      "Time_End": 727.64,
+      "Text": " that was just like a serialization exploit gadget,"
+    },
+    {
+      "Time_Start": 727.64,
+      "Time_End": 729.92,
+      "Text": " it would choke on it every time I tried."
+    },
+    {
+      "Time_Start": 729.92,
+      "Time_End": 732.0799999999999,
+      "Text": " So I played with that a lot and I found"
+    },
+    {
+      "Time_Start": 732.0799999999999,
+      "Time_End": 734.16,
+      "Text": " a completely different way to attack it."
+    },
+    {
+      "Time_Start": 734.16,
+      "Time_End": 737.9599999999999,
+      "Text": " And that's what I'm calling a serialization mutation attack."
+    },
+    {
+      "Time_Start": 737.9599999999999,
+      "Time_End": 741.98,
+      "Text": " So here's a remote code execution payload for MartinDB."
+    },
+    {
+      "Time_Start": 742.9200000000001,
+      "Time_End": 744.0600000000001,
+      "Text": " This one's a little bit different."
+    },
+    {
+      "Time_Start": 744.0600000000001,
+      "Time_End": 745.62,
+      "Text": " So what I'm going to do here is I'm going to make"
+    },
+    {
+      "Time_Start": 745.62,
+      "Time_End": 748.0600000000001,
+      "Text": " in .NET a dictionary of string, string."
+    },
+    {
+      "Time_Start": 748.0600000000001,
+      "Time_End": 749.9,
+      "Text": " This could be a hash table too, but you need something"
+    },
+    {
+      "Time_Start": 749.9,
+      "Time_End": 752.84,
+      "Text": " that's got key value pairs mapping a string to a string."
+    },
+    {
+      "Time_Start": 752.84,
+      "Time_End": 754.94,
+      "Text": " And what I'm going to put in that dictionary"
+    },
+    {
+      "Time_Start": 754.94,
+      "Time_End": 758.02,
+      "Text": " is first a dollar type key paired"
+    },
+    {
+      "Time_Start": 758.02,
+      "Time_End": 759.34,
+      "Text": " with the name of a .NET type."
+    },
+    {
+      "Time_Start": 759.34,
+      "Time_End": 760.98,
+      "Text": " In this case, Workflow Designer,"
+    },
+    {
+      "Time_Start": 760.98,
+      "Time_End": 764.02,
+      "Text": " which is another JSON.NET serialization gadget."
+    },
+    {
+      "Time_Start": 764.02,
+      "Time_End": 766.4200000000001,
+      "Text": " It lets you do an arbitrary XAML read."
+    },
+    {
+      "Time_Start": 766.4200000000001,
+      "Time_End": 769.58,
+      "Text": " Again, look at YSO Serial for details about how it works."
+    },
+    {
+      "Time_Start": 769.58,
+      "Time_End": 771.02,
+      "Text": " And then I'm going to do one other thing"
+    },
+    {
+      "Time_Start": 771.02,
+      "Time_End": 772.9,
+      "Text": " where I'm going to set another key value pair"
+    },
+    {
+      "Time_Start": 772.9,
+      "Time_End": 776.06,
+      "Text": " where this is the name of a property on Workflow Designer,"
+    },
+    {
+      "Time_Start": 776.06,
+      "Time_End": 777.78,
+      "Text": " which is the one you set the XAML with"
+    },
+    {
+      "Time_Start": 777.78,
+      "Time_End": 780.46,
+      "Text": " to get an arbitrary XAML parse out of it."
+    },
+    {
+      "Time_Start": 780.46,
+      "Time_End": 781.5799999999999,
+      "Text": " And what I'm going to do with that"
+    },
+    {
+      "Time_Start": 781.5799999999999,
+      "Time_End": 784.0799999999999,
+      "Text": " is I'm just going to write it to the database."
+    },
+    {
+      "Time_Start": 784.0799999999999,
+      "Time_End": 786.54,
+      "Text": " So if you write this object to the database"
+    },
+    {
+      "Time_Start": 786.54,
+      "Time_End": 788.72,
+      "Text": " and then read it back, that will run code,"
+    },
+    {
+      "Time_Start": 788.72,
+      "Time_End": 790.14,
+      "Text": " it will launch calc."
+    },
+    {
+      "Time_Start": 790.14,
+      "Time_End": 791.34,
+      "Text": " And that's kind of weird."
+    },
+    {
+      "Time_Start": 791.34,
+      "Time_End": 793.12,
+      "Text": " We're writing a dictionary to the database,"
+    },
+    {
+      "Time_Start": 793.12,
+      "Time_End": 795.18,
+      "Text": " but when you read it back, it runs calc."
+    },
+    {
+      "Time_Start": 795.18,
+      "Time_End": 796.02,
+      "Text": " Why does that work?"
+    },
+    {
+      "Time_Start": 796.02,
+      "Time_End": 798.6999999999999,
+      "Text": " So this is using JSON.NET as its serializer."
+    },
+    {
+      "Time_Start": 798.7,
+      "Time_End": 800.98,
+      "Text": " So let's look at how this works in JSON.NET."
+    },
+    {
+      "Time_Start": 802.34,
+      "Time_End": 803.94,
+      "Text": " So in JSON.NET,"
+    },
+    {
+      "Time_Start": 803.94,
+      "Time_End": 807.3000000000001,
+      "Text": " if you serialize one of these dictionary string strings,"
+    },
+    {
+      "Time_Start": 807.3000000000001,
+      "Time_End": 808.86,
+      "Text": " like say you have a dictionary"
+    },
+    {
+      "Time_Start": 808.86,
+      "Time_End": 811.5,
+      "Text": " where you've got a key named fruit and the value pair,"
+    },
+    {
+      "Time_Start": 811.5,
+      "Time_End": 814.76,
+      "Text": " it uses the key names exactly as you provide them."
+    },
+    {
+      "Time_Start": 814.76,
+      "Time_End": 817.0200000000001,
+      "Text": " So your key as fruit is just going to go"
+    },
+    {
+      "Time_Start": 817.0200000000001,
+      "Time_End": 819.9200000000001,
+      "Text": " into the serialized JSON as the key named fruit."
+    },
+    {
+      "Time_Start": 819.9200000000001,
+      "Time_End": 821.74,
+      "Text": " Now, if you compare that"
+    },
+    {
+      "Time_Start": 821.74,
+      "Time_End": 824.86,
+      "Text": " to what an RCE payload looks like for JSON.NET,"
+    },
+    {
+      "Time_Start": 824.86,
+      "Time_End": 826.62,
+      "Text": " here's an example of one."
+    },
+    {
+      "Time_Start": 826.62,
+      "Time_End": 828.38,
+      "Text": " You've got that type specifier key,"
+    },
+    {
+      "Time_Start": 829.06,
+      "Time_End": 829.9,
+      "Text": " that $type,"
+    },
+    {
+      "Time_Start": 829.9,
+      "Time_End": 831.14,
+      "Text": " and then you've got a .NET type name"
+    },
+    {
+      "Time_Start": 831.14,
+      "Time_End": 832.9,
+      "Text": " as a value for it and so on."
+    },
+    {
+      "Time_Start": 832.9,
+      "Time_End": 834.74,
+      "Text": " And the key trick with this"
+    },
+    {
+      "Time_Start": 834.74,
+      "Time_End": 837.62,
+      "Text": " is there's nothing special about that $type key."
+    },
+    {
+      "Time_Start": 837.62,
+      "Time_End": 840.02,
+      "Text": " There's nothing special about the type specifier"
+    },
+    {
+      "Time_Start": 840.02,
+      "Time_End": 842.9399999999999,
+      "Text": " used really in any of the serializers I've talked about."
+    },
+    {
+      "Time_Start": 842.9399999999999,
+      "Time_End": 846.46,
+      "Text": " So you can make a key for a string string dictionary"
+    },
+    {
+      "Time_Start": 846.46,
+      "Time_End": 847.78,
+      "Text": " named $type,"
+    },
+    {
+      "Time_Start": 847.78,
+      "Time_End": 849.7,
+      "Text": " and it turns out that if you serialize"
+    },
+    {
+      "Time_Start": 849.7,
+      "Time_End": 852.94,
+      "Text": " one of those string string dictionaries in JSON.NET"
+    },
+    {
+      "Time_Start": 852.94,
+      "Time_End": 855.06,
+      "Text": " or most of the other serializers I've talked about,"
+    },
+    {
+      "Time_Start": 855.06,
+      "Time_End": 856.78,
+      "Text": " it just uses the key directly."
+    },
+    {
+      "Time_Start": 856.78,
+      "Time_End": 857.62,
+      "Text": " It doesn't filter it out"
+    },
+    {
+      "Time_Start": 857.62,
+      "Time_End": 859.94,
+      "Text": " even though it matches its type specifier."
+    },
+    {
+      "Time_Start": 859.94,
+      "Time_End": 863.38,
+      "Text": " So what happens there"
+    },
+    {
+      "Time_Start": 863.38,
+      "Time_End": 867.38,
+      "Text": " is that you're essentially colliding with the syntax"
+    },
+    {
+      "Time_Start": 867.38,
+      "Time_End": 870.5,
+      "Text": " of what that RCE payload looked like."
+    },
+    {
+      "Time_Start": 870.5,
+      "Time_End": 872.22,
+      "Text": " You're making it just output data"
+    },
+    {
+      "Time_Start": 872.22,
+      "Time_End": 874.86,
+      "Text": " where it's going to be the type specifier."
+    },
+    {
+      "Time_Start": 874.86,
+      "Time_End": 877.18,
+      "Text": " So when this object gets serialized and then deserialized,"
+    },
+    {
+      "Time_Start": 877.18,
+      "Time_End": 879.42,
+      "Text": " it mutates into a different type entirely,"
+    },
+    {
+      "Time_Start": 879.42,
+      "Time_End": 881.74,
+      "Text": " and you can choose whatever type you want."
+    },
+    {
+      "Time_Start": 881.74,
+      "Time_End": 883.54,
+      "Text": " And this doesn't just work for dictionary."
+    },
+    {
+      "Time_Start": 883.54,
+      "Time_End": 885.9,
+      "Text": " It works for hash table, J object, expand to object,"
+    },
+    {
+      "Time_Start": 885.9,
+      "Time_End": 887.26,
+      "Text": " and like 50 others."
+    },
+    {
+      "Time_Start": 887.26,
+      "Time_End": 888.38,
+      "Text": " Just go look around the .NET"
+    },
+    {
+      "Time_Start": 888.38,
+      "Time_End": 890.98,
+      "Text": " for things that have key value structures."
+    },
+    {
+      "Time_Start": 890.98,
+      "Time_End": 893.34,
+      "Text": " And because of this mutation attack,"
+    },
+    {
+      "Time_Start": 893.34,
+      "Time_End": 896.18,
+      "Text": " you can do a lot of attacks on serialization"
+    },
+    {
+      "Time_Start": 896.18,
+      "Time_End": 898.5,
+      "Text": " that usually weren't considered possible."
+    },
+    {
+      "Time_Start": 898.5,
+      "Time_End": 902.0,
+      "Text": " So say you have a website that takes some key value data,"
+    },
+    {
+      "Time_Start": 902.0,
+      "Time_End": 903.8199999999999,
+      "Text": " and this is a screenshot from a certain website"
+    },
+    {
+      "Time_Start": 903.8199999999999,
+      "Time_End": 906.6,
+      "Text": " you might recognize that did not have this vulnerability,"
+    },
+    {
+      "Time_Start": 906.6,
+      "Time_End": 908.22,
+      "Text": " but does let you enter key value data"
+    },
+    {
+      "Time_Start": 908.22,
+      "Time_End": 910.54,
+      "Text": " where you can choose both the keys and the values."
+    },
+    {
+      "Time_Start": 910.54,
+      "Time_End": 913.6999999999999,
+      "Text": " And you send that to a web front end with a form post,"
+    },
+    {
+      "Time_Start": 913.6999999999999,
+      "Time_End": 914.92,
+      "Text": " and on the web front end,"
+    },
+    {
+      "Time_Start": 914.9200000000001,
+      "Time_End": 917.1600000000001,
+      "Text": " they're going to make a dictionary or a hash table"
+    },
+    {
+      "Time_Start": 917.1600000000001,
+      "Time_End": 918.6200000000001,
+      "Text": " with the data you sent them."
+    },
+    {
+      "Time_Start": 918.6200000000001,
+      "Time_End": 920.9200000000001,
+      "Text": " And later on, say that dictionary or hash table"
+    },
+    {
+      "Time_Start": 920.9200000000001,
+      "Time_End": 924.0400000000001,
+      "Text": " gets serialized to a database or a cache,"
+    },
+    {
+      "Time_Start": 924.0400000000001,
+      "Time_End": 925.5200000000001,
+      "Text": " and then later on after that,"
+    },
+    {
+      "Time_Start": 925.5200000000001,
+      "Time_End": 927.3800000000001,
+      "Text": " it gets read back from that database or cache"
+    },
+    {
+      "Time_Start": 927.3800000000001,
+      "Time_End": 929.0000000000001,
+      "Text": " using an unsafe serializer."
+    },
+    {
+      "Time_Start": 929.0000000000001,
+      "Time_End": 932.1200000000001,
+      "Text": " Well, in that case, you can provide key value data"
+    },
+    {
+      "Time_Start": 932.1200000000001,
+      "Time_End": 934.72,
+      "Text": " where you're using that type specifier as the key name,"
+    },
+    {
+      "Time_Start": 934.72,
+      "Time_End": 936.0600000000001,
+      "Text": " and when it gets read from that cache"
+    },
+    {
+      "Time_Start": 936.0600000000001,
+      "Time_End": 937.6,
+      "Text": " on some back end server,"
+    },
+    {
+      "Time_Start": 937.6,
+      "Time_End": 940.32,
+      "Text": " you can make it so it mutates into whatever object you want."
+    },
+    {
+      "Time_Start": 940.32,
+      "Time_End": 942.4200000000001,
+      "Text": " It's now your serialization exploit gadget."
+    },
+    {
+      "Time_Start": 942.4200000000001,
+      "Time_End": 944.2,
+      "Text": " It's now that pain."
+    },
+    {
+      "Time_Start": 944.2,
+      "Time_End": 947.1600000000001,
+      "Text": " And you've got real code execution whenever that happens."
+    },
+    {
+      "Time_Start": 950.4000000000001,
+      "Time_End": 953.44,
+      "Text": " So I was saying that was that extra attack pattern"
+    },
+    {
+      "Time_Start": 953.44,
+      "Time_End": 955.0,
+      "Text": " against all of these NoSQL engines."
+    },
+    {
+      "Time_Start": 955.0,
+      "Time_End": 956.9200000000001,
+      "Text": " Here's how that works against LightDB."
+    },
+    {
+      "Time_Start": 956.9200000000001,
+      "Time_End": 960.84,
+      "Text": " So LightDB, you can make a dictionary string string."
+    },
+    {
+      "Time_Start": 960.84,
+      "Time_End": 962.6,
+      "Text": " You put your payload in there,"
+    },
+    {
+      "Time_Start": 962.6,
+      "Time_End": 965.0600000000001,
+      "Text": " so you've got that underscore type key"
+    },
+    {
+      "Time_Start": 965.0600000000001,
+      "Time_End": 966.1600000000001,
+      "Text": " specified with a type name,"
+    },
+    {
+      "Time_Start": 966.1600000000001,
+      "Time_End": 967.36,
+      "Text": " in this case, assembly installer."
+    },
+    {
+      "Time_Start": 967.36,
+      "Time_End": 969.1600000000001,
+      "Text": " So we're going to do, again,"
+    },
+    {
+      "Time_Start": 969.1600000000001,
+      "Time_End": 971.08,
+      "Text": " a arbitrary call to load library."
+    },
+    {
+      "Time_Start": 971.08,
+      "Time_End": 973.24,
+      "Text": " We're saying we're loading malicious DLL."
+    },
+    {
+      "Time_Start": 973.24,
+      "Time_End": 975.64,
+      "Text": " And all you do is you write it to the database"
+    },
+    {
+      "Time_Start": 975.64,
+      "Time_End": 976.92,
+      "Text": " and read it back."
+    },
+    {
+      "Time_Start": 976.92,
+      "Time_End": 979.72,
+      "Text": " Now, this hack is kind of magic."
+    },
+    {
+      "Time_Start": 979.72,
+      "Time_End": 981.88,
+      "Text": " It doesn't matter where this is in the data structure."
+    },
+    {
+      "Time_Start": 981.88,
+      "Time_End": 983.8,
+      "Text": " If you can control two key value pairs"
+    },
+    {
+      "Time_Start": 983.8,
+      "Time_End": 986.64,
+      "Text": " in some part of some object graph,"
+    },
+    {
+      "Time_Start": 986.64,
+      "Time_End": 989.94,
+      "Text": " if it gets saved and read back, that gets you RCE."
+    },
+    {
+      "Time_Start": 989.94,
+      "Time_End": 991.8,
+      "Text": " And this actually makes a lot of attacks"
+    },
+    {
+      "Time_Start": 991.8,
+      "Time_End": 993.46,
+      "Text": " really ridiculous and easy."
+    },
+    {
+      "Time_Start": 993.46,
+      "Time_End": 995.88,
+      "Text": " Like, there's some application that's just asking you"
+    },
+    {
+      "Time_Start": 995.88,
+      "Time_End": 997.24,
+      "Text": " for a couple of string pairs,"
+    },
+    {
+      "Time_Start": 997.24,
+      "Time_End": 1000.38,
+      "Text": " and later you get RCE when it gets read from the database."
+    },
+    {
+      "Time_Start": 1000.38,
+      "Time_End": 1003.74,
+      "Text": " And this kind of attack works with a lot of serializers."
+    },
+    {
+      "Time_Start": 1003.74,
+      "Time_End": 1005.96,
+      "Text": " Here's a list of all the ones I know."
+    },
+    {
+      "Time_Start": 1005.96,
+      "Time_End": 1007.9399999999999,
+      "Text": " These are all the .NET serializers I know"
+    },
+    {
+      "Time_Start": 1007.9399999999999,
+      "Time_End": 1009.9,
+      "Text": " where this sort of mutation attack works."
+    },
+    {
+      "Time_Start": 1009.9,
+      "Time_End": 1012.86,
+      "Text": " You'll notice these are all JSON and BSIN serializers."
+    },
+    {
+      "Time_Start": 1012.86,
+      "Time_End": 1014.38,
+      "Text": " This doesn't work for binary formatter"
+    },
+    {
+      "Time_Start": 1014.38,
+      "Time_End": 1018.2,
+      "Text": " because it doesn't use anything like this kind of syntax."
+    },
+    {
+      "Time_Start": 1020.26,
+      "Time_End": 1021.86,
+      "Text": " And it's also worth noting that this doesn't work"
+    },
+    {
+      "Time_Start": 1021.86,
+      "Time_End": 1023.7,
+      "Text": " against MongoDB's serializer."
+    },
+    {
+      "Time_Start": 1025.3,
+      "Time_End": 1027.62,
+      "Text": " You'll note that there's different requirements"
+    },
+    {
+      "Time_Start": 1027.62,
+      "Time_End": 1028.78,
+      "Text": " for this to work in certain cases."
+    },
+    {
+      "Time_Start": 1028.78,
+      "Time_End": 1031.1399999999999,
+      "Text": " Some of them, you have to control the first key value pair."
+    },
+    {
+      "Time_Start": 1031.1399999999999,
+      "Time_End": 1033.3,
+      "Text": " Some of them, there's that assignability check."
+    },
+    {
+      "Time_Start": 1033.3,
+      "Time_End": 1035.62,
+      "Text": " Some of them, there's other like specific"
+    },
+    {
+      "Time_Start": 1035.62,
+      "Time_End": 1037.5,
+      "Text": " unsafe properties you've got to set."
+    },
+    {
+      "Time_Start": 1037.5,
+      "Time_End": 1039.18,
+      "Text": " So there's a lot of variability"
+    },
+    {
+      "Time_Start": 1039.18,
+      "Time_End": 1041.6,
+      "Text": " in how exploitable mutation can be."
+    },
+    {
+      "Time_Start": 1042.74,
+      "Time_End": 1045.06,
+      "Text": " For example, JSON.NET, like most popular"
+    },
+    {
+      "Time_Start": 1045.06,
+      "Time_End": 1048.36,
+      "Text": " open source library in the world as far as I'm aware,"
+    },
+    {
+      "Time_Start": 1048.36,
+      "Time_End": 1050.28,
+      "Text": " you can get mutation attacks against it,"
+    },
+    {
+      "Time_Start": 1050.28,
+      "Time_End": 1051.5,
+      "Text": " but it's a little bit tricky."
+    },
+    {
+      "Time_Start": 1051.5,
+      "Time_End": 1053.46,
+      "Text": " You have to control the first key value pair"
+    },
+    {
+      "Time_Start": 1053.46,
+      "Time_End": 1054.5,
+      "Text": " because that's the only one it'll read"
+    },
+    {
+      "Time_Start": 1054.5,
+      "Time_End": 1056.32,
+      "Text": " the type specifier from."
+    },
+    {
+      "Time_Start": 1056.32,
+      "Time_End": 1058.8,
+      "Text": " It has to be deserialized using unsafe settings."
+    },
+    {
+      "Time_Start": 1058.8,
+      "Time_End": 1060.36,
+      "Text": " It has to be serialized in such a way"
+    },
+    {
+      "Time_Start": 1060.36,
+      "Time_End": 1063.3799999999999,
+      "Text": " that it doesn't double up the type specifier."
+    },
+    {
+      "Time_Start": 1063.3799999999999,
+      "Time_End": 1066.32,
+      "Text": " And in general, I would suggest experimenting with this."
+    },
+    {
+      "Time_Start": 1066.32,
+      "Time_End": 1069.36,
+      "Text": " There's a lot of weird special cases and nuances,"
+    },
+    {
+      "Time_Start": 1069.36,
+      "Time_End": 1071.32,
+      "Text": " but sometimes you can make this work"
+    },
+    {
+      "Time_Start": 1071.32,
+      "Time_End": 1072.84,
+      "Text": " and you can use this to exploit things"
+    },
+    {
+      "Time_Start": 1072.84,
+      "Time_End": 1076.36,
+      "Text": " where the serialization is just not something you can touch."
+    },
+    {
+      "Time_Start": 1076.36,
+      "Time_End": 1078.12,
+      "Text": " The serialization happens on the back end."
+    },
+    {
+      "Time_Start": 1078.12,
+      "Time_End": 1079.6399999999999,
+      "Text": " You can't see the deserialized data."
+    },
+    {
+      "Time_Start": 1079.6399999999999,
+      "Time_End": 1081.6,
+      "Text": " Maybe it even gets an HMAC stuck on it."
+    },
+    {
+      "Time_Start": 1081.6,
+      "Time_End": 1082.96,
+      "Text": " It doesn't matter."
+    },
+    {
+      "Time_Start": 1082.96,
+      "Time_End": 1084.2,
+      "Text": " On the other hand, there's serializers"
+    },
+    {
+      "Time_Start": 1084.2,
+      "Time_End": 1085.8799999999999,
+      "Text": " where this just works all the time."
+    },
+    {
+      "Time_Start": 1086.24,
+      "Time_End": 1088.68,
+      "Text": " If you've got JavaScript serializer with a type resolver,"
+    },
+    {
+      "Time_Start": 1088.68,
+      "Time_End": 1091.5200000000002,
+      "Text": " it will go out of its way to make the exploit work."
+    },
+    {
+      "Time_Start": 1091.5200000000002,
+      "Time_End": 1093.44,
+      "Text": " It doesn't matter if you've got other entries"
+    },
+    {
+      "Time_Start": 1093.44,
+      "Time_End": 1094.6200000000001,
+      "Text": " in your key value storage."
+    },
+    {
+      "Time_Start": 1094.6200000000001,
+      "Time_End": 1096.8400000000001,
+      "Text": " It doesn't matter if your type specifier"
+    },
+    {
+      "Time_Start": 1096.8400000000001,
+      "Time_End": 1098.64,
+      "Text": " is the last thing in the list."
+    },
+    {
+      "Time_Start": 1098.64,
+      "Time_End": 1101.0800000000002,
+      "Text": " It doesn't matter if the assignability doesn't make sense."
+    },
+    {
+      "Time_Start": 1101.0800000000002,
+      "Time_End": 1103.3200000000002,
+      "Text": " It'll just run the code and it'll just work."
+    },
+    {
+      "Time_Start": 1105.0,
+      "Time_End": 1107.6000000000001,
+      "Text": " You can also do kind of a blind scanning technique"
+    },
+    {
+      "Time_Start": 1107.6000000000001,
+      "Time_End": 1109.0400000000002,
+      "Text": " to find these vulnerabilities."
+    },
+    {
+      "Time_Start": 1109.0400000000002,
+      "Time_End": 1110.7600000000002,
+      "Text": " If you've got websites out there"
+    },
+    {
+      "Time_Start": 1110.7600000000002,
+      "Time_End": 1112.2,
+      "Text": " that you think are running on .NET"
+    },
+    {
+      "Time_Start": 1112.2,
+      "Time_End": 1115.0400000000002,
+      "Text": " and might have some back end cache or database,"
+    },
+    {
+      "Time_Start": 1115.04,
+      "Time_End": 1117.72,
+      "Text": " you can just stick key value data in there."
+    },
+    {
+      "Time_Start": 1117.72,
+      "Time_End": 1119.76,
+      "Text": " You can use that assembly installer pingback trick"
+    },
+    {
+      "Time_Start": 1119.76,
+      "Time_End": 1122.2,
+      "Text": " I've talked about, and you can wait to see"
+    },
+    {
+      "Time_Start": 1122.2,
+      "Time_End": 1125.82,
+      "Text": " if you later get a request back to your own server."
+    },
+    {
+      "Time_Start": 1125.82,
+      "Time_End": 1128.8799999999999,
+      "Text": " So you can stick data in services blind,"
+    },
+    {
+      "Time_Start": 1128.8799999999999,
+      "Time_End": 1131.0,
+      "Text": " use maybe unique URLs for your pingback"
+    },
+    {
+      "Time_Start": 1131.0,
+      "Time_End": 1132.8,
+      "Text": " so you can see which ones talk back to you,"
+    },
+    {
+      "Time_Start": 1132.8,
+      "Time_End": 1135.1599999999999,
+      "Text": " and then maybe later on when it gets read from the cache,"
+    },
+    {
+      "Time_Start": 1135.1599999999999,
+      "Time_End": 1136.28,
+      "Text": " you'll get a request and you know"
+    },
+    {
+      "Time_Start": 1136.28,
+      "Time_End": 1137.84,
+      "Text": " there's an RCE happening there."
+    },
+    {
+      "Time_Start": 1139.8,
+      "Time_End": 1142.48,
+      "Text": " You can defend against these attacks in a bunch of ways."
+    },
+    {
+      "Time_Start": 1142.48,
+      "Time_End": 1143.6,
+      "Text": " If you're writing an application,"
+    },
+    {
+      "Time_Start": 1143.6000000000001,
+      "Time_End": 1146.3200000000002,
+      "Text": " the best thing to do is don't use a polymorphic serializer."
+    },
+    {
+      "Time_Start": 1146.3200000000002,
+      "Time_End": 1148.2,
+      "Text": " And I'm gonna say that a lot in this talk."
+    },
+    {
+      "Time_Start": 1148.2,
+      "Time_End": 1150.4,
+      "Text": " Don't use a serializer where the data gets to tell you"
+    },
+    {
+      "Time_Start": 1150.4,
+      "Time_End": 1152.3200000000002,
+      "Text": " what type it wants to be."
+    },
+    {
+      "Time_Start": 1152.3200000000002,
+      "Time_End": 1154.2400000000002,
+      "Text": " If you have to, for some reason,"
+    },
+    {
+      "Time_Start": 1154.2400000000002,
+      "Time_End": 1156.4,
+      "Text": " you can try using a serialization binder,"
+    },
+    {
+      "Time_Start": 1156.4,
+      "Time_End": 1159.0800000000002,
+      "Text": " but I'm about to tell you how to bypass serialization binders"
+    },
+    {
+      "Time_Start": 1159.0800000000002,
+      "Time_End": 1161.4800000000002,
+      "Text": " so kind of grain of salt there."
+    },
+    {
+      "Time_Start": 1161.4800000000002,
+      "Time_End": 1164.44,
+      "Text": " So here's how to bypass serialization binders."
+    },
+    {
+      "Time_Start": 1165.8400000000001,
+      "Time_End": 1167.4800000000002,
+      "Text": " In general, if you're talking about using"
+    },
+    {
+      "Time_Start": 1167.4800000000002,
+      "Time_End": 1169.5200000000002,
+      "Text": " a serialization binder for security purposes,"
+    },
+    {
+      "Time_Start": 1169.5200000000002,
+      "Time_End": 1171.5000000000002,
+      "Text": " it's acting like a filter."
+    },
+    {
+      "Time_Start": 1171.5,
+      "Time_End": 1173.94,
+      "Text": " What's happening is during deserialization,"
+    },
+    {
+      "Time_Start": 1173.94,
+      "Time_End": 1176.5,
+      "Text": " your binder's gonna get asked about every type"
+    },
+    {
+      "Time_Start": 1176.5,
+      "Time_End": 1179.22,
+      "Text": " that's directly referenced in the serialized data,"
+    },
+    {
+      "Time_Start": 1179.22,
+      "Time_End": 1182.34,
+      "Text": " and it'll say, okay, this is the type I expect, go ahead."
+    },
+    {
+      "Time_Start": 1182.34,
+      "Time_End": 1184.56,
+      "Text": " Or if you're doing it right, you throw an exception"
+    },
+    {
+      "Time_Start": 1184.56,
+      "Time_End": 1186.98,
+      "Text": " when some type you don't expect shows up."
+    },
+    {
+      "Time_Start": 1186.98,
+      "Time_End": 1189.1,
+      "Text": " And that means if someone throws pain at you,"
+    },
+    {
+      "Time_Start": 1189.1,
+      "Time_End": 1190.58,
+      "Text": " you say, I don't know what pain is,"
+    },
+    {
+      "Time_Start": 1190.58,
+      "Time_End": 1193.22,
+      "Text": " you throw an exception and nothing bad happens."
+    },
+    {
+      "Time_Start": 1193.22,
+      "Time_End": 1194.26,
+      "Text": " So if you're doing it right,"
+    },
+    {
+      "Time_Start": 1194.26,
+      "Time_End": 1197.18,
+      "Text": " your serialization binder looks sort of like this."
+    },
+    {
+      "Time_Start": 1197.18,
+      "Time_End": 1199.18,
+      "Text": " What this is is just an allow list"
+    },
+    {
+      "Time_Start": 1199.18,
+      "Time_End": 1200.38,
+      "Text": " of all the expected types."
+    },
+    {
+      "Time_Start": 1200.38,
+      "Time_End": 1203.8200000000002,
+      "Text": " It's a string allow list for both the assembly name"
+    },
+    {
+      "Time_Start": 1203.8200000000002,
+      "Time_End": 1205.7,
+      "Text": " and the type from the assembly name,"
+    },
+    {
+      "Time_Start": 1205.7,
+      "Time_End": 1207.3400000000001,
+      "Text": " and if you see one that you don't expect,"
+    },
+    {
+      "Time_Start": 1207.3400000000001,
+      "Time_End": 1208.6200000000001,
+      "Text": " you throw an exception."
+    },
+    {
+      "Time_Start": 1208.6200000000001,
+      "Time_End": 1211.5,
+      "Text": " The problem is a lot of times people don't do this."
+    },
+    {
+      "Time_Start": 1211.5,
+      "Time_End": 1213.2800000000002,
+      "Text": " Usually what you see for a serialization binder"
+    },
+    {
+      "Time_Start": 1213.2800000000002,
+      "Time_End": 1215.0600000000002,
+      "Text": " is something more like this,"
+    },
+    {
+      "Time_Start": 1215.0600000000002,
+      "Time_End": 1217.68,
+      "Text": " where you have some assembly you've written yourself."
+    },
+    {
+      "Time_Start": 1217.68,
+      "Time_End": 1219.5200000000002,
+      "Text": " You say, well, I trust all my types,"
+    },
+    {
+      "Time_Start": 1219.5200000000002,
+      "Time_End": 1222.18,
+      "Text": " there's no crazy serialization gadgets in there,"
+    },
+    {
+      "Time_Start": 1222.18,
+      "Time_End": 1225.7800000000002,
+      "Text": " so if the type says it's coming from my assembly,"
+    },
+    {
+      "Time_Start": 1225.7800000000002,
+      "Time_End": 1227.64,
+      "Text": " I'll just allow it and I'll use type get type"
+    },
+    {
+      "Time_Start": 1227.64,
+      "Time_End": 1229.8200000000002,
+      "Text": " to actually get the type out of there."
+    },
+    {
+      "Time_Start": 1230.26,
+      "Time_End": 1231.98,
+      "Text": " The problem with this approach is,"
+    },
+    {
+      "Time_Start": 1231.98,
+      "Time_End": 1235.1,
+      "Text": " say your assembly contains a type like this."
+    },
+    {
+      "Time_Start": 1235.1,
+      "Time_End": 1237.7,
+      "Text": " This is an initialized list type we're going to invent"
+    },
+    {
+      "Time_Start": 1237.7,
+      "Time_End": 1241.22,
+      "Text": " that just derives, inherits from the generic list type"
+    },
+    {
+      "Time_Start": 1241.22,
+      "Time_End": 1243.8999999999999,
+      "Text": " in .NET, and we're adding another property to it."
+    },
+    {
+      "Time_Start": 1243.8999999999999,
+      "Time_End": 1245.58,
+      "Text": " That seems pretty harmless,"
+    },
+    {
+      "Time_Start": 1245.58,
+      "Time_End": 1246.9399999999998,
+      "Text": " but if you've got a type like this"
+    },
+    {
+      "Time_Start": 1246.9399999999998,
+      "Time_End": 1249.0,
+      "Text": " in that assembly that you're trusting,"
+    },
+    {
+      "Time_Start": 1249.0,
+      "Time_End": 1251.06,
+      "Text": " you can exploit it like this."
+    },
+    {
+      "Time_Start": 1251.06,
+      "Time_End": 1253.02,
+      "Text": " So here's a JSON payload"
+    },
+    {
+      "Time_Start": 1253.02,
+      "Time_End": 1256.26,
+      "Text": " to bypass that serialization binder I just showed you."
+    },
+    {
+      "Time_Start": 1256.26,
+      "Time_End": 1259.5,
+      "Text": " The type it's saying it wants to be is initialized list,"
+    },
+    {
+      "Time_Start": 1260.18,
+      "Time_End": 1261.02,
+      "Text": " that type I just mentioned,"
+    },
+    {
+      "Time_Start": 1261.02,
+      "Time_End": 1263.9,
+      "Text": " but the type in the template for that is assembly installer,"
+    },
+    {
+      "Time_Start": 1263.9,
+      "Time_End": 1266.62,
+      "Text": " that one that lets you do an arbitrary load library."
+    },
+    {
+      "Time_Start": 1266.62,
+      "Time_End": 1267.66,
+      "Text": " The trick with this is,"
+    },
+    {
+      "Time_Start": 1267.66,
+      "Time_End": 1270.22,
+      "Text": " initialized list is the type you're getting asked about,"
+    },
+    {
+      "Time_Start": 1270.22,
+      "Time_End": 1271.66,
+      "Text": " that comes from your assembly,"
+    },
+    {
+      "Time_Start": 1271.66,
+      "Time_End": 1273.82,
+      "Text": " so that binder is okay with it."
+    },
+    {
+      "Time_Start": 1273.82,
+      "Time_End": 1275.82,
+      "Text": " And you'll notice that assembly installer"
+    },
+    {
+      "Time_Start": 1275.82,
+      "Time_End": 1278.7,
+      "Text": " is only ever referenced inside the template here,"
+    },
+    {
+      "Time_Start": 1278.7,
+      "Time_End": 1283.18,
+      "Text": " but when this values part of the JSON blob gets deserialized,"
+    },
+    {
+      "Time_Start": 1283.18,
+      "Time_End": 1285.04,
+      "Text": " it'll still make an assembly installer object,"
+    },
+    {
+      "Time_Start": 1285.04,
+      "Time_End": 1286.86,
+      "Text": " it'll still set its path property,"
+    },
+    {
+      "Time_Start": 1286.86,
+      "Time_End": 1288.5,
+      "Text": " and you're still doing load library,"
+    },
+    {
+      "Time_Start": 1288.5,
+      "Time_End": 1290.16,
+      "Text": " so your RCE is still working."
+    },
+    {
+      "Time_Start": 1292.12,
+      "Time_End": 1292.96,
+      "Text": " There's a trick here"
+    },
+    {
+      "Time_Start": 1292.96,
+      "Time_End": 1294.94,
+      "Text": " that when you serialize this with JSON.NET,"
+    },
+    {
+      "Time_Start": 1294.94,
+      "Time_End": 1296.88,
+      "Text": " it'll put another dollar type entry in there"
+    },
+    {
+      "Time_Start": 1296.88,
+      "Time_End": 1298.46,
+      "Text": " for the assembly installer,"
+    },
+    {
+      "Time_Start": 1298.46,
+      "Time_End": 1299.44,
+      "Text": " but you don't need it."
+    },
+    {
+      "Time_Start": 1299.44,
+      "Time_End": 1301.08,
+      "Text": " It can figure out what it's supposed to be"
+    },
+    {
+      "Time_Start": 1301.08,
+      "Time_End": 1301.92,
+      "Text": " if it's not there,"
+    },
+    {
+      "Time_Start": 1301.92,
+      "Time_End": 1303.14,
+      "Text": " so you can just take it back out again"
+    },
+    {
+      "Time_Start": 1303.14,
+      "Time_End": 1304.66,
+      "Text": " and then bypass the binder."
+    },
+    {
+      "Time_Start": 1305.66,
+      "Time_End": 1306.82,
+      "Text": " There's another trick you can use"
+    },
+    {
+      "Time_Start": 1306.82,
+      "Time_End": 1308.22,
+      "Text": " to bypass serialization binders"
+    },
+    {
+      "Time_Start": 1308.22,
+      "Time_End": 1310.06,
+      "Text": " that I'm calling contagion."
+    },
+    {
+      "Time_Start": 1310.06,
+      "Time_End": 1313.7,
+      "Text": " So for JSON.NET and a lot of other Beeson"
+    },
+    {
+      "Time_Start": 1313.7,
+      "Time_End": 1315.78,
+      "Text": " and JSON serializers,"
+    },
+    {
+      "Time_Start": 1315.78,
+      "Time_End": 1317.18,
+      "Text": " you've got that dollar type entry"
+    },
+    {
+      "Time_Start": 1317.18,
+      "Time_End": 1319.9,
+      "Text": " that's saying what type it's supposed to be,"
+    },
+    {
+      "Time_Start": 1319.9,
+      "Time_End": 1321.94,
+      "Text": " but that object you're creating"
+    },
+    {
+      "Time_Start": 1321.94,
+      "Time_End": 1324.94,
+      "Text": " has members, properties, constructor arguments"
+    },
+    {
+      "Time_Start": 1324.94,
+      "Time_End": 1326.66,
+      "Text": " that have their own types,"
+    },
+    {
+      "Time_Start": 1326.66,
+      "Time_End": 1328.94,
+      "Text": " and you don't have to specify"
+    },
+    {
+      "Time_Start": 1328.94,
+      "Time_End": 1330.42,
+      "Text": " the types of those in the JSON."
+    },
+    {
+      "Time_Start": 1330.42,
+      "Time_End": 1331.8600000000001,
+      "Text": " If you serialize it, it will,"
+    },
+    {
+      "Time_Start": 1331.8600000000001,
+      "Time_End": 1332.7,
+      "Text": " but if you don't,"
+    },
+    {
+      "Time_Start": 1332.7,
+      "Time_End": 1334.8600000000001,
+      "Text": " the serializer will just figure it out."
+    },
+    {
+      "Time_Start": 1334.8600000000001,
+      "Time_End": 1337.78,
+      "Text": " So if there's some serialization gadget you wanna use"
+    },
+    {
+      "Time_Start": 1337.78,
+      "Time_End": 1339.26,
+      "Text": " and it's a member of something"
+    },
+    {
+      "Time_Start": 1339.26,
+      "Time_End": 1340.22,
+      "Text": " that's a member of something"
+    },
+    {
+      "Time_Start": 1340.22,
+      "Time_End": 1341.5,
+      "Text": " that's a member of something"
+    },
+    {
+      "Time_Start": 1341.5,
+      "Time_End": 1343.22,
+      "Text": " that you can get past the binder,"
+    },
+    {
+      "Time_Start": 1343.22,
+      "Time_End": 1344.74,
+      "Text": " you can use that one object"
+    },
+    {
+      "Time_Start": 1344.74,
+      "Time_End": 1347.1200000000001,
+      "Text": " that has it in its tree somewhere"
+    },
+    {
+      "Time_Start": 1348.0600000000002,
+      "Time_End": 1348.88,
+      "Text": " to get it past the binder."
+    },
+    {
+      "Time_Start": 1348.88,
+      "Time_End": 1350.24,
+      "Text": " Here's one example."
+    },
+    {
+      "Time_Start": 1350.24,
+      "Time_End": 1353.2,
+      "Text": " So Windows Identity that I mentioned before"
+    },
+    {
+      "Time_Start": 1353.2,
+      "Time_End": 1355.5200000000002,
+      "Text": " is a JSON.NET RCE gadget."
+    },
+    {
+      "Time_Start": 1355.5200000000002,
+      "Time_End": 1357.3200000000002,
+      "Text": " It lets you pivot to binary formatter."
+    },
+    {
+      "Time_Start": 1357.3200000000002,
+      "Time_End": 1358.88,
+      "Text": " And you could have a serialization binder"
+    },
+    {
+      "Time_Start": 1358.88,
+      "Time_End": 1361.0800000000002,
+      "Text": " that specifically block lists that."
+    },
+    {
+      "Time_Start": 1361.0800000000002,
+      "Time_End": 1363.64,
+      "Text": " And if you do that, you can still get it by."
+    },
+    {
+      "Time_Start": 1363.64,
+      "Time_End": 1365.0000000000002,
+      "Text": " The way you do that is you use"
+    },
+    {
+      "Time_Start": 1365.0000000000002,
+      "Time_End": 1367.5200000000002,
+      "Text": " a Windows Authentication Event Args object."
+    },
+    {
+      "Time_Start": 1367.5200000000002,
+      "Time_End": 1369.8000000000002,
+      "Text": " So if you serialize Windows Authentication Event Args,"
+    },
+    {
+      "Time_Start": 1369.8000000000002,
+      "Time_End": 1372.64,
+      "Text": " it has a constructor argument called Identity"
+    },
+    {
+      "Time_Start": 1372.64,
+      "Time_End": 1374.5200000000002,
+      "Text": " whose type is Windows Identity."
+    },
+    {
+      "Time_Start": 1374.5200000000002,
+      "Time_End": 1375.8400000000001,
+      "Text": " So when you serialize that,"
+    },
+    {
+      "Time_Start": 1375.84,
+      "Time_End": 1379.0,
+      "Text": " the only type going by the binder is this dollar type"
+    },
+    {
+      "Time_Start": 1379.0,
+      "Time_End": 1381.32,
+      "Text": " because the only things that the binder gets asked about"
+    },
+    {
+      "Time_Start": 1381.32,
+      "Time_End": 1384.3,
+      "Text": " are the types explicitly listed in the JSON."
+    },
+    {
+      "Time_Start": 1385.1999999999998,
+      "Time_End": 1388.52,
+      "Text": " But when the identity part of it gets deserialized here,"
+    },
+    {
+      "Time_Start": 1388.52,
+      "Time_End": 1390.6999999999998,
+      "Text": " it'll still make a Windows Identity object."
+    },
+    {
+      "Time_Start": 1390.6999999999998,
+      "Time_End": 1392.22,
+      "Text": " It'll still set its properties."
+    },
+    {
+      "Time_Start": 1392.22,
+      "Time_End": 1394.36,
+      "Text": " You still get RCE."
+    },
+    {
+      "Time_Start": 1394.36,
+      "Time_End": 1397.04,
+      "Text": " So that's a lot of problems."
+    },
+    {
+      "Time_Start": 1397.04,
+      "Time_End": 1398.62,
+      "Text": " What if this has been fixed?"
+    },
+    {
+      "Time_Start": 1398.62,
+      "Time_End": 1400.4399999999998,
+      "Text": " So I am with Microsoft."
+    },
+    {
+      "Time_Start": 1400.4399999999998,
+      "Time_End": 1401.9199999999998,
+      "Text": " I practice responsible disclosure."
+    },
+    {
+      "Time_Start": 1401.9199999999998,
+      "Time_End": 1404.1999999999998,
+      "Text": " I told all of these people about these issues"
+    },
+    {
+      "Time_Start": 1404.2,
+      "Time_End": 1405.94,
+      "Text": " in January or earlier."
+    },
+    {
+      "Time_Start": 1407.04,
+      "Time_End": 1409.96,
+      "Text": " Everybody except MartinDB made some sort of fix."
+    },
+    {
+      "Time_Start": 1409.96,
+      "Time_End": 1413.04,
+      "Text": " MartinDB, as far as I've checked last, still hasn't."
+    },
+    {
+      "Time_Start": 1413.04,
+      "Time_End": 1415.0800000000002,
+      "Text": " MongoDB's fix is pretty solid."
+    },
+    {
+      "Time_Start": 1415.0800000000002,
+      "Time_End": 1416.2,
+      "Text": " I don't know how to bypass it."
+    },
+    {
+      "Time_Start": 1416.2,
+      "Time_End": 1417.64,
+      "Text": " They added a pretty strict allow list"
+    },
+    {
+      "Time_Start": 1417.64,
+      "Time_End": 1420.24,
+      "Text": " on the types that can get created during deserialization."
+    },
+    {
+      "Time_Start": 1420.24,
+      "Time_End": 1421.52,
+      "Text": " It seems good."
+    },
+    {
+      "Time_Start": 1421.52,
+      "Time_End": 1424.6000000000001,
+      "Text": " Everybody else here added a block list."
+    },
+    {
+      "Time_Start": 1424.6000000000001,
+      "Time_End": 1426.8400000000001,
+      "Text": " LightDB also added an assignability check"
+    },
+    {
+      "Time_Start": 1426.8400000000001,
+      "Time_End": 1429.76,
+      "Text": " so that puts them about on par for MongoDB"
+    },
+    {
+      "Time_Start": 1429.76,
+      "Time_End": 1431.14,
+      "Text": " before they made a fix."
+    },
+    {
+      "Time_Start": 1431.14,
+      "Time_End": 1433.76,
+      "Text": " I just showed you how to bypass block lists."
+    },
+    {
+      "Time_Start": 1434.36,
+      "Time_End": 1436.76,
+      "Text": " I can bypass all of the fixes for LightDB,"
+    },
+    {
+      "Time_Start": 1436.76,
+      "Time_End": 1438.92,
+      "Text": " RavenDB, and ServiceDoc.Redis."
+    },
+    {
+      "Time_Start": 1438.92,
+      "Time_End": 1440.6,
+      "Text": " Like I said, MartinDB didn't get fixed."
+    },
+    {
+      "Time_Start": 1440.6,
+      "Time_End": 1442.12,
+      "Text": " I told all of these people,"
+    },
+    {
+      "Time_Start": 1442.12,
+      "Time_End": 1444.08,
+      "Text": " look, I can still bypass these fixes."
+    },
+    {
+      "Time_Start": 1444.08,
+      "Time_End": 1446.12,
+      "Text": " They said, we're not making additional fixes."
+    },
+    {
+      "Time_Start": 1446.12,
+      "Time_End": 1448.24,
+      "Text": " So there's remote code execution vulnerabilities"
+    },
+    {
+      "Time_Start": 1448.24,
+      "Time_End": 1450.54,
+      "Text": " that are live right now for all of those libraries."
+    },
+    {
+      "Time_Start": 1450.54,
+      "Time_End": 1451.44,
+      "Text": " Worth looking at."
+    },
+    {
+      "Time_Start": 1452.76,
+      "Time_End": 1456.12,
+      "Text": " The mutation attack I mentioned against json.net"
+    },
+    {
+      "Time_Start": 1456.12,
+      "Time_End": 1458.08,
+      "Text": " is not being fixed."
+    },
+    {
+      "Time_Start": 1458.08,
+      "Time_End": 1459.4,
+      "Text": " I talked to James Newton King,"
+    },
+    {
+      "Time_Start": 1459.4,
+      "Time_End": 1461.84,
+      "Text": " the maintainer for json.net about this."
+    },
+    {
+      "Time_Start": 1461.84,
+      "Time_End": 1464.36,
+      "Text": " He said, essentially, it's supposed to do that."
+    },
+    {
+      "Time_Start": 1464.36,
+      "Time_End": 1466.6799999999998,
+      "Text": " So that behavior is not going to be changed."
+    },
+    {
+      "Time_Start": 1466.6799999999998,
+      "Time_End": 1468.9199999999998,
+      "Text": " If you've got some application that's using json.net,"
+    },
+    {
+      "Time_Start": 1468.9199999999998,
+      "Time_End": 1471.54,
+      "Text": " it might be vulnerable to mutation."
+    },
+    {
+      "Time_Start": 1471.54,
+      "Time_End": 1473.28,
+      "Text": " Similarly, JavaScript Serializer,"
+    },
+    {
+      "Time_Start": 1473.28,
+      "Time_End": 1474.8,
+      "Text": " the .NET Serializer I mentioned"
+    },
+    {
+      "Time_Start": 1474.8,
+      "Time_End": 1477.84,
+      "Text": " that works really well for mutation attacks,"
+    },
+    {
+      "Time_Start": 1477.84,
+      "Time_End": 1479.28,
+      "Text": " will not be fixed."
+    },
+    {
+      "Time_Start": 1479.28,
+      "Time_End": 1480.9199999999998,
+      "Text": " I talked to the .NET team about this."
+    },
+    {
+      "Time_Start": 1480.9199999999998,
+      "Time_End": 1483.6799999999998,
+      "Text": " They said, we tell people don't use JavaScript Serializer."
+    },
+    {
+      "Time_Start": 1483.6799999999998,
+      "Time_End": 1485.56,
+      "Text": " We tell people don't use TypeResolver."
+    },
+    {
+      "Time_Start": 1485.56,
+      "Time_End": 1486.86,
+      "Text": " So we're not gonna fix them."
+    },
+    {
+      "Time_Start": 1486.86,
+      "Time_End": 1487.86,
+      "Text": " Just don't use them."
+    },
+    {
+      "Time_Start": 1488.8600000000001,
+      "Time_End": 1493.5000000000002,
+      "Text": " So, best practices to avoid these issues."
+    },
+    {
+      "Time_Start": 1493.5000000000002,
+      "Time_End": 1495.7,
+      "Text": " First, thing I keep saying."
+    },
+    {
+      "Time_Start": 1495.7,
+      "Time_End": 1497.5800000000002,
+      "Text": " Don't use a polymorphic serializer."
+    },
+    {
+      "Time_Start": 1497.5800000000002,
+      "Time_End": 1498.5400000000002,
+      "Text": " Don't roll your own."
+    },
+    {
+      "Time_Start": 1498.5400000000002,
+      "Time_End": 1500.5800000000002,
+      "Text": " It's a really bad idea."
+    },
+    {
+      "Time_Start": 1500.5800000000002,
+      "Time_End": 1502.7800000000002,
+      "Text": " Don't have that data let you tell you"
+    },
+    {
+      "Time_Start": 1502.7800000000002,
+      "Time_End": 1504.2600000000002,
+      "Text": " what type it wants to be."
+    },
+    {
+      "Time_Start": 1504.2600000000002,
+      "Time_End": 1506.3400000000001,
+      "Text": " It leads to all kind of problems."
+    },
+    {
+      "Time_Start": 1506.3400000000001,
+      "Time_End": 1508.3400000000001,
+      "Text": " Don't call type get type because if you're doing that,"
+    },
+    {
+      "Time_Start": 1508.3400000000001,
+      "Time_End": 1510.46,
+      "Text": " you're probably writing a polymorphic serializer"
+    },
+    {
+      "Time_Start": 1510.46,
+      "Time_End": 1512.8400000000001,
+      "Text": " even if you don't realize you're doing it."
+    },
+    {
+      "Time_Start": 1512.8400000000001,
+      "Time_End": 1515.8600000000001,
+      "Text": " Similarly, in Java, don't call class for name."
+    },
+    {
+      "Time_Start": 1515.8600000000001,
+      "Time_End": 1518.66,
+      "Text": " Also, remember that you can't use an unsafe serializer"
+    },
+    {
+      "Time_Start": 1518.66,
+      "Time_End": 1520.5400000000002,
+      "Text": " anywhere because mutation attacks."
+    },
+    {
+      "Time_Start": 1520.5400000000002,
+      "Time_End": 1522.5400000000002,
+      "Text": " If it's on your backend, if you've got an HMAC,"
+    },
+    {
+      "Time_Start": 1522.5400000000002,
+      "Time_End": 1524.44,
+      "Text": " it doesn't matter for mutation."
+    },
+    {
+      "Time_Start": 1524.44,
+      "Time_End": 1527.0600000000002,
+      "Text": " You can attack like deep copy tricks."
+    },
+    {
+      "Time_Start": 1527.0600000000002,
+      "Time_End": 1529.94,
+      "Text": " A lot of people use serializers to just deep copy objects."
+    },
+    {
+      "Time_Start": 1529.94,
+      "Time_End": 1532.1000000000001,
+      "Text": " You can get RCE out of that because of mutation,"
+    },
+    {
+      "Time_Start": 1532.1000000000001,
+      "Time_End": 1533.48,
+      "Text": " which is kind of silly."
+    },
+    {
+      "Time_Start": 1533.48,
+      "Time_End": 1536.38,
+      "Text": " So, don't use unsafe serializers anywhere."
+    },
+    {
+      "Time_Start": 1537.68,
+      "Time_End": 1538.8600000000001,
+      "Text": " This one kind of hurts,"
+    },
+    {
+      "Time_Start": 1538.8600000000001,
+      "Time_End": 1541.7800000000002,
+      "Text": " but maybe don't read untrusted data from NoSQL."
+    },
+    {
+      "Time_Start": 1541.7800000000002,
+      "Time_End": 1543.68,
+      "Text": " Mongo might be okay,"
+    },
+    {
+      "Time_Start": 1543.72,
+      "Time_End": 1546.2,
+      "Text": " but it kind of looks like every other NoSQL engine"
+    },
+    {
+      "Time_Start": 1546.2,
+      "Time_End": 1547.04,
+      "Text": " I've looked at."
+    },
+    {
+      "Time_Start": 1547.04,
+      "Time_End": 1548.72,
+      "Text": " You can get RCE if someone can write bad data"
+    },
+    {
+      "Time_Start": 1548.72,
+      "Time_End": 1550.1200000000001,
+      "Text": " and you can read it back."
+    },
+    {
+      "Time_Start": 1550.1200000000001,
+      "Time_End": 1553.6200000000001,
+      "Text": " Now, I only really looked at .NET NoSQL engines,"
+    },
+    {
+      "Time_Start": 1553.6200000000001,
+      "Time_End": 1556.0800000000002,
+      "Text": " but there's kind of a pattern here with NoSQL"
+    },
+    {
+      "Time_Start": 1556.0800000000002,
+      "Time_End": 1558.4,
+      "Text": " where they say, just take this object."
+    },
+    {
+      "Time_Start": 1558.4,
+      "Time_End": 1560.1200000000001,
+      "Text": " And then later on, you can tell the NoSQL engine,"
+    },
+    {
+      "Time_Start": 1560.1200000000001,
+      "Time_End": 1562.6000000000001,
+      "Text": " I want the object back and I don't care what it is."
+    },
+    {
+      "Time_Start": 1562.6000000000001,
+      "Time_End": 1564.04,
+      "Text": " Anytime you have that pattern,"
+    },
+    {
+      "Time_Start": 1564.04,
+      "Time_End": 1567.04,
+      "Text": " there's a polymorphic serializer in there somewhere"
+    },
+    {
+      "Time_Start": 1567.04,
+      "Time_End": 1568.74,
+      "Text": " and you can probably get RCE out of it"
+    },
+    {
+      "Time_Start": 1568.74,
+      "Time_End": 1570.3600000000001,
+      "Text": " if you want a research project"
+    },
+    {
+      "Time_Start": 1570.3600000000001,
+      "Time_End": 1572.1200000000001,
+      "Text": " or want to go find libraries that are vulnerable."
+    },
+    {
+      "Time_Start": 1572.1200000000001,
+      "Time_End": 1574.68,
+      "Text": " Maybe you look at Java or Python NoSQL engines."
+    },
+    {
+      "Time_Start": 1576.5200000000002,
+      "Time_End": 1578.96,
+      "Text": " Don't try to use serialization binders."
+    },
+    {
+      "Time_Start": 1578.96,
+      "Time_End": 1582.0800000000002,
+      "Text": " It's possible to write a good one, but nobody ever does it."
+    },
+    {
+      "Time_Start": 1582.0800000000002,
+      "Time_End": 1583.2800000000002,
+      "Text": " Everybody screws this up."
+    },
+    {
+      "Time_Start": 1583.2800000000002,
+      "Time_End": 1586.16,
+      "Text": " I see bypasses for these all the time."
+    },
+    {
+      "Time_Start": 1586.16,
+      "Time_End": 1588.64,
+      "Text": " In general, you're better off architecting your application"
+    },
+    {
+      "Time_Start": 1588.64,
+      "Time_End": 1592.2800000000002,
+      "Text": " so you don't need a serialization binder in the first place."
+    },
+    {
+      "Time_Start": 1592.2800000000002,
+      "Time_End": 1593.64,
+      "Text": " And now I'm going to get into the bonus stuff"
+    },
+    {
+      "Time_Start": 1593.64,
+      "Time_End": 1594.8400000000001,
+      "Text": " that's just for DEF CON."
+    },
+    {
+      "Time_Start": 1594.8400000000001,
+      "Time_End": 1597.8000000000002,
+      "Text": " So, I've been talking about .NET framework exploits,"
+    },
+    {
+      "Time_Start": 1597.8000000000002,
+      "Time_End": 1600.16,
+      "Text": " but what about .NET 6 plus?"
+    },
+    {
+      "Time_Start": 1600.16,
+      "Time_End": 1601.88,
+      "Text": " Everyone seems to think that's different."
+    },
+    {
+      "Time_Start": 1602.64,
+      "Time_End": 1604.7600000000002,
+      "Text": " It's not going to have these serialization vulnerabilities."
+    },
+    {
+      "Time_Start": 1604.7600000000002,
+      "Time_End": 1608.8000000000002,
+      "Text": " So, since 2016, .NET has had a couple of different flavors."
+    },
+    {
+      "Time_Start": 1608.8000000000002,
+      "Time_End": 1612.0,
+      "Text": " There's .NET framework and then there's .NET."
+    },
+    {
+      "Time_Start": 1612.0,
+      "Time_End": 1613.3200000000002,
+      "Text": " That's what they want me to call it,"
+    },
+    {
+      "Time_Start": 1613.3200000000002,
+      "Time_End": 1615.48,
+      "Text": " but .NET 6 through 8."
+    },
+    {
+      "Time_Start": 1615.48,
+      "Time_End": 1617.4,
+      "Text": " Those are the ones people use right now."
+    },
+    {
+      "Time_Start": 1617.4,
+      "Time_End": 1619.6000000000001,
+      "Text": " All these exploits have been .NET framework exploits,"
+    },
+    {
+      "Time_Start": 1619.6000000000001,
+      "Time_End": 1621.72,
+      "Text": " so the ones that are in YSER serial."
+    },
+    {
+      "Time_Start": 1621.72,
+      "Time_End": 1623.0800000000002,
+      "Text": " But what about .NET 6 plus?"
+    },
+    {
+      "Time_Start": 1623.0800000000002,
+      "Time_End": 1625.5200000000002,
+      "Text": " Can you do this sort of stuff there?"
+    },
+    {
+      "Time_Start": 1625.5200000000002,
+      "Time_End": 1628.64,
+      "Text": " There is this myth that .NET 6 plus"
+    },
+    {
+      "Time_Start": 1628.64,
+      "Time_End": 1630.68,
+      "Text": " is immune to serialization attacks."
+    },
+    {
+      "Time_Start": 1630.68,
+      "Time_End": 1633.16,
+      "Text": " So, here's the CVE mongo opened"
+    },
+    {
+      "Time_Start": 1633.16,
+      "Time_End": 1634.64,
+      "Text": " for the vulnerability I found."
+    },
+    {
+      "Time_Start": 1634.64,
+      "Time_End": 1636.0800000000002,
+      "Text": " And it's kind of an eye chart there,"
+    },
+    {
+      "Time_Start": 1636.0800000000002,
+      "Time_End": 1638.4,
+      "Text": " but I'll underline the important part here."
+    },
+    {
+      "Time_Start": 1638.4,
+      "Time_End": 1641.5600000000002,
+      "Text": " And what they said was it must be running Windows host"
+    },
+    {
+      "Time_Start": 1641.5600000000002,
+      "Time_End": 1644.28,
+      "Text": " using full .NET framework, not .NET core."
+    },
+    {
+      "Time_Start": 1644.28,
+      "Time_End": 1645.1200000000001,
+      "Text": " That's not true."
+    },
+    {
+      "Time_Start": 1646.92,
+      "Time_End": 1648.92,
+      "Text": " Similarly, if you look at YSER serial,"
+    },
+    {
+      "Time_Start": 1648.92,
+      "Time_End": 1650.2,
+      "Text": " they have a bug there,"
+    },
+    {
+      "Time_Start": 1650.2,
+      "Time_End": 1652.5600000000002,
+      "Text": " which is, is there any gadget for .NET core?"
+    },
+    {
+      "Time_Start": 1652.5600000000002,
+      "Time_End": 1654.4,
+      "Text": " And no one has found one there."
+    },
+    {
+      "Time_Start": 1656.24,
+      "Time_End": 1659.48,
+      "Text": " So, admittedly, exploiting .NET 6 plus is harder."
+    },
+    {
+      "Time_Start": 1659.48,
+      "Time_End": 1661.24,
+      "Text": " A lot of the exploitable types,"
+    },
+    {
+      "Time_Start": 1661.24,
+      "Time_End": 1662.82,
+      "Text": " the gadgets that people use in .NET framework"
+    },
+    {
+      "Time_Start": 1662.82,
+      "Time_End": 1664.92,
+      "Text": " just aren't there in the framework at all."
+    },
+    {
+      "Time_Start": 1668.4,
+      "Time_End": 1671.0,
+      "Text": " There's also this whole issue where .NET,"
+    },
+    {
+      "Time_Start": 1671.0,
+      "Time_End": 1673.0,
+      "Text": " .NET 6 plus, whatever we're calling it,"
+    },
+    {
+      "Time_Start": 1673.0,
+      "Time_End": 1675.4,
+      "Text": " actually divides the framework into three parts."
+    },
+    {
+      "Time_Start": 1675.4,
+      "Time_End": 1677.52,
+      "Text": " There's .NET core, there's ASP.NET,"
+    },
+    {
+      "Time_Start": 1677.52,
+      "Time_End": 1679.54,
+      "Text": " and there's the Windows desktop part."
+    },
+    {
+      "Time_Start": 1679.54,
+      "Time_End": 1682.08,
+      "Text": " And depending on how you build your application,"
+    },
+    {
+      "Time_Start": 1682.08,
+      "Time_End": 1685.22,
+      "Text": " you only get some of the DLLs that are even visible at all."
+    },
+    {
+      "Time_Start": 1685.22,
+      "Time_End": 1686.84,
+      "Text": " So, you can only use gadgets from the ones"
+    },
+    {
+      "Time_Start": 1686.8400000000001,
+      "Time_End": 1689.5800000000002,
+      "Text": " that are appropriate to how you build your application."
+    },
+    {
+      "Time_Start": 1691.0400000000002,
+      "Time_End": 1695.1200000000001,
+      "Text": " So, the ASP.NET core app types"
+    },
+    {
+      "Time_Start": 1695.1200000000001,
+      "Time_End": 1697.5200000000002,
+      "Text": " and the Windows desktop app types"
+    },
+    {
+      "Time_Start": 1697.5200000000002,
+      "Time_End": 1699.16,
+      "Text": " won't be found by type get type."
+    },
+    {
+      "Time_Start": 1699.16,
+      "Time_End": 1702.0800000000002,
+      "Text": " You can't deserialize them unless you've built"
+    },
+    {
+      "Time_Start": 1702.0800000000002,
+      "Time_End": 1705.8000000000002,
+      "Text": " with an ASP.NET app or a Windows desktop app."
+    },
+    {
+      "Time_Start": 1705.8000000000002,
+      "Time_End": 1708.44,
+      "Text": " But you can still do deserialization exploits."
+    },
+    {
+      "Time_Start": 1708.44,
+      "Time_End": 1711.64,
+      "Text": " So, object data provider is still there in .NET 6."
+    },
+    {
+      "Time_Start": 1711.64,
+      "Time_End": 1713.2400000000002,
+      "Text": " It's still there in .NET 8."
+    },
+    {
+      "Time_Start": 1713.2400000000002,
+      "Time_End": 1715.94,
+      "Text": " You have to have Windows desktop loaded for it to work,"
+    },
+    {
+      "Time_Start": 1715.94,
+      "Time_End": 1718.64,
+      "Text": " but if it's loaded, the payloads I've been showing you"
+    },
+    {
+      "Time_Start": 1718.64,
+      "Time_End": 1720.94,
+      "Text": " for object data provider, they just work fine."
+    },
+    {
+      "Time_Start": 1722.26,
+      "Time_End": 1724.42,
+      "Text": " There are also some deserialization gadgets"
+    },
+    {
+      "Time_Start": 1724.42,
+      "Time_End": 1726.46,
+      "Text": " that do exist in .NET core app."
+    },
+    {
+      "Time_Start": 1726.46,
+      "Time_End": 1727.94,
+      "Text": " And now I'm going to go to the parts"
+    },
+    {
+      "Time_Start": 1727.94,
+      "Time_End": 1728.94,
+      "Text": " that aren't on my slides"
+    },
+    {
+      "Time_Start": 1728.94,
+      "Time_End": 1731.6200000000001,
+      "Text": " because I think I've got some time left."
+    },
+    {
+      "Time_Start": 1731.6200000000001,
+      "Time_End": 1735.02,
+      "Text": " So, I told you earlier how you can get a ping back"
+    },
+    {
+      "Time_Start": 1735.02,
+      "Time_End": 1736.6200000000001,
+      "Text": " with assembly installer."
+    },
+    {
+      "Time_Start": 1736.6200000000001,
+      "Time_End": 1738.8600000000001,
+      "Text": " There's a similar trick you can do in .NET 6,"
+    },
+    {
+      "Time_Start": 1738.8600000000001,
+      "Time_End": 1740.5800000000002,
+      "Text": " in .NET 8, and so on."
+    },
+    {
+      "Time_Start": 1740.5800000000002,
+      "Time_End": 1742.7,
+      "Text": " And there's a few types you can use to do that."
+    },
+    {
+      "Time_Start": 1742.74,
+      "Time_End": 1745.9,
+      "Text": " One of them is assembly dependency resolver."
+    },
+    {
+      "Time_Start": 1745.9,
+      "Time_End": 1749.02,
+      "Text": " Another one is system.io.fileinfo."
+    },
+    {
+      "Time_Start": 1749.02,
+      "Time_End": 1752.7,
+      "Text": " The trick with both of those is they will call create file"
+    },
+    {
+      "Time_Start": 1752.7,
+      "Time_End": 1753.74,
+      "Text": " whatever string you give them."
+    },
+    {
+      "Time_Start": 1753.74,
+      "Time_End": 1755.26,
+      "Text": " So, assembly dependency resolver"
+    },
+    {
+      "Time_Start": 1755.26,
+      "Time_End": 1757.74,
+      "Text": " has a constructor argument, which is just a path,"
+    },
+    {
+      "Time_Start": 1757.74,
+      "Time_End": 1759.98,
+      "Text": " and it'll just call create file on that path."
+    },
+    {
+      "Time_Start": 1760.9,
+      "Time_End": 1763.46,
+      "Text": " The file info type, you can set the read-only flag"
+    },
+    {
+      "Time_Start": 1763.46,
+      "Time_End": 1766.06,
+      "Text": " on a file with it, and you can do that, however."
+    },
+    {
+      "Time_Start": 1766.06,
+      "Time_End": 1768.7,
+      "Text": " So, you can also use that as a payload to do DOS"
+    },
+    {
+      "Time_Start": 1768.7,
+      "Time_End": 1770.76,
+      "Text": " because you can make files on the server read-only."
+    },
+    {
+      "Time_Start": 1770.76,
+      "Time_End": 1771.6,
+      "Text": " But when you do that,"
+    },
+    {
+      "Time_Start": 1771.6,
+      "Time_End": 1774.52,
+      "Text": " it'll also call create file on that path."
+    },
+    {
+      "Time_Start": 1774.52,
+      "Time_End": 1776.4,
+      "Text": " Now, there's a thing with create file in Windows"
+    },
+    {
+      "Time_Start": 1776.4,
+      "Time_End": 1780.08,
+      "Text": " where if you give it an internet SMB URL or a WebDAV URL,"
+    },
+    {
+      "Time_Start": 1780.08,
+      "Time_End": 1781.14,
+      "Text": " it'll go talk to that."
+    },
+    {
+      "Time_Start": 1781.14,
+      "Time_End": 1782.42,
+      "Text": " It's happy to do it."
+    },
+    {
+      "Time_Start": 1782.42,
+      "Time_End": 1784.46,
+      "Text": " So, if you've got an SMB server on the internet"
+    },
+    {
+      "Time_Start": 1784.46,
+      "Time_End": 1786.26,
+      "Text": " or a WebDAV server somewhere,"
+    },
+    {
+      "Time_Start": 1786.26,
+      "Time_End": 1789.14,
+      "Text": " you can use those gadgets to get a ping back to that server."
+    },
+    {
+      "Time_Start": 1789.14,
+      "Time_End": 1790.64,
+      "Text": " Now, a lot of times,"
+    },
+    {
+      "Time_Start": 1790.64,
+      "Time_End": 1792.44,
+      "Text": " if they're doing their opsec correctly,"
+    },
+    {
+      "Time_Start": 1792.44,
+      "Time_End": 1794.12,
+      "Text": " S and B outbound will be blocked"
+    },
+    {
+      "Time_Start": 1794.12,
+      "Time_End": 1796.28,
+      "Text": " on the server you're trying to attack."
+    },
+    {
+      "Time_Start": 1796.28,
+      "Time_End": 1798.52,
+      "Text": " And sometimes the WebDAV redirector"
+    },
+    {
+      "Time_Start": 1798.52,
+      "Time_End": 1800.08,
+      "Text": " won't exist in the Windows install."
+    },
+    {
+      "Time_Start": 1800.12,
+      "Time_End": 1801.28,
+      "Text": " So, it's a little bit iffy,"
+    },
+    {
+      "Time_Start": 1801.28,
+      "Time_End": 1802.3799999999999,
+      "Text": " but in my experience,"
+    },
+    {
+      "Time_Start": 1802.3799999999999,
+      "Time_End": 1806.02,
+      "Text": " usually one or the other of those works."
+    },
+    {
+      "Time_Start": 1806.02,
+      "Time_End": 1808.02,
+      "Text": " So, you can still get a ping back, essentially,"
+    },
+    {
+      "Time_Start": 1808.02,
+      "Time_End": 1811.1999999999998,
+      "Text": " by using assembly dependency resolver or file info,"
+    },
+    {
+      "Time_Start": 1811.1999999999998,
+      "Time_End": 1812.48,
+      "Text": " setting the read-only flag,"
+    },
+    {
+      "Time_Start": 1812.48,
+      "Time_End": 1816.3999999999999,
+      "Text": " and then giving either an internet SMB URL or a WebDAV URL."
+    },
+    {
+      "Time_Start": 1818.34,
+      "Time_End": 1820.8,
+      "Text": " And that's actually all I had."
+    },
+    {
+      "Time_Start": 1820.8,
+      "Time_End": 1822.9199999999998,
+      "Text": " So, are there any questions?"
+    },
+    {
+      "Time_Start": 1824.76,
+      "Time_End": 1825.6,
+      "Text": " Oh."
+    },
+    {
+      "Time_Start": 1826.3200000000002,
+      "Time_End": 1827.92,
+      "Text": " Thank you, thanks."
+    },
+    {
+      "Time_Start": 1833.96,
+      "Time_End": 1835.0000000000002,
+      "Text": " I saw one over here."
+    },
+    {
+      "Time_Start": 1839.8000000000002,
+      "Time_End": 1841.44,
+      "Text": " Sorry, can you tell me that one more time?"
+    },
+    {
+      "Time_Start": 1841.44,
+      "Time_End": 1842.2800000000002,
+      "Text": " Sorry."
+    },
+    {
+      "Time_Start": 1847.0400000000002,
+      "Time_End": 1848.0800000000002,
+      "Text": " Okay, the question was,"
+    },
+    {
+      "Time_Start": 1848.0800000000002,
+      "Time_End": 1850.5600000000002,
+      "Text": " do I have any examples of the vulnerable games?"
+    },
+    {
+      "Time_Start": 1850.5600000000002,
+      "Time_End": 1852.2,
+      "Text": " I don't remember which ones they are,"
+    },
+    {
+      "Time_Start": 1852.2,
+      "Time_End": 1854.8600000000001,
+      "Text": " but what you can do is go on,"
+    },
+    {
+      "Time_Start": 1855.6000000000001,
+      "Time_End": 1862.6000000000001,
+      "Text": " GitHub or, like, if you go on to NuGet, okay, so two approaches. Go to NuGet, look at our"
+    },
+    {
+      "Time_Start": 1862.6000000000001,
+      "Time_End": 1867.5600000000002,
+      "Text": " projects that are dependent on LightDB, and then look at where those get used, or just"
+    },
+    {
+      "Time_Start": 1867.5600000000002,
+      "Time_End": 1871.16,
+      "Text": " search on GitHub for uses of LightDB for things that look like games. That's how I found a"
+    },
+    {
+      "Time_Start": 1871.16,
+      "Time_End": 1878.16,
+      "Text": " bunch of our examples of that before. Yes, over here."
+    },
+    {
+      "Time_Start": 1878.16,
+      "Time_End": 1885.16,
+      "Text": " Sorry. You said that after you're reading the object, it will actually initialize the"
+    },
+    {
+      "Time_Start": 1895.0,
+      "Time_End": 1902.0,
+      "Text": " object injection, right? So how did you find that in the first time? Because it's not something"
+    },
+    {
+      "Time_Start": 1902.28,
+      "Time_End": 1909.28,
+      "Text": " that you typically think about when you start this research."
+    },
+    {
+      "Time_Start": 1909.28,
+      "Time_End": 1915.92,
+      "Text": " Okay, to clarify, was the question, how did I realize that the vulnerability was there"
+    },
+    {
+      "Time_Start": 1915.92,
+      "Time_End": 1917.96,
+      "Text": " in the code that I was looking at to begin with?"
+    },
+    {
+      "Time_Start": 1917.96,
+      "Time_End": 1922.24,
+      "Text": " Yeah, because you said, I can control the key, I can control the value, and then when"
+    },
+    {
+      "Time_Start": 1922.24,
+      "Time_End": 1927.24,
+      "Text": " I read it, it will initialize the object injection, right?"
+    },
+    {
+      "Time_Start": 1927.56,
+      "Time_End": 1934.56,
+      "Text": " Oh, okay. So as far as that goes, if you're looking for polymorphic serializers where"
+    },
+    {
+      "Time_Start": 1934.92,
+      "Time_End": 1939.2,
+      "Text": " people are rolling their own, which is a really bad idea in general, what I look for when"
+    },
+    {
+      "Time_Start": 1939.2,
+      "Time_End": 1942.88,
+      "Text": " I'm doing these sorts of code reviews is calls to type get type that are just being passed"
+    },
+    {
+      "Time_Start": 1942.88,
+      "Time_End": 1947.74,
+      "Text": " a string, especially if the string somehow comes from user data. Type get type being"
+    },
+    {
+      "Time_Start": 1947.74,
+      "Time_End": 1953.64,
+      "Text": " called on a user-provided string almost always is either unsafe serialization or someone"
+    },
+    {
+      "Time_Start": 1953.64,
+      "Time_End": 1958.92,
+      "Text": " doing really sketchy with reflection and evokes. And both of those are probably RCE."
+    },
+    {
+      "Time_Start": 1958.92,
+      "Time_End": 1960.3200000000002,
+      "Text": " Does that explain it?"
+    },
+    {
+      "Time_Start": 1960.3200000000002,
+      "Time_End": 1963.0,
+      "Text": " Yes, it is. Thank you."
+    },
+    {
+      "Time_Start": 1963.0,
+      "Time_End": 1968.0,
+      "Text": " Okay, in the middle here?"
+    },
+    {
+      "Time_Start": 1968.0,
+      "Time_End": 1975.0,
+      "Text": " Okay, the question was, did I look at the AWS? I did at least, okay, the question was,"
+    },
+    {
+      "Time_Start": 1976.0,
+      "Time_End": 1983.0,
+      "Text": " did I look at DynamoDB NoSQL? I glanced at it. I did not do an in\u2011depth test. It did"
+    },
+    {
+      "Time_Start": 1984.28,
+      "Time_End": 1991.12,
+      "Text": " not have as easy of an exploit as the other ones I looked at. I won't say it's safe. And"
+    },
+    {
+      "Time_Start": 1991.12,
+      "Time_End": 1998.12,
+      "Text": " then there was one over here."
+    },
+    {
+      "Time_Start": 1999.1200000000001,
+      "Time_End": 2006.1200000000001,
+      "Text": " Okay, the question here was the assembly installer exploit that I'm loading malicious DLL with"
+    },
+    {
+      "Time_Start": 2014.1200000000001,
+      "Time_End": 2019.0000000000002,
+      "Text": " and how can I make sure the malicious DLL is there present on the system? In that case,"
+    },
+    {
+      "Time_Start": 2019.0000000000002,
+      "Time_End": 2023.24,
+      "Text": " the assumption is you've got some other exploit that lets you do a file drop. Something I"
+    },
+    {
+      "Time_Start": 2023.24,
+      "Time_End": 2027.0000000000002,
+      "Text": " should explain is the cases where I was using assembly installer exploits, that's because"
+    },
+    {
+      "Time_Start": 2027.0,
+      "Time_End": 2031.04,
+      "Text": " the string is shorter than the object data provider ones. Object data provider works"
+    },
+    {
+      "Time_Start": 2031.04,
+      "Time_End": 2035.52,
+      "Text": " for all of these too. So do lots of other .NET gadgets. Assembly installer I feel like"
+    },
+    {
+      "Time_Start": 2035.52,
+      "Time_End": 2040.04,
+      "Text": " honestly is more useful for doing a ping back to an HTTP URL because that lets you do that"
+    },
+    {
+      "Time_Start": 2040.04,
+      "Time_End": 2045.0,
+      "Text": " blind scanning I mentioned."
+    },
+    {
+      "Time_Start": 2045.0,
+      "Time_End": 2052.0,
+      "Text": " And one way in the back. You might have to come forward for me to hear you."
+    },
+    {
+      "Time_Start": 2057.0,
+      "Time_End": 2064.0,
+      "Text": " So the question was whether automapper and fast mapper that also use that sort of reflection"
+    },
+    {
+      "Time_Start": 2082.2,
+      "Time_End": 2086.16,
+      "Text": " under the covers are also vulnerable. I'll admit I haven't looked at those. I'm honestly"
+    },
+    {
+      "Time_Start": 2086.2,
+      "Time_End": 2089.72,
+      "Text": " not quite sure what you're referring to. So maybe we can talk a little bit more about"
+    },
+    {
+      "Time_Start": 2089.72,
+      "Time_End": 2096.72,
+      "Text": " it after this. And if there's no other questions, I'll finish there. Thank you."
+    },
+    {
+      "Time_Start": 2096.7200000000003,
+      "Time_End": 2099.78,
+      "Text": " If there's no other questions, I'll finish there. Thank you."
+    }
+  ]
+}

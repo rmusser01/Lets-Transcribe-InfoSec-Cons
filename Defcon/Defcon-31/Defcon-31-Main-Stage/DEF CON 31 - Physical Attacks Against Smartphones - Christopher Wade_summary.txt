@@ -1,0 +1,98 @@
+**Case Study 1: Rooting a Locked Bootloader**
+- **Gaining Root Access**:
+  - Target device: Chinese OEM smartphone, 2019 release, with OEM-developed fork of Android.
+  - Bootloader had no traditional unlocking capabilities, but included a special engineering app with restricted access.
+  - Required an exploit to gain root privileges due to lack of direct bootloader USB interface access.
+- **Analyzing the Android Fork**:
+  - Custom system and root-level applications were potential targets for exploitation.
+  - A service running as root, facilitating cloud upload and archiving of app data, had an immediate command injection vulnerability.
+  - SE Linux, an additional security measure, limited the impact of the command injection vulnerability.
+- **Exploring Recovery Mode**:
+  - Recovery mode on the device included Wi-Fi access, extended external storage access, and touchscreen functionality.
+  - The lack of an available recovery image made vulnerability discovery challenging.
+  - Basic attacks were attempted, leveraging the option to load encrypted zip files.
+  - A command injection vulnerability was found in the recovery image, allowing for potential further root access.
+- **Gaining Root Access via Recovery Mode**:
+  - Root cause analysis revealed a shallow command check vulnerability in the update process.
+  - This vulnerability could be exploited to load and execute a more complex script.
+  - The file system used by Android's user data did not support all special characters, requiring a workaround.
+  - The recovery image also supported EXT4 file systems, allowing for the execution of a more complex update file.
+- **Establishing a Concrete Shell**:
+  - Techniques employed: running the IT command, disabling SE Linux, and enabling ADB.
+  - Goal: gaining a root shell in recovery mode.
+- **Transitioning from Recovery to Android**:
+  - Kexec, a kernel component for loading a new Linux kernel, was considered but denied due to module restrictions.
+  - Ptrace, a system call for observing and controlling processes, was utilized instead.
+  - Ptrace allowed for latching onto the init process and restarting it in the Android context.
+  - Switch root, a common feature on Linux-based devices, was used to switch from the init ramfs to the Android init ramfs.
+- **Addressing Caveats**:
+  - Shared mounts and SE Linux enforcement were issues that needed to be resolved.
+  - Ptrace's ability to override system calls was used to work around these challenges.
+  - Kernel panics occurred due to conflicts with hardware initialization processes.
+  - Workarounds were implemented by returning empty files when accessing certain dot RC files.
+- **Preserving Root Access**:
+  - The root access was read-only, and rebooting the device would result in losing the shell.
+  - Mount --bind command was used to temporarily override read-only files in the system partition.
+- **Demonstration**:
+  - The speaker demonstrates the boot process, transitioning from recovery to Android and gaining root access.
+- **Discovering a Secret Section**:
+  - The speaker observes that the recovery context remains accessible even after switching to Android.
+  - This provides a hidden section of the device that Android doesn't recognize, allowing access to hardware and the Android root file system.
+  - The speaker expands this by adding a Debian root file system, enhancing debugging and exploitation capabilities.
+- **Conclusion**:
+  - Root access via this method was consistent and stable, with no adverse effects on device functionality.
+  - Ptrace was highlighted as a valuable tool for this exploit.
+
+**Case Study 2: Exploiting a Samsung Smartphone**
+- **Introduction**:
+  - Target device: Samsung Galaxy A04S, released in August 2022, with Exynos 850 chipset.
+  - Focus on exploiting the low-level USB stack and core USB control transfers.
+- **Fuzzing the USB Core**:
+  - A simple fuzzer was used to randomize parameters and send randomized data to the USB core.
+  - Initial fuzzing attempts caused the device to reboot into a failure mode, but it was recoverable using the download mode tool.
+  - Further fuzzing identified a sequence of control transfers that caused the device to crash and reboot.
+- **Descriptor Buffer Overflow**:
+  - The B request parameter OXF6 was found to cause a crash when sent as a get descriptor request.
+  - By sending data to the same memory location, the speaker could overwrite the first byte of the buffer.
+  - A buffer overflow was discovered, allowing for the overwrite of adjacent memory.
+- **Brute-forcing Memory**:
+  - The speaker brute-forced their way up the adjacent memory, searching for fully working memory to manipulate.
+  - A linked list of pointers to other descriptors was discovered, enabling potential cold boot and bootloader modification attacks.
+- **Dumping Bootloader Memory**:
+  - The speaker dumped bootloader memory to analyze its layout and potentially manipulate it.
+  - The bootloader code was found to start at a specific memory address (OXF8 and five zeros).
+- **Achieving Code Execution**:
+  - Data Execution Prevention (DEP) was implemented on the device, preventing code overwrite in the bootloader RAM.
+  - The speaker discovered that executing code outside the allocated bootloader code area was possible.
+  - They could patch in new functions by writing code slightly outside the mapped area.
+- **Exploiting Fastboot Mode**:
+  - Fastboot mode was chosen as the basis for the exploit due to its string-based commands and table of strings for commands and function pointers.
+  - The speaker could modify the table to achieve easy code execution without stack manipulation.
+- **Bypassing Secure Boot**:
+  - The speaker aimed to modify the kernel to bypass secure boot and execute their own code.
+  - None of the USB-based modes (fastboot, download, etc.) had the capability to boot the phone directly.
+  - The speaker had to call into the existing boot functionality or re-implement the boot process.
+- **Re-implementing the Boot Process**:
+  - Two options: copying working memory or re-implementing the boot functionality from scratch.
+  - The speaker chose the latter due to limited writable memory and the presence of an RTOS in the bootloader.
+  - Functions in the bootloader could be called by absolute addresses in C, allowing for easy modification and debugging.
+- **Comparing Boot Implementations**:
+  - The speaker compared their boot implementation to a legitimate one, identifying differences and making adjustments.
+  - This process involved checking if statements and removing hardware initialization functions that had already been executed.
+- **Handling Kernel Initialization**:
+  - The kernel reinitialized the MMU, causing conflicts with the RTOS's background tasks, USB control transfers, and high-level USB communication threads.
+  - The solution was to throw an exception, causing all threads to hang and allowing the speaker to execute their bootstrapping code.
+- **Addressing Boot Issues**:
+  - The speaker encountered issues with the user data partition decryption and hardware initialization functions.
+  - By analyzing log messages, they identified missing hardware initialization functions and implemented them.
+- **Demonstration**:
+  - The speaker demonstrates the exploit, showing the phone booting into Android with a modified kernel.
+- **Conclusion**:
+  - Code execution was achieved, allowing for potential secure boot bypass and kernel modification.
+  - The exploit could be triggered using an exception, making it more accessible.
+  - The risk of triggering Samsung's Knox security feature was present but not encountered during analysis.
+
+**Disclosure and Final Notes**
+- The initial vulnerability was disclosed to Samsung in December 2022, and they promptly patched the finding across all devices.
+- The speaker's tools and further details will be released on their GitHub and Twitter.
+- Conclusion: despite security measures, devices often have exploitable vulnerabilities, and basic vulnerabilities can lead to complex attack chains.

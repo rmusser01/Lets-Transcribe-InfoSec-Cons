@@ -1,0 +1,44 @@
+**Introduction**
+- Speaker: Patrick Wardle, founder of the Objective-C Foundation
+- Topics covered: Apple's macOS Background Task Management (BTM), reversing malware detection, macOS internals, etc.
+
+**Background Task Management**
+- **Overview**: Introduced in macOS 13, BTM governs and consolidates **persistent items** or "background tasks."
+- **Persistent items**: Processes that automatically re-execute upon system reboot or user login (e.g., auto-updaters, malware).
+- **BTM's Visual Indicators**: When an item is installed that persists, three things happen:
+    - A system alert informs the user.
+    - A security message is broadcast, notifying security tools.
+    - The item is registered in the BTM database.
+
+**Why BTM Matters**
+- **For Defenders**: Provides a centralized subsystem to manage and detect persistent items, including potential malware.
+- **For Hackers**: Poses challenges due to user alerts and security messages, requiring new approaches for silent persistence.
+
+**Internals of BTM**
+- **Log Analysis**: Analyzing logs with full logging capability enabled provides insights into BTM's components and behavior.
+- **Key BTM Components**:
+    - **SMD (System Management Daemon)**: Monitors file system events and communicates with BTM via XPC messages.
+    - **BTM Daemon**: Core component that manages persistent items, updates the BTM database, and interacts with other processes via XPC.
+    - **BTM Agent**: Displays user alerts and notifications regarding persistent items.
+- **BTM Database**: Contains information about all persistent items, but it's proprietary and undocumented, requiring reverse engineering to access.
+
+**Writing Tools to Leverage BTM**
+- **Dumping the BTM Database**: Apple's SFL tool can dump the BTM database, but it requires a private entitlement. Reverse engineering SFL tool reveals methods to deserialize database objects programmatically.
+- **Open-Source Library: dump BTM**: Allows developers to query the BTM database and integrate BTM functionality into security tools.
+- **Real-time Persistence Detection**: macOS's Endpoint Security subsystem allows security tools to register for notifications when persistent items are added or removed. However, the removal event is currently broken.
+
+**Bypassing BTM**
+- **Overview**: Bypassing BTM involves suppressing user alerts and preventing endpoint security messages from being delivered.
+- **Method 1: Resetting the BTM Database**: Using Apple's SFL tool to reset the database confuses the BTM daemon, preventing the user alert. Requires root access.
+- **Method 2: Suspending the BTM Agent**: Sending a stop signal to the BTM agent (running as the user) prevents the user alert from being displayed.
+- **Blocking Endpoint Security Messages**: Analyzing the BTM daemon's code reveals a kernel bug where the responsible process for persistence is not found, causing an error and preventing the endpoint security message.
+
+**Detecting BTM Bypasses**
+- **Resetting the BTM Database**: Write a process monitor to detect when the SFL tool is used to reset the database, or use endpoint security events to block the reset command.
+- **Suspending the BTM Agent**: Use endpoint security to register for signals and block the stop signal from being sent to the BTM agent.
+- **Endpoint Security Notifications**: While the BTM launch item add event is bypassable, file notifications (e.g., notify create, notify write) are not susceptible to the kernel bug and can be used for persistence detection.
+
+**Takeaways**
+- BTM, despite being a new security feature, is poorly implemented and trivial to bypass, leading to a false sense of security for users and security tools.
+- The speaker's non-profit organization focuses on Mac security and raises money for various causes, including recent wildfowl relief efforts in Maui.
+- The speaker has written free books on Mac malware, reverse engineering, and security tool development, with Volume 2 covering topics discussed in the talk.

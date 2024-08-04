@@ -1,0 +1,65 @@
+**Introduction**
+- **Tomer Bar and Omer Attias** present their research on exploiting a vulnerability in Windows Defender.
+
+**Motivation**
+- Inspired by the **Flame malware**, which exploited the Windows update process, the researchers aim to achieve similar capabilities without admin privileges or a forged certificate.
+
+**Understanding the Defender Update Process**
+- Windows Defender checks for updates with the **Microsoft Update Center**.
+- Updates are returned as a single executable file, **Microsoft Protection Anti-Malware Front End (MPAM)**.
+- MPAM extracts six files: two executables (**MP Engine** and **MP6 tab**) and four **VDM** files.
+- MP6 tab executes MP Engine DLL, which contains Defender's core functionality.
+
+**Initial Attempts at Modification**
+- Researchers modify a valid update payload by replacing the MP Engine DLL with a fake one, but this attempt fails due to unsigned DLL protection.
+- Modifying only the file version in an older VDM file and updating Defender with it succeeds, indicating a potential vulnerability.
+
+**Analyzing the VDM Files**
+- VDM files are **Portable Executable** files without code logic, likely containing detection signatures.
+- Base VDM files are larger and have a higher major version number, indicating they contain the majority of signature logic.
+- Delta VDM files represent incremental updates with minor version number changes.
+
+**Understanding the Update Process**
+- MP6 tab communicates with Defender's main process via **RPC** (Remote Procedure Call).
+- Dynamic kernel debugging reveals the update execution flow, including the loading of VDM files and signature verification.
+
+**Investigating the Database Format**
+- VDM files contain a resource section with compressed data starting with **RMDX magic bytes**.
+- Signatures in base and delta files are compressed with **Zlib**, but the magic bytes are absent.
+- Base file contains over **2.5 million signatures**, organized into **threads** with unique names, categories, and severity levels.
+
+**Experimenting with Modifications**
+- Researchers extract strings from a VDM file, compile them into an executable, and trigger a Defender alert without any malicious code.
+- Modifying the thread name in the VDM file results in an unsuccessful update attempt, indicating the presence of validation mechanisms.
+
+**Reverse Engineering the Update Process**
+- Dynamic debugging reveals two important structures: the **RMDX header** and the **Zlib header**.
+- The Zlib header contains compressed data and a value compared to a variable calculated using a specific **CRC algorithm** (**gemCRC**).
+- Modifying the VDM file to fix the CRC value does not lead to a successful update, suggesting additional validation checks.
+
+**Understanding the Relationship Between Base and Delta Files**
+- Delta file contains compressed data, including a **blob signature** and **actions** that define how to build the updated file.
+- Delta file actions include "copy from delta" and "copy from base," specifying the size and offset of data to be copied into the new merge file.
+- Researchers develop a script to merge the base and delta files, resulting in a modified base file with new signatures.
+
+**Discovering Validation Checks**
+- Further analysis reveals three validation checks: Zlib compressed data validation, merge size validation, and merge CRC validation.
+- Modifying the delta actions to change the merge results in a successful update with a fake unsigned database using an unprivileged user account.
+
+**Attack Vectors**
+- Researchers develop a tool, **WD Pretender**, to demonstrate three attack vectors:
+  1. **Thread Deletion**: Deleting threads with specific keywords (e.g., "lasagna") allows the execution of tools previously detected and deleted by Defender.
+  2. **Friendly File Signature Modification**: Replacing the hash of a friendly file (e.g., Oracle VirtualBox runtime library) with a known hash of a malicious file (e.g., Mimikatz) allows the malicious file to run undetected.
+  3. **Emotet Signature Modification**: Modifying an existing Emotet signature to include the "program cannot be run in DOS mode" string causes Defender to delete all PE files, resulting in a permanent denial of service.
+
+**Future Work**
+- The signature database file contains **30,000 Lua scripts** used for remediation. Modifying these scripts may lead to potential local privilege escalation.
+
+**Takeaways**
+- Trust no one, even reliable security controls, as they can be exploited by adversaries.
+- Digitally signed files do not guarantee security. Security vendors should continuously verify the integrity of the update process.
+- The signature update process of security controls is a potential attack vector that requires further research.
+
+**Conclusion**
+- The researchers successfully exploited a vulnerability in Windows Defender to gain full control over the update process, allowing them to bypass detection and perform malicious actions.
+- Their findings highlight the importance of secure update processes and the need for continuous security validation.

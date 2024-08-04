@@ -1,0 +1,1454 @@
+{
+  "segments": [
+    {
+      "Time_Start": 0.0,
+      "Time_End": 6.0,
+      "Text": "This text was transcribed using whisper model: large-v2\n\n Okay. How is everybody? I need your energy, right? Yeah. Okay. I drank some. Okay. So, welcome"
+    },
+    {
+      "Time_Start": 11.42,
+      "Time_End": 18.88,
+      "Text": " to our talk, Defender Pretender, when Windows Defender updates become a security risk. We'll"
+    },
+    {
+      "Time_Start": 18.88,
+      "Time_End": 24.88,
+      "Text": " introduce ourselves first. My name is Tomer Bar and I am the VP of security research at"
+    },
+    {
+      "Time_Start": 24.88,
+      "Time_End": 31.34,
+      "Text": " SafeBridge. Actually, we spoke 10 different talks at BlackHat USA and this is our ninth"
+    },
+    {
+      "Time_Start": 31.34,
+      "Time_End": 37.54,
+      "Text": " in DEF CON. And I've been around for the last 20 years. I presented in many global security"
+    },
+    {
+      "Time_Start": 37.54,
+      "Time_End": 45.54,
+      "Text": " conferences and this year I was qualified to speak two talks at BlackHat and one at DEF CON."
+    },
+    {
+      "Time_Start": 45.54,
+      "Time_End": 53.34,
+      "Text": " Hey guys. So, my name is Omer Attias. I'm a security researcher at SafeBridge. I have over"
+    },
+    {
+      "Time_Start": 53.34,
+      "Time_End": 59.260000000000005,
+      "Text": " six years of experience in cyber security, especially in low level and vulnerability"
+    },
+    {
+      "Time_Start": 59.260000000000005,
+      "Time_End": 65.26,
+      "Text": " research. And I'm also a technology and science enthusiast. So, let's kick it off. Okay. We"
+    },
+    {
+      "Time_Start": 68.60000000000001,
+      "Time_End": 75.72,
+      "Text": " will introduce our research motivation and goal and then we'll describe in details Defender"
+    },
+    {
+      "Time_Start": 75.72,
+      "Time_End": 82.60000000000001,
+      "Text": " Pretender process and the vulnerability we discovered. We will demo different super"
+    },
+    {
+      "Time_Start": 82.60000000000001,
+      "Time_End": 88.36000000000001,
+      "Text": " interesting attack vectors and we'll finish our talk with important takeaways before"
+    },
+    {
+      "Time_Start": 88.36000000000001,
+      "Time_End": 96.06,
+      "Text": " leaving time for Q and A. Let's begin. So, in this session, we are going to walk you all"
+    },
+    {
+      "Time_Start": 96.06,
+      "Time_End": 103.44000000000001,
+      "Text": " through the process of how we turned Defender to Defender Pretender. And our motivation"
+    },
+    {
+      "Time_Start": 103.44000000000001,
+      "Time_End": 109.44000000000001,
+      "Text": " originated from the flame malware used by probably state sponsored threat actor and exploited"
+    },
+    {
+      "Time_Start": 110.44,
+      "Time_End": 116.44,
+      "Text": " the Windows update process using a sophisticated man in the middle attack. Flame was able to"
+    },
+    {
+      "Time_Start": 119.02,
+      "Time_End": 125.32,
+      "Text": " hijack the Windows update mechanism by posing as a legitimate Microsoft update server,"
+    },
+    {
+      "Time_Start": 125.32,
+      "Time_End": 132.9,
+      "Text": " allowing it to deliver malicious updates and maintain persistence on the target system. Our"
+    },
+    {
+      "Time_Start": 132.9,
+      "Time_End": 138.9,
+      "Text": " goal was to achieve similar capabilities but running without admin privileges, without"
+    },
+    {
+      "Time_Start": 140.82,
+      "Time_End": 147.02,
+      "Text": " possessing a forged certificate, and with no prior requirements of man in the middle, and"
+    },
+    {
+      "Time_Start": 147.02,
+      "Time_End": 155.02,
+      "Text": " still achieve full takeover on Defender workflow. So, let's start to analyze the Defender"
+    },
+    {
+      "Time_Start": 155.02,
+      "Time_End": 162.52,
+      "Text": " update process and understand what happens locally during an update. So, Defender"
+    },
+    {
+      "Time_Start": 162.52,
+      "Time_End": 168.9,
+      "Text": " check with the Microsoft update center for new updates. We found out that the updates are"
+    },
+    {
+      "Time_Start": 168.9,
+      "Time_End": 175.44,
+      "Text": " returned as a single executable. The file full name is pretty long. It's called Microsoft"
+    },
+    {
+      "Time_Start": 175.44,
+      "Time_End": 181.44,
+      "Text": " protection anti-malware front end. So, we will refer to it as MPAM from now on. And we"
+    },
+    {
+      "Time_Start": 183.82000000000002,
+      "Time_End": 190.18,
+      "Text": " downloaded this MPAM file, analyzed it and found that it has a cab resource and then we"
+    },
+    {
+      "Time_Start": 190.18,
+      "Time_End": 198.18,
+      "Text": " manually extracted the resource and got six files. Two executable files, MP Engine and MP6"
+    },
+    {
+      "Time_Start": 198.18,
+      "Time_End": 204.18,
+      "Text": " tab, and four files with unfamiliar VDM extension, at least for us. So, when we tried to"
+    },
+    {
+      "Time_Start": 206.84,
+      "Time_End": 214.60000000000002,
+      "Text": " execute this MPAM file, we observed that it was executed at the MP6 tab as a child process"
+    },
+    {
+      "Time_Start": 214.6,
+      "Time_End": 220.56,
+      "Text": " using the mouth command line in red. After the execution, we saw that Defender was"
+    },
+    {
+      "Time_Start": 220.56,
+      "Time_End": 226.56,
+      "Text": " updated. So, it seems like the stub's role is to initiate the update process. The VDM files are"
+    },
+    {
+      "Time_Start": 231.14,
+      "Time_End": 237.14,
+      "Text": " loaded to Defender's main process, as you can see here. MP Engine DLL was also used by the"
+    },
+    {
+      "Time_Start": 237.48000000000002,
+      "Time_End": 243.48000000000002,
+      "Text": " process and this DLL exports Defender's core functionality. Let's investigate a little bit"
+    },
+    {
+      "Time_Start": 247.48000000000002,
+      "Time_End": 253.48000000000002,
+      "Text": " more about this VDM files. So, the VDM files are actually portable executable files, meaning"
+    },
+    {
+      "Time_Start": 255.26000000000002,
+      "Time_End": 261.26,
+      "Text": " application. However, they cannot be executed as they have no code logic at all. So, we assume"
+    },
+    {
+      "Time_Start": 261.46,
+      "Time_End": 267.46,
+      "Text": " that they are special data files that contains the detection signatures. Furthermore, we"
+    },
+    {
+      "Time_Start": 270.18,
+      "Time_End": 276.34,
+      "Text": " observed that the two of them are labeled with the keyword base and the other two are labeled"
+    },
+    {
+      "Time_Start": 276.34,
+      "Time_End": 282.88,
+      "Text": " with the keyboard delta. With the main difference being their sizes. The base file are"
+    },
+    {
+      "Time_Start": 282.88,
+      "Time_End": 289.5,
+      "Text": " significantly larger than the delta files and we speculate that this is due to incremental"
+    },
+    {
+      "Time_Start": 289.5,
+      "Time_End": 297.16,
+      "Text": " updating for efficiency reasons. Because you probably don't want to send the entire database"
+    },
+    {
+      "Time_Start": 297.16,
+      "Time_End": 303.16,
+      "Text": " each time you have a small update, right? It's not efficient. And the base file has a major"
+    },
+    {
+      "Time_Start": 305.24,
+      "Time_End": 311.24,
+      "Text": " version of 391 and zero minor version and the delta file has the same major version and 3508"
+    },
+    {
+      "Time_Start": 311.74,
+      "Time_End": 317.74,
+      "Text": " as the minor version. And it's important and I'm telling you that because the delta version"
+    },
+    {
+      "Time_Start": 317.74,
+      "Time_End": 323.74,
+      "Text": " represent the current version of Defender security intelligence. So, it may indicate that the"
+    },
+    {
+      "Time_Start": 326.7,
+      "Time_End": 332.7,
+      "Text": " delta files are related to the signature data. But a quick check reveals that all six files are"
+    },
+    {
+      "Time_Start": 333.7,
+      "Time_End": 339.7,
+      "Text": " digitally signed by Microsoft which probably indicates that the update process was designed"
+    },
+    {
+      "Time_Start": 342.65999999999997,
+      "Time_End": 349.53999999999996,
+      "Text": " against tampering. However, let's continue to explore further more before reaching a"
+    },
+    {
+      "Time_Start": 349.53999999999996,
+      "Time_End": 355.53999999999996,
+      "Text": " definitive answer to this speculation. So, to summarize the update process to the ones that come"
+    },
+    {
+      "Time_Start": 356.54,
+      "Time_End": 363.62,
+      "Text": " in right now, the MPAM file is fetched from the internet and upon execution, it triggers an"
+    },
+    {
+      "Time_Start": 363.62,
+      "Time_End": 370.24,
+      "Text": " update and the following three steps occur. MPAM extracts the VDN files, MP engine and"
+    },
+    {
+      "Time_Start": 370.24,
+      "Time_End": 376.24,
+      "Text": " MP6 tab from itself into the update payload folder located at the temporary directory and MPAM"
+    },
+    {
+      "Time_Start": 377.24,
+      "Time_End": 383.24,
+      "Text": " then executes the 6 tab in order to perform the update and finally, 6 tab takes the VDN files and"
+    },
+    {
+      "Time_Start": 388.2,
+      "Time_End": 394.2,
+      "Text": " MP engine DLL and use them to update Windows Defender. So, easy, right? Until now. So, now that we"
+    },
+    {
+      "Time_Start": 395.98,
+      "Time_End": 402.86,
+      "Text": " have gained high level knowledge about the update process, we can start to play around with the"
+    },
+    {
+      "Time_Start": 402.86,
+      "Time_End": 408.86,
+      "Text": " files involved. If we will be able to modify MP engine DLL to our own fake DLL, it will be a"
+    },
+    {
+      "Time_Start": 413.6,
+      "Time_End": 419.6,
+      "Text": " game over for Defender resulting in local privilege escalation, right? So, we modified a valid"
+    },
+    {
+      "Time_Start": 421.74,
+      "Time_End": 428.02000000000004,
+      "Text": " update payload that we have downloaded from the internet and replaced only the original MP"
+    },
+    {
+      "Time_Start": 428.02,
+      "Time_End": 434.18,
+      "Text": " engine DLL, as you can see, with our fake DLL, even though the DLL was digitally signed by"
+    },
+    {
+      "Time_Start": 434.18,
+      "Time_End": 440.14,
+      "Text": " Microsoft, the original one. And then we executed this tab executable with the appropriate"
+    },
+    {
+      "Time_Start": 440.14,
+      "Time_End": 447.4,
+      "Text": " command line and of course, this attempt failed. During a kernel debugging, we got this"
+    },
+    {
+      "Time_Start": 447.4,
+      "Time_End": 454.02,
+      "Text": " exception at the top that tells us that the DLL is not signed. This protection is"
+    },
+    {
+      "Time_Start": 454.02,
+      "Time_End": 460.52,
+      "Text": " implemented since Defender main process is a protected process, a PPL process, which cannot"
+    },
+    {
+      "Time_Start": 460.52,
+      "Time_End": 466.52,
+      "Text": " load unsigned DLLs. So, in that point we thought, is this the end of our research lead? We"
+    },
+    {
+      "Time_Start": 468.59999999999997,
+      "Time_End": 475.59999999999997,
+      "Text": " decided not to give up and focus on the VDN files. What will happen if we update Defender"
+    },
+    {
+      "Time_Start": 476.06,
+      "Time_End": 482.21999999999997,
+      "Text": " using a modified older VDN file? So, we decided to modify only the file version which is"
+    },
+    {
+      "Time_Start": 482.22,
+      "Time_End": 487.68,
+      "Text": " embedded inside the file, so making Defender believe it's a newer version, but without"
+    },
+    {
+      "Time_Start": 487.68,
+      "Time_End": 494.34000000000003,
+      "Text": " modifying the data itself. Of course, this modification will turn the VDN to be unsigned"
+    },
+    {
+      "Time_Start": 494.34000000000003,
+      "Time_End": 500.68,
+      "Text": " because it's embedded in the file, but we decided to give it a shot anyway. And for our"
+    },
+    {
+      "Time_Start": 500.68,
+      "Time_End": 507.1,
+      "Text": " surprise, the update attempt succeeded. We actually update an older version pretending to be a"
+    },
+    {
+      "Time_Start": 507.1,
+      "Time_End": 513.76,
+      "Text": " newer version. And most importantly, using unsigned files with the low privilege user,"
+    },
+    {
+      "Time_Start": 513.76,
+      "Time_End": 519.76,
+      "Text": " unprivileged user. So, this was the first clue that something is fishy. But, when we try to"
+    },
+    {
+      "Time_Start": 521.88,
+      "Time_End": 528.88,
+      "Text": " modify additional random byte in this VDN data itself and not just the file version and"
+    },
+    {
+      "Time_Start": 528.88,
+      "Time_End": 536.1800000000001,
+      "Text": " execute a second update, we got an error. So, we understood it won't be that simple and we"
+    },
+    {
+      "Time_Start": 536.1800000000001,
+      "Time_End": 543.0600000000001,
+      "Text": " have to learn more about the update process. So, let's summarize what we accomplished so"
+    },
+    {
+      "Time_Start": 543.0600000000001,
+      "Time_End": 550.0600000000001,
+      "Text": " far. We understood in eye level Windows Defender update process and we have become familiar"
+    },
+    {
+      "Time_Start": 550.84,
+      "Time_End": 556.6400000000001,
+      "Text": " with the involved file, right? We attempted to modify MP Engine to use our own fake DLL,"
+    },
+    {
+      "Time_Start": 556.6400000000001,
+      "Time_End": 561.6400000000001,
+      "Text": " but were unsuccessful in doing so. However, we did successfully modify an older update"
+    },
+    {
+      "Time_Start": 562.56,
+      "Time_End": 568.56,
+      "Text": " payload to appear as a new update payload by modifying the VDN files, but finally got an"
+    },
+    {
+      "Time_Start": 571.4,
+      "Time_End": 577.4,
+      "Text": " error when we updated using VDN file with modified data. So, we're left with the question, how"
+    },
+    {
+      "Time_Start": 579.64,
+      "Time_End": 585.64,
+      "Text": " does a low privilege user can replace files managed by Defender protected process? We began to"
+    },
+    {
+      "Time_Start": 586.4,
+      "Time_End": 592.4,
+      "Text": " analyze MP6 tab. After a bit of reversing, we understood that MP6 tab communicate with MSMP"
+    },
+    {
+      "Time_Start": 598.8199999999999,
+      "Time_End": 605.6,
+      "Text": " Engine, which is the main process of Defender via RPC, remote procedural code. But, at that"
+    },
+    {
+      "Time_Start": 605.6,
+      "Time_End": 611.68,
+      "Text": " point in time, we were unable to find a specific RPC interface which was used and the"
+    },
+    {
+      "Time_Start": 611.6800000000001,
+      "Time_End": 618.5600000000001,
+      "Text": " challenge was even more difficult since RPC tools that we all use like RPC view could not display"
+    },
+    {
+      "Time_Start": 618.5600000000001,
+      "Time_End": 625.6800000000001,
+      "Text": " the RPC data due to involved protected process. So, we did manual reverse engineering and"
+    },
+    {
+      "Time_Start": 625.6800000000001,
+      "Time_End": 632.1,
+      "Text": " revealed that the RPC GUID, which belongs to MPSVC DLL and that the function number"
+    },
+    {
+      "Time_Start": 632.1,
+      "Time_End": 638.1,
+      "Text": " parameter was 42 corresponding to a function name server MP update engine signature, which by its"
+    },
+    {
+      "Time_Start": 638.78,
+      "Time_End": 644.78,
+      "Text": " name indeed seems like the function we were looking for. After the RPC is done, the execution will"
+    },
+    {
+      "Time_Start": 649.24,
+      "Time_End": 657.24,
+      "Text": " continue from Defender main process on the right and will reach in it engine context function,"
+    },
+    {
+      "Time_Start": 657.24,
+      "Time_End": 664.82,
+      "Text": " which start the update process by calling the R signal function in our MP engine DLL. So, now we"
+    },
+    {
+      "Time_Start": 664.82,
+      "Time_End": 671.7800000000001,
+      "Text": " are ready for dynamic kernel debugging to understand the rest of the execution flow. And as"
+    },
+    {
+      "Time_Start": 671.7800000000001,
+      "Time_End": 678.08,
+      "Text": " you can see, the execution flow is pretty long, right? We will skip to the interesting part in"
+    },
+    {
+      "Time_Start": 678.08,
+      "Time_End": 686.08,
+      "Text": " the load database function, which is called for each VDM file. So, now we know for sure that the"
+    },
+    {
+      "Time_Start": 686.26,
+      "Time_End": 694.26,
+      "Text": " VDM is indeed contains the update database. Let's analyze the database format. So, we will be"
+    },
+    {
+      "Time_Start": 696.4200000000001,
+      "Time_End": 701.88,
+      "Text": " able to modify the data in much smarter way than we did before like in random data"
+    },
+    {
+      "Time_Start": 701.88,
+      "Time_End": 709.26,
+      "Text": " modification. As we mentioned, the VDM file is Windows portable executable files with no code"
+    },
+    {
+      "Time_Start": 709.26,
+      "Time_End": 716.0,
+      "Text": " logic, but it also includes a resource section. And this resource section contains compressed"
+    },
+    {
+      "Time_Start": 716.0,
+      "Time_End": 722.0,
+      "Text": " data that start with RMDX magic bytes. And the signature in both the base and the delta files"
+    },
+    {
+      "Time_Start": 726.14,
+      "Time_End": 732.14,
+      "Text": " are compressed with Zlib, but Zlib magic bytes are absent. So, by simply adding these two bytes"
+    },
+    {
+      "Time_Start": 735.5,
+      "Time_End": 741.5,
+      "Text": " at the bottom and running this simple command, it can be decompressed. And we were very surprised"
+    },
+    {
+      "Time_Start": 741.5,
+      "Time_End": 747.5,
+      "Text": " to see that the signature are not even encrypted. So, in a brief look over the base file, we"
+    },
+    {
+      "Time_Start": 750.14,
+      "Time_End": 757.14,
+      "Text": " could literally see where a signature begins and ends and probably the actual unique strings"
+    },
+    {
+      "Time_Start": 757.14,
+      "Time_End": 763.14,
+      "Text": " defender searches in order to detect for this example the country ransomware. But the delta"
+    },
+    {
+      "Time_Start": 763.78,
+      "Time_End": 769.78,
+      "Text": " file format appears to be a little bit more complex. And we have decided to prioritize"
+    },
+    {
+      "Time_Start": 773.08,
+      "Time_End": 780.38,
+      "Text": " understanding it to a later time. So, now we are going to focus on the base file. And the base"
+    },
+    {
+      "Time_Start": 780.38,
+      "Time_End": 786.58,
+      "Text": " file as we assume has the most of the signature logic because it's larger. And it seems easier"
+    },
+    {
+      "Time_Start": 786.58,
+      "Time_End": 792.6800000000001,
+      "Text": " to understand its format. So, let's see what we discovered. So, each signature has a four"
+    },
+    {
+      "Time_Start": 792.6800000000001,
+      "Time_End": 798.6800000000001,
+      "Text": " byte signature header which contains signature type and size. The type is one byte long and the"
+    },
+    {
+      "Time_Start": 800.38,
+      "Time_End": 806.38,
+      "Text": " size is three byte long. And the signature data begins just right after the signature header. So,"
+    },
+    {
+      "Time_Start": 808.0400000000001,
+      "Time_End": 814.12,
+      "Text": " simple structure. And instead of reversing each signature type, we search on Google and for"
+    },
+    {
+      "Time_Start": 814.12,
+      "Time_End": 820.12,
+      "Text": " some relevant information and found this comprehensive list of signature types. Each thread"
+    },
+    {
+      "Time_Start": 823.04,
+      "Time_End": 829.04,
+      "Text": " starts with a signature type 5C. A thread is a collection of signature. These signatures are"
+    },
+    {
+      "Time_Start": 830.88,
+      "Time_End": 836.62,
+      "Text": " simply unique strings or byte sequences which belongs to a malware family. You can see"
+    },
+    {
+      "Time_Start": 836.62,
+      "Time_End": 842.96,
+      "Text": " several strings from the country thread and the collection of the signatures always ends up"
+    },
+    {
+      "Time_Start": 842.96,
+      "Time_End": 848.96,
+      "Text": " with thread and signature 5D type at the bottom. The base file is actually a sequence of"
+    },
+    {
+      "Time_Start": 852.26,
+      "Time_End": 859.46,
+      "Text": " threads. When one thread ends, the next thread starts and so on. So, using this knowledge, we"
+    },
+    {
+      "Time_Start": 859.46,
+      "Time_End": 865.46,
+      "Text": " were able to extract more than two and a half million signatures from the base file. We figure"
+    },
+    {
+      "Time_Start": 865.8000000000001,
+      "Time_End": 871.8000000000001,
+      "Text": " out most of the member of the signature. For example, the thread name, its category, and"
+    },
+    {
+      "Time_Start": 873.72,
+      "Time_End": 879.72,
+      "Text": " severity of the thread. Now, we can conduct an experiment in order to verify if we can modify it in a"
+    },
+    {
+      "Time_Start": 882.0400000000001,
+      "Time_End": 887.96,
+      "Text": " more smarter way than we did at the beginning of the research. So, we extracted the strings"
+    },
+    {
+      "Time_Start": 887.96,
+      "Time_End": 893.9200000000001,
+      "Text": " from the video files, copied them to a visual studio environment, and compiled a simple"
+    },
+    {
+      "Time_Start": 893.9200000000001,
+      "Time_End": 899.6800000000001,
+      "Text": " executable containing these strings. But, as you can see, without any logic, as you can see"
+    },
+    {
+      "Time_Start": 899.6800000000001,
+      "Time_End": 906.4200000000001,
+      "Text": " it's line 16, the main function is empty. And then we copied this executable to a virtual"
+    },
+    {
+      "Time_Start": 906.4200000000001,
+      "Time_End": 913.6800000000001,
+      "Text": " machine with Defender and in a minute, immediately, it triggered Defender even though there is no"
+    },
+    {
+      "Time_Start": 913.6800000000001,
+      "Time_End": 919.6800000000001,
+      "Text": " malicious code at all. And as expected, the thread alert name is the name of the thread we"
+    },
+    {
+      "Time_Start": 919.6800000000001,
+      "Time_End": 926.6400000000001,
+      "Text": " investigated, Conti, as you can see at the top. Then, we modified just the thread name"
+    },
+    {
+      "Time_Start": 926.6400000000001,
+      "Time_End": 933.34,
+      "Text": " associated with the signature from Conti to a different name, recompressed the video file, and"
+    },
+    {
+      "Time_Start": 933.34,
+      "Time_End": 940.1,
+      "Text": " tried to update Defender using this modified version. Unfortunately, this attempt was"
+    },
+    {
+      "Time_Start": 940.1,
+      "Time_End": 947.6,
+      "Text": " unsuccessful and resulted in unexplained error. We assume that the error is due to validation"
+    },
+    {
+      "Time_Start": 947.6,
+      "Time_End": 951.6,
+      "Text": " mechanism, and Omer will speak about those validations."
+    },
+    {
+      "Time_Start": 951.6,
+      "Time_End": 957.6,
+      "Text": " Okay. So, we went back to the drawing board and reverse engineered the update process. With"
+    },
+    {
+      "Time_Start": 963.36,
+      "Time_End": 969.36,
+      "Text": " the goal of identifying the point where the update failed and why it failed. So, a quick"
+    },
+    {
+      "Time_Start": 970.36,
+      "Time_End": 976.36,
+      "Text": " reminder, for each video file, load database is called and then checks the validity of the file"
+    },
+    {
+      "Time_Start": 979.32,
+      "Time_End": 986.58,
+      "Text": " and then calls to consume input compressed function. Consume input compressed function is a"
+    },
+    {
+      "Time_Start": 986.58,
+      "Time_End": 994.58,
+      "Text": " huge function that performs a lot of operations on the video files. Also, we suspected the"
+    },
+    {
+      "Time_Start": 995.58,
+      "Time_End": 1003.12,
+      "Text": " function to be the function that returned the error code we saw in the logs. So, we focused"
+    },
+    {
+      "Time_Start": 1003.12,
+      "Time_End": 1010.5,
+      "Text": " deeply on the internals of these two functions and specifically on consume input compressed"
+    },
+    {
+      "Time_Start": 1010.5,
+      "Time_End": 1018.5,
+      "Text": " function. We did it by dynamically debugging the update execution. So, let's see what we got"
+    },
+    {
+      "Time_Start": 1019.0,
+      "Time_End": 1027.0,
+      "Text": " from debugging. The debugging led us to figure out two important structures that contained"
+    },
+    {
+      "Time_Start": 1027.0,
+      "Time_End": 1035.0,
+      "Text": " in each video file. The first one is the RMDX header, which appears in the beginning of"
+    },
+    {
+      "Time_Start": 1035.0,
+      "Time_End": 1043.0,
+      "Text": " every video resource data. One of the important members of the RMDX header is the data offset"
+    },
+    {
+      "Time_Start": 1044.0,
+      "Time_End": 1052.0,
+      "Text": " which points to a second header called Zlib header, which we can see marked in blue. The"
+    },
+    {
+      "Time_Start": 1052.0,
+      "Time_End": 1060.0,
+      "Text": " Zlib header actually contains the Zlib compressed data of the VDM and also consists of two"
+    },
+    {
+      "Time_Start": 1060.0,
+      "Time_End": 1068.0,
+      "Text": " VARs and the second VAR suspected to be the CRC of the compressed data. So, we tried to"
+    },
+    {
+      "Time_Start": 1069.0,
+      "Time_End": 1077.0,
+      "Text": " calculate the CRC value of the compressed data, but we didn't get the expected value. So, maybe"
+    },
+    {
+      "Time_Start": 1077.0,
+      "Time_End": 1085.0,
+      "Text": " this is not the CRC. So, we tried to locate the point where this value is accessed and"
+    },
+    {
+      "Time_Start": 1085.0,
+      "Time_End": 1093.0,
+      "Text": " discovered that it's compared to a variable calculated using an algorithm similar to a CRC"
+    },
+    {
+      "Time_Start": 1094.0,
+      "Time_End": 1102.0,
+      "Text": " calculations. So, after searching on Google, we found out that this is a specific CRC algorithm"
+    },
+    {
+      "Time_Start": 1104.0,
+      "Time_End": 1112.0,
+      "Text": " called gemCRC, which is calculated by one minus the CRC value. So, we were confident that we"
+    },
+    {
+      "Time_Start": 1112.0,
+      "Time_End": 1120.0,
+      "Text": " could modify the VDM and fix the expected CRC value that appears in the headers, and by doing"
+    },
+    {
+      "Time_Start": 1121.0,
+      "Time_End": 1129.0,
+      "Text": " so, the update would be validated successfully, and we would be able to take down Defender. But"
+    },
+    {
+      "Time_Start": 1129.0,
+      "Time_End": 1137.0,
+      "Text": " the update was unsuccessful, even though we fixed the CRC value of the compressed data. Likely,"
+    },
+    {
+      "Time_Start": 1137.0,
+      "Time_End": 1145.0,
+      "Text": " there are additional validation checks, and we thought, where do these validation occurs and"
+    },
+    {
+      "Time_Start": 1145.0,
+      "Time_End": 1153.0,
+      "Text": " what they validate? So, let's find them out. The modification was simple. We just opened up the"
+    },
+    {
+      "Time_Start": 1153.0,
+      "Time_End": 1161.0,
+      "Text": " base file and tried to modify the signatures, and after the modification, we wrapped up the base"
+    },
+    {
+      "Time_Start": 1161.0,
+      "Time_End": 1169.0,
+      "Text": " file and tried to do an update attempt. But it turned out to be quite more complicated than we"
+    },
+    {
+      "Time_Start": 1169.0,
+      "Time_End": 1177.0,
+      "Text": " thought. We completely ignored the delta file, and we assumed that the error we got related to the"
+    },
+    {
+      "Time_Start": 1177.0,
+      "Time_End": 1185.0,
+      "Text": " relationship between the base file and the delta file. There are two pairs of VDMs. The first pair"
+    },
+    {
+      "Time_Start": 1185.0,
+      "Time_End": 1193.0,
+      "Text": " contains the antivirus definitions of Defender, and the second pair actually contains the spyware"
+    },
+    {
+      "Time_Start": 1193.0,
+      "Time_End": 1201.0,
+      "Text": " definitions. Each of these pairs is identical in terms of the format of the file and the signatures."
+    },
+    {
+      "Time_Start": 1201.0,
+      "Time_End": 1211.0,
+      "Text": " So, all the findings and the conclusions we will show now apply to each of these VDM pairs. Okay."
+    },
+    {
+      "Time_Start": 1211.0,
+      "Time_End": 1218.0,
+      "Text": " So, as we mentioned earlier, we ignored the delta, but now it's time to focus on the purpose of the"
+    },
+    {
+      "Time_Start": 1218.0,
+      "Time_End": 1228.0,
+      "Text": " delta file. During an update, both the base and the delta files are involved. The merge takes the base"
+    },
+    {
+      "Time_Start": 1228.0,
+      "Time_End": 1236.0,
+      "Text": " file, and the delta simply defines the changes to be made to this base file. The resulting output"
+    },
+    {
+      "Time_Start": 1236.0,
+      "Time_End": 1244.0,
+      "Text": " file will represent the updated version from the delta, and this update process is referred to as"
+    },
+    {
+      "Time_Start": 1244.0,
+      "Time_End": 1252.0,
+      "Text": " incremental. To modify base signatures, we need to supply a delta file that precisely patches"
+    },
+    {
+      "Time_Start": 1252.0,
+      "Time_End": 1261.0,
+      "Text": " the base file with the intended changes. But to do that, we need to understand the entire merge"
+    },
+    {
+      "Time_Start": 1261.0,
+      "Time_End": 1271.0,
+      "Text": " process internals and identify any other validations that we encountered. So, now we will"
+    },
+    {
+      "Time_Start": 1271.0,
+      "Time_End": 1279.0,
+      "Text": " delve into the merge process. Oh, sorry. So, we have talked about the VDM file format, and"
+    },
+    {
+      "Time_Start": 1279.0,
+      "Time_End": 1289.0,
+      "Text": " specifically the base file format, which contains threats and their signatures. Now, let's look into"
+    },
+    {
+      "Time_Start": 1289.0,
+      "Time_End": 1297.0,
+      "Text": " the delta format and how it combines with the base file to create a new file with new signatures."
+    },
+    {
+      "Time_Start": 1297.0,
+      "Time_End": 1305.0,
+      "Text": " So, we went back to the decompressed delta file, and we figured out that the delta is a signature"
+    },
+    {
+      "Time_Start": 1305.0,
+      "Time_End": 1313.0,
+      "Text": " base file too. We saw that the delta always contained two signatures. The second signature is blob"
+    },
+    {
+      "Time_Start": 1313.0,
+      "Time_End": 1321.0,
+      "Text": " signature type, and we ignored the blob rec info signature as we assume all the essential data"
+    },
+    {
+      "Time_Start": 1321.0,
+      "Time_End": 1329.0,
+      "Text": " contained in the blob signature. So, right after the signature there, we have two numbers which we"
+    },
+    {
+      "Time_Start": 1329.0,
+      "Time_End": 1335.0,
+      "Text": " were not sure about their purpose. So, we will call them unknown for now, and we will come back to"
+    },
+    {
+      "Time_Start": 1335.0,
+      "Time_End": 1345.0,
+      "Text": " them later on. The rest of the data right after these numbers is actually the actions, which define"
+    },
+    {
+      "Time_Start": 1345.0,
+      "Time_End": 1353.0,
+      "Text": " actions done by the merge algorithm. How do they define the actions? Now, we will answer this"
+    },
+    {
+      "Time_Start": 1353.0,
+      "Time_End": 1361.0,
+      "Text": " question. So, we spotted the point where Defender parsed the actions, and this block of code shows"
+    },
+    {
+      "Time_Start": 1361.0,
+      "Time_End": 1371.0,
+      "Text": " where actually the action parts start, and we reversed all the merge process and figured out how the"
+    },
+    {
+      "Time_Start": 1371.0,
+      "Time_End": 1381.0,
+      "Text": " merge works. So, let's delve into the internals. So, we identified two action types, copy from delta"
+    },
+    {
+      "Time_Start": 1381.0,
+      "Time_End": 1391.0,
+      "Text": " and copy from base. Copy from delta used to copy size bytes from the delta file into the merge file, and"
+    },
+    {
+      "Time_Start": 1391.0,
+      "Time_End": 1399.0,
+      "Text": " copy from base used to copy size bytes from an offset within the base file into the merge file."
+    },
+    {
+      "Time_Start": 1399.0,
+      "Time_End": 1409.0,
+      "Text": " Let's see exactly the format of each of these signatures. So, to parse the actions, we first need to read"
+    },
+    {
+      "Time_Start": 1409.0,
+      "Time_End": 1417.0,
+      "Text": " two bytes representing the action header. The first bit within the action header indicates the action type."
+    },
+    {
+      "Time_Start": 1417.0,
+      "Time_End": 1426.0,
+      "Text": " Zero for copy from delta and one for copy from base. And the rest of the action header is dependent on the"
+    },
+    {
+      "Time_Start": 1426.0,
+      "Time_End": 1436.0,
+      "Text": " action type. So, first let's take a look at copy from delta action. Here we have an action example."
+    },
+    {
+      "Time_Start": 1436.0,
+      "Time_End": 1444.0,
+      "Text": " And the first thing to do is to read the first two bytes and check the MSB to identify which type of action"
+    },
+    {
+      "Time_Start": 1444.0,
+      "Time_End": 1455.0,
+      "Text": " is it. The MSB is zero, means this action is actually copy from delta. Then it means that the next 15 bits"
+    },
+    {
+      "Time_Start": 1455.0,
+      "Time_End": 1466.0,
+      "Text": " represented the size variable, which tells us how many bytes to read. So, the size variable is set to one in"
+    },
+    {
+      "Time_Start": 1466.0,
+      "Time_End": 1474.0,
+      "Text": " this case. So, we read one byte right after the action header. So, in this case, we will read 5C and place it"
+    },
+    {
+      "Time_Start": 1474.0,
+      "Time_End": 1482.0,
+      "Text": " into the new merge file. Okay. Now that we understand how to parse copy from delta action, let's move on to"
+    },
+    {
+      "Time_Start": 1482.0,
+      "Time_End": 1492.0,
+      "Text": " copy from base action. So, when we look at copy from base action, we can see that the MSB is on. But in this"
+    },
+    {
+      "Time_Start": 1492.0,
+      "Time_End": 1500.0,
+      "Text": " case, after reverse engineer of consuming put compress function, we found out that in this case, the size"
+    },
+    {
+      "Time_Start": 1500.0,
+      "Time_End": 1510.0,
+      "Text": " variable calculated in the following way. Firstly, we take the two bytes and turn off the MSB and bitwise"
+    },
+    {
+      "Time_Start": 1510.0,
+      "Time_End": 1520.0,
+      "Text": " with 7FFF. And then add to this result six, which result the size variable. We now know how many bytes to"
+    },
+    {
+      "Time_Start": 1520.0,
+      "Time_End": 1528.0,
+      "Text": " read. But the question is where we will read them from. So, copy from base action type consists also of the"
+    },
+    {
+      "Time_Start": 1528.0,
+      "Time_End": 1536.0,
+      "Text": " offset variable. The next D word right after the action header indicates the offset within the base file we"
+    },
+    {
+      "Time_Start": 1536.0,
+      "Time_End": 1546.0,
+      "Text": " should read the bytes from. So, in this example, the size is equal to 8,005. And we should read them from the"
+    },
+    {
+      "Time_Start": 1546.0,
+      "Time_End": 1556.0,
+      "Text": " offset one of the base file. And eventually, place them into the new merge file. So, to summarize, the"
+    },
+    {
+      "Time_Start": 1556.0,
+      "Time_End": 1566.0,
+      "Text": " delta file contains compressed data. And by decompressing this data, we can extract the blob signature."
+    },
+    {
+      "Time_Start": 1566.0,
+      "Time_End": 1574.0,
+      "Text": " The blob contains actions. And the actions tells how to build the new updated file. Depending on the current"
+    },
+    {
+      "Time_Start": 1574.0,
+      "Time_End": 1584.0,
+      "Text": " version of the base file. And all this occurs in memory. So, following our knowledge, we developed a script"
+    },
+    {
+      "Time_Start": 1584.0,
+      "Time_End": 1594.0,
+      "Text": " that do that merge between the base file and the delta file. We ran our code and got a merge stream that"
+    },
+    {
+      "Time_Start": 1594.0,
+      "Time_End": 1602.0,
+      "Text": " actually seems like a base with signatures, but with some modifications. And we can see a difference"
+    },
+    {
+      "Time_Start": 1602.0,
+      "Time_End": 1610.0,
+      "Text": " between base signatures to emerge signatures. The bytes that marked in yellow are the modified bytes."
+    },
+    {
+      "Time_Start": 1610.0,
+      "Time_End": 1620.0,
+      "Text": " And the size of the data got bigger. Probably the merge process added some new signatures. And"
+    },
+    {
+      "Time_Start": 1620.0,
+      "Time_End": 1628.0,
+      "Text": " things are starting to reveal a clear image of what happening. As we said before, we will talk about"
+    },
+    {
+      "Time_Start": 1628.0,
+      "Time_End": 1634.0,
+      "Text": " the unknown numbers we mentioned before. So, we started to investigate the merge properties like the size"
+    },
+    {
+      "Time_Start": 1634.0,
+      "Time_End": 1644.0,
+      "Text": " of the merge and the CRC of the merge. And we looked up for a correlation to the unknown numbers. And"
+    },
+    {
+      "Time_Start": 1644.0,
+      "Time_End": 1652.0,
+      "Text": " we got it. The first number represents the size of the merge data. And the second number is actually the"
+    },
+    {
+      "Time_Start": 1652.0,
+      "Time_End": 1662.0,
+      "Text": " CRC of the merge data. These two numbers are the expected values that defenders compares with. And"
+    },
+    {
+      "Time_Start": 1662.0,
+      "Time_End": 1670.0,
+      "Text": " the numbers is actually one more layer of validations. So, I want to recap the three validations we"
+    },
+    {
+      "Time_Start": 1670.0,
+      "Time_End": 1678.0,
+      "Text": " discovered. The first validation simply checks if the Zlib compressed data isn't changed. And how does"
+    },
+    {
+      "Time_Start": 1678.0,
+      "Time_End": 1686.0,
+      "Text": " the defender check this? By comparing the expected CRC value within the Zlib data header to the calculated"
+    },
+    {
+      "Time_Start": 1686.0,
+      "Time_End": 1694.0,
+      "Text": " CRC of the Zlib data. The next validation are the ones we just mentioned. Merge size validation ensures"
+    },
+    {
+      "Time_Start": 1694.0,
+      "Time_End": 1704.0,
+      "Text": " the size of the merge data. And merge CRC validation validates the CRC of the merge data. This checks"
+    },
+    {
+      "Time_Start": 1704.0,
+      "Time_End": 1712.0,
+      "Text": " confirmed the success of the merge algorithm. So, we wondered if now we have all the knowledge we need"
+    },
+    {
+      "Time_Start": 1712.0,
+      "Time_End": 1719.0,
+      "Text": " in order to fake an update. So, we tried to change the delta actions in such a way that the merge will result"
+    },
+    {
+      "Time_Start": 1719.0,
+      "Time_End": 1727.0,
+      "Text": " with a difference. And it worked. We managed to update defender with a fake unsigned database using"
+    },
+    {
+      "Time_Start": 1727.0,
+      "Time_End": 1737.0,
+      "Text": " unprivileged user. It's crazy. Let's see what we can do with this capability. We will explain three attack"
+    },
+    {
+      "Time_Start": 1737.0,
+      "Time_End": 1747.0,
+      "Text": " vectors. We have developed a fully automatic tool called WD Pretender which stands for Windows Defender"
+    },
+    {
+      "Time_Start": 1747.0,
+      "Time_End": 1755.0,
+      "Text": " Pretender. This tool supports all the attack vectors that we are going to present. And we will share the"
+    },
+    {
+      "Time_Start": 1755.0,
+      "Time_End": 1763.0,
+      "Text": " GitHub link at the end of the talk. So, as we explained earlier, the signatures of defender resulted from"
+    },
+    {
+      "Time_Start": 1763.0,
+      "Time_End": 1771.0,
+      "Text": " merging the delta file and the base file. The database files of defender are composed of threads and each"
+    },
+    {
+      "Time_Start": 1771.0,
+      "Time_End": 1781.0,
+      "Text": " thread has its name. And we can infer from the name the purpose of the thread, right? Now, what will happen"
+    },
+    {
+      "Time_Start": 1781.0,
+      "Time_End": 1789.0,
+      "Text": " if we will delete all the threads that contain the keyword lasagna, for example, in their names? Let's see."
+    },
+    {
+      "Time_Start": 1789.0,
+      "Time_End": 1797.0,
+      "Text": " We will show our deletion of thread resulting with bypass and we successfully execute lasagna tool."
+    },
+    {
+      "Time_Start": 1797.0,
+      "Time_End": 1813.0,
+      "Text": " Let's see. So, now we see that we are unprivileged user. And we will try to download lasagna tool. And it"
+    },
+    {
+      "Time_Start": 1813.0,
+      "Time_End": 1825.0,
+      "Text": " immediately triggered defender. And defender will delete this tool. Now, we will run WD Pretender and delete"
+    },
+    {
+      "Time_Start": 1825.0,
+      "Time_End": 1835.0,
+      "Text": " all the threads that contain the lasagna name in their threads name. The tool will export the VDM files and we will"
+    },
+    {
+      "Time_Start": 1835.0,
+      "Time_End": 1849.0,
+      "Text": " run an update attempt with this tab. And we will see in a sec that the update executed successfully. And now we will"
+    },
+    {
+      "Time_Start": 1849.0,
+      "Time_End": 1863.0,
+      "Text": " download lasagna tool again. Let's see what we get. Perfect. The tool downloaded and we will execute successfully"
+    },
+    {
+      "Time_Start": 1863.0,
+      "Time_End": 1883.0,
+      "Text": " lasagna. Bingo. Thank you. Okay. Now, Tomer will present the next demos."
+    },
+    {
+      "Time_Start": 1884.0,
+      "Time_End": 1892.0,
+      "Text": " Okay. So, one of the signature type seems very, very interesting. The name that Microsoft named it is friendly file"
+    },
+    {
+      "Time_Start": 1892.0,
+      "Time_End": 1903.0,
+      "Text": " signature. And with hash algorithm like 256 as you can see on the left, on the red. So, we wonder what do Microsoft"
+    },
+    {
+      "Time_Start": 1903.0,
+      "Time_End": 1913.0,
+      "Text": " means by friendly files. So, parsing all the friendly file signatures from the VDM files revealed us a very, very long"
+    },
+    {
+      "Time_Start": 1913.0,
+      "Time_End": 1921.0,
+      "Text": " list of sorted list of hashes. The hash marked in green on the right belongs to Oracle virtual box run time"
+    },
+    {
+      "Time_Start": 1921.0,
+      "Time_End": 1929.0,
+      "Text": " library and the others belongs to other files. And we assume that this signature is probably an allow list"
+    },
+    {
+      "Time_Start": 1929.0,
+      "Time_End": 1939.0,
+      "Text": " implementation, probably to reduce false positives caused by example this Oracle file. And what will happen if we"
+    },
+    {
+      "Time_Start": 1939.0,
+      "Time_End": 1947.0,
+      "Text": " replace the hash value of Oracle file with the Mimikatz known hash value. We didn't change the Mimikatz from the"
+    },
+    {
+      "Time_Start": 1947.0,
+      "Time_End": 1961.0,
+      "Text": " internet. Will it be allowed to run? Can we create a friendly Mimikatz file? Let's see a demo. Okay. So, we'll try to"
+    },
+    {
+      "Time_Start": 1961.0,
+      "Time_End": 1970.0,
+      "Text": " download Mimikatz. It is detected as Mimikatz on the right. So, defender is working. Now, we will execute on the left."
+    },
+    {
+      "Time_Start": 1970.5,
+      "Time_End": 1978.5,
+      "Text": " Again, Windows pretender defender. Defender pretender, sorry. And with the hash of Mimikatz, the known hash, then"
+    },
+    {
+      "Time_Start": 1978.5,
+      "Time_End": 1984.6,
+      "Text": " we will update and you will see on the right that the update was successfully from unprivileged user, unsigned"
+    },
+    {
+      "Time_Start": 1984.6,
+      "Time_End": 1994.6,
+      "Text": " files. And you can also see that the logs are saying the same, that the update was successful. Now, we will try to"
+    },
+    {
+      "Time_Start": 1994.6000000000001,
+      "Time_End": 2002.6000000000001,
+      "Text": " download Mimikatz from the same place. And let's see if it runs. Yeah, it runs. Let's see if we can extract all"
+    },
+    {
+      "Time_Start": 2002.6000000000001,
+      "Time_End": 2019.6000000000001,
+      "Text": " credentials from the memory of Lsus. Yeah. Right? Thank you. And now, for our final demo, we saved the best for last."
+    },
+    {
+      "Time_Start": 2019.6000000000001,
+      "Time_End": 2029.1000000000001,
+      "Text": " It's going to be very, very cool. Trust me. We are going to force defender to delete all the PE files in the PC by"
+    },
+    {
+      "Time_Start": 2029.1000000000001,
+      "Time_End": 2037.4,
+      "Text": " modifying existing emoted signature to include the DOS mod stop string, which appears in all of the portable"
+    },
+    {
+      "Time_Start": 2037.4,
+      "Time_End": 2045.9,
+      "Text": " executable as a new malicious signature. And when defender will find this string, this program cannot be run in"
+    },
+    {
+      "Time_Start": 2045.9,
+      "Time_End": 2054.4,
+      "Text": " DOS mode since the 80s, right? In OS files, it will automatically say I'm going to delete you and causing"
+    },
+    {
+      "Time_Start": 2054.4,
+      "Time_End": 2065.0,
+      "Text": " permanent denial of service. So, we run our tool generated database. We are going to copy it to a machine,"
+    },
+    {
+      "Time_Start": 2065.0,
+      "Time_End": 2075.4,
+      "Text": " replace it, and we'll do an update after that. That's the user that is unprivileged user. And we'll run the"
+    },
+    {
+      "Time_Start": 2075.4,
+      "Time_End": 2084.4,
+      "Text": " update. And on the left, you will see the update succeed. Okay? Now, we'll wait like a few seconds."
+    },
+    {
+      "Time_Start": 2084.4,
+      "Time_End": 2092.2000000000003,
+      "Text": " It's not edited at all. And defender started to say something about a lot of files detecting them as"
+    },
+    {
+      "Time_Start": 2092.2000000000003,
+      "Time_End": 2098.7000000000003,
+      "Text": " emoted. And it keeps going. It keeps going. If I had sound right now, you would see like a lot of"
+    },
+    {
+      "Time_Start": 2098.7999999999997,
+      "Time_End": 2105.6,
+      "Text": " concert, you know? And defender said, what's going on? Restart the computer. But we are not going to do it."
+    },
+    {
+      "Time_Start": 2105.6,
+      "Time_End": 2113.6,
+      "Text": " We are going to scan the driver folder under system 32. Thank you. Thank you. And let's see. Let's see"
+    },
+    {
+      "Time_Start": 2118.1,
+      "Time_End": 2126.1,
+      "Text": " what happens. And we'll do, we'll show you that all the drivers and DLL files and processes and registry"
+    },
+    {
+      "Time_Start": 2127.1,
+      "Time_End": 2133.1,
+      "Text": " keys and everything. And of course, we can do it also in user files that contain a specific word like"
+    },
+    {
+      "Time_Start": 2133.1,
+      "Time_End": 2141.1,
+      "Text": " Defcon. Any file that contains Defcon, we can delete it and so on. And trust me, Windows cannot load"
+    },
+    {
+      "Time_Start": 2141.1,
+      "Time_End": 2148.2,
+      "Text": " without drivers. It won't work. So, we tried. We tried. We have a second restart attempt. But"
+    },
+    {
+      "Time_Start": 2148.2,
+      "Time_End": 2155.4,
+      "Text": " believe me, it won't work. So, it's a permanent denial of service. And this demo was recorded on an"
+    },
+    {
+      "Time_Start": 2155.4,
+      "Time_End": 2161.7000000000003,
+      "Text": " older version of Defender. It was version 3.2.1. And the newest version at the time of the check"
+    },
+    {
+      "Time_Start": 2161.7000000000003,
+      "Time_End": 2168.5,
+      "Text": " 3.8.1 implements a few additional checks. For example, we had to remove all the signature type"
+    },
+    {
+      "Time_Start": 2168.5,
+      "Time_End": 2176.3,
+      "Text": " trusted publisher to make Defender delete benign drivers and OS executables. But it works. Let's"
+    },
+    {
+      "Time_Start": 2176.3,
+      "Time_End": 2181.7000000000003,
+      "Text": " speak a little bit about future work. And it's very interesting. We found out that the signature"
+    },
+    {
+      "Time_Start": 2181.7,
+      "Time_End": 2189.7,
+      "Text": " database file also includes 30,000 Lua scripts. Microsoft used a little bit of modified Lua"
+    },
+    {
+      "Time_Start": 2189.7,
+      "Time_End": 2197.2,
+      "Text": " header for them. But we were able to overcome the modification and to decompile and extract the"
+    },
+    {
+      "Time_Start": 2197.2,
+      "Time_End": 2205.2,
+      "Text": " source code of 30,000 Lua scripts that control all of the remediation process of Defender. So,"
+    },
+    {
+      "Time_Start": 2206.2000000000003,
+      "Time_End": 2213.3,
+      "Text": " for example, a Lua rule to detect suspicious files masquerading as legit Windows files. The rule"
+    },
+    {
+      "Time_Start": 2213.3,
+      "Time_End": 2221.3,
+      "Text": " simply checks if a file has the same name of OS executable but not in the legit OS path. What"
+    },
+    {
+      "Time_Start": 2221.3,
+      "Time_End": 2227.6000000000004,
+      "Text": " will happen if we change this rule code to our own code and we try to use Lua libraries but"
+    },
+    {
+      "Time_Start": 2227.6000000000004,
+      "Time_End": 2235.1000000000004,
+      "Text": " failed since Microsoft probably limits the usage of Lua libraries. But we still think that we"
+    },
+    {
+      "Time_Start": 2235.1,
+      "Time_End": 2240.9,
+      "Text": " might be possible to achieve LPE, local privilege escalation, using Microsoft remediation"
+    },
+    {
+      "Time_Start": 2240.9,
+      "Time_End": 2246.9,
+      "Text": " library which we saw used in some of the other Lua scripts. But we had to leave it for future"
+    },
+    {
+      "Time_Start": 2246.9,
+      "Time_End": 2251.2999999999997,
+      "Text": " work because of lack of time. But we encourage you to do it and please update us if you can do"
+    },
+    {
+      "Time_Start": 2251.2999999999997,
+      "Time_End": 2258.4,
+      "Text": " it. We will try to after Defcon. So, a little bit about takeaways. Of course, trust no one."
+    },
+    {
+      "Time_Start": 2258.4,
+      "Time_End": 2265.8,
+      "Text": " We are Defcon, right? Even the most reliable security controls might be used as a loophole by"
+    },
+    {
+      "Time_Start": 2265.8,
+      "Time_End": 2273.0,
+      "Text": " adversaries and the architecture and work process should check and verify in continuous security"
+    },
+    {
+      "Time_Start": 2273.0,
+      "Time_End": 2279.9,
+      "Text": " validation process. Secondly, using digitally signed files does not always necessarily mean"
+    },
+    {
+      "Time_Start": 2279.9,
+      "Time_End": 2286.7000000000003,
+      "Text": " totally secure. Security vendors should always verify in any step of the process that the"
+    },
+    {
+      "Time_Start": 2286.7000000000003,
+      "Time_End": 2293.3,
+      "Text": " trust was not broken. And finally, signature update process of security control is probably a"
+    },
+    {
+      "Time_Start": 2293.3,
+      "Time_End": 2300.0000000000005,
+      "Text": " new attack vector and we believe additional research is very important. We reported to"
+    },
+    {
+      "Time_Start": 2300.0000000000005,
+      "Time_End": 2307.5000000000005,
+      "Text": " Microsoft which released a patch and assigned DCVAD. Please make sure that you are using the"
+    },
+    {
+      "Time_Start": 2307.5000000000005,
+      "Time_End": 2316.0000000000005,
+      "Text": " version of malware protection platform or above. Keep your cameras. This is the Windows"
+    },
+    {
+      "Time_Start": 2316.0,
+      "Time_End": 2322.4,
+      "Text": " Defender pretended GitHub QR code and link. I will wait a few seconds for those of you who"
+    },
+    {
+      "Time_Start": 2322.4,
+      "Time_End": 2330.4,
+      "Text": " would like to follow it. And this past research helped us a lot and we built our research"
+    },
+    {
+      "Time_Start": 2330.4,
+      "Time_End": 2335.6,
+      "Text": " based on their initial findings. So, thank you. And thank you all."
+    }
+  ]
+}

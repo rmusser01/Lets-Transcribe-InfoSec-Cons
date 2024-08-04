@@ -1,0 +1,1964 @@
+{
+  "segments": [
+    {
+      "Time_Start": 0.0,
+      "Time_End": 5.12,
+      "Text": "This text was transcribed using whisper model: large-v2\n\n Hello everyone, and welcome to my talk, Container Self-Staying Undetected Using the Windows"
+    },
+    {
+      "Time_Start": 5.12,
+      "Time_End": 9.92,
+      "Text": " Containers Isolation Framework. The use of containers became an integral part of any"
+    },
+    {
+      "Time_Start": 9.92,
+      "Time_End": 15.96,
+      "Text": " resource-efficient and secure environment. Starting from Windows Server 2016, Microsoft"
+    },
+    {
+      "Time_Start": 15.96,
+      "Time_End": 21.3,
+      "Text": " released its version of this solution called Windows Containers. Today we'll break down"
+    },
+    {
+      "Time_Start": 21.3,
+      "Time_End": 25.54,
+      "Text": " the containers file system isolation framework and see how it can be abused to bypass security"
+    },
+    {
+      "Time_Start": 25.54,
+      "Time_End": 30.619999999999997,
+      "Text": " products, file system-based malware protection, file write restrictions, and ETW-based"
+    },
+    {
+      "Time_Start": 30.619999999999997,
+      "Time_End": 35.62,
+      "Text": " correlations. Before we begin, a bit about myself. My name is Daniel Avinon. I'm a security"
+    },
+    {
+      "Time_Start": 38.22,
+      "Time_End": 42.82,
+      "Text": " researcher at Deep Instinct for the past two years. At my work, I focus mainly on Windows"
+    },
+    {
+      "Time_Start": 42.82,
+      "Time_End": 47.32,
+      "Text": " internals and low-level programming, and I'm also a big Motorsport fan. I'll even admit"
+    },
+    {
+      "Time_Start": 47.32,
+      "Time_End": 52.32,
+      "Text": " to you that I have a driving simulator at home, which costs me way too much. Okay, today's"
+    },
+    {
+      "Time_Start": 52.6,
+      "Time_End": 57.6,
+      "Text": " agenda. We will start by overviewing the basics of the Windows Containers Framework and get to"
+    },
+    {
+      "Time_Start": 60.22,
+      "Time_End": 65.52,
+      "Text": " know some of its main concepts. We then continue to analyze the WCFS driver, which is the"
+    },
+    {
+      "Time_Start": 65.52,
+      "Time_End": 70.36,
+      "Text": " main driver the framework uses for file system isolation, and see how our findings can"
+    },
+    {
+      "Time_Start": 70.36,
+      "Time_End": 75.36,
+      "Text": " then be utilized to bypass security products. Finally, we will summarize and provide ways to"
+    },
+    {
+      "Time_Start": 75.36,
+      "Time_End": 81.6,
+      "Text": " effectively mitigate the bypasses. Okay, let's start with the basics of Windows"
+    },
+    {
+      "Time_Start": 81.60000000000001,
+      "Time_End": 87.14000000000001,
+      "Text": " Containers, job objects. Job objects have been around since the days of Windows Server"
+    },
+    {
+      "Time_Start": 87.14000000000001,
+      "Time_End": 93.64000000000001,
+      "Text": " 2003. These objects are designed to group several processes and manage them as one unit."
+    },
+    {
+      "Time_Start": 93.64000000000001,
+      "Time_End": 98.14000000000001,
+      "Text": " This allows the system to control the attributes of all processes associated with a job, like"
+    },
+    {
+      "Time_Start": 98.14000000000001,
+      "Time_End": 104.34,
+      "Text": " limiting their CPU usage, IO bandwidth, virtual memory usage, and network activity. And"
+    },
+    {
+      "Time_Start": 104.34,
+      "Time_End": 109.88000000000001,
+      "Text": " multiprocess applications often use these objects to manage their child processes more easily."
+    },
+    {
+      "Time_Start": 109.88,
+      "Time_End": 115.0,
+      "Text": " These are also known as nested jobs. For example, this Google Drive process uses a nested"
+    },
+    {
+      "Time_Start": 115.0,
+      "Time_End": 122.0,
+      "Text": " job to manage its child's processes. Although they make a good start, jobs themselves are not"
+    },
+    {
+      "Time_Start": 123.16,
+      "Time_End": 127.41999999999999,
+      "Text": " enough to provide the isolation needed for a container, which is why Microsoft created"
+    },
+    {
+      "Time_Start": 127.41999999999999,
+      "Time_End": 134.3,
+      "Text": " silos. Silos can be considered an extension of jobs, kind of super jobs. Similarly to"
+    },
+    {
+      "Time_Start": 134.3,
+      "Time_End": 140.3,
+      "Text": " traditional jobs, these objects are used for process grouping, but with additional features."
+    },
+    {
+      "Time_Start": 140.3,
+      "Time_End": 144.64000000000001,
+      "Text": " Containers use a type of silo called server silo, which besides providing the basic job"
+    },
+    {
+      "Time_Start": 144.64000000000001,
+      "Time_End": 150.10000000000002,
+      "Text": " capabilities, it also provides redirection of various system resources like the registry,"
+    },
+    {
+      "Time_Start": 150.10000000000002,
+      "Time_End": 155.76000000000002,
+      "Text": " networking, and the object manager. The Windows kernel detects processes assigned to silos"
+    },
+    {
+      "Time_Start": 155.76000000000002,
+      "Time_End": 162.46,
+      "Text": " using API like PS is currently in server silo and PS is processing silo. Looking at the"
+    },
+    {
+      "Time_Start": 162.46,
+      "Time_End": 167.66,
+      "Text": " IO driver snippet taken from NTS kernel, the Windows kernel checks whether the process"
+    },
+    {
+      "Time_Start": 167.66,
+      "Time_End": 172.0,
+      "Text": " that attempted to unload the driver is within a server silo and if it is, it locks the"
+    },
+    {
+      "Time_Start": 172.0,
+      "Time_End": 179.20000000000002,
+      "Text": " operation and blocks it by returning status privilege not held. So silos do provide a good"
+    },
+    {
+      "Time_Start": 179.20000000000002,
+      "Time_End": 184.12,
+      "Text": " foundation to a container, but file system separation is still needed. Microsoft"
+    },
+    {
+      "Time_Start": 184.12,
+      "Time_End": 189.42000000000002,
+      "Text": " implemented this concept using repose points. So what is a repose point? A repose point is"
+    },
+    {
+      "Time_Start": 189.42000000000002,
+      "Time_End": 195.84,
+      "Text": " an MFT attribute and it can be given to files or directories. It's data type, sorry, it's"
+    },
+    {
+      "Time_Start": 195.84,
+      "Time_End": 203.34,
+      "Text": " repose point data, it's typed, meaning a registered tag identifier or the repose tag"
+    },
+    {
+      "Time_Start": 203.34,
+      "Time_End": 208.46,
+      "Text": " determines the data structure of the repose point data itself. It can be given to files or"
+    },
+    {
+      "Time_Start": 208.46,
+      "Time_End": 213.68,
+      "Text": " directories using the device IO control function alongside the set repose point file system"
+    },
+    {
+      "Time_Start": 213.68,
+      "Time_End": 220.02,
+      "Text": " control code. Note that write primitive is needed for this to succeed. Now when a file with a"
+    },
+    {
+      "Time_Start": 220.02,
+      "Time_End": 224.68,
+      "Text": " repose point is being opened, it is handled by a file system mini filter driver according to"
+    },
+    {
+      "Time_Start": 224.68,
+      "Time_End": 230.26000000000002,
+      "Text": " its repose type. A good example of these attributes can be seen in symbolic links. A directory"
+    },
+    {
+      "Time_Start": 230.26000000000002,
+      "Time_End": 235.10000000000002,
+      "Text": " that functions as a symbolic link to another contains behind the scene a repose point with the"
+    },
+    {
+      "Time_Start": 235.10000000000002,
+      "Time_End": 240.34,
+      "Text": " path to the correct destination using the junction 64 tool from sys internal so you can see"
+    },
+    {
+      "Time_Start": 240.34,
+      "Time_End": 246.08,
+      "Text": " that the C users all users folder redirects using a symbolic link to C program data. This"
+    },
+    {
+      "Time_Start": 246.08,
+      "Time_End": 254.08,
+      "Text": " redirection again is implemented by a repose point. So we mentioned in the previous slide"
+    },
+    {
+      "Time_Start": 254.08,
+      "Time_End": 258.84000000000003,
+      "Text": " mini filter drivers so let's give a bit of a background about them as well. Mini filter"
+    },
+    {
+      "Time_Start": 258.84000000000003,
+      "Time_End": 263.84000000000003,
+      "Text": " drivers were designed to make the IO filtering process much easier for developers. Since"
+    },
+    {
+      "Time_Start": 263.84000000000003,
+      "Time_End": 268.22,
+      "Text": " implementing a legacy filter driver from scratch is difficult, Microsoft provided a solution"
+    },
+    {
+      "Time_Start": 268.22,
+      "Time_End": 274.76000000000005,
+      "Text": " in the form of its filter manager. The filter manager is a legacy filter that manages other"
+    },
+    {
+      "Time_Start": 274.76000000000005,
+      "Time_End": 280.84000000000003,
+      "Text": " mini filter drivers according so it takes care of all the heavy liftings for them. For example"
+    },
+    {
+      "Time_Start": 280.84000000000003,
+      "Time_End": 285.14000000000004,
+      "Text": " their insertion to the device stack, ignoring any relevant request and the support for"
+    },
+    {
+      "Time_Start": 285.14000000000004,
+      "Time_End": 290.84000000000003,
+      "Text": " multiple platforms among other. It also exposes a mini filter dedicated API that implements"
+    },
+    {
+      "Time_Start": 290.84000000000003,
+      "Time_End": 296.14000000000004,
+      "Text": " the common operations used by these drivers. This is also known as the FLT API. We will soon"
+    },
+    {
+      "Time_Start": 296.14,
+      "Time_End": 302.14,
+      "Text": " see some functions starting with the FLT prefix. Okay. Each mini filter can be attached by the"
+    },
+    {
+      "Time_Start": 305.56,
+      "Time_End": 311.26,
+      "Text": " manager to one or more volumes creating what is called a mini filter instance. And a volume"
+    },
+    {
+      "Time_Start": 311.26,
+      "Time_End": 316.68,
+      "Text": " is simply a logical storage unit that is implemented so that is presented to the file system"
+    },
+    {
+      "Time_Start": 316.68,
+      "Time_End": 324.3,
+      "Text": " as a disk for example the C drive or in its anti-device path the hard disk volume 3. Similarly"
+    },
+    {
+      "Time_Start": 324.3,
+      "Time_End": 328.26,
+      "Text": " to legacy filters, mini filter instances can intercept the pre and post operations of"
+    },
+    {
+      "Time_Start": 328.26,
+      "Time_End": 333.42,
+      "Text": " numerous IO functions like create, read and write. And another important concept the filter"
+    },
+    {
+      "Time_Start": 333.42,
+      "Time_End": 340.92,
+      "Text": " manager implements is the mini filter altitude system. Each mini filter should specify an"
+    },
+    {
+      "Time_Start": 340.92,
+      "Time_End": 345.72,
+      "Text": " altitude which is a numeric value upon its registration to the manager. The filter manager"
+    },
+    {
+      "Time_Start": 345.72,
+      "Time_End": 350.42,
+      "Text": " invokes its mini filter operations callbacks according to their altitudes. A high altitude"
+    },
+    {
+      "Time_Start": 350.42,
+      "Time_End": 354.42,
+      "Text": " mini filter will handle the pre operation before the ones below it and the post operation"
+    },
+    {
+      "Time_Start": 354.42,
+      "Time_End": 360.34000000000003,
+      "Text": " after them. So I know that this was a long slide. To make things a bit clearer, let's see a"
+    },
+    {
+      "Time_Start": 360.34000000000003,
+      "Time_End": 365.88,
+      "Text": " demonstration of how mini filters and repass points work together. When a call to create file"
+    },
+    {
+      "Time_Start": 365.88,
+      "Time_End": 370.76,
+      "Text": " is made with a file containing a point, the IO manager will build an IRP, an interrupt"
+    },
+    {
+      "Time_Start": 370.76,
+      "Time_End": 376.5,
+      "Text": " request packet for this operation. This IRP will then be sent down the device stack of the"
+    },
+    {
+      "Time_Start": 376.52,
+      "Time_End": 382.88,
+      "Text": " storage device, the C drive in our case, until it will reach the filter manager. As stated,"
+    },
+    {
+      "Time_Start": 382.88,
+      "Time_End": 387.86,
+      "Text": " the filter manager organizes its mini filters in a stack based on their assigned altitudes. It"
+    },
+    {
+      "Time_Start": 387.86,
+      "Time_End": 391.82,
+      "Text": " will then invoke the pre create operation callbacks of its mini filters according to their"
+    },
+    {
+      "Time_Start": 391.82,
+      "Time_End": 398.06,
+      "Text": " altitudes from top to bottom and after all the pre operation callbacks were invoked, the"
+    },
+    {
+      "Time_Start": 398.06,
+      "Time_End": 402.0,
+      "Text": " IRP will then be returned to the filter manager and then be sent down the storage device"
+    },
+    {
+      "Time_Start": 402.0,
+      "Time_End": 406.3,
+      "Text": " stack until it will reach the actual storage device. When it will reach the device, the file"
+    },
+    {
+      "Time_Start": 406.3,
+      "Time_End": 410.48,
+      "Text": " will be read and the IRP will then go back up the device stack, this time at the opposite"
+    },
+    {
+      "Time_Start": 410.48,
+      "Time_End": 416.72,
+      "Text": " direction. And when it will reach the NTFS driver, it will recognize a file containing a"
+    },
+    {
+      "Time_Start": 416.72,
+      "Time_End": 422.46,
+      "Text": " point was being opened. So it will change the status of this IRP to status repass. The"
+    },
+    {
+      "Time_Start": 422.46,
+      "Time_End": 427.02,
+      "Text": " filter manager then will receive the IRP again and this time it will invoke the post"
+    },
+    {
+      "Time_Start": 427.02,
+      "Time_End": 431.16,
+      "Text": " operation callbacks of its mini filters. Again, according to the altitudes, this time at the"
+    },
+    {
+      "Time_Start": 431.16,
+      "Time_End": 436.86,
+      "Text": " opposite direction from bottom to top. Now, when a mini filter that should handle a"
+    },
+    {
+      "Time_Start": 436.86,
+      "Time_End": 442.56,
+      "Text": " repass point gets an IRP with the status repass status code, it first needs to get the"
+    },
+    {
+      "Time_Start": 442.56,
+      "Time_End": 446.88000000000005,
+      "Text": " actual content of the repass point from the MFT attribute itself. And it does so by"
+    },
+    {
+      "Time_Start": 446.88000000000005,
+      "Time_End": 451.48,
+      "Text": " calling FLTFS control file with the get repass point file system control code. Again,"
+    },
+    {
+      "Time_Start": 451.48,
+      "Time_End": 457.98,
+      "Text": " this will read the actual content of the MFT attribute itself, the repass point data. Now"
+    },
+    {
+      "Time_Start": 458.0,
+      "Time_End": 463.44,
+      "Text": " here the mini filter faces two options. The first option is if the repass tag that is located"
+    },
+    {
+      "Time_Start": 463.44,
+      "Time_End": 468.32,
+      "Text": " in the repass data header is not associated with it. In this case it will ignore the request"
+    },
+    {
+      "Time_Start": 468.32,
+      "Time_End": 473.86,
+      "Text": " and will leave it to the drivers above it. The second option is if the tag is associated with"
+    },
+    {
+      "Time_Start": 473.86,
+      "Time_End": 480.82,
+      "Text": " it, the driver then will know how to read and read the repass point buffer and extract the"
+    },
+    {
+      "Time_Start": 480.82,
+      "Time_End": 486.3,
+      "Text": " correct destination path from the repass point itself. And in this case the mini filter"
+    },
+    {
+      "Time_Start": 486.32,
+      "Time_End": 491.76,
+      "Text": " usually replaces the request file object using IO replace file object name with the"
+    },
+    {
+      "Time_Start": 491.76,
+      "Time_End": 497.54,
+      "Text": " FLT set call back data dirty. The combination of these two functions will cause the IO"
+    },
+    {
+      "Time_Start": 497.54,
+      "Time_End": 502.04,
+      "Text": " manager to then repass the name in the file object and then pass the request back down this"
+    },
+    {
+      "Time_Start": 502.04,
+      "Time_End": 508.48,
+      "Text": " time with the correct path. So eventually the destination path will be, the destination"
+    },
+    {
+      "Time_Start": 508.48,
+      "Time_End": 513.48,
+      "Text": " file, sorry, will be returned to the caller. Okay, so if you go back to containers, in this"
+    },
+    {
+      "Time_Start": 516.3199999999999,
+      "Time_End": 521.0999999999999,
+      "Text": " case, in order to avoid an additional copy of OS files, each container is using a"
+    },
+    {
+      "Time_Start": 521.0999999999999,
+      "Time_End": 527.1999999999999,
+      "Text": " dynamically generated image which points to the original using repass points. The result is"
+    },
+    {
+      "Time_Start": 527.1999999999999,
+      "Time_End": 532.8399999999999,
+      "Text": " images that contain ghost files which basically store no actual data but point to a different"
+    },
+    {
+      "Time_Start": 532.8399999999999,
+      "Time_End": 537.18,
+      "Text": " volume on the system. When looking at the mounted container volume we see that the"
+    },
+    {
+      "Time_Start": 537.18,
+      "Time_End": 541.7199999999999,
+      "Text": " Windows folder contains files in the size of 1.2 gigabyte but has the actual size on disk"
+    },
+    {
+      "Time_Start": 541.74,
+      "Time_End": 547.02,
+      "Text": " of only 57 megabytes. Again this is happening because files on the containers volume doesn't"
+    },
+    {
+      "Time_Start": 547.02,
+      "Time_End": 551.52,
+      "Text": " contain the actual, doesn't store the actual content. They're simply links to the original"
+    },
+    {
+      "Time_Start": 551.52,
+      "Time_End": 558.3000000000001,
+      "Text": " files on the OS, the OS file system and as stated the these uh links are implemented by"
+    },
+    {
+      "Time_Start": 558.3000000000001,
+      "Time_End": 563.3000000000001,
+      "Text": " repass points. Okay so it was at this point that the idea struck me. What if I could use"
+    },
+    {
+      "Time_Start": 566.0400000000001,
+      "Time_End": 570.5400000000001,
+      "Text": " this redirection mechanism to obfuscate my file system operations and confuse security"
+    },
+    {
+      "Time_Start": 570.56,
+      "Time_End": 575.9599999999999,
+      "Text": " products. The road that I chose was not to escape the container from within but"
+    },
+    {
+      "Time_Start": 575.9599999999999,
+      "Time_End": 580.98,
+      "Text": " intentionally use this feature while executing on the host. Okay let's start talking about the"
+    },
+    {
+      "Time_Start": 582.98,
+      "Time_End": 587.98,
+      "Text": " WCIFS driver. The Windows Container Isolation File System or WCIFS is the mini filter driver"
+    },
+    {
+      "Time_Start": 588.98,
+      "Time_End": 593.98,
+      "Text": " which is responsible for the file system separation between Windows containers and their"
+    },
+    {
+      "Time_Start": 600.08,
+      "Time_End": 605.32,
+      "Text": " host. We'll soon see exactly how. During my research I was surprised to find that this"
+    },
+    {
+      "Time_Start": 605.32,
+      "Time_End": 611.0,
+      "Text": " driver is loaded on every Windows OS starting from Windows 10 including servers by default."
+    },
+    {
+      "Time_Start": 611.0,
+      "Time_End": 615.46,
+      "Text": " This is true even when the containers option is turned off in the Windows features menu."
+    },
+    {
+      "Time_Start": 615.48,
+      "Time_End": 620.02,
+      "Text": " Meaning any potential abuse of this driver would affect most of today's modern system without"
+    },
+    {
+      "Time_Start": 620.02,
+      "Time_End": 625.02,
+      "Text": " relying on any third party files or packages installed. We saw that repass points are parsed and"
+    },
+    {
+      "Time_Start": 628.1600000000001,
+      "Time_End": 633.8000000000001,
+      "Text": " handled by mini filters based on their tag. WCIFS parses repass points as well and this is how"
+    },
+    {
+      "Time_Start": 633.8000000000001,
+      "Time_End": 639.2,
+      "Text": " it performs the ghost files redirection process. The main repass tags associated with this"
+    },
+    {
+      "Time_Start": 639.2,
+      "Time_End": 644.2,
+      "Text": " driver are IO replace tag WCI sorry IO repass tag WCI 1 and IO repass tag WCI 2. The main"
+    },
+    {
+      "Time_Start": 646.0400000000001,
+      "Time_End": 648.88,
+      "Text": " repass tags are IO replace tag WCI link 1 which according to the Windows documentation are"
+    },
+    {
+      "Time_Start": 648.88,
+      "Time_End": 653.58,
+      "Text": " used by the Windows container isolation filter. Server interpretation only not meaningful"
+    },
+    {
+      "Time_Start": 653.58,
+      "Time_End": 659.08,
+      "Text": " over the wire. So Microsoft doesn't give us anything here. Due to the due to the"
+    },
+    {
+      "Time_Start": 659.08,
+      "Time_End": 663.32,
+      "Text": " significance and frequent mention throughout the remainder of uh this presentation I will now"
+    },
+    {
+      "Time_Start": 663.32,
+      "Time_End": 668.32,
+      "Text": " reference uh these tags as WCI 1 and link 1. Okay so after some basic reverse engineering I"
+    },
+    {
+      "Time_Start": 669.3000000000001,
+      "Time_End": 674.3000000000001,
+      "Text": " managed to map both of the points internal buffers which were the same by the way. Uh the"
+    },
+    {
+      "Time_Start": 676.7,
+      "Time_End": 681.58,
+      "Text": " buffer itself is pretty straight forward. It contains contains a GUID which is a hard coded"
+    },
+    {
+      "Time_Start": 681.58,
+      "Time_End": 686.58,
+      "Text": " value I found I found on any uh of the WCI tags. And the uh path to the destination file so"
+    },
+    {
+      "Time_Start": 689.22,
+      "Time_End": 694.22,
+      "Text": " nothing special here. And at this point all that there was left for me to do was to attach a"
+    },
+    {
+      "Time_Start": 694.86,
+      "Time_End": 699.86,
+      "Text": " WCFS driver into a to a volume. Debug it using a debugger and place a breakpoint on its"
+    },
+    {
+      "Time_Start": 703.4,
+      "Time_End": 708.84,
+      "Text": " post operation callback to see how the repass points are being handled and how can I"
+    },
+    {
+      "Time_Start": 708.84,
+      "Time_End": 713.84,
+      "Text": " potentially abuse it. So I've placed a breakpoint and I've waited and waited and waited and"
+    },
+    {
+      "Time_Start": 715.98,
+      "Time_End": 722.5600000000001,
+      "Text": " nothing happened. So uh it turns out that for the post operation callback to invoke the"
+    },
+    {
+      "Time_Start": 722.5600000000001,
+      "Time_End": 727.74,
+      "Text": " pre-operation callback must return either FLT pre-op success with callback or FLT pre-op"
+    },
+    {
+      "Time_Start": 727.74,
+      "Time_End": 732.74,
+      "Text": " synchronize which didn't happen. So looking at the pre-create uh function of the WC driver I saw"
+    },
+    {
+      "Time_Start": 735.5000000000001,
+      "Time_End": 742.32,
+      "Text": " that there was a function blocking me. This function called WC unions exists for instance."
+    },
+    {
+      "Time_Start": 742.32,
+      "Time_End": 747.2600000000001,
+      "Text": " Stepping into this function I saw that there were two conditions that had to be met. The"
+    },
+    {
+      "Time_Start": 747.2600000000001,
+      "Time_End": 751.46,
+      "Text": " first condition is a check of whether the process that originated the create call is not"
+    },
+    {
+      "Time_Start": 751.46,
+      "Time_End": 756.96,
+      "Text": " within the host the host silo. Host silo is the equivalent to the host OS or in other words"
+    },
+    {
+      "Time_Start": 756.96,
+      "Time_End": 762.7,
+      "Text": " if the originated process was not inside the silo at all. Simply being inside the silo is not"
+    },
+    {
+      "Time_Start": 762.7,
+      "Time_End": 767.0400000000001,
+      "Text": " enough because the second condition is that the silo that originated the request will have a"
+    },
+    {
+      "Time_Start": 767.0400000000001,
+      "Time_End": 772.38,
+      "Text": " register context within the driver's internal collections. Context management is another"
+    },
+    {
+      "Time_Start": 772.38,
+      "Time_End": 776.7800000000001,
+      "Text": " feature provided by the filter manager. A mini filter can create custom defined data also"
+    },
+    {
+      "Time_Start": 776.7800000000001,
+      "Time_End": 780.98,
+      "Text": " known as union context and link it to objects like files, instances and silos using the"
+    },
+    {
+      "Time_Start": 780.98,
+      "Time_End": 785.98,
+      "Text": " FLT API. So to pass the pre-create checks of the WC driver I had to do the following. First"
+    },
+    {
+      "Time_Start": 788.78,
+      "Time_End": 794.4200000000001,
+      "Text": " create a silo and insert my process into it. Then somehow inform my the driver and my"
+    },
+    {
+      "Time_Start": 794.4200000000001,
+      "Time_End": 798.66,
+      "Text": " silo is representing a container so it will create a union context for it and handle it"
+    },
+    {
+      "Time_Start": 798.66,
+      "Time_End": 804.26,
+      "Text": " accordingly. The first requirement is not that difficult to fulfill because in order to"
+    },
+    {
+      "Time_Start": 804.26,
+      "Time_End": 809.2,
+      "Text": " create a silo we first need to uh uh create a job using create job object A and give it a"
+    },
+    {
+      "Time_Start": 809.2,
+      "Time_End": 815.76,
+      "Text": " name. Then uh convert it to a silo using set information job object with the job object"
+    },
+    {
+      "Time_Start": 815.76,
+      "Time_End": 821.84,
+      "Text": " silo flag. This flag is undocumented by the way. And finally assign our process into this"
+    },
+    {
+      "Time_Start": 821.84,
+      "Time_End": 828.44,
+      "Text": " new silo so overall three API functions pretty easy. The second requirement however is a bit"
+    },
+    {
+      "Time_Start": 828.44,
+      "Time_End": 834.6600000000001,
+      "Text": " trickier. To communicate with the mini filter driver the uh filter manager offers the FLT"
+    },
+    {
+      "Time_Start": 834.68,
+      "Time_End": 839.4599999999999,
+      "Text": " send message function. This function receives a buffer without a specific structure and"
+    },
+    {
+      "Time_Start": 839.4599999999999,
+      "Time_End": 844.76,
+      "Text": " simply passes it to a handler function within the driver for further processing. In order to"
+    },
+    {
+      "Time_Start": 844.76,
+      "Time_End": 848.4,
+      "Text": " be the value structure the driver will accept I had to reverse engineer the get message"
+    },
+    {
+      "Time_Start": 848.4,
+      "Time_End": 854.64,
+      "Text": " handler function in the driver's binary. So I've examined the function and with this I"
+    },
+    {
+      "Time_Start": 854.64,
+      "Time_End": 859.6,
+      "Text": " managed to map both of the so I managed I managed to map the uh structure that will register"
+    },
+    {
+      "Time_Start": 859.6,
+      "Time_End": 864.3399999999999,
+      "Text": " a silo as a container. It turns out that there are several functionalities the driver"
+    },
+    {
+      "Time_Start": 864.36,
+      "Time_End": 868.9,
+      "Text": " offers to its user mode clients uh with the FLT send message function. The one that"
+    },
+    {
+      "Time_Start": 868.9,
+      "Time_End": 874.0600000000001,
+      "Text": " interests us is the code one message or the set union message. It's data will contain the"
+    },
+    {
+      "Time_Start": 874.0600000000001,
+      "Time_End": 879.44,
+      "Text": " following fields. The notable ones are uh the number of unions where each union is uh"
+    },
+    {
+      "Time_Start": 879.44,
+      "Time_End": 884.84,
+      "Text": " representing a volume the container will work with. The name of the uh driver's instance"
+    },
+    {
+      "Time_Start": 884.84,
+      "Time_End": 891.2800000000001,
+      "Text": " uh both of the repost tag and repost tag links and a handle to our silo. At the end of"
+    },
+    {
+      "Time_Start": 891.3199999999999,
+      "Time_End": 895.3,
+      "Text": " this track there are two extra structures. Again one for each volume the container will"
+    },
+    {
+      "Time_Start": 895.3,
+      "Time_End": 900.9,
+      "Text": " work with. Uh the first one is the volume union structure. It has uh a geo ID stores a"
+    },
+    {
+      "Time_Start": 900.9,
+      "Time_End": 905.3399999999999,
+      "Text": " geo ID which is the same geo ID found on the repost points buffer. A boolean that will"
+    },
+    {
+      "Time_Start": 905.3399999999999,
+      "Time_End": 910.28,
+      "Text": " represent if this uh volume is the source volume or destination volume. And an offset to"
+    },
+    {
+      "Time_Start": 910.28,
+      "Time_End": 915.5799999999999,
+      "Text": " the second structure which is uh container root ID which will store the uh name of the"
+    },
+    {
+      "Time_Start": 915.5799999999999,
+      "Time_End": 920.98,
+      "Text": " volume. Container root ID is just a different uh name I found at the driver symbols uh to"
+    },
+    {
+      "Time_Start": 920.98,
+      "Time_End": 927.46,
+      "Text": " a simple unicode string so it's just a simple string. To simplify this let's see an example"
+    },
+    {
+      "Time_Start": 927.46,
+      "Time_End": 931.46,
+      "Text": " of a value structure the driver will accept and will register our silo as a container. Again"
+    },
+    {
+      "Time_Start": 931.46,
+      "Time_End": 935.9,
+      "Text": " we have the uh set union message, the code one message. Uh the internal buffer will have"
+    },
+    {
+      "Time_Start": 935.9,
+      "Time_End": 942.44,
+      "Text": " two volumes, the source and destination volume and both of the uh WCI repost tags. A"
+    },
+    {
+      "Time_Start": 942.44,
+      "Time_End": 947.28,
+      "Text": " handle to our silo and both the source and target volume unions and source and target"
+    },
+    {
+      "Time_Start": 947.28,
+      "Time_End": 952.86,
+      "Text": " container root IDs. Something interesting to note here, I haven't seen any validation of"
+    },
+    {
+      "Time_Start": 952.86,
+      "Time_End": 957.36,
+      "Text": " whether the source and target volumes are the same. This means that in theory it is possible"
+    },
+    {
+      "Time_Start": 957.36,
+      "Time_End": 960.8,
+      "Text": " to create a container that will redirect to the same volume. Now this is interesting and"
+    },
+    {
+      "Time_Start": 960.8,
+      "Time_End": 965.8,
+      "Text": " remember this because we'll use this uh uh at uh uh later. Okay so now that we have uh"
+    },
+    {
+      "Time_Start": 971.24,
+      "Time_End": 975.64,
+      "Text": " fulfilled both requirements of the pre create function our post script will invoke allowing"
+    },
+    {
+      "Time_Start": 975.64,
+      "Time_End": 980.28,
+      "Text": " us to analyze how the driver handles its repost points. The first tag we will look at is the"
+    },
+    {
+      "Time_Start": 980.28,
+      "Time_End": 986.16,
+      "Text": " link one tag. And as you might guess this tag acts as a regular link between two files. It is"
+    },
+    {
+      "Time_Start": 986.16,
+      "Time_End": 990.52,
+      "Text": " usually placed on files that should be open with three primitives only uh for example system"
+    },
+    {
+      "Time_Start": 990.52,
+      "Time_End": 996.96,
+      "Text": " files. The driver will read the destination file uh from the repost point buffer and will"
+    },
+    {
+      "Time_Start": 996.96,
+      "Time_End": 1003.2,
+      "Text": " redirect the call to the uh volume the uh container directs to using IO replace file object"
+    },
+    {
+      "Time_Start": 1003.2,
+      "Time_End": 1009.48,
+      "Text": " name. Let's see an example. Let's say we have an open process that is inside a container. Uh"
+    },
+    {
+      "Time_Start": 1009.48,
+      "Time_End": 1013.9200000000001,
+      "Text": " this container redirects IO calls from the container's volume, hard disk volume five in our"
+    },
+    {
+      "Time_Start": 1013.9200000000001,
+      "Time_End": 1018.9200000000001,
+      "Text": " case to the uh host file system, the host volume. The open process opens a file with three"
+    },
+    {
+      "Time_Start": 1021.88,
+      "Time_End": 1027.96,
+      "Text": " primitives and the WC driver will see the status repost on the IRP and will see the link one"
+    },
+    {
+      "Time_Start": 1027.96,
+      "Time_End": 1032.94,
+      "Text": " repost tag which it's responsible for. So it will read the content of the repost point from"
+    },
+    {
+      "Time_Start": 1033.68,
+      "Time_End": 1039.0800000000002,
+      "Text": " the MFT attribute and will extract the relative path of the destination file. Then it will"
+    },
+    {
+      "Time_Start": 1039.0800000000002,
+      "Time_End": 1044.0800000000002,
+      "Text": " open a handle to the destination file on the uh destination volume again the um um host"
+    },
+    {
+      "Time_Start": 1048.06,
+      "Time_End": 1053.6000000000001,
+      "Text": " volume. And then it will return this handle to the notebook process. Now note that in this"
+    },
+    {
+      "Time_Start": 1053.6000000000001,
+      "Time_End": 1058.14,
+      "Text": " case the notebook process got a handle to a file that is inside uh that is uh outside the"
+    },
+    {
+      "Time_Start": 1058.14,
+      "Time_End": 1064.7800000000002,
+      "Text": " container dynamic images uh inside on the host volume. Now this is safe because the uh the"
+    },
+    {
+      "Time_Start": 1064.7800000000002,
+      "Time_End": 1069.18,
+      "Text": " handle that is given to the process is with three primitives only so it cannot change it. It"
+    },
+    {
+      "Time_Start": 1069.18,
+      "Time_End": 1074.18,
+      "Text": " cannot and cannot affect uh the uh files outside of its uh container. The second tag we"
+    },
+    {
+      "Time_Start": 1077.8200000000002,
+      "Time_End": 1083.5,
+      "Text": " look at is far more interesting. Um according to the driver symbols the WCI tag is"
+    },
+    {
+      "Time_Start": 1083.52,
+      "Time_End": 1089.7,
+      "Text": " responsible for file and directory expansion. Expansion is this driver's definition to copy"
+    },
+    {
+      "Time_Start": 1089.7,
+      "Time_End": 1095.64,
+      "Text": " an open protection. This tag is placed on files that uh can be opened with right primitives"
+    },
+    {
+      "Time_Start": 1095.64,
+      "Time_End": 1101.84,
+      "Text": " and can be edited. When encountering the WCI one tag the driver saves the repost data in the"
+    },
+    {
+      "Time_Start": 1101.84,
+      "Time_End": 1107.52,
+      "Text": " file's object context and launches a walk item that further handles the request. This walk"
+    },
+    {
+      "Time_Start": 1107.52,
+      "Time_End": 1111.88,
+      "Text": " item copies the file into the source volume, the container's ghost image, so it will edit a"
+    },
+    {
+      "Time_Start": 1111.9,
+      "Time_End": 1117.48,
+      "Text": " copy of the file instead of the original using the FLT read file and write file functions. So"
+    },
+    {
+      "Time_Start": 1117.48,
+      "Time_End": 1121.3400000000001,
+      "Text": " going back to the same example as before, this time the notebook process opens a file with"
+    },
+    {
+      "Time_Start": 1121.3400000000001,
+      "Time_End": 1126.5800000000002,
+      "Text": " right primitives meaning it wants to edit its content. The driver again will see the status"
+    },
+    {
+      "Time_Start": 1126.5800000000002,
+      "Time_End": 1131.88,
+      "Text": " reparse and WCI one tag. Get the relative path of the destination file from the repost point"
+    },
+    {
+      "Time_Start": 1131.88,
+      "Time_End": 1138.5,
+      "Text": " itself. This time it will read the content of the destination file from the host volume. Note"
+    },
+    {
+      "Time_Start": 1138.52,
+      "Time_End": 1144.66,
+      "Text": " that the file must exist. And then it will write this content to the uh container's uh volume,"
+    },
+    {
+      "Time_Start": 1144.66,
+      "Time_End": 1151.1,
+      "Text": " the original file that had the repost point. And return this handle to the notebook process."
+    },
+    {
+      "Time_Start": 1151.1,
+      "Time_End": 1156.3,
+      "Text": " Now this time the notebook process got the handle to the file it was originally requested but"
+    },
+    {
+      "Time_Start": 1156.3,
+      "Time_End": 1160.24,
+      "Text": " the file is not a ghost file anymore. It has the actual content of the file, the"
+    },
+    {
+      "Time_Start": 1160.24,
+      "Time_End": 1165.54,
+      "Text": " destination file, the file that it was directing to. So the notebook process can edit it uh"
+    },
+    {
+      "Time_Start": 1165.56,
+      "Time_End": 1171.82,
+      "Text": " without affecting the original file on the host volume. Now I've stated that uh the"
+    },
+    {
+      "Time_Start": 1171.82,
+      "Time_End": 1177.1,
+      "Text": " destination file must exist. In the case it doesn't exist, the original file that contained"
+    },
+    {
+      "Time_Start": 1177.1,
+      "Time_End": 1183.5,
+      "Text": " the repost point will be deleted. Let's see this in this uh in the uh driver C compiled code."
+    },
+    {
+      "Time_Start": 1183.5,
+      "Time_End": 1188.04,
+      "Text": " Uh it tries to open the repost point and if it gets back status object name not found, meaning"
+    },
+    {
+      "Time_Start": 1188.04,
+      "Time_End": 1194.48,
+      "Text": " the uh destination file doesn't exist, it will then allocate a new IRP using FLT allocate"
+    },
+    {
+      "Time_Start": 1194.48,
+      "Time_End": 1199.6200000000001,
+      "Text": " callback data and will set the major function code of this IRP to set information alongside"
+    },
+    {
+      "Time_Start": 1199.6200000000001,
+      "Time_End": 1204.82,
+      "Text": " the file disposition delete flag. This will cause the original file to be deleted and it will"
+    },
+    {
+      "Time_Start": 1204.82,
+      "Time_End": 1210.7,
+      "Text": " invoke the this new IRP using FLT perform synchronous IO. Again, same example. Note the"
+    },
+    {
+      "Time_Start": 1210.7,
+      "Time_End": 1216.14,
+      "Text": " process opens the file with right primitives. Um WCIFS gets the relative path of the"
+    },
+    {
+      "Time_Start": 1216.14,
+      "Time_End": 1221.18,
+      "Text": " destination file and this time when it reads the content of the destination file, it gets"
+    },
+    {
+      "Time_Start": 1221.18,
+      "Time_End": 1225.78,
+      "Text": " back status object name not found because the file doesn't exist. So it will delete the"
+    },
+    {
+      "Time_Start": 1225.78,
+      "Time_End": 1231.26,
+      "Text": " original file on the container's volume and will return uh to the notebook process error"
+    },
+    {
+      "Time_Start": 1231.26,
+      "Time_End": 1238.76,
+      "Text": " invalid handle because the file it was requested doesn't uh exist anymore, was deleted. An"
+    },
+    {
+      "Time_Start": 1238.76,
+      "Time_End": 1243.4,
+      "Text": " additional functionality provided by this driver is the ability to copy and paste files without"
+    },
+    {
+      "Time_Start": 1243.4,
+      "Time_End": 1249.14,
+      "Text": " having to bother with entering a container or dealing with repost points. This is used when"
+    },
+    {
+      "Time_Start": 1249.14,
+      "Time_End": 1252.8400000000001,
+      "Text": " files are needed to be transferred between the container and host volume. So let's say we"
+    },
+    {
+      "Time_Start": 1252.8400000000001,
+      "Time_End": 1257.24,
+      "Text": " have a file on the container's dynamic image and we want to save it on our host volume. You"
+    },
+    {
+      "Time_Start": 1257.24,
+      "Time_End": 1264.22,
+      "Text": " can do uh you can use these uh this functionality uh by the uh WCIFS driver to do so. The"
+    },
+    {
+      "Time_Start": 1264.22,
+      "Time_End": 1269.1200000000001,
+      "Text": " copy and paste operations are done using uh again the FLT read file and write file functions"
+    },
+    {
+      "Time_Start": 1269.1200000000001,
+      "Time_End": 1274.1200000000001,
+      "Text": " the same function as the WCIF one repost tag. To do this we again send a message to the"
+    },
+    {
+      "Time_Start": 1274.42,
+      "Time_End": 1279.42,
+      "Text": " driver using FLT send message this time with message code form. The content of the uh the"
+    },
+    {
+      "Time_Start": 1282.0800000000002,
+      "Time_End": 1286.6200000000001,
+      "Text": " message data will contain the source and target file paths and source and target volumes. Uh"
+    },
+    {
+      "Time_Start": 1286.6200000000001,
+      "Time_End": 1292.3600000000001,
+      "Text": " pretty simple nothing interesting here. Okay let's summarize what we've learned from reverse"
+    },
+    {
+      "Time_Start": 1292.3600000000001,
+      "Time_End": 1299.0000000000002,
+      "Text": " engineer the WCFS driver. We managed to create a silo, insert a process into it and register it"
+    },
+    {
+      "Time_Start": 1299.02,
+      "Time_End": 1305.16,
+      "Text": " as a fabricate as a fake container by communicating with the WCFS driver. This allowed us to"
+    },
+    {
+      "Time_Start": 1305.16,
+      "Time_End": 1310.0,
+      "Text": " resolve how the driver handles its repost points. Using the link one tag we're able to open"
+    },
+    {
+      "Time_Start": 1310.0,
+      "Time_End": 1315.0,
+      "Text": " one file and receive a handle of another. Using the WCIF one tag we're able to um override the"
+    },
+    {
+      "Time_Start": 1317.88,
+      "Time_End": 1324.12,
+      "Text": " file with the content of another or delete a file. And by directly communicating with the"
+    },
+    {
+      "Time_Start": 1324.14,
+      "Time_End": 1330.88,
+      "Text": " driver we're also able to copy and paste files. So let's see how what we've seen can be"
+    },
+    {
+      "Time_Start": 1330.88,
+      "Time_End": 1335.88,
+      "Text": " utilized. File system protection is an essential feature any EDR must provide and security"
+    },
+    {
+      "Time_Start": 1344.22,
+      "Time_End": 1348.0000000000002,
+      "Text": " vendors tend to use their own mini filter drivers to monitor the system's IO activity. We'll"
+    },
+    {
+      "Time_Start": 1348.0000000000002,
+      "Time_End": 1353.8000000000002,
+      "Text": " soon see exactly how. In the previous section we saw that the WCIF driver uses FLT uh"
+    },
+    {
+      "Time_Start": 1354.56,
+      "Time_End": 1359.96,
+      "Text": " read file, write file and performs IO to perform IO operations from within the kernel. Now"
+    },
+    {
+      "Time_Start": 1359.96,
+      "Time_End": 1364.36,
+      "Text": " there is something special about these functions. Looking at the MSDN documentation of all of"
+    },
+    {
+      "Time_Start": 1364.36,
+      "Time_End": 1370.04,
+      "Text": " these uh uh these three functions we'll see the following remark. The function will cause the"
+    },
+    {
+      "Time_Start": 1370.04,
+      "Time_End": 1374.54,
+      "Text": " request to be sent uh to the mini filter driver instances attached below the initiating"
+    },
+    {
+      "Time_Start": 1374.54,
+      "Time_End": 1379.24,
+      "Text": " instance into the file system. The specified instance and the instances attached above it do"
+    },
+    {
+      "Time_Start": 1379.26,
+      "Time_End": 1384.86,
+      "Text": " not receive the request. We know that uh mini filters are attached in order by their"
+    },
+    {
+      "Time_Start": 1384.86,
+      "Time_End": 1389.96,
+      "Text": " altitude values. This altitude range is split into groups and each group is associated with a"
+    },
+    {
+      "Time_Start": 1389.96,
+      "Time_End": 1394.98,
+      "Text": " certain type of mini filters. For example 320 to 330,000 is the range for security vendors"
+    },
+    {
+      "Time_Start": 1398.14,
+      "Time_End": 1405.14,
+      "Text": " drivers. And going back to where WC driver is loaded it is lower at 190,000 and can be even"
+    },
+    {
+      "Time_Start": 1405.14,
+      "Time_End": 1409.88,
+      "Text": " lower if we attach it manually. Which will cause EDR mini filters to simply not be"
+    },
+    {
+      "Time_Start": 1409.88,
+      "Time_End": 1415.2800000000002,
+      "Text": " notified about any of our IO operations done using these three functions from within the"
+    },
+    {
+      "Time_Start": 1415.2800000000002,
+      "Time_End": 1421.4,
+      "Text": " kernel. Let's visualize this uh by using the same example as the beginning of the talk. Uh"
+    },
+    {
+      "Time_Start": 1421.4,
+      "Time_End": 1427.74,
+      "Text": " this time the file that is being opened has the uh WCIF one repose point. So again the"
+    },
+    {
+      "Time_Start": 1427.74,
+      "Time_End": 1432.5800000000002,
+      "Text": " IRP will create uh sorry the IRP manager will create an IRP for this operation which will go"
+    },
+    {
+      "Time_Start": 1432.58,
+      "Time_End": 1436.62,
+      "Text": " down the storage device stack until it will reach the filter manager. The filter manager will"
+    },
+    {
+      "Time_Start": 1436.62,
+      "Time_End": 1442.22,
+      "Text": " then invoke the pre-create operation callbacks of all of its mini filter instances. Note that"
+    },
+    {
+      "Time_Start": 1442.22,
+      "Time_End": 1446.86,
+      "Text": " this includes any EDR mini filter so it will receive a notification of our process attempting"
+    },
+    {
+      "Time_Start": 1446.86,
+      "Time_End": 1452.36,
+      "Text": " to open a file with a repose point which we don't really care about, we'll soon see why. The"
+    },
+    {
+      "Time_Start": 1452.36,
+      "Time_End": 1457.1,
+      "Text": " IRP again will then be returned to the filter manager, the file will be read and the FS driver"
+    },
+    {
+      "Time_Start": 1457.1,
+      "Time_End": 1461.4399999999998,
+      "Text": " will change the status of this IRP to status repose and the request will eventually reach the"
+    },
+    {
+      "Time_Start": 1461.44,
+      "Time_End": 1466.5800000000002,
+      "Text": " filter manager again where it will invoke the post-create operation callbacks of uh the WC"
+    },
+    {
+      "Time_Start": 1466.5800000000002,
+      "Time_End": 1472.8200000000002,
+      "Text": " driver. In this function the driver will notice the WCIF one tag which it's responsible"
+    },
+    {
+      "Time_Start": 1472.8200000000002,
+      "Time_End": 1477.8200000000002,
+      "Text": " for and as we've seen it will either override the source file with the content of the target"
+    },
+    {
+      "Time_Start": 1477.8200000000002,
+      "Time_End": 1483.52,
+      "Text": " file or it will delete the source file in the case the target file doesn't exist. These"
+    },
+    {
+      "Time_Start": 1483.52,
+      "Time_End": 1487.72,
+      "Text": " functions will cause a new IRP to be created and go down the same path, down the storage"
+    },
+    {
+      "Time_Start": 1487.72,
+      "Time_End": 1494.08,
+      "Text": " device stack until it will reach the filter manager again, the same as any IRP. Um this"
+    },
+    {
+      "Time_Start": 1494.08,
+      "Time_End": 1498.56,
+      "Text": " time however if we will go back to the remark from the previous slide, any instances"
+    },
+    {
+      "Time_Start": 1498.56,
+      "Time_End": 1503.8600000000001,
+      "Text": " attached above the originating instance, our WC driver, including any EDR mini filter"
+    },
+    {
+      "Time_Start": 1503.8600000000001,
+      "Time_End": 1509.8600000000001,
+      "Text": " instances will not receive a notification about this operation. Now uh the IRP again will"
+    },
+    {
+      "Time_Start": 1509.8600000000001,
+      "Time_End": 1516.3,
+      "Text": " be uh go uh sent and back down, go back up and when it will reach the filter manager again"
+    },
+    {
+      "Time_Start": 1516.32,
+      "Time_End": 1521.22,
+      "Text": " the remark will apply to the post-create callbacks as well, causing the post-create of any"
+    },
+    {
+      "Time_Start": 1521.22,
+      "Time_End": 1526.24,
+      "Text": " instances attached above the WC driver to not be notified. Um including any EDR mini filters."
+    },
+    {
+      "Time_Start": 1526.24,
+      "Time_End": 1531.24,
+      "Text": " Um eventually the call will be returned to the WC driver when it will uh return FFT post-op"
+    },
+    {
+      "Time_Start": 1534.74,
+      "Time_End": 1539.74,
+      "Text": " finished processing. This will cause the entire operation to be completed uh causing the uh"
+    },
+    {
+      "Time_Start": 1539.74,
+      "Time_End": 1546.08,
+      "Text": " file to be reparsed and as we've seen any internal operations done using the WC driver"
+    },
+    {
+      "Time_Start": 1546.1,
+      "Time_End": 1551.1,
+      "Text": " will not be notified uh EDR mini filters will not be notified about about it. Okay so in"
+    },
+    {
+      "Time_Start": 1553.8999999999999,
+      "Time_End": 1558.3999999999999,
+      "Text": " order to know how this behavior can be abused, we first need to understand how security"
+    },
+    {
+      "Time_Start": 1558.3999999999999,
+      "Time_End": 1563.62,
+      "Text": " products implement their protection. To combat file system based malware, these products"
+    },
+    {
+      "Time_Start": 1563.62,
+      "Time_End": 1567.72,
+      "Text": " leverage advanced algorithm that analyze mini filter IO logs, actively searching for"
+    },
+    {
+      "Time_Start": 1567.72,
+      "Time_End": 1573.32,
+      "Text": " specific patterns to detect and prevent any potential irreversible damage. Most EDRs rely"
+    },
+    {
+      "Time_Start": 1573.8,
+      "Time_End": 1579.74,
+      "Text": " on a standard set of principles to identify processes associated with ransomware wipers."
+    },
+    {
+      "Time_Start": 1579.74,
+      "Time_End": 1583.6799999999998,
+      "Text": " These principles include monitoring processes that open a significant number of file"
+    },
+    {
+      "Time_Start": 1583.6799999999998,
+      "Time_End": 1589.08,
+      "Text": " handles and exhibit behaviors such as reading data from a file and overwriting it making"
+    },
+    {
+      "Time_Start": 1589.08,
+      "Time_End": 1596.08,
+      "Text": " the original data inaccessible. Knowing this, let's create an undetectable wiper and"
+    },
+    {
+      "Time_Start": 1596.08,
+      "Time_End": 1601.86,
+      "Text": " ransomware using the WC driver. We'll start with the wiper because it's a bit simpler. We"
+    },
+    {
+      "Time_Start": 1601.9,
+      "Time_End": 1605.7,
+      "Text": " first need to create an empty file that will be our target file and then write a buffer of"
+    },
+    {
+      "Time_Start": 1605.7,
+      "Time_End": 1611.44,
+      "Text": " zeros or random data to it, it doesn't matter. Then we'll traverse each file on the system"
+    },
+    {
+      "Time_Start": 1611.44,
+      "Time_End": 1618.0200000000002,
+      "Text": " and for each file we'll set an IO uh WCR1 reparse point that will point to the target file,"
+    },
+    {
+      "Time_Start": 1618.0200000000002,
+      "Time_End": 1623.96,
+      "Text": " the file that contains the zero dot buffer. Then we'll create a silo, assign our current"
+    },
+    {
+      "Time_Start": 1623.96,
+      "Time_End": 1628.3200000000002,
+      "Text": " process into it and register it as a fabricated container uh where both the source and"
+    },
+    {
+      "Time_Start": 1628.32,
+      "Time_End": 1634.36,
+      "Text": " target volumes are the same one, the uh host volume. We'll then traverse each file on the"
+    },
+    {
+      "Time_Start": 1634.36,
+      "Time_End": 1638.56,
+      "Text": " system again, this time we'll simply try to open the file using create file. Now as we've"
+    },
+    {
+      "Time_Start": 1638.56,
+      "Time_End": 1642.6399999999999,
+      "Text": " seen this will cause the WC driver to read the content of the destination file and write it"
+    },
+    {
+      "Time_Start": 1642.6399999999999,
+      "Time_End": 1647.3,
+      "Text": " for us on the file that we want to wipe without triggering any security mini filter drivers"
+    },
+    {
+      "Time_Start": 1647.3,
+      "Time_End": 1652.32,
+      "Text": " callback functions. Let's visualize this. Again if we try to uh directly wipe the file uh EDR"
+    },
+    {
+      "Time_Start": 1652.98,
+      "Time_End": 1657.98,
+      "Text": " algorithms will eventually detect and prevent us instead. We'll set a WCR1 reparse point"
+    },
+    {
+      "Time_Start": 1661.3,
+      "Time_End": 1665.6599999999999,
+      "Text": " that will point uh to the only source file that we want to wipe that will point to the target"
+    },
+    {
+      "Time_Start": 1665.6599999999999,
+      "Time_End": 1670.96,
+      "Text": " file that contains the zero dot buffer and we'll insert our wiper into a container. Then we'll"
+    },
+    {
+      "Time_Start": 1670.96,
+      "Time_End": 1675.54,
+      "Text": " try to open the file that we want to wipe. The WC driver will then read the content of the"
+    },
+    {
+      "Time_Start": 1675.54,
+      "Time_End": 1680.4399999999998,
+      "Text": " destination file and write it for us thus wiping the file without the detection of EDRs."
+    },
+    {
+      "Time_Start": 1681.16,
+      "Time_End": 1686.16,
+      "Text": " Um okay the ransomware algorithm is uh uh pretty much the same. Uh it we first need to"
+    },
+    {
+      "Time_Start": 1689.3,
+      "Time_End": 1693.44,
+      "Text": " traverse each file on the system and for each one we'll uh read its content and encrypt it in"
+    },
+    {
+      "Time_Start": 1693.44,
+      "Time_End": 1700.28,
+      "Text": " memory. We'll then create a target file and write the encrypted data to it. Note that security"
+    },
+    {
+      "Time_Start": 1700.28,
+      "Time_End": 1705.16,
+      "Text": " mini filters will be notified about the file write but will ignore it because the encrypted"
+    },
+    {
+      "Time_Start": 1705.18,
+      "Time_End": 1710.42,
+      "Text": " content is written to is written to a new file on the system and an existing file is not being"
+    },
+    {
+      "Time_Start": 1710.42,
+      "Time_End": 1715.42,
+      "Text": " overridden. Then we'll set again a WCR1 reparse point that will point to the target file that"
+    },
+    {
+      "Time_Start": 1717.3000000000002,
+      "Time_End": 1723.9,
+      "Text": " contains the uh encrypted data. Create a silo, assign our process into it and register it as a"
+    },
+    {
+      "Time_Start": 1723.9,
+      "Time_End": 1729.2,
+      "Text": " fake container. Traverse each file on the system again and try to open it using create file"
+    },
+    {
+      "Time_Start": 1729.26,
+      "Time_End": 1735.46,
+      "Text": " causing the encrypted data to be written by the WC driver. Let's see this ransomware in real"
+    },
+    {
+      "Time_Start": 1735.46,
+      "Time_End": 1742.3600000000001,
+      "Text": " time. Here we have two folders containing the exact same files and has the same size on"
+    },
+    {
+      "Time_Start": 1742.3600000000001,
+      "Time_End": 1747.38,
+      "Text": " disk. We have the secrets folder and the secrets copy folder. Uh we will first try to encrypt"
+    },
+    {
+      "Time_Start": 1750.38,
+      "Time_End": 1756.02,
+      "Text": " the uh first folder, the secrets the secrets folder with a traditional ransomware that simply"
+    },
+    {
+      "Time_Start": 1756.04,
+      "Time_End": 1763.1399999999999,
+      "Text": " opens encrypt and write the encrypted data to the same file. The ransomware starts to"
+    },
+    {
+      "Time_Start": 1763.1399999999999,
+      "Time_End": 1769.02,
+      "Text": " encrypt some of the files but eventually getting detected and terminated by the EDR installed"
+    },
+    {
+      "Time_Start": 1769.02,
+      "Time_End": 1775.6,
+      "Text": " on the system. Looking at the secrets folder, the one that we wanted to encrypt, you can see"
+    },
+    {
+      "Time_Start": 1775.6,
+      "Time_End": 1780.3,
+      "Text": " that some of the files were encrypted but not all of them. For example this test file was not"
+    },
+    {
+      "Time_Start": 1780.32,
+      "Time_End": 1785.32,
+      "Text": " encrypted. So the uh ransomware was prevented on time. We then execute our ransomware that uses"
+    },
+    {
+      "Time_Start": 1787.96,
+      "Time_End": 1794.1,
+      "Text": " the WC driver encrypting the second folder, the secrets copy folder. So it first sets a"
+    },
+    {
+      "Time_Start": 1794.1,
+      "Time_End": 1799.3999999999999,
+      "Text": " repo spot on the files then encrypting them using the WC driver and as you can see the process"
+    },
+    {
+      "Time_Start": 1799.3999999999999,
+      "Time_End": 1804.28,
+      "Text": " was not terminated and looking at the secrets copy folder you can see that all of the files"
+    },
+    {
+      "Time_Start": 1804.28,
+      "Time_End": 1809.28,
+      "Text": " were encrypted including our test file. So this is a very simple way to encrypt a ransomware"
+    },
+    {
+      "Time_Start": 1810.46,
+      "Time_End": 1812.46,
+      "Text": " file. Thank you."
+    },
+    {
+      "Time_Start": 1817.46,
+      "Time_End": 1821.96,
+      "Text": " Another notable feature of security vendors products is the ability to block file system"
+    },
+    {
+      "Time_Start": 1821.96,
+      "Time_End": 1826.7,
+      "Text": " write operations. This can be utilized by organizations to either enforce a read only policy"
+    },
+    {
+      "Time_Start": 1826.7,
+      "Time_End": 1832.8799999999999,
+      "Text": " for mobile devices thus effectively mitigating the risk of data exfiltration or to block file"
+    },
+    {
+      "Time_Start": 1832.8799999999999,
+      "Time_End": 1837.68,
+      "Text": " writes to folders housing sensitive data which will add an extra layer of protection against"
+    },
+    {
+      "Time_Start": 1837.7,
+      "Time_End": 1843.3400000000001,
+      "Text": " unauthorized modifications. This protection is implemented by you guessed it a mini filter"
+    },
+    {
+      "Time_Start": 1843.3400000000001,
+      "Time_End": 1849.3400000000001,
+      "Text": " driver which we can bypass as well. Let's see another demo. This time we have a different"
+    },
+    {
+      "Time_Start": 1849.3400000000001,
+      "Time_End": 1855.28,
+      "Text": " EDR than before. A USB stick is connected to the system and when trying to copy a file to the"
+    },
+    {
+      "Time_Start": 1855.28,
+      "Time_End": 1860.28,
+      "Text": " USB stick the operation is being blocked by the EDR due to a read only policy. But when"
+    },
+    {
+      "Time_Start": 1860.78,
+      "Time_End": 1865.78,
+      "Text": " copying the file using the copy and paste feature of the WC driver so we copy the file to the E"
+    },
+    {
+      "Time_Start": 1871.58,
+      "Time_End": 1878.2,
+      "Text": " volume, the USB stick, the operation is completed successfully and the file can be extracted"
+    },
+    {
+      "Time_Start": 1878.2,
+      "Time_End": 1884.0,
+      "Text": " from the system and this is how you can exfiltrate the most precious file of all the calculator"
+    },
+    {
+      "Time_Start": 1884.0,
+      "Time_End": 1886.0,
+      "Text": " from the organization."
+    },
+    {
+      "Time_Start": 1890.28,
+      "Time_End": 1895.28,
+      "Text": " Okay, ETW. ETW or Event Tracing for Windows is a powerful and efficient logging mechanism"
+    },
+    {
+      "Time_Start": 1898.82,
+      "Time_End": 1903.22,
+      "Text": " built into the Windows operating system. The Windows kernel serves as a crucial lock"
+    },
+    {
+      "Time_Start": 1903.22,
+      "Time_End": 1908.06,
+      "Text": " provider that captures a wide range of system operations including those related to the file"
+    },
+    {
+      "Time_Start": 1908.06,
+      "Time_End": 1914.16,
+      "Text": " system. Security vendors leverage these events to analyze and identify potential threats"
+    },
+    {
+      "Time_Start": 1914.16,
+      "Time_End": 1919.6399999999999,
+      "Text": " often creating attack flows by cross referencing. Now if you recall the WCI 1 tag override"
+    },
+    {
+      "Time_Start": 1919.64,
+      "Time_End": 1925.44,
+      "Text": " process the read and write operations occur within a kernel work item. Executing from a"
+    },
+    {
+      "Time_Start": 1925.44,
+      "Time_End": 1930.5800000000002,
+      "Text": " work item which is a kernel thread will cause the ETW log to attribute these actions to the"
+    },
+    {
+      "Time_Start": 1930.5800000000002,
+      "Time_End": 1936.2800000000002,
+      "Text": " system process instead of the actual process responsible. This will lead to misinformation"
+    },
+    {
+      "Time_Start": 1936.2800000000002,
+      "Time_End": 1940.96,
+      "Text": " for any vendor consuming events number 15 and 16 of read and write from the kernel file"
+    },
+    {
+      "Time_Start": 1940.96,
+      "Time_End": 1947.96,
+      "Text": " provider bypassing any threat handling correlation based on these events. An example to a"
+    },
+    {
+      "Time_Start": 1947.96,
+      "Time_End": 1954.42,
+      "Text": " built in Windows tool that is ETW based is SACL. Windows offers the capability to"
+    },
+    {
+      "Time_Start": 1954.42,
+      "Time_End": 1959.6000000000001,
+      "Text": " establish an auditing policy for file system objects knowing, known as system access"
+    },
+    {
+      "Time_Start": 1959.6000000000001,
+      "Time_End": 1965.5,
+      "Text": " control or SACL. This allows for extensive logging of all I operations performed on the"
+    },
+    {
+      "Time_Start": 1965.5,
+      "Time_End": 1972.04,
+      "Text": " specified objects. ETW based Windows tools intentionally designed to disregard logs"
+    },
+    {
+      "Time_Start": 1972.04,
+      "Time_End": 1976.6200000000001,
+      "Text": " originating from the system. This approach guarantees that such logs which are typically"
+    },
+    {
+      "Time_Start": 1976.6200000000001,
+      "Time_End": 1982.48,
+      "Text": " relevant to the user monitoring the system are not included to avoid unnecessary overhead."
+    },
+    {
+      "Time_Start": 1982.48,
+      "Time_End": 1987.7600000000002,
+      "Text": " The result of all of this is that our IO request will be absent from the logs altogether."
+    },
+    {
+      "Time_Start": 1987.7600000000002,
+      "Time_End": 1992.7600000000002,
+      "Text": " Time for another demo. Here we have a secret file that has a read and execute auditing"
+    },
+    {
+      "Time_Start": 1995.16,
+      "Time_End": 1999.74,
+      "Text": " rule which will log any access to the file. So looking at the auditing policy of this file"
+    },
+    {
+      "Time_Start": 1999.74,
+      "Time_End": 2006.48,
+      "Text": " you can see that we have a read and execute rule on any user on the system. Opening this"
+    },
+    {
+      "Time_Start": 2006.48,
+      "Time_End": 2011.3,
+      "Text": " file with notepad for example will cause a log to be generated by the auditing policy. So"
+    },
+    {
+      "Time_Start": 2011.3,
+      "Time_End": 2017.44,
+      "Text": " looking at the event view of the auditing logs you can see that logs were created stating"
+    },
+    {
+      "Time_Start": 2017.44,
+      "Time_End": 2024.72,
+      "Text": " that the secret file were accessed by the notepad process. However, if you will create an"
+    },
+    {
+      "Time_Start": 2024.72,
+      "Time_End": 2029.7,
+      "Text": " empty file that will store the content of the secret that we want to steal. Then set a WCR1"
+    },
+    {
+      "Time_Start": 2029.7,
+      "Time_End": 2034.7,
+      "Text": " tag that will point to the actual secret file and override it using the WC driver. So"
+    },
+    {
+      "Time_Start": 2036.74,
+      "Time_End": 2044.0,
+      "Text": " we set the reverse point and then override it. The kernel log item will read and write the"
+    },
+    {
+      "Time_Start": 2044.0,
+      "Time_End": 2049.72,
+      "Text": " file's content for us without any log being created by the auditing policy. So the content"
+    },
+    {
+      "Time_Start": 2049.72,
+      "Time_End": 2055.92,
+      "Text": " of the secret was stolen but looking at the auditing policy you can see that no logs were"
+    },
+    {
+      "Time_Start": 2055.92,
+      "Time_End": 2060.92,
+      "Text": " creating stating that the secret, the original secret was accessed. So this is the"
+    },
+    {
+      "Time_Start": 2066.5,
+      "Time_End": 2071.5,
+      "Text": " solution. Okay let's summarize. We've learned that the Windows container frameworks, the"
+    },
+    {
+      "Time_Start": 2076.2400000000002,
+      "Time_End": 2080.94,
+      "Text": " Windows containers framework provides a file system isolation solution that is implemented by"
+    },
+    {
+      "Time_Start": 2080.94,
+      "Time_End": 2086.38,
+      "Text": " repass points and mini filter drivers. Through reverse engineering of the main driver, the"
+    },
+    {
+      "Time_Start": 2086.38,
+      "Time_End": 2092.22,
+      "Text": " main driver of the framework, uh the WCFS driver, we're able to create a counterfeit container"
+    },
+    {
+      "Time_Start": 2092.26,
+      "Time_End": 2096.8,
+      "Text": " and successfully insert our process into it. This allowed us to leverage the framework's IO"
+    },
+    {
+      "Time_Start": 2096.8,
+      "Time_End": 2101.7000000000003,
+      "Text": " direction mechanism causing files to be overridden, deleted, or copied without the"
+    },
+    {
+      "Time_Start": 2101.7000000000003,
+      "Time_End": 2107.4800000000005,
+      "Text": " detection of security products. As a result, we have identified new bypasses of file system"
+    },
+    {
+      "Time_Start": 2107.4800000000005,
+      "Time_End": 2112.5800000000004,
+      "Text": " based malware protection, file write restrictions, and ETW based correlations without relying"
+    },
+    {
+      "Time_Start": 2112.5800000000004,
+      "Time_End": 2117.5800000000004,
+      "Text": " on any other known bypass techniques. So how to mitigate the bypasses. There are numerous"
+    },
+    {
+      "Time_Start": 2117.72,
+      "Time_End": 2124.2599999999998,
+      "Text": " routes you can take. I found that the easiest way is by detecting the suspicious activity in"
+    },
+    {
+      "Time_Start": 2124.2599999999998,
+      "Time_End": 2129.2,
+      "Text": " the user mode and not the kernel mode. For example, uh detecting calls to device IO control"
+    },
+    {
+      "Time_Start": 2129.2,
+      "Time_End": 2135.24,
+      "Text": " with the set repass point file system control code alongside the uh any of the WCI1 tags."
+    },
+    {
+      "Time_Start": 2135.24,
+      "Time_End": 2142.38,
+      "Text": " From what I've seen, uh this uh activity is, it should, it should not happen under a normal"
+    },
+    {
+      "Time_Start": 2142.42,
+      "Time_End": 2149.42,
+      "Text": " container operation. It is pretty much an anomaly so it looks suspicious. Um, you can also"
+    },
+    {
+      "Time_Start": 2149.42,
+      "Time_End": 2154.2200000000003,
+      "Text": " uh check whether the WC communication port was opened or a silo is created by a non-sys"
+    },
+    {
+      "Time_Start": 2154.2200000000003,
+      "Time_End": 2159.0,
+      "Text": " process. Or to check if the WC driver is attached to a volume uh while the container's"
+    },
+    {
+      "Time_Start": 2159.0,
+      "Time_End": 2163.8,
+      "Text": " feature is turned off. Again, keep in mind, these are just um a few ways to detect the bypasses."
+    },
+    {
+      "Time_Start": 2163.8,
+      "Time_End": 2167.7000000000003,
+      "Text": " There are plenty of other methods you can take as well. For example, from the kernel itself."
+    },
+    {
+      "Time_Start": 2168.5,
+      "Time_End": 2173.5,
+      "Text": " Uh, uh so, these are just a few. Okay, further research. The WCFS driver is just one of many"
+    },
+    {
+      "Time_Start": 2178.7799999999997,
+      "Time_End": 2182.4399999999996,
+      "Text": " mini filters out there. I'm sure that there are plenty of other mini filters that can be"
+    },
+    {
+      "Time_Start": 2182.4399999999996,
+      "Time_End": 2189.2799999999997,
+      "Text": " abused in a similar way to perform some uh system operations from the kernel itself. It is"
+    },
+    {
+      "Time_Start": 2189.2799999999997,
+      "Time_End": 2193.8199999999997,
+      "Text": " also possible to set repass points on directories. Uh, the driver symbols, reference"
+    },
+    {
+      "Time_Start": 2193.84,
+      "Time_End": 2197.88,
+      "Text": " directory expansion and possible redirection handling so this is uh an interesting route you"
+    },
+    {
+      "Time_Start": 2197.88,
+      "Time_End": 2202.88,
+      "Text": " can take. And most importantly, mini filter and ETW based protection is everywhere. And I'm"
+    },
+    {
+      "Time_Start": 2204.76,
+      "Time_End": 2209.76,
+      "Text": " sure that there are more bypasses that can be achieved using the methods shown today. You"
+    },
+    {
+      "Time_Start": 2212.26,
+      "Time_End": 2216.7400000000002,
+      "Text": " can contact me on uh, if you have any questions you can contact me on Twitter or X or"
+    },
+    {
+      "Time_Start": 2216.7400000000002,
+      "Time_End": 2221.7400000000002,
+      "Text": " whatever it is now. Um, or you can scan the uh QR code to access the POC tool of the uh"
+    },
+    {
+      "Time_Start": 2224.78,
+      "Time_End": 2226.78,
+      "Text": " shown on the demos today. Thank you."
+    },
+    {
+      "Time_Start": 2226.78,
+      "Time_End": 2229.78,
+      "Text": " Applause"
+    }
+  ]
+}

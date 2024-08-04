@@ -1,0 +1,63 @@
+**Introduction:**
+- Presentation on abusing manipulation points in the Android 13 runtime for anti-reverse engineering.
+- Speaker: Laurie Kirk, reverse engineer at Microsoft specializing in cross-platform malware analysis.
+
+**Runtime Manipulation for Anti-Reverse Engineering:**
+- Dynamic code loading techniques are commonly used to defeat static analysis of Android applications.
+- Standard methods like DEX class loader, path class loader, and Java reflective calls are easily detectable and hookable.
+- **Proposed approach:** Directly manipulate the Android runtime by modifying methods and executables in process memory, bypassing standard API calls.
+
+**Manipulating the Android Runtime:**
+- Android Runtime (ART) is responsible for parsing, mapping, and executing code from Android applications (APKs).
+- ART maps methods and executables from disk into process memory, providing an opportunity for manipulation.
+- **Goal:** Swap the behavior of methods to execute custom code while the application is running.
+
+**Finding Entry Points and Targets:**
+- Examined the Android source code to identify potential targets for manipulation.
+- Initial target: Swapping entire DEX files by modifying the 'mCookie' field, but faced a chicken-and-egg problem with the main DEX file.
+- Focused on modifying individual members within a DEX file, specifically the 'ART method' structure.
+
+**Intercepting Methods via JNI:**
+- Java Native Interface (JNI) allows communication between managed Java code and native C++ code.
+- Used JNI to retrieve references to target objects and their corresponding 'ART method' fields.
+- Overwrote one method's 'ART method' field with another, but it didn't work due to access modifiers and understanding the underlying native structure.
+
+**Understanding the Native Structure:**
+- The 'ART method' field is a pointer to an underlying native 'ART method' structure containing method data.
+- Analyzed the Android source code to understand the native representation of the 'ART method' structure and its fields.
+- Identified the 'entryPointFromQuickCompiledCode' field, which contains the actual native instructions for the method.
+
+**Initial Tests and Challenges:**
+- Conducted tests by overwriting random bytes in memory, but encountered repeated crashes.
+- Tried to locate the 'entryPointFromQuickCompiledCode' pointer by overwriting memory in small increments, but was unsuccessful.
+- Decided to overwrite 64 random bytes from the malicious method to the benign method, assuming similar variable sizes.
+
+**Second Test and Success:**
+- Modified the code to copy 64 bytes from the malicious method to the benign method.
+- Test was successful, indicating that the correct offsets and sizes were used.
+- Further testing revealed that methods must have the same signature, be static, and can be declared in separate classes.
+
+**Calculating Offsets and Understanding the ART Method Structure:**
+- Created a dummy 'ART method' class to calculate the offsets of its variables in memory.
+- Performed byte math to associate the bytes of two methods with their actual variables and types.
+- Confirmed the offsets by disassembling the 'entryPointFromQuickCompiledCode' field, which revealed native instructions.
+
+**Pushing the Boundaries:**
+- Replaced the official 'log.e' Android API with custom code to steal data, demonstrating the potential for unexpected code execution.
+- Created a static method with the same signature as 'log.e' but with custom functionality.
+- Invoking the 'log.e' method executed the custom code, stealing data from installed applications.
+
+**Artful: A New Open-Source Tool:**
+- Released 'Artful', a library for dynamically swapping the behavior of methods in Android 13 and 14 (Upside Down Cake).
+- Artful simplifies the process by handling the complicated calculations and providing default methods for swapping behavior.
+- Supports user-defined methods and official Android framework APIs, allowing unexpected code execution without standard API calls.
+
+**Summary and Benefits:**
+- Primary challenges include understanding the Android source code and performing complex pointer math.
+- Benefits: Avoid standard class loader API calls, execute unexpected code, and thwart static analysis and reverse engineering efforts.
+- Artful provides an easy-to-use library for method swapping, with potential for further extension to support different API versions.
+
+**Conclusion:**
+- Successfully manipulated the Android runtime by modifying methods and executables in process memory.
+- Artful library enables developers to enhance the obfuscation of their Android applications.
+- Q&A session followed the presentation.

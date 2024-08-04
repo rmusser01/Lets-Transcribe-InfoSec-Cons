@@ -1,0 +1,849 @@
+{
+  "segments": [
+    {
+      "Time_Start": 0.0,
+      "Time_End": 6.640000000000001,
+      "Text": "This text was transcribed using whisper model: large-v2\n\n Welcome, everyone. My name is Michael Stepankin. In this session, we'll dive into mutual TLS and"
+    },
+    {
+      "Time_Start": 6.640000000000001,
+      "Time_End": 13.44,
+      "Text": " authentication based on certificates. I'm excited to present some interesting attacks on MTLS,"
+    },
+    {
+      "Time_Start": 13.44,
+      "Time_End": 19.76,
+      "Text": " as well as demonstrate vulnerabilities in popular open source software. My purpose is to give you"
+    },
+    {
+      "Time_Start": 19.76,
+      "Time_End": 28.240000000000002,
+      "Text": " some fresh ideas on how to attack and secure this technology. So what is a mutual TLS? In short,"
+    },
+    {
+      "Time_Start": 28.32,
+      "Time_End": 34.24,
+      "Text": " it's another form of client authentication. Most of you probably know that the browser"
+    },
+    {
+      "Time_Start": 34.24,
+      "Time_End": 40.800000000000004,
+      "Text": " checks the server's certificate. The same idea can be applied to authenticate browsers or TLS"
+    },
+    {
+      "Time_Start": 40.800000000000004,
+      "Time_End": 47.120000000000005,
+      "Text": " clients in general. For example, a server can ask a browser to provide a valid certificate."
+    },
+    {
+      "Time_Start": 47.120000000000005,
+      "Time_End": 53.36,
+      "Text": " It can be either used as an alternative to classic password authentication or as an additional"
+    },
+    {
+      "Time_Start": 53.36,
+      "Time_End": 60.4,
+      "Text": " factor. This process is defined in the TLS RFC and based on asymmetric cryptography."
+    },
+    {
+      "Time_Start": 61.04,
+      "Time_End": 65.44,
+      "Text": " During the handshake, the server can send a certificate request message."
+    },
+    {
+      "Time_Start": 66.72,
+      "Time_End": 72.32,
+      "Text": " The client replies with a certificate message that contains a public key. This is followed"
+    },
+    {
+      "Time_Start": 72.32,
+      "Time_End": 79.03999999999999,
+      "Text": " by a certificate verify message encrypted by a private key, so that even if the message is"
+    },
+    {
+      "Time_Start": 79.04,
+      "Time_End": 84.24000000000001,
+      "Text": " intercepted, a person in the middle would not see any secrets in the plain text."
+    },
+    {
+      "Time_Start": 86.0,
+      "Time_End": 93.76,
+      "Text": " So what exactly is a certificate? Generally speaking, it's a blob of binary encoded data."
+    },
+    {
+      "Time_Start": 93.76,
+      "Time_End": 100.32000000000001,
+      "Text": " The most important fields are the subject, the issuer, and the public key. Subject usually"
+    },
+    {
+      "Time_Start": 100.32000000000001,
+      "Time_End": 106.88000000000001,
+      "Text": " defines a username or hostname, and similar to JSON web tokens, the certificate is signed by"
+    },
+    {
+      "Time_Start": 106.96,
+      "Time_End": 113.36,
+      "Text": " the issuer's private key, so the data inside cannot be tampered with. The issuer field points"
+    },
+    {
+      "Time_Start": 113.36,
+      "Time_End": 121.84,
+      "Text": " to another certificate who signed this certificate. A sequence of certificates signing each other"
+    },
+    {
+      "Time_Start": 121.84,
+      "Time_End": 127.91999999999999,
+      "Text": " forms a certificate chain. In order to check the validity of the certificate, the server should"
+    },
+    {
+      "Time_Start": 127.91999999999999,
+      "Time_End": 134.72,
+      "Text": " build a trusted chain from the client certificate to a trusted root certificate. The client and"
+    },
+    {
+      "Time_Start": 134.72,
+      "Time_End": 140.88,
+      "Text": " intermediate certificates are normally sent by the client, whereas the server only needs to know"
+    },
+    {
+      "Time_Start": 140.88,
+      "Time_End": 149.52,
+      "Text": " about trusted root certificates. Let's see how to use MTLS in an example Java web application."
+    },
+    {
+      "Time_Start": 150.24,
+      "Time_End": 155.76,
+      "Text": " In the bare minimum, the developers only need to enable it in the application settings"
+    },
+    {
+      "Time_Start": 155.76,
+      "Time_End": 161.92,
+      "Text": " and specify the location of all trusted root certificates. From the client perspective,"
+    },
+    {
+      "Time_Start": 161.92000000000002,
+      "Time_End": 167.84,
+      "Text": " such as curl, you need to specify what certificate is sent to the server. The rest"
+    },
+    {
+      "Time_Start": 167.84,
+      "Time_End": 174.32000000000002,
+      "Text": " of the application code, such as request mappings, is exactly the same as for a normal web application."
+    },
+    {
+      "Time_Start": 176.72000000000003,
+      "Time_End": 181.36,
+      "Text": " As you can see, this approach brings some advantages and disadvantages compared to"
+    },
+    {
+      "Time_Start": 181.36,
+      "Time_End": 187.44000000000003,
+      "Text": " traditional authentication methods, such as password. First of all, it might be faster for"
+    },
+    {
+      "Time_Start": 187.44,
+      "Time_End": 192.16,
+      "Text": " your application, as the authentication can only happen at the handshake level,"
+    },
+    {
+      "Time_Start": 192.8,
+      "Time_End": 200.32,
+      "Text": " so all subsequent HTTP requests will be authenticated, saving our CPU time. Also,"
+    },
+    {
+      "Time_Start": 200.32,
+      "Time_End": 206.24,
+      "Text": " similar to JSON web tokens, there is a storage benefit, as the server does not need to store"
+    },
+    {
+      "Time_Start": 206.24,
+      "Time_End": 212.72,
+      "Text": " all the client certificates, only need to access the root certificate. Speaking of the cons,"
+    },
+    {
+      "Time_Start": 212.72,
+      "Time_End": 218.24,
+      "Text": " there is no granular control. As soon as you enable MTLS in your application,"
+    },
+    {
+      "Time_Start": 218.24,
+      "Time_End": 224.72,
+      "Text": " all requests have to be authenticated, even to the public pages or JS or CSS resources."
+    },
+    {
+      "Time_Start": 225.6,
+      "Time_End": 231.52,
+      "Text": " Also, any certificates signed by a root certificate can be used for client authentication."
+    },
+    {
+      "Time_Start": 232.16,
+      "Time_End": 238.96,
+      "Text": " Even if the certificate is issued for another purpose, it still can potentially be used for"
+    },
+    {
+      "Time_Start": 238.96,
+      "Time_End": 247.76000000000002,
+      "Text": " TLS authentication. Furthermore, the mutual TLS does not specify how the certificate should be"
+    },
+    {
+      "Time_Start": 247.76000000000002,
+      "Time_End": 254.0,
+      "Text": " issued. It's up to the application to define additional mechanism for certificate issuance."
+    },
+    {
+      "Time_Start": 254.88,
+      "Time_End": 261.76,
+      "Text": " Finally, certificates are always expired, and it's just a hassle to rotate them frequently."
+    },
+    {
+      "Time_Start": 262.56,
+      "Time_End": 268.64,
+      "Text": " Before we dive into the attack section, I'm going to briefly mention some of the previous well-known"
+    },
+    {
+      "Time_Start": 268.64,
+      "Time_End": 275.03999999999996,
+      "Text": " attacks on certificate validation. Obviously, the security of the authentication system depends on"
+    },
+    {
+      "Time_Start": 275.03999999999996,
+      "Time_End": 281.76,
+      "Text": " the strength of the signature. If we can somehow forge the content of the certificate, but keep"
+    },
+    {
+      "Time_Start": 281.76,
+      "Time_End": 289.12,
+      "Text": " the same signature, we can completely break the authentication process. Also, since x5.x"
+    },
+    {
+      "Time_Start": 289.52,
+      "Time_End": 298.16,
+      "Text": " Also, since x5.x09 format is quite complex, just parsing these data structures can lead to buffer"
+    },
+    {
+      "Time_Start": 298.16,
+      "Time_End": 305.6,
+      "Text": " and heap overflows. In addition, lack of basic constraint checking can also be used to bypass"
+    },
+    {
+      "Time_Start": 305.6,
+      "Time_End": 313.92,
+      "Text": " the authentication process. I've got to say that in my research, I mostly looked at how MTLS is"
+    },
+    {
+      "Time_Start": 313.92,
+      "Time_End": 320.16,
+      "Text": " implemented in applications written in Java. In the Java development kit, most of these attacks"
+    },
+    {
+      "Time_Start": 320.16,
+      "Time_End": 327.6,
+      "Text": " are already mitigated on the language level, so I had to take a different approach. At the same time,"
+    },
+    {
+      "Time_Start": 327.6,
+      "Time_End": 331.44,
+      "Text": " the attacks I'm going to describe are also applicable to other languages."
+    },
+    {
+      "Time_Start": 335.84000000000003,
+      "Time_End": 339.84000000000003,
+      "Text": " All right, let's move on to the attack section. In the first chapter,"
+    },
+    {
+      "Time_Start": 340.40000000000003,
+      "Time_End": 343.04,
+      "Text": " we'll cover improper certificate extraction."
+    },
+    {
+      "Time_Start": 346.32000000000005,
+      "Time_End": 352.00000000000006,
+      "Text": " In real-life applications, developers often need to access the subject name from the certificate"
+    },
+    {
+      "Time_Start": 352.00000000000006,
+      "Time_End": 358.08000000000004,
+      "Text": " presented during the TLS handshake. For example, they may need it for authorization needs to"
+    },
+    {
+      "Time_Start": 358.08000000000004,
+      "Time_End": 367.36,
+      "Text": " understand what is the current username. In Java, you can use sslsession.getPairCertificates method."
+    },
+    {
+      "Time_Start": 368.0,
+      "Time_End": 374.8,
+      "Text": " Interestingly, this method returns an array of certificates, not a single one. Why? Perhaps"
+    },
+    {
+      "Time_Start": 374.8,
+      "Time_End": 382.32,
+      "Text": " because TLS specification defines that clients may send a full chain of certificates, not only one."
+    },
+    {
+      "Time_Start": 383.6,
+      "Time_End": 389.92,
+      "Text": " So, I decided to take a look at how different applications use this API. The most common"
+    },
+    {
+      "Time_Start": 389.92,
+      "Time_End": 395.2,
+      "Text": " approach I've seen is to take only the first certificate from the array and consider it as"
+    },
+    {
+      "Time_Start": 395.2,
+      "Time_End": 404.15999999999997,
+      "Text": " a client certificate. This is correct, as mTLSRFC explicitly says that the sender's certificate"
+    },
+    {
+      "Time_Start": 404.15999999999997,
+      "Time_End": 410.32,
+      "Text": " must come first in the list. At the same time, I discovered some rare cases when applications"
+    },
+    {
+      "Time_Start": 410.32,
+      "Time_End": 416.8,
+      "Text": " disregard this rule and iterate over the array trying to find a certificate that matches some"
+    },
+    {
+      "Time_Start": 416.8,
+      "Time_End": 423.52,
+      "Text": " criteria. This can be dangerous, as the underlying TLS library in Java only verifies the first"
+    },
+    {
+      "Time_Start": 423.52,
+      "Time_End": 432.64,
+      "Text": " certificate from the list. One of these examples was of vulnerability I discovered in KeyClock."
+    },
+    {
+      "Time_Start": 432.64,
+      "Time_End": 440.64,
+      "Text": " KeyClock is a popular authorization server that supports OAuth, SAML, and other authorization"
+    },
+    {
+      "Time_Start": 440.64,
+      "Time_End": 447.68,
+      "Text": " methods, as well as mutual TLS. KeyClock iterates over all certificates in the array, searching for"
+    },
+    {
+      "Time_Start": 447.68,
+      "Time_End": 454.32,
+      "Text": " the one that matches the client ID form parameter. As soon as it found one certificate, it implicitly"
+    },
+    {
+      "Time_Start": 454.32,
+      "Time_End": 462.64,
+      "Text": " trusts it, assuming that its signature has already been checked during the TLS handshake. In reality,"
+    },
+    {
+      "Time_Start": 463.2,
+      "Time_End": 470.24,
+      "Text": " a client can send as many certificates as they want, so the server only verifies the first one."
+    },
+    {
+      "Time_Start": 470.96000000000004,
+      "Time_End": 477.84000000000003,
+      "Text": " A potential attacker can exploit this behavior to authenticate under a different username. It is"
+    },
+    {
+      "Time_Start": 477.84000000000003,
+      "Time_End": 484.0,
+      "Text": " possible to send a list of certificates, where the first one contains one username and properly"
+    },
+    {
+      "Time_Start": 484.0,
+      "Time_End": 490.96000000000004,
+      "Text": " chained to a root CA. The last certificate might be self-signed and belong to a different user."
+    },
+    {
+      "Time_Start": 490.96000000000004,
+      "Time_End": 495.2,
+      "Text": " The client does not even need to provide a valid private key for it."
+    },
+    {
+      "Time_Start": 495.92,
+      "Time_End": 502.32,
+      "Text": " There are a number of endpoints in KeyClock that support MTLS authentication. For exploitation,"
+    },
+    {
+      "Time_Start": 502.32,
+      "Time_End": 507.76,
+      "Text": " we need one that doesn't require any additional factors, such as tokens or secrets."
+    },
+    {
+      "Time_Start": 508.64,
+      "Time_End": 516.96,
+      "Text": " Client Management Register node is a good example, as it mutates users' data. In the first comment,"
+    },
+    {
+      "Time_Start": 516.96,
+      "Time_End": 522.16,
+      "Text": " it's shown how we can normally use this API with MTLS authentication."
+    },
+    {
+      "Time_Start": 522.16,
+      "Time_End": 531.12,
+      "Text": " In the second request, we generate a new self-signed certificate using OpenSSL and add it to the chain."
+    },
+    {
+      "Time_Start": 531.12,
+      "Time_End": 538.0,
+      "Text": " When we send the second curl request, KeyClock will perform this action on behalf of the user"
+    },
+    {
+      "Time_Start": 538.0,
+      "Time_End": 545.52,
+      "Text": " specified in the certificate 2 instead of certificate 1. Therefore, we can mutate data"
+    },
+    {
+      "Time_Start": 546.48,
+      "Time_End": 552.64,
+      "Text": " on the server for any client that supports MTLS."
+    },
+    {
+      "Time_Start": 555.52,
+      "Time_End": 560.0799999999999,
+      "Text": " How to fix that? Easy. Just use the first certificate from the array."
+    },
+    {
+      "Time_Start": 560.64,
+      "Time_End": 566.4,
+      "Text": " That's exactly how KeyClock patched this vulnerability. It's a good example of how"
+    },
+    {
+      "Time_Start": 566.4,
+      "Time_End": 573.1999999999999,
+      "Text": " developers provide methods and interfaces that can be misunderstood or used incorrectly."
+    },
+    {
+      "Time_Start": 576.3199999999999,
+      "Time_End": 582.0,
+      "Text": " Another common scenario for MTLS deployments is when TLS connection is terminated on the"
+    },
+    {
+      "Time_Start": 582.0,
+      "Time_End": 588.72,
+      "Text": " reverse proxy. In this case, the reverse proxy often checks the certificate and forwards it"
+    },
+    {
+      "Time_Start": 588.72,
+      "Time_End": 594.8,
+      "Text": " to a backend server as an additional header. On this slide, you can see a typical engine"
+    },
+    {
+      "Time_Start": 594.8,
+      "Time_End": 601.68,
+      "Text": " configuration to enable MTLS. I've seen a number of systems like that, and in most cases, backend"
+    },
+    {
+      "Time_Start": 601.6800000000001,
+      "Time_End": 610.1600000000001,
+      "Text": " servers do not perform additional validation, trusting the reverse proxy. This behavior is not"
+    },
+    {
+      "Time_Start": 610.1600000000001,
+      "Time_End": 616.6400000000001,
+      "Text": " exploitable straight away, but it's not ideal either. Why? Well, first of all, it means that"
+    },
+    {
+      "Time_Start": 616.6400000000001,
+      "Time_End": 622.96,
+      "Text": " any server in the local network can make requests with the header, so the network segment should be"
+    },
+    {
+      "Time_Start": 622.96,
+      "Time_End": 630.08,
+      "Text": " properly isolated from the traffic coming from outside. Additionally, if your backend or reverse"
+    },
+    {
+      "Time_Start": 630.08,
+      "Time_End": 635.84,
+      "Text": " proxy is affected by a request smuggling vulnerability, its exploitation becomes"
+    },
+    {
+      "Time_Start": 635.84,
+      "Time_End": 642.4000000000001,
+      "Text": " trivial. Over the past few years, we've seen a lot of request and header smuggling vulnerabilities,"
+    },
+    {
+      "Time_Start": 642.4000000000001,
+      "Time_End": 650.8000000000001,
+      "Text": " including the latest CVEs in Apache and Node.js. Be careful when implementing these scenarios"
+    },
+    {
+      "Time_Start": 650.8000000000001,
+      "Time_End": 655.0400000000001,
+      "Text": " and check the certificate signature on all servers if possible."
+    },
+    {
+      "Time_Start": 655.28,
+      "Time_End": 658.9599999999999,
+      "Text": " Moving on to the next chapter, follow the chain where it leads you."
+    },
+    {
+      "Time_Start": 662.0799999999999,
+      "Time_End": 668.0799999999999,
+      "Text": " In large systems, servers may not store all root and intermediate certificates locally,"
+    },
+    {
+      "Time_Start": 668.0799999999999,
+      "Time_End": 674.7199999999999,
+      "Text": " but use an external storage instead. RFC defines the concept of a certificate store,"
+    },
+    {
+      "Time_Start": 675.36,
+      "Time_End": 681.28,
+      "Text": " an interface you can use to lazily access the certificates during chain validation. These"
+    },
+    {
+      "Time_Start": 682.24,
+      "Time_End": 689.1999999999999,
+      "Text": " stores are implemented over different protocols, such as HTTP, LDAP, FTP, or SQL queries."
+    },
+    {
+      "Time_Start": 690.8,
+      "Time_End": 696.64,
+      "Text": " The X.509 format defines some certificate extensions that can contain information where"
+    },
+    {
+      "Time_Start": 696.64,
+      "Time_End": 703.4399999999999,
+      "Text": " to find the issuer NCA certificates. For instance, the authority information access extension"
+    },
+    {
+      "Time_Start": 703.4399999999999,
+      "Time_End": 711.04,
+      "Text": " contains a URL pointing to the issuer's certificate. The authority information access"
+    },
+    {
+      "Time_Start": 711.5999999999999,
+      "Time_End": 717.92,
+      "Text": " extension is used for validation, there is a high chance that you can exploit it to perform an"
+    },
+    {
+      "Time_Start": 718.56,
+      "Time_End": 727.4399999999999,
+      "Text": " SSRF attack. Also, subject, issuer, serial, and their alternative names can be used to construct"
+    },
+    {
+      "Time_Start": 727.4399999999999,
+      "Time_End": 734.56,
+      "Text": " SQL and LDAP queries, leaving options for injection attack. When certificate stores are in use,"
+    },
+    {
+      "Time_Start": 734.5600000000001,
+      "Time_End": 740.48,
+      "Text": " you want to think about these values as insertion points, similar to those ones"
+    },
+    {
+      "Time_Start": 740.48,
+      "Time_End": 745.6800000000001,
+      "Text": " we have in Burp Suite Intruder. And what's really good for attackers,"
+    },
+    {
+      "Time_Start": 746.8000000000001,
+      "Time_End": 750.8800000000001,
+      "Text": " all of these values can be used in queries before the signature is checked."
+    },
+    {
+      "Time_Start": 755.5200000000001,
+      "Time_End": 761.6800000000001,
+      "Text": " To demonstrate an example of this vulnerability, we'll use LDAP third store from the Bouncy Castle"
+    },
+    {
+      "Time_Start": 761.6800000000001,
+      "Time_End": 768.48,
+      "Text": " library. Bouncy Castle is one of the most popular libraries for certificate validation in Java."
+    },
+    {
+      "Time_Start": 768.48,
+      "Time_End": 773.84,
+      "Text": " Here is an example of how you can use this store to build and validate a certificate chain."
+    },
+    {
+      "Time_Start": 775.6,
+      "Time_End": 781.44,
+      "Text": " Under the hood, Bouncy Castle uses a subject field from the certificate to build an LDAP"
+    },
+    {
+      "Time_Start": 781.44,
+      "Time_End": 788.32,
+      "Text": " query. The subject field is inserted in the filter, and as you can imagine, without any escaping."
+    },
+    {
+      "Time_Start": 789.12,
+      "Time_End": 795.6,
+      "Text": " So, if the subject contains any special characters, it can change the syntax of the LDAP query."
+    },
+    {
+      "Time_Start": 795.6,
+      "Time_End": 801.44,
+      "Text": " In most cases, this can be exploited as a blind LDAP query injection. Therefore,"
+    },
+    {
+      "Time_Start": 802.32,
+      "Time_End": 808.48,
+      "Text": " it could be possible to use this vulnerability to extract other fields from the LDAP directory."
+    },
+    {
+      "Time_Start": 808.48,
+      "Time_End": 814.08,
+      "Text": " The exploitation is based on many factors, including whether the application exposes any errors,"
+    },
+    {
+      "Time_Start": 815.0400000000001,
+      "Time_End": 818.48,
+      "Text": " and it also depends on the structure of the LDAP directory."
+    },
+    {
+      "Time_Start": 821.12,
+      "Time_End": 827.76,
+      "Text": " Anyway, whenever you incorporate user-supplied data into LDAP query, special characters should"
+    },
+    {
+      "Time_Start": 827.76,
+      "Time_End": 834.0,
+      "Text": " be properly filtered. That's exactly how this CVE has been patched in the Bouncy Castle code."
+    },
+    {
+      "Time_Start": 835.2,
+      "Time_End": 841.44,
+      "Text": " Next, we'll cover revocation. This controversial topic sparked many debates over the years."
+    },
+    {
+      "Time_Start": 842.32,
+      "Time_End": 848.1600000000001,
+      "Text": " Similar to JSON web tokens, the beauty of certificate chains is that they can be trusted"
+    },
+    {
+      "Time_Start": 848.1600000000001,
+      "Time_End": 853.5200000000001,
+      "Text": " just based on their signature. But what happens if we need to revoke a certificate"
+    },
+    {
+      "Time_Start": 853.5200000000001,
+      "Time_End": 861.36,
+      "Text": " so it can no longer be used? The PKI specification addresses this problem by proposing a special"
+    },
+    {
+      "Time_Start": 861.36,
+      "Time_End": 868.6400000000001,
+      "Text": " store for revoked certificates, accessible via HTTP or LDAP protocols. Certificate verifiers"
+    },
+    {
+      "Time_Start": 869.6,
+      "Time_End": 877.4399999999999,
+      "Text": " can use two different methods, OACP or CRL. Many developers believe that revocation checking"
+    },
+    {
+      "Time_Start": 877.4399999999999,
+      "Time_End": 882.96,
+      "Text": " is absolutely necessary, whereas others urge to avoid it for performance reasons"
+    },
+    {
+      "Time_Start": 882.96,
+      "Time_End": 890.0,
+      "Text": " or use affluent revocation lists. Generally speaking, the store location can be hard-coded"
+    },
+    {
+      "Time_Start": 890.0,
+      "Time_End": 896.4,
+      "Text": " into the application or taken from the certificate itself. There are two certificate extensions used"
+    },
+    {
+      "Time_Start": 896.4,
+      "Time_End": 903.68,
+      "Text": " for that, authority information access and CRL distribution points. Looking at it from the"
+    },
+    {
+      "Time_Start": 903.68,
+      "Time_End": 910.4,
+      "Text": " hacker's point of view, I think it's incredible that the location of the revocation server can"
+    },
+    {
+      "Time_Start": 910.4,
+      "Time_End": 917.68,
+      "Text": " be taken from the certificate. So if application takes URLs relying on extensions to make a"
+    },
+    {
+      "Time_Start": 917.68,
+      "Time_End": 925.04,
+      "Text": " revocation check, it can be abused for SSRF attacks. Sadly for attackers, this normally happens"
+    },
+    {
+      "Time_Start": 925.04,
+      "Time_End": 931.76,
+      "Text": " after the signature checks, but in some cases it's still exploitable. Moreover, the LDAP protocol"
+    },
+    {
+      "Time_Start": 931.76,
+      "Time_End": 942.7199999999999,
+      "Text": " is also supported, at least in Java. Wait, did I hear LDAP in Java? Yes, the standard Java library"
+    },
+    {
+      "Time_Start": 942.7199999999999,
+      "Time_End": 949.28,
+      "Text": " can use JNDI to access revocation locations under some settings. You probably heard that in Java,"
+    },
+    {
+      "Time_Start": 949.36,
+      "Time_End": 953.8399999999999,
+      "Text": " in marshalling, an LDAP lockup response can lead to a remote code execution."
+    },
+    {
+      "Time_Start": 954.64,
+      "Time_End": 960.56,
+      "Text": " A few years back, this problem was reported, but Moritz Bechler and remote code execution"
+    },
+    {
+      "Time_Start": 960.56,
+      "Time_End": 966.88,
+      "Text": " via revocation has been patched in GDK. You can check out his blog post for more details."
+    },
+    {
+      "Time_Start": 968.8,
+      "Time_End": 973.4399999999999,
+      "Text": " In my research, I decided to check if Bouncy Castle library is also affected."
+    },
+    {
+      "Time_Start": 974.0,
+      "Time_End": 980.8000000000001,
+      "Text": " It turned out that Bouncy Castle can use the CRLTP extension and make calls to an LDAP server."
+    },
+    {
+      "Time_Start": 980.8000000000001,
+      "Time_End": 986.6400000000001,
+      "Text": " At the same time, Bouncy Castle only fetches a specific attribute from the LDAP response"
+    },
+    {
+      "Time_Start": 986.6400000000001,
+      "Time_End": 993.6,
+      "Text": " and does not support references. So remote code execution is sadly not possible there."
+    },
+    {
+      "Time_Start": 993.6,
+      "Time_End": 1001.5200000000001,
+      "Text": " HTTP SSRF is still a viable thing though. I also had a quick look at open source projects"
+    },
+    {
+      "Time_Start": 1001.52,
+      "Time_End": 1007.36,
+      "Text": " that support MTLS and perform revocation checking. One of these projects was AperioCAS."
+    },
+    {
+      "Time_Start": 1007.92,
+      "Time_End": 1015.4399999999999,
+      "Text": " It's another popular authentication server that is highly configurable. Administrators of AperioCAS"
+    },
+    {
+      "Time_Start": 1015.4399999999999,
+      "Time_End": 1022.3199999999999,
+      "Text": " can enable the revocation check using the external LDAP server by specifying its address and password"
+    },
+    {
+      "Time_Start": 1022.3199999999999,
+      "Time_End": 1029.2,
+      "Text": " in the settings. If these settings are applied, AperioCAS performs a revocation check for the"
+    },
+    {
+      "Time_Start": 1029.2,
+      "Time_End": 1036.0800000000002,
+      "Text": " certificate, fetching the address from the certificate's CRLTP extension. I was afraid that"
+    },
+    {
+      "Time_Start": 1036.0800000000002,
+      "Time_End": 1042.8,
+      "Text": " this could also lead to remote code execution, but it turned out that AperioCAS uses a custom"
+    },
+    {
+      "Time_Start": 1042.8,
+      "Time_End": 1050.24,
+      "Text": " library for LDAP connection, which does not support external codebases or object factories needed for"
+    },
+    {
+      "Time_Start": 1050.24,
+      "Time_End": 1061.68,
+      "Text": " RCE. When I tested this in AperioCAS, I noticed one interesting behavior. The server prefers LDAP"
+    },
+    {
+      "Time_Start": 1061.68,
+      "Time_End": 1068.0,
+      "Text": " URLs located inside the certificate, instead the one that is configured in the settings. At the"
+    },
+    {
+      "Time_Start": 1068.0,
+      "Time_End": 1075.04,
+      "Text": " same time, AperioCAS still sends a password from the settings. I quickly set up a testing environment"
+    },
+    {
+      "Time_Start": 1075.04,
+      "Time_End": 1081.6,
+      "Text": " and send a self-signed certificate in the header. This certificate has a CRLTP extension with LDAP"
+    },
+    {
+      "Time_Start": 1081.6,
+      "Time_End": 1088.32,
+      "Text": " URL pointing to a Netcat listener. After sending this request to AperioCAS, I managed to receive"
+    },
+    {
+      "Time_Start": 1089.12,
+      "Time_End": 1093.36,
+      "Text": " a request to my Netcat listener with a username and password leaked."
+    },
+    {
+      "Time_Start": 1095.36,
+      "Time_End": 1101.6,
+      "Text": " After reporting this vulnerability, the application developers issued a fix within just one day."
+    },
+    {
+      "Time_Start": 1102.16,
+      "Time_End": 1106.0800000000002,
+      "Text": " They patched it by clearing the login and password from LDAP connection."
+    },
+    {
+      "Time_Start": 1106.96,
+      "Time_End": 1113.7600000000002,
+      "Text": " Therefore, the password leak is no longer possible. But in general, I'd say that using"
+    },
+    {
+      "Time_Start": 1113.7600000000002,
+      "Time_End": 1119.92,
+      "Text": " URLs from CRLTP extension is still dangerous, as it broadens the attack surface."
+    },
+    {
+      "Time_Start": 1121.92,
+      "Time_End": 1128.3200000000002,
+      "Text": " To summarize, when you develop an MTLS system or perform a security assessment, I suggest"
+    },
+    {
+      "Time_Start": 1128.8799999999999,
+      "Time_End": 1135.9199999999998,
+      "Text": " First, pay attention when extracting usernames from the MTLS chain, as the servers only verify"
+    },
+    {
+      "Time_Start": 1135.9199999999998,
+      "Time_End": 1142.0,
+      "Text": " the first certificate in the chain. Second, use certificate stores with caution. It can lead to"
+    },
+    {
+      "Time_Start": 1142.0,
+      "Time_End": 1149.2,
+      "Text": " LDAP and SQL injections. And last but not least, certificate revocation can lead to SSRF or even"
+    },
+    {
+      "Time_Start": 1149.2,
+      "Time_End": 1155.2,
+      "Text": " RCE in the worst case, so it's advised to do the revocation check only after all other checks."
+    },
+    {
+      "Time_Start": 1155.76,
+      "Time_End": 1159.3600000000001,
+      "Text": " And that's it. Thank you for your attention."
+    },
+    {
+      "Time_Start": 1159.3600000000001,
+      "Time_End": 1164.56,
+      "Text": " The full write-up will be available in our blog at GitHub. Bye!"
+    }
+  ]
+}

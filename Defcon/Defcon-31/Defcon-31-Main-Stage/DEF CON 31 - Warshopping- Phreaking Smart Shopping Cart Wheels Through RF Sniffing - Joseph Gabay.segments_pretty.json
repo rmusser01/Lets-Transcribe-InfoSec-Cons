@@ -1,0 +1,2244 @@
+{
+  "segments": [
+    {
+      "Time_Start": 0.0,
+      "Time_End": 3.0,
+      "Text": "This text was transcribed using whisper model: large-v2\n\n So everyone, give a round of applause for Joe."
+    },
+    {
+      "Time_Start": 3.0,
+      "Time_End": 8.0,
+      "Text": " Alright, we're in. Well uh, everyone thanks for coming. Uh it's great to see you all here. Uh my"
+    },
+    {
+      "Time_Start": 13.48,
+      "Time_End": 17.72,
+      "Text": " name's Joseph Gabay and today I'm gonna be talking to you about smart shopping cart"
+    },
+    {
+      "Time_Start": 17.72,
+      "Time_End": 23.86,
+      "Text": " wheels. Uh if this seems familiar, uh I, 2 years ago, uh my first time at DefCon actually, I"
+    },
+    {
+      "Time_Start": 23.86,
+      "Time_End": 28.5,
+      "Text": " gave a presentation about when I first started my work on these. I did a little bit of early"
+    },
+    {
+      "Time_Start": 28.5,
+      "Time_End": 32.36,
+      "Text": " exploration and uh uh found some cool things you could do with them that I'll be talking"
+    },
+    {
+      "Time_Start": 32.36,
+      "Time_End": 37.14,
+      "Text": " about now. But uh this talk is a continuation of that. Uh I found a completely new brand of"
+    },
+    {
+      "Time_Start": 37.14,
+      "Time_End": 42.5,
+      "Text": " wheel. Uh and did a good amount of reverse engineering and I'd like to take you all on that"
+    },
+    {
+      "Time_Start": 42.5,
+      "Time_End": 47.68,
+      "Text": " journey with me. So before I get any further, I wanna give a quick disclaimer, especially"
+    },
+    {
+      "Time_Start": 47.68,
+      "Time_End": 51.379999999999995,
+      "Text": " cause a couple of my coworkers are out in the audience here today. Uh this is a personal"
+    },
+    {
+      "Time_Start": 51.379999999999995,
+      "Time_End": 56.32,
+      "Text": " project. This has all been done on my own personal time, with my own personal equipment, uh"
+    },
+    {
+      "Time_Start": 56.34,
+      "Time_End": 60.88,
+      "Text": " with my own personal curiosity. Uh none of this reflects my employer or anything I do"
+    },
+    {
+      "Time_Start": 60.88,
+      "Time_End": 65.56,
+      "Text": " professionally and uh yeah this is just me doing my thing, trying to have some fun and learn"
+    },
+    {
+      "Time_Start": 65.56,
+      "Time_End": 70.56,
+      "Text": " some stuff. So what this talk is, uh I'm gonna be taking you on the journey that I went on"
+    },
+    {
+      "Time_Start": 72.9,
+      "Time_End": 76.7,
+      "Text": " to reverse engineer this wheel. There's a lot of troubleshooting, there's a couple dead"
+    },
+    {
+      "Time_Start": 76.7,
+      "Time_End": 80.9,
+      "Text": " ends, I'm going to be pulling at some stuff that's oh that's neat but it doesn't go anywhere"
+    },
+    {
+      "Time_Start": 80.9,
+      "Time_End": 85.74000000000001,
+      "Text": " else and that's the nature of reverse engineering. My ultimate goal with this project was"
+    },
+    {
+      "Time_Start": 85.75999999999999,
+      "Time_End": 91.89999999999999,
+      "Text": " to try and defeat and bypass the anti-shoplifting features that Rokitech introduces and I"
+    },
+    {
+      "Time_Start": 91.89999999999999,
+      "Time_End": 96.89999999999999,
+      "Text": " think I got to that point and you know my previous talk was kind of more focused on just"
+    },
+    {
+      "Time_Start": 96.89999999999999,
+      "Time_End": 101.44,
+      "Text": " that. This one's going to be bringing you along on how I did it. We're going to be looking at"
+    },
+    {
+      "Time_Start": 101.44,
+      "Time_End": 105.61999999999999,
+      "Text": " devices for hardware, firmware and security vulnerabilities. We're gonna be playing"
+    },
+    {
+      "Time_Start": 105.61999999999999,
+      "Time_End": 111.66,
+      "Text": " around with debuggers and programmers like PitKits, logic analyzers like Salaze and cool"
+    },
+    {
+      "Time_Start": 111.67999999999999,
+      "Time_End": 116.82,
+      "Text": " software stacks like Ghidra and Audacity do some fun stuff. We're going to instrument a"
+    },
+    {
+      "Time_Start": 116.82,
+      "Time_End": 122.02,
+      "Text": " shopping cart with a bunch of SDRs and go war shopping. We're gonna do some old school audio"
+    },
+    {
+      "Time_Start": 122.02,
+      "Time_End": 127.72,
+      "Text": " freaking. What this talk isn't, this isn't leak hacking, I'm not dropping some hot new zero"
+    },
+    {
+      "Time_Start": 127.72,
+      "Time_End": 132.8,
+      "Text": " days. Uh this isn't an endorsement or instructions on how to shoplift anymore than the"
+    },
+    {
+      "Time_Start": 132.8,
+      "Time_End": 138.6,
+      "Text": " lockpicking village is instructions endorsement on burglary. Uh you know we're hackers, we"
+    },
+    {
+      "Time_Start": 138.62,
+      "Time_End": 142.78,
+      "Text": " talk a lot about security systems and how to defeat and bypass them and a lot of times"
+    },
+    {
+      "Time_Start": 142.78,
+      "Time_End": 147.78,
+      "Text": " that's a purely academic and intellectual exercise and this is what this was for me and uh"
+    },
+    {
+      "Time_Start": 147.78,
+      "Time_End": 151.85999999999999,
+      "Text": " yeah. At the end of this I'm gonna show you how to defeat the security system, you know use"
+    },
+    {
+      "Time_Start": 151.85999999999999,
+      "Time_End": 157.1,
+      "Text": " use that power responsibly. And also this isn't going to be a 100 percent definitive tear"
+    },
+    {
+      "Time_Start": 157.1,
+      "Time_End": 161.26,
+      "Text": " down of how this system works. This is reverse engineering, you know it was limited in"
+    },
+    {
+      "Time_Start": 161.26,
+      "Time_End": 165.54,
+      "Text": " scope. I probably got some things wrong and if there's any Rokitech engineers out there"
+    },
+    {
+      "Time_Start": 165.54,
+      "Time_End": 168.88,
+      "Text": " listening to this you'll be like oh no we didn't do that at all, you got that wrong and yep"
+    },
+    {
+      "Time_Start": 168.88,
+      "Time_End": 174.07999999999998,
+      "Text": " that's the nature of the beast. But at the end of the day I I figured I had to walk out of a"
+    },
+    {
+      "Time_Start": 174.07999999999998,
+      "Time_End": 180.01999999999998,
+      "Text": " shopping center with a out the cart locking up and I consider that a victory. So who am I?"
+    },
+    {
+      "Time_Start": 180.01999999999998,
+      "Time_End": 185.0,
+      "Text": " Uh I'm a hacker, I'm a robotics engineer, I don't know why that's cut off for some reason but"
+    },
+    {
+      "Time_Start": 185.0,
+      "Time_End": 189.29999999999998,
+      "Text": " uh in my previous life I was a robotics engineer uh uh I worked in a lot of startups uh with"
+    },
+    {
+      "Time_Start": 189.29999999999998,
+      "Time_End": 194.7,
+      "Text": " embedded systems and electronics. Uh I jump out of airplanes for fun, I freak shopping"
+    },
+    {
+      "Time_Start": 194.70000000000002,
+      "Time_End": 199.70000000000002,
+      "Text": " carts and uh I really question has anyone ever seen the other side of the moon? And who I'm"
+    },
+    {
+      "Time_Start": 201.98000000000002,
+      "Time_End": 206.14000000000001,
+      "Text": " not. I'm not an expert at some of these things. I'm not a binary reverse engineering expert."
+    },
+    {
+      "Time_Start": 206.14000000000001,
+      "Time_End": 210.92000000000002,
+      "Text": " You know I do pull some code off of uh the microcontroller and I do open up Engadier and look at it."
+    },
+    {
+      "Time_Start": 210.92000000000002,
+      "Time_End": 214.76000000000002,
+      "Text": " It's pretty basic so there isn't a whole lot to do there. You know maybe someone with a sharper"
+    },
+    {
+      "Time_Start": 214.76000000000002,
+      "Time_End": 219.96,
+      "Text": " eye than me could see some stuff that I missed but that wasn't instrumental to getting to the"
+    },
+    {
+      "Time_Start": 219.96,
+      "Time_End": 223.76000000000002,
+      "Text": " end result but I still think that's an important part of the journey to look at. I'm also not a"
+    },
+    {
+      "Time_Start": 223.76,
+      "Time_End": 227.62,
+      "Text": " radio engineer or an electrical engineer and there's equally some stuff I missed there."
+    },
+    {
+      "Time_Start": 227.62,
+      "Time_End": 231.95999999999998,
+      "Text": " Again, I'm also probably not 100 percent correct here so if you see anything that I missed or I"
+    },
+    {
+      "Time_Start": 231.95999999999998,
+      "Time_End": 235.26,
+      "Text": " said anything that's completely wrong, you know I've got my email address at the end of this,"
+    },
+    {
+      "Time_Start": 235.26,
+      "Time_End": 241.23999999999998,
+      "Text": " shoot me an email, I'd I'd love to learn stuff. So I talked about how 2 years ago I I talked"
+    },
+    {
+      "Time_Start": 241.23999999999998,
+      "Time_End": 245.22,
+      "Text": " about these wheels and I want to give a super quick recap. So for those of you who aren't"
+    },
+    {
+      "Time_Start": 245.22,
+      "Time_End": 250.12,
+      "Text": " familiar with security wheels on shopping carts, they're basically a wheel, they're usually on"
+    },
+    {
+      "Time_Start": 250.14000000000001,
+      "Time_End": 254.74,
+      "Text": " either 1 or 2 of the wheels on a shopping cart and they have some mechanism that can lock and"
+    },
+    {
+      "Time_Start": 254.74,
+      "Time_End": 259.08,
+      "Text": " unlock the wheel to immobilize the cart. Uh usually these are used to prevent you know"
+    },
+    {
+      "Time_Start": 259.08,
+      "Time_End": 263.68,
+      "Text": " shopping carts from walking off in urban areas where they're connected directly to sidewalks"
+    },
+    {
+      "Time_Start": 263.68,
+      "Time_End": 267.82,
+      "Text": " but uh some companies advertise that you can have anti-shoplifting features, you know make"
+    },
+    {
+      "Time_Start": 267.82,
+      "Time_End": 272.06,
+      "Text": " sure somebody went through the checkout lane before exiting the store otherwise it'll lock."
+    },
+    {
+      "Time_Start": 272.06,
+      "Time_End": 276.44,
+      "Text": " And that's one of the big things Rokitech advertises and that we'll be looking at. Uh there's"
+    },
+    {
+      "Time_Start": 276.46,
+      "Time_End": 281.02,
+      "Text": " 2 main players in this system, uh gatekeeper systems and I've seen them all across the"
+    },
+    {
+      "Time_Start": 281.02,
+      "Time_End": 285.96,
+      "Text": " country. Uh and then Rokitech which is a smaller player that I've only seen in 1 place, we'll"
+    },
+    {
+      "Time_Start": 285.96,
+      "Time_End": 290.9,
+      "Text": " talk about that in a second. But they have some major commonalities. The big one is that"
+    },
+    {
+      "Time_Start": 290.9,
+      "Time_End": 296.74,
+      "Text": " they have a buried perimeter wire that's broadcasting a radio signal at a very low"
+    },
+    {
+      "Time_Start": 296.74,
+      "Time_End": 301.94,
+      "Text": " frequency. Uh usually around 10 kilohertz and that's a big pain to transmit at, we'll get"
+    },
+    {
+      "Time_Start": 301.94,
+      "Time_End": 306.98,
+      "Text": " into that later but uh it's very similar to those invisible fence systems you'll see for like"
+    },
+    {
+      "Time_Start": 306.98,
+      "Time_End": 313.42,
+      "Text": " dogs. Uh they can receive lock and unlock commands at these ultra low frequency bands as well"
+    },
+    {
+      "Time_Start": 313.42,
+      "Time_End": 317.76,
+      "Text": " as some of them have capabilities of receiving some commands at 2.4 gigahertz which is a"
+    },
+    {
+      "Time_Start": 317.76,
+      "Time_End": 323.94,
+      "Text": " much friendlier band to broadcast at. So they have some locking mechanisms uh these are"
+    },
+    {
+      "Time_Start": 323.94,
+      "Time_End": 329.7,
+      "Text": " both 2 gatekeeper systems wheels, 2 different styles, 1 of them has a internal wheel that"
+    },
+    {
+      "Time_Start": 329.7,
+      "Time_End": 333.9,
+      "Text": " will expand and lock the wheel like a clutch and the other one has a plastic piece that's"
+    },
+    {
+      "Time_Start": 333.9,
+      "Time_End": 337.97999999999996,
+      "Text": " spring loaded and will come down and cover the wheel and prevent it from rolling forward. And"
+    },
+    {
+      "Time_Start": 337.97999999999996,
+      "Time_End": 341.28,
+      "Text": " their Rokitech has a slightly different one, we'll get into that during the mechanical"
+    },
+    {
+      "Time_Start": 341.28,
+      "Time_End": 346.58,
+      "Text": " teardown. But uh this is a picture of the buried wire system that you'll actually see in the"
+    },
+    {
+      "Time_Start": 346.58,
+      "Time_End": 351.52,
+      "Text": " parking lots. Uh a store nearby me was having their parking lot and sidewalk redone and uh"
+    },
+    {
+      "Time_Start": 351.52,
+      "Time_End": 356.15999999999997,
+      "Text": " this wire was nice and exposed for me to uh look at and play with so that was uh pretty"
+    },
+    {
+      "Time_Start": 356.18,
+      "Time_End": 359.92,
+      "Text": " fortuitous but this is what it actually looks like you know underneath that seam you'll see"
+    },
+    {
+      "Time_Start": 359.92,
+      "Time_End": 364.46000000000004,
+      "Text": " in the parking lot. Or inside supermarkets you'll sometimes see them integrated directly"
+    },
+    {
+      "Time_Start": 364.46000000000004,
+      "Time_End": 370.90000000000003,
+      "Text": " underneath like the tile uh you know for like the per check system. And last this is this is"
+    },
+    {
+      "Time_Start": 370.90000000000003,
+      "Time_End": 377.34000000000003,
+      "Text": " the real fun part of the last talk is the methods I used to capture these signals. So these"
+    },
+    {
+      "Time_Start": 377.34000000000003,
+      "Time_End": 382.24,
+      "Text": " signals are in the tens of kilohertz range. That's ultra low frequency you know anything"
+    },
+    {
+      "Time_Start": 382.24,
+      "Time_End": 386.8,
+      "Text": " that we normally deal with is almost always gonna be over at least a megahertz so that's a"
+    },
+    {
+      "Time_Start": 386.8,
+      "Time_End": 391.5,
+      "Text": " couple orders of magnitude lower than we're used to dealing with. And it gets weird dealing"
+    },
+    {
+      "Time_Start": 391.5,
+      "Time_End": 398.12,
+      "Text": " with that. But one of the uh interesting things we'll notice is uh 10 kilohertz is in the"
+    },
+    {
+      "Time_Start": 398.12,
+      "Time_End": 402.98,
+      "Text": " audio range if that were sound waves we'd be able to hear it. So we need some sort of"
+    },
+    {
+      "Time_Start": 402.98,
+      "Time_End": 408.46000000000004,
+      "Text": " electronics, we need some device to convert the radio waves into electronic signals and then"
+    },
+    {
+      "Time_Start": 408.48,
+      "Time_End": 412.42,
+      "Text": " something that can deal with 10 kilohertz electronic signals. I don't know like an audio"
+    },
+    {
+      "Time_Start": 412.42,
+      "Time_End": 418.02000000000004,
+      "Text": " amplifier. So uh to do this I made a loop stick antenna which is a pretty basic kind of"
+    },
+    {
+      "Time_Start": 418.02000000000004,
+      "Time_End": 422.86,
+      "Text": " antenna. They're not very good at transmitting but they're okay at receiving. And uh it's a"
+    },
+    {
+      "Time_Start": 422.86,
+      "Time_End": 428.36,
+      "Text": " ferrite core and some enamel wire both you can grab them off Amazon. Put into a cordless"
+    },
+    {
+      "Time_Start": 428.36,
+      "Time_End": 432.50000000000006,
+      "Text": " drill and uh put on some Netflix and just wind the antenna. You know the more loops you"
+    },
+    {
+      "Time_Start": 432.50000000000006,
+      "Time_End": 437.74,
+      "Text": " have the more pickup you're gonna get. Uh you have to do a little bit of balancing for the"
+    },
+    {
+      "Time_Start": 437.76,
+      "Time_End": 442.46000000000004,
+      "Text": " uh impedance matching and what not. But you can find a ham radio handbook if you really"
+    },
+    {
+      "Time_Start": 442.46000000000004,
+      "Time_End": 448.74,
+      "Text": " wanna deep uh dive deep into that math. And uh you take this and you solder it to a"
+    },
+    {
+      "Time_Start": 448.74,
+      "Time_End": 452.88,
+      "Text": " headphone jack. Uh you'll see there's a little resistor that's hooked up there and what"
+    },
+    {
+      "Time_Start": 452.88,
+      "Time_End": 457.94,
+      "Text": " that does is it actually convinces your phone or audio device that instead of a headphone"
+    },
+    {
+      "Time_Start": 457.94,
+      "Time_End": 464.02,
+      "Text": " jack it's a microphone jack. So you can use this to record. So I had to dig through my old"
+    },
+    {
+      "Time_Start": 464.03999999999996,
+      "Time_End": 469.64,
+      "Text": " electronics bin to find a phone that actually had a headphone jack. Anyone remember those? Uh"
+    },
+    {
+      "Time_Start": 469.64,
+      "Time_End": 475.21999999999997,
+      "Text": " but eventually I found one and uh this is the method that I was using to capture the ultra low"
+    },
+    {
+      "Time_Start": 475.21999999999997,
+      "Time_End": 479.96,
+      "Text": " frequency signals. And we'll talk about how to uh broadcast those later. So I mentioned"
+    },
+    {
+      "Time_Start": 479.96,
+      "Time_End": 484.9,
+      "Text": " there's a new kind of wheel and that's Rokotec. Uh how I came across this involves a funny"
+    },
+    {
+      "Time_Start": 484.9,
+      "Time_End": 491.14,
+      "Text": " story with my dad. Uh so my dad's a weird guy as you can imagine if you know me. Uh and he"
+    },
+    {
+      "Time_Start": 491.15999999999997,
+      "Time_End": 496.26,
+      "Text": " loves collecting curios. He he recently retired so he's had a lot of time to scour eBay and"
+    },
+    {
+      "Time_Start": 496.26,
+      "Time_End": 501.09999999999997,
+      "Text": " local garage sales and uh this is this is his workshop and uh you can see all the fun stuff"
+    },
+    {
+      "Time_Start": 501.09999999999997,
+      "Time_End": 506.64,
+      "Text": " he has. And yes that is a functional phone booth in the back. He's got 3 of them. Uh and he"
+    },
+    {
+      "Time_Start": 506.64,
+      "Time_End": 511.18,
+      "Text": " no he doesn't realize how cool that would make him here. He this is completely unrelated to"
+    },
+    {
+      "Time_Start": 511.18,
+      "Time_End": 515.74,
+      "Text": " hacking. He just thinks they're cool and I love him for that. Uh but anyways so one day I"
+    },
+    {
+      "Time_Start": 515.74,
+      "Time_End": 520.88,
+      "Text": " get a call from my dad. Hey Joe uh I got one of those shopping carts that has the smart"
+    },
+    {
+      "Time_Start": 520.92,
+      "Time_End": 525.9,
+      "Text": " wheel but it's locked. Any chance you could help me unlock it? And I'm like yeah sure this is"
+    },
+    {
+      "Time_Start": 525.9,
+      "Time_End": 532.34,
+      "Text": " my thing I guess. Uh so you know I I head up to my parents house and his garage and I he he"
+    },
+    {
+      "Time_Start": 532.34,
+      "Time_End": 537.34,
+      "Text": " not only has the wheel he has the whole cart attached to it. Uh which I I don't ask where he"
+    },
+    {
+      "Time_Start": 537.34,
+      "Time_End": 542.88,
+      "Text": " gets these things and I I think it's better that way. But uh I take a look at the wheel and"
+    },
+    {
+      "Time_Start": 542.88,
+      "Time_End": 548.38,
+      "Text": " lo and behold it's one I've never seen before. Uh and no wonder you know he's trying to use"
+    },
+    {
+      "Time_Start": 548.38,
+      "Time_End": 551.52,
+      "Text": " the website that has the little buttons to unlock it and it wasn't working and he was"
+    },
+    {
+      "Time_Start": 551.52,
+      "Time_End": 556.02,
+      "Text": " wondering why. I said well of course cause I haven't seen this before. So I uh go and look"
+    },
+    {
+      "Time_Start": 556.02,
+      "Time_End": 560.4,
+      "Text": " it up and uh that's how I discovered Rokitech. So this is what the wheel looks like and you"
+    },
+    {
+      "Time_Start": 560.4,
+      "Time_End": 564.86,
+      "Text": " can see uh some of their marketing material. This was actually I took this from a store, a"
+    },
+    {
+      "Time_Start": 564.86,
+      "Time_End": 570.74,
+      "Text": " grocery store near my house. Uh you know Rokitech focuses a lot more heavily on the anti"
+    },
+    {
+      "Time_Start": 570.74,
+      "Time_End": 574.68,
+      "Text": " shoplifting angle in their technology than gatekeeper systems which is more about"
+    },
+    {
+      "Time_Start": 574.6800000000001,
+      "Time_End": 580.86,
+      "Text": " retaining your carts on property. Uh so just slight different uh uh approaches but"
+    },
+    {
+      "Time_Start": 580.86,
+      "Time_End": 584.6600000000001,
+      "Text": " gatekeeper systems does also advertise that they have a similar system to what we're gonna"
+    },
+    {
+      "Time_Start": 584.6600000000001,
+      "Time_End": 591.36,
+      "Text": " talk about but I haven't ever seen it used. So now my curiosity was piqued and also I had"
+    },
+    {
+      "Time_Start": 591.36,
+      "Time_End": 596.4000000000001,
+      "Text": " to unlock this cart for my dad. Uh so I need to do some research. There's a couple great"
+    },
+    {
+      "Time_Start": 596.4000000000001,
+      "Time_End": 601.74,
+      "Text": " wells of information I go to when I'm trying to do OSINT and uh so publicly inf- publicly"
+    },
+    {
+      "Time_Start": 601.74,
+      "Time_End": 606.6800000000001,
+      "Text": " available information uh FCC filings always a huge goldmine. If you have anything that's"
+    },
+    {
+      "Time_Start": 606.6800000000001,
+      "Time_End": 611.32,
+      "Text": " gonna be broadcasting, receiving, anything with radio stuff, you have to disclose a huge"
+    },
+    {
+      "Time_Start": 611.32,
+      "Time_End": 617.62,
+      "Text": " amount of information to the FCC about the frequencies, the bands and usually it's easier"
+    },
+    {
+      "Time_Start": 617.62,
+      "Time_End": 621.5600000000001,
+      "Text": " just to include like the whole instruction manual cause it's gonna have all the info they"
+    },
+    {
+      "Time_Start": 621.5600000000001,
+      "Time_End": 625.0600000000001,
+      "Text": " want. You know if you care about security you can you know carefully redact it and only"
+    },
+    {
+      "Time_Start": 625.0600000000001,
+      "Time_End": 630.14,
+      "Text": " have what you need but in this case Rokitech had quite a bit of information. Uh what you"
+    },
+    {
+      "Time_Start": 630.14,
+      "Time_End": 633.38,
+      "Text": " can also look at is patent information. You know a lot of times there's very technical"
+    },
+    {
+      "Time_Start": 633.38,
+      "Time_End": 638.14,
+      "Text": " descriptions of how systems work because that's what a patent is. Uh and in return for that"
+    },
+    {
+      "Time_Start": 638.14,
+      "Time_End": 643.06,
+      "Text": " prote- disclosure you get protection but disclosure is disclosure and that can tell us a lot."
+    },
+    {
+      "Time_Start": 643.06,
+      "Time_End": 648.12,
+      "Text": " And lastly is marketing information. Companies tell us a lot about how things work when"
+    },
+    {
+      "Time_Start": 648.12,
+      "Time_End": 652.4,
+      "Text": " they're trying to get us to buy things. And uh we'll talk about what we found there in the"
+    },
+    {
+      "Time_Start": 652.4,
+      "Time_End": 656.96,
+      "Text": " next couple slides but uh then afterwards for further research you have to do some field"
+    },
+    {
+      "Time_Start": 656.96,
+      "Time_End": 662.0600000000001,
+      "Text": " research and get your hands dirty. So that's physical disassembly, taking RF captures and"
+    },
+    {
+      "Time_Start": 662.0600000000001,
+      "Time_End": 666.9000000000001,
+      "Text": " some reverse engineering. So in terms of marketing material uh uh this is from one of their"
+    },
+    {
+      "Time_Start": 666.9000000000001,
+      "Time_End": 671.24,
+      "Text": " brochures and this looks pretty standard and doesn't seem like it has a lot but it has a"
+    },
+    {
+      "Time_Start": 671.24,
+      "Time_End": 676.4000000000001,
+      "Text": " couple things that stand out. One uh it claims that it has an RF receiver that can up and"
+    },
+    {
+      "Time_Start": 676.4000000000001,
+      "Time_End": 680.62,
+      "Text": " download data. So that immediately people are like alright what data are they uploading? What"
+    },
+    {
+      "Time_Start": 680.62,
+      "Time_End": 685.32,
+      "Text": " data are they you know recording? Are they cause you could be tracking alright where is this"
+    },
+    {
+      "Time_Start": 685.34,
+      "Time_End": 690.94,
+      "Text": " cart going in the store? You could be tracking shopping habits etc. Uh so that piqued my uh"
+    },
+    {
+      "Time_Start": 690.94,
+      "Time_End": 696.98,
+      "Text": " interest and in terms of thinking about some of the design assumptions, it's also battery"
+    },
+    {
+      "Time_Start": 696.98,
+      "Time_End": 702.5,
+      "Text": " powered and it lasts very long. Uh that seems a little silly but what that tells me is it's a"
+    },
+    {
+      "Time_Start": 702.5,
+      "Time_End": 707.0,
+      "Text": " sealed battery system, it's not meant to be serviced or easily replaced very often. So it's"
+    },
+    {
+      "Time_Start": 707.0,
+      "Time_End": 712.7,
+      "Text": " probably going to be designed and optimized around saving power rather than say security"
+    },
+    {
+      "Time_Start": 712.72,
+      "Time_End": 718.22,
+      "Text": " because you know if you're doing encryption every time you send a signal, that's a lot of"
+    },
+    {
+      "Time_Start": 718.22,
+      "Time_End": 724.76,
+      "Text": " CPU time and if you only have that little unrechargeable battery, that's life. So you see a"
+    },
+    {
+      "Time_Start": 724.76,
+      "Time_End": 730.6400000000001,
+      "Text": " lot of design decisions and a lot of security decisions get made and eschewed for other"
+    },
+    {
+      "Time_Start": 730.6400000000001,
+      "Time_End": 735.38,
+      "Text": " technical design reasons and that's a big thing that you can look at in reverse engineering."
+    },
+    {
+      "Time_Start": 735.38,
+      "Time_End": 740.38,
+      "Text": " So moving on to the FCC filings uh so the wheel itself had a FCC ID number on it and the first"
+    },
+    {
+      "Time_Start": 742.72,
+      "Time_End": 748.4200000000001,
+      "Text": " 3 or 5 letters of that are actually common to the company that makes it. So you can punch in"
+    },
+    {
+      "Time_Start": 748.4200000000001,
+      "Time_End": 753.9200000000001,
+      "Text": " that first 5 and get a list of all of the FCC filings that Rokitech has ever made. So from"
+    },
+    {
+      "Time_Start": 753.9200000000001,
+      "Time_End": 758.3000000000001,
+      "Text": " this you can pivot to seeing stuff like this little box here which is what they attach to the"
+    },
+    {
+      "Time_Start": 758.3000000000001,
+      "Time_End": 762.8000000000001,
+      "Text": " checkout counter and when you the payment goes through it sends the signal out and that's"
+    },
+    {
+      "Time_Start": 762.8000000000001,
+      "Time_End": 768.74,
+      "Text": " what tells the cart you're allowed to leave. So this is the FCC filing for it and I've taken"
+    },
+    {
+      "Time_Start": 768.74,
+      "Time_End": 774.28,
+      "Text": " out a couple snippets of it. Uh the big part it has uh a couple information up above there it"
+    },
+    {
+      "Time_Start": 774.28,
+      "Time_End": 779.5600000000001,
+      "Text": " talks about you know the 2.4 gigahertz of signal, the B signal it emits and it also talks a"
+    },
+    {
+      "Time_Start": 779.5600000000001,
+      "Time_End": 785.8,
+      "Text": " little bit about the test procedure. Now this is useful for the 2.4 gigahertz but I also"
+    },
+    {
+      "Time_Start": 785.8,
+      "Time_End": 790.64,
+      "Text": " found the one for the box that actually connects to the buried loop wires and sends out all"
+    },
+    {
+      "Time_Start": 790.64,
+      "Time_End": 796.1,
+      "Text": " of those signals and uh it tells us right there the exact frequency that it's using, 8.13"
+    },
+    {
+      "Time_Start": 796.1,
+      "Time_End": 802.7,
+      "Text": " kilohertz and it also tells us that there's 3 different 8.13 kilohertz signals, the A"
+    },
+    {
+      "Time_Start": 802.7,
+      "Time_End": 808.28,
+      "Text": " signal, the C signal and the H signal. It also tells us a little bit if the relevant shopping"
+    },
+    {
+      "Time_Start": 808.28,
+      "Time_End": 813.36,
+      "Text": " cart casters receive 2 A signals and lock. So alright if it gets 2 of those signals it'll"
+    },
+    {
+      "Time_Start": 813.36,
+      "Time_End": 817.76,
+      "Text": " lock, that's probably the one at the entrance of it and we can start figuring out how this"
+    },
+    {
+      "Time_Start": 817.76,
+      "Time_End": 821.9,
+      "Text": " works and later on we'll turn this into a flow chart and start looking at how we can bypass"
+    },
+    {
+      "Time_Start": 821.9,
+      "Time_End": 826.9,
+      "Text": " it. So I've talked about loop stick antennas, I've talked about the frequency, how are we going"
+    },
+    {
+      "Time_Start": 829.28,
+      "Time_End": 835.4399999999999,
+      "Text": " to actually capture and process these? So we can do this in the audio frequency, we can use a"
+    },
+    {
+      "Time_Start": 835.4399999999999,
+      "Time_End": 840.52,
+      "Text": " loop stick antenna to capture it and we can actually because it just comes out as an MP3"
+    },
+    {
+      "Time_Start": 840.52,
+      "Time_End": 846.16,
+      "Text": " file and those radio waves get encoded as sound, we can open up an Audacity like and just"
+    },
+    {
+      "Time_Start": 846.16,
+      "Time_End": 851.76,
+      "Text": " treat it as a regular sound file and then we can play it back as a radio file. So we have all"
+    },
+    {
+      "Time_Start": 851.76,
+      "Time_End": 857.3,
+      "Text": " the parts we need, it's time to go war carting. So this is my little setup, I've got my laptop"
+    },
+    {
+      "Time_Start": 857.3,
+      "Time_End": 862.7,
+      "Text": " here, I've got a SDR to capture some of the signals and I've got a loop stick antenna connected"
+    },
+    {
+      "Time_Start": 862.7,
+      "Time_End": 867.9399999999999,
+      "Text": " to my phone, a little dab of hot glue so nothing comes out cause uh 3.5 millimeter headphone"
+    },
+    {
+      "Time_Start": 867.9399999999999,
+      "Time_End": 873.38,
+      "Text": " jacks did have some flaws. Uh can't do this with Bluetooth though sadly. But anyway so I had"
+    },
+    {
+      "Time_Start": 873.38,
+      "Time_End": 879.38,
+      "Text": " this all running on a audio recorder app and I had a GQRX recording from the SDR for the"
+    },
+    {
+      "Time_Start": 879.4,
+      "Time_End": 886.28,
+      "Text": " uh megahertz and gigahertz signals and uh I put this all into my war cart and you can see the uh"
+    },
+    {
+      "Time_Start": 886.28,
+      "Time_End": 890.48,
+      "Text": " the smart wheel in the corner there and uh just put my backpack down in there, you know"
+    },
+    {
+      "Time_Start": 890.48,
+      "Time_End": 894.98,
+      "Text": " completely innocent, it's where I keep my reusable shopping bags and my reusable shopping SDRs"
+    },
+    {
+      "Time_Start": 894.98,
+      "Time_End": 902.0,
+      "Text": " and all the important stuff there. Uh so what my plan was, my plan was to go into this"
+    },
+    {
+      "Time_Start": 902.0,
+      "Time_End": 906.56,
+      "Text": " grocery store, engineer a situation in which my cart would lock, you know completely"
+    },
+    {
+      "Time_Start": 906.58,
+      "Time_End": 912.6600000000001,
+      "Text": " innocently, feign ignorance and wait for the kind clerk to come up and with a remote unlock"
+    },
+    {
+      "Time_Start": 912.6600000000001,
+      "Time_End": 916.82,
+      "Text": " the cart for me and at which point I would capture a copy of that unlock signal and I'd have"
+    },
+    {
+      "Time_Start": 916.82,
+      "Time_End": 921.36,
+      "Text": " what I need. Uh with the gatekeeper system thankfully uh uh I was able to buy a couple of the"
+    },
+    {
+      "Time_Start": 921.36,
+      "Time_End": 927.1,
+      "Text": " remotes the stores have uh on eBay. With Rokitech being a bit more obscure I wasn't able"
+    },
+    {
+      "Time_Start": 927.1,
+      "Time_End": 932.5400000000001,
+      "Text": " to so I had to go and find these signals a different way. So that was the method and uh it"
+    },
+    {
+      "Time_Start": 932.56,
+      "Time_End": 937.5,
+      "Text": " worked. So I went in uh used the Coinstar machine for a bit, oh no I should probably get a"
+    },
+    {
+      "Time_Start": 937.5,
+      "Time_End": 941.54,
+      "Text": " bigger cart before I go shopping and went back to like the little cart corral area and the"
+    },
+    {
+      "Time_Start": 941.54,
+      "Time_End": 945.8399999999999,
+      "Text": " cart locked and the alarms went off and uh the store clerk came rushing out, super"
+    },
+    {
+      "Time_Start": 945.8399999999999,
+      "Time_End": 950.8399999999999,
+      "Text": " apologetic and I was like no it's okay I promise. Uh but anyways I got it. So this is, you"
+    },
+    {
+      "Time_Start": 953.88,
+      "Time_End": 957.48,
+      "Text": " can see there's a couple different bursts but towards the right there that's uh what the"
+    },
+    {
+      "Time_Start": 957.48,
+      "Time_End": 961.36,
+      "Text": " unlock signal was and we're gonna clean that up in a little bit and look at that a bit"
+    },
+    {
+      "Time_Start": 961.38,
+      "Time_End": 966.48,
+      "Text": " closer but uh as a result of this little war shopping experience I got a good amount of"
+    },
+    {
+      "Time_Start": 966.48,
+      "Time_End": 972.32,
+      "Text": " signals. So I got a copy of, there's a perimeter lock signal around the parking lot itself"
+    },
+    {
+      "Time_Start": 972.32,
+      "Time_End": 976.7,
+      "Text": " so if you try to take the cart out of there the cart will just lock automatically. There's"
+    },
+    {
+      "Time_Start": 976.7,
+      "Time_End": 982.0600000000001,
+      "Text": " the arming lock signal which is at the entrance of the shopping area so you take it, bring"
+    },
+    {
+      "Time_Start": 982.0600000000001,
+      "Time_End": 986.24,
+      "Text": " it into the market, it gets armed and then if you try to bring it out again it'll lock."
+    },
+    {
+      "Time_Start": 986.26,
+      "Time_End": 991.5600000000001,
+      "Text": " There's obviously the unlock signal which can unlock a locked cart. There's a megahertz"
+    },
+    {
+      "Time_Start": 991.5600000000001,
+      "Time_End": 996.76,
+      "Text": " level alarm mute that can mute the alarm uh uh once it gets set to that Intellibox we just"
+    },
+    {
+      "Time_Start": 996.76,
+      "Time_End": 1002.04,
+      "Text": " saw. And then there's the per check signal and that per check signal is what the uh uh"
+    },
+    {
+      "Time_Start": 1002.04,
+      "Time_End": 1007.24,
+      "Text": " checkout counter is sending to the wheel to say hey it's been paid for if you once you get"
+    },
+    {
+      "Time_Start": 1007.24,
+      "Time_End": 1012.24,
+      "Text": " the uh exit signal you know don't lock. Now you can see here in GQRX I did capture a copy"
+    },
+    {
+      "Time_Start": 1012.82,
+      "Time_End": 1017.82,
+      "Text": " of the 2.4 gigahertz per check signal. Uh I'm not gonna go too deep into that for reasons"
+    },
+    {
+      "Time_Start": 1020.42,
+      "Time_End": 1025.06,
+      "Text": " I'll talk about in a second. Uh there actually wasn't a whole lot happening at 2.4 gigahertz"
+    },
+    {
+      "Time_Start": 1025.06,
+      "Time_End": 1030.6,
+      "Text": " but this signal is also repeated at the kilohertz frequency and that's a lot more useful"
+    },
+    {
+      "Time_Start": 1030.6,
+      "Time_End": 1035.54,
+      "Text": " for what we're going to do. Uh both because it's paradoxically easier to transmit at"
+    },
+    {
+      "Time_Start": 1035.54,
+      "Time_End": 1041.48,
+      "Text": " kilohertz for what we're gonna do and because a gigahertz capable SDR is slightly"
+    },
+    {
+      "Time_Start": 1041.52,
+      "Time_End": 1045.78,
+      "Text": " annoyingly expensive. You know you have to get a hack RF and you know it's you you can't get"
+    },
+    {
+      "Time_Start": 1045.78,
+      "Time_End": 1051.8,
+      "Text": " that high with the uh real cheap SDRs. So this is what the unlock signal looks like. It's a"
+    },
+    {
+      "Time_Start": 1051.8,
+      "Time_End": 1057.8600000000001,
+      "Text": " 8.15 kilohertz tone. Uh it looks like it's kinda broken up a little bit but uh in Audacity I"
+    },
+    {
+      "Time_Start": 1057.8600000000001,
+      "Time_End": 1062.4,
+      "Text": " recreated it just from a pure tone and it was just a solid noise and that consistently"
+    },
+    {
+      "Time_Start": 1062.4,
+      "Time_End": 1067.78,
+      "Text": " unlocks the wheel so that's uh that appears to be what it's listening for. The arming signal"
+    },
+    {
+      "Time_Start": 1067.78,
+      "Time_End": 1072.78,
+      "Text": " is uh again at 8.15 kilohertz but it's 50 millisecond length pulses at a 33% duty cycle. So"
+    },
+    {
+      "Time_Start": 1075.58,
+      "Time_End": 1080.56,
+      "Text": " it's just kind of pulsing that. And you're gonna notice uh all of these signals are pretty"
+    },
+    {
+      "Time_Start": 1080.56,
+      "Time_End": 1086.8999999999999,
+      "Text": " basic. You know they're either solid tones, pulses or very basic shifts. And I'm gonna talk"
+    },
+    {
+      "Time_Start": 1086.8999999999999,
+      "Time_End": 1090.8999999999999,
+      "Text": " about this at the very end when I speculate to some of their design decisions but I I think"
+    },
+    {
+      "Time_Start": 1090.8999999999999,
+      "Time_End": 1096.18,
+      "Text": " this is a very intentional design because it's easy to do with low processing power. The"
+    },
+    {
+      "Time_Start": 1096.18,
+      "Time_End": 1101.04,
+      "Text": " cost is security and that's gonna let us do some fun things later but uh this is the lock"
+    },
+    {
+      "Time_Start": 1101.04,
+      "Time_End": 1106.04,
+      "Text": " signal. This is a 7 kilohertz pulse, 30 milliseconds with a 50% duty cycle. And then uh this is"
+    },
+    {
+      "Time_Start": 1108.92,
+      "Time_End": 1113.16,
+      "Text": " the one that I really wanted to get, the per check signal. So you can see there's a couple"
+    },
+    {
+      "Time_Start": 1113.16,
+      "Time_End": 1118.0,
+      "Text": " things I actually uh uh checked out, bought a pack of gum to do it again so I could see if"
+    },
+    {
+      "Time_Start": 1118.0,
+      "Time_End": 1122.24,
+      "Text": " there was any difference you know between subsequent ones and the answer is no. And if we uh"
+    },
+    {
+      "Time_Start": 1122.26,
+      "Time_End": 1127.1,
+      "Text": " adjust the contrast a bit and zoom in we can see what that looks like. Uh it might be a little"
+    },
+    {
+      "Time_Start": 1127.1,
+      "Time_End": 1131.98,
+      "Text": " hard if you're not used to reading spectrograms but uh what you can see is there's a couple"
+    },
+    {
+      "Time_Start": 1131.98,
+      "Time_End": 1136.54,
+      "Text": " lines that are parallel and partway through they dip down a little bit and then go back up."
+    },
+    {
+      "Time_Start": 1136.54,
+      "Time_End": 1141.28,
+      "Text": " And that's kind of repeated like a ladder across a bunch of different frequencies. So what"
+    },
+    {
+      "Time_Start": 1141.28,
+      "Time_End": 1146.28,
+      "Text": " this is it's a tone and I'm not sure what frequency it was originally intended to be at."
+    },
+    {
+      "Time_Start": 1146.28,
+      "Time_End": 1151.26,
+      "Text": " Things can get a little weird with harmonics but it's a frequency. It drops down by 250"
+    },
+    {
+      "Time_Start": 1151.28,
+      "Time_End": 1156.28,
+      "Text": " hertz, goes back up. And uh that is the signal that it's allowed to leave. And now if I can I"
+    },
+    {
+      "Time_Start": 1159.52,
+      "Time_End": 1166.2,
+      "Text": " actually have what that sounds like uh if you you know this was a recreation of it so I"
+    },
+    {
+      "Time_Start": 1166.2,
+      "Time_End": 1169.74,
+      "Text": " cleaned it up a lot. It was very very faint in the original audio but if you take that"
+    },
+    {
+      "Time_Start": 1169.74,
+      "Time_End": 1172.74,
+      "Text": " pattern and you uh retune it it sounds like this."
+    },
+    {
+      "Time_Start": 1172.86,
+      "Time_End": 1177.86,
+      "Text": " And that's all uh it takes. Okay. That's enough. Uh and that's all it takes to unlock the"
+    },
+    {
+      "Time_Start": 1184.04,
+      "Time_End": 1191.04,
+      "Text": " shopping cart. So let's get a little freaky. And for those of you uh unfamiliar with what"
+    },
+    {
+      "Time_Start": 1191.04,
+      "Time_End": 1196.32,
+      "Text": " freaking is it refers back to uh a famous hacker John Draper who figured out that you could"
+    },
+    {
+      "Time_Start": 1196.32,
+      "Time_End": 1201.76,
+      "Text": " use the toy plastic whistle in a Captain Crunch cereal box. If you played it into an old"
+    },
+    {
+      "Time_Start": 1201.78,
+      "Time_End": 1206.14,
+      "Text": " school pay phone it was the right frequency as some of the control codes and it would let"
+    },
+    {
+      "Time_Start": 1206.14,
+      "Time_End": 1212.52,
+      "Text": " you basically access admin mode. And so freaking is kind of one of those fun little you know"
+    },
+    {
+      "Time_Start": 1212.52,
+      "Time_End": 1218.16,
+      "Text": " using unconventional signal methods to get control that you shouldn't have. And I I think"
+    },
+    {
+      "Time_Start": 1218.16,
+      "Time_End": 1224.0,
+      "Text": " this is adjacent enough to it where uh uh we can call it that. So a couple things let us do"
+    },
+    {
+      "Time_Start": 1224.0,
+      "Time_End": 1228.5,
+      "Text": " this really easily. These signals lack any sort of authentication or security. It's the same"
+    },
+    {
+      "Time_Start": 1228.54,
+      "Time_End": 1233.64,
+      "Text": " signal each time. There's no rolling code. Nothing gets incremented. It's the same each day."
+    },
+    {
+      "Time_Start": 1233.64,
+      "Time_End": 1239.58,
+      "Text": " There's no time stamping. Uh and again this was probably done because all of those things"
+    },
+    {
+      "Time_Start": 1239.58,
+      "Time_End": 1244.3,
+      "Text": " are computationally expensive and every processor cycle takes a couple joules and you have a"
+    },
+    {
+      "Time_Start": 1244.3,
+      "Time_End": 1248.52,
+      "Text": " limited amount of those in your lifetime and you know if you can make the difference"
+    },
+    {
+      "Time_Start": 1248.52,
+      "Time_End": 1253.54,
+      "Text": " between a year uh a wheel that lasts 2 years in the field versus one that lasts 5 years"
+    },
+    {
+      "Time_Start": 1253.56,
+      "Time_End": 1259.22,
+      "Text": " that's huge from a marketing perspective and you know unfortunately a fact that's not uh at"
+    },
+    {
+      "Time_Start": 1259.22,
+      "Time_End": 1264.5,
+      "Text": " heart to people who aren't in this room is security isn't number one. You know there's so"
+    },
+    {
+      "Time_Start": 1264.5,
+      "Time_End": 1269.5,
+      "Text": " many other business factors that go into these design decisions and uh a lot of times"
+    },
+    {
+      "Time_Start": 1269.5,
+      "Time_End": 1273.2,
+      "Text": " security gets put in the wayside. You know I don't think their threat model here was super"
+    },
+    {
+      "Time_Start": 1273.2,
+      "Time_End": 1277.78,
+      "Text": " sophisticated. I don't think they expected some random nerd to get real curious and reverse"
+    },
+    {
+      "Time_Start": 1277.78,
+      "Time_End": 1282.82,
+      "Text": " engineer it so I think it could be forgiven but you know you can see the impact of other"
+    },
+    {
+      "Time_Start": 1282.82,
+      "Time_End": 1287.6,
+      "Text": " factors in design decisions into the security of a system and you know in my day job when I"
+    },
+    {
+      "Time_Start": 1287.6,
+      "Time_End": 1292.26,
+      "Text": " do assessments of commercial devices you see this a lot more and it's a lot more"
+    },
+    {
+      "Time_Start": 1292.26,
+      "Time_End": 1298.3,
+      "Text": " pronounced. You know you can start to see corporate politics in in security decisions. So"
+    },
+    {
+      "Time_Start": 1298.3,
+      "Time_End": 1302.1799999999998,
+      "Text": " when we're talking about freaking these wheels we need to talk briefly about what parasitic"
+    },
+    {
+      "Time_Start": 1302.1799999999998,
+      "Time_End": 1307.1799999999998,
+      "Text": " EMF is. So whenever you're putting current through a wire you're creating a magnetic and a"
+    },
+    {
+      "Time_Start": 1307.6200000000001,
+      "Time_End": 1314.48,
+      "Text": " radio field. They're kind of the same thing it's a whole whole physics thing but basically you"
+    },
+    {
+      "Time_Start": 1314.48,
+      "Time_End": 1320.8200000000002,
+      "Text": " put current through a wire you're creating radio waves. Uh and normally that's a bad thing."
+    },
+    {
+      "Time_Start": 1320.8200000000002,
+      "Time_End": 1325.4,
+      "Text": " You know you're putting energy into the air that's not going into the thing you want it to and"
+    },
+    {
+      "Time_Start": 1325.4,
+      "Time_End": 1330.1000000000001,
+      "Text": " uh in the case of a speaker coil you know that's energy that's radio waves just a tiny amount"
+    },
+    {
+      "Time_Start": 1330.1000000000001,
+      "Time_End": 1335.6000000000001,
+      "Text": " but that's not going to you know moving your membrane and creating sound. But in our case"
+    },
+    {
+      "Time_Start": 1335.6000000000001,
+      "Time_End": 1341.2,
+      "Text": " since we're trying to transmit a signal at the audio range when we play an audio file the"
+    },
+    {
+      "Time_Start": 1341.2,
+      "Time_End": 1347.7400000000002,
+      "Text": " parasitic EMF is also in the kilohertz range. So if we play the right audio file through our"
+    },
+    {
+      "Time_Start": 1347.7400000000002,
+      "Time_End": 1352.64,
+      "Text": " speaker at the at a loud enough volume and hold it next to one of these wheels we can control"
+    },
+    {
+      "Time_Start": 1352.64,
+      "Time_End": 1358.7800000000002,
+      "Text": " the wheels and send the lock and unlock signals and that's what we're going to be doing. So I"
+    },
+    {
+      "Time_Start": 1358.7800000000002,
+      "Time_End": 1363.1200000000001,
+      "Text": " had this successfully working with the gatekeeper systems wheels and uh uh the website I'm"
+    },
+    {
+      "Time_Start": 1363.14,
+      "Time_End": 1367.88,
+      "Text": " going to link to at the end uh has buttons you can just push play for lock and unlock and it"
+    },
+    {
+      "Time_Start": 1367.88,
+      "Time_End": 1371.0800000000002,
+      "Text": " plays the little audio and you hold it up to the wheel and uh I'll have a demo in the physical"
+    },
+    {
+      "Time_Start": 1371.0800000000002,
+      "Time_End": 1375.8600000000001,
+      "Text": " security village if uh people want to try it themselves. But uh I was having inconsistent"
+    },
+    {
+      "Time_Start": 1375.8600000000001,
+      "Time_End": 1381.1000000000001,
+      "Text": " results with these Rokitech wheels and I couldn't figure out why. So I needed to go deeper"
+    },
+    {
+      "Time_Start": 1381.1000000000001,
+      "Time_End": 1386.2600000000002,
+      "Text": " and uh the only way to do it was physical disassembly. And I have no idea why these things"
+    },
+    {
+      "Time_Start": 1386.2600000000002,
+      "Time_End": 1392.2800000000002,
+      "Text": " were on eBay but I'm not complaining. Uh so I got a couple samples that I could uh uh tear"
+    },
+    {
+      "Time_Start": 1392.3,
+      "Time_End": 1397.1399999999999,
+      "Text": " down uh destructively if I needed to and really dive into it. So now it's time to get into"
+    },
+    {
+      "Time_Start": 1397.1399999999999,
+      "Time_End": 1404.18,
+      "Text": " reverse engineering. And uh this is where uh uh the the concept of scope comes in. You know"
+    },
+    {
+      "Time_Start": 1404.18,
+      "Time_End": 1409.18,
+      "Text": " this is a hobby project. Whenever you're reverse engineering something there's near infinite"
+    },
+    {
+      "Time_Start": 1409.18,
+      "Time_End": 1414.32,
+      "Text": " scope available. You can go as deep as you want and deep as you have time for. Uh and when"
+    },
+    {
+      "Time_Start": 1414.32,
+      "Time_End": 1417.7,
+      "Text": " you're reverse engineering you need to carefully select that scope. You know there were"
+    },
+    {
+      "Time_Start": 1417.72,
+      "Time_End": 1422.96,
+      "Text": " some things that I found was a dead end and I I you know left them as it was. But if I wanted"
+    },
+    {
+      "Time_Start": 1422.96,
+      "Time_End": 1426.8600000000001,
+      "Text": " to I could have gone a lot deeper. You know there's a couple mystery chips that I was like"
+    },
+    {
+      "Time_Start": 1426.8600000000001,
+      "Time_End": 1431.9,
+      "Text": " alright that's what this probably is. And I could have fully traced out the PCB and made more"
+    },
+    {
+      "Time_Start": 1431.9,
+      "Time_End": 1436.98,
+      "Text": " educated guesses but I didn't because I didn't want to and that's okay. That wasn't in the"
+    },
+    {
+      "Time_Start": 1436.98,
+      "Time_End": 1442.42,
+      "Text": " scope that I set for this project. Uh you know reverse engineering can be sometimes like"
+    },
+    {
+      "Time_Start": 1442.42,
+      "Time_End": 1445.82,
+      "Text": " looking at some some footprints and trying to figure out what the person had for lunch. You"
+    },
+    {
+      "Time_Start": 1445.84,
+      "Time_End": 1448.8799999999999,
+      "Text": " know you're looking at some weird things and trying to intuit something completely"
+    },
+    {
+      "Time_Start": 1448.8799999999999,
+      "Time_End": 1454.1799999999998,
+      "Text": " orthogonal and if you're good sometimes you can. And uh it wouldn't be a presentation that I"
+    },
+    {
+      "Time_Start": 1454.1799999999998,
+      "Time_End": 1459.96,
+      "Text": " give if I didn't sneak in a Terry Pratchett quote. Uh and I I think this really speaks to the"
+    },
+    {
+      "Time_Start": 1459.96,
+      "Time_End": 1465.2,
+      "Text": " heart of reverse engineering is what happens to people who ask too many questions? They"
+    },
+    {
+      "Time_Start": 1465.2,
+      "Time_End": 1470.2,
+      "Text": " need answers and it serves them right. And uh we got some answers. So I got this wheel and I"
+    },
+    {
+      "Time_Start": 1470.32,
+      "Time_End": 1476.16,
+      "Text": " started tearing it down and mechanically it it's pretty similar to other wheels. You know it"
+    },
+    {
+      "Time_Start": 1476.16,
+      "Time_End": 1481.46,
+      "Text": " has a battery compartment, a sealed PCB enclosure, uh a sub mechanism to lock it. You know"
+    },
+    {
+      "Time_Start": 1481.46,
+      "Time_End": 1485.54,
+      "Text": " you have a little locking latch that's controlled by a pawl and that pawl rotates, releases"
+    },
+    {
+      "Time_Start": 1485.54,
+      "Time_End": 1490.24,
+      "Text": " that latch and then it interferes with that uh internal uh wheel and prevents the wheel from"
+    },
+    {
+      "Time_Start": 1490.24,
+      "Time_End": 1496.68,
+      "Text": " spinning. Not nothing too crazy. If we look into that sealed PCB area we get to the circuit"
+    },
+    {
+      "Time_Start": 1496.7,
+      "Time_End": 1501.3400000000001,
+      "Text": " board, the real area of interest. So we've got that inductor uh you know that's gonna be the"
+    },
+    {
+      "Time_Start": 1501.3400000000001,
+      "Time_End": 1506.38,
+      "Text": " kilohertz antenna. It's basically the loop stick antenna that I made except it has much"
+    },
+    {
+      "Time_Start": 1506.38,
+      "Time_End": 1511.92,
+      "Text": " better amplifier equipment designed by a real engineer. Uh we see that underneath it there is a"
+    },
+    {
+      "Time_Start": 1511.92,
+      "Time_End": 1516.66,
+      "Text": " missing chip footprint. That's gonna be a lot of fun in a couple seconds. Uh we see the main"
+    },
+    {
+      "Time_Start": 1516.66,
+      "Time_End": 1521.66,
+      "Text": " microcontroller, a PIC a PIC18F23K20. Uh of note is this chip doesn't have 2.4 gigahertz"
+    },
+    {
+      "Time_Start": 1522.66,
+      "Time_End": 1527.66,
+      "Text": " capability. Uh so the 2.4 gigahertz capability they're advertising is kinda curious since"
+    },
+    {
+      "Time_Start": 1532.16,
+      "Time_End": 1535.92,
+      "Text": " they need some sort of transceiver unless they're doing something really really basic and"
+    },
+    {
+      "Time_Start": 1535.92,
+      "Time_End": 1540.3600000000001,
+      "Text": " weird with raw signal. But we see there's a header that will later turn out to be a"
+    },
+    {
+      "Time_Start": 1540.3600000000001,
+      "Time_End": 1543.8400000000001,
+      "Text": " programming header and we have some wires that connect to the battery connector and the"
+    },
+    {
+      "Time_Start": 1543.8400000000001,
+      "Time_End": 1549.0400000000002,
+      "Text": " motor connector. Looking at the back we have a mystery chip. That's gonna be fun. Uh it's"
+    },
+    {
+      "Time_Start": 1549.06,
+      "Time_End": 1555.3999999999999,
+      "Text": " just labeled N100B and uh has DE4 printed on it, nothing else. Uh and we have just a little"
+    },
+    {
+      "Time_Start": 1555.3999999999999,
+      "Time_End": 1559.74,
+      "Text": " uh tactile sensor that's used as a limit switch so it can tell you know when it's in the"
+    },
+    {
+      "Time_Start": 1559.74,
+      "Time_End": 1565.74,
+      "Text": " locked or unlocked state. So now we get to use a technique that I really like using uh for"
+    },
+    {
+      "Time_Start": 1565.74,
+      "Time_End": 1571.18,
+      "Text": " tracing out PCBs which is overlaying images. So we have the front and the back of this board"
+    },
+    {
+      "Time_Start": 1571.18,
+      "Time_End": 1575.42,
+      "Text": " and we can see that the traces jump from the front to the back and it's a pain to trace out"
+    },
+    {
+      "Time_Start": 1575.44,
+      "Time_End": 1580.44,
+      "Text": " with a multimeter and try to keep track of it. So for smaller boards like this uh uh you can"
+    },
+    {
+      "Time_Start": 1580.44,
+      "Time_End": 1585.48,
+      "Text": " sometimes do it but even on small boards where you don't have to I find it's really useful if"
+    },
+    {
+      "Time_Start": 1585.48,
+      "Time_End": 1590.1200000000001,
+      "Text": " you take good uh straight on photos of the front and back. You load it up in GIMP or"
+    },
+    {
+      "Time_Start": 1590.1200000000001,
+      "Time_End": 1595.38,
+      "Text": " Photoshop and uh mess with the transparencies and you can get a really cool overlay. And so"
+    },
+    {
+      "Time_Start": 1595.38,
+      "Time_End": 1600.26,
+      "Text": " you can kind of see where holes, where traces, where vias and everything align and what"
+    },
+    {
+      "Time_Start": 1600.26,
+      "Time_End": 1605.98,
+      "Text": " components they talk to. And from here you can pull up the data sheet for components that"
+    },
+    {
+      "Time_Start": 1605.98,
+      "Time_End": 1610.64,
+      "Text": " you can identify and you can start tracing out all of those traces and having that"
+    },
+    {
+      "Time_Start": 1610.64,
+      "Time_End": 1615.22,
+      "Text": " transparent image and being able to flip back and forth is super useful. So in this case I"
+    },
+    {
+      "Time_Start": 1615.22,
+      "Time_End": 1620.22,
+      "Text": " traced out these um uh uh pins and I found that that header had a VPP, VDD, PGD and all of"
+    },
+    {
+      "Time_Start": 1623.0,
+      "Time_End": 1626.6,
+      "Text": " those lovely lovely things that people who work with microcontrollers will recognize as a"
+    },
+    {
+      "Time_Start": 1626.6000000000001,
+      "Time_End": 1632.92,
+      "Text": " debug header. So the next step was to grab a debugger and see what I could find. Uh so this"
+    },
+    {
+      "Time_Start": 1632.92,
+      "Time_End": 1639.0200000000002,
+      "Text": " is a PIC kit. Uh it is the standard debugger for PIC microcontrollers. Uh they're super cheap"
+    },
+    {
+      "Time_Start": 1639.0200000000002,
+      "Time_End": 1645.1000000000001,
+      "Text": " on Amazon, like 20 bucks. I got one and hooked it up. Uh word to the wise, hook up all the"
+    },
+    {
+      "Time_Start": 1645.1000000000001,
+      "Time_End": 1650.3000000000002,
+      "Text": " wires. I spent about 2 hours wondering why it wasn't working and I didn't have um uh VPP"
+    },
+    {
+      "Time_Start": 1650.3,
+      "Time_End": 1656.48,
+      "Text": " hooked up properly so that was entirely on me. But uh you hook it up and uh you have to"
+    },
+    {
+      "Time_Start": 1656.48,
+      "Time_End": 1661.34,
+      "Text": " hook up little tiny uh wires to everything. And then you get it hooked up, all of them hooked"
+    },
+    {
+      "Time_Start": 1661.34,
+      "Time_End": 1668.36,
+      "Text": " up to the PIC uh PIC kit and you load up PIC kit 2 minus. Uh PIC kit 2 plus is the premium"
+    },
+    {
+      "Time_Start": 1668.36,
+      "Time_End": 1673.1599999999999,
+      "Text": " software that has all the fancy features but PIC kit 2 minus is the free one that doesn't"
+    },
+    {
+      "Time_Start": 1673.1599999999999,
+      "Time_End": 1677.76,
+      "Text": " but it has enough for me. Uh you connect it via USB, take care of the boot loader stuff for"
+    },
+    {
+      "Time_Start": 1677.76,
+      "Time_End": 1683.56,
+      "Text": " your PIC kit, select your device, go through the rigmarole and if you're lucky, we're in. So"
+    },
+    {
+      "Time_Start": 1683.56,
+      "Time_End": 1687.8,
+      "Text": " we get a couple cool things. We can see that we've got program memory, we've got some"
+    },
+    {
+      "Time_Start": 1687.8,
+      "Time_End": 1692.7,
+      "Text": " configuration bits and we've got EEPROM data. Now a quick word about the configuration"
+    },
+    {
+      "Time_Start": 1692.7,
+      "Time_End": 1698.14,
+      "Text": " bits cause this is also something I see a lot in the commercial world. Uh set your security"
+    },
+    {
+      "Time_Start": 1698.14,
+      "Time_End": 1702.62,
+      "Text": " bits. You know microcontrollers have code protection. You can code protect it so people"
+    },
+    {
+      "Time_Start": 1702.62,
+      "Time_End": 1706.78,
+      "Text": " can't pull off the code. You can write protect it so people can't overwrite, overwrite the"
+    },
+    {
+      "Time_Start": 1706.8,
+      "Time_End": 1711.1399999999999,
+      "Text": " code you put on. You can even do external block table reads which I have no idea what they"
+    },
+    {
+      "Time_Start": 1711.1399999999999,
+      "Time_End": 1716.8799999999999,
+      "Text": " are. Uh and you can see what they do in the data sheet if you look up that table and I'll"
+    },
+    {
+      "Time_Start": 1716.8799999999999,
+      "Time_End": 1722.66,
+      "Text": " save you the trouble, none of them are set on this. None of the security bits are set. So"
+    },
+    {
+      "Time_Start": 1722.66,
+      "Time_End": 1727.56,
+      "Text": " that means we can pull off the uh uh code from the microcontroller and open up in a reverse"
+    },
+    {
+      "Time_Start": 1727.56,
+      "Time_End": 1732.3999999999999,
+      "Text": " engineering program like Ghidra. And interestingly there's only about 2 kilobytes of actual"
+    },
+    {
+      "Time_Start": 1732.42,
+      "Time_End": 1737.72,
+      "Text": " code uh that I managed to pull off. Everything was set to uh OXFF. Uh it looks like it was"
+    },
+    {
+      "Time_Start": 1737.72,
+      "Time_End": 1743.16,
+      "Text": " mostly the resets and the interrupts that were set and a couple other bits of code. So I'm"
+    },
+    {
+      "Time_Start": 1743.16,
+      "Time_End": 1747.0,
+      "Text": " not an RE expert. I could be missing things. I had a couple friends who are look at it and"
+    },
+    {
+      "Time_Start": 1747.0,
+      "Time_End": 1752.18,
+      "Text": " they also agreed that there was not a lot. So based on the fact that this is a really basic"
+    },
+    {
+      "Time_Start": 1752.18,
+      "Time_End": 1757.22,
+      "Text": " microcontroller, I'm guessing the fact that it's really just handling the you know the limit"
+    },
+    {
+      "Time_Start": 1757.22,
+      "Time_End": 1761.5800000000002,
+      "Text": " switch for the motor, powering the motor and then maybe doing some super basic signal"
+    },
+    {
+      "Time_Start": 1761.6,
+      "Time_End": 1766.1999999999998,
+      "Text": " processing and then firing an interrupt based on that. And you know maybe a couple bits for a"
+    },
+    {
+      "Time_Start": 1766.1999999999998,
+      "Time_End": 1771.8799999999999,
+      "Text": " state machine and tracking that. But it really seems like it's that basic and it's not doing"
+    },
+    {
+      "Time_Start": 1771.8799999999999,
+      "Time_End": 1778.08,
+      "Text": " uh uh any encryption, any data uploading or downloading or anything like that. Uh and then"
+    },
+    {
+      "Time_Start": 1778.08,
+      "Time_End": 1782.1599999999999,
+      "Text": " we've got this mystery chip on the back. And we've also got that mystery footprint of an"
+    },
+    {
+      "Time_Start": 1782.1599999999999,
+      "Time_End": 1786.52,
+      "Text": " unpopulated chip. And I'll talk more about this in the speculation section but that's"
+    },
+    {
+      "Time_Start": 1786.54,
+      "Time_End": 1791.1399999999999,
+      "Text": " probably where they'd put the 2.4 gigahertz stuff if they wanted to implement it later. But"
+    },
+    {
+      "Time_Start": 1791.1399999999999,
+      "Time_End": 1797.1399999999999,
+      "Text": " uh from tracing it out early, I noticed that all of the pins on that mystery chip get broken"
+    },
+    {
+      "Time_Start": 1797.1399999999999,
+      "Time_End": 1802.68,
+      "Text": " out to both the main microcontroller and also that unpopulated header. And that unpopulated"
+    },
+    {
+      "Time_Start": 1802.68,
+      "Time_End": 1807.68,
+      "Text": " header makes it real easy to well easy to connect fly wires. Uh this is miserable work. Uh uh"
+    },
+    {
+      "Time_Start": 1811.02,
+      "Time_End": 1815.5,
+      "Text": " this is my first attempt at it. I ended up having to completely redo it. But uh you take a"
+    },
+    {
+      "Time_Start": 1815.5,
+      "Time_End": 1821.68,
+      "Text": " little 30 gauge uh uh wire or some uh uh enamel wire if you have it. You wrap it around and"
+    },
+    {
+      "Time_Start": 1821.68,
+      "Time_End": 1826.98,
+      "Text": " you solder it real tiny. Use lots of flux and a small soldering iron tip. From there you can"
+    },
+    {
+      "Time_Start": 1826.98,
+      "Time_End": 1832.62,
+      "Text": " hook it up to a Sele logic analyzer. A logic analyzer is basically um uh a whole bunch of"
+    },
+    {
+      "Time_Start": 1832.62,
+      "Time_End": 1836.52,
+      "Text": " it's like an 8 channel oscilloscope. You know it's not as high resolution but it can do some"
+    },
+    {
+      "Time_Start": 1836.52,
+      "Time_End": 1842.24,
+      "Text": " really cool stuff. And uh run it through the boot and see what we get. And we get some some"
+    },
+    {
+      "Time_Start": 1842.24,
+      "Time_End": 1847.32,
+      "Text": " interesting stuff. This is in digital lonely mode. Uh and one thing I noticed is everything"
+    },
+    {
+      "Time_Start": 1847.32,
+      "Time_End": 1852.98,
+      "Text": " was dead until I touched the wheel. Uh when I moved it, those lines you see the yellow, green"
+    },
+    {
+      "Time_Start": 1852.98,
+      "Time_End": 1859.86,
+      "Text": " and purple ones lit up. Uh so they were sending something. And I was a little confused. Uh so"
+    },
+    {
+      "Time_Start": 1859.86,
+      "Time_End": 1863.66,
+      "Text": " it looks like there's some sort of accelerometer and it's only listening for signals when it's"
+    },
+    {
+      "Time_Start": 1863.66,
+      "Time_End": 1868.4,
+      "Text": " in motion. Again probably a battery saving feature but that would explain why I was getting"
+    },
+    {
+      "Time_Start": 1868.44,
+      "Time_End": 1872.6000000000001,
+      "Text": " inconsistent results with my replay attacks. Because I had it on the benchtop with the"
+    },
+    {
+      "Time_Start": 1872.6000000000001,
+      "Time_End": 1878.38,
+      "Text": " speaker and it wasn't moving so it was just ignoring any signals. But looking at some of"
+    },
+    {
+      "Time_Start": 1878.38,
+      "Time_End": 1883.74,
+      "Text": " these signals, they're id- nearly identical. Uh uh slightly different but why would they"
+    },
+    {
+      "Time_Start": 1883.74,
+      "Time_End": 1889.16,
+      "Text": " replicate them? So I switched it to analog mode and we see that they are very similar"
+    },
+    {
+      "Time_Start": 1889.16,
+      "Time_End": 1895.76,
+      "Text": " waveforms but it's the antenna. I played uh uh a couple of the lock signals and we see"
+    },
+    {
+      "Time_Start": 1895.76,
+      "Time_End": 1901.96,
+      "Text": " those waveforms and we see on the upper traces similar modified waveforms. My theory is"
+    },
+    {
+      "Time_Start": 1901.96,
+      "Time_End": 1907.1,
+      "Text": " that they're doing, they're filtering in hardware. So they have passive components and"
+    },
+    {
+      "Time_Start": 1907.1,
+      "Time_End": 1912.3,
+      "Text": " they're doing their radio signal processing and a couple of their uh uh mathematical"
+    },
+    {
+      "Time_Start": 1912.3,
+      "Time_End": 1915.84,
+      "Text": " operations at the hardware level so they don't have to do it in the processor. You know if"
+    },
+    {
+      "Time_Start": 1915.84,
+      "Time_End": 1920.24,
+      "Text": " they need to find the absolute value or the magnitude of it, you can do that with passives"
+    },
+    {
+      "Time_Start": 1920.26,
+      "Time_End": 1927.16,
+      "Text": " and save yourself compute time. So we we kinda set the Sele to a mixed digital and um uh"
+    },
+    {
+      "Time_Start": 1927.16,
+      "Time_End": 1932.54,
+      "Text": " analog mode and got a good capture of this is the whole boot sequence, you arm it, you hit put"
+    },
+    {
+      "Time_Start": 1932.54,
+      "Time_End": 1936.18,
+      "Text": " at the arm thing and you can see it lock and it goes to this whole thing. Uh if you're"
+    },
+    {
+      "Time_Start": 1936.18,
+      "Time_End": 1940.64,
+      "Text": " wondering if there's any serial data there, no there wasn't any serial on any of those lines."
+    },
+    {
+      "Time_Start": 1940.64,
+      "Time_End": 1945.22,
+      "Text": " Uh I think there is chip to chip communication lines there but because that chip is"
+    },
+    {
+      "Time_Start": 1945.22,
+      "Time_End": 1950.1200000000001,
+      "Text": " unpopulated there's just no communication happening. Uh so with this we can make a flow"
+    },
+    {
+      "Time_Start": 1950.14,
+      "Time_End": 1955.1000000000001,
+      "Text": " chart and that's gonna help us bypass this. So we have an idea of you know the basic"
+    },
+    {
+      "Time_Start": 1955.1000000000001,
+      "Time_End": 1959.18,
+      "Text": " states it can operate in, we have an idea of the signals it's listening for and can listen"
+    },
+    {
+      "Time_Start": 1959.18,
+      "Time_End": 1964.68,
+      "Text": " for and uh we can start thinking of bypasses. So I just put together a quick little flow"
+    },
+    {
+      "Time_Start": 1964.68,
+      "Time_End": 1970.3200000000002,
+      "Text": " chart of how it works. Uh uh one big caveat is uh if it gets the arm signal within 30"
+    },
+    {
+      "Time_Start": 1970.3200000000002,
+      "Time_End": 1974.6200000000001,
+      "Text": " seconds of the first one, it assumes that you know you brought it through and then brought"
+    },
+    {
+      "Time_Start": 1974.6200000000001,
+      "Time_End": 1977.9,
+      "Text": " it back quickly and it doesn't lock and it goes back to idle. And that's gonna be"
+    },
+    {
+      "Time_Start": 1977.9,
+      "Time_End": 1982.92,
+      "Text": " important. So looking at this flow chart we can see 3 possible paths to bypass this. One is is"
+    },
+    {
+      "Time_Start": 1985.24,
+      "Time_End": 1990.1200000000001,
+      "Text": " the very obvious one where we just replay the per check signal to it and say hey yeah you're"
+    },
+    {
+      "Time_Start": 1990.1200000000001,
+      "Time_End": 1994.3200000000002,
+      "Text": " okay to leave and you leave and I've tested this in the store you know with an empty cart and"
+    },
+    {
+      "Time_Start": 1994.3200000000002,
+      "Time_End": 1999.26,
+      "Text": " uh successfully been able to get the cart back out without it triggering the alarm. Uh"
+    },
+    {
+      "Time_Start": 1999.26,
+      "Time_End": 2004.26,
+      "Text": " there's other ways too. Uh the 30 second disarm can be exploited so you bring it out and"
+    },
+    {
+      "Time_Start": 2004.26,
+      "Time_End": 2009.4,
+      "Text": " then you bring it up to the buried line again and then back it out and it's entered the idle"
+    },
+    {
+      "Time_Start": 2009.4,
+      "Time_End": 2013.4,
+      "Text": " state again thinking it was back into the little cart corral area but it's actually in the"
+    },
+    {
+      "Time_Start": 2013.4,
+      "Time_End": 2018.28,
+      "Text": " store and it's not gonna arm till you take it back out. Uh and then the last one and this is"
+    },
+    {
+      "Time_Start": 2018.28,
+      "Time_End": 2022.68,
+      "Text": " probably the most reliable since the other 2 give you no feedback is to bring it through a"
+    },
+    {
+      "Time_Start": 2022.68,
+      "Time_End": 2027.82,
+      "Text": " lock cycle. So you have a lock signal and an unlock signal. You bring it into the store, you"
+    },
+    {
+      "Time_Start": 2027.82,
+      "Time_End": 2031.46,
+      "Text": " play the lock signal to force it to lock, then you play the unlock signal to force it to"
+    },
+    {
+      "Time_Start": 2031.5,
+      "Time_End": 2036.56,
+      "Text": " unlock and then it's back in its idle state disarmed because it thinks it's already been"
+    },
+    {
+      "Time_Start": 2036.56,
+      "Time_End": 2042.0,
+      "Text": " through it. And with that you have positive feedback knowing that you know it's working and"
+    },
+    {
+      "Time_Start": 2042.0,
+      "Time_End": 2045.6000000000001,
+      "Text": " you know you're not just playing a speaker sound at it and hoping it picked it up and it's"
+    },
+    {
+      "Time_Start": 2045.6000000000001,
+      "Time_End": 2051.92,
+      "Text": " not gonna alarm. So those those are the 3 main methods for bypassing this that I found. And"
+    },
+    {
+      "Time_Start": 2051.92,
+      "Time_End": 2056.08,
+      "Text": " now as I promised it's time for a quick little bit of speculation kind of this is me just"
+    },
+    {
+      "Time_Start": 2056.08,
+      "Time_End": 2060.82,
+      "Text": " shooting off the cuff, stuff I think they're doing or is going on uh uh that I'm not 100"
+    },
+    {
+      "Time_Start": 2060.82,
+      "Time_End": 2065.82,
+      "Text": " percent sure on. So I mentioned 2.4 gigahertz and how they have it. Uh their FCC documents and"
+    },
+    {
+      "Time_Start": 2068.42,
+      "Time_End": 2073.6600000000003,
+      "Text": " their marketing materials say they do but their PCB says they doesn't. Uh you'll notice"
+    },
+    {
+      "Time_Start": 2073.6600000000003,
+      "Time_End": 2077.76,
+      "Text": " they have uh there's a little trace going around the entire perimeter for that and those are"
+    },
+    {
+      "Time_Start": 2077.76,
+      "Time_End": 2084.2400000000002,
+      "Text": " usually used for gigahertz antennas. Uh but you'll also notice if we zoom in uh where that"
+    },
+    {
+      "Time_Start": 2084.2400000000002,
+      "Time_End": 2090.1200000000003,
+      "Text": " connects to the board all of the passive components are depopulated. Uh that combined with"
+    },
+    {
+      "Time_Start": 2090.14,
+      "Time_End": 2094.88,
+      "Text": " depopulated you know what looks like it could be a microcontroller. I'm going to guess that"
+    },
+    {
+      "Time_Start": 2094.88,
+      "Time_End": 2099.8599999999997,
+      "Text": " they designed this to be able to at some point do 2.4 gigahertz but either for design"
+    },
+    {
+      "Time_Start": 2099.8599999999997,
+      "Time_End": 2105.4,
+      "Text": " reasons, economics or battery saving reasons they said hey we can make this only work off"
+    },
+    {
+      "Time_Start": 2105.4,
+      "Time_End": 2110.46,
+      "Text": " you know the 8.1 kilohertz range and we don't need to do this radio stuff. And maybe if a"
+    },
+    {
+      "Time_Start": 2110.46,
+      "Time_End": 2115.14,
+      "Text": " customer did wanna do the advanced stuff and uh be able to upload and download data you"
+    },
+    {
+      "Time_Start": 2115.16,
+      "Time_End": 2120.5,
+      "Text": " know they could have a revision of this that does have that built in but I haven't been able"
+    },
+    {
+      "Time_Start": 2120.5,
+      "Time_End": 2124.7799999999997,
+      "Text": " to find this and I I've gotten a handful of these wheels off eBay from all different parts of"
+    },
+    {
+      "Time_Start": 2124.7799999999997,
+      "Time_End": 2129.3799999999997,
+      "Text": " the country and none of them that I've opened up have had uh those chips populated or any"
+    },
+    {
+      "Time_Start": 2129.3799999999997,
+      "Time_End": 2135.3799999999997,
+      "Text": " indicator that it's doing more advanced communications. So that mystery chip on the back?"
+    },
+    {
+      "Time_Start": 2135.3799999999997,
+      "Time_End": 2141.02,
+      "Text": " That could be a a crappy little system on chip that's handling the 2.4 gigahertz. I imagine if"
+    },
+    {
+      "Time_Start": 2141.04,
+      "Time_End": 2146.38,
+      "Text": " it were it would have been closer to that and those antenna traces. Uh my honest guess is"
+    },
+    {
+      "Time_Start": 2146.38,
+      "Time_End": 2150.74,
+      "Text": " that's an accelerometer and that's how it's actually sensing when it's in motion. Uh a lot of"
+    },
+    {
+      "Time_Start": 2150.74,
+      "Time_End": 2155.32,
+      "Text": " accelerometers have ultra low power modes that can send an interrupt signal when it's in"
+    },
+    {
+      "Time_Start": 2155.32,
+      "Time_End": 2159.62,
+      "Text": " motion so you're not actually doing any communication or like reading and data processing"
+    },
+    {
+      "Time_Start": 2159.62,
+      "Time_End": 2164.42,
+      "Text": " you're just hey was this in motion within the past couple seconds? And that's consistent with"
+    },
+    {
+      "Time_Start": 2164.42,
+      "Time_End": 2170.0,
+      "Text": " what I'm seeing on the logic analyzer. Uh and the 2.4 gigahertz could probably be added"
+    },
+    {
+      "Time_Start": 2170.02,
+      "Time_End": 2176.22,
+      "Text": " later but probably won't because that's gonna use a lot of power that you don't have. Uh I"
+    },
+    {
+      "Time_Start": 2176.22,
+      "Time_End": 2180.72,
+      "Text": " wanna give a couple thanks and shout outs uh first of all to my dad for like bringing these"
+    },
+    {
+      "Time_Start": 2180.72,
+      "Time_End": 2186.26,
+      "Text": " wheels to my attention to uh all the Defcon staff and goons for making this happen and for"
+    },
+    {
+      "Time_Start": 2186.26,
+      "Time_End": 2189.96,
+      "Text": " somehow letting me on stage again to talk about shopping cart like 2 years ago you gave me a"
+    },
+    {
+      "Time_Start": 2189.96,
+      "Time_End": 2193.84,
+      "Text": " stage and I talked about shopping carts for 20 minutes and like this year you guys have no"
+    },
+    {
+      "Time_Start": 2193.84,
+      "Time_End": 2197.94,
+      "Text": " excuse. I told you what I was gonna do, you knew what I was gonna do but y'all still showed"
+    },
+    {
+      "Time_Start": 2197.96,
+      "Time_End": 2201.62,
+      "Text": " up here and uh I'm real thankful for all of you. I'd also like to thank all of my friends and"
+    },
+    {
+      "Time_Start": 2201.62,
+      "Time_End": 2205.96,
+      "Text": " loved ones some of whom are here uh some of whom are back home uh and we'll see this in"
+    },
+    {
+      "Time_Start": 2205.96,
+      "Time_End": 2212.06,
+      "Text": " video. Hi mom, hi dad. Uh and then just everyone who's made all of the software stack that I"
+    },
+    {
+      "Time_Start": 2212.06,
+      "Time_End": 2217.4,
+      "Text": " use this. The people who made Audacity, URH, Ghidra, thanks NSA uh and all the other tools as"
+    },
+    {
+      "Time_Start": 2217.4,
+      "Time_End": 2222.2000000000003,
+      "Text": " well as just the random people on eBay who have these things for sale. I don't know how"
+    },
+    {
+      "Time_Start": 2222.2000000000003,
+      "Time_End": 2227.2000000000003,
+      "Text": " people end up with these but that's how it goes. Uh this is just a quick references and uh"
+    },
+    {
+      "Time_Start": 2229.84,
+      "Time_End": 2234.92,
+      "Text": " that's it. I'm going to have a demo in the physical security village. I'm gonna go set it up"
+    },
+    {
+      "Time_Start": 2234.92,
+      "Time_End": 2239.88,
+      "Text": " right after this uh where we have I modified some wheels to be transparent so you can see"
+    },
+    {
+      "Time_Start": 2239.88,
+      "Time_End": 2244.9,
+      "Text": " what's going on inside of them. Uh we have a website bgaydocrime.com slash carts. It has"
+    },
+    {
+      "Time_Start": 2244.9,
+      "Time_End": 2249.9,
+      "Text": " little play buttons where you can uh play these audio files and uh if you want check us out in"
+    },
+    {
+      "Time_Start": 2250.04,
+      "Time_End": 2256.84,
+      "Text": " the flamingo in the physical security village. We've got uh I've got 4 of these wheels, some"
+    },
+    {
+      "Time_Start": 2256.84,
+      "Time_End": 2260.94,
+      "Text": " of the gatekeeper systems, 2 of the Rokitex and uh you can actually try this yourself with"
+    },
+    {
+      "Time_Start": 2260.94,
+      "Time_End": 2266.38,
+      "Text": " your phone. Uh if anyone has any questions uh uh happy to answer them. I'll also be around"
+    },
+    {
+      "Time_Start": 2266.38,
+      "Time_End": 2271.38,
+      "Text": " the physical security village if we run out of time. Thank you. Thank you. Thank thank you all"
+    },
+    {
+      "Time_Start": 2271.58,
+      "Time_End": 2276.58,
+      "Text": " for coming. This was a lot of fun to work on. I had a lot of fun and I'm I'm just real thankful"
+    },
+    {
+      "Time_Start": 2281.88,
+      "Time_End": 2288.9,
+      "Text": " to be here and that you all let me talk about shopping carts to you for so long. Alright any"
+    },
+    {
+      "Time_Start": 2288.9,
+      "Time_End": 2293.9,
+      "Text": " questions? Bueller? Bueller? Alright well thank you folks. Have a good one. Uh if you have"
+    },
+    {
+      "Time_Start": 2296.7000000000003,
+      "Time_End": 2300.44,
+      "Text": " any questions feel free to grab me after the talk. I've got pretty distinctive hair. Alright"
+    },
+    {
+      "Time_Start": 2300.44,
+      "Time_End": 2301.64,
+      "Text": " have a good one folks."
+    }
+  ]
+}

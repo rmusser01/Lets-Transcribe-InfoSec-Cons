@@ -1,0 +1,2549 @@
+{
+  "segments": [
+    {
+      "Time_Start": 0.0,
+      "Time_End": 6.0,
+      "Text": "This text was transcribed using whisper model: large-v2\n\n Good morning. Aloha and welcome to my talk on Apple's background task management. My name is"
+    },
+    {
+      "Time_Start": 10.84,
+      "Time_End": 15.540000000000001,
+      "Text": " Patrick Wardle. I am the founder of the Objective C Foundation. There I work on free"
+    },
+    {
+      "Time_Start": 15.540000000000001,
+      "Time_End": 21.54,
+      "Text": " open source Mac security tools. I write the Art of Mac Malware book series and also"
+    },
+    {
+      "Time_Start": 21.54,
+      "Time_End": 27.04,
+      "Text": " co-found and organized the Objective by the C Mac security conference. So basically all"
+    },
+    {
+      "Time_Start": 27.04,
+      "Time_End": 33.7,
+      "Text": " things Apple, all things Mac. So today what will you learn? What will we dive into? What"
+    },
+    {
+      "Time_Start": 33.7,
+      "Time_End": 38.5,
+      "Text": " am I going to be talking about? Well the cool thing is there's kind of many facets to this"
+    },
+    {
+      "Time_Start": 38.5,
+      "Time_End": 45.620000000000005,
+      "Text": " talk. I mean really the goal is to focus and understand on Apple's Mac OS's background"
+    },
+    {
+      "Time_Start": 45.620000000000005,
+      "Time_End": 49.96,
+      "Text": " task management, BTM, which of course we'll explain exactly what that is. But we're also"
+    },
+    {
+      "Time_Start": 49.96,
+      "Time_End": 55.16,
+      "Text": " going to cover topics of reversing malware detection, Mac OS internals and more. So"
+    },
+    {
+      "Time_Start": 55.160000000000004,
+      "Time_End": 60.78,
+      "Text": " hopefully there's something in this talk for everyone. We're going to start by diving into"
+    },
+    {
+      "Time_Start": 60.78,
+      "Time_End": 67.0,
+      "Text": " the internals of Apple's new background task management. I will caveat this part. We're"
+    },
+    {
+      "Time_Start": 67.0,
+      "Time_End": 71.58000000000001,
+      "Text": " going to get into the weeds pretty deep. Some reverse engineering, disassembly. But this is"
+    },
+    {
+      "Time_Start": 71.58000000000001,
+      "Time_End": 76.74000000000001,
+      "Text": " really important for the remainder of the talk. And with an understanding then of the internals"
+    },
+    {
+      "Time_Start": 76.74000000000001,
+      "Time_End": 82.08000000000001,
+      "Text": " of this background task management, we'll then show how we can build some neat tools to"
+    },
+    {
+      "Time_Start": 82.08,
+      "Time_End": 86.46,
+      "Text": " leverage this. Then because, you know, DEF CON is a hacker conference, we'll talk about of"
+    },
+    {
+      "Time_Start": 86.46,
+      "Time_End": 90.92,
+      "Text": " course how to fully bypass this new system. And then we'll end by talking about how to"
+    },
+    {
+      "Time_Start": 90.92,
+      "Time_End": 97.03999999999999,
+      "Text": " detect our zero day bypasses. So first let's start with an overview. Starting with"
+    },
+    {
+      "Time_Start": 97.03999999999999,
+      "Time_End": 102.7,
+      "Text": " defining and talking about what is background task management. So this is something that was"
+    },
+    {
+      "Time_Start": 102.7,
+      "Time_End": 108.78,
+      "Text": " largely introduced in Mac OS 13. So the most recent version of Mac OS. And what it is, it's a"
+    },
+    {
+      "Time_Start": 108.82000000000001,
+      "Time_End": 116.82000000000001,
+      "Text": " system designed by Apple on Mac OS to govern and consolidate persistent items or in Apple's"
+    },
+    {
+      "Time_Start": 116.82000000000001,
+      "Time_End": 121.9,
+      "Text": " parlance background tasks. So what are persistent items? Persistent items in the context of"
+    },
+    {
+      "Time_Start": 121.9,
+      "Time_End": 128.9,
+      "Text": " this talk are simply processes that have installed themselves in a manner that every time the"
+    },
+    {
+      "Time_Start": 128.9,
+      "Time_End": 134.66,
+      "Text": " system is rebooted or the user relogs in are automatically re-executed by the operating"
+    },
+    {
+      "Time_Start": 134.66,
+      "Time_End": 140.2,
+      "Text": " system. So things like an auto updater that needs to run every day is going to persistently"
+    },
+    {
+      "Time_Start": 140.2,
+      "Time_End": 145.5,
+      "Text": " install itself. Of course malware is going to do the same thing because if malware does not"
+    },
+    {
+      "Time_Start": 145.5,
+      "Time_End": 151.28,
+      "Text": " persist and you reboot your system, you've just disinfected yourself. Now what happens when"
+    },
+    {
+      "Time_Start": 151.28,
+      "Time_End": 157.85999999999999,
+      "Text": " an item is installed that persistently installs itself is three things. Three visual things"
+    },
+    {
+      "Time_Start": 157.85999999999999,
+      "Time_End": 162.78,
+      "Text": " related to BTM. First, and again this happens on the most recent version of Mac OS, there's"
+    },
+    {
+      "Time_Start": 162.78,
+      "Time_End": 168.06,
+      "Text": " going to be a system alert informing the user that whatever they just installed is"
+    },
+    {
+      "Time_Start": 168.06,
+      "Time_End": 172.06,
+      "Text": " persisting. So an alert to the user saying hey, something just added itself to the"
+    },
+    {
+      "Time_Start": 172.06,
+      "Time_End": 177.36,
+      "Text": " operating system is going to be automatically restarted. Second, there is a security message"
+    },
+    {
+      "Time_Start": 177.36,
+      "Time_End": 183.44,
+      "Text": " that is broadcast that security tools can register for which is a notification, a"
+    },
+    {
+      "Time_Start": 183.44,
+      "Time_End": 188.06,
+      "Text": " programmatic notification saying hey, something just persisted. You can see from a security"
+    },
+    {
+      "Time_Start": 188.06,
+      "Time_End": 192.1,
+      "Text": " point of view, from a security tool, this is something that's very useful. And then finally"
+    },
+    {
+      "Time_Start": 192.14,
+      "Time_End": 199.14,
+      "Text": " that item is going to be registered in a database, the BTM database. So why do we even care"
+    },
+    {
+      "Time_Start": 199.14,
+      "Time_End": 204.14,
+      "Text": " about this? Who cares about this? Well, we do. First and foremost as defenders, we now have"
+    },
+    {
+      "Time_Start": 204.14,
+      "Time_End": 210.18,
+      "Text": " a nicely organized subsystem that manages most persistent items. If we can understand and"
+    },
+    {
+      "Time_Start": 210.18,
+      "Time_End": 214.45999999999998,
+      "Text": " tap into that, we can build, and I'll show you exactly how, very powerful security tools"
+    },
+    {
+      "Time_Start": 214.45999999999998,
+      "Time_End": 219.84,
+      "Text": " that can now allow us to generically detect persistent malware. This is awesome. As hackers"
+    },
+    {
+      "Time_Start": 219.84,
+      "Time_End": 226.76,
+      "Text": " though, BTM definitely poses some problems. Two reasons. There's going to be an alert"
+    },
+    {
+      "Time_Start": 226.76,
+      "Time_End": 231.26,
+      "Text": " telling the user hey, something just persisted. So if you get on a system and try to persist"
+    },
+    {
+      "Time_Start": 231.26,
+      "Time_End": 235.0,
+      "Text": " your back door, the user will now be alerted. And also as I just mentioned, there's a"
+    },
+    {
+      "Time_Start": 235.0,
+      "Time_End": 239.84,
+      "Text": " security message that's broadcasted so any security tools that installed on the system will"
+    },
+    {
+      "Time_Start": 239.84,
+      "Time_End": 244.42000000000002,
+      "Text": " get a notification. These are both brand new events on the latest version of Mac OS. So you"
+    },
+    {
+      "Time_Start": 244.42000000000002,
+      "Time_End": 249.04,
+      "Text": " can see as hackers, this is a problem for us. So we need to figure out exactly how to get"
+    },
+    {
+      "Time_Start": 249.04,
+      "Time_End": 254.2,
+      "Text": " around this. Now, BTM is largely undocumented. Apple really doesn't describe a lot. So the"
+    },
+    {
+      "Time_Start": 254.2,
+      "Time_End": 260.24,
+      "Text": " first part of this talk is really going to be diving into the internals of this subsystem. Now,"
+    },
+    {
+      "Time_Start": 260.24,
+      "Time_End": 265.62,
+      "Text": " when I want to understand something on Mac OS, I always turn to the logs. And this is"
+    },
+    {
+      "Time_Start": 265.62,
+      "Time_End": 270.53999999999996,
+      "Text": " because a lot of components in the operating system, even undocumented ones, give us a lot of"
+    },
+    {
+      "Time_Start": 270.53999999999996,
+      "Time_End": 276.53999999999996,
+      "Text": " very informative log messages. Unfortunately on Mac OS, a lot of log messages are"
+    },
+    {
+      "Time_Start": 276.54,
+      "Time_End": 282.16,
+      "Text": " redacted. So what we first have to do is install a logging profile which basically tells"
+    },
+    {
+      "Time_Start": 282.16,
+      "Time_End": 286.5,
+      "Text": " the operating system, hey, please unredact and log everything. And there's a link on the"
+    },
+    {
+      "Time_Start": 286.5,
+      "Time_End": 289.92,
+      "Text": " slide how to do that. It's pretty straightforward but just know if you're going to be"
+    },
+    {
+      "Time_Start": 289.92,
+      "Time_End": 293.74,
+      "Text": " splunking around in the logs, make sure you've kind of turned on this full logging"
+    },
+    {
+      "Time_Start": 293.74,
+      "Time_End": 299.74,
+      "Text": " capability. So now that we have logging off and running, we just install a launch"
+    },
+    {
+      "Time_Start": 300.28000000000003,
+      "Time_End": 306.86,
+      "Text": " statement, which is a persistent component. And then look in the logs and see what is"
+    },
+    {
+      "Time_Start": 306.86,
+      "Time_End": 312.28000000000003,
+      "Text": " shown. So we can see on the slide there's a few very interesting log messages that are"
+    },
+    {
+      "Time_Start": 312.28000000000003,
+      "Time_End": 316.74,
+      "Text": " directly related to the BTM subsystem. And what we're going to do is we're going to take"
+    },
+    {
+      "Time_Start": 316.74,
+      "Time_End": 322.28000000000003,
+      "Text": " these log messages and find the binaries that are responsible for generating them and look in"
+    },
+    {
+      "Time_Start": 322.28000000000003,
+      "Time_End": 327.66,
+      "Text": " their disassembly at the functions that are broadcasting or logging these messages to"
+    },
+    {
+      "Time_Start": 327.66,
+      "Time_End": 332.78000000000003,
+      "Text": " figure out exactly what's going on. So they're great sign posts. So we can see two things"
+    },
+    {
+      "Time_Start": 332.78000000000003,
+      "Time_End": 337.82000000000005,
+      "Text": " are happening. First, there are two binaries, two processes that appear to be"
+    },
+    {
+      "Time_Start": 337.82000000000005,
+      "Time_End": 342.96000000000004,
+      "Text": " responsible for BTM. One is called SMD and the other one is called background task"
+    },
+    {
+      "Time_Start": 342.96000000000004,
+      "Time_End": 348.32000000000005,
+      "Text": " management D. We'll dive into both of these. And based on the method names, we first see"
+    },
+    {
+      "Time_Start": 348.32000000000005,
+      "Time_End": 352.82000000000005,
+      "Text": " one that's called launch D will scan your path. And then the second one registered"
+    },
+    {
+      "Time_Start": 352.82,
+      "Time_End": 357.86,
+      "Text": " launch item. So it appears that the operating system has noticed that a new item was"
+    },
+    {
+      "Time_Start": 357.86,
+      "Time_End": 364.28,
+      "Text": " persisted. It's going to scan that directory and then register that item. This makes sense."
+    },
+    {
+      "Time_Start": 364.28,
+      "Time_End": 369.32,
+      "Text": " So let's first talk about SMD. This is the system management demon. And the first thing it"
+    },
+    {
+      "Time_Start": 369.32,
+      "Time_End": 376.4,
+      "Text": " does is we see that it generates a log message saying got a FS event. FS stands for file"
+    },
+    {
+      "Time_Start": 376.4,
+      "Time_End": 382.4,
+      "Text": " system. And if we debug this, we can see that when this log message is called, if we"
+    },
+    {
+      "Time_Start": 382.40000000000003,
+      "Time_End": 386.36,
+      "Text": " poke around and look at some of the registers, we can see that one of the registers contains"
+    },
+    {
+      "Time_Start": 386.36,
+      "Time_End": 394.56000000000006,
+      "Text": " an XPC dictionary with an event that is related to watch paths. Now if we look at SMD's"
+    },
+    {
+      "Time_Start": 394.56000000000006,
+      "Time_End": 398.56000000000006,
+      "Text": " property list, which contains information about how it should be launched and some other"
+    },
+    {
+      "Time_Start": 398.56000000000006,
+      "Time_End": 404.78000000000003,
+      "Text": " activities, we can see it contains key value pairs that tell the operating system, please"
+    },
+    {
+      "Time_Start": 404.78000000000003,
+      "Time_End": 409.74,
+      "Text": " invoke me any time something is written, for example, to the launch demon directory. If"
+    },
+    {
+      "Time_Start": 409.78000000000003,
+      "Time_End": 413.94,
+      "Text": " you're not familiar with Mac OS, writing something to the launch demon directory is how you"
+    },
+    {
+      "Time_Start": 413.94,
+      "Time_End": 419.82,
+      "Text": " persist an item as a demon. So what this is telling the operating system is, hey, I am"
+    },
+    {
+      "Time_Start": 419.82,
+      "Time_End": 426.32,
+      "Text": " interested any time something is added to this directory. If we dig in a little more, looking"
+    },
+    {
+      "Time_Start": 426.32,
+      "Time_End": 431.86,
+      "Text": " at some of the method names that we saw in the log messages, we see that SMD will generate"
+    },
+    {
+      "Time_Start": 431.86,
+      "Time_End": 437.86,
+      "Text": " a XPC connection to a service called com.apple.background task management. Now XPC is a"
+    },
+    {
+      "Time_Start": 439.98,
+      "Time_End": 445.56,
+      "Text": " Mac specific IPC, inter process communication mechanism that allows one process to talk to"
+    },
+    {
+      "Time_Start": 445.56,
+      "Time_End": 451.90000000000003,
+      "Text": " another. To both send messages but also to invoke methods and code in the remote process."
+    },
+    {
+      "Time_Start": 451.90000000000003,
+      "Time_End": 457.40000000000003,
+      "Text": " And we'll see BTM utilizes this heavily. Again, if we poke around in the debugger, we can"
+    },
+    {
+      "Time_Start": 457.40000000000003,
+      "Time_End": 463.36,
+      "Text": " see that the scan path that SMD is looking at and is going to talk to the other component is"
+    },
+    {
+      "Time_Start": 463.36,
+      "Time_End": 469.44,
+      "Text": " the launch demon directory, which is where our persistent item was just placed. Let's look a"
+    },
+    {
+      "Time_Start": 469.48,
+      "Time_End": 475.14,
+      "Text": " little bit more at these XPC messages to confirm who SMD is sending them to. We can use"
+    },
+    {
+      "Time_Start": 475.14,
+      "Time_End": 482.06,
+      "Text": " Mac OS's LSMP command. This is LS list MP mock port. This will show you who is sending"
+    },
+    {
+      "Time_Start": 482.06,
+      "Time_End": 488.02,
+      "Text": " mock messages and to whom. So we get the PID of background task management, run LSMP and"
+    },
+    {
+      "Time_Start": 488.02,
+      "Time_End": 493.98,
+      "Text": " we can see, yes, there's a bunch of mock messages, XPC messages coming from SMD. And if"
+    },
+    {
+      "Time_Start": 493.98,
+      "Time_End": 499.76,
+      "Text": " we set a break point on the BTM daemon, we can see that the way its methods are invoked are"
+    },
+    {
+      "Time_Start": 499.76,
+      "Time_End": 505.8,
+      "Text": " via this XPC message. So really SMD is just talking to the BTM daemon. So now let's look at"
+    },
+    {
+      "Time_Start": 505.8,
+      "Time_End": 510.64000000000004,
+      "Text": " this BTM daemon. This is like the second piece of the puzzle, kind of the core component of"
+    },
+    {
+      "Time_Start": 510.64000000000004,
+      "Time_End": 516.22,
+      "Text": " the background task management subsystem. If we look at its property list, we can see it has"
+    },
+    {
+      "Time_Start": 516.22,
+      "Time_End": 522.48,
+      "Text": " various mock interfaces. These are the XPC interfaces that processes such as SMD can"
+    },
+    {
+      "Time_Start": 522.48,
+      "Time_End": 529.0600000000001,
+      "Text": " connect and talk to. And then also the path to its binary. Let's take a closer look at its"
+    },
+    {
+      "Time_Start": 529.0600000000001,
+      "Time_End": 533.98,
+      "Text": " binary. We can see first that it's going to be running with root privileges. This makes"
+    },
+    {
+      "Time_Start": 533.98,
+      "Time_End": 539.64,
+      "Text": " sense because it needs to monitor system activity, manage these persistent items. If we look"
+    },
+    {
+      "Time_Start": 539.64,
+      "Time_End": 544.98,
+      "Text": " at its entitlements which are capabilities, additional features that the operating system"
+    },
+    {
+      "Time_Start": 544.98,
+      "Time_End": 551.48,
+      "Text": " will give it, we can see it has some related to managing BTM. Also there's an interesting"
+    },
+    {
+      "Time_Start": 551.48,
+      "Time_End": 556.4,
+      "Text": " one and we'll dive into this more showing it has an entitlement allowing it to submit"
+    },
+    {
+      "Time_Start": 556.4,
+      "Time_End": 562.76,
+      "Text": " end point security events. We'll see this is how that security message is generated. If we"
+    },
+    {
+      "Time_Start": 562.76,
+      "Time_End": 568.8000000000001,
+      "Text": " look at its launch item registration function, we can see that what it's going to do is once"
+    },
+    {
+      "Time_Start": 568.8000000000001,
+      "Time_End": 574.34,
+      "Text": " it gets a message from SMD it's going to look at for example the launch daemon directory and"
+    },
+    {
+      "Time_Start": 574.34,
+      "Time_End": 579.48,
+      "Text": " find the new item that was added. So for example when I install Zoom on my system, Zoom"
+    },
+    {
+      "Time_Start": 579.48,
+      "Time_End": 584.6,
+      "Text": " legitimately installs a launch daemon, a persistent component, we can see in a debugger that"
+    },
+    {
+      "Time_Start": 584.6,
+      "Time_End": 591.8000000000001,
+      "Text": " the BTM daemon has now the property list of that new item that was registered. We now have"
+    },
+    {
+      "Time_Start": 591.8000000000001,
+      "Time_End": 598.52,
+      "Text": " another player that enters the scene and this is the BTM agent. So if we go back to the"
+    },
+    {
+      "Time_Start": 598.52,
+      "Time_End": 603.44,
+      "Text": " logs we can see that there's a log message from the BTM daemon that says should post"
+    },
+    {
+      "Time_Start": 603.44,
+      "Time_End": 609.94,
+      "Text": " advisory and in this case it is set equal to true. Next we see a log message from a new"
+    },
+    {
+      "Time_Start": 609.94,
+      "Time_End": 616.1,
+      "Text": " process called the background task management agent and we can see a log message saying"
+    },
+    {
+      "Time_Start": 616.1,
+      "Time_End": 621.36,
+      "Text": " posting new advisory notification. So at the bottom of the slide we have kind of now a full"
+    },
+    {
+      "Time_Start": 621.36,
+      "Time_End": 627.32,
+      "Text": " diagrammatic overview where SMD is going to get the initial notification, send an XPC message"
+    },
+    {
+      "Time_Start": 627.32,
+      "Time_End": 633.74,
+      "Text": " to the BTM daemon. The BTM daemon is then going to talk to this new process, the BTM agent,"
+    },
+    {
+      "Time_Start": 633.74,
+      "Time_End": 639.0200000000001,
+      "Text": " which is then going to show the alert to the user. So let's briefly look at this agent. It's"
+    },
+    {
+      "Time_Start": 639.0200000000001,
+      "Time_End": 644.9000000000001,
+      "Text": " the last piece of the BTM puzzle. If we look at its property list we can see it has some mock"
+    },
+    {
+      "Time_Start": 644.9000000000001,
+      "Time_End": 650.82,
+      "Text": " and XPC interfaces. Again these are exposed so that processes such as the BTM daemon can"
+    },
+    {
+      "Time_Start": 650.82,
+      "Time_End": 657.5200000000001,
+      "Text": " send a message to it. And then also the path to its binary. If we look at its binary we"
+    },
+    {
+      "Time_Start": 657.5200000000001,
+      "Time_End": 662.94,
+      "Text": " notice it's running as not root but as the user. This makes sense because the agent is"
+    },
+    {
+      "Time_Start": 662.94,
+      "Time_End": 668.2,
+      "Text": " responsible for displaying the notification on the user's desktop which you have to be"
+    },
+    {
+      "Time_Start": 668.2,
+      "Time_End": 673.4000000000001,
+      "Text": " running in the user session in order to do that. In terms of entitlement we can see that it"
+    },
+    {
+      "Time_Start": 673.4000000000001,
+      "Time_End": 679.5200000000001,
+      "Text": " has various BTM specific entitlements and also then a private Apple entitlement that"
+    },
+    {
+      "Time_Start": 679.52,
+      "Time_End": 683.68,
+      "Text": " allows it to generate system notifications. On Mac OS you need these entitlements for"
+    },
+    {
+      "Time_Start": 683.68,
+      "Time_End": 689.86,
+      "Text": " example to show a system prompt. Okay we're kind of wrapping up the internals of this. Kind"
+    },
+    {
+      "Time_Start": 689.86,
+      "Time_End": 694.52,
+      "Text": " of one of the last pieces. We need to look a little closer at how this message is actually"
+    },
+    {
+      "Time_Start": 694.52,
+      "Time_End": 700.02,
+      "Text": " displayed. So we know that the BTM daemon is going to send a message to the BTM agent and if"
+    },
+    {
+      "Time_Start": 700.02,
+      "Time_End": 706.56,
+      "Text": " we look at the agent's disassembly we can see it has a method aptly named post advisory for"
+    },
+    {
+      "Time_Start": 706.5600000000001,
+      "Time_End": 711.5200000000001,
+      "Text": " content. And in the bottom I've debugged this and set a break point on this method and we can"
+    },
+    {
+      "Time_Start": 711.5200000000001,
+      "Time_End": 717.0600000000001,
+      "Text": " see that the argument that it's passed is the method is sorry the message that should be"
+    },
+    {
+      "Time_Start": 717.0600000000001,
+      "Time_End": 722.0600000000001,
+      "Text": " displayed in the notification. So this is just the internals of how the agent then will"
+    },
+    {
+      "Time_Start": 722.0600000000001,
+      "Time_End": 728.2600000000001,
+      "Text": " display the message to the user alerting them as to the fact that something was just"
+    },
+    {
+      "Time_Start": 728.2600000000001,
+      "Time_End": 735.2600000000001,
+      "Text": " persistently installed. Once that has been displayed we see one other log message which"
+    },
+    {
+      "Time_Start": 735.26,
+      "Time_End": 740.14,
+      "Text": " shows that the background task management daemon, it's kind of the core piece, is actually"
+    },
+    {
+      "Time_Start": 740.14,
+      "Time_End": 746.1,
+      "Text": " updating some undocumented proprietary database with what appears to be the item that was"
+    },
+    {
+      "Time_Start": 746.1,
+      "Time_End": 750.96,
+      "Text": " registered. And we'll dig into this more when we dive into writing a tool. But basically what"
+    },
+    {
+      "Time_Start": 750.96,
+      "Time_End": 756.96,
+      "Text": " the BTM daemon is doing is now storing information about the item that was just persisted"
+    },
+    {
+      "Time_Start": 756.96,
+      "Time_End": 763.22,
+      "Text": " into a new database. So that was kind of an overview. We kind of got into the weeds but it's"
+    },
+    {
+      "Time_Start": 763.22,
+      "Time_End": 767.8000000000001,
+      "Text": " important again to understand these different components because as we now talk about"
+    },
+    {
+      "Time_Start": 767.8000000000001,
+      "Time_End": 772.9200000000001,
+      "Text": " writing tools to interact with them we have to understand those and also when we want to"
+    },
+    {
+      "Time_Start": 772.9200000000001,
+      "Time_End": 778.4200000000001,
+      "Text": " bypass these we're going to have to have this understanding as well. So that's out of the"
+    },
+    {
+      "Time_Start": 778.4200000000001,
+      "Time_End": 783.22,
+      "Text": " way. Let's kind of pull it back a little bit and talk first about how we can write some neat"
+    },
+    {
+      "Time_Start": 783.22,
+      "Time_End": 789.22,
+      "Text": " tools to leverage BTM to detect persistent malware. Now why this is such a great idea in my"
+    },
+    {
+      "Time_Start": 789.5,
+      "Time_End": 796.9200000000001,
+      "Text": " opinion is because the vast majority of malware is going to persist. Again persistence is a"
+    },
+    {
+      "Time_Start": 796.9200000000001,
+      "Time_End": 802.3000000000001,
+      "Text": " way to ensure that you are automatically re-executed by the operating system each time the"
+    },
+    {
+      "Time_Start": 802.3000000000001,
+      "Time_End": 807.9200000000001,
+      "Text": " system is rebooted. So this is something that the vast, vast majority of malware strives to"
+    },
+    {
+      "Time_Start": 807.9200000000001,
+      "Time_End": 814.26,
+      "Text": " achieve. I study the Numack malware of each year. It's kind of one of my end of the year"
+    },
+    {
+      "Time_Start": 814.3,
+      "Time_End": 820.0,
+      "Text": " highlights sadly. And I've noticed some interesting trends and this is not surprising to me"
+    },
+    {
+      "Time_Start": 820.0,
+      "Time_End": 826.46,
+      "Text": " but again this just reiterates that most malware is going to persist. So in 2015 which is now"
+    },
+    {
+      "Time_Start": 826.46,
+      "Time_End": 832.26,
+      "Text": " almost ten years ago I was like hey since all Mac malware is persisting I should write a"
+    },
+    {
+      "Time_Start": 832.26,
+      "Time_End": 838.5,
+      "Text": " tool that monitors for these persistent events and then when malware persists regardless of"
+    },
+    {
+      "Time_Start": 838.54,
+      "Time_End": 844.16,
+      "Text": " how it got onto your system via zero day, a trojanized installer, a supply chain attack, like I"
+    },
+    {
+      "Time_Start": 844.16,
+      "Time_End": 850.24,
+      "Text": " might not be able to detect all that but as soon as it persists I can alert the user. So I"
+    },
+    {
+      "Time_Start": 850.24,
+      "Time_End": 855.16,
+      "Text": " released this free open source tool called BlockBlock and BlockBlock does exactly kind of as"
+    },
+    {
+      "Time_Start": 855.16,
+      "Time_End": 861.82,
+      "Text": " the name implies. It will monitor for persistent activity and then alert the user. So this is"
+    },
+    {
+      "Time_Start": 861.82,
+      "Time_End": 865.66,
+      "Text": " what Apple is doing now. It took them ten years or so to realize this is a good idea. I like to"
+    },
+    {
+      "Time_Start": 865.66,
+      "Time_End": 871.1999999999999,
+      "Text": " think they were inspired by my tool. But from a security point of view this is great. Now"
+    },
+    {
+      "Time_Start": 871.1999999999999,
+      "Time_End": 876.4,
+      "Text": " this is built into the operating system. And to me again this just iterates the fact that Apple"
+    },
+    {
+      "Time_Start": 876.4,
+      "Time_End": 882.66,
+      "Text": " now has also realized that because most Mac malware is going to persist this is a great way to"
+    },
+    {
+      "Time_Start": 882.66,
+      "Time_End": 888.4399999999999,
+      "Text": " now alert the user that perhaps something has slipped into their system. Let's look at a"
+    },
+    {
+      "Time_Start": 888.4399999999999,
+      "Time_End": 895.3199999999999,
+      "Text": " brief example. DazzleSpy, one of my great examples for this because it was deployed via zero"
+    },
+    {
+      "Time_Start": 895.32,
+      "Time_End": 901.32,
+      "Text": " day Safari bugs. So a very powerful deployment mechanism, right? Users in this case were"
+    },
+    {
+      "Time_Start": 901.32,
+      "Time_End": 907.6,
+      "Text": " almost SOL if they inadvertently browsed to the site, clicked on a link, the zero days would"
+    },
+    {
+      "Time_Start": 907.6,
+      "Time_End": 914.4000000000001,
+      "Text": " infect their operating systems, their Mac OS systems even if they were fully patched. If we"
+    },
+    {
+      "Time_Start": 914.4000000000001,
+      "Time_End": 919.7800000000001,
+      "Text": " look at the embedded strings for DazzleSpy we can see something related to a launch agent"
+    },
+    {
+      "Time_Start": 919.7800000000001,
+      "Time_End": 924.86,
+      "Text": " which is another way you can persist. And if we run a file monitor and execute the malware,"
+    },
+    {
+      "Time_Start": 924.9,
+      "Time_End": 930.52,
+      "Text": " for example in a virtual machine, we can passively observe it persisting itself as a"
+    },
+    {
+      "Time_Start": 930.52,
+      "Time_End": 938.02,
+      "Text": " launch agent. So again, even if we can't detect the zero day exploitation or prevent that, as"
+    },
+    {
+      "Time_Start": 938.02,
+      "Time_End": 943.0600000000001,
+      "Text": " soon as the malware goes to persist, if we are able to detect that, we can then alert the"
+    },
+    {
+      "Time_Start": 943.0600000000001,
+      "Time_End": 948.4,
+      "Text": " user that something is amiss and maybe stop the infection before it's gone too far. So the"
+    },
+    {
+      "Time_Start": 948.4,
+      "Time_End": 955.22,
+      "Text": " first idea I had to leverage this new BTM is I want to dump the database because the BTM"
+    },
+    {
+      "Time_Start": 955.22,
+      "Time_End": 961.52,
+      "Text": " database has a nice comprehensive list of all the persistent items. So the idea is let's"
+    },
+    {
+      "Time_Start": 961.52,
+      "Time_End": 966.98,
+      "Text": " write a tool that you can run on a Mac system that says show me everything that's persisted."
+    },
+    {
+      "Time_Start": 966.98,
+      "Time_End": 972.68,
+      "Text": " Now this will include legitimate software, for example Zoom we saw, but if there is any"
+    },
+    {
+      "Time_Start": 972.68,
+      "Time_End": 977.52,
+      "Text": " persistent malware on your system it will likely also be in this database. The problem is"
+    },
+    {
+      "Time_Start": 977.52,
+      "Time_End": 982.76,
+      "Text": " this database is proprietary and undocumented. Luckily though, Apple ships a tool called"
+    },
+    {
+      "Time_Start": 982.76,
+      "Time_End": 988.76,
+      "Text": " the SFL tool that allows you to interact with this database. And one of the commands it has"
+    },
+    {
+      "Time_Start": 988.76,
+      "Time_End": 993.8,
+      "Text": " is dump BTM and if you execute this, it will nicely dump the database. So here for example"
+    },
+    {
+      "Time_Start": 993.8,
+      "Time_End": 1000.76,
+      "Text": " we can see the information about Zoom's persistent component in the BTM database. Now it's"
+    },
+    {
+      "Time_Start": 1000.76,
+      "Time_End": 1004.4399999999999,
+      "Text": " great that there's a command line tool but I want to be able to programmatically do this so I"
+    },
+    {
+      "Time_Start": 1004.48,
+      "Time_End": 1011.6800000000001,
+      "Text": " can add this to my own security tools. So I said okay, well SFL tool obviously knows how to"
+    },
+    {
+      "Time_Start": 1011.6800000000001,
+      "Time_End": 1017.0600000000001,
+      "Text": " grab this database, parse it. Let me reverse engineer and figure out how it does this. So if"
+    },
+    {
+      "Time_Start": 1017.0600000000001,
+      "Time_End": 1022.1800000000001,
+      "Text": " we reverse engineer it, we can see in a nutshell that it sends an XPC message to the background"
+    },
+    {
+      "Time_Start": 1022.1800000000001,
+      "Time_End": 1027.48,
+      "Text": " task management daemon and the daemon will then send the database, its contents back to the"
+    },
+    {
+      "Time_Start": 1027.48,
+      "Time_End": 1032.76,
+      "Text": " SFL tool. We can see that also in the log messages with the BTM daemon saying yes I received"
+    },
+    {
+      "Time_Start": 1032.76,
+      "Time_End": 1038.26,
+      "Text": " an XPC message to get the contents of this database. So I said awesome, let me implement"
+    },
+    {
+      "Time_Start": 1038.26,
+      "Time_End": 1043.8799999999999,
+      "Text": " this same code. Let me talk to the BTM daemon, kindly ask and say hey I also want the"
+    },
+    {
+      "Time_Start": 1043.8799999999999,
+      "Time_End": 1050.58,
+      "Text": " database. So I mimicked the code of SFL tool, compiled and executed this and it completely"
+    },
+    {
+      "Time_Start": 1050.58,
+      "Time_End": 1055.26,
+      "Text": " failed. Basically we can see a log message saying Patrick you don't have Apple's private"
+    },
+    {
+      "Time_Start": 1055.26,
+      "Time_End": 1060.58,
+      "Text": " entitlement. Rude, you can't talk to me. Please go away. And we can confirm this if we"
+    },
+    {
+      "Time_Start": 1060.58,
+      "Time_End": 1067.04,
+      "Text": " reverse engineer the background task management daemon, we can see it has code to check"
+    },
+    {
+      "Time_Start": 1067.04,
+      "Time_End": 1073.1599999999999,
+      "Text": " who is talking to it. And it will only talk to processes that are privately entitled."
+    },
+    {
+      "Time_Start": 1073.1599999999999,
+      "Time_End": 1080.32,
+      "Text": " Meaning things like SFL tool. I can't get that private Apple entitlement. I can't spoof it. So"
+    },
+    {
+      "Time_Start": 1080.32,
+      "Time_End": 1084.6999999999998,
+      "Text": " BTM daemon is basically going to tell me to take a hike whereas FSL tool is going to be"
+    },
+    {
+      "Time_Start": 1084.6999999999998,
+      "Time_End": 1089.6599999999999,
+      "Text": " allowed to make that request and get the contents of the database. So fail. But can we"
+    },
+    {
+      "Time_Start": 1089.66,
+      "Time_End": 1097.5,
+      "Text": " just access the database directly? Yeah, as long as we have full disk access we can. So the"
+    },
+    {
+      "Time_Start": 1097.5,
+      "Time_End": 1101.2,
+      "Text": " first thing I said, let me dig into this database to figure out what exactly it is. I ran"
+    },
+    {
+      "Time_Start": 1101.2,
+      "Time_End": 1107.7,
+      "Text": " the file tool on it. It told me it was an Apple binary property list. We can use the PLUT"
+    },
+    {
+      "Time_Start": 1107.7,
+      "Time_End": 1113.24,
+      "Text": " command to convert it to a normal property list. But unfortunately that doesn't really help"
+    },
+    {
+      "Time_Start": 1113.28,
+      "Time_End": 1120.28,
+      "Text": " because it shows us it's just a NS key archived which is a object that has a bunch of other"
+    },
+    {
+      "Time_Start": 1120.28,
+      "Time_End": 1126.94,
+      "Text": " serialized objects. So really the database has a bunch of undocumented serialized objects. So"
+    },
+    {
+      "Time_Start": 1126.94,
+      "Time_End": 1134.94,
+      "Text": " not the best format. But SFL tool can somehow deserialize those objects and display them to"
+    },
+    {
+      "Time_Start": 1134.94,
+      "Time_End": 1140.4,
+      "Text": " the user. So if we reverse engineer SFL tool some more and figure out how those objects are"
+    },
+    {
+      "Time_Start": 1140.44,
+      "Time_End": 1146.2800000000002,
+      "Text": " deserialized, in theory we should be able to write our own deserializer and then read the"
+    },
+    {
+      "Time_Start": 1146.2800000000002,
+      "Time_End": 1151.6000000000001,
+      "Text": " database directly ourselves and display this information to the user. So if we look at SFL's"
+    },
+    {
+      "Time_Start": 1151.6000000000001,
+      "Time_End": 1156.94,
+      "Text": " tool we find it's deserialization code which describes the objects that are in this"
+    },
+    {
+      "Time_Start": 1156.94,
+      "Time_End": 1163.18,
+      "Text": " database. So what we can do is we can essentially reimplement that deserialization"
+    },
+    {
+      "Time_Start": 1163.18,
+      "Time_End": 1167.68,
+      "Text": " ourselves. I'm not going to go through all of this. But we can see there's things in these"
+    },
+    {
+      "Time_Start": 1167.72,
+      "Time_End": 1175.14,
+      "Text": " serialized objects such as an executable path, bundle identifier, et cetera, et cetera. We"
+    },
+    {
+      "Time_Start": 1175.14,
+      "Time_End": 1180.64,
+      "Text": " can then with this deserialization logic complete write some code that opens the database,"
+    },
+    {
+      "Time_Start": 1180.64,
+      "Time_End": 1186.52,
+      "Text": " loads it into our own keyed archiver and then invoke the D object, decode object of class"
+    },
+    {
+      "Time_Start": 1186.52,
+      "Time_End": 1194.02,
+      "Text": " method which will invoke our custom deserializer and deserialize all the objects for us. So I"
+    },
+    {
+      "Time_Start": 1194.02,
+      "Time_End": 1200.56,
+      "Text": " push this logic into an open source library called dump BTM and with this library now you"
+    },
+    {
+      "Time_Start": 1200.56,
+      "Time_End": 1207.48,
+      "Text": " can write a 5 or 10 line program that simply can interact with the database. The library"
+    },
+    {
+      "Time_Start": 1207.48,
+      "Time_End": 1213.9,
+      "Text": " exposes two main methods. The first one is dump BTM. You can either specify the path or look"
+    },
+    {
+      "Time_Start": 1213.9,
+      "Time_End": 1218.9,
+      "Text": " it up for you. This will print it out to standard out or it will load the contents of this"
+    },
+    {
+      "Time_Start": 1218.98,
+      "Time_End": 1224.5600000000002,
+      "Text": " database into a dictionary that then you can programmatically dig into more. So here's an"
+    },
+    {
+      "Time_Start": 1224.5600000000002,
+      "Time_End": 1232.2,
+      "Text": " example, the output of our dump BTM tool. This should look exactly like SFL tool which was"
+    },
+    {
+      "Time_Start": 1232.2,
+      "Time_End": 1237.16,
+      "Text": " legal. Another cool thing about it is this doesn't need root access to run where Apple's SFL"
+    },
+    {
+      "Time_Start": 1237.16,
+      "Time_End": 1242.3600000000001,
+      "Text": " tool does. So if we execute this we can see we're opening the background task management"
+    },
+    {
+      "Time_Start": 1242.3600000000001,
+      "Time_End": 1247.3200000000002,
+      "Text": " database which contains all the persistent items on the system that we're interested in and"
+    },
+    {
+      "Time_Start": 1247.32,
+      "Time_End": 1251.58,
+      "Text": " starts printing them out. Again we can see for example the zoom daemon that has installed"
+    },
+    {
+      "Time_Start": 1251.58,
+      "Time_End": 1257.82,
+      "Text": " itself. So what I then did was I took this library and I implemented it into one of my well"
+    },
+    {
+      "Time_Start": 1257.82,
+      "Time_End": 1262.9399999999998,
+      "Text": " known security tools called knock knock. Knock knock's goal is to simply tell you who's there."
+    },
+    {
+      "Time_Start": 1262.9399999999998,
+      "Time_End": 1267.3999999999999,
+      "Text": " Pretty much saying these are all the persistent items and with the addition of this new"
+    },
+    {
+      "Time_Start": 1267.3999999999999,
+      "Time_End": 1272.58,
+      "Text": " library code it can now also query the undocumented BTM database, get all the persistent"
+    },
+    {
+      "Time_Start": 1272.58,
+      "Time_End": 1278.1599999999999,
+      "Text": " items from that and display that. So on a system where Dazzle Spy has infected via the"
+    },
+    {
+      "Time_Start": 1278.1599999999999,
+      "Time_End": 1283.62,
+      "Text": " Safari zero days we can now enumerate its persistence and alert the user that their system is"
+    },
+    {
+      "Time_Start": 1283.62,
+      "Time_End": 1289.96,
+      "Text": " infected. Now there's one kind of downside to that approach and that is it's somewhat"
+    },
+    {
+      "Time_Start": 1289.96,
+      "Time_End": 1293.96,
+      "Text": " reactive, right? You're going to get on a system if you're doing some forensic analysis or"
+    },
+    {
+      "Time_Start": 1293.96,
+      "Time_End": 1298.24,
+      "Text": " seeing if it's infected and you're going to now query and yes you can get a list of"
+    },
+    {
+      "Time_Start": 1298.24,
+      "Time_End": 1304.9,
+      "Text": " everything that's persisted but it would be nice to get a notification in real time when"
+    },
+    {
+      "Time_Start": 1304.9,
+      "Time_End": 1308.4,
+      "Text": " something is persistent. That's a little more proactive. So let's talk about how to do that"
+    },
+    {
+      "Time_Start": 1308.4,
+      "Time_End": 1314.9,
+      "Text": " now. Now you might remember that I mentioned that the background task management daemon has"
+    },
+    {
+      "Time_Start": 1314.9,
+      "Time_End": 1319.7,
+      "Text": " an entitlement related to end point security. What is end point security? It's another"
+    },
+    {
+      "Time_Start": 1319.7,
+      "Time_End": 1325.9,
+      "Text": " subsystem in Mac OS that's designed to be, designed to interact with third party security"
+    },
+    {
+      "Time_Start": 1325.94,
+      "Time_End": 1330.94,
+      "Text": " tools. The idea is the end point security system and we'll dive into this more, basically"
+    },
+    {
+      "Time_Start": 1330.94,
+      "Time_End": 1336.48,
+      "Text": " monitors all sorts of activity on the system and then third party security clients can tell"
+    },
+    {
+      "Time_Start": 1336.48,
+      "Time_End": 1342.5600000000002,
+      "Text": " it what they are interested in and when that event occurs the end point security subsystem"
+    },
+    {
+      "Time_Start": 1342.5600000000002,
+      "Time_End": 1347.52,
+      "Text": " will programmatically deliver it to them. So for example we will see, we can tell the end"
+    },
+    {
+      "Time_Start": 1347.52,
+      "Time_End": 1352.14,
+      "Text": " point security subsystem, hey we are interested whenever something persists and then it will"
+    },
+    {
+      "Time_Start": 1352.14,
+      "Time_End": 1357.18,
+      "Text": " programmatically call us. So this is really great for a security tool to monitor for"
+    },
+    {
+      "Time_Start": 1357.18,
+      "Time_End": 1362.64,
+      "Text": " example whenever a persistent item is installed. Whether that is zoom or dazzle spy via"
+    },
+    {
+      "Time_Start": 1362.64,
+      "Time_End": 1369.92,
+      "Text": " zero days. So what we can do is we can look at the header files for the end point security"
+    },
+    {
+      "Time_Start": 1369.92,
+      "Time_End": 1376.0,
+      "Text": " system and we note that in Mac OS 13, the most recent version when BTM was introduced, there"
+    },
+    {
+      "Time_Start": 1376.0,
+      "Time_End": 1381.1000000000001,
+      "Text": " are some new end point security events that we can now listen for. And the one we're going to"
+    },
+    {
+      "Time_Start": 1381.1000000000001,
+      "Time_End": 1387.1000000000001,
+      "Text": " focus on is the BTM launch item ad. As the name implies, this is a message that will be"
+    },
+    {
+      "Time_Start": 1387.1000000000001,
+      "Time_End": 1393.4800000000002,
+      "Text": " delivered anytime a new item is persisted. So the idea is an installer or a piece of"
+    },
+    {
+      "Time_Start": 1393.4800000000002,
+      "Time_End": 1398.0200000000002,
+      "Text": " malware comes along and persists itself. If our ES client has registered for these"
+    },
+    {
+      "Time_Start": 1398.0200000000002,
+      "Time_End": 1401.9,
+      "Text": " notifications, Apple will deliver that to us. So you can see if you're writing a security"
+    },
+    {
+      "Time_Start": 1401.9,
+      "Time_End": 1406.9800000000002,
+      "Text": " tool, this is great. You can then perhaps examine that item, alert the user, generate a log"
+    },
+    {
+      "Time_Start": 1407.02,
+      "Time_End": 1412.24,
+      "Text": " message, et cetera, et cetera. So let's look how to do this programmatically. This is some"
+    },
+    {
+      "Time_Start": 1412.24,
+      "Time_End": 1417.52,
+      "Text": " standard end point security code. This is how you write a client. Basically three steps. You"
+    },
+    {
+      "Time_Start": 1417.52,
+      "Time_End": 1422.7,
+      "Text": " tell it what events are of interest to you. Here we want to detect when a new persistent item"
+    },
+    {
+      "Time_Start": 1422.7,
+      "Time_End": 1428.82,
+      "Text": " is added so we tell it we're interested in the BTM launch item ad event. We create a call"
+    },
+    {
+      "Time_Start": 1428.82,
+      "Time_End": 1433.94,
+      "Text": " back that will be invoked when this event is delivered to us and then we subscribe which"
+    },
+    {
+      "Time_Start": 1433.98,
+      "Time_End": 1439.6200000000001,
+      "Text": " kicks off basically our listener. Now whenever something is persisted, the operating"
+    },
+    {
+      "Time_Start": 1439.6200000000001,
+      "Time_End": 1446.16,
+      "Text": " system will call us because we said hey, please let us know. And here are some additional"
+    },
+    {
+      "Time_Start": 1446.16,
+      "Time_End": 1453.44,
+      "Text": " information about the contents of that message. So we can see things like the item, the"
+    },
+    {
+      "Time_Start": 1453.44,
+      "Time_End": 1459.28,
+      "Text": " executable, the path to its property list. Again, these are the components of the message"
+    },
+    {
+      "Time_Start": 1459.32,
+      "Time_End": 1466.82,
+      "Text": " that are going to be delivered to us. So now if we add this code and compile and execute, we"
+    },
+    {
+      "Time_Start": 1466.82,
+      "Time_End": 1472.24,
+      "Text": " are now listening essentially for persistence events. If Dazzle Spy comes along and infects"
+    },
+    {
+      "Time_Start": 1472.24,
+      "Time_End": 1478.32,
+      "Text": " this system, we can now see that we get a notification from the operating system, from the"
+    },
+    {
+      "Time_Start": 1478.32,
+      "Time_End": 1483.66,
+      "Text": " end point security subsystem telling us hey, just to let you know, a new persistent item was"
+    },
+    {
+      "Time_Start": 1483.7,
+      "Time_End": 1489.3200000000002,
+      "Text": " added. Here is the path to its executable and also the path to its property list. This is"
+    },
+    {
+      "Time_Start": 1489.3200000000002,
+      "Time_End": 1493.74,
+      "Text": " great because if we look at that, first we can see it's an executable software updater"
+    },
+    {
+      "Time_Start": 1493.74,
+      "Time_End": 1499.8200000000002,
+      "Text": " that's running from a hidden directory. Huge red flag. Its property list is also called"
+    },
+    {
+      "Time_Start": 1499.8200000000002,
+      "Time_End": 1505.3200000000002,
+      "Text": " com.apple.software but if we look at the binary software update, it's not signed by"
+    },
+    {
+      "Time_Start": 1505.3200000000002,
+      "Time_End": 1511.5800000000002,
+      "Text": " Apple. So another huge red flag. So this is an example of now how we can generically detect"
+    },
+    {
+      "Time_Start": 1511.58,
+      "Time_End": 1516.9199999999998,
+      "Text": " even brand new malware that's being deployed via zero days simply by monitoring for"
+    },
+    {
+      "Time_Start": 1516.9199999999998,
+      "Time_End": 1522.58,
+      "Text": " persistence activities. Now one problematic issue, the other end point security event"
+    },
+    {
+      "Time_Start": 1522.58,
+      "Time_End": 1528.58,
+      "Text": " related to persistence events, the remove events is broken. Like you can register for it"
+    },
+    {
+      "Time_Start": 1528.58,
+      "Time_End": 1534.1999999999998,
+      "Text": " but when a persistent item is removed, it's just never delivered. So Apple, please fix. And"
+    },
+    {
+      "Time_Start": 1534.1999999999998,
+      "Time_End": 1539.5,
+      "Text": " speaking of broken, the BTM launch ad event was actually horribly broken to begin with in"
+    },
+    {
+      "Time_Start": 1539.5,
+      "Time_End": 1544.58,
+      "Text": " two ways. First, whenever an item was persisted, the operating system would just call you"
+    },
+    {
+      "Time_Start": 1544.58,
+      "Time_End": 1549.92,
+      "Text": " with all the items that were persisted which is totally unhelpful. I'm only interested in the"
+    },
+    {
+      "Time_Start": 1549.92,
+      "Time_End": 1555.12,
+      "Text": " new items, not the 25 other items that are already on the system. And then also if you"
+    },
+    {
+      "Time_Start": 1555.12,
+      "Time_End": 1560.2,
+      "Text": " persisted as a login item which is another persistence mechanism, you wouldn't get a"
+    },
+    {
+      "Time_Start": 1560.2,
+      "Time_End": 1565.2,
+      "Text": " notification at all. So I sent a bug report to Apple and I said hey, yo, this is like all"
+    },
+    {
+      "Time_Start": 1565.2,
+      "Time_End": 1571.2,
+      "Text": " broken. They took their happy time but eventually in Mac OS 13.3 they fixed this. Okay,"
+    },
+    {
+      "Time_Start": 1573.8600000000001,
+      "Time_End": 1578.6200000000001,
+      "Text": " so now we've talked about the internals of the BTM subsystem. We've showed how we can write"
+    },
+    {
+      "Time_Start": 1578.6200000000001,
+      "Time_End": 1583.78,
+      "Text": " some pretty powerful detection tools that allow us to detect malware when it persists. So"
+    },
+    {
+      "Time_Start": 1583.78,
+      "Time_End": 1588.24,
+      "Text": " this is great for defenders. But as I mentioned, DEF CON like it's a hacker conference so we"
+    },
+    {
+      "Time_Start": 1588.24,
+      "Time_End": 1593.32,
+      "Text": " need to like put on our black hats and talk about now how to break this subsystem. And the"
+    },
+    {
+      "Time_Start": 1593.32,
+      "Time_End": 1600.36,
+      "Text": " reason we want to break this subsystem as hackers are twofold. First, let's put ourselves in"
+    },
+    {
+      "Time_Start": 1600.36,
+      "Time_End": 1605.24,
+      "Text": " the shoes of a hacker. We come along, we infect a Mac system with our zero days, all well and"
+    },
+    {
+      "Time_Start": 1605.24,
+      "Time_End": 1611.7,
+      "Text": " good. We go to persist. Two things now happen because of BTM. First, a big system alert is"
+    },
+    {
+      "Time_Start": 1611.7,
+      "Time_End": 1616.3999999999999,
+      "Text": " generated and displayed to the user saying hey, something just persisted. And like if you're"
+    },
+    {
+      "Time_Start": 1616.3999999999999,
+      "Time_End": 1620.3999999999999,
+      "Text": " browsing Safari and all of a sudden this pops up, like yeah, you're probably owned. And then"
+    },
+    {
+      "Time_Start": 1620.4,
+      "Time_End": 1625.7800000000002,
+      "Text": " also as we showed, this will generate a end point security message which means that if any"
+    },
+    {
+      "Time_Start": 1625.7800000000002,
+      "Time_End": 1631.74,
+      "Text": " security system is on your Mac, any security tool, it will pick up this event and also be"
+    },
+    {
+      "Time_Start": 1631.74,
+      "Time_End": 1638.4,
+      "Text": " like yo, strange, you've essentially been hacked. So as hackers we want to bypass both the"
+    },
+    {
+      "Time_Start": 1638.4,
+      "Time_End": 1644.4,
+      "Text": " security alert and the end point security event. Two things to point out. These are both"
+    },
+    {
+      "Time_Start": 1644.4,
+      "Time_End": 1650.3200000000002,
+      "Text": " separate so we have to find attacks and bypasses for both of them. But the good news is both"
+    },
+    {
+      "Time_Start": 1650.32,
+      "Time_End": 1655.36,
+      "Text": " of them are independent on the functionality of the persistent item. Meaning regardless of"
+    },
+    {
+      "Time_Start": 1655.36,
+      "Time_End": 1662.2,
+      "Text": " what happens to the alert and the security event, they're both notifications. So either way"
+    },
+    {
+      "Time_Start": 1662.2,
+      "Time_End": 1666.4399999999998,
+      "Text": " the item will be successfully persisted. It's not like the operating system is waiting for the"
+    },
+    {
+      "Time_Start": 1666.4399999999998,
+      "Time_End": 1670.82,
+      "Text": " user to click on the event and say allow. So this is good. This means if we can suppress these"
+    },
+    {
+      "Time_Start": 1670.82,
+      "Time_End": 1675.08,
+      "Text": " messages or somehow prevent them from being delivered, we're great. Our malware will be able"
+    },
+    {
+      "Time_Start": 1675.08,
+      "Time_End": 1681.1599999999999,
+      "Text": " to persist invisibly and still function. So one thing you can do, and this is not really a"
+    },
+    {
+      "Time_Start": 1681.1599999999999,
+      "Time_End": 1687.96,
+      "Text": " bypass per se, it's more just a limitation of BTM, is simply persist in a way that is outside"
+    },
+    {
+      "Time_Start": 1687.96,
+      "Time_End": 1693.54,
+      "Text": " launch daemons, launch agents or login items which are the three persistent mechanism that"
+    },
+    {
+      "Time_Start": 1693.54,
+      "Time_End": 1698.34,
+      "Text": " BTM currently monitors. These are the most popular ones but there are a myriad of other ways."
+    },
+    {
+      "Time_Start": 1698.34,
+      "Time_End": 1703.9199999999998,
+      "Text": " For example, you can persist as a cron job and currently BTM does not monitor cron jobs."
+    },
+    {
+      "Time_Start": 1703.92,
+      "Time_End": 1710.26,
+      "Text": " There's also a great blog post by Chaba who basically shows that there's 20 or so more"
+    },
+    {
+      "Time_Start": 1710.26,
+      "Time_End": 1714.76,
+      "Text": " esoteric and stealthy ways to persist. So if you persist your malware in any of those ways,"
+    },
+    {
+      "Time_Start": 1714.76,
+      "Time_End": 1719.5600000000002,
+      "Text": " again as long as you're not a launch daemon, a launch agent or a login item, BTM doesn't even"
+    },
+    {
+      "Time_Start": 1719.5600000000002,
+      "Time_End": 1726.46,
+      "Text": " come into play. But I wanted to directly bypass that system alert. So method one is"
+    },
+    {
+      "Time_Start": 1726.46,
+      "Time_End": 1732.8000000000002,
+      "Text": " hilariously simple. If we go back to that SFL tool and look at what it supports, one of its"
+    },
+    {
+      "Time_Start": 1732.84,
+      "Time_End": 1737.84,
+      "Text": " commands is the reset BTM database. And the idea is if your database gets into a funky"
+    },
+    {
+      "Time_Start": 1740.56,
+      "Time_End": 1746.6399999999999,
+      "Text": " state, you can reset it. The operating system will then just rescan all the launch daemon"
+    },
+    {
+      "Time_Start": 1746.6399999999999,
+      "Time_End": 1752.1,
+      "Text": " agent and login items directory and rebuild the database. So that's great. The problem is"
+    },
+    {
+      "Time_Start": 1752.1,
+      "Time_End": 1756.94,
+      "Text": " when you execute that, it puts the background task management daemon in like a funky"
+    },
+    {
+      "Time_Start": 1756.94,
+      "Time_End": 1761.68,
+      "Text": " confused state. So if we look at the log messages, what we can first do is reset the"
+    },
+    {
+      "Time_Start": 1761.68,
+      "Time_End": 1767.3600000000001,
+      "Text": " database and then persist an item. And if you look at the log messages, you can see that"
+    },
+    {
+      "Time_Start": 1767.3600000000001,
+      "Time_End": 1773.8600000000001,
+      "Text": " should post advisory is now set to false. I don't know exactly why, but I know that if you"
+    },
+    {
+      "Time_Start": 1773.8600000000001,
+      "Time_End": 1779.18,
+      "Text": " reset the database, this will always be the case. So what a hacker can now do, granted with"
+    },
+    {
+      "Time_Start": 1779.18,
+      "Time_End": 1783.8600000000001,
+      "Text": " root privileges, is just reset the database, persist their item, their item will be"
+    },
+    {
+      "Time_Start": 1783.8600000000001,
+      "Time_End": 1789.0600000000002,
+      "Text": " successfully persisted and restart every time the system is rebooted, but the alert will"
+    },
+    {
+      "Time_Start": 1789.1,
+      "Time_End": 1793.56,
+      "Text": " never be delivered. And again, they're simply using Apple's own tool. So this isn't some"
+    },
+    {
+      "Time_Start": 1793.56,
+      "Time_End": 1797.94,
+      "Text": " crazy like heap overflow. You're basically just saying, hey, please reset the database. And"
+    },
+    {
+      "Time_Start": 1797.94,
+      "Time_End": 1803.28,
+      "Text": " the system's like, cool. And then you can persist silently. So that's awesome. But the problem"
+    },
+    {
+      "Time_Start": 1803.28,
+      "Time_End": 1809.3999999999999,
+      "Text": " with that is you need root access. So I said, okay, let's do one better. Remember the"
+    },
+    {
+      "Time_Start": 1809.3999999999999,
+      "Time_End": 1815.32,
+      "Text": " BTM daemon will send an XPC notification to the BTM agent and say, please display a"
+    },
+    {
+      "Time_Start": 1815.36,
+      "Time_End": 1820.58,
+      "Text": " notification to the user. What privilege level is the agent running at? User. And this is"
+    },
+    {
+      "Time_Start": 1820.58,
+      "Time_End": 1826.8999999999999,
+      "Text": " because it needs to display a message on the user's desktop session. So I said, can we just"
+    },
+    {
+      "Time_Start": 1826.8999999999999,
+      "Time_End": 1833.6599999999999,
+      "Text": " send the BTM agent a stop signal? Like, yo, go to sleep for a minute. What happens? Well, it"
+    },
+    {
+      "Time_Start": 1833.6599999999999,
+      "Time_End": 1840.08,
+      "Text": " turns out you can do this. The BTM daemon will still deliver the message to the BTM agent and"
+    },
+    {
+      "Time_Start": 1840.08,
+      "Time_End": 1845.3,
+      "Text": " believe that was successfully delivered. But since the agent is sleeping, it's not really"
+    },
+    {
+      "Time_Start": 1845.3,
+      "Time_End": 1850.46,
+      "Text": " going to get that message and so it will never be displayed. So what a hacker can do is get"
+    },
+    {
+      "Time_Start": 1850.46,
+      "Time_End": 1855.46,
+      "Text": " the process ID of the BTM agent, which again is running as user, so lowest privilege level,"
+    },
+    {
+      "Time_Start": 1855.46,
+      "Time_End": 1860.9199999999998,
+      "Text": " send it a stop signal to put it to sleep. Go to persist. BTM daemon will try to deliver the"
+    },
+    {
+      "Time_Start": 1860.9199999999998,
+      "Time_End": 1866.46,
+      "Text": " message and think it succeeded, but the agent is sleeping. And then once they have persisted,"
+    },
+    {
+      "Time_Start": 1866.46,
+      "Time_End": 1870.76,
+      "Text": " kill the agent, which again you can do because it's running with your same privilege level. You"
+    },
+    {
+      "Time_Start": 1870.76,
+      "Time_End": 1874.68,
+      "Text": " need to kill the agent because otherwise when you wake it up, the alert will have been"
+    },
+    {
+      "Time_Start": 1874.68,
+      "Time_End": 1880.5,
+      "Text": " queued and will be displayed. But if you do this, you will now be able to persist and the alert"
+    },
+    {
+      "Time_Start": 1880.5,
+      "Time_End": 1886.1000000000001,
+      "Text": " to the user will never be displayed. Now this is well and good. I'm like, cool, like these"
+    },
+    {
+      "Time_Start": 1886.1000000000001,
+      "Time_End": 1891.38,
+      "Text": " techniques work on the latest version of Mac OS, so hackers take note. I guess Apple take"
+    },
+    {
+      "Time_Start": 1891.38,
+      "Time_End": 1898.2600000000002,
+      "Text": " note too. But I'm like, cool, users might ignore that alert anyways. What I'm really more"
+    },
+    {
+      "Time_Start": 1898.2600000000002,
+      "Time_End": 1903.14,
+      "Text": " interested in is preventing the end point security message because security tools,"
+    },
+    {
+      "Time_Start": 1903.14,
+      "Time_End": 1909.3000000000002,
+      "Text": " including my own, listen for this method. This is how Apple says register for persistence"
+    },
+    {
+      "Time_Start": 1909.3000000000002,
+      "Time_End": 1913.38,
+      "Text": " notification. And you can imagine security tools are not going to necessarily ignore this. A"
+    },
+    {
+      "Time_Start": 1913.38,
+      "Time_End": 1917.1000000000001,
+      "Text": " user might ignore an alert. A security tool, if it gets a persistence event, is going to"
+    },
+    {
+      "Time_Start": 1917.1000000000001,
+      "Time_End": 1921.7,
+      "Text": " examine that very closely. So again as adversaries, hackers, we want to figure out how to"
+    },
+    {
+      "Time_Start": 1921.7,
+      "Time_End": 1926.0200000000002,
+      "Text": " prevent that message from being delivered. And it's a little harder because this is all being"
+    },
+    {
+      "Time_Start": 1926.0200000000002,
+      "Time_End": 1931.0200000000002,
+      "Text": " delivered in the root session. So I went back to the BTM daemon and started looking around at"
+    },
+    {
+      "Time_Start": 1931.0200000000002,
+      "Time_End": 1936.5200000000002,
+      "Text": " how it submits events to the end point security system when it detects something has"
+    },
+    {
+      "Time_Start": 1936.5200000000002,
+      "Time_End": 1941.2,
+      "Text": " persisted. And unfortunately if we follow the call chain, we can see it calls into the"
+    },
+    {
+      "Time_Start": 1941.2,
+      "Time_End": 1946.2,
+      "Text": " kernel, which means we're going to have to pop into kernel. However, right below that kernel"
+    },
+    {
+      "Time_Start": 1946.24,
+      "Time_End": 1952.2,
+      "Text": " call, we can see a log message that says failed to submit event. So I'm like, okay, well, it"
+    },
+    {
+      "Time_Start": 1952.2,
+      "Time_End": 1956.6200000000001,
+      "Text": " looks like there's a failure scenario. I have no idea what that is. But if we can figure out"
+    },
+    {
+      "Time_Start": 1956.6200000000001,
+      "Time_End": 1960.92,
+      "Text": " what that failure scenario is and trigger that, we might be able to prevent the end point"
+    },
+    {
+      "Time_Start": 1960.92,
+      "Time_End": 1965.0,
+      "Text": " security message from being delivered to any security tool on the system. Which is the"
+    },
+    {
+      "Time_Start": 1965.0,
+      "Time_End": 1969.74,
+      "Text": " goal. So we pop into the kernel and there's kind of a lot going on in the slide, kind of"
+    },
+    {
+      "Time_Start": 1969.74,
+      "Time_End": 1974.96,
+      "Text": " follow the black arrows. We can basically see that in the end point security kernel"
+    },
+    {
+      "Time_Start": 1975.0,
+      "Time_End": 1980.72,
+      "Text": " extension. So this is running in kernel mode. We find a bunch of methods. One is called PDB"
+    },
+    {
+      "Time_Start": 1980.72,
+      "Time_End": 1986.8400000000001,
+      "Text": " read audit token. This reads a process ID from a user mode buffer and then calls another"
+    },
+    {
+      "Time_Start": 1986.8400000000001,
+      "Time_End": 1991.8400000000001,
+      "Text": " method create from PID version. And this invokes the proc find API. Given a PID. This is"
+    },
+    {
+      "Time_Start": 1994.64,
+      "Time_End": 1999.3,
+      "Text": " going to be important. Then it calls another method to get the executable V node. This is"
+    },
+    {
+      "Time_Start": 1999.3,
+      "Time_End": 2004.6000000000001,
+      "Text": " kind of like the file system V node of the process it's just looked up. So basically it's"
+    },
+    {
+      "Time_Start": 2004.6000000000001,
+      "Time_End": 2009.94,
+      "Text": " trying to get a path to a process. What process? Well, if we set a break point in kernel"
+    },
+    {
+      "Time_Start": 2009.94,
+      "Time_End": 2014.7800000000002,
+      "Text": " mode and install something, for example, oversight which is one of my utilities that"
+    },
+    {
+      "Time_Start": 2014.7800000000002,
+      "Time_End": 2021.2400000000002,
+      "Text": " installs a launch, a login item, we can see that the process that it's looking up is the"
+    },
+    {
+      "Time_Start": 2021.2400000000002,
+      "Time_End": 2026.5600000000002,
+      "Text": " responsible process that has persisted the item. And we can confirm that if we look at the"
+    },
+    {
+      "Time_Start": 2026.5600000000002,
+      "Time_End": 2031.14,
+      "Text": " end point security message in user mode. We can see that the PID and the process match. So"
+    },
+    {
+      "Time_Start": 2031.14,
+      "Time_End": 2035.64,
+      "Text": " again, what the end point security kernel extension is trying to do is look up the"
+    },
+    {
+      "Time_Start": 2035.64,
+      "Time_End": 2041.18,
+      "Text": " process that is responsible for generating the persistent event. The installer, the malware,"
+    },
+    {
+      "Time_Start": 2041.18,
+      "Time_End": 2045.48,
+      "Text": " et cetera, et cetera. This makes sense because they want to deliver that to the security"
+    },
+    {
+      "Time_Start": 2045.48,
+      "Time_End": 2050.98,
+      "Text": " tool in user mode. So I looked at that a little more and I thought, okay, what happens if the"
+    },
+    {
+      "Time_Start": 2050.98,
+      "Time_End": 2055.9,
+      "Text": " responsible process is like gone? What if it executes really quickly, right? This is kind"
+    },
+    {
+      "Time_Start": 2055.9,
+      "Time_End": 2062.7400000000002,
+      "Text": " of happening separately. So maybe it will get confused. And so what happens, we can see in"
+    },
+    {
+      "Time_Start": 2062.7400000000002,
+      "Time_End": 2067.44,
+      "Text": " this case, they call proc find with null. They don't have a PID because the process that"
+    },
+    {
+      "Time_Start": 2067.44,
+      "Time_End": 2074.48,
+      "Text": " persisted, at least I thought, was gone. Now, if you call proc find with null, which is also"
+    },
+    {
+      "Time_Start": 2074.48,
+      "Time_End": 2080.94,
+      "Text": " zero, you get back a process object but it's the one belonging to the kernel task because the"
+    },
+    {
+      "Time_Start": 2080.94,
+      "Time_End": 2085.2000000000003,
+      "Text": " kernel task is assigned PID zero. It's not really a process per se but this is just how it"
+    },
+    {
+      "Time_Start": 2085.24,
+      "Time_End": 2090.7,
+      "Text": " works on Mac OS. And that's okay. I mean, they kind of have the wrong process at this point."
+    },
+    {
+      "Time_Start": 2090.7,
+      "Time_End": 2095.5,
+      "Text": " But it's problematic then when they call proc get executable V node because the kernel"
+    },
+    {
+      "Time_Start": 2095.5,
+      "Time_End": 2100.62,
+      "Text": " doesn't have an executable V node. It's not a running process backed by a binary per se. So"
+    },
+    {
+      "Time_Start": 2100.62,
+      "Time_End": 2106.7799999999997,
+      "Text": " that is going to return null which causes them to return error number 3. And if we go back"
+    },
+    {
+      "Time_Start": 2106.7799999999997,
+      "Time_End": 2113.3599999999997,
+      "Text": " to the log messages in user mode, we can see a log message that says fail to submit ES"
+    },
+    {
+      "Time_Start": 2113.36,
+      "Time_End": 2119.7000000000003,
+      "Text": " sys call. Error 3 no such process. So I was like, okay, I think I can trigger this but how?"
+    },
+    {
+      "Time_Start": 2119.7000000000003,
+      "Time_End": 2124.2000000000003,
+      "Text": " Like how do I develop a proof of concept? And I thought about it and I said, oh, wait a"
+    },
+    {
+      "Time_Start": 2124.2000000000003,
+      "Time_End": 2131.02,
+      "Text": " minute. My own tool block block uses the CP command to install a property list. It copies"
+    },
+    {
+      "Time_Start": 2131.02,
+      "Time_End": 2135.48,
+      "Text": " that. And that's a very quick command that exits. So I was like, is this going to trigger"
+    },
+    {
+      "Time_Start": 2135.48,
+      "Time_End": 2140.44,
+      "Text": " this kernel bug and bypass that? So let's do a demo. I haven't prayed to the demo god so"
+    },
+    {
+      "Time_Start": 2140.44,
+      "Time_End": 2144.56,
+      "Text": " fingers crossed this all worked. But go big or go home. The first thing we're going to do,"
+    },
+    {
+      "Time_Start": 2144.56,
+      "Time_End": 2149.4,
+      "Text": " I'm going to make this a little bigger, is we're going to execute Apple's ES logger command."
+    },
+    {
+      "Time_Start": 2149.4,
+      "Time_End": 2154.36,
+      "Text": " And this is going to, this is a utility, an end point security client that allows you to"
+    },
+    {
+      "Time_Start": 2154.36,
+      "Time_End": 2159.32,
+      "Text": " listen for end point security events. And we're saying please listen for the BTM launch add"
+    },
+    {
+      "Time_Start": 2159.32,
+      "Time_End": 2166.06,
+      "Text": " item. So in theory, if an item is persisted, we should get notification. We're then going to"
+    },
+    {
+      "Time_Start": 2166.06,
+      "Time_End": 2171.36,
+      "Text": " have some log messages running. This is just going to show us the error message. And then"
+    },
+    {
+      "Time_Start": 2171.36,
+      "Time_End": 2178.56,
+      "Text": " we're going to install block block. Fingers crossed. Put in my password. This is definitely"
+    },
+    {
+      "Time_Start": 2178.56,
+      "Time_End": 2184.1,
+      "Text": " going to work. Now we do get an alert. We'll address that in a second. These alerts are"
+    },
+    {
+      "Time_Start": 2184.1,
+      "Time_End": 2189.86,
+      "Text": " again separate from the end point security subsystem. If we go over here though, we see"
+    },
+    {
+      "Time_Start": 2189.86,
+      "Time_End": 2193.94,
+      "Text": " there's no message. There's supposed to be a message. Why isn't there a message? Well if we"
+    },
+    {
+      "Time_Start": 2193.94,
+      "Time_End": 2199.06,
+      "Text": " go back to here and look for lib end point, we can see that we have successfully triggered"
+    },
+    {
+      "Time_Start": 2199.06,
+      "Time_End": 2206.44,
+      "Text": " this kernel bug. Failed to submit event. Syscall failed. Error no such process. And this is"
+    },
+    {
+      "Time_Start": 2206.44,
+      "Time_End": 2211.82,
+      "Text": " because block block again is a script that executes shell commands which start and stop very"
+    },
+    {
+      "Time_Start": 2211.82,
+      "Time_End": 2217.02,
+      "Text": " quickly. So the kernel doesn't have time to look that up or isn't tracking those separately."
+    },
+    {
+      "Time_Start": 2217.02,
+      "Time_End": 2221.82,
+      "Text": " When it goes to look that up, that process is already gone. And so it doesn't have a PID and so"
+    },
+    {
+      "Time_Start": 2221.82,
+      "Time_End": 2229.44,
+      "Text": " it errors out. So basically all you have to do to bypass the security events is to do that."
+    },
+    {
+      "Time_Start": 2229.44,
+      "Time_End": 2234.32,
+      "Text": " Okay. Let's, I guess we have some time. Let's show how we can block these messages as well."
+    },
+    {
+      "Time_Start": 2234.32,
+      "Time_End": 2242.32,
+      "Text": " Yeah. Awesome. Thank you. So I'm going to uninstall block block. Click through this. Just to"
+    },
+    {
+      "Time_Start": 2242.32,
+      "Time_End": 2248.7400000000002,
+      "Text": " kind of reset everything. Uninstall. And we're going to run it again and we're going to this"
+    },
+    {
+      "Time_Start": 2248.7400000000002,
+      "Time_End": 2256.5400000000004,
+      "Text": " time try to hide those alerts. So I remember I told you the launch agent, the background, the"
+    },
+    {
+      "Time_Start": 2256.5400000000004,
+      "Time_End": 2261.2400000000002,
+      "Text": " BTM agent is responsible for displaying those alerts. And so what we can do is just tell it to"
+    },
+    {
+      "Time_Start": 2261.2400000000002,
+      "Time_End": 2265.78,
+      "Text": " go to sleep. So let's do that exactly. So what we're going to do first over here, I'll make"
+    },
+    {
+      "Time_Start": 2265.78,
+      "Time_End": 2269.0400000000004,
+      "Text": " this a little bigger, is we're just going to get the process ID of the background task"
+    },
+    {
+      "Time_Start": 2269.0400000000004,
+      "Time_End": 2275.4,
+      "Text": " management agent. We can see it has a PID of 86276. It's also running as me as the normal"
+    },
+    {
+      "Time_Start": 2275.4,
+      "Time_End": 2279.6600000000003,
+      "Text": " user. So what we can do is we can do this programmatically or we can just do it via the"
+    },
+    {
+      "Time_Start": 2279.6600000000003,
+      "Time_End": 2284.36,
+      "Text": " kill. We're going to send it the kill stop command which is going to say, hey, go to sleep."
+    },
+    {
+      "Time_Start": 2284.36,
+      "Time_End": 2290.44,
+      "Text": " And we can confirm that if we do the process listing again, it now has a T here. T means that"
+    },
+    {
+      "Time_Start": 2290.44,
+      "Time_End": 2297.1600000000003,
+      "Text": " item is now suspended. If we, and I'm going to reset this because the uninstaller for block"
+    },
+    {
+      "Time_Start": 2297.1600000000003,
+      "Time_End": 2300.7000000000003,
+      "Text": " block installs something persistently but does it programmatically so this generates an"
+    },
+    {
+      "Time_Start": 2300.7000000000003,
+      "Time_End": 2305.26,
+      "Text": " event. This just proves that normally we should get an event. So I'm going to reset this to"
+    },
+    {
+      "Time_Start": 2305.26,
+      "Time_End": 2310.26,
+      "Text": " show that the installer doesn't. We're now going to run block block again and the hope is"
+    },
+    {
+      "Time_Start": 2310.26,
+      "Time_End": 2316.8,
+      "Text": " we A, don't get a security event and B, no, no alert is shown. So fingers crossed. Live"
+    },
+    {
+      "Time_Start": 2316.8,
+      "Time_End": 2324.8,
+      "Text": " demo number two. Block block is going to install. Hooray. Happy. We're going to get an"
+    },
+    {
+      "Time_Start": 2325.6000000000004,
+      "Time_End": 2331.76,
+      "Text": " alert from block block saying I'm up and running but no alerts from the end point security"
+    },
+    {
+      "Time_Start": 2331.76,
+      "Time_End": 2337.76,
+      "Text": " system and no alerts from the subsystem. So now what we would do is we would kill the agent to"
+    },
+    {
+      "Time_Start": 2340.76,
+      "Time_End": 2345.1000000000004,
+      "Text": " make sure that those messages are not delivered. What I'm going to do instead, resume it to"
+    },
+    {
+      "Time_Start": 2345.1000000000004,
+      "Time_End": 2350.1000000000004,
+      "Text": " show you that if we didn't do those, those would actually be there. So again, normally a"
+    },
+    {
+      "Time_Start": 2350.1000000000004,
+      "Time_End": 2354.4,
+      "Text": " hacker wouldn't like continue the agent. They would kill it at this point which is again"
+    },
+    {
+      "Time_Start": 2354.5,
+      "Time_End": 2357.9,
+      "Text": " because it's running with the same privileges. But if we continue it, we will see those are"
+    },
+    {
+      "Time_Start": 2357.9,
+      "Time_End": 2363.2400000000002,
+      "Text": " the messages. So they were delivered but because the agent was sleeping, they weren't"
+    },
+    {
+      "Time_Start": 2363.2400000000002,
+      "Time_End": 2367.6600000000003,
+      "Text": " actually shown and if we kill it, they will never be displayed. So what we have done is fully"
+    },
+    {
+      "Time_Start": 2367.6600000000003,
+      "Time_End": 2374.1600000000003,
+      "Text": " bypassed background task management which is I think kind of problematic. And why is this"
+    },
+    {
+      "Time_Start": 2374.1600000000003,
+      "Time_End": 2379.62,
+      "Text": " problematic? Let me just clear these annoying alerts. It's really problematic because this"
+    },
+    {
+      "Time_Start": 2379.62,
+      "Time_End": 2383.7000000000003,
+      "Text": " is a security mechanism that Apple has basically told us will protect our Macs but in"
+    },
+    {
+      "Time_Start": 2383.7000000000003,
+      "Time_End": 2388.84,
+      "Text": " reality it's implemented incredibly poorly and is trivial to bypass. And this is"
+    },
+    {
+      "Time_Start": 2388.84,
+      "Time_End": 2393.0000000000005,
+      "Text": " problematic because users might now be over confident in the security of their system"
+    },
+    {
+      "Time_Start": 2393.0000000000005,
+      "Time_End": 2397.6600000000003,
+      "Text": " because Apple has promised them this security feature. And security tool vendors might also"
+    },
+    {
+      "Time_Start": 2397.6600000000003,
+      "Time_End": 2403.6200000000003,
+      "Text": " be leveraging this to detect persistence believing it works when in reality it's broken"
+    },
+    {
+      "Time_Start": 2403.6200000000003,
+      "Time_End": 2408.9600000000005,
+      "Text": " and trivial to bypass. So that in my opinion is problematic. So let's end kind of on a more"
+    },
+    {
+      "Time_Start": 2408.96,
+      "Time_End": 2413.8,
+      "Text": " positive note and show how we can detect these bypasses until Apple gets their act"
+    },
+    {
+      "Time_Start": 2413.8,
+      "Time_End": 2418.76,
+      "Text": " together and actually starts shipping well secure implementations. So the first thing we"
+    },
+    {
+      "Time_Start": 2418.76,
+      "Time_End": 2425.26,
+      "Text": " want to do is how do we detect if someone resets the SFL or the BTM database. This is not"
+    },
+    {
+      "Time_Start": 2425.26,
+      "Time_End": 2429.6,
+      "Text": " something that should ever normally happen, right? It's kind of an undocumented database. No"
+    },
+    {
+      "Time_Start": 2429.6,
+      "Time_End": 2434.6,
+      "Text": " one really knows about the SFL tool. So if you see someone resetting the database, it's"
+    },
+    {
+      "Time_Start": 2434.6,
+      "Time_End": 2438.56,
+      "Text": " like probably a hacker trying to leverage one of these bypasses. So what we can do is we can"
+    },
+    {
+      "Time_Start": 2438.56,
+      "Time_End": 2444.48,
+      "Text": " write a process monitor that can detect when this process is spawned and also look at the"
+    },
+    {
+      "Time_Start": 2444.48,
+      "Time_End": 2450.1,
+      "Text": " arguments. We can write a process monitor that's either passive that can say hey this"
+    },
+    {
+      "Time_Start": 2450.1,
+      "Time_End": 2455.2,
+      "Text": " happened or using other end point security events you can actually receive a notification"
+    },
+    {
+      "Time_Start": 2455.2,
+      "Time_End": 2463.2,
+      "Text": " when a process is about to be spawned and if it's the SFL tool with the dump BTM command you"
+    },
+    {
+      "Time_Start": 2463.36,
+      "Time_End": 2469.28,
+      "Text": " can actually prevent, sorry with the reset database command you can actually block that"
+    },
+    {
+      "Time_Start": 2469.28,
+      "Time_End": 2473.4600000000005,
+      "Text": " altogether. So this is a way to essentially prevent that command from being run so that"
+    },
+    {
+      "Time_Start": 2473.4600000000005,
+      "Time_End": 2480.5400000000004,
+      "Text": " database cannot be reset. What about telling the BTM agent to go to sleep? Well it turns out"
+    },
+    {
+      "Time_Start": 2480.5400000000004,
+      "Time_End": 2487.7400000000002,
+      "Text": " we can also use the end point security system to register for signals. Specifically we can"
+    },
+    {
+      "Time_Start": 2487.78,
+      "Time_End": 2494.2400000000002,
+      "Text": " use the event type off signal which will be delivered to us any time a process is trying to"
+    },
+    {
+      "Time_Start": 2494.2400000000002,
+      "Time_End": 2501.46,
+      "Text": " send a signal to another process. What we can then do is we can examine both the signal and"
+    },
+    {
+      "Time_Start": 2501.46,
+      "Time_End": 2507.46,
+      "Text": " the source and destination process and if the destination process is the background task"
+    },
+    {
+      "Time_Start": 2507.46,
+      "Time_End": 2513.2400000000002,
+      "Text": " management agent and the signal that is about to be sent to it is a stop event to put it to"
+    },
+    {
+      "Time_Start": 2513.28,
+      "Time_End": 2519.5000000000005,
+      "Text": " sleep we can tell the operating system do not allow that to happen. So if we implement this"
+    },
+    {
+      "Time_Start": 2519.5000000000005,
+      "Time_End": 2524.5400000000004,
+      "Text": " code and are running this in our security tool you can now see that when the attacker tries"
+    },
+    {
+      "Time_Start": 2524.5400000000004,
+      "Time_End": 2531.5000000000005,
+      "Text": " to send that sig stop message to tell the BTM agent to go to sleep our security tool will deny"
+    },
+    {
+      "Time_Start": 2531.5000000000005,
+      "Time_End": 2536.7000000000003,
+      "Text": " that and that will actually fail. So now we've prevented the agent from going to sleep."
+    },
+    {
+      "Time_Start": 2536.7000000000003,
+      "Time_End": 2542.82,
+      "Text": " Again these are things like Apple should be doing. It's like lame that we have to do this but"
+    },
+    {
+      "Time_Start": 2542.82,
+      "Time_End": 2548.98,
+      "Text": " it is what it is, right? In terms of getting the end point security notification for"
+    },
+    {
+      "Time_Start": 2548.98,
+      "Time_End": 2554.5800000000004,
+      "Text": " persistence this one's a little tougher because it's a kernel flaw. So kind of hard for us to"
+    },
+    {
+      "Time_Start": 2554.5800000000004,
+      "Time_End": 2561.9,
+      "Text": " detect. Well good news is there are other end point security alerts or messages that will also"
+    },
+    {
+      "Time_Start": 2561.9,
+      "Time_End": 2568.32,
+      "Text": " be delivered that are not susceptible to this bug. For example when a piece of malware"
+    },
+    {
+      "Time_Start": 2568.4,
+      "Time_End": 2574.2400000000002,
+      "Text": " writes a property list to the launch daemon directory to persist, yes in theory this is"
+    },
+    {
+      "Time_Start": 2574.2400000000002,
+      "Time_End": 2578.4,
+      "Text": " supposed to generate a BTM launch item add and will in some cases but we showed how to"
+    },
+    {
+      "Time_Start": 2578.4,
+      "Time_End": 2585.0800000000004,
+      "Text": " trivially bypass this. This will always also generate file notifications. For example"
+    },
+    {
+      "Time_Start": 2585.0800000000004,
+      "Time_End": 2590.1200000000003,
+      "Text": " notify create, notify write that will be delivered to us and are not susceptible to the"
+    },
+    {
+      "Time_Start": 2590.1200000000003,
+      "Time_End": 2595.36,
+      "Text": " kernel flaw which allows us then to say hey something was written to those directories. So"
+    },
+    {
+      "Time_Start": 2595.36,
+      "Time_End": 2600.28,
+      "Text": " what we can do and this is how block block detects persistence is it doesn't use the BTM"
+    },
+    {
+      "Time_Start": 2600.28,
+      "Time_End": 2604.94,
+      "Text": " launch item add because it's broken currently. I wish it worked. It would be really nice."
+    },
+    {
+      "Time_Start": 2604.94,
+      "Time_End": 2610.9,
+      "Text": " But instead it uses the file events to monitor the locations where items can persist. As I"
+    },
+    {
+      "Time_Start": 2610.9,
+      "Time_End": 2617.1600000000003,
+      "Text": " mentioned those events will always be delivered accurately and correctly. So it listens for"
+    },
+    {
+      "Time_Start": 2617.1600000000003,
+      "Time_End": 2622.44,
+      "Text": " those events. If it turns out it's in one of those directories it then alerts the user. The"
+    },
+    {
+      "Time_Start": 2622.44,
+      "Time_End": 2626.86,
+      "Text": " other thing is unlike Apple's approach it has the ability to block that so you can"
+    },
+    {
+      "Time_Start": 2626.86,
+      "Time_End": 2630.7000000000003,
+      "Text": " actually take some action against that versus just clicking on an alert that's like yeah"
+    },
+    {
+      "Time_Start": 2630.7000000000003,
+      "Time_End": 2636.2000000000003,
+      "Text": " cool. Okay. So let's wrap this all up with some takeaways. So we talked about"
+    },
+    {
+      "Time_Start": 2636.2000000000003,
+      "Time_End": 2640.94,
+      "Text": " understanding macOS's BTM subsystem. I think it was important to understand that because"
+    },
+    {
+      "Time_Start": 2640.94,
+      "Time_End": 2645.7400000000002,
+      "Text": " we want to write tools and also understand limitations. So once we had an understanding of"
+    },
+    {
+      "Time_Start": 2645.7400000000002,
+      "Time_End": 2651.2000000000003,
+      "Text": " the internals of the background task management we showed how to write some very powerful"
+    },
+    {
+      "Time_Start": 2651.2000000000003,
+      "Time_End": 2656.28,
+      "Text": " malware detection tools that are built on the fact that Mac malware persists and BTM now"
+    },
+    {
+      "Time_Start": 2656.28,
+      "Time_End": 2663.5800000000004,
+      "Text": " manages and governs persistence. Unfortunately we showed that it's trivial to bypass the"
+    },
+    {
+      "Time_Start": 2663.5800000000004,
+      "Time_End": 2668.1600000000003,
+      "Text": " BTM subsystem entirely. Again all these approaches worked on all the latest versions of"
+    },
+    {
+      "Time_Start": 2668.1600000000003,
+      "Time_End": 2674.28,
+      "Text": " macOS so go out and cause chaos I guess. No don't. But you know again one of the other"
+    },
+    {
+      "Time_Start": 2674.28,
+      "Time_End": 2680.6200000000003,
+      "Text": " takeaways is like if we're not doing this research who is? Like what is Apple doing? Like"
+    },
+    {
+      "Time_Start": 2680.66,
+      "Time_End": 2685.42,
+      "Text": " counting their trillions in Cupertino? I don't know but it's really problematic when they"
+    },
+    {
+      "Time_Start": 2685.42,
+      "Time_End": 2690.38,
+      "Text": " say hey there's this great new security system that's built into macOS. You now are"
+    },
+    {
+      "Time_Start": 2690.38,
+      "Time_End": 2696.58,
+      "Text": " protected against persistent malware. Well in reality like that's really not true. And again"
+    },
+    {
+      "Time_Start": 2696.58,
+      "Time_End": 2700.12,
+      "Text": " as I mentioned that's problematic because users are going to have a false sense of security"
+    },
+    {
+      "Time_Start": 2700.12,
+      "Time_End": 2705.04,
+      "Text": " which is bad. Makes them easier to victimize. And then also security tools might be thinking"
+    },
+    {
+      "Time_Start": 2705.04,
+      "Time_End": 2710.2799999999997,
+      "Text": " they're doing their jobs when in reality they're not at no fault of their own. So again"
+    },
+    {
+      "Time_Start": 2710.28,
+      "Time_End": 2714.6200000000003,
+      "Text": " maybe anything Apple says take with a huge grain of salt and continue to keep poking on"
+    },
+    {
+      "Time_Start": 2714.6200000000003,
+      "Time_End": 2722.1200000000003,
+      "Text": " macOS because even new code that Apple releases is well I would say subpar. Now if you're"
+    },
+    {
+      "Time_Start": 2722.1200000000003,
+      "Time_End": 2725.2400000000002,
+      "Text": " interested in learning more about Mac malware, reverse engineering, writing security"
+    },
+    {
+      "Time_Start": 2725.2400000000002,
+      "Time_End": 2731.0800000000004,
+      "Text": " tools, I've written some free books on the topic. Volume 1 is out. Go to TAOMM.org 100% free"
+    },
+    {
+      "Time_Start": 2731.0800000000004,
+      "Time_End": 2734.82,
+      "Text": " online. I'm also going to be doing a book signing today right after this talk at the No"
+    },
+    {
+      "Time_Start": 2734.82,
+      "Time_End": 2739.4,
+      "Text": " Starts Press so if you want to pick up Volume 1, get my signature, check it out. I'm also"
+    },
+    {
+      "Time_Start": 2739.44,
+      "Time_End": 2744.56,
+      "Text": " writing Volume 2 which covers basically the topics we talked about today which are the"
+    },
+    {
+      "Time_Start": 2744.56,
+      "Time_End": 2750.52,
+      "Text": " programmatic approaches to detecting malware. I'll end by just mentioning briefly again the"
+    },
+    {
+      "Time_Start": 2750.52,
+      "Time_End": 2755.06,
+      "Text": " non-profit I'm part of because I think we're doing a lot of really cool things that I think"
+    },
+    {
+      "Time_Start": 2755.06,
+      "Time_End": 2759.7400000000002,
+      "Text": " many of you will be interested in. We organized the OBTS security conference. I see a lot of"
+    },
+    {
+      "Time_Start": 2759.7400000000002,
+      "Time_End": 2764.56,
+      "Text": " friends here from that conference so thank you all. We also raised money for college"
+    },
+    {
+      "Time_Start": 2764.56,
+      "Time_End": 2769.14,
+      "Text": " scholarships for students who are going into technology fields and we have various"
+    },
+    {
+      "Time_Start": 2769.14,
+      "Time_End": 2773.6,
+      "Text": " diversity programs as well. Our current effort though is raising money for the wild"
+    },
+    {
+      "Time_Start": 2773.6,
+      "Time_End": 2779.86,
+      "Text": " fowls in Maui. Many of you know I live there. A lot of my friends had everything lost so we"
+    },
+    {
+      "Time_Start": 2779.86,
+      "Time_End": 2786.4,
+      "Text": " are working to raise money for that. So something very personal. If you feel like you want"
+    },
+    {
+      "Time_Start": 2786.4,
+      "Time_End": 2790.52,
+      "Text": " to support that, it's awesome or even just share this. It's something that would be very"
+    },
+    {
+      "Time_Start": 2790.52,
+      "Time_End": 2796.6,
+      "Text": " meaningful to those who lost their houses and their loved ones. So speaking of thank you,"
+    },
+    {
+      "Time_Start": 2796.6,
+      "Time_End": 2802.52,
+      "Text": " I also want to briefly just end by thanking the companies who support the non-profit. We're"
+    },
+    {
+      "Time_Start": 2802.52,
+      "Time_End": 2806.4,
+      "Text": " able to organize this great conference. I'm able to release these tools, these free books,"
+    },
+    {
+      "Time_Start": 2806.4,
+      "Time_End": 2810.98,
+      "Text": " give these talks thanks to them. Really couldn't do that without them so I briefly want to"
+    },
+    {
+      "Time_Start": 2810.98,
+      "Time_End": 2817.06,
+      "Text": " thank them all and also thank you all for spending this rather early Saturday morning with"
+    },
+    {
+      "Time_Start": 2817.1,
+      "Time_End": 2820.1,
+      "Text": " me talking nerdy about Mac OS stuff. So thank you again to you all."
+    },
+    {
+      "Time_Start": 2820.1,
+      "Time_End": 2821.1,
+      "Text": " Applause."
+    }
+  ]
+}

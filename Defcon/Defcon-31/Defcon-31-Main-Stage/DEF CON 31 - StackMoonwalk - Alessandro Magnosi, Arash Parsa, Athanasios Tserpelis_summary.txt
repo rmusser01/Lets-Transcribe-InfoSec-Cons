@@ -1,0 +1,65 @@
+**Introduction**
+- The talk presents new approaches for **stack spoofing** on **Windows 64-bit** architecture.
+- **Stack spoofing**: Substituting stack frames with fake ones to hide malicious code execution.
+
+**Speaker Introductions**
+- **Alessandro Magnosi**: Principal security consultant at BSI, red teaming, offensive tool development, white box assessments, and bug hunting.
+- **Arash Parsa**: Dual role at CyberArk, performing threat hunting, detection engineering, and red teaming.
+- **Thanos Tserpelis**: Red teamer at Netitude, also contributed to the research.
+
+**Background**
+- Stack spoofing techniques aim to bypass detection of malicious code by concealing its presence in a target process's memory.
+- **Thread Stack Spoofing**: Hides malicious calls in the stack by replacing stack frames with fake ones.
+
+**Full Moon and Half Moon Techniques**
+- **Full Moon**: Obfuscates the stack by manipulating the call stack, making it difficult to detect.
+- **Half Moon**: Focuses on hiding the caller by emulating the prologue of an API-level API and executing an indirect system call.
+
+**Stack Spoofing Detection**
+- **Eclipse**: A detection algorithm designed to identify stack tampering techniques.
+- Extends the functionality of **RtlVirtualUnwind** to perform strict checks on specific instructions and call sequences.
+- Evaluates the efficacy of Eclipse against Full Moon and Half Moon techniques, discussing performance and limitations.
+
+**Combining Techniques**
+- Possibility of combining Full Moon and Half Moon to create a more robust method for call stack tampering resistant to detection.
+- Contributes to the growing body of knowledge in call stack tampering and provides insights for researchers and security professionals.
+
+**Stack Spoofing Techniques**
+- **Stack Truncation**: Variation of return address spoofing, using a trampoline to cut the call stack, but leaving it unwoundable.
+- **Stack Crafting**: Asynchronous technique, recording legitimate call stacks and crafting similar stacks when calling target functions.
+- **Stack Cloning**: Exploiting sleeping threads, cloning their call stacks to appear legitimate during conditional scanning.
+- **Stack Hiding**: Transforming a thread into a fiber with a legitimate call stack, switching to it during sleep, and restoring the original stack upon wake.
+
+**Full Moon Walkthrough**
+- Selects specific frames (set FPRAG, push reg, sync, and concealed) to modify the address pushed in memory.
+- Uses a ROP gadget to hijack the return flow and execute a restore function, resetting the main module.
+- Creates logical inconsistencies in the stack that can be used for detection.
+
+**IOCs and Detection Challenges**
+- IOCs include specific call opcodes and desync gadgets used in Full Moonwalk.
+- Difficult to deploy at scale and not easily hunted in EDRs.
+- Detection algorithm looks for invalid stacks, unbacked memory regions, private RX commit memory regions, and call mismatches.
+- False positives can occur with JITs, browsers, and C# applications.
+
+**Half Moon Walkthrough**
+- Takes an API name and relevant syscall instruction as input and traces the execution flow to find the relevant anti-function.
+- Recreates the frames of the API-level API by emulating its prologue, ensuring the return flow is correct.
+- Strategies for ensuring correct return flow: return on epilogue, targeted setup, and sliding breakpoints.
+
+**Opaque Architecture**
+- Emulate system call function by swapping itself with the frame of another function to restore the stack.
+- Enforce constraints in the implant to match the sides of the NDR stub call to stack.
+- Start a thread pointing to the shellcode, force initial frames, and then execute the implant.
+- Call Half Moonwalk to spoof functions, creating a legitimate call stack that hides the caller.
+
+**CHAT and Indirect Branch Tracing**
+- **CHAT** (Control-flow Integrity based on Hardware-Enforced Stack Protection): Creates a shadow stack, maintaining a list of return addresses.
+- If the return addresses don't match the writable normal call stack, a CP fault occurs, crashing the program.
+- Indirect branch tracing makes it challenging to modify the instruction pointer using exception handlers.
+- Browsers and other non-CHAT-enabled processes can still be abused for executing the technique.
+
+**Key Takeaways**
+- Obfuscate the stack at runtime, especially when going to sleep, to avoid detection.
+- Logical inconsistencies in the stack increase the chance of detection.
+- CHAT and indirect branch tracing pose challenges, but non-CHAT-enabled processes can still be targeted.
+- Combining stack spoofing with sleep encryption adds complexity but enhances stealth.

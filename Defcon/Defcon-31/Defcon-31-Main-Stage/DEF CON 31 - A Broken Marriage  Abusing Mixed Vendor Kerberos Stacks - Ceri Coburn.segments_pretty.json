@@ -1,0 +1,904 @@
+{
+  "segments": [
+    {
+      "Time_Start": 0.0,
+      "Time_End": 10.24,
+      "Text": "This text was transcribed using whisper model: large-v2\n\n Good afternoon, DEF CON. All right, so my name is Kerry. I was a software developer for 18 years"
+    },
+    {
+      "Time_Start": 10.24,
+      "Time_End": 16.84,
+      "Text": " within the DRM and security solution space. And around four years ago, actually, to this week,"
+    },
+    {
+      "Time_Start": 16.84,
+      "Time_End": 25.32,
+      "Text": " I joined the InfoSec game and joined Pentest partners to get involved in all the cool stuff"
+    },
+    {
+      "Time_Start": 25.32,
+      "Time_End": 30.6,
+      "Text": " that we all do. So I've been dedicated to red teaming and offensive security tooling for the"
+    },
+    {
+      "Time_Start": 30.6,
+      "Time_End": 35.96,
+      "Text": " last two years, and an author of several tools that I've released to the community, including"
+    },
+    {
+      "Time_Start": 35.96,
+      "Time_End": 42.400000000000006,
+      "Text": " BuffNet, Sweet Potato, and Sharplock. I more recently become a member of the Rubius maintainer"
+    },
+    {
+      "Time_Start": 42.400000000000006,
+      "Time_End": 48.519999999999996,
+      "Text": " team. So what we're going to cover on this talk today, so I'm going to give a very quick"
+    },
+    {
+      "Time_Start": 48.519999999999996,
+      "Time_End": 54.88,
+      "Text": " introduction to Kerberos. I'm going to go into some Active Directory specifics on authentication"
+    },
+    {
+      "Time_Start": 54.88,
+      "Time_End": 61.6,
+      "Text": " and authorization. I'm going to quickly cover some of spoofing attacks from previous vulnerabilities,"
+    },
+    {
+      "Time_Start": 61.6,
+      "Time_End": 67.92,
+      "Text": " namely the SAM, the admin group of CVs. And then I'll cover the premise of this talk,"
+    },
+    {
+      "Time_Start": 67.92,
+      "Time_End": 74.0,
+      "Text": " which is a new spoofing vector. So a quick introduction then to some changes that have"
+    },
+    {
+      "Time_Start": 74.0,
+      "Time_End": 83.72,
+      "Text": " been made to Rubius to exploit, I should say, on a new set of enumeration tools for this spoofing"
+    },
+    {
+      "Time_Start": 83.72,
+      "Time_End": 94.88,
+      "Text": " vector. And then finally, what can be done to mitigate this new vector. So what is Kerberos?"
+    },
+    {
+      "Time_Start": 94.88,
+      "Time_End": 101.24,
+      "Text": " So it's an authentication protocol used by Windows and Unix, Linux-based operating systems. The"
+    },
+    {
+      "Time_Start": 101.24,
+      "Time_End": 106.92,
+      "Text": " machines are joined to a common realm to facilitate mutual authentication of principles in the realm."
+    },
+    {
+      "Time_Start": 106.92,
+      "Time_End": 113.28,
+      "Text": " So a principle being a user or a computer that was within that realm. And they're identified"
+    },
+    {
+      "Time_Start": 113.28,
+      "Time_End": 119.64,
+      "Text": " by both a name and a principle type. Now Kerberos doesn't actually deal with authorization. It only"
+    },
+    {
+      "Time_Start": 119.64,
+      "Time_End": 126.04,
+      "Text": " deals with authentication. So the authorization is left to the implementer of that particular"
+    },
+    {
+      "Time_Start": 126.04,
+      "Time_End": 134.04,
+      "Text": " Kerberos stack. And Windows and Unix, Linux hosts can be joined to the same realm. So what does a"
+    },
+    {
+      "Time_Start": 134.04,
+      "Time_End": 139.04,
+      "Text": " principle name look like? So it's made of your typical name string. So that would be the SAM"
+    },
+    {
+      "Time_Start": 139.07999999999998,
+      "Time_End": 144.44,
+      "Text": " account name. So John.do. Or it could be a user principle name, which is typically in the form of"
+    },
+    {
+      "Time_Start": 144.44,
+      "Time_End": 150.32,
+      "Text": " an email address. Or even an LDAP distinguished name is a valid principle name. And of course,"
+    },
+    {
+      "Time_Start": 150.32,
+      "Time_End": 156.92,
+      "Text": " the service principle names for computer accounts or service accounts. And there's also the name"
+    },
+    {
+      "Time_Start": 156.92,
+      "Time_End": 167.23999999999998,
+      "Text": " type. Now this name type is a hint to the Kerberos authentication scheme so that the KDC has an idea"
+    },
+    {
+      "Time_Start": 167.36,
+      "Time_End": 171.44,
+      "Text": " of what sort of name principle it is. And as you can see from the table below at the bottom,"
+    },
+    {
+      "Time_Start": 171.44,
+      "Time_End": 177.36,
+      "Text": " there's a number of different principle types there. But the most common for users is the NT"
+    },
+    {
+      "Time_Start": 177.36,
+      "Time_End": 186.36,
+      "Text": " principle type. So Active Directory actually uses a fairly complex search algorithm for when you're"
+    },
+    {
+      "Time_Start": 186.36,
+      "Time_End": 194.44,
+      "Text": " authenticating with the principle. It uses multiple attributes within LDAP to actually find the user"
+    },
+    {
+      "Time_Start": 194.6,
+      "Time_End": 199.44,
+      "Text": " that you're looking at. And then as far as authorization decisions are made, it's always"
+    },
+    {
+      "Time_Start": 199.44,
+      "Time_End": 205.64,
+      "Text": " made from what's called a privileged attribute certificate that's embedded inside the Kerberos"
+    },
+    {
+      "Time_Start": 205.64,
+      "Time_End": 213.56,
+      "Text": " ticket, collectively known as the PAC, I guess. Principle name collisions can occur. And this has"
+    },
+    {
+      "Time_Start": 213.56,
+      "Time_End": 221.84,
+      "Text": " led to previous vulnerabilities, privilege escalations in the past. So I've tried to sort"
+    },
+    {
+      "Time_Start": 221.84,
+      "Time_End": 228.88,
+      "Text": " of simplify Active Directory's method of searching for a principle. So the default,"
+    },
+    {
+      "Time_Start": 228.88,
+      "Time_End": 234.24,
+      "Text": " when you actually log into a Windows machine, it uses the name type of NT principle. And let's say"
+    },
+    {
+      "Time_Start": 234.24,
+      "Time_End": 240.96,
+      "Text": " for this example, we got to use the name of John Doe. Now, by default, it will go to the right"
+    },
+    {
+      "Time_Start": 240.96,
+      "Time_End": 246.44,
+      "Text": " hand side of that search. So because we're using the NT principle, Active Directory will actually"
+    },
+    {
+      "Time_Start": 246.44,
+      "Time_End": 253.88,
+      "Text": " search the SAM account name field first. And then if a user's not found, it'll then actually append"
+    },
+    {
+      "Time_Start": 253.88,
+      "Time_End": 259.32,
+      "Text": " a dollar to the end of the name, just in case that you're actually authenticating with a computer"
+    },
+    {
+      "Time_Start": 259.32,
+      "Time_End": 264.64,
+      "Text": " account, because computer accounts generally have a dollar at the end of their name. And then"
+    },
+    {
+      "Time_Start": 264.64,
+      "Time_End": 270.2,
+      "Text": " finally, if it still hasn't been able to find a user, it'll switch to the left hand side of that"
+    },
+    {
+      "Time_Start": 270.96,
+      "Time_End": 276.92,
+      "Text": " flowchart, where it'll search the user principle name field instead. And then if there's no username"
+    },
+    {
+      "Time_Start": 276.92,
+      "Time_End": 282.88,
+      "Text": " found, at that stage, you get a user not found error. And of course, any time in between those"
+    },
+    {
+      "Time_Start": 282.88,
+      "Time_End": 291.8,
+      "Text": " stages, if a user is found, it then will try and authenticate the password. So the actual ticket"
+    },
+    {
+      "Time_Start": 291.8,
+      "Time_End": 297.12,
+      "Text": " makeup within an Active Directory network. So the green area is what you'd say is part of the actual"
+    },
+    {
+      "Time_Start": 297.12,
+      "Time_End": 305.12,
+      "Text": " Kerberos RFC, that contains sort of the client name or the CNAME, and the service that the ticket"
+    },
+    {
+      "Time_Start": 305.12,
+      "Time_End": 310.56,
+      "Text": " is destined for on a start and end date. And then the Microsoft specific sort of come into play,"
+    },
+    {
+      "Time_Start": 310.56,
+      "Time_End": 318.48,
+      "Text": " which is the red area of the ticket. Now, you can actually have a ticket with a pack missing"
+    },
+    {
+      "Time_Start": 318.48,
+      "Time_End": 326.36,
+      "Text": " altogether. And now when it comes to Windows based authorization, even though the outer green ticket"
+    },
+    {
+      "Time_Start": 326.36,
+      "Time_End": 331.28000000000003,
+      "Text": " is actually valid, and it has a client name that's within Active Directory, you'll actually"
+    },
+    {
+      "Time_Start": 331.28000000000003,
+      "Time_End": 335.84000000000003,
+      "Text": " log on as an anonymous log on if the pack is missing. So as far as Windows is concerned,"
+    },
+    {
+      "Time_Start": 335.84000000000003,
+      "Time_End": 343.64,
+      "Text": " you always need the pack really to validate the user within Active Directory. So with that in"
+    },
+    {
+      "Time_Start": 343.64,
+      "Time_End": 351.64,
+      "Text": " mind, so what actually happened with the SAM, the admin group of CVs. So back before the patch for"
+    },
+    {
+      "Time_Start": 352.36,
+      "Time_End": 358.2,
+      "Text": " the SAM, the admin CVs, you could actually request the TGT without the pack present. So what the"
+    },
+    {
+      "Time_Start": 358.2,
+      "Time_End": 363.52,
+      "Text": " actual vulnerability was, you would do that, you'd actually request the TGT without the pack being"
+    },
+    {
+      "Time_Start": 363.52,
+      "Time_End": 369.52,
+      "Text": " embedded inside it. Now the ticket is valid for eight hours. So in between that TGT that you've"
+    },
+    {
+      "Time_Start": 369.52,
+      "Time_End": 378.44,
+      "Text": " requested, so let me rewind a little. So first you actually create a machine account using the Mac."
+    },
+    {
+      "Time_Start": 378.44,
+      "Time_End": 385.56,
+      "Text": " Now that machine account would be named similar to, let's say, a domain controller. The only"
+    },
+    {
+      "Time_Start": 385.56,
+      "Time_End": 389.68,
+      "Text": " difference is the SAM account name field won't have the dollar at the end. So it's exactly the"
+    },
+    {
+      "Time_Start": 389.68,
+      "Time_End": 395.15999999999997,
+      "Text": " same name, but it doesn't contain the dollar at the end. And then you request your packless TGT,"
+    },
+    {
+      "Time_Start": 395.15999999999997,
+      "Time_End": 400.52,
+      "Text": " which means that the only thing in the ticket is the C name itself, so there's no pack in there"
+    },
+    {
+      "Time_Start": 400.52,
+      "Time_End": 408.28,
+      "Text": " at all. Then you rename the account to something else, nothing that exists within AD, but you do"
+    },
+    {
+      "Time_Start": 408.28000000000003,
+      "Time_End": 415.64000000000004,
+      "Text": " have at least a Kerberos TGT now that looks like the domain controller TGT. Now because you've"
+    },
+    {
+      "Time_Start": 415.64000000000004,
+      "Time_End": 422.00000000000006,
+      "Text": " renamed the account, you then request a service TGT from the KDC, and the KDC will realize that"
+    },
+    {
+      "Time_Start": 422.00000000000006,
+      "Time_End": 427.52000000000004,
+      "Text": " there's no pack embedded inside that TGT. So it will use the same search criteria as I just covered"
+    },
+    {
+      "Time_Start": 427.52000000000004,
+      "Time_End": 433.28000000000003,
+      "Text": " on some of the previous slides, but it'll use the the official Kerberos C name that's embedded in"
+    },
+    {
+      "Time_Start": 433.28000000000003,
+      "Time_End": 438.16,
+      "Text": " the green part of that TGT. And because you've renamed the account in between the point where"
+    },
+    {
+      "Time_Start": 438.16,
+      "Time_End": 443.20000000000005,
+      "Text": " you've got the TGT, it would have then actually found the real domain controller account and"
+    },
+    {
+      "Time_Start": 443.20000000000005,
+      "Time_End": 449.0,
+      "Text": " embed the pack for the real domain controller, and that resulted in a privilege escalation."
+    },
+    {
+      "Time_Start": 449.0,
+      "Time_End": 459.36,
+      "Text": " So this is going back to the search algorithm again, this is the area within the SAM the admin"
+    },
+    {
+      "Time_Start": 459.36,
+      "Time_End": 464.52000000000004,
+      "Text": " group of CVEs that were affected, so this is the right hand side there where the SAM account name"
+    },
+    {
+      "Time_Start": 464.56,
+      "Time_End": 470.12,
+      "Text": " is searched, and then it would append the dollar and so on and so forth. So what did they do to"
+    },
+    {
+      "Time_Start": 470.12,
+      "Time_End": 476.79999999999995,
+      "Text": " fix SAM the admin? Basically you can't request a packless TGT anymore. Microsoft deemed it that"
+    },
+    {
+      "Time_Start": 476.79999999999995,
+      "Time_End": 484.56,
+      "Text": " it wasn't a reliable way to identify users within AD unless you had a pack embedded within it."
+    },
+    {
+      "Time_Start": 484.56,
+      "Time_End": 490.2,
+      "Text": " There were some other heartening attempts, so the SAM account name fields also now must end"
+    },
+    {
+      "Time_Start": 490.28,
+      "Time_End": 497.08,
+      "Text": " with a dollar whenever an unprivileged user creates it, and a few other heartening artifacts"
+    },
+    {
+      "Time_Start": 497.08,
+      "Time_End": 503.0,
+      "Text": " were made to the user account control settings. But you can actually still request a packless"
+    },
+    {
+      "Time_Start": 503.0,
+      "Time_End": 511.28,
+      "Text": " service TGT. So what's the new spoofing vector? So obviously the SAM account name had been looked"
+    },
+    {
+      "Time_Start": 511.28,
+      "Time_End": 516.56,
+      "Text": " at previously, and it has been hardened quite considerably since that group of CVEs, so I"
+    },
+    {
+      "Time_Start": 516.5600000000001,
+      "Time_End": 521.6800000000001,
+      "Text": " decided to have a look at the user principal name attribute and see what we could do with that. So"
+    },
+    {
+      "Time_Start": 521.6800000000001,
+      "Time_End": 529.2800000000001,
+      "Text": " the user principal name or the UPN is made up of the username element, the at, and a domain suffix,"
+    },
+    {
+      "Time_Start": 529.2800000000001,
+      "Time_End": 535.0000000000001,
+      "Text": " so basically looks like an email address. Now to modify that particular attribute within Active"
+    },
+    {
+      "Time_Start": 535.0000000000001,
+      "Time_End": 541.94,
+      "Text": " Directory, you're looking to have write permission on the public information attribute set, or generic"
+    },
+    {
+      "Time_Start": 542.1,
+      "Time_End": 546.34,
+      "Text": " write over a computer or user account within Active Directory. So these are the sort of the"
+    },
+    {
+      "Time_Start": 546.34,
+      "Time_End": 554.98,
+      "Text": " prerequisites needed to abuse it. But duplicated UPNs are not allowed in the same way that duplicate"
+    },
+    {
+      "Time_Start": 554.98,
+      "Time_End": 561.7800000000001,
+      "Text": " SAM account names are not allowed, so how exactly can we spoof if no duplicates are allowed? Well,"
+    },
+    {
+      "Time_Start": 561.7800000000001,
+      "Time_End": 567.0200000000001,
+      "Text": " as it turns out, you can actually set an invalid user principal name within Active Directory. It"
+    },
+    {
+      "Time_Start": 567.02,
+      "Time_End": 572.42,
+      "Text": " doesn't actually have to have the domain suffix. So from what you can see from the screenshot there,"
+    },
+    {
+      "Time_Start": 572.42,
+      "Time_End": 576.78,
+      "Text": " we've got the John Doe account where the SAM account name is set to John Doe, but you can"
+    },
+    {
+      "Time_Start": 576.78,
+      "Time_End": 582.86,
+      "Text": " actually still update the user principal name to mimic that of another account, so let's say the"
+    },
+    {
+      "Time_Start": 582.86,
+      "Time_End": 591.42,
+      "Text": " domain administrator in this case. But there's another difference to this search algorithm then,"
+    },
+    {
+      "Time_Start": 591.54,
+      "Time_End": 598.3399999999999,
+      "Text": " is going back to the name type hint that I talked about earlier. If you specify the name type as"
+    },
+    {
+      "Time_Start": 598.3399999999999,
+      "Time_End": 603.2199999999999,
+      "Text": " NT Enterprise as opposed to Principal, which is typically the default one used within Windows,"
+    },
+    {
+      "Time_Start": 603.2199999999999,
+      "Time_End": 608.5,
+      "Text": " the search algorithm changes and it actually searches the user principal name first before"
+    },
+    {
+      "Time_Start": 608.5,
+      "Time_End": 616.6999999999999,
+      "Text": " SAM account name. So as I'm sure you can glean from that, basically you can get your spoofed"
+    },
+    {
+      "Time_Start": 616.82,
+      "Time_End": 621.94,
+      "Text": " account name to be found first prior to the real account that's sitting within Active Directory."
+    },
+    {
+      "Time_Start": 621.94,
+      "Time_End": 629.46,
+      "Text": " So as part of this, I made some updates to Rubyist and they should be live on the current master"
+    },
+    {
+      "Time_Start": 629.46,
+      "Time_End": 636.1800000000001,
+      "Text": " branch on GitHub, and basically a new argument has been added to specify the principal type. So you"
+    },
+    {
+      "Time_Start": 636.1800000000001,
+      "Time_End": 641.1,
+      "Text": " can spell from the group that we've seen at the start of the slides, you can actually now specify"
+    },
+    {
+      "Time_Start": 641.1,
+      "Time_End": 645.94,
+      "Text": " the principal type that you're using. So as an example there on the left, that's how you would"
+    },
+    {
+      "Time_Start": 645.94,
+      "Time_End": 651.98,
+      "Text": " typically authenticate using Rubyist at the moment, and by default that would use the NT"
+    },
+    {
+      "Time_Start": 651.98,
+      "Time_End": 658.3800000000001,
+      "Text": " principal type as opposed to the Enterprise type. So in a typical Active Directory network, the"
+    },
+    {
+      "Time_Start": 658.3800000000001,
+      "Time_End": 663.1800000000001,
+      "Text": " screen on the left there would actually be tempting to log on as the domain admin, and since the"
+    },
+    {
+      "Time_Start": 663.1800000000001,
+      "Time_End": 668.34,
+      "Text": " domain admin password is not super secret, you get a pre-authentication failure because the password"
+    },
+    {
+      "Time_Start": 668.34,
+      "Time_End": 673.9000000000001,
+      "Text": " is wrong. But going back to the modified John Doe account that I just showed you earlier, once you"
+    },
+    {
+      "Time_Start": 673.9,
+      "Time_End": 679.26,
+      "Text": " add the principal type of Enterprise, the search algorithm changes, and then it actually ends up"
+    },
+    {
+      "Time_Start": 679.26,
+      "Time_End": 685.8199999999999,
+      "Text": " for finding your John Doe account. But the ticket that you actually get back contains Administrator"
+    },
+    {
+      "Time_Start": 685.8199999999999,
+      "Time_End": 691.9,
+      "Text": " as the username. So from the outset, the ticket actually does look like a domain admin, but it's"
+    },
+    {
+      "Time_Start": 691.9,
+      "Time_End": 698.9,
+      "Text": " not. The pack inside that ticket still identifies John Doe. It's only the outer green part of the"
+    },
+    {
+      "Time_Start": 698.9,
+      "Time_End": 705.26,
+      "Text": " tickets that I showed you earlier that make it look like it's a domain admin. So what abuse factors"
+    },
+    {
+      "Time_Start": 705.26,
+      "Time_End": 711.14,
+      "Text": " do we have for this? So like I said, Windows is completely out. It purely relies on the pack for"
+    },
+    {
+      "Time_Start": 711.14,
+      "Time_End": 718.18,
+      "Text": " authorization, but when it comes to Kerberos authentication on your Linux and Unix machines,"
+    },
+    {
+      "Time_Start": 718.18,
+      "Time_End": 724.9,
+      "Text": " which leverages the GSS API, they tend to do things differently. Like I said, the pack is very"
+    },
+    {
+      "Time_Start": 724.9,
+      "Time_End": 733.1,
+      "Text": " specific to sort of Windows-based environments. So what tends to happen is GSS API stack will"
+    },
+    {
+      "Time_Start": 733.1,
+      "Time_End": 738.98,
+      "Text": " actually rely on the green parts of the ticket for validating the username. And then the permissions"
+    },
+    {
+      "Time_Start": 738.98,
+      "Time_End": 746.38,
+      "Text": " for the user is done as a second stage. So it may do an LDAP search on that name that is extracted"
+    },
+    {
+      "Time_Start": 746.38,
+      "Time_End": 751.38,
+      "Text": " from the ticket, and more often than not, that ends up being the same account name that it's"
+    },
+    {
+      "Time_Start": 751.38,
+      "Time_End": 757.34,
+      "Text": " searching on. But of course, we've authenticated using the user principal name. But other solutions"
+    },
+    {
+      "Time_Start": 757.34,
+      "Time_End": 763.98,
+      "Text": " also include mapping Kerberos principal names to local account names. So for example, you can create"
+    },
+    {
+      "Time_Start": 763.98,
+      "Time_End": 772.18,
+      "Text": " a machine using root dollar, and that will actually log you in as root on Linux. Andrew Bartlett"
+    },
+    {
+      "Time_Start": 772.18,
+      "Time_End": 777.62,
+      "Text": " actually discovered that, who is the person that discovered the original SAM, the admin group of"
+    },
+    {
+      "Time_Start": 777.62,
+      "Time_End": 785.34,
+      "Text": " CVs, and he basically realized that using the Mac permissions and having the ability to create a"
+    },
+    {
+      "Time_Start": 785.34,
+      "Time_End": 792.18,
+      "Text": " machine with a low privilege user, you could call the machine root dollar, pass that ticket to SSH,"
+    },
+    {
+      "Time_Start": 792.18,
+      "Time_End": 799.02,
+      "Text": " and then you'd be logged in as root. And that issue actually still exists today and is a no-fix. Now"
+    },
+    {
+      "Time_Start": 799.02,
+      "Time_End": 803.7,
+      "Text": " the issue with that, though, you can't actually impersonate existing AD users because you wouldn't"
+    },
+    {
+      "Time_Start": 803.7,
+      "Time_End": 808.6600000000001,
+      "Text": " be able to create the machine in the first place because you'd get a collision with a SAM account"
+    },
+    {
+      "Time_Start": 808.6600000000001,
+      "Time_End": 813.5,
+      "Text": " name if you were trying to impersonate another user. So that's where this new technique comes"
+    },
+    {
+      "Time_Start": 813.5,
+      "Time_End": 822.4200000000001,
+      "Text": " into play, where you can now actually impersonate valid Active Directory users. So these are the"
+    },
+    {
+      "Time_Start": 822.4200000000001,
+      "Time_End": 831.0600000000001,
+      "Text": " services that I've seen so far that implement Kerberos authentication via GSS API. So SSH,"
+    },
+    {
+      "Time_Start": 831.0600000000001,
+      "Time_End": 837.3000000000001,
+      "Text": " I've confirmed, is vulnerable to this, as well as Postgres database. I just haven't had the time"
+    },
+    {
+      "Time_Start": 837.3000000000001,
+      "Time_End": 842.86,
+      "Text": " to check all the others yet, but essentially if any of these are claiming Kerberos authentication"
+    },
+    {
+      "Time_Start": 842.86,
+      "Time_End": 848.4200000000001,
+      "Text": " and GSS API support, and they don't look at the Windows pack, they're all going to be vulnerable"
+    },
+    {
+      "Time_Start": 848.4200000000001,
+      "Time_End": 858.6600000000001,
+      "Text": " to this sort of attack, would be my guess. Okay, so on to the demo. So both of these are live"
+    },
+    {
+      "Time_Start": 858.66,
+      "Time_End": 865.54,
+      "Text": " already, so I made them live just before the talk. So Rubius has the new argument so that you"
+    },
+    {
+      "Time_Start": 865.54,
+      "Time_End": 871.5799999999999,
+      "Text": " can specify the principal type, and I've also created a new set of Python tools to allow you"
+    },
+    {
+      "Time_Start": 871.5799999999999,
+      "Time_End": 880.02,
+      "Text": " to enumerate potential vulnerable Linux or Unix hosts within an Active Directory network. So it's"
+    },
+    {
+      "Time_Start": 880.02,
+      "Time_End": 885.78,
+      "Text": " a little bit small, but we'll work through it. So what I've set up here is, again, we're going back"
+    },
+    {
+      "Time_Start": 885.78,
+      "Time_End": 892.3399999999999,
+      "Text": " to the John Doe account, and to be able to, or the prerequisites to be able to actually abuse this"
+    },
+    {
+      "Time_Start": 892.3399999999999,
+      "Time_End": 898.74,
+      "Text": " issue is having sort of generic right over an account. Now you'd need to authenticate as that"
+    },
+    {
+      "Time_Start": 898.74,
+      "Time_End": 905.78,
+      "Text": " user, so shadow credentials has worked, for example, so you don't necessarily need to do anything, you"
+    },
+    {
+      "Time_Start": 905.78,
+      "Time_End": 909.8199999999999,
+      "Text": " know, brutal like changing the user's password. You can still use shadow credentials with this"
+    },
+    {
+      "Time_Start": 909.9000000000001,
+      "Time_End": 917.7,
+      "Text": " sort of technique. So what we're going to do now is just change the properties of the user"
+    },
+    {
+      "Time_Start": 917.7,
+      "Time_End": 931.4200000000001,
+      "Text": " principal name from what it was to administrator. Okay. And you'll see, obviously, in Active"
+    },
+    {
+      "Time_Start": 931.4200000000001,
+      "Time_End": 937.22,
+      "Text": " Directory that the user principal name is now set and ready to spoof, but the SAM account name is"
+    },
+    {
+      "Time_Start": 937.22,
+      "Time_End": 943.4200000000001,
+      "Text": " left as it is, so we're using John Doe. So I'm just going to show that without specifying the"
+    },
+    {
+      "Time_Start": 943.4200000000001,
+      "Time_End": 947.74,
+      "Text": " principal type, you'd essentially be trying to log on to the domain admin, which is incorrect in"
+    },
+    {
+      "Time_Start": 947.74,
+      "Time_End": 954.22,
+      "Text": " this case. So when I authenticate, you get a pre-authentication failure. But then if we use"
+    },
+    {
+      "Time_Start": 954.22,
+      "Time_End": 959.78,
+      "Text": " the new principal type argument and specify enterprise, the search algorithm changes, and now"
+    },
+    {
+      "Time_Start": 959.78,
+      "Time_End": 965.0600000000001,
+      "Text": " we're authenticated as John Doe, but with the username of administrator. And if you look at"
+    },
+    {
+      "Time_Start": 965.0600000000001,
+      "Time_End": 971.0200000000001,
+      "Text": " the K list, you'll see that that has been imported, and from the, you know, just looking at it, it"
+    },
+    {
+      "Time_Start": 971.0200000000001,
+      "Time_End": 977.5400000000001,
+      "Text": " does look like an administrator or domain admin, but the pack actually says differently. Now, the"
+    },
+    {
+      "Time_Start": 977.5400000000001,
+      "Time_End": 983.82,
+      "Text": " GSS API tool, what the way that works is it does a search with inside Active Directory for looking"
+    },
+    {
+      "Time_Start": 983.82,
+      "Time_End": 991.1800000000001,
+      "Text": " at the operating system field of every computer object, and any that don't have the word Windows"
+    },
+    {
+      "Time_Start": 991.1800000000001,
+      "Time_End": 998.82,
+      "Text": " in there, it assumes it to be a Linux or basically non-Windows based host. And then once it compiles"
+    },
+    {
+      "Time_Start": 998.82,
+      "Time_End": 1004.5000000000001,
+      "Text": " that list of machines, it'll then try and connect to each one of them over SSH to determine what"
+    },
+    {
+      "Time_Start": 1004.5000000000001,
+      "Time_End": 1010.34,
+      "Text": " authentication schemes it supports, and then if it does realize that particular host supports"
+    },
+    {
+      "Time_Start": 1010.34,
+      "Time_End": 1019.46,
+      "Text": " GSS API, it flags that host as potentially vulnerable. So you can see in the output here,"
+    },
+    {
+      "Time_Start": 1019.46,
+      "Time_End": 1026.54,
+      "Text": " there are two machines found. One is Ubuntu, and one is CentOS. Now Ubuntu, and I believe all other"
+    },
+    {
+      "Time_Start": 1026.54,
+      "Time_End": 1036.46,
+      "Text": " Debian based Linux operating systems don't have GSS API enabled by default, but CentOS, Red Hat"
+    },
+    {
+      "Time_Start": 1036.46,
+      "Time_End": 1042.98,
+      "Text": " Enterprise server, they do. So the minute you join a CentOS or Red Hat based Linux server to an Active"
+    },
+    {
+      "Time_Start": 1042.98,
+      "Time_End": 1048.78,
+      "Text": " Directory network, you're going to be sort of vulnerable to this sort of attack. And then the"
+    },
+    {
+      "Time_Start": 1048.78,
+      "Time_End": 1054.12,
+      "Text": " final stage is now that we've got our ticket imported and ready to use, we can use SSH with"
+    },
+    {
+      "Time_Start": 1054.12,
+      "Time_End": 1059.94,
+      "Text": " the minus K argument to indicate that we want to use Kerberos authentication. You have to fully"
+    },
+    {
+      "Time_Start": 1059.94,
+      "Time_End": 1065.7,
+      "Text": " qualify the username, so you'll see administrator at adginger.com, and here we connect it. But the big"
+    },
+    {
+      "Time_Start": 1065.7,
+      "Time_End": 1071.42,
+      "Text": " question is of course, what groups are we a member of? So by doing a quick ID, we can actually see"
+    },
+    {
+      "Time_Start": 1071.5,
+      "Time_End": 1076.5,
+      "Text": " that we are logged into the Ubuntu host as the domain admin. So I did contact MSRC about this, and"
+    },
+    {
+      "Time_Start": 1089.5,
+      "Time_End": 1096.1000000000001,
+      "Text": " they basically said the issue I reported is as designed. I was sort of questioning whose design"
+    },
+    {
+      "Time_Start": 1096.1000000000001,
+      "Time_End": 1101.1000000000001,
+      "Text": " they were talking about. So I had a quick look at what the RFC says, and the RFC says it quite"
+    },
+    {
+      "Time_Start": 1103.8200000000002,
+      "Time_End": 1109.0200000000002,
+      "Text": " clear as far as I'm concerned. Principal names that differ only in the name type should identify"
+    },
+    {
+      "Time_Start": 1109.0200000000002,
+      "Time_End": 1115.1000000000001,
+      "Text": " the same principal. So they are not listening as far as I can see to what the Kerberos RFC spec"
+    },
+    {
+      "Time_Start": 1115.1000000000001,
+      "Time_End": 1122.18,
+      "Text": " says. So what sort of mitigations? Well, Microsoft themselves could harden the user principal name"
+    },
+    {
+      "Time_Start": 1122.22,
+      "Time_End": 1128.1000000000001,
+      "Text": " by ensuring they all have a domain suffix, or additionally they could cross-check the user"
+    },
+    {
+      "Time_Start": 1128.1000000000001,
+      "Time_End": 1133.94,
+      "Text": " principal name against the SAM account name to make sure that there are no collisions there. But in"
+    },
+    {
+      "Time_Start": 1133.94,
+      "Time_End": 1138.94,
+      "Text": " the meantime, defenders out there, so what kind of approaches can you take? I guess disable"
+    },
+    {
+      "Time_Start": 1141.66,
+      "Time_End": 1147.6200000000001,
+      "Text": " anything that's GSS API based authentication that's joined to an active directory realm, or the"
+    },
+    {
+      "Time_Start": 1147.6200000000001,
+      "Time_End": 1153.18,
+      "Text": " less drastic approach may be monitoring for sort of user principal name updates that don't conform"
+    },
+    {
+      "Time_Start": 1153.18,
+      "Time_End": 1162.5000000000002,
+      "Text": " to a valid UPN, and then obviously investigate those sort of anomalies. So I think I'm running"
+    },
+    {
+      "Time_Start": 1162.5000000000002,
+      "Time_End": 1167.42,
+      "Text": " out of time for actual questions, so what I will do if anybody does want to ask a question,"
+    },
+    {
+      "Time_Start": 1167.42,
+      "Time_End": 1173.7,
+      "Text": " we'll certainly, I'll certainly hang around outside if needed. I want to give a big shout"
+    },
+    {
+      "Time_Start": 1173.7,
+      "Time_End": 1181.6200000000001,
+      "Text": " out actually to Charlie Clark, aka ExploitPH. He's been sort of a great sounding board for some"
+    },
+    {
+      "Time_Start": 1181.6200000000001,
+      "Time_End": 1188.02,
+      "Text": " of the Kerberos shenanigans, I'll say, that we've discussed on this talk. Thanks for listening."
+    }
+  ]
+}

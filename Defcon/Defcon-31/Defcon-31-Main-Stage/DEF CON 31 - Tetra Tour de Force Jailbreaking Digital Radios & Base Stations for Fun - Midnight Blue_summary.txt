@@ -1,0 +1,51 @@
+**Introduction**
+- **Jules Wetzels**, **Carla Meyer**, and **Wouter Bokslag** of **Midnight Blue** present their research on **TETRA** (**Terrestrial Trunked Radio**), a widely-used radio technology for voice and data communications.
+- TETRA is used by police, military, critical infrastructure, and more in over 100 countries.
+- The cryptography within TETRA has been kept secret, prompting the team to undertake Project ReTetra to reverse-engineer the algorithms.
+
+**TETRA Overview**
+- TETRA is a radio technology that competes with standards like P25, DMR, and Tetrapole.
+- It was standardized in 1995 by **ETSI** (**European Telecommunication Standards Institute**), known for their work on GSM, 3G, and 4G.
+- TETRA is used for voice, data, and machine-to-machine communications, relying on secret proprietary cryptography.
+- It is used by global police forces, military and intelligence services, and critical infrastructure such as airports, harbors, train stations, and SCADA systems.
+- TETRA security is based on two main pillars: the TAA1 suite (authentication, key management, and distribution) and the TEA suite (voice and data encryption).
+
+**Reverse Engineering TETRA Algorithms**
+- The team selected the **Motorola MTM5400** radio as their target due to its use of a **Trusted Execution Environment** (TEE) in software.
+- They analyzed the internal architecture, firmwares, and security features to identify potential vulnerabilities.
+- They gained code execution on the application processor by exploiting a **format string vulnerability** in the AT modem command interface.
+- They moved to the DSP (Digital Signal Processor) by exploiting the lack of memory protection and shared memory between the cores.
+- To extract the secret algorithms, they performed a **cache timing side-channel attack** on the TEE, targeting the AES decryption process.
+- They optimized the attack to extract the encryption key in less than a minute.
+
+**Analyzing TETRA Security**
+- With the secret algorithms in hand, the team analyzed the cryptographic primitives underpinning TETRA's security.
+- They found that the authentication primitives are based on a proprietary cipher named **Hurdle**, a 16-round FISO cipher with a 64-bit block and a 128-bit key.
+- They discovered a vulnerability in the authentication scheme that allows an attacker to establish an authenticated channel with a known session key of all zeros.
+- They identified a potential attack on the identity encryption primitive, TA61, which could lead to de-anonymization of Tetra addresses.
+- The team also analyzed the TEA key stream generators and found a **backdoor** in TEA1, reducing its key strength from 80 bits to 32 bits, making it trivial to crack.
+- They demonstrated the feasibility of cracking TEA1 on 90s consumer hardware, refuting claims by ETSI that it would require high-end equipment.
+
+**Protocol Level Vulnerabilities**
+- TETRA messages lack authenticity or integrity guarantees, making them vulnerable to forgery.
+- The team discovered a protocol-level vulnerability where an attacker can overpower the infrastructure and alter a mobile station's perception of network time, leading to keystream recovery and decryption of messages.
+- They demonstrated this attack on a real network, highlighting the seriousness of the issue.
+- ETSI downplayed the severity of the vulnerabilities, claiming that packet injection and TEA1-encrypted networks were impossible.
+
+**Base Station Hacking**
+- The team acquired a **Motorola MBTS** base station and modified its firmwares to implement a proof-of-concept attack.
+- They added functionalities like raw memory access, malloc/free primitives, and TEA support to transform it into an attack platform.
+- They also discovered multiple vulnerabilities in the base station software stacks, including unauthenticated firmwares and hard-coded backdoor passwords.
+- They demonstrated the keystream recovery attack on their lab setup, showing the decryption of an encrypted message.
+
+**Coordinated Vulnerability Disclosure**
+- The team spent four months reverse-engineering the secret cryptography and the rest of the year analyzing the ciphers, protocol, and building proofs-of-concept.
+- They contacted the Dutch NCSC, who helped coordinate the disclosure process with various stakeholders, including police, ETSI, and the intelligence community.
+- Mitigations include firmware updates, end-to-end encryption, and the use of alternative encryption algorithms.
+
+**Discussion and Conclusion**
+- The team highlights some interesting responses from ETSI, including downplaying the severity of the TEA1 backdoor and claiming that 32 bits of key entropy was sufficient in the late 90s.
+- They also discuss the use of TA1 in critical infrastructure and the potential impact of the vulnerabilities, citing references from the Snowden documents.
+- ETSI has announced an update to the standard, including replacing the TAA1 authentication suite and updating the TEA algorithms, but they plan to keep the new algorithms secret.
+- The team calls for further analysis of the TEA algorithms, especially TEA3, and Hurdle, as well as the implementation and extension of open Tetra stacks.
+- They emphasize the importance of stopping secret cryptography, as it often leads to security issues and a lack of public scrutiny.

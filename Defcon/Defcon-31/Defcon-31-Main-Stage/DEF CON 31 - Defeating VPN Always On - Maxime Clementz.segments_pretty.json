@@ -1,0 +1,1839 @@
+{
+  "segments": [
+    {
+      "Time_Start": 0.0,
+      "Time_End": 10.0,
+      "Text": "This text was transcribed using whisper model: large-v2\n\n Hello, everyone. I'm very happy to be there. Let's start. This is Defeating VPN, Always On."
+    },
+    {
+      "Time_Start": 10.0,
+      "Time_End": 17.0,
+      "Text": " My name is Maxime Clemence. As you can hear, I'm French. Hopefully the speech to text will be"
+    },
+    {
+      "Time_Start": 17.0,
+      "Time_End": 24.0,
+      "Text": " able to translate what I can say. Sorry if that's not the case. Yeah, okay. I got my first"
+    },
+    {
+      "Time_Start": 24.0,
+      "Time_End": 32.0,
+      "Text": " indistinguishable. Okay. Let's go. I work in Luxembourg. It's a very small country. I work in"
+    },
+    {
+      "Time_Start": 32.0,
+      "Time_End": 44.0,
+      "Text": " the PwC company. Do we have anyone from PwC in the room? Yeah? Great. Okay. Okay. Let's start."
+    },
+    {
+      "Time_Start": 44.0,
+      "Time_End": 50.0,
+      "Text": " So I will try to show you how Always On can be a bit off sometimes. So the reason of this talk is"
+    },
+    {
+      "Time_Start": 50.0,
+      "Time_End": 56.0,
+      "Text": " that I encountered this kind of control during some penetration tests. I managed to find one"
+    },
+    {
+      "Time_Start": 56.0,
+      "Time_End": 62.0,
+      "Text": " bypass, then two bypasses, then three. So I decided to dig further and to try to better understand"
+    },
+    {
+      "Time_Start": 62.0,
+      "Time_End": 68.0,
+      "Text": " how it works when it doesn't really work. We will start with the high level concepts with the"
+    },
+    {
+      "Time_Start": 68.0,
+      "Time_End": 76.0,
+      "Text": " components of Always On. Then we will see the practical analysis, so what it is made of. We will"
+    },
+    {
+      "Time_Start": 76.0,
+      "Time_End": 81.0,
+      "Text": " directly identify some naive attacks. I would say naive because we don't need to understand"
+    },
+    {
+      "Time_Start": 81.0,
+      "Time_End": 87.0,
+      "Text": " exactly how it is implemented. Just based on the documentation, we will find some attacks that"
+    },
+    {
+      "Time_Start": 87.0,
+      "Time_End": 95.0,
+      "Text": " might work or not. Those attacks and their results will raise some questions. Maybe we will"
+    },
+    {
+      "Time_Start": 95.0,
+      "Time_End": 101.0,
+      "Text": " need to look at behind the scenes to better understand all these results. We will inspect some"
+    },
+    {
+      "Time_Start": 101.0,
+      "Time_End": 107.0,
+      "Text": " of the filters to try to find new attacks that will allow us to break free from the Always On."
+    },
+    {
+      "Time_Start": 107.0,
+      "Time_End": 113.0,
+      "Text": " Then obviously I will finish with some recommendations. So who is this talk for?"
+    },
+    {
+      "Time_Start": 113.0,
+      "Time_End": 119.0,
+      "Text": " Definitely red teams or offensive teams. I will try to show some of the attacks that I found"
+    },
+    {
+      "Time_Start": 119.0,
+      "Time_End": 127.0,
+      "Text": " that will allow you to defeat Always On to bypass this control. For the blue team, of course, I"
+    },
+    {
+      "Time_Start": 127.0,
+      "Time_End": 133.0,
+      "Text": " will try to show what are the main issues that we have in the most popular VPN agents."
+    },
+    {
+      "Time_Start": 133.0,
+      "Time_End": 140.0,
+      "Text": " Definitely we will try to improve the situation here. Most importantly, we can find a lot of"
+    },
+    {
+      "Time_Start": 140.0,
+      "Time_End": 147.0,
+      "Text": " ways to actually bypass VPN Always On. I will be focusing on all the techniques that we can use"
+    },
+    {
+      "Time_Start": 147.0,
+      "Time_End": 153.0,
+      "Text": " without privileges, without complex tools, without specific attacks. So I'm really looking forward"
+    },
+    {
+      "Time_Start": 153.0,
+      "Time_End": 161.0,
+      "Text": " to showing some attacks that anyone can replay so that you can use it in your offensive assignments,"
+    },
+    {
+      "Time_Start": 161.0,
+      "Time_End": 168.0,
+      "Text": " for instance. Importantly, on the victim side as well, I want to run some attacks that might work"
+    },
+    {
+      "Time_Start": 168.0,
+      "Time_End": 176.0,
+      "Text": " without privileges. So the main concept, I guess that I don't need to explain what a VPN is, but"
+    },
+    {
+      "Time_Start": 176.0,
+      "Time_End": 185.0,
+      "Text": " I'm especially referring to VPN in the corporate context. So if the company, the organization tries"
+    },
+    {
+      "Time_Start": 185.0,
+      "Time_End": 192.0,
+      "Text": " to protect their remote end users, then of course they will try to implement a tunnel so that you"
+    },
+    {
+      "Time_Start": 192.0,
+      "Time_End": 199.0,
+      "Text": " can get all the protection from the corporate controls. If you know VPN, then you might already"
+    },
+    {
+      "Time_Start": 199.0,
+      "Time_End": 204.0,
+      "Text": " know the differences between split tunneling, foot tunneling, but today we are going to focus on"
+    },
+    {
+      "Time_Start": 204.0,
+      "Time_End": 212.0,
+      "Text": " Always On, which is also called Lockdown Mode, which is again like full tunneling mode, but then"
+    },
+    {
+      "Time_Start": 212.0,
+      "Time_End": 219.0,
+      "Text": " with the user is not even able to disable the control. So it will be forced to connect to the VPN"
+    },
+    {
+      "Time_Start": 219.0,
+      "Time_End": 226.0,
+      "Text": " gateway. Today I selected three editors that we are going to attack and we are going to review"
+    },
+    {
+      "Time_Start": 226.0,
+      "Time_End": 233.0,
+      "Text": " how they are implementing such controls, but basically they are almost all the same. If you look at"
+    },
+    {
+      "Time_Start": 233.0,
+      "Time_End": 238.0,
+      "Text": " the documentation of other providers, you will see that they are probably going to be vulnerable"
+    },
+    {
+      "Time_Start": 238.0,
+      "Time_End": 248.0,
+      "Text": " to the same things. So this is the typical symptoms of having unforced Always On on a Windows"
+    },
+    {
+      "Time_Start": 248.0,
+      "Time_End": 256.0,
+      "Text": " machine, for instance. You will see the quite typical general failure, like when you are doing"
+    },
+    {
+      "Time_Start": 257.0,
+      "Time_End": 263.0,
+      "Text": " something, it will not say that the thing is not coming back and that there is no response. Now"
+    },
+    {
+      "Time_Start": 263.0,
+      "Time_End": 268.0,
+      "Text": " it will be this weird message, general failure. So this is kind of a typical symptom that we can"
+    },
+    {
+      "Time_Start": 268.0,
+      "Time_End": 274.0,
+      "Text": " have. Obviously, if the tunnel is not established, like I took Avanti for instance, then in that"
+    },
+    {
+      "Time_Start": 274.0,
+      "Time_End": 279.0,
+      "Text": " case we have a restricted network access. We will get some error messages from the browser, and"
+    },
+    {
+      "Time_Start": 279.0,
+      "Time_End": 286.0,
+      "Text": " again, since it is enforced, the end user is not able, cannot disable this control. So we will"
+    },
+    {
+      "Time_Start": 286.0,
+      "Time_End": 295.0,
+      "Text": " get some other error messages. In the scenarios that we have, obviously if we are admin, if we"
+    },
+    {
+      "Time_Start": 295.0,
+      "Time_End": 300.0,
+      "Text": " can steal all the data by plugging in a USB key, if we can decrypt the drive, all those, we are"
+    },
+    {
+      "Time_Start": 300.0,
+      "Time_End": 305.0,
+      "Text": " not, I would say they are not relevant for this scenario. I'm really speaking about a scenario"
+    },
+    {
+      "Time_Start": 305.0,
+      "Time_End": 311.0,
+      "Text": " in which the end point is very well hardened, so the end user doesn't have any admin access. We"
+    },
+    {
+      "Time_Start": 311.0,
+      "Time_End": 317.0,
+      "Text": " cannot just plug a USB key and so on and so on. So the web proxy in the corporate environment is"
+    },
+    {
+      "Time_Start": 317.0,
+      "Time_End": 324.0,
+      "Text": " doing TLS interceptions, so everything is there to actually prevent any kind of data leak or any"
+    },
+    {
+      "Time_Start": 324.0,
+      "Time_End": 332.0,
+      "Text": " kind of C2 bidirectional channel. But another thing, very important, we know there have been"
+    },
+    {
+      "Time_Start": 332.0,
+      "Time_End": 340.0,
+      "Text": " many talks about exfiltration with sound, electromagnetic noise, pixel, and so on. They are"
+    },
+    {
+      "Time_Start": 340.0,
+      "Time_End": 347.0,
+      "Text": " great, but we are really interested in simple things with high throughput. So we want to be"
+    },
+    {
+      "Time_Start": 347.0,
+      "Time_End": 355.0,
+      "Text": " able to exfiltrate big files, for instance. So we need to find much effective attacks. The"
+    },
+    {
+      "Time_Start": 355.0,
+      "Time_End": 360.0,
+      "Text": " scenarios that we are going to consider, obviously the first one, hacker in the middle. The"
+    },
+    {
+      "Time_Start": 361.0,
+      "Time_End": 368.0,
+      "Text": " hacker does not have access to the target device, so the target device can be a laptop, typically."
+    },
+    {
+      "Time_Start": 368.0,
+      "Time_End": 375.0,
+      "Text": " On the other scenario that we can consider is if the attacker has access to the device, or if it"
+    },
+    {
+      "Time_Start": 375.0,
+      "Time_End": 382.0,
+      "Text": " is a malicious insider, then obviously it will be able to do both commands on the laptops as"
+    },
+    {
+      "Time_Start": 382.0,
+      "Time_End": 390.0,
+      "Text": " well as controlling the network. So enough theory, let's have a look at some of the"
+    },
+    {
+      "Time_Start": 390.0,
+      "Time_End": 397.0,
+      "Text": " components that are needed for always on to work. The first one is trusted network detection. Of"
+    },
+    {
+      "Time_Start": 397.0,
+      "Time_End": 403.0,
+      "Text": " course, the local VPN agent must understand, must conclude if it has to connect to the gateway"
+    },
+    {
+      "Time_Start": 403.0,
+      "Time_End": 409.0,
+      "Text": " or not. So for this, the algorithm that are being implemented in the VPN agents are called"
+    },
+    {
+      "Time_Start": 410.0,
+      "Time_End": 417.0,
+      "Text": " trusted network detection. When outside of the trusted network, the VPN agent needs to know if"
+    },
+    {
+      "Time_Start": 417.0,
+      "Time_End": 422.0,
+      "Text": " the gateway is directly accessible or not. Because if you are behind a captive portal, for"
+    },
+    {
+      "Time_Start": 422.0,
+      "Time_End": 428.0,
+      "Text": " instance, you will not be able to reach the VPN gateway and you will be first allowed some"
+    },
+    {
+      "Time_Start": 428.0,
+      "Time_End": 433.0,
+      "Text": " specific network access until you can authenticate on the captive portal, pay what you want or"
+    },
+    {
+      "Time_Start": 433.0,
+      "Time_End": 439.0,
+      "Text": " just enter your credentials until you are authenticated and then you can eventually reach out"
+    },
+    {
+      "Time_Start": 439.0,
+      "Time_End": 445.0,
+      "Text": " the VPN gateway. If we look at the implementation of trusted network detection in the three VPN"
+    },
+    {
+      "Time_Start": 447.0,
+      "Time_End": 453.0,
+      "Text": " agents that I selected, it's more or less the same. Let's take for example Cisco. To determine"
+    },
+    {
+      "Time_Start": 455.0,
+      "Time_End": 461.0,
+      "Text": " if we are on the trusted network, then it will use, it can use the internal DNS suffix or the"
+    },
+    {
+      "Time_Start": 462.0,
+      "Time_End": 468.0,
+      "Text": " internal DNS server IP. Just to mention a very important point here, Cisco is the only one"
+    },
+    {
+      "Time_Start": 468.0,
+      "Time_End": 475.0,
+      "Text": " provider that is actually proposing an option that is secure enough. So if you want to"
+    },
+    {
+      "Time_Start": 475.0,
+      "Time_End": 481.0,
+      "Text": " determine that you are on the LAN, on the trusted network, then you can still use the"
+    },
+    {
+      "Time_Start": 481.0,
+      "Time_End": 486.0,
+      "Text": " fingerprints of a TLS certificate. So this, in my opinion, is the only way you can do that"
+    },
+    {
+      "Time_Start": 486.0,
+      "Time_End": 491.0,
+      "Text": " properly. But it's so impractical that, to be honest, I've never seen that implemented"
+    },
+    {
+      "Time_Start": 491.0,
+      "Time_End": 498.0,
+      "Text": " correctly in the wild. For the other ones, you can see that it's also something that are"
+    },
+    {
+      "Time_Start": 498.0,
+      "Time_End": 504.0,
+      "Text": " pushed by JCP offers or IP settings, these kind of things. I'm already showing the pass on"
+    },
+    {
+      "Time_Start": 504.0,
+      "Time_End": 510.0,
+      "Text": " location of these settings on logs because we will actually find all the values that we need to"
+    },
+    {
+      "Time_Start": 511.0,
+      "Time_End": 517.0,
+      "Text": " attack these agents. Another observation is the files that we have there on the logs, they are"
+    },
+    {
+      "Time_Start": 520.0,
+      "Time_End": 526.0,
+      "Text": " all user readable. So you do not even need admin rights to get these files, to read them and to"
+    },
+    {
+      "Time_Start": 526.0,
+      "Time_End": 533.0,
+      "Text": " understand what is expected so that the VPN agent will conclude that it's on the trusted"
+    },
+    {
+      "Time_Start": 533.0,
+      "Time_End": 540.0,
+      "Text": " network. Obviously, most of these checks can be tricked. And finally, I referred to split"
+    },
+    {
+      "Time_Start": 540.0,
+      "Time_End": 546.0,
+      "Text": " tuning earlier. This is also where you will find all the exceptions for the IPs, domains that"
+    },
+    {
+      "Time_Start": 546.0,
+      "Time_End": 551.0,
+      "Text": " you can connect to directly. So if you look at these files, you might already find everything"
+    },
+    {
+      "Time_Start": 551.0,
+      "Time_End": 559.0,
+      "Text": " you need to perform your attack if you want to break free from the situation. Let's move on to"
+    },
+    {
+      "Time_Start": 559.0,
+      "Time_End": 565.0,
+      "Text": " the captive portal detection. So it's a kind of security trade off for connectivity. I just"
+    },
+    {
+      "Time_Start": 565.0,
+      "Time_End": 571.0,
+      "Text": " explained there what are the main algorithms that are being used to determine if you have, if"
+    },
+    {
+      "Time_Start": 571.0,
+      "Time_End": 576.0,
+      "Text": " the laptop, if the system that you are using is directly connected to the internet or not. So"
+    },
+    {
+      "Time_Start": 576.0,
+      "Time_End": 582.0,
+      "Text": " Microsoft, Google, Apple, it's quite similar in the way that they are performing some HTTP"
+    },
+    {
+      "Time_Start": 582.0,
+      "Time_End": 587.0,
+      "Text": " requests and depending on the response, of course, it will determine that you are directly"
+    },
+    {
+      "Time_Start": 587.0,
+      "Time_End": 593.0,
+      "Text": " connected or not. And when not, if this check fails, then it is assumed that you are behind a"
+    },
+    {
+      "Time_Start": 593.0,
+      "Time_End": 597.0,
+      "Text": " captive portal and this is where you will get the, you know, the prompt that you need to"
+    },
+    {
+      "Time_Start": 597.0,
+      "Time_End": 602.0,
+      "Text": " authenticate with your web browser before you can get access to the internet. The VPN agents"
+    },
+    {
+      "Time_Start": 602.0,
+      "Time_End": 610.0,
+      "Text": " that I'm going to, I would say, attack today are using a variance of this or a combination of"
+    },
+    {
+      "Time_Start": 610.0,
+      "Time_End": 616.0,
+      "Text": " these checks. But for Cisco, it's a bit different. It will use some HTTPS connection before. But"
+    },
+    {
+      "Time_Start": 616.0,
+      "Time_End": 626.0,
+      "Text": " all these tests can be checked. So we had a look at trusted network detection. We had a look at"
+    },
+    {
+      "Time_Start": 626.0,
+      "Time_End": 632.0,
+      "Text": " captive portal detection. Obviously, you know that we can already find some attacks that we can"
+    },
+    {
+      "Time_Start": 632.0,
+      "Time_End": 639.0,
+      "Text": " try. But just a quick reminder, what we are trying to achieve there is to do some data"
+    },
+    {
+      "Time_Start": 639.0,
+      "Time_End": 645.0,
+      "Text": " exfiltration but with, I would say, important files, very big stuff, or to establish a"
+    },
+    {
+      "Time_Start": 645.0,
+      "Time_End": 651.0,
+      "Text": " command and control with a bidirectional channel. So this is what we try to achieve there. And"
+    },
+    {
+      "Time_Start": 651.0,
+      "Time_End": 655.0,
+      "Text": " again, with the constraints, we are not admin or we do not even have access to the laptop"
+    },
+    {
+      "Time_Start": 655.0,
+      "Time_End": 663.0,
+      "Text": " itself. We want simple attacks. We don't want to use binaries that we would have to compile"
+    },
+    {
+      "Time_Start": 663.5,
+      "Time_End": 671.5,
+      "Text": " and to put on the laptop and so on. And again, the end point is hardened. So as you understood,"
+    },
+    {
+      "Time_Start": 671.5,
+      "Time_End": 678.5,
+      "Text": " the VPN agent still needs DNS to work because this will be the only way for it to get the IP"
+    },
+    {
+      "Time_Start": 678.5,
+      "Time_End": 686.5,
+      "Text": " address of the gateway, the VPN gateway. So naively, we can think that maybe we can use DNS"
+    },
+    {
+      "Time_Start": 686.5,
+      "Time_End": 692.0,
+      "Text": " ourselves in order to establish some channel. And indeed, it works. So indeed, I mentioned"
+    },
+    {
+      "Time_Start": 692.0,
+      "Time_End": 697.5,
+      "Text": " some of the tools right here, but again, we do not need any external tools to do this kind of"
+    },
+    {
+      "Time_Start": 697.5,
+      "Time_End": 703.5,
+      "Text": " things. We can simply use PowerShell, for instance, that is capable of doing DNS on LLMNR."
+    },
+    {
+      "Time_Start": 703.5,
+      "Time_End": 711.5,
+      "Text": " The conclusion for this quick or naive attack is that it will work for Cisco and Palo Alto."
+    },
+    {
+      "Time_Start": 711.5,
+      "Time_End": 718.5,
+      "Text": " The UDP LLMNR will work with Palo Alto only. And with Eventy, nothing works. So it's not"
+    },
+    {
+      "Time_Start": 718.5,
+      "Time_End": 724.5,
+      "Text": " possible to try to establish a tunnel or to send some data over DNS with Eventy. We already"
+    },
+    {
+      "Time_Start": 724.5,
+      "Time_End": 731.0,
+      "Text": " found some discrepancies here that I will try to explain later. Another example of attack that"
+    },
+    {
+      "Time_Start": 731.0,
+      "Time_End": 737.0,
+      "Text": " is highly effective is if you are able to do some Ethernet management like with SlimShim or"
+    },
+    {
+      "Time_Start": 737.0,
+      "Time_End": 743.5,
+      "Text": " this kind of things, but they only make sense if you are inside the corporate environment and"
+    },
+    {
+      "Time_Start": 743.5,
+      "Time_End": 752.0,
+      "Text": " you have access to network plugs. So let's not discuss about this there. The third option that"
+    },
+    {
+      "Time_Start": 752.0,
+      "Time_End": 757.5,
+      "Text": " we have, based on the design issues of VPN always on, is that we can try some other protocols"
+    },
+    {
+      "Time_Start": 757.5,
+      "Time_End": 763.0,
+      "Text": " that could be there and that could be useful and that could work. Honestly, I wanted this talk"
+    },
+    {
+      "Time_Start": 763.0,
+      "Time_End": 769.0,
+      "Text": " to be about some crazy exfiltration protocols and ideas that I have, but it was so easy to"
+    },
+    {
+      "Time_Start": 769.5,
+      "Time_End": 775.0,
+      "Text": " bypass the actual controls that we can already forget about those, especially since I do not"
+    },
+    {
+      "Time_Start": 775.0,
+      "Time_End": 781.0,
+      "Text": " want to compile or to add some new binaries to the victim machines. Okay. I mentioned DNS, but"
+    },
+    {
+      "Time_Start": 785.0,
+      "Time_End": 791.0,
+      "Text": " we do not really need to comply with the DNS protocol. We can simply try to use UDP 53 as an"
+    },
+    {
+      "Time_Start": 792.0,
+      "Time_End": 798.0,
+      "Text": " outbound connection to try to send some datagrams. It will be much more effective than a DNS"
+    },
+    {
+      "Time_Start": 803.5,
+      "Time_End": 809.7,
+      "Text": " channel because then we will have the full bandwidth that we can try to send. So I'm just"
+    },
+    {
+      "Time_Start": 809.7,
+      "Time_End": 816.0,
+      "Text": " putting there a very naive PowerShell script because we can use the UDP client PowerShell"
+    },
+    {
+      "Time_Start": 816.0,
+      "Time_End": 822.0,
+      "Text": " function that will allow us to send some datagrams over the port that we like. And again,"
+    },
+    {
+      "Time_Start": 822.0,
+      "Time_End": 828.5,
+      "Text": " some kind of discrepancy there. So this is not DNS UDP 53. It will work with Cisco on"
+    },
+    {
+      "Time_Start": 828.5,
+      "Time_End": 834.8,
+      "Text": " Palo Alto, but again, not with Eventy. So you might think that Eventy managed to implement a"
+    },
+    {
+      "Time_Start": 834.8,
+      "Time_End": 841.7,
+      "Text": " much better always on feature. Wait for the end of this talk. For some reasons, you might"
+    },
+    {
+      "Time_Start": 841.7,
+      "Time_End": 847.4000000000001,
+      "Text": " think that, okay, DNS worked, but we also need DHCP to be working even if we have an always"
+    },
+    {
+      "Time_Start": 847.4000000000001,
+      "Time_End": 852.7,
+      "Text": " on enabled. Well, it did not work at all for any of these three, and we will try to figure"
+    },
+    {
+      "Time_Start": 852.7,
+      "Time_End": 858.7,
+      "Text": " out later. Another thing that I found interesting is a kind of lockdown grace period that can be"
+    },
+    {
+      "Time_Start": 861.4000000000001,
+      "Time_End": 867.4000000000001,
+      "Text": " observed for Cisco on Eventy. So as soon as we get the DHCP response with an IP in it, then for"
+    },
+    {
+      "Time_Start": 868.4,
+      "Time_End": 875.1,
+      "Text": " Cisco on Eventy, it will take them between four to ten seconds in my experience before the"
+    },
+    {
+      "Time_Start": 875.1,
+      "Time_End": 881.1,
+      "Text": " connection is, I would say, locked again. Unfortunately, this is long enough to get this"
+    },
+    {
+      "Time_Start": 883.9,
+      "Time_End": 890.6,
+      "Text": " kind of screen shot that I know you like seeing on your screen. You are completely able to get"
+    },
+    {
+      "Time_Start": 890.6,
+      "Time_End": 897.1,
+      "Text": " the hashes of the user with responder or any other tool. So this is well enough either to get"
+    },
+    {
+      "Time_Start": 897.1,
+      "Time_End": 902.6,
+      "Text": " this kind of hash or to exfiltrate some small files already. So you have nothing to do just"
+    },
+    {
+      "Time_Start": 902.6,
+      "Time_End": 908.3000000000001,
+      "Text": " with this grace period. You can already get some nice results. But again, another discrepancy"
+    },
+    {
+      "Time_Start": 908.3000000000001,
+      "Time_End": 913.7,
+      "Text": " with Parallel to Global Protect, there is no such grace period observed. So again, something"
+    },
+    {
+      "Time_Start": 913.7,
+      "Time_End": 920.4,
+      "Text": " that we will try to answer later. So I mentioned captive portal detection. It's kind of"
+    },
+    {
+      "Time_Start": 920.4,
+      "Time_End": 926.1,
+      "Text": " obvious what we will try to do there now. If you remember some of the algorithms that I"
+    },
+    {
+      "Time_Start": 926.1,
+      "Time_End": 932.6,
+      "Text": " explained about, okay, how can we determine if we are behind captive portal or not, well"
+    },
+    {
+      "Time_Start": 932.6,
+      "Time_End": 939.4,
+      "Text": " then it's trivial to spoof this kind of thing. I'm just suggesting some IP tables that will"
+    },
+    {
+      "Time_Start": 939.4,
+      "Time_End": 945.4,
+      "Text": " allow you to make the VPN agent to think that you are behind a captive portal and it will"
+    },
+    {
+      "Time_Start": 945.4,
+      "Time_End": 951.1,
+      "Text": " unlock some connectivity so that you can use that on authenticate. So for Eventy on"
+    },
+    {
+      "Time_Start": 951.1,
+      "Time_End": 958.3000000000001,
+      "Text": " Palo Alto, it's just with the ATTP, so TCP AT port. For Cisco, it just requires to"
+    },
+    {
+      "Time_Start": 958.3000000000001,
+      "Time_End": 964.1,
+      "Text": " redirect the 443 as well just because of the algorithm that they use. But now that we can"
+    },
+    {
+      "Time_Start": 964.1,
+      "Time_End": 969.8000000000001,
+      "Text": " pretend we are captive portal, the VPN agent will unlock some connectivity and we can then"
+    },
+    {
+      "Time_Start": 969.8000000000001,
+      "Time_End": 975.8000000000001,
+      "Text": " try to steal credentials. We can try to establish bidirectional channel to exfiltrate data"
+    },
+    {
+      "Time_Start": 975.8000000000001,
+      "Time_End": 983.8000000000001,
+      "Text": " on to send some commands. So we can try that. On the right, I wrote a very, very naive"
+    },
+    {
+      "Time_Start": 983.8000000000001,
+      "Time_End": 989.5000000000001,
+      "Text": " captive portal web server which will pretend that we have to authenticate to connect. So"
+    },
+    {
+      "Time_Start": 989.5000000000001,
+      "Time_End": 995.3000000000001,
+      "Text": " based on, thanks to the IP tables rules, we will redirect all the connections to that."
+    },
+    {
+      "Time_Start": 995.3000000000001,
+      "Time_End": 1000.1,
+      "Text": " Depending on the type of VPN agent, we will have a, I would say, different outcome. So for"
+    },
+    {
+      "Time_Start": 1000.1,
+      "Time_End": 1006.6,
+      "Text": " Cisco, by default it's five minutes of unlocked access. We must use the embedded browser, but"
+    },
+    {
+      "Time_Start": 1006.6,
+      "Time_End": 1012.8000000000001,
+      "Text": " the embedded browser has all HTTP features that you might need to establish a channel or to"
+    },
+    {
+      "Time_Start": 1012.8000000000001,
+      "Time_End": 1020.3000000000001,
+      "Text": " exfiltrate some data. For Pulse Secure or the new name of Pulse Secure is Eventy, then it's"
+    },
+    {
+      "Time_Start": 1020.3000000000001,
+      "Time_End": 1024.6,
+      "Text": " not even restricted to the captive portal IP. So you can have access to the full LAN as"
+    },
+    {
+      "Time_Start": 1024.6,
+      "Time_End": 1029.1,
+      "Text": " long as Eventy believes that you are behind a captive portal. But we are still forced"
+    },
+    {
+      "Time_Start": 1029.1,
+      "Time_End": 1035.3,
+      "Text": " to use the embedded browser. For Palo Alto, there is no restrictions on the binary that is"
+    },
+    {
+      "Time_Start": 1035.3,
+      "Time_End": 1040.8,
+      "Text": " authorized to connect on the network. So as long as you pretend you have a captive portal"
+    },
+    {
+      "Time_Start": 1040.8,
+      "Time_End": 1046.6,
+      "Text": " on the network, you can then use any binary, any program to connect on the network. I'm"
+    },
+    {
+      "Time_Start": 1046.6,
+      "Time_End": 1053.8,
+      "Text": " just giving an example where we can simply use some HTTP form to upload some files. It was"
+    },
+    {
+      "Time_Start": 1053.8,
+      "Time_End": 1059.2,
+      "Text": " very nice. You can use any other more convenient web server that you want to do some file"
+    },
+    {
+      "Time_Start": 1059.2,
+      "Time_End": 1067.0,
+      "Text": " sharing, to do your C2, whatever. It can work this way. Now I think it's time to move on to"
+    },
+    {
+      "Time_Start": 1067.0,
+      "Time_End": 1072.7,
+      "Text": " the most interesting attack, I believe, because it's definitely the most powerful one. It"
+    },
+    {
+      "Time_Start": 1072.7,
+      "Time_End": 1078.7,
+      "Text": " will completely unlock the network access. So as I mentioned, the trusted network detection"
+    },
+    {
+      "Time_Start": 1078.7,
+      "Time_End": 1083.3,
+      "Text": " for the vulnerable ones, again, I have to insist, Cisco made a nice job because they are the"
+    },
+    {
+      "Time_Start": 1083.3,
+      "Time_End": 1089.3,
+      "Text": " only ones to propose something that is secure enough. But for the other one, it's either IP"
+    },
+    {
+      "Time_Start": 1089.3,
+      "Time_End": 1094.8,
+      "Text": " values or DNS values that are pushed in DHCP offers. And for some others, you also have to"
+    },
+    {
+      "Time_Start": 1094.8,
+      "Time_End": 1102.5,
+      "Text": " do some ping. Again, ping is trivial to spoof. So if we combine all this information, indeed,"
+    },
+    {
+      "Time_Start": 1102.5,
+      "Time_End": 1107.6,
+      "Text": " not only all these values can be spoofed, there is no authentication on these values, but"
+    },
+    {
+      "Time_Start": 1107.7,
+      "Time_End": 1113.2,
+      "Text": " they are also written in clear in the logs or in the configuration, and they can also leak in"
+    },
+    {
+      "Time_Start": 1113.2,
+      "Time_End": 1118.1000000000001,
+      "Text": " the traffic. So you will be able to see all these values in the traffic, and if you make some"
+    },
+    {
+      "Time_Start": 1118.1000000000001,
+      "Time_End": 1124.3000000000002,
+      "Text": " assumptions, you do not even need to understand everything to actually spoof the trusted"
+    },
+    {
+      "Time_Start": 1124.3000000000002,
+      "Time_End": 1130.4,
+      "Text": " network detection. So we will try to pretend that our rogue network is the actual LAN, and"
+    },
+    {
+      "Time_Start": 1130.4,
+      "Time_End": 1134.8000000000002,
+      "Text": " you will see that it will be happy with it. So I just give you an example with Cisco that has"
+    },
+    {
+      "Time_Start": 1134.8,
+      "Time_End": 1141.1,
+      "Text": " not been configured with the trusted network, the secure version. So it's not a TLS"
+    },
+    {
+      "Time_Start": 1141.1,
+      "Time_End": 1144.7,
+      "Text": " certificate there, but you can see that, okay, it will consider that we are on a trusted"
+    },
+    {
+      "Time_Start": 1144.7,
+      "Time_End": 1150.6,
+      "Text": " network, while that's not the case, obviously, and then that the network access is available."
+    },
+    {
+      "Time_Start": 1150.6,
+      "Time_End": 1155.8,
+      "Text": " Yes, this is what we want to do, even though the DiffCon bank does not exist at all, but Cisco"
+    },
+    {
+      "Time_Start": 1155.8,
+      "Time_End": 1162.7,
+      "Text": " will be happy with what we give in our DHCP offers. So let's try to exploit that. I will give"
+    },
+    {
+      "Time_Start": 1162.7,
+      "Time_End": 1167.9,
+      "Text": " the examples for the three. You will see that it's more or less the same. On the left, we"
+    },
+    {
+      "Time_Start": 1167.9,
+      "Time_End": 1174.0,
+      "Text": " have, on the right, sorry, top right, we have an extract of the eventy connection settings. So"
+    },
+    {
+      "Time_Start": 1174.0,
+      "Time_End": 1179.2,
+      "Text": " it is located at this pass. It is user readable, and you will find the connection policy"
+    },
+    {
+      "Time_Start": 1179.2,
+      "Time_End": 1185.9,
+      "Text": " there. That is a Boolean statement that will combine all the criteria, all the checks that"
+    },
+    {
+      "Time_Start": 1185.9,
+      "Time_End": 1192.2,
+      "Text": " are available. So if we want to avoid the VPN agent to force the connection, we just have to"
+    },
+    {
+      "Time_Start": 1192.3,
+      "Time_End": 1198.9,
+      "Text": " simply understand the Boolean logic here and try to inverse it. And we can do it one by one."
+    },
+    {
+      "Time_Start": 1198.9,
+      "Time_End": 1205.7,
+      "Text": " So I will be using DNS mask as a DHCP server as well as the DNS server. I will simply say"
+    },
+    {
+      "Time_Start": 1205.7,
+      "Time_End": 1211.9,
+      "Text": " that, okay, let's look at every value that is expected there, and I will propose everything"
+    },
+    {
+      "Time_Start": 1211.9,
+      "Time_End": 1216.2,
+      "Text": " so that event will believe that it's on the trusted network. So I will use host record. I"
+    },
+    {
+      "Time_Start": 1216.2,
+      "Time_End": 1220.8,
+      "Text": " will just write what is expected there. DHCP branch, I will write something that matches"
+    },
+    {
+      "Time_Start": 1220.8,
+      "Time_End": 1226.6,
+      "Text": " with what is expected there on DHCP option 6 for the DNS server IP. I will just give it"
+    },
+    {
+      "Time_Start": 1226.6,
+      "Time_End": 1233.5,
+      "Text": " what it wants to read. If I do that, event will consider that the device is connected to the"
+    },
+    {
+      "Time_Start": 1233.5,
+      "Time_End": 1239.6,
+      "Text": " internal network and completely unlock the network access. So unfortunately for event,"
+    },
+    {
+      "Time_Start": 1239.6,
+      "Time_End": 1246.3999999999999,
+      "Text": " they only implement weak or spoofable trusted network detection check. DNS server,"
+    },
+    {
+      "Time_Start": 1246.4,
+      "Time_End": 1252.2,
+      "Text": " DNS records on interface IP branch. You can select and you can create a very big statement."
+    },
+    {
+      "Time_Start": 1252.2,
+      "Time_End": 1257.4,
+      "Text": " Since it will only be composed of these spoofable checks, you will always be able to"
+    },
+    {
+      "Time_Start": 1257.4,
+      "Time_End": 1264.7,
+      "Text": " pretend you are the trusted network. Let's move on to the TND of Cisco. Again, if it is not"
+    },
+    {
+      "Time_Start": 1264.7,
+      "Time_End": 1271.0,
+      "Text": " configured with this secure trusted network, it will only use the trusted DNS domain on"
+    },
+    {
+      "Time_Start": 1271.0,
+      "Time_End": 1277.3,
+      "Text": " sometimes the IP address of the internal DNS domain. These values can be found in the"
+    },
+    {
+      "Time_Start": 1277.3,
+      "Time_End": 1285.3,
+      "Text": " profile in XML file at this location. If you do that, it will be enough for Cisco to consider"
+    },
+    {
+      "Time_Start": 1285.3,
+      "Time_End": 1291.2,
+      "Text": " that, okay, this is indeed a trusted network. Since I like to work in a very convenient and"
+    },
+    {
+      "Time_Start": 1291.2,
+      "Time_End": 1296.7,
+      "Text": " easy way, I can also tell you that if you run this command, that works, but you can also"
+    },
+    {
+      "Time_Start": 1296.8,
+      "Time_End": 1303.0,
+      "Text": " avoid any conflicts with your already running DNS mask and you can use that on the, you know,"
+    },
+    {
+      "Time_Start": 1303.0,
+      "Time_End": 1309.0,
+      "Text": " default hotspot features on any user of Linux distribution. If you put all these values"
+    },
+    {
+      "Time_Start": 1309.0,
+      "Time_End": 1314.5,
+      "Text": " there in the command line, you put them in the DNS mask shared configuration, it will"
+    },
+    {
+      "Time_Start": 1314.5,
+      "Time_End": 1320.9,
+      "Text": " peacefully run along your already running DNS mask and you will not even need to run any"
+    },
+    {
+      "Time_Start": 1321.0,
+      "Time_End": 1328.0,
+      "Text": " commands, actually, to spoof the trusted network. Let's finish with Palo Alto because it's"
+    },
+    {
+      "Time_Start": 1328.0,
+      "Time_End": 1333.6000000000001,
+      "Text": " also vulnerable. This time it will not be in the configuration because good for them, they"
+    },
+    {
+      "Time_Start": 1333.6000000000001,
+      "Time_End": 1339.4,
+      "Text": " decided to encrypt part of the configuration. That's nice. Unfortunately, the same values are"
+    },
+    {
+      "Time_Start": 1339.4,
+      "Time_End": 1344.1000000000001,
+      "Text": " leaking in clear text in the logs. So you will find everything you need as well. There you"
+    },
+    {
+      "Time_Start": 1344.1000000000001,
+      "Time_End": 1349.6000000000001,
+      "Text": " will see the IP on the name of the host. On little trick, it's not a DNS A record that is"
+    },
+    {
+      "Time_Start": 1349.6000000000001,
+      "Time_End": 1355.5000000000002,
+      "Text": " expected, it's a DNS PTR record. So it will require you to do some effort and to write the IP"
+    },
+    {
+      "Time_Start": 1355.5000000000002,
+      "Time_End": 1361.0000000000002,
+      "Text": " address in the inverse order, but once you do that, you are completely breaking free from the"
+    },
+    {
+      "Time_Start": 1361.0000000000002,
+      "Time_End": 1367.4,
+      "Text": " always on feature and you have access to that. So just to show you this, how quickly it can be"
+    },
+    {
+      "Time_Start": 1367.4,
+      "Time_End": 1374.1000000000001,
+      "Text": " in a short demo, on the left of the screen you will see the target machine with Cisco VPN"
+    },
+    {
+      "Time_Start": 1374.1000000000001,
+      "Time_End": 1379.1000000000001,
+      "Text": " agent and on the right you will see my own Linux distribution with this DNS mask that is"
+    },
+    {
+      "Time_Start": 1381.9,
+      "Time_End": 1386.9,
+      "Text": " running. Okay, so I will first try with giving the nope.local which is not the expected value."
+    },
+    {
+      "Time_Start": 1392.6000000000001,
+      "Time_End": 1398.4,
+      "Text": " So we will see that when we do that, I'm trying some pings so that we can see the results"
+    },
+    {
+      "Time_Start": 1398.8000000000002,
+      "Time_End": 1406.1000000000001,
+      "Text": " almost in real time. You will see that we might get some ping response because of the grace"
+    },
+    {
+      "Time_Start": 1406.1000000000001,
+      "Time_End": 1412.7,
+      "Text": " period that I explained earlier because Cisco is vulnerable to that. Now since it is not the"
+    },
+    {
+      "Time_Start": 1412.7,
+      "Time_End": 1418.8000000000002,
+      "Text": " DHCP value, since it is not the internal DNS domain, we will see that Cisco is not happy about"
+    },
+    {
+      "Time_Start": 1418.8000000000002,
+      "Time_End": 1425.8000000000002,
+      "Text": " that and we will definitely try to connect to the VPN gateway which obviously does not exist"
+    },
+    {
+      "Time_Start": 1425.8,
+      "Time_End": 1430.5,
+      "Text": " for this one, but then I will try with what is expected on what I could see in the"
+    },
+    {
+      "Time_Start": 1430.5,
+      "Time_End": 1435.5,
+      "Text": " configuration file. I'm restarting my DHCP server with the DNS values that I want to push and"
+    },
+    {
+      "Time_Start": 1440.5,
+      "Time_End": 1446.5,
+      "Text": " after a few graphical glitches, then we should be able to see that Cisco is happy with that. So we"
+    },
+    {
+      "Time_Start": 1447.5,
+      "Time_End": 1453.5,
+      "Text": " get the ping replies, so meaning that the network is now completely unlocked and I just want to"
+    },
+    {
+      "Time_Start": 1459.7,
+      "Time_End": 1465.7,
+      "Text": " see the graphical interface. Thanks. So it's now happy. Consider that we are on a trusted"
+    },
+    {
+      "Time_Start": 1466.6000000000001,
+      "Time_End": 1472.6000000000001,
+      "Text": " network and that we have completely unlocked the network access and now we can do whatever we"
+    },
+    {
+      "Time_Start": 1476.6000000000001,
+      "Time_End": 1482.6000000000001,
+      "Text": " want. So again, we did not need to understand how it is completely implemented. I did not need to"
+    },
+    {
+      "Time_Start": 1484.4,
+      "Time_End": 1489.2,
+      "Text": " reverse anything to understand all that. I just had to read the documentation and to do some"
+    },
+    {
+      "Time_Start": 1489.2,
+      "Time_End": 1495.1000000000001,
+      "Text": " experiments with some assumptions. But we raised some questions. We have some discrepancies"
+    },
+    {
+      "Time_Start": 1495.1000000000001,
+      "Time_End": 1501.5000000000002,
+      "Text": " between the VPN agents. We have some things that did not work while we expected such DHCP or"
+    },
+    {
+      "Time_Start": 1501.5000000000002,
+      "Time_End": 1507.5000000000002,
+      "Text": " the protocols to work. It was not the case. So we now need admin privileges just to try to"
+    },
+    {
+      "Time_Start": 1509.6000000000001,
+      "Time_End": 1517.6000000000001,
+      "Text": " understand how it works and try to get new attacks that might be working without privileges. So"
+    },
+    {
+      "Time_Start": 1517.6000000000001,
+      "Time_End": 1523.8000000000002,
+      "Text": " let's have a look at behind the scenes. Behind the scenes is the Windows filtering platform."
+    },
+    {
+      "Time_Start": 1523.8,
+      "Time_End": 1530.3,
+      "Text": " I'm not going to explain it at length there because there are other talks that will deep dive in"
+    },
+    {
+      "Time_Start": 1530.3,
+      "Time_End": 1536.8999999999999,
+      "Text": " this. You just have to understand that it is an API that is provided by Microsoft so that you can"
+    },
+    {
+      "Time_Start": 1536.8999999999999,
+      "Time_End": 1542.8999999999999,
+      "Text": " interact with the filtering engine of Windows. So the main idea is you have a provider that you"
+    },
+    {
+      "Time_Start": 1545.3999999999999,
+      "Time_End": 1552.1,
+      "Text": " can define. So it will be Cisco, Eventi, Palo Alto for instance. They will open a session to the"
+    },
+    {
+      "Time_Start": 1552.3000000000002,
+      "Time_End": 1557.1000000000001,
+      "Text": " Windows engine, to the Windows kernel basically. And then they will define some layers and"
+    },
+    {
+      "Time_Start": 1557.1000000000001,
+      "Time_End": 1564.6000000000001,
+      "Text": " sublayers which are network definitions. And then they will add, they will commit filters. And the"
+    },
+    {
+      "Time_Start": 1564.6000000000001,
+      "Time_End": 1570.3000000000002,
+      "Text": " filter will simply be something that you will define as okay, I want to block this protocol"
+    },
+    {
+      "Time_Start": 1570.3000000000002,
+      "Time_End": 1575.4,
+      "Text": " from this IP to this port and everything. You can define everything you want. The Windows"
+    },
+    {
+      "Time_Start": 1575.4,
+      "Time_End": 1580.5000000000002,
+      "Text": " firewall is actually using this API. So everything that is network filtering on Windows, on"
+    },
+    {
+      "Time_Start": 1580.8,
+      "Time_End": 1587.7,
+      "Text": " the modern Windows platform is using WFP. I'm showing there some API functions that we will be"
+    },
+    {
+      "Time_Start": 1587.7,
+      "Time_End": 1595.7,
+      "Text": " using later. So because it's using WFP, the Windows filtering platform, we already have some nice"
+    },
+    {
+      "Time_Start": 1595.7,
+      "Time_End": 1601.0,
+      "Text": " tools on Event 1 that is already built in Windows. It's part of the NetSH command. You can use"
+    },
+    {
+      "Time_Start": 1601.0,
+      "Time_End": 1608.0,
+      "Text": " NetSH WFP and show filters and it will show you all the filters that are currently enabled on"
+    },
+    {
+      "Time_Start": 1608.1,
+      "Time_End": 1614.1,
+      "Text": " the system. You can see there that since I just run this command again, I have to be admin to"
+    },
+    {
+      "Time_Start": 1614.1,
+      "Time_End": 1622.1,
+      "Text": " execute this command. I will get as an output a nice XML file that is quite clear to understand."
+    },
+    {
+      "Time_Start": 1622.1,
+      "Time_End": 1628.9,
+      "Text": " And I can see there the filter that is being committed by Eventi to block all the outgoing"
+    },
+    {
+      "Time_Start": 1628.9,
+      "Time_End": 1634.8,
+      "Text": " connection. So this is kind of an artifact of the always on configuration there. And you will see"
+    },
+    {
+      "Time_Start": 1634.8,
+      "Time_End": 1640.5,
+      "Text": " that okay, this is the name of the filter. This is connected before. So it will block all the"
+    },
+    {
+      "Time_Start": 1640.5,
+      "Time_End": 1646.0,
+      "Text": " outgoing connection on IP before. And then the main action there is block with no condition. So"
+    },
+    {
+      "Time_Start": 1646.0,
+      "Time_End": 1651.7,
+      "Text": " this is kind of the most important rule of the VPN always on feature. It will just block"
+    },
+    {
+      "Time_Start": 1651.7,
+      "Time_End": 1657.3,
+      "Text": " everything. So we can inspect all these rules with just a simple command. The other tools that"
+    },
+    {
+      "Time_Start": 1657.3,
+      "Time_End": 1663.3,
+      "Text": " I want to talk about are WFP Explorer from Pavel Yusifovic on Gems4show who made a lot of WFP"
+    },
+    {
+      "Time_Start": 1666.6,
+      "Time_End": 1673.2,
+      "Text": " functions available in his nice NT object manager. Thanks to these two tools, we will be able to"
+    },
+    {
+      "Time_Start": 1673.2,
+      "Time_End": 1681.2,
+      "Text": " actually impact on change the rules or specifically delete some rules. So let's have a look at the"
+    },
+    {
+      "Time_Start": 1681.2,
+      "Time_End": 1687.2,
+      "Text": " WFP Explorer. This is not an attack. It's not an exploit. It's just to prove that it's just"
+    },
+    {
+      "Time_Start": 1687.5,
+      "Time_End": 1694.5,
+      "Text": " by deleting the filters that have been committed to the kernel, to the Windows filtering platform"
+    },
+    {
+      "Time_Start": 1694.5,
+      "Time_End": 1700.2,
+      "Text": " framework, we will be able to get our connectivity back. So I will obviously choose to delete"
+    },
+    {
+      "Time_Start": 1700.2,
+      "Time_End": 1708.2,
+      "Text": " this outgoing V4 rule. Okay. Same situation. The channel is not established. So I'm in lockdown"
+    },
+    {
+      "Time_Start": 1709.2,
+      "Time_End": 1716.7,
+      "Text": " mode. I cannot connect to anything. I will just select the rule. You can see on the right that"
+    },
+    {
+      "Time_Start": 1716.7,
+      "Time_End": 1722.7,
+      "Text": " as soon as I delete the rule, then the connectivity is back for ping to work. But again, that"
+    },
+    {
+      "Time_Start": 1724.3,
+      "Time_End": 1731.3,
+      "Text": " was just to demonstrate or to illustrate these filters. So now that we know what we have to"
+    },
+    {
+      "Time_Start": 1731.3,
+      "Time_End": 1738.1,
+      "Text": " look at, I used and I obviously tried to inspect all the filters so that I could maybe find"
+    },
+    {
+      "Time_Start": 1738.1,
+      "Time_End": 1744.3,
+      "Text": " some nice hard-coded values, some back doors on some things that could be interesting. And"
+    },
+    {
+      "Time_Start": 1744.3,
+      "Time_End": 1750.6,
+      "Text": " I've done that with Palo Alto, Eventy. But for Cisco, it did not work. I could not see the"
+    },
+    {
+      "Time_Start": 1750.6,
+      "Time_End": 1758.1,
+      "Text": " filters that were implemented by Cisco for some reason. And it was kind of a big problem for me"
+    },
+    {
+      "Time_Start": 1758.1000000000001,
+      "Time_End": 1764.9,
+      "Text": " because I really wanted to see all these filters. So none of the filters implemented by Cisco"
+    },
+    {
+      "Time_Start": 1764.9,
+      "Time_End": 1770.9,
+      "Text": " would show up in the NetSH WFP output. But by enabling the audit policy, you could have a"
+    },
+    {
+      "Time_Start": 1776.4,
+      "Time_End": 1783.4,
+      "Text": " look at all the things that are being made or the changes that are being made on WFP. So we can"
+    },
+    {
+      "Time_Start": 1783.4,
+      "Time_End": 1790.24,
+      "Text": " definitely select some event logs that will show the fact that some filters are being"
+    },
+    {
+      "Time_Start": 1790.24,
+      "Time_End": 1795.16,
+      "Text": " committed. But on Cisco, they will commit filters very frequently so it was very hard to"
+    },
+    {
+      "Time_Start": 1795.16,
+      "Time_End": 1800.74,
+      "Text": " follow. I really wanted to look at all the filters that were being implemented and being"
+    },
+    {
+      "Time_Start": 1800.74,
+      "Time_End": 1806.7800000000002,
+      "Text": " pushed to the platform live. So this is where I wrote some Frida scripts to hook all the"
+    },
+    {
+      "Time_Start": 1806.78,
+      "Time_End": 1813.46,
+      "Text": " calls to the API. It was quite long because I wanted to decode everything. Unfortunately,"
+    },
+    {
+      "Time_Start": 1813.46,
+      "Time_End": 1818.96,
+      "Text": " this was not necessary at all. But anyways, I'm using some codes to do that. I will show you"
+    },
+    {
+      "Time_Start": 1818.96,
+      "Time_End": 1825.92,
+      "Text": " this example. So I'm injecting in the VPN agent binary. What I want to do is simply to hook"
+    },
+    {
+      "Time_Start": 1825.92,
+      "Time_End": 1832.74,
+      "Text": " the filter add function based on that. Then I will pass all the scripts, follow all the"
+    },
+    {
+      "Time_Start": 1832.74,
+      "Time_End": 1837.82,
+      "Text": " pointers and so on so that I can reconstruct the values that are being there pushed in the"
+    },
+    {
+      "Time_Start": 1837.82,
+      "Time_End": 1844.54,
+      "Text": " filters. So by the way, Cisco chose a very nice lead script there, you can see. But again, I'm"
+    },
+    {
+      "Time_Start": 1844.54,
+      "Time_End": 1851.54,
+      "Text": " happy now because I can look at my filters directly in live, but it will not show up if I'm"
+    },
+    {
+      "Time_Start": 1852.24,
+      "Time_End": 1859.24,
+      "Text": " trying to ask the API after that. I finally get this weird answer that access is denied. So"
+    },
+    {
+      "Time_Start": 1860.24,
+      "Time_End": 1865.24,
+      "Text": " maybe this is why I could not see all the filters. One subtlety of the WFP framework is that you"
+    },
+    {
+      "Time_Start": 1869.58,
+      "Time_End": 1876.1200000000001,
+      "Text": " can define some security descriptor that will block or reduce the access to the filters"
+    },
+    {
+      "Time_Start": 1876.1200000000001,
+      "Time_End": 1881.1200000000001,
+      "Text": " themselves, to the providers on everything that you can add to the filtering engine. This"
+    },
+    {
+      "Time_Start": 1881.1200000000001,
+      "Time_End": 1886.1200000000001,
+      "Text": " security descriptor is a nightmare to pass because it's with a lot of variables, some pointers"
+    },
+    {
+      "Time_Start": 1889.42,
+      "Time_End": 1895.82,
+      "Text": " or it's really hard to do that. But I got the hint from James Forshaw himself to actually just"
+    },
+    {
+      "Time_Start": 1895.82,
+      "Time_End": 1900.82,
+      "Text": " dump the first values appointed by the security descriptor pointer and then we will try to pass"
+    },
+    {
+      "Time_Start": 1904.82,
+      "Time_End": 1910.1200000000001,
+      "Text": " them automatically with his NT object manager and try to format that as a security"
+    },
+    {
+      "Time_Start": 1910.1200000000001,
+      "Time_End": 1916.08,
+      "Text": " descriptor. And then we finally have this answer that if you want to look at all the filters"
+    },
+    {
+      "Time_Start": 1916.08,
+      "Time_End": 1922.0,
+      "Text": " that are being committed by Cisco, then you will see that the system does not even have a read"
+    },
+    {
+      "Time_Start": 1922.0,
+      "Time_End": 1927.1599999999999,
+      "Text": " access to these filters. It only has write on delete access. If you want to read these filters,"
+    },
+    {
+      "Time_Start": 1927.1599999999999,
+      "Time_End": 1932.3799999999999,
+      "Text": " you will need to be local service because only local service has open on read. So we got our"
+    },
+    {
+      "Time_Start": 1932.3799999999999,
+      "Time_End": 1937.3799999999999,
+      "Text": " answer there, but it's not over. We still need to craft a token that will show that we can be"
+    },
+    {
+      "Time_Start": 1940.0,
+      "Time_End": 1945.54,
+      "Text": " local service. So again, kudos to James Forshaw who actually gave me the trick on Twitter"
+    },
+    {
+      "Time_Start": 1945.58,
+      "Time_End": 1951.54,
+      "Text": " where we discussed about that. And we can see there that we just need to define the token with"
+    },
+    {
+      "Time_Start": 1951.54,
+      "Time_End": 1956.54,
+      "Text": " the local service value there. So you can see that if I'm opening the engine without this token,"
+    },
+    {
+      "Time_Start": 1960.42,
+      "Time_End": 1967.12,
+      "Text": " then I get no results. Right here, get filter, for all Cisco filter, then I got no answer. But if"
+    },
+    {
+      "Time_Start": 1967.12,
+      "Time_End": 1972.12,
+      "Text": " I'm actually using the engine that I used for which I opened a session with the proper token, then I"
+    },
+    {
+      "Time_Start": 1973.1200000000001,
+      "Time_End": 1979.1200000000001,
+      "Text": " finally get all the filters. So that was kind of good news. Even if I spent several weeks writing"
+    },
+    {
+      "Time_Start": 1981.7,
+      "Time_End": 1987.7,
+      "Text": " something to dump in the function, I just had to do that. But anyways, I got my answers. The other"
+    },
+    {
+      "Time_Start": 1994.16,
+      "Time_End": 2000.96,
+      "Text": " way to do that is since we are able to hook the functions, we can also try to change these"
+    },
+    {
+      "Time_Start": 2000.96,
+      "Time_End": 2008.16,
+      "Text": " values. So another alternative to do that is to either hook the function code and set the SID on"
+    },
+    {
+      "Time_Start": 2008.16,
+      "Time_End": 2013.8400000000001,
+      "Text": " the DACL to null so that everyone, every admin, will get direct access to the filters. Or"
+    },
+    {
+      "Time_Start": 2013.8400000000001,
+      "Time_End": 2019.3400000000001,
+      "Text": " eventually you can use your admin access to first become owner of the object and then you will be"
+    },
+    {
+      "Time_Start": 2019.3400000000001,
+      "Time_End": 2025.8400000000001,
+      "Text": " able to change the DACL. So those are just some pop codes that I'm using as well. They are not"
+    },
+    {
+      "Time_Start": 2025.8400000000001,
+      "Time_End": 2032.38,
+      "Text": " so complex. But again, you need to be admin to do that. So now that we've managed to get the"
+    },
+    {
+      "Time_Start": 2032.38,
+      "Time_End": 2038.38,
+      "Text": " list of filters, we can now answer our questions on if we take them one by one. DHCP was not"
+    },
+    {
+      "Time_Start": 2040.7600000000002,
+      "Time_End": 2046.3400000000001,
+      "Text": " usable at all because all the permit filters specify the source port as well. This is not"
+    },
+    {
+      "Time_Start": 2046.3400000000001,
+      "Time_End": 2051.6800000000003,
+      "Text": " possible on Windows if you do not have privileges. So this is why it could not work. The fact"
+    },
+    {
+      "Time_Start": 2051.72,
+      "Time_End": 2058.14,
+      "Text": " that we cannot use TCP DNS on TCP LLMNR, well that's similar. The permit filters are only"
+    },
+    {
+      "Time_Start": 2058.14,
+      "Time_End": 2064.94,
+      "Text": " defined for UDP protocols. The fact that we could not use even DNS with Eventy, it's because"
+    },
+    {
+      "Time_Start": 2064.94,
+      "Time_End": 2071.3799999999997,
+      "Text": " Eventy only permits a system process to be able to use the UDP53 because with Windows"
+    },
+    {
+      "Time_Start": 2071.3799999999997,
+      "Time_End": 2077.06,
+      "Text": " filtering platform, you can even define a user, a system, accounts, groups, and you can define"
+    },
+    {
+      "Time_Start": 2077.1,
+      "Time_End": 2082.6,
+      "Text": " who can access the network based on these values. And finally, for the grace period that is"
+    },
+    {
+      "Time_Start": 2082.6,
+      "Time_End": 2089.06,
+      "Text": " not observable for Global Protect, it's because Global Protect is using persistent filters"
+    },
+    {
+      "Time_Start": 2089.06,
+      "Time_End": 2093.72,
+      "Text": " and not dynamic filters. So the filters are already there at all times and only when it's"
+    },
+    {
+      "Time_Start": 2093.72,
+      "Time_End": 2099.72,
+      "Text": " happy with the connection, it will decide to remove that. So unfortunately, I could not"
+    },
+    {
+      "Time_Start": 2100.34,
+      "Time_End": 2106.34,
+      "Text": " explain all the attacks that I managed to find. But if you see this table, again, I insist, it's"
+    },
+    {
+      "Time_Start": 2109.84,
+      "Time_End": 2116.8,
+      "Text": " only unprivileged techniques. So I really want to be able to do this kind of break free"
+    },
+    {
+      "Time_Start": 2116.8,
+      "Time_End": 2123.6800000000003,
+      "Text": " exercise of VPN always on. But you can see that none of the VPN agent is perfect because"
+    },
+    {
+      "Time_Start": 2123.6800000000003,
+      "Time_End": 2129.0200000000004,
+      "Text": " they are always vulnerable to at least one of the attacks that I explained there. I also"
+    },
+    {
+      "Time_Start": 2129.02,
+      "Time_End": 2134.86,
+      "Text": " found some outcoded values, but you do not even need to do that because they are most of"
+    },
+    {
+      "Time_Start": 2134.86,
+      "Time_End": 2140.28,
+      "Text": " the time vulnerable to the trusted network detection, which is, in my opinion, the most"
+    },
+    {
+      "Time_Start": 2140.28,
+      "Time_End": 2147.1,
+      "Text": " important one and the most flexible one. When it comes to recommendation, I try to"
+    },
+    {
+      "Time_Start": 2147.1,
+      "Time_End": 2155.1,
+      "Text": " prepare this talk with all the ideas that I have for detecting all the attacks that I"
+    },
+    {
+      "Time_Start": 2155.1,
+      "Time_End": 2160.14,
+      "Text": " could imagine or that I demonstrated, but it's not practical at all. You have to do some"
+    },
+    {
+      "Time_Start": 2160.14,
+      "Time_End": 2166.3199999999997,
+      "Text": " correlation. ETW will not give you all the nice answers that you are looking for, so you"
+    },
+    {
+      "Time_Start": 2166.3199999999997,
+      "Time_End": 2170.86,
+      "Text": " will have to do a lot of things. So let's not waste our time on detection opportunities"
+    },
+    {
+      "Time_Start": 2170.86,
+      "Time_End": 2178.86,
+      "Text": " there and let's directly move on to the prevention part. The security agency in France wrote a"
+    },
+    {
+      "Time_Start": 2179.6600000000003,
+      "Time_End": 2185.9,
+      "Text": " very nice report, which is full of guidelines. They are a bit extreme, but I think that I agree"
+    },
+    {
+      "Time_Start": 2185.9,
+      "Time_End": 2191.9,
+      "Text": " with them. If you want to circumvent the captive portal problem, then do not connect to a"
+    },
+    {
+      "Time_Start": 2191.9,
+      "Time_End": 2196.6600000000003,
+      "Text": " captive portal and always connect your laptop through a smartphone access point, for"
+    },
+    {
+      "Time_Start": 2196.6600000000003,
+      "Time_End": 2202.6200000000003,
+      "Text": " instance. So you would use 3, 4, 5G just to avoid being connected to any Wi-Fi network that"
+    },
+    {
+      "Time_Start": 2202.62,
+      "Time_End": 2210.0,
+      "Text": " you do not trust. The other way to do that, I think, and I think they are right, you can use"
+    },
+    {
+      "Time_Start": 2210.0,
+      "Time_End": 2214.3399999999997,
+      "Text": " your smartphone that will connect to the captive portal and then your laptop will connect"
+    },
+    {
+      "Time_Start": 2214.3399999999997,
+      "Time_End": 2220.54,
+      "Text": " through the smartphone. I think that works quite well on Android devices. I'm not sure for"
+    },
+    {
+      "Time_Start": 2220.54,
+      "Time_End": 2227.38,
+      "Text": " iOS. When it comes to the trusted network detection, they concluded well before me that"
+    },
+    {
+      "Time_Start": 2227.38,
+      "Time_End": 2232.62,
+      "Text": " most of the mechanisms are not secure, except the one from Cisco that is relying on the"
+    },
+    {
+      "Time_Start": 2232.62,
+      "Time_End": 2239.46,
+      "Text": " certificate hash. The other idea they have, I think it's promising, but not so convenient, is to"
+    },
+    {
+      "Time_Start": 2239.46,
+      "Time_End": 2246.2200000000003,
+      "Text": " deploy an internal VPN gateway as well. In that case, there will never be any notion of"
+    },
+    {
+      "Time_Start": 2246.2200000000003,
+      "Time_End": 2251.1,
+      "Text": " trusted network. It will either be connected to the internal gateway or the external"
+    },
+    {
+      "Time_Start": 2251.1,
+      "Time_End": 2258.18,
+      "Text": " gateway. So it's a bit extreme, but it works. And from the recommendation from this research, I"
+    },
+    {
+      "Time_Start": 2258.18,
+      "Time_End": 2262.7,
+      "Text": " would say that from a configuration point of view for the blue team there, you will need to"
+    },
+    {
+      "Time_Start": 2262.7,
+      "Time_End": 2268.14,
+      "Text": " check the access rights. You might want to change them because simple users have access to"
+    },
+    {
+      "Time_Start": 2268.14,
+      "Time_End": 2273.14,
+      "Text": " settings on logs, and you might also consider looking at your TND on CPD settings. For the"
+    },
+    {
+      "Time_Start": 2274.14,
+      "Time_End": 2279.14,
+      "Text": " implementation issues, well, now that you get to know the various weaknesses of the VPN"
+    },
+    {
+      "Time_Start": 2283.22,
+      "Time_End": 2289.54,
+      "Text": " agents, depending on your own provider, you might consider changing a bit how you are"
+    },
+    {
+      "Time_Start": 2289.54,
+      "Time_End": 2295.06,
+      "Text": " configuring them. And eventually, you can consider deploying your own WFP filter, but then"
+    },
+    {
+      "Time_Start": 2295.06,
+      "Time_End": 2300.94,
+      "Text": " you will need to know the API provided by Microsoft. It is well documented, but it's not so"
+    },
+    {
+      "Time_Start": 2300.94,
+      "Time_End": 2305.94,
+      "Text": " convenient, so good luck with that. Key takeaways, again, as I said, always on can be a bit"
+    },
+    {
+      "Time_Start": 2309.78,
+      "Time_End": 2316.3,
+      "Text": " off sometimes. Definitely VPN agents are not securing the always on feature in the same way."
+    },
+    {
+      "Time_Start": 2316.3,
+      "Time_End": 2321.94,
+      "Text": " None of them is perfect, so you have to keep that in mind. Naive attacks work. You do not"
+    },
+    {
+      "Time_Start": 2321.94,
+      "Time_End": 2327.7400000000002,
+      "Text": " need privileges. You do not always need to have access to the laptop that you are attacking on"
+    },
+    {
+      "Time_Start": 2327.7400000000002,
+      "Time_End": 2333.5000000000005,
+      "Text": " all the information that you need, for instance, to do the trusted network spoofing, are found"
+    },
+    {
+      "Time_Start": 2333.5000000000005,
+      "Time_End": 2339.5400000000004,
+      "Text": " in files that are accessible to the low privilege user, even sometimes on the packets"
+    },
+    {
+      "Time_Start": 2339.5400000000004,
+      "Time_End": 2344.6600000000003,
+      "Text": " themselves, if you are able to do some man in the middle, or just to look at what's happening"
+    },
+    {
+      "Time_Start": 2344.6600000000003,
+      "Time_End": 2350.1400000000003,
+      "Text": " on the wire. TND spoofing, again, from my point of view, is the most convenient on generic"
+    },
+    {
+      "Time_Start": 2350.1400000000003,
+      "Time_End": 2356.6600000000003,
+      "Text": " technique. For the rest, most of the answers can be found in the documentation itself, as"
+    },
+    {
+      "Time_Start": 2356.66,
+      "Time_End": 2361.98,
+      "Text": " well as in open source tools that are well made, and that will give you all the answers that"
+    },
+    {
+      "Time_Start": 2361.98,
+      "Time_End": 2366.98,
+      "Text": " you need, provided that you are able to look at the trap that I fall into with the Cisco"
+    },
+    {
+      "Time_Start": 2371.42,
+      "Time_End": 2376.8599999999997,
+      "Text": " settings. And finally, IT admins have to consider configuration mistakes, because even if we"
+    },
+    {
+      "Time_Start": 2376.8599999999997,
+      "Time_End": 2381.8599999999997,
+      "Text": " have weaknesses in the VPN agents themselves, we also form, in many occurrences, the fact"
+    },
+    {
+      "Time_Start": 2382.78,
+      "Time_End": 2387.78,
+      "Text": " that the IT admins change the settings, so the end user would also be able to change the"
+    },
+    {
+      "Time_Start": 2390.7400000000002,
+      "Time_End": 2394.86,
+      "Text": " profiles on the settings themselves. So it's not demonstrated there, but it is also"
+    },
+    {
+      "Time_Start": 2394.86,
+      "Time_End": 2399.86,
+      "Text": " something to consider. Thank you very much for your attention."
+    }
+  ]
+}

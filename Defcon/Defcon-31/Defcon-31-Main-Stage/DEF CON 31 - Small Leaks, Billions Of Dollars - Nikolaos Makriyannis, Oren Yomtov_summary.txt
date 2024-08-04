@@ -1,0 +1,44 @@
+**Introduction**
+- **Nikos** and **Oren**, cryptography and security researchers at **Fireblocks**, present their research on hacking **crypto wallets**.
+
+**Crypto Wallets and MPC**
+- A **crypto wallet** holds a **key** that allows users to sign transactions and send **cryptocurrency**.
+- The **single point of failure** in this setup is the key being stored in one place, making it vulnerable to theft.
+- **Multi-Party Computation (MPC)** offers a solution by splitting the key into shares held by different parties, eliminating the need for a centralized trusted party.
+- MPC has become a **common cryptographic technique** for protecting billions of dollars in cryptocurrency wallets, with commercial adoption in various industries.
+
+**Attacking Crypto Wallets**
+- Potential attacks on MPC crypto wallets include **denial of service**, **signature forgery**, and **private key exfiltration**.
+- The focus of the presentation is on private key exfiltration, where an attacker (Alice) collaborates with other participants to sign normal-looking transactions while secretly exfiltrating their key shares.
+- The research findings include **four novel attacks**, including **three zero-days**, affecting over **16 vendors** and open-source libraries.
+- The attacks target different protocols: **Lindle 17**, **GG18/GG20 family**, and a **"Do-It-Yourself" protocol**.
+
+**Background**
+- **Modulo Operator**: X modulo N is the remainder of X divided by N.
+- **Homomorphic Encryption**: Allows computation on encrypted data without decrypting it.
+- **ECDSA Signature Scheme**: The most important signature scheme in the blockchain space, used by Bitcoin and Ethereum.
+
+**Exploit 1: Attacking Lindle 17 Protocol**
+- **Lindle 17** is a **two-party signing protocol** where parties choose random key shares and encrypt them using homomorphic encryption.
+- During signing, Alice sends an encrypted partial signature to Bob, who finalizes it and verifies its validity before signing.
+- The paper specifies that any abort (invalid signature) should result in no later execution, i.e., the wallet must be locked.
+- However, the implementation did not lock the wallet, so the researchers devised a way to leverage this into a **private key exfiltration attack**.
+- By switching the modulus in the partial signature, Alice can determine if Bob's key share is divisible by a specific number, allowing her to extract his entire key share bit by bit.
+- The attack was successfully tested on an open-source implementation, and vendors have since mitigated it by following the paper's specification.
+
+**Exploit 2: Attacking GG18/GG20 Family of Protocols**
+- The **GG18/GG20** protocols are **multi-party signing protocols** involving multiple rounds of communication.
+- The focus of the attack is on the first round, which implements a **multiplication to addition** transformation.
+- Alice encrypts her multiplicative share (K) and sends it to Bob, who multiplies it with his key share (X) and adds a mask to prevent leakage.
+- The mask must be sufficiently large to prevent Alice from dividing and obtaining X.
+- The researchers found a way to cheat the **zero-knowledge range proof** used to ensure K is no bigger than 256 bits, allowing them to choose a large K and obtain X in the clear.
+- By manipulating the prime factors of N (the public key of the homomorphic encryption scheme), Alice can extract X mod P, where P is a 16-bit prime.
+- Using the **Chinese Remainder Theorem**, they can reconstruct X by obtaining 16 leakages in 16 signature sessions.
+- The attack was successfully tested on an open-source implementation, and vendors have mitigated it by adding zero-knowledge proofs for N's well-formedness.
+
+**Exploit 3: Attacking the "Do-It-Yourself" Protocol**
+- The **"Do-It-Yourself" protocol** is an MTA-based protocol without zero-knowledge proofs accompanying the ciphertext.
+- The mask is chosen to be as large as N, making the previous attack irrelevant.
+- However, without zero-knowledge proofs, Alice can send a non-ciphertext value, and by choosing a specific N, Bob inadvertently sends back his X (with some data processing and brute force required).
+- This attack is a condensed version of the previous one, obtaining all leakages in a single signature and then using CRT to reconstruct the key.
+- The researchers successfully demonstrated this attack and emphasized the need for more eyes on MPC implementation security.

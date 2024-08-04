@@ -1,0 +1,59 @@
+**Introduction**
+- Speaker: Bill Demirkapi, researcher for the Microsoft Security Response Center and full-time student at the Rochester Institute of Technology.
+- Specialization: low-level **operating system internals** with a focus on Windows.
+
+**Digital Signatures**
+- Used to verify the **authenticity** and **integrity** of untrusted data, ensuring it hasn't been tampered with.
+- **Code signing certificates** are more challenging to obtain compared to SSL or S/MIME certificates.
+- **Vulnerable implementations** mistakenly accept files signed with incompatible certificates, violating specifications.
+
+**Digital Signature Validation**
+- A **digital signature** is created by hashing a message and encrypting it with the sender's private key.
+- A **digital certificate** contains the sender's public key and is issued by a **trusted third-party** **Certificate Authority** (CA).
+- **Root Certificate Authorities** (CAs) are pre-installed and verify the identity of individuals and organizations requesting a certificate.
+- **Chain of trust**: verifying if a digital certificate is legitimate by checking if it chains up to a trusted CA.
+- **Authenticode specification**: generating a hash of an executable, decrypting and comparing it with the hash in the security directory, and verifying the certificate and chain of trust.
+
+**Attacking Digital Signatures**
+- Memory Corruption Issues: caused by mishandling of untrusted data, can be found through manual analysis, fuzzing, and mitigated by minimizing attack surface or using memory-safe programming languages.
+- Logic Flaws: context-specific issues requiring understanding of application design, can be found by analyzing differences between design documents and implementation, and prevented by minimizing code processing untrusted data and using test suites.
+- Cryptographic Flaws: exist in cryptographic algorithms, can be found through mathematical analysis, and prevented by following specifications and not rolling your own crypto.
+
+**Signing Certificates and Validation**
+- **Regular SSL certificates**: used to secure web server connections, require proof of domain ownership.
+- **S/MIME certificates**: used for securing email communications, require proof of email address ownership.
+- **Code signing certificates**: used to maintain software integrity, require verification of identity or organization legitimacy.
+- **Document signing certificates**: similar to S/MIME or SSL certificates, require varying levels of validation.
+- **Domain Validation** (DV): low bar for verification, only requires proof of domain control.
+- **Organization Validation** (OV): moderate level of verification, requires proof of legal and physical existence of the organization.
+- **Extended Validation** (EV): highest level of validation, includes face-to-face verification and proof of legitimate business.
+
+**Certificate Purpose and EKUs**
+- **Extended Key Usage** (EKU) field specifies the purpose of a certificate, e.g., server and client authentication.
+- Signing tools and utilities may impose restrictions based on EKUs, but these can be modified by attackers.
+- Vulnerable implementations fail to validate EKUs, allowing abuse of certificates with lower verification requirements for sensitive purposes like code signing.
+
+**Vulnerable Implementations**
+- **Microsoft's Sign Tool**: used for signing various file extensions, performs EKU verification by default, but can be patched to bypass the check.
+- **Manifest Generation and Editing Tool** (Mage): used for creating and modifying application manifests, performs EKU verification but can be patched to bypass.
+- **Windows Signature Validation**: uses **WinVerifyTrust** API, which relies on **Subject Interface Packages** (SIPs) and **Trust Providers** for format-specific verification.
+- **Generic Verify Provider**: used for verifying most authentic code formats, requires the presence of the code signing EKU.
+- **Mono Project**: open-source equivalent to Microsoft's .NET framework, includes **Authenticode Deformatter** and **Formatter** classes for authentic code signing and verification.
+- **Check Trust Tool**: used to verify the signature of an executable, vulnerable due to lack of EKU validation.
+- **Trail of Bits Authentic Code**: cross-platform library for verifying portable executable signatures, vulnerable to EKU attack, allowing signing with unrelated certificates.
+- **Deviation from Specification**: modifying the location of the security directory within a PE section can result in an unchanged authentic code hash, enabling code replacement without detection.
+- **ClickOnce**: deployment technology for self-updating applications, vulnerable to EKU attack, allowing publisher spoofing.
+
+**Related Work and Techniques**
+- **Using Frankincerts** (2014): researchers generated mutated certificates to test certificate validation and SSL/TLS implementations, finding inconsistencies in EKU validation.
+- **Certificate Pinning**: can protect against EKU attacks by restricting accepted certificates to a specific subset of trusted authorities.
+
+**Takeaways and Protection**
+- Always validate EKUs to ensure certificates are used for their intended purposes.
+- Use libraries with proper EKU checks and trust but verify key principles.
+- Implement regular security testing, especially for cryptographic components.
+- Microsoft has released patches for first-party issues and is working with impacted third-party vendors.
+
+**Conclusion**
+- Speaker thanks the audience and invites questions.
+- Addresses the potential impact of certificate pinning on EKU attacks.

@@ -1,0 +1,1739 @@
+{
+  "segments": [
+    {
+      "Time_Start": 0.0,
+      "Time_End": 7.0,
+      "Text": "This text was transcribed using whisper model: large-v2\n\n Hi, DEF CON. How's it going? So thank you guys for joining to this presentation. Contactless"
+    },
+    {
+      "Time_Start": 10.72,
+      "Time_End": 17.72,
+      "Text": " Overflow where we're going to discuss about code execution issues in NFC readers that"
+    },
+    {
+      "Time_Start": 17.8,
+      "Time_End": 24.8,
+      "Text": " are used in point of sales and ATMs. So short introduction about myself. I'm a principal"
+    },
+    {
+      "Time_Start": 25.8,
+      "Time_End": 31.8,
+      "Text": " security consultant at IOActive. So I'm a guy that most of his time is doing reverse"
+    },
+    {
+      "Time_Start": 31.8,
+      "Time_End": 37.8,
+      "Text": " engineering, basically from bare metal framework, operating system, whatever that can be reverse"
+    },
+    {
+      "Time_Start": 37.8,
+      "Time_End": 44.8,
+      "Text": " engineered. Also I do some hardware hacking as well. Code review also a lot for framework"
+    },
+    {
+      "Time_Start": 44.8,
+      "Time_End": 51.3,
+      "Text": " operating systems, applications, whatever. So basically I'm a guy that likes to break"
+    },
+    {
+      "Time_Start": 51.300000000000004,
+      "Time_End": 58.300000000000004,
+      "Text": " stuff and learn new things. But also I enjoy to find mitigations and solutions for those"
+    },
+    {
+      "Time_Start": 59.42,
+      "Time_End": 66.42,
+      "Text": " findings, because sometimes it's quite challenging as well. So this is agenda for the presentation"
+    },
+    {
+      "Time_Start": 68.22,
+      "Time_End": 73.46000000000001,
+      "Text": " where we're going to have some interaction and then we will describe with technical details"
+    },
+    {
+      "Time_Start": 73.46000000000001,
+      "Time_End": 80.46000000000001,
+      "Text": " some of the code execution issues. Then we'll also talk about the ATM scenario in more detail."
+    },
+    {
+      "Time_Start": 82.02,
+      "Time_End": 89.02,
+      "Text": " So one important thing to take into account here is that all the issues that we will see"
+    },
+    {
+      "Time_Start": 89.62,
+      "Time_End": 96.62,
+      "Text": " here are in different scenarios or devices. For instance, this typical portable or mobile"
+    },
+    {
+      "Time_Start": 100.34,
+      "Time_End": 105.74,
+      "Text": " payment device that you use to pay in restaurants or shops are affected as we will see later."
+    },
+    {
+      "Time_Start": 106.14000000000001,
+      "Time_End": 113.14000000000001,
+      "Text": " Also in devices like to pay for the bus or the train station, in ATMs as well, parking"
+    },
+    {
+      "Time_Start": 113.50000000000001,
+      "Time_End": 120.50000000000001,
+      "Text": " machines or even vending machines. So a lot of different scenarios we have these devices."
+    },
+    {
+      "Time_Start": 121.26,
+      "Time_End": 127.58000000000001,
+      "Text": " Also for previous research I wanted to see if there were any research paper or whatever"
+    },
+    {
+      "Time_Start": 127.58000000000001,
+      "Time_End": 133.18,
+      "Text": " that was possible to compromise the firmware of the device over NFC and I couldn't see"
+    },
+    {
+      "Time_Start": 133.42000000000002,
+      "Time_End": 138.9,
+      "Text": " anything like that, so at least back then I couldn't find anything like this in this"
+    },
+    {
+      "Time_Start": 138.9,
+      "Time_End": 145.9,
+      "Text": " case. So how these devices work, I'm going to use as an example this device that you"
+    },
+    {
+      "Time_Start": 146.54000000000002,
+      "Time_End": 153.54000000000002,
+      "Text": " have there on the screen. In this case it's the IDTech Kiosk 3, as you can see here. I"
+    },
+    {
+      "Time_Start": 155.10000000000002,
+      "Time_End": 160.46,
+      "Text": " started with this device during my research because I have many years of experience working"
+    },
+    {
+      "Time_Start": 160.46,
+      "Time_End": 165.82000000000002,
+      "Text": " with ATMs and I knew that this device, this reader, is using most of the ATMs in the world"
+    },
+    {
+      "Time_Start": 165.82000000000002,
+      "Time_End": 172.82,
+      "Text": " in the most important ATM vendors. So basically we have here this case is where we have the"
+    },
+    {
+      "Time_Start": 173.06,
+      "Time_End": 180.06,
+      "Text": " NFC antenna and also the NFC chip and then with this serial cable connects to this board"
+    },
+    {
+      "Time_Start": 180.38,
+      "Time_End": 186.82,
+      "Text": " where we have the microcontroller that handles all the parsing of the credit card or debit"
+    },
+    {
+      "Time_Start": 186.85999999999999,
+      "Time_End": 193.85999999999999,
+      "Text": " card information, but also this microcontroller is responsible for the USB communications"
+    },
+    {
+      "Time_Start": 194.54,
+      "Time_End": 201.38,
+      "Text": " because this board is connected with this USB cable to a host computer with this device"
+    },
+    {
+      "Time_Start": 201.38,
+      "Time_End": 208.38,
+      "Text": " which could be a Windows computer or Linux computer, in this case would be the ATM computer."
+    },
+    {
+      "Time_Start": 209.38,
+      "Time_End": 216.38,
+      "Text": " So what we really want to compromise is this microcontroller that is where all the USB"
+    },
+    {
+      "Time_Start": 216.57999999999998,
+      "Time_End": 223.57999999999998,
+      "Text": " stuff is happening and in this case through the contactless interface. So we don't need"
+    },
+    {
+      "Time_Start": 225.46,
+      "Time_End": 230.54,
+      "Text": " to be experts in EMB transactions and all the details about the protocol but we just"
+    },
+    {
+      "Time_Start": 230.54,
+      "Time_End": 237.01999999999998,
+      "Text": " need to know at least that between a transaction when we are using the contactless interface,"
+    },
+    {
+      "Time_Start": 237.02,
+      "Time_End": 243.86,
+      "Text": " the reader is the one that starts the communication and then the card in this case will respond"
+    },
+    {
+      "Time_Start": 243.86,
+      "Time_End": 249.9,
+      "Text": " back and then we have this communication back and forth between them and where we need to"
+    },
+    {
+      "Time_Start": 249.9,
+      "Time_End": 256.62,
+      "Text": " focus on is the data that, in this case the credit card, the data that sends to the reader"
+    },
+    {
+      "Time_Start": 256.62,
+      "Time_End": 261.66,
+      "Text": " because we want to send something in particular that allows us to get code execution in the"
+    },
+    {
+      "Time_Start": 261.66,
+      "Time_End": 268.66,
+      "Text": " firmware of the NFC reader. So at the application layer we have what is called APDUs, so basically"
+    },
+    {
+      "Time_Start": 269.90000000000003,
+      "Time_End": 275.18,
+      "Text": " at the application layer is what the credit card in this case is sending to the reader"
+    },
+    {
+      "Time_Start": 275.18,
+      "Time_End": 281.54,
+      "Text": " and this is based on TLV, so tag length value, so basically we have one byte that indicates"
+    },
+    {
+      "Time_Start": 281.54,
+      "Time_End": 287.1,
+      "Text": " the tag, one byte that indicates the length of the packet and then the value itself, so"
+    },
+    {
+      "Time_Start": 287.1,
+      "Time_End": 294.1,
+      "Text": " it's pretty easy to understand the grammar of these packets, of these APDUs. There are"
+    },
+    {
+      "Time_Start": 294.5,
+      "Time_End": 300.18,
+      "Text": " tools out there where, for instance, this is an APDU for a transaction where you can"
+    },
+    {
+      "Time_Start": 300.18,
+      "Time_End": 307.14000000000004,
+      "Text": " see the first byte SF indicates the file control information, then the second byte 6A is the"
+    },
+    {
+      "Time_Start": 307.14000000000004,
+      "Time_End": 313.14000000000004,
+      "Text": " size of the entire packet in this case and then the 84 byte in this case is the next"
+    },
+    {
+      "Time_Start": 313.18,
+      "Time_End": 320.18,
+      "Text": " tag, so that's how more or less it works. But again, like I said, we don't need to dig"
+    },
+    {
+      "Time_Start": 320.18,
+      "Time_End": 327.18,
+      "Text": " too much in the EMV protocol in this case for EMV transactions. So yeah, if you sniff"
+    },
+    {
+      "Time_Start": 329.21999999999997,
+      "Time_End": 334.38,
+      "Text": " the communications, like with Proxmark for instance, this is what you get during a transaction"
+    },
+    {
+      "Time_Start": 334.38,
+      "Time_End": 341.38,
+      "Text": " where you have the NFC low level protocol or commands and then you have the APDUs that"
+    },
+    {
+      "Time_Start": 343.26,
+      "Time_End": 349.86,
+      "Text": " the communications between the reader and the card at the application layer."
+    },
+    {
+      "Time_Start": 349.86,
+      "Time_End": 355.26,
+      "Text": " Okay so one of the first things that we need to do is to emulate the card because we want"
+    },
+    {
+      "Time_Start": 355.26,
+      "Time_End": 362.18,
+      "Text": " to attack the reader emulating a card and send something specific, so at first what"
+    },
+    {
+      "Time_Start": 362.18,
+      "Time_End": 369.18,
+      "Text": " I used was this device, the ACR122 device which contains the NXP PM532 chip that allows"
+    },
+    {
+      "Time_Start": 370.18,
+      "Time_End": 377.18,
+      "Text": " emulation. So yeah, you connect that reader to your laptop over USB and then with some"
+    },
+    {
+      "Time_Start": 377.74,
+      "Time_End": 383.74,
+      "Text": " Python framework you can send some commands like start the emulation mode for that reader"
+    },
+    {
+      "Time_Start": 383.74,
+      "Time_End": 390.38,
+      "Text": " and then with Python as well you can interact with the APDU layer, the application layer"
+    },
+    {
+      "Time_Start": 390.38,
+      "Time_End": 395.66,
+      "Text": " with the reader and you can send APDUs to the reader and receive the APDUs from the"
+    },
+    {
+      "Time_Start": 395.66,
+      "Time_End": 402.66,
+      "Text": " reader as well. In this case I was using this framework, the RFID IoT which is very"
+    },
+    {
+      "Time_Start": 404.62,
+      "Time_End": 410.86,
+      "Text": " useful for this. But also there is another approach which is in this case you create"
+    },
+    {
+      "Time_Start": 410.86,
+      "Time_End": 415.90000000000003,
+      "Text": " your own Android application using host card emulation that allows you to also interact"
+    },
+    {
+      "Time_Start": 415.90000000000003,
+      "Time_End": 422.90000000000003,
+      "Text": " with emulate a card and interact at the application layer with NFC reader in this case."
+    },
+    {
+      "Time_Start": 423.46000000000004,
+      "Time_End": 428.94000000000005,
+      "Text": " So before jumping to the issues, let's talk about IDTech. Like I said before I started"
+    },
+    {
+      "Time_Start": 428.94000000000005,
+      "Time_End": 435.94000000000005,
+      "Text": " with this reader, the IDTech Kiosk 3 device because it was present in every ATM that has"
+    },
+    {
+      "Time_Start": 436.02000000000004,
+      "Time_End": 443.02000000000004,
+      "Text": " contactless capabilities. So IDTech is a global leader in payment devices where they make"
+    },
+    {
+      "Time_Start": 444.02000000000004,
+      "Time_End": 450.58000000000004,
+      "Text": " a lot of different devices, not only this Kiosk 3 device. They also make pin pads, touch"
+    },
+    {
+      "Time_Start": 450.7,
+      "Time_End": 457.7,
+      "Text": " screens, displays and other devices for payment devices. And something important to understand"
+    },
+    {
+      "Time_Start": 459.9,
+      "Time_End": 465.06,
+      "Text": " here as we will see later that all devices from IDTech are vulnerable to these code execution"
+    },
+    {
+      "Time_Start": 465.06,
+      "Time_End": 471.26,
+      "Text": " issues because they basically use the same code base for the firmware. So this particular"
+    },
+    {
+      "Time_Start": 471.26,
+      "Time_End": 478.26,
+      "Text": " one device, the Kiosk 3, I bought it in happyatms.com website where you can buy parts from ATMs"
+    },
+    {
+      "Time_Start": 478.3,
+      "Time_End": 485.3,
+      "Text": " that have been in production. You can also buy these in eBay. So this actually was using"
+    },
+    {
+      "Time_Start": 485.53999999999996,
+      "Time_End": 492.3,
+      "Text": " an ATM. But also I bought brand new devices from IDTech as well to make sure that they"
+    },
+    {
+      "Time_Start": 492.3,
+      "Time_End": 499.3,
+      "Text": " were also with the newest version of the firmware they were also vulnerable. So yeah, as you"
+    },
+    {
+      "Time_Start": 500.53999999999996,
+      "Time_End": 505.34,
+      "Text": " can see here in this picture, in the ATMs for instance the only part that is exposed"
+    },
+    {
+      "Time_Start": 505.34000000000003,
+      "Time_End": 512.34,
+      "Text": " to the user obviously is this case where the NFC antennas. But also these IDTech devices"
+    },
+    {
+      "Time_Start": 514.02,
+      "Time_End": 519.74,
+      "Text": " are not only in ATMs, they are also in parking machines, vending machines. They have also"
+    },
+    {
+      "Time_Start": 519.74,
+      "Time_End": 526.22,
+      "Text": " this device which is also vulnerable in retail and also hospitality. So basically it's using"
+    },
+    {
+      "Time_Start": 526.22,
+      "Time_End": 533.22,
+      "Text": " a lot of different scenarios. Okay so let's jump to the issues. So first when I got the"
+    },
+    {
+      "Time_Start": 535.6600000000001,
+      "Time_End": 540.86,
+      "Text": " device from that website, happyatms.com, what I wanted to check if JTAG was enabled. So"
+    },
+    {
+      "Time_Start": 540.86,
+      "Time_End": 546.3000000000001,
+      "Text": " I was able to, surprisingly it was enabled and I was able to extract the firmware and"
+    },
+    {
+      "Time_Start": 546.3000000000001,
+      "Time_End": 551.9,
+      "Text": " gain debugging capabilities with GDB which is also great because for the reverse engineering"
+    },
+    {
+      "Time_Start": 551.9,
+      "Time_End": 558.26,
+      "Text": " process it's really helpful. But also for the exploit development process. But also"
+    },
+    {
+      "Time_Start": 558.26,
+      "Time_End": 563.46,
+      "Text": " in the devices that I bought from IDTech, JTAG was enabled as well which is not great."
+    },
+    {
+      "Time_Start": 563.46,
+      "Time_End": 570.46,
+      "Text": " But basically JTAG is enabled in all of these devices. So then once I'm able to extract"
+    },
+    {
+      "Time_Start": 571.1800000000001,
+      "Time_End": 576.7800000000001,
+      "Text": " the firmware from the microcontroller of this device, I start to reverse engineer the firmware."
+    },
+    {
+      "Time_Start": 576.7800000000001,
+      "Time_End": 581.4200000000001,
+      "Text": " In this case it's a bare metal firmware where we don't have an operating system, there's"
+    },
+    {
+      "Time_Start": 581.4200000000001,
+      "Time_End": 587.34,
+      "Text": " no symbols, no strings and it has more or less around 1600 functions so it's more or"
+    },
+    {
+      "Time_Start": 587.34,
+      "Time_End": 594.34,
+      "Text": " less big. So it's a bit hard to reverse engineer this kind of firmware. So my first goal here"
+    },
+    {
+      "Time_Start": 595.82,
+      "Time_End": 602.82,
+      "Text": " is locate in the code of the firmware where it starts reading the content of the credit"
+    },
+    {
+      "Time_Start": 603.9,
+      "Time_End": 608.5,
+      "Text": " card in this case. So there are different approaches here. But what I did basically"
+    },
+    {
+      "Time_Start": 608.5,
+      "Time_End": 614.94,
+      "Text": " is that when I was learning more about EMV transactions, I knew that there was something"
+    },
+    {
+      "Time_Start": 614.94,
+      "Time_End": 619.5,
+      "Text": " called proximity payment system environment which is basically these bytes as you can"
+    },
+    {
+      "Time_Start": 619.5,
+      "Time_End": 625.6600000000001,
+      "Text": " see here that the reader is sending to the card in the very first communication. So I"
+    },
+    {
+      "Time_Start": 625.6600000000001,
+      "Time_End": 630.98,
+      "Text": " just needed to find those bytes in the code and I found it as you can see here and then"
+    },
+    {
+      "Time_Start": 630.98,
+      "Time_End": 637.9000000000001,
+      "Text": " start from here to reverse engineer and understand what the code was doing. Then after some hours"
+    },
+    {
+      "Time_Start": 637.9000000000001,
+      "Time_End": 642.74,
+      "Text": " I identified, as you can see here, I changed the name of this function because there were"
+    },
+    {
+      "Time_Start": 642.82,
+      "Time_End": 648.1,
+      "Text": " no symbols as receive card because I found that in this function is the function where"
+    },
+    {
+      "Time_Start": 648.1,
+      "Time_End": 655.1,
+      "Text": " it starts reading from the card over the NFC interface. So something important to understand"
+    },
+    {
+      "Time_Start": 655.9,
+      "Time_End": 662.9,
+      "Text": " also here is that standard APDUs are up to 255 bytes size, that's the maximum size. So"
+    },
+    {
+      "Time_Start": 664.66,
+      "Time_End": 669.0600000000001,
+      "Text": " as you can see here the code was checking the byte that indicates the length of the"
+    },
+    {
+      "Time_Start": 669.0600000000001,
+      "Time_End": 675.9000000000001,
+      "Text": " packet so it's only one byte because it's only 255 bytes as maximum. So I was getting"
+    },
+    {
+      "Time_Start": 675.9000000000001,
+      "Time_End": 682.9000000000001,
+      "Text": " more familiar with the code but also I was a bit concerned because with only 255 bytes"
+    },
+    {
+      "Time_Start": 683.7800000000001,
+      "Time_End": 688.9000000000001,
+      "Text": " you can end up in a situation where you have a stack buffer overflow for instance but with"
+    },
+    {
+      "Time_Start": 688.9000000000001,
+      "Time_End": 695.9000000000001,
+      "Text": " that size, 255 as maximum, maybe you can't overflow the other variables in the stack"
+    },
+    {
+      "Time_Start": 696.34,
+      "Time_End": 703.34,
+      "Text": " and then overwrite the saved return address in the stack. Of course you can maybe overwrite"
+    },
+    {
+      "Time_Start": 703.34,
+      "Time_End": 707.8199999999999,
+      "Text": " some of the other local variables in the stack and achieve code execution in that way but"
+    },
+    {
+      "Time_Start": 707.8199999999999,
+      "Time_End": 714.8199999999999,
+      "Text": " normally it's harder and that's why I was a bit concerned because of that. But then"
+    },
+    {
+      "Time_Start": 715.38,
+      "Time_End": 720.22,
+      "Text": " when I was getting more familiar with the code I realized that as you can see here in"
+    },
+    {
+      "Time_Start": 720.22,
+      "Time_End": 726.78,
+      "Text": " these lines the code in the firmware was checking if the second byte of the APDU is"
+    },
+    {
+      "Time_Start": 726.78,
+      "Time_End": 733.78,
+      "Text": " the byte 82 in X then it was getting two bytes from the APDU as the size. Meaning that then"
+    },
+    {
+      "Time_Start": 735.14,
+      "Time_End": 741.7,
+      "Text": " if it's getting two bytes as size then we can have FFFF as size which is 65,000 more"
+    },
+    {
+      "Time_Start": 741.7,
+      "Time_End": 748.62,
+      "Text": " or less bytes. So I didn't understand at the beginning because as far as I knew the maximum"
+    },
+    {
+      "Time_Start": 748.62,
+      "Time_End": 755.62,
+      "Text": " size of an APDU was 255 bytes. But then doing some searching about this and I found that"
+    },
+    {
+      "Time_Start": 757.78,
+      "Time_End": 764.78,
+      "Text": " there is something called extended APDUs which indeed are up to 65,000 bytes and indeed they"
+    },
+    {
+      "Time_Start": 765.54,
+      "Time_End": 771.5,
+      "Text": " use two bytes to indicate the size of that APDU. So that was great news because now I"
+    },
+    {
+      "Time_Start": 771.5,
+      "Time_End": 778.5,
+      "Text": " can send, I can try to use these extended APDUs. Then I realized in this case that the"
+    },
+    {
+      "Time_Start": 779.62,
+      "Time_End": 786.14,
+      "Text": " function that reads the contents of the card it's using to store that APDU in this stack"
+    },
+    {
+      "Time_Start": 786.14,
+      "Time_End": 793.14,
+      "Text": " buffer and if we can send a buffer bigger than 138 hex which is 312 bytes if I remember"
+    },
+    {
+      "Time_Start": 795.38,
+      "Time_End": 802.38,
+      "Text": " correctly then you would overflow this buffer and then get a stack buffer overflow. So I"
+    },
+    {
+      "Time_Start": 803.14,
+      "Time_End": 809.18,
+      "Text": " saw this statically reversing in the firmware but I needed to be able to send an extended"
+    },
+    {
+      "Time_Start": 809.18,
+      "Time_End": 815.74,
+      "Text": " APDU and prove that that was possible. But the problem was that the reader I was using"
+    },
+    {
+      "Time_Start": 815.74,
+      "Time_End": 821.82,
+      "Text": " to emulate a card didn't support extended APDUs by hardware so I couldn't use that and"
+    },
+    {
+      "Time_Start": 821.82,
+      "Time_End": 827.02,
+      "Text": " I was looking on the internet like how can I emulate a card but also be able to send"
+    },
+    {
+      "Time_Start": 827.02,
+      "Time_End": 834.02,
+      "Text": " an extended APDU and the only solution I saw back then was that I found in some Google"
+    },
+    {
+      "Time_Start": 834.3,
+      "Time_End": 841.3,
+      "Text": " forums that some Google pixel phones had hardware support for extended APDUs and also Google"
+    },
+    {
+      "Time_Start": 843.54,
+      "Time_End": 850.54,
+      "Text": " released an Android version with support also for extended APDUs. So at least I found"
+    },
+    {
+      "Time_Start": 851.54,
+      "Time_End": 857.54,
+      "Text": " something that allowed me to send those extended APDUs. So this is part of the Android"
+    },
+    {
+      "Time_Start": 857.54,
+      "Time_End": 862.98,
+      "Text": " application that they created and here you have the APDU that I'm sending which is these"
+    },
+    {
+      "Time_Start": 862.98,
+      "Time_End": 867.0999999999999,
+      "Text": " initial bytes are following the protocol but then the rest of the packet as you can see"
+    },
+    {
+      "Time_Start": 867.0999999999999,
+      "Time_End": 873.6999999999999,
+      "Text": " are 41, 41, 41, the typical A's in ASCII, you know for the proof of concept, typical"
+    },
+    {
+      "Time_Start": 873.7,
+      "Time_End": 880.7,
+      "Text": " proof of concept. So yeah, as soon as I tried the POC with the reader, as I was expecting,"
+    },
+    {
+      "Time_Start": 884.0200000000001,
+      "Time_End": 889.1800000000001,
+      "Text": " as you can see here in the output of the GDB, the stack overflow was working and I was able"
+    },
+    {
+      "Time_Start": 889.1800000000001,
+      "Time_End": 896.1800000000001,
+      "Text": " to have control of the PC register so in this case code execution is possible in this framework"
+    },
+    {
+      "Time_Start": 896.82,
+      "Time_End": 903.58,
+      "Text": " through the NFC interface. But also it's important to clarify that in these particular devices"
+    },
+    {
+      "Time_Start": 903.62,
+      "Time_End": 909.4200000000001,
+      "Text": " from ID Tech in this case, the Kiosk 3, there is no exploit mitigations at all which makes"
+    },
+    {
+      "Time_Start": 909.4200000000001,
+      "Time_End": 916.0200000000001,
+      "Text": " harder, easier the exploitation of this but also there is no secure boot so you can make"
+    },
+    {
+      "Time_Start": 916.0200000000001,
+      "Time_End": 921.58,
+      "Text": " it persistent which is also better from the attacker's perspective. And also since we"
+    },
+    {
+      "Time_Start": 921.58,
+      "Time_End": 928.58,
+      "Text": " are using extended APDUs which can be 65,000 bytes big, then you have plenty of bytes that"
+    },
+    {
+      "Time_Start": 929.58,
+      "Time_End": 936.58,
+      "Text": " you can use for your own ARM instructions to create your own, to inject your own malware"
+    },
+    {
+      "Time_Start": 936.9000000000001,
+      "Time_End": 943.9000000000001,
+      "Text": " in the framework of the device. So also this stack overflow is present in another 21 different"
+    },
+    {
+      "Time_Start": 950.6600000000001,
+      "Time_End": 956.82,
+      "Text": " functions in the same framework that are reachable on other stages of the transaction but I just"
+    },
+    {
+      "Time_Start": 956.86,
+      "Time_End": 963.86,
+      "Text": " needed one but I kept looking and then I found 21 more. So let me show you a video of this."
+    },
+    {
+      "Time_Start": 971.38,
+      "Time_End": 978.38,
+      "Text": " So let me make this bigger. So here we have the Kiosk 3 device. I'm attached with the"
+    },
+    {
+      "Time_Start": 980.22,
+      "Time_End": 984.3800000000001,
+      "Text": " JTAG interface so we can see the crash in GDB in real time and also you can see the"
+    },
+    {
+      "Time_Start": 984.38,
+      "Time_End": 991.38,
+      "Text": " USB cable is connected to this laptop and in the laptop is where in this case the ID"
+    },
+    {
+      "Time_Start": 991.38,
+      "Time_End": 996.5,
+      "Text": " Tech SDK, the application is running and it's sending the commands through the USB cable"
+    },
+    {
+      "Time_Start": 996.5,
+      "Time_End": 1003.5,
+      "Text": " to the reader to start the transaction. And in the right side we have the GDB. So first"
+    },
+    {
+      "Time_Start": 1006.98,
+      "Time_End": 1012.82,
+      "Text": " I'm going to start a transaction here and then I'm going to use a credit card. There"
+    },
+    {
+      "Time_Start": 1012.82,
+      "Time_End": 1017.7800000000001,
+      "Text": " is no sound apparently but you should hear a beep there and then we can see the credit"
+    },
+    {
+      "Time_Start": 1017.7800000000001,
+      "Time_End": 1023.0600000000001,
+      "Text": " card information in the application. So it worked the transaction and now if I use my"
+    },
+    {
+      "Time_Start": 1023.0600000000001,
+      "Time_End": 1030.06,
+      "Text": " proof of concept in this case, well in this case there is no sound but you will then hear"
+    },
+    {
+      "Time_Start": 1030.18,
+      "Time_End": 1037.18,
+      "Text": " a beep because the framework is crashing before trying to make the beep and then we can see"
+    },
+    {
+      "Time_Start": 1037.6200000000001,
+      "Time_End": 1044.6200000000001,
+      "Text": " the crash in GDB. So here we can see that the LR register is with our 4141 bytes but"
+    },
+    {
+      "Time_Start": 1048.22,
+      "Time_End": 1055.22,
+      "Text": " also if we execute the backtrace command we can see that the return address is 4141 as"
+    },
+    {
+      "Time_Start": 1055.54,
+      "Time_End": 1062.54,
+      "Text": " well. So there's the bug working in this case in the GDB. And like I said before, other"
+    },
+    {
+      "Time_Start": 1068.14,
+      "Time_End": 1072.46,
+      "Text": " ID Tech devices were having the same exact issue because they were using the same code"
+    },
+    {
+      "Time_Start": 1072.46,
+      "Time_End": 1079.46,
+      "Text": " base at least at that particular layer of the parsing. Okay so at this point I was thinking"
+    },
+    {
+      "Time_Start": 1084.6200000000001,
+      "Time_End": 1090.42,
+      "Text": " like okay it's pretty clear that the problem here is that this device by hardware and software"
+    },
+    {
+      "Time_Start": 1090.42,
+      "Time_End": 1096.0600000000002,
+      "Text": " supports those extended PDUs but the developers didn't take into account that yeah the device"
+    },
+    {
+      "Time_Start": 1096.1399999999999,
+      "Time_End": 1103.1399999999999,
+      "Text": " can receive more than in this case 312 bytes. That was the size of the buffer that it was"
+    },
+    {
+      "Time_Start": 1103.3799999999999,
+      "Time_End": 1108.3799999999999,
+      "Text": " overflowed with the stack buffer overflow. So I was thinking like okay so maybe this"
+    },
+    {
+      "Time_Start": 1108.3799999999999,
+      "Time_End": 1112.22,
+      "Text": " issue is present in other vendors. They are having the same problem because it's pretty"
+    },
+    {
+      "Time_Start": 1112.22,
+      "Time_End": 1119.22,
+      "Text": " easy to have that mistake. And indeed many vendors were having the same issue. So basically"
+    },
+    {
+      "Time_Start": 1120.46,
+      "Time_End": 1125.3,
+      "Text": " what I was doing is using the same proof of concept that I created for this ID Tech reader."
+    },
+    {
+      "Time_Start": 1125.62,
+      "Time_End": 1131.98,
+      "Text": " I was testing it with other vendors. Most of them they were crashing as well. Some of"
+    },
+    {
+      "Time_Start": 1131.98,
+      "Time_End": 1136.1399999999999,
+      "Text": " them were stack buffer overflows. Some of them were heap buffer overflows because we"
+    },
+    {
+      "Time_Start": 1136.1399999999999,
+      "Time_End": 1139.94,
+      "Text": " were dealing sometimes with bare metal firmware like this one. But also sometimes they were"
+    },
+    {
+      "Time_Start": 1139.94,
+      "Time_End": 1146.94,
+      "Text": " real time operating systems or Android systems or even Linux systems. So one of the vendors"
+    },
+    {
+      "Time_Start": 1150.46,
+      "Time_End": 1154.3,
+      "Text": " affected is Ingenico. I don't know how to pronounce that in English but basically it's"
+    },
+    {
+      "Time_Start": 1154.8999999999999,
+      "Time_End": 1161.8999999999999,
+      "Text": " a very famous vendor in the world for payment devices and payment applications. And I have"
+    },
+    {
+      "Time_Start": 1162.06,
+      "Time_End": 1169.06,
+      "Text": " another video here to show you. So basically since sometimes it's hard to get access to"
+    },
+    {
+      "Time_Start": 1174.94,
+      "Time_End": 1178.82,
+      "Text": " these devices actually in a production environment where it works and you can perform a"
+    },
+    {
+      "Time_Start": 1178.82,
+      "Time_End": 1184.62,
+      "Text": " transaction and everything. What I did in this case I have a friend in Spain where he"
+    },
+    {
+      "Time_Start": 1184.62,
+      "Time_End": 1190.7,
+      "Text": " owns a shop and he has these devices so he allowed me to test it at the proof of concept."
+    },
+    {
+      "Time_Start": 1190.7,
+      "Time_End": 1196.4199999999998,
+      "Text": " So basically as you can see here the device was charging me for 39 euros. And then as"
+    },
+    {
+      "Time_Start": 1196.4199999999998,
+      "Time_End": 1203.4199999999998,
+      "Text": " soon as I tap my phone you can see. Rebooting progress. So basically in this case I was"
+    },
+    {
+      "Time_Start": 1209.26,
+      "Time_End": 1216.3,
+      "Text": " rebooting because in this case it's a Linux system so the issue is in a particular library."
+    },
+    {
+      "Time_Start": 1216.3,
+      "Time_End": 1221.3,
+      "Text": " So the operating system was detecting the crash and rebooting. But my proof of concept was"
+    },
+    {
+      "Time_Start": 1221.3,
+      "Time_End": 1228.3,
+      "Text": " just crashing it. It wasn't weaponized in this case. So yeah. And I was doing this with"
+    },
+    {
+      "Time_Start": 1228.8999999999999,
+      "Time_End": 1234.8999999999999,
+      "Text": " another device and another reader and all of them were crashing. Every device was crashing"
+    },
+    {
+      "Time_Start": 1234.9,
+      "Time_End": 1240.9,
+      "Text": " like this. Okay. So. Verifone as well. Several Verifone devices affected. I was testing"
+    },
+    {
+      "Time_Start": 1246.94,
+      "Time_End": 1252.8200000000002,
+      "Text": " them and crashing. Sorry I forgot to mention that my approach was also like once I found"
+    },
+    {
+      "Time_Start": 1252.8200000000002,
+      "Time_End": 1258.18,
+      "Text": " that the device was crashing then I was trying to get to buy one and get debug capabilities"
+    },
+    {
+      "Time_Start": 1258.18,
+      "Time_End": 1264.8600000000001,
+      "Text": " or log access so I can see if it's a stack buffer or flow and then contact the vendor"
+    },
+    {
+      "Time_Start": 1265.14,
+      "Time_End": 1272.14,
+      "Text": " of course. So Verifone as well as I was saying. Crane Payment Innovations as well. Several"
+    },
+    {
+      "Time_Start": 1272.66,
+      "Time_End": 1278.5000000000002,
+      "Text": " devices from them that were affected. BB Post. This is a very big company as well where"
+    },
+    {
+      "Time_Start": 1278.5000000000002,
+      "Time_End": 1285.5000000000002,
+      "Text": " they have everywhere readers and there were several of these devices were affected. We"
+    },
+    {
+      "Time_Start": 1285.94,
+      "Time_End": 1292.22,
+      "Text": " CC which in this case is a Chinese company but they have devices everywhere in the world."
+    },
+    {
+      "Time_Start": 1292.82,
+      "Time_End": 1297.94,
+      "Text": " Their devices were affected. NextGo in this case as well. Another Chinese vendor but again"
+    },
+    {
+      "Time_Start": 1297.94,
+      "Time_End": 1304.54,
+      "Text": " you can find these devices everywhere. Okay. So let's talk about the impact. Like what"
+    },
+    {
+      "Time_Start": 1304.54,
+      "Time_End": 1310.42,
+      "Text": " the attacker can actually do with these attacks, right? With once the firmware of the device"
+    },
+    {
+      "Time_Start": 1310.42,
+      "Time_End": 1317.42,
+      "Text": " is compromised. So it's always up to the imagination of the attacker but at least in my imagination"
+    },
+    {
+      "Time_Start": 1318.42,
+      "Time_End": 1325.42,
+      "Text": " I have these approaches. So the very first one is to remember we have code execution"
+    },
+    {
+      "Time_Start": 1327.6200000000001,
+      "Time_End": 1333.38,
+      "Text": " in the microcontroller of the reader through the NFC, the contactless interface. We have"
+    },
+    {
+      "Time_Start": 1333.38,
+      "Time_End": 1338.74,
+      "Text": " full control so we can inject and install our own malware here. So what we can do is"
+    },
+    {
+      "Time_Start": 1338.74,
+      "Time_End": 1344.1000000000001,
+      "Text": " typically in a transaction as you saw in the other video is that the host, the Windows"
+    },
+    {
+      "Time_Start": 1344.1000000000001,
+      "Time_End": 1349.0200000000002,
+      "Text": " computer in this case sends the start transaction command over USB to this guy and the price"
+    },
+    {
+      "Time_Start": 1349.0200000000002,
+      "Time_End": 1353.7800000000002,
+      "Text": " for the transaction. But my malware in this case that is running here because this device"
+    },
+    {
+      "Time_Start": 1353.7800000000002,
+      "Time_End": 1360.7800000000002,
+      "Text": " has been already compromised can change that price instead of $500 for 50 cents, you know?"
+    },
+    {
+      "Time_Start": 1362.0200000000002,
+      "Time_End": 1368.66,
+      "Text": " But even the receipt if the device has a display, in this case this device doesn't have a display"
+    },
+    {
+      "Time_Start": 1368.66,
+      "Time_End": 1374.78,
+      "Text": " but other devices have a display, you can put the $500 but in the end in the background"
+    },
+    {
+      "Time_Start": 1374.78,
+      "Time_End": 1380.5,
+      "Text": " it's charging you for 50 cents. And since you can make this persistent then every future"
+    },
+    {
+      "Time_Start": 1380.5,
+      "Time_End": 1385.22,
+      "Text": " transaction will be 50 cents if you want or one cent or whatever you want to make it."
+    },
+    {
+      "Time_Start": 1385.22,
+      "Time_End": 1391.38,
+      "Text": " So that would be one possible attack that the attackers could do with this. Another"
+    },
+    {
+      "Time_Start": 1391.38,
+      "Time_End": 1398.38,
+      "Text": " thing that the attacker could do is in the U.S. especially there is something called"
+    },
+    {
+      "Time_Start": 1398.9,
+      "Time_End": 1405.9,
+      "Text": " contactless magnetic stripe data transactions where the full number of the credit card and"
+    },
+    {
+      "Time_Start": 1406.5800000000002,
+      "Time_End": 1413.14,
+      "Text": " the expiration date is sent in clear text to the NFC reader so that would be in clear"
+    },
+    {
+      "Time_Start": 1413.14,
+      "Time_End": 1418.0600000000002,
+      "Text": " text in the memory of the NFC reader in this case. So what my malware could do in this"
+    },
+    {
+      "Time_Start": 1418.0600000000002,
+      "Time_End": 1425.0600000000002,
+      "Text": " device is once the device is compromised then every future credit card that will be using"
+    },
+    {
+      "Time_Start": 1426.06,
+      "Time_End": 1432.1799999999998,
+      "Text": " that type of contactless transaction, the magnetic stripe data transaction, my malware"
+    },
+    {
+      "Time_Start": 1432.1799999999998,
+      "Time_End": 1437.34,
+      "Text": " will do is it will store those credit card numbers in the memory or in the flash and"
+    },
+    {
+      "Time_Start": 1437.34,
+      "Time_End": 1441.1399999999999,
+      "Text": " then if the device has internet connection then send those credit card numbers to my"
+    },
+    {
+      "Time_Start": 1441.1399999999999,
+      "Time_End": 1446.98,
+      "Text": " server on the internet. But also if the device doesn't have internet connection what the"
+    },
+    {
+      "Time_Start": 1446.98,
+      "Time_End": 1452.06,
+      "Text": " attacker could do is then after a few days or hours come back to the reader, send a special"
+    },
+    {
+      "Time_Start": 1452.06,
+      "Time_End": 1458.94,
+      "Text": " command to the malware that is actually running in the NFC reader and exfiltrate those credit"
+    },
+    {
+      "Time_Start": 1458.94,
+      "Time_End": 1465.94,
+      "Text": " card numbers over the NFC interface. So now I have here a demo of a weaponized exploit."
+    },
+    {
+      "Time_Start": 1469.4199999999998,
+      "Time_End": 1476.4199999999998,
+      "Text": " So in this case it's an Android device but as you can see I can't show you some parts"
+    },
+    {
+      "Time_Start": 1476.8200000000002,
+      "Time_End": 1483.46,
+      "Text": " of the graphical interface because I can't show the name of the bank and some other details"
+    },
+    {
+      "Time_Start": 1483.46,
+      "Time_End": 1490.46,
+      "Text": " but you will see the POC without the blurry image. But basically this is an Android device"
+    },
+    {
+      "Time_Start": 1491.5800000000002,
+      "Time_End": 1496.3400000000001,
+      "Text": " in this case and the weaponized exploit what we will do to prove that code execution is"
+    },
+    {
+      "Time_Start": 1496.3400000000001,
+      "Time_End": 1500.22,
+      "Text": " possible in this case and manipulate the firmware is going to show a message on the screen as"
+    },
+    {
+      "Time_Start": 1500.22,
+      "Time_End": 1507.22,
+      "Text": " you will see. So first we're using a credit card. I don't know why there's no sound but"
+    },
+    {
+      "Time_Start": 1508.34,
+      "Time_End": 1514.94,
+      "Text": " you should hear how the receipt is giving me the receipt but I don't know, sorry but"
+    },
+    {
+      "Time_Start": 1514.94,
+      "Time_End": 1521.94,
+      "Text": " the sound is not working. And after that then the device is ready for another transaction"
+    },
+    {
+      "Time_Start": 1522.98,
+      "Time_End": 1528.5,
+      "Text": " and I'm going to use the proof of concept, the weaponized exploit in this case. And then"
+    },
+    {
+      "Time_Start": 1528.5,
+      "Time_End": 1533.94,
+      "Text": " you will see basically I will change, the exploit will change the screen with an active"
+    },
+    {
+      "Time_Start": 1533.94,
+      "Time_End": 1540.94,
+      "Text": " logo and like saying hey this device has been compromised, blah blah, just to, there you"
+    },
+    {
+      "Time_Start": 1541.74,
+      "Time_End": 1548.74,
+      "Text": " go. So that would be. Okay and the last thing which is probably the most interesting one"
+    },
+    {
+      "Time_Start": 1549.74,
+      "Time_End": 1556.74,
+      "Text": " is that like okay now the malware that is installing this microcontroller, what if we can attack"
+    },
+    {
+      "Time_Start": 1565.74,
+      "Time_End": 1570.78,
+      "Text": " the host that is connected over USB? In this case it could be the Windows computer that"
+    },
+    {
+      "Time_Start": 1570.78,
+      "Time_End": 1577.78,
+      "Text": " is in the ATM because remember we have a USB cable that is connected to the host machine."
+    },
+    {
+      "Time_Start": 1577.82,
+      "Time_End": 1584.82,
+      "Text": " So to do that what I did was in the case of the ID Tech device, ID Tech they provide their"
+    },
+    {
+      "Time_Start": 1588.06,
+      "Time_End": 1594.42,
+      "Text": " lib ID Tech SDK to their customers so they can interact with the device and perform transactions."
+    },
+    {
+      "Time_Start": 1594.42,
+      "Time_End": 1598.86,
+      "Text": " So what I wanted to do is you know reverse engineer this SDK and see if they have issues"
+    },
+    {
+      "Time_Start": 1598.86,
+      "Time_End": 1605.86,
+      "Text": " so we can compromise the host over USB. So basically the idea here is that the SDK in"
+    },
+    {
+      "Time_Start": 1606.5000000000002,
+      "Time_End": 1610.5400000000002,
+      "Text": " the Windows computer will send the command over USB to the reader and my malware that"
+    },
+    {
+      "Time_Start": 1610.5400000000002,
+      "Time_End": 1616.5400000000002,
+      "Text": " is already there in the firmware of the reader will send as a response a particular payload"
+    },
+    {
+      "Time_Start": 1616.5400000000002,
+      "Time_End": 1621.5400000000002,
+      "Text": " that allows me to get code execution in the Windows computer. So for that the SDK provides"
+    },
+    {
+      "Time_Start": 1625.5400000000002,
+      "Time_End": 1630.5400000000002,
+      "Text": " several APIs. In this case when I was getting familiar with those APIs I focused in the device"
+    },
+    {
+      "Time_Start": 1630.54,
+      "Time_End": 1635.54,
+      "Text": " API because this particular one is always used because it's the one that is used to"
+    },
+    {
+      "Time_Start": 1640.54,
+      "Time_End": 1645.54,
+      "Text": " initialize the device before doing a transaction. So I was sure that this one was an important"
+    },
+    {
+      "Time_Start": 1648.54,
+      "Time_End": 1653.54,
+      "Text": " one. So yeah I started to reverse engineer this API in the DLL of the SDK and I found in"
+    },
+    {
+      "Time_Start": 1654.54,
+      "Time_End": 1659.54,
+      "Text": " the code of the API where the function where it receives the USB payload from the reader"
+    },
+    {
+      "Time_Start": 1666.54,
+      "Time_End": 1671.54,
+      "Text": " and in this case as you can see here there was this mem copy where the size of the mem"
+    },
+    {
+      "Time_Start": 1673.54,
+      "Time_End": 1678.54,
+      "Text": " copy are two bytes that are coming from the USB payload from the reader. So we can control"
+    },
+    {
+      "Time_Start": 1679.54,
+      "Time_End": 1684.54,
+      "Text": " the size of the mem copy with two bytes and there were no sanity checks at all and the source"
+    },
+    {
+      "Time_Start": 1685.54,
+      "Time_End": 1690.54,
+      "Text": " of the mem copy was the actual USB payload it was receiving from the NFC reader. So I just"
+    },
+    {
+      "Time_Start": 1693.54,
+      "Time_End": 1698.54,
+      "Text": " needed to make sure that the destination buffer it wasn't too big so I was able to overflow"
+    },
+    {
+      "Time_Start": 1700.54,
+      "Time_End": 1705.54,
+      "Text": " it. So in this case the buffer in this case was pretty small. It was 56 hex bytes and I was"
+    },
+    {
+      "Time_Start": 1706.54,
+      "Time_End": 1711.54,
+      "Text": " able to overflow the buffer but also the other local variables in the stack and then overwrite"
+    },
+    {
+      "Time_Start": 1712.54,
+      "Time_End": 1717.54,
+      "Text": " the saved return others in the stack and you know a straightforward stack buffer will flow"
+    },
+    {
+      "Time_Start": 1718.54,
+      "Time_End": 1723.54,
+      "Text": " to get code execution in the host. So again so in this case we have to change two attacks"
+    },
+    {
+      "Time_Start": 1726.54,
+      "Time_End": 1731.54,
+      "Text": " right? So we have first to compromise the finger of the reader through the NFC as we saw and"
+    },
+    {
+      "Time_Start": 1731.54,
+      "Time_End": 1736.54,
+      "Text": " then we inject that malware in the finger and then that malware that is running the NFC"
+    },
+    {
+      "Time_Start": 1736.54,
+      "Time_End": 1741.54,
+      "Text": " reader will receive a USB command from the Windows computer and then my malware will send a"
+    },
+    {
+      "Time_Start": 1741.54,
+      "Time_End": 1746.54,
+      "Text": " specific payload to achieve code execution through that mem copy that we saw in the code of the"
+    },
+    {
+      "Time_Start": 1749.54,
+      "Time_End": 1754.54,
+      "Text": " library. So to create a proof of concept of this what I did was instead of creating my own"
+    },
+    {
+      "Time_Start": 1755.54,
+      "Time_End": 1760.54,
+      "Text": " malware and doing it with the NFC reader which takes some reasonable time, I just to make it"
+    },
+    {
+      "Time_Start": 1763.54,
+      "Time_End": 1768.54,
+      "Text": " quick I used Raspberry Pi with Gadget FS which allows me to emulate any USB device. So this"
+    },
+    {
+      "Time_Start": 1769.54,
+      "Time_End": 1774.54,
+      "Text": " Raspberry Pi was acting as the NFC reader. So yeah, with the Gadget FS I was able to provide"
+    },
+    {
+      "Time_Start": 1775.54,
+      "Time_End": 1780.54,
+      "Text": " the end point information and the ID vendor, the ID product of the USB device. So in this case"
+    },
+    {
+      "Time_Start": 1785.54,
+      "Time_End": 1790.54,
+      "Text": " I was emulating the NFC reader as a USB device. And with Python you can also send over USB"
+    },
+    {
+      "Time_Start": 1792.54,
+      "Time_End": 1797.54,
+      "Text": " whatever you want and receive whatever in this case the SDK running in the host is sending you."
+    },
+    {
+      "Time_Start": 1798.54,
+      "Time_End": 1803.54,
+      "Text": " And this is actually the proof of concept that was triggering the stack buffer overflow. And as"
+    },
+    {
+      "Time_Start": 1810.54,
+      "Time_End": 1815.54,
+      "Text": " you can see here in the Windows computer in this case with WinDebug, you can see how it was"
+    },
+    {
+      "Time_Start": 1817.54,
+      "Time_End": 1824.54,
+      "Text": " actually crashing with that mem copy issue. The return address as you can see here is 41, 41,"
+    },
+    {
+      "Time_Start": 1824.54,
+      "Time_End": 1829.54,
+      "Text": " 41. So it's basically my payload. So yeah. So this is the way I found a code execution in the"
+    },
+    {
+      "Time_Start": 1832.54,
+      "Time_End": 1837.54,
+      "Text": " SDK that ID Tech provides to their customers to communicate with the device. And remember that"
+    },
+    {
+      "Time_Start": 1840.54,
+      "Time_End": 1845.54,
+      "Text": " so this SDK from ID Tech is present in some ATMs in this case because it's the SDK that they"
+    },
+    {
+      "Time_Start": 1846.54,
+      "Time_End": 1851.54,
+      "Text": " provide to communicate with the NFC reader. So also this SDK is pretty vulnerable. They have"
+    },
+    {
+      "Time_Start": 1858.54,
+      "Time_End": 1863.54,
+      "Text": " more than 20 exploitable stack buffer overflows like the one I described. We don't have time to"
+    },
+    {
+      "Time_Start": 1863.54,
+      "Time_End": 1868.54,
+      "Text": " talk about all of them but yeah, it was pretty bad. Okay so let's talk about the ATM scenario."
+    },
+    {
+      "Time_Start": 1876.54,
+      "Time_End": 1881.54,
+      "Text": " So like I said, I have many years of experience working with ATM, with ATMs. I've been"
+    },
+    {
+      "Time_Start": 1883.54,
+      "Time_End": 1888.54,
+      "Text": " reversing ATMs drivers. Also the ATM devices like for instance a gas dispenser and other"
+    },
+    {
+      "Time_Start": 1892.54,
+      "Time_End": 1897.54,
+      "Text": " devices. Also doing some USB hacking with ATMs and also I have experience working with XFS."
+    },
+    {
+      "Time_Start": 1899.54,
+      "Time_End": 1904.54,
+      "Text": " XFS is the middleware that most of the ATMs in the world they use to communicate with the"
+    },
+    {
+      "Time_Start": 1905.54,
+      "Time_End": 1909.54,
+      "Text": " hardware of the ATM. Like for instance the gas dispenser and using some particular"
+    },
+    {
+      "Time_Start": 1909.54,
+      "Time_End": 1916.54,
+      "Text": " APAs you can interact with the hardware and perform for instance a cash out. And again"
+    },
+    {
+      "Time_Start": 1916.54,
+      "Time_End": 1923.54,
+      "Text": " remember that this particular reader, the ID Tech Kiosk 3 is present in most of the ATM"
+    },
+    {
+      "Time_Start": 1923.54,
+      "Time_End": 1928.54,
+      "Text": " brands in the world. The most important brands like some of them NCR, WingCore, Diable,"
+    },
+    {
+      "Time_Start": 1928.54,
+      "Time_End": 1934.54,
+      "Text": " Fujitsu, HiaSoon and maybe more. At least I was able to confirm those some years ago."
+    },
+    {
+      "Time_Start": 1935.54,
+      "Time_End": 1940.54,
+      "Text": " So what the attacker can do in the ATM in this particular case. So one of the first things"
+    },
+    {
+      "Time_Start": 1943.54,
+      "Time_End": 1948.54,
+      "Text": " like before is like especially in the US in this case, if the card supports MSD, magnetic"
+    },
+    {
+      "Time_Start": 1950.54,
+      "Time_End": 1955.54,
+      "Text": " strike data, contactless transactions, then the clear text, the full number of the credit"
+    },
+    {
+      "Time_Start": 1957.54,
+      "Time_End": 1962.54,
+      "Text": " card will be in the clear text and expiration date in the memory of the device. So the"
+    },
+    {
+      "Time_Start": 1962.54,
+      "Time_End": 1968.54,
+      "Text": " attacker could do is compromise the firmware of the reader first over NFC like we saw and"
+    },
+    {
+      "Time_Start": 1968.54,
+      "Time_End": 1975.54,
+      "Text": " install the malware. And then since in the ATMs these devices doesn't have internet"
+    },
+    {
+      "Time_Start": 1975.54,
+      "Time_End": 1980.54,
+      "Text": " connection, what the attacker would need is to leave the area then come back after a few"
+    },
+    {
+      "Time_Start": 1980.54,
+      "Time_End": 1986.54,
+      "Text": " hours or days or whatever and then exfiltrate those credit card numbers from the memory"
+    },
+    {
+      "Time_Start": 1986.54,
+      "Time_End": 1991.54,
+      "Text": " of the device using the malware that he already installed like sending a special command to"
+    },
+    {
+      "Time_Start": 1991.54,
+      "Time_End": 1996.54,
+      "Text": " the malware for instance and then the malware will send you back to your phone the credit"
+    },
+    {
+      "Time_Start": 1996.54,
+      "Time_End": 2001.54,
+      "Text": " card numbers that have been used in the reader in those days."
+    },
+    {
+      "Time_Start": 2003.54,
+      "Time_End": 2009.54,
+      "Text": " But then we also have the ATM jackpot scenario. So the idea here is like once we have our"
+    },
+    {
+      "Time_Start": 2011.54,
+      "Time_End": 2017.54,
+      "Text": " malware running in the NFC reader microcontroller, we want to as we saw before like compromise"
+    },
+    {
+      "Time_Start": 2018.54,
+      "Time_End": 2023.54,
+      "Text": " the ATM computer. If it's running the ID tech SDK, we know it's possible. If it's running"
+    },
+    {
+      "Time_Start": 2025.54,
+      "Time_End": 2031.54,
+      "Text": " another driver for whatever reason, then you need to of course to find if the driver that is"
+    },
+    {
+      "Time_Start": 2031.54,
+      "Time_End": 2037.54,
+      "Text": " using is vulnerable, there's any memory corruption and then exploit that. And then once you"
+    },
+    {
+      "Time_Start": 2037.54,
+      "Time_End": 2043.54,
+      "Text": " have code execution in the ATM computer, then you need as you will see a special payload or"
+    },
+    {
+      "Time_Start": 2044.54,
+      "Time_End": 2049.54,
+      "Text": " a program in this case to interact with the hardware of the ATM like the cash dispenser in"
+    },
+    {
+      "Time_Start": 2049.54,
+      "Time_End": 2055.54,
+      "Text": " this case to perform the cash out, the jackpot."
+    },
+    {
+      "Time_Start": 2055.54,
+      "Time_End": 2061.54,
+      "Text": " So yeah, one important thing also to take into account here is that we don't only if we're"
+    },
+    {
+      "Time_Start": 2064.54,
+      "Time_End": 2070.54,
+      "Text": " working with an ATM in this case, we are not only limited to the driver or SDK that is used"
+    },
+    {
+      "Time_Start": 2071.54,
+      "Time_End": 2076.54,
+      "Text": " for the NFC reader because since we have full control of the microcontroller of the"
+    },
+    {
+      "Time_Start": 2076.54,
+      "Time_End": 2082.54,
+      "Text": " reader, we can modify the firmware to act as another USB device. Let's say I want to act as"
+    },
+    {
+      "Time_Start": 2084.54,
+      "Time_End": 2090.54,
+      "Text": " the USB camera and I know that there is a USB camera driver in the Windows ATM computer and"
+    },
+    {
+      "Time_Start": 2090.54,
+      "Time_End": 2096.54,
+      "Text": " it's vulnerable so I want to target that and attack that so that would be another possible"
+    },
+    {
+      "Time_Start": 2096.54,
+      "Time_End": 2101.54,
+      "Text": " approach."
+    },
+    {
+      "Time_Start": 2101.54,
+      "Time_End": 2107.54,
+      "Text": " So then once you have code execution in the ATM computer through the ID tech SDK or"
+    },
+    {
+      "Time_Start": 2109.54,
+      "Time_End": 2115.54,
+      "Text": " other driver, if you guys, someone has experience working with ATMs, you probably know"
+    },
+    {
+      "Time_Start": 2116.54,
+      "Time_End": 2122.54,
+      "Text": " that once you have full control of the ATM computer with admin rights in this case because"
+    },
+    {
+      "Time_Start": 2124.54,
+      "Time_End": 2130.54,
+      "Text": " normally it's Windows, there is just a matter of time to be able to perform the jackpot"
+    },
+    {
+      "Time_Start": 2130.54,
+      "Time_End": 2136.54,
+      "Text": " because the way they are designed, it's impossible to make this impossible basically."
+    },
+    {
+      "Time_Start": 2138.54,
+      "Time_End": 2144.54,
+      "Text": " Of course sometimes they put some mitigations like as we'll see if you're using XFS, maybe"
+    },
+    {
+      "Time_Start": 2144.54,
+      "Time_End": 2150.54,
+      "Text": " there's some sort of authentication making sure that your application can't use those"
+    },
+    {
+      "Time_Start": 2150.54,
+      "Time_End": 2156.54,
+      "Text": " XFS APIs and so on but in the end it's always a matter of time to find a way to do it"
+    },
+    {
+      "Time_Start": 2157.54,
+      "Time_End": 2163.54,
+      "Text": " because the way it's designed, it's impossible to make it 100% secure."
+    },
+    {
+      "Time_Start": 2163.54,
+      "Time_End": 2169.54,
+      "Text": " So this XFS, as I was saying before, it's a middleware that is basically in every ATM that"
+    },
+    {
+      "Time_Start": 2170.54,
+      "Time_End": 2176.54,
+      "Text": " it provides several APIs that you can use to interact with the hardware of the ATM."
+    },
+    {
+      "Time_Start": 2178.54,
+      "Time_End": 2184.54,
+      "Text": " So in this case here as you can see an example, this is one of my XFS programs I use many"
+    },
+    {
+      "Time_Start": 2185.54,
+      "Time_End": 2190.54,
+      "Text": " times in ATMs to perform the cash out."
+    },
+    {
+      "Time_Start": 2190.54,
+      "Time_End": 2195.54,
+      "Text": " In this case for instance as an example you can see here we are using the WFS open API to open"
+    },
+    {
+      "Time_Start": 2195.54,
+      "Time_End": 2201.54,
+      "Text": " a session with a device, in this case the device is the cash dispenser and then we provide"
+    },
+    {
+      "Time_Start": 2201.54,
+      "Time_End": 2207.54,
+      "Text": " several details like the number of bills and the number of the cassette and some other details"
+    },
+    {
+      "Time_Start": 2207.54,
+      "Time_End": 2213.54,
+      "Text": " and then we use after this other APIs to execute the actual command and then perform the cash out."
+    },
+    {
+      "Time_Start": 2216.54,
+      "Time_End": 2222.54,
+      "Text": " So at this point you might be wondering, okay so did you try this with an ATM?"
+    },
+    {
+      "Time_Start": 2225.54,
+      "Time_End": 2231.54,
+      "Text": " So yes I tried and it was working but it was in a lab environment and there are some NDAs involved"
+    },
+    {
+      "Time_Start": 2232.54,
+      "Time_End": 2238.54,
+      "Text": " so I can't show you videos about it and I also can't tell you which ATM brand was this particular one"
+    },
+    {
+      "Time_Start": 2239.54,
+      "Time_End": 2245.54,
+      "Text": " but if you have doubts or concerns about this I think here you have enough technical details"
+    },
+    {
+      "Time_Start": 2246.54,
+      "Time_End": 2252.54,
+      "Text": " so you can do it by yourself if you have the motivation but also if you have specifically"
+    },
+    {
+      "Time_Start": 2252.54,
+      "Time_End": 2258.54,
+      "Text": " concerns about this because you are working in an ATM security team or whatever, my recommendation"
+    },
+    {
+      "Time_Start": 2258.54,
+      "Time_End": 2264.54,
+      "Text": " here is that first make sure that the firmware of this reader in the ATM is already patched"
+    },
+    {
+      "Time_Start": 2265.54,
+      "Time_End": 2271.54,
+      "Text": " because there are available patches for these issues and also make sure that the driver or SDK"
+    },
+    {
+      "Time_Start": 2272.54,
+      "Time_End": 2278.54,
+      "Text": " that is used in the ATM computer doesn't have any memory corruptions but the most important thing"
+    },
+    {
+      "Time_Start": 2278.54,
+      "Time_End": 2284.54,
+      "Text": " obviously is to make sure that the firmware of this reader is already patched because if the attacker"
+    },
+    {
+      "Time_Start": 2284.54,
+      "Time_End": 2290.54,
+      "Text": " can't compromise this over NFC then more or less the problem is solved, right?"
+    },
+    {
+      "Time_Start": 2290.54,
+      "Time_End": 2296.54,
+      "Text": " It's going to be really hard to compromise the ATM in this way."
+    },
+    {
+      "Time_Start": 2298.54,
+      "Time_End": 2304.54,
+      "Text": " So regarding disclosure, we contacted all these affected vendors as you saw there were many"
+    },
+    {
+      "Time_Start": 2305.54,
+      "Time_End": 2311.54,
+      "Text": " all of them told us that they fixed the issues, some of them they provided us the fixes"
+    },
+    {
+      "Time_Start": 2312.54,
+      "Time_End": 2318.54,
+      "Text": " and we tested that and we were able to confirm that the fix was okay but not all of them provided us"
+    },
+    {
+      "Time_Start": 2319.54,
+      "Time_End": 2325.54,
+      "Text": " these fixes so we don't know for some others what happened."
+    },
+    {
+      "Time_Start": 2325.54,
+      "Time_End": 2331.54,
+      "Text": " In this case we waited almost two years because this research started almost two years ago"
+    },
+    {
+      "Time_Start": 2331.54,
+      "Time_End": 2337.54,
+      "Text": " because the problem was that as you saw many parties were involved here and the problem is"
+    },
+    {
+      "Time_Start": 2337.54,
+      "Time_End": 2343.54,
+      "Text": " since I was testing my proof of concept with another device, oh this vendor is also vulnerable,"
+    },
+    {
+      "Time_Start": 2343.54,
+      "Time_End": 2349.54,
+      "Text": " shit, again, and another, and another, so we had to wait time but also the problem is that"
+    },
+    {
+      "Time_Start": 2350.54,
+      "Time_End": 2356.54,
+      "Text": " many of these devices they don't have remote update capabilities so sometimes they have to go"
+    },
+    {
+      "Time_Start": 2356.54,
+      "Time_End": 2362.54,
+      "Text": " physically there to update the firmware of these readers which is a problem, right?"
+    },
+    {
+      "Time_Start": 2363.54,
+      "Time_End": 2369.54,
+      "Text": " So yeah, that's a problem."
+    },
+    {
+      "Time_Start": 2369.54,
+      "Time_End": 2375.54,
+      "Text": " So yeah, I think that's everything. If you have any questions I'll be around. Thank you."
+    }
+  ]
+}

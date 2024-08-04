@@ -1,0 +1,48 @@
+**Introduction**
+- Speaker: Wojciech Regula, Head of Mobile Security at Securing
+- Focuses on **macOS** and **iOS** application security
+- Runs a blog, WojciechRegula.blog, dedicated to Apple security
+- Creator of the iOS Security Suite, a free and open-source Swift library for secure iPhone app development
+- Engaged in **macOS environment security assessments**
+
+**Talk Outline**
+- Introduction to **TCC** and privacy fundamentals on macOS
+- Two problems: Electron applications and TCC
+- Introduction to a new tool, **Electronizer**, to address these problems
+- Discussion of **detections** and conclusions
+
+**TCC and Privacy Fundamentals**
+- **System Integrity Protection (SIP)**: A mechanism enabled by default on macOS that restricts root user actions, even with root permissions.
+- TCC: A **privacy framework** that controls access to sensitive resources like contacts, documents, camera, and microphone.
+- TCC permissions are stored in **SQLite databases**, with one global database and separate databases for each user.
+- These databases are protected by SIP and can only be modified with special permissions.
+- TCC permissions are granular and cover various resources, including automation and application control.
+
+**Electron Applications and Problems**
+- Many popular applications are **Electron-based**, including Slack, Twitch, Visual Studio Code, Discord, Notion, Teams, WordPress, and GitHub.
+- Electron technology embeds a web browser with a website, allowing JavaScript files to bridge to system APIs.
+- This bridge has led to **remote code execution** vulnerabilities in the past.
+- Electron applications require granting TCC permissions, such as camera, microphone, or screen-sharing access.
+- In 2019, the speaker published a blog post, "Abusing Electron Apps to Bypass macOS Security Controls," demonstrating how a malicious app could take over TCC permissions granted to vulnerable Electron apps.
+- However, this technique was fixed in macOS Ventura, which introduced a protection mechanism that locks application directories, allowing only the same developer ID to modify them.
+
+**TCC Permissions Inheritance**
+- A complex topic that has led to many vulnerabilities.
+- Applications with private TCC entitlements do not pass TCC permissions to spawned children processes.
+- However, applications downloaded from the internet or the App Store (including Electron apps) pass TCC permissions to their children.
+- Electronizer, the speaker's new tool, takes advantage of this inheritance by injecting code into Electron apps and exploiting their TCC permissions.
+
+**Electronizer Demonstration**
+- Electronizer abuses the fact that Electron apps are native browsers with embedded websites, allowing access to developer tools and the ability to execute JavaScript within the context of the webpage.
+- Electronizer connects to Electron apps via a web socket and injects malicious payloads.
+- Demonstration of taking over Visual Studio Code's permissions to access desktop files and Microsoft Teams' camera access.
+
+**Addressing Disabled Inspect Flag**
+- Some Electron applications, like Slack, disable the inspect flag, preventing direct injection.
+- However, a vulnerability in TCC code signing requirements allows for a downgrade attack.
+- By injecting an older version of the application that respects the inspect flag, Electronizer can still take over TCC permissions.
+
+**Detections and Conclusions**
+- The easiest way to detect Electronizer is to filter for ES event type notify exec and look for the inspect flag in the context parameter.
+- TCC permissions inheritance is possible for children processes spawned by Electron applications, even with macOS Ventura's app protection mechanism.
+- Red teamers can exploit TCC permissions granted to Electron applications, even if the inspect flag is disabled, by injecting an older version of the application.

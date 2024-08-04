@@ -1,0 +1,97 @@
+**Introduction**
+- **DEF CON 31** talk by **Benny Zeltser** and **Jonathan Lusky**
+- **RingHopper**: a method to hop from user-land to **SMM** (System Management Mode)
+- Disclosure of a family of industry-wide **vulnerabilities** in various **UEFI** implementations
+- Affected more than **eight major vendors**, making **billions of devices vulnerable**
+
+**Timeline**
+- June 1, 2021: Initial reporting of the findings
+- January 19, 2022: CERT-CC started working on coordinated disclosure
+- August 2022: Talks withdrawn from Black Hat and DEF CON due to issues not being fixed in time
+- November 8, 2022: Last embargo expired, and a note was published
+
+**Privilege Rings and SMM**
+- Four privilege rings: **user mode** (ring 3), **kernel** (ring 0), **VMM** (ring -1), and **SMM** (ring -2)
+- SMM started as a small operating mode for low-level system functionalities but has grown bigger over the years
+- SMM resides in a well-guarded portion of RAM called **SM RAM**, which is inaccessible to other entities
+- To switch to SMM, the kernel triggers a **system management interrupt** (SMI)
+- Once SMI is triggered, the processor switches to running SMM, and an **SMI handler** takes over
+- After the SMI handler is done, the processor switches back to running the kernel, and SMM becomes inactive
+
+**Time-of-Check Time-of-Use Vulnerability**
+- An SMI handler may validate input and then use it, creating a potential vulnerability
+- An attacker could modify the output buffer between the time-of-check and time-of-use to gain a write primitive
+- This can be exploited using **DMA** (Direct Memory Access) and peripheral devices like an Ethernet adapter or graphics card
+
+**Exploiting the Vulnerability**
+- Used a tool called **PCILH** by Ulf Rysk to initiate arbitrary read and write DMA transactions to RAM
+- Added a malicious file with a payload to a storage device to generate DMA transactions remotely
+- Hooked the DMA request and triggered an SMI to exploit the time-of-check time-of-use issue
+
+**Recap and S3 Suspend-Resume Cycle**
+- Discussed SMM, time-of-check time-of-use vulnerabilities, DMA transaction manipulation, and write primitives to SMRAM
+- S3 is a **sleep state** where the CPU is idle, but memory remains active
+- During a normal boot, the configuration of the platform is encoded into the **S3 boot script**
+- When the machine wakes up, the **boot engine** executes the S3 boot script to restore the configuration
+- The S3 boot script is stored in a container called **Logbox**, located in SMRAM
+
+**Attempting to Execute Code in SMM**
+- Analyzed the **SMBIOS DMA Edit Dixie driver** and found potential write primitives
+- In SMM, all pages containing code are **read-only**, and all pages containing data are **non-executable**
+- The paging mechanism in SMM hinders exploitation by restricting memory access and making page table attributes permanent
+- Needed to think outside the box and leverage unique mechanisms internal to SMM
+
+**Leveraging S3 Suspend-Resume Cycle**
+- Referenced a paper by Raphael Washtuk and Corey Kallenberg from 2015 on running arbitrary code in SMM
+- The paper abused the fact that the S3 boot script was stored in a location accessible to the OS
+- However, this has been mitigated, and now the S3 boot script resides in the Logbox in SMRAM
+- The update procedure for the Logbox prevents the kernel from updating it unless a specific global variable is not set
+- Using their write primitive, they were able to zero out this global variable and modify the S3 boot script
+- However, when the machine wakes up, the SMRAM is locked, and most of the RAM is not mapped to the page table
+
+**SMBase Relocation Attack**
+- Each core has its own region of SMRAM, pointed to by the **SMBase MSR** (Model-Specific Register)
+- The SMBase MSR can be modified by changing its value in the **save state**
+- This triggers an **SMBase Relocation**, relocating the entire region to a new address
+- Crafted their own SMI handler entry point in user-controlled memory and used their write primitive to modify SMBase in the save state
+- However, this didn't work due to the **SMM Code Check Enable** bit in a specific MSR
+- This bit, when set, triggers an exception if code outside of SMRAM is executed in SMM
+- There is also a **lock bit** that, when set, prevents the MSR from being modified until the next reboot
+- Putting the machine to sleep (S3 state) clears the SMM Code Check Enable bit, providing a way to bypass the restriction
+- Used their write primitive to annul a specific global variable responsible for MSR restoration
+- Put the machine to sleep, and when it woke up, the MSR was annulled, and they were able to execute code outside of SMRAM
+- Created their own SMI handler entry point and used a write primitive to modify the SMBase MSR, triggering an SMBase Relocation
+- Successfully executed code in SMM with full and unrestricted memory access
+
+**Dealing with Newer Mitigations**
+- Newer mitigations, such as the **S3** and **SMBase log bits**, restrict modifying the **CR3** register and SMBase MSR until the next reboot
+- Referenced a cache poisoning attack by Rafael and Joanna from 2009 to read and write to SMRAM
+- In practice, when writing to SMRAM, data first goes through the cache before being written back to SMRAM
+- This can be exploited by triggering an SMI to remove the barrier and modify the content of SMRAM
+- However, this is mitigated by the **SMRR** (System Management Range Register), which disables caching of SMRAM
+- By annulling a specific global variable using their write primitive and putting the machine to sleep, they were able to disable SMRR
+- When the machine woke up, they were able to write to SMRAM directly, resurrecting the cache poisoning attack
+
+**Demo**
+- Modified the Intel NUC logo stored on the SPI Flash, which is only accessible to SMM
+- Crafted a new write primitive of the value zero by chaining existing write primitives and modifying globals in SMRAM
+- Annulled the MSMM Feature Control Supported global, which is responsible for MSR restoration
+- Read the MSR before and after putting the machine to sleep, demonstrating the ability to execute code outside of SMRAM
+- Executed the SMBase relocation attack and replaced one of the SMI handlers
+- Rebooted the machine, and the new logo was displayed
+
+**UEFI Ecosystem and Impact**
+- The UEFI ecosystem involves the TianoCore project, IBVs (Independent BIOS Vendors), OEMs (Original Equipment Manufacturers), and end customers
+- In 2020 alone, more than **200 million devices** were manufactured that were vulnerable to the attack, resulting in billions of vulnerable devices
+
+**Extending the Attack to User Space**
+- Required three things: the ability to generate DMA transactions, trigger SMIs, and write to specific physical memory
+- Generating DMA transactions from user space is as simple as reading a file
+- Triggering SMIs is more complicated as it requires executing a special opcode that can only be executed from the kernel
+- Found a tweet by Alex Matrosoff mentioning that BIOS update tools often have low-level functionality that can be reused offensively
+- AMI provides drivers for Linux and Windows that expose an API for triggering arbitrary SMIs
+- For writing to specific physical memory, the communication with SMM involves a **mailbox** struct with a physical address of a row buffer
+- On Windows, used a buffer mapping yoke tool to map the physical address of the row buffer to a user-accessible virtual address
+- Exploited a race condition by modifying the physical address in the mailbox before it was mapped to a virtual address
+- On Linux, used a kernel module to map any physical address, including the address of the Linux kernel or a kernel module
+- By patching ring zero code, they gained code execution in the kernel, completing the exploitation chain from user land to SMM

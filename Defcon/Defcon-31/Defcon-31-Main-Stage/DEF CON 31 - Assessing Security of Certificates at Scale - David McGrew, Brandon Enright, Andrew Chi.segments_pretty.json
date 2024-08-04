@@ -1,0 +1,854 @@
+{
+  "segments": [
+    {
+      "Time_Start": 0.0,
+      "Time_End": 5.34,
+      "Text": "This text was transcribed using whisper model: large-v2\n\n Thanks so much for coming out this morning. I want to be true to my Scots heritage, I never"
+    },
+    {
+      "Time_Start": 5.34,
+      "Time_End": 11.8,
+      "Text": " turned down whiskey. Uh I'm David McGrew, I'm going to be presenting uh some joint work I"
+    },
+    {
+      "Time_Start": 11.8,
+      "Time_End": 16.8,
+      "Text": " did with Andrew Chee and Brandon Enright here. And um the we're going to be assessing the"
+    },
+    {
+      "Time_Start": 19.68,
+      "Time_End": 23.6,
+      "Text": " security of certificates at scale and the exciting thing of course is we're going to show an"
+    },
+    {
+      "Time_Start": 23.62,
+      "Time_End": 30.62,
+      "Text": " exploit against keys we got off the internet. So for the last decade or so, people have"
+    },
+    {
+      "Time_Start": 30.62,
+      "Time_End": 36.78,
+      "Text": " been aware that there's a problem that commercial and small business and consumer grade"
+    },
+    {
+      "Time_Start": 36.78,
+      "Time_End": 42.120000000000005,
+      "Text": " devices often have really poor entropy and when they use this to generate keys, they can"
+    },
+    {
+      "Time_Start": 42.120000000000005,
+      "Time_End": 48.3,
+      "Text": " generate keys that are exploitably weak. And so Dan Bernstein and Nadia Henninger and"
+    },
+    {
+      "Time_Start": 48.300000000000004,
+      "Time_End": 54.260000000000005,
+      "Text": " their teams, you know, convincingly showed this a long time ago and there's there's other"
+    },
+    {
+      "Time_Start": 54.260000000000005,
+      "Time_End": 60.06,
+      "Text": " teams that more recently showed that it's still a problem. In 2023, we are talking about"
+    },
+    {
+      "Time_Start": 60.06,
+      "Time_End": 64.9,
+      "Text": " migrating to quantum safe cryptography. We have a another problem to solve which is this"
+    },
+    {
+      "Time_Start": 64.9,
+      "Time_End": 68.7,
+      "Text": " weak entropy problem, right? Because otherwise we're going to have quantum safe"
+    },
+    {
+      "Time_Start": 68.7,
+      "Time_End": 73.7,
+      "Text": " algorithms with weak keys which is maybe an oxymoron. So what is the the weak key problem?"
+    },
+    {
+      "Time_Start": 78.74,
+      "Time_End": 83.74,
+      "Text": " So here we've got a big set of devices and in this diagram there are wireless access points,"
+    },
+    {
+      "Time_Start": 86.84,
+      "Time_End": 93.46,
+      "Text": " right? Could it be but it could be any device that generates um a public private key pair. And"
+    },
+    {
+      "Time_Start": 93.46,
+      "Time_End": 99.1,
+      "Text": " so each device has an entropy source in it and the entropy source is going to provide an"
+    },
+    {
+      "Time_Start": 99.1,
+      "Time_End": 104.8,
+      "Text": " output into a key generator. Very often these devices generate a key when they first boot."
+    },
+    {
+      "Time_Start": 104.8,
+      "Time_End": 109.94,
+      "Text": " Which is often a problem because if you have a software based entropy source, when you"
+    },
+    {
+      "Time_Start": 109.94,
+      "Time_End": 113.84,
+      "Text": " first boot, you probably don't have a lot of entropy. Probably it's fairly deterministic"
+    },
+    {
+      "Time_Start": 113.84,
+      "Time_End": 120.92,
+      "Text": " process by which you boot. And so the if you use that entropy, put it into a key generator"
+    },
+    {
+      "Time_Start": 120.92,
+      "Time_End": 127.32,
+      "Text": " and generate a key from it, then uh that could potentially be a problem as we show. But our"
+    },
+    {
+      "Time_Start": 127.32,
+      "Time_End": 131.12,
+      "Text": " model is, you know, we've got a lot of devices, they each have an entropy source, they each"
+    },
+    {
+      "Time_Start": 131.12,
+      "Time_End": 136.42000000000002,
+      "Text": " generate uh a public private key pair. And then we we're able to access the public keys and"
+    },
+    {
+      "Time_Start": 136.42000000000002,
+      "Time_End": 143.36,
+      "Text": " then analyze them. So if you have cryptographically strong entropy generators, then if you"
+    },
+    {
+      "Time_Start": 143.36,
+      "Time_End": 148.16,
+      "Text": " want to generate an n bit key, all 2 to the n possible keys are equally probable, right? And"
+    },
+    {
+      "Time_Start": 148.16,
+      "Time_End": 152.58,
+      "Text": " that's what you want to be unpredictable to your adversary. But with weak key generation, you"
+    },
+    {
+      "Time_Start": 152.58,
+      "Time_End": 158.38,
+      "Text": " just have a really small typical set that's like a tiny fraction of the original size of you"
+    },
+    {
+      "Time_Start": 159.28,
+      "Time_End": 164.38,
+      "Text": " wanted, right? And this can make it predictable. And so we're going to be detecting and"
+    },
+    {
+      "Time_Start": 164.38,
+      "Time_End": 171.42,
+      "Text": " exploiting some of these weak keys. Going back to our original picture, we have a bunch of"
+    },
+    {
+      "Time_Start": 171.42,
+      "Time_End": 176.9,
+      "Text": " wireless access points and they are they're they're entropy sources except device 1 and"
+    },
+    {
+      "Time_Start": 176.9,
+      "Time_End": 183.5,
+      "Text": " device 3 happen to have entropy that's similar, right? And so the similar entropy is fed"
+    },
+    {
+      "Time_Start": 183.52,
+      "Time_End": 190.2,
+      "Text": " into the uh key generation algorithm and then the the keys are going to be weak, right? So"
+    },
+    {
+      "Time_Start": 190.2,
+      "Time_End": 196.6,
+      "Text": " red on these diagrams indicates weak. And the you know there's a key thing here is, which"
+    },
+    {
+      "Time_Start": 196.6,
+      "Time_End": 203.44,
+      "Text": " is there's a lot of devices that we want to assess the security of and we're going to use"
+    },
+    {
+      "Time_Start": 203.44,
+      "Time_End": 207.62,
+      "Text": " batch processing on this. And it actually is kind of a birthday paradox thing. The more"
+    },
+    {
+      "Time_Start": 207.64000000000001,
+      "Time_End": 212.64000000000001,
+      "Text": " things we're analyzing, the more chance of success we're going to have. So there are"
+    },
+    {
+      "Time_Start": 216.22,
+      "Time_End": 221.28,
+      "Text": " different public key crypto algorithms and they each have their own failure modes and the"
+    },
+    {
+      "Time_Start": 221.28,
+      "Time_End": 227.66,
+      "Text": " the 2 really important ones are common keys and common factors. So common keys can be"
+    },
+    {
+      "Time_Start": 227.66,
+      "Time_End": 234.24,
+      "Text": " generated uh for any algorithm, right? It just means that the the the entropy input to the"
+    },
+    {
+      "Time_Start": 234.32000000000002,
+      "Time_End": 239.42000000000002,
+      "Text": " key generation was identical in 2 cases so you get identical keys out, right? So this this"
+    },
+    {
+      "Time_Start": 239.42000000000002,
+      "Time_End": 243.76000000000002,
+      "Text": " can happen for any algorithm, elliptic curve cryptography, RSA or any of the quantum safe"
+    },
+    {
+      "Time_Start": 243.76000000000002,
+      "Time_End": 250.0,
+      "Text": " things. And so detection is fairly easy in the sense that you're just doing an equality"
+    },
+    {
+      "Time_Start": 250.0,
+      "Time_End": 255.0,
+      "Text": " match but it also is difficult to go from that match to strong evidence of uh failure, right?"
+    },
+    {
+      "Time_Start": 255.94,
+      "Time_End": 260.94,
+      "Text": " Of exploitable weakness because there are you know the same public key might be enrolled in"
+    },
+    {
+      "Time_Start": 265.12,
+      "Time_End": 270.02,
+      "Text": " multiple certificates and sometimes people actually take the same private key and they put it"
+    },
+    {
+      "Time_Start": 270.02,
+      "Time_End": 273.88,
+      "Text": " in multiple servers and they think they're being clever even though it's a poor security"
+    },
+    {
+      "Time_Start": 273.88,
+      "Time_End": 278.9,
+      "Text": " practice. And but the common keys can be generated by weak entropy but it can be difficult to"
+    },
+    {
+      "Time_Start": 278.9,
+      "Time_End": 283.36,
+      "Text": " distinguish it from that like poor security practice. The other thing that we're going to"
+    },
+    {
+      "Time_Start": 283.36,
+      "Time_End": 290.3,
+      "Text": " focus more of our time on today is common factors, right? So in the RSA cryptosystem there"
+    },
+    {
+      "Time_Start": 290.3,
+      "Time_End": 295.3,
+      "Text": " are 2 factors, I'll show you how the math works and it can happen that uh 2 distinct"
+    },
+    {
+      "Time_Start": 298.68,
+      "Time_End": 302.74,
+      "Text": " private keys have the same common factor. We could detect that using the batch GCD"
+    },
+    {
+      "Time_Start": 302.74,
+      "Time_End": 308.82,
+      "Text": " algorithm and this is very strong evidence of uh weak entropy and a serious problem with"
+    },
+    {
+      "Time_Start": 308.82,
+      "Time_End": 315.52,
+      "Text": " the entropy in the system and then also it's exploitable which is kind of fun to watch. So"
+    },
+    {
+      "Time_Start": 315.52,
+      "Time_End": 321.71999999999997,
+      "Text": " here's how the RSA cryptosystem works, right? The public key is the product of 2 large"
+    },
+    {
+      "Time_Start": 321.71999999999997,
+      "Time_End": 326.74,
+      "Text": " primes and those large primes are the private key, right? So the private key would be you know"
+    },
+    {
+      "Time_Start": 326.74,
+      "Time_End": 331.74,
+      "Text": " P comma Q and then the public key is their product M. And M is also called the modulus, right?"
+    },
+    {
+      "Time_Start": 332.46000000000004,
+      "Time_End": 337.46000000000004,
+      "Text": " Within the context of RSA. So multiplication is easy to do in a computational sense but"
+    },
+    {
+      "Time_Start": 341.2,
+      "Time_End": 345.88,
+      "Text": " factoring is very hard, right? So which is what makes the RSA cryptosystem secure when it's"
+    },
+    {
+      "Time_Start": 345.88,
+      "Time_End": 350.88,
+      "Text": " done properly. So when I talk about uh common factors what I mean is like 2 distinct devices"
+    },
+    {
+      "Time_Start": 353.42,
+      "Time_End": 360.22,
+      "Text": " will generate the uh identical factors, right? You can see here you know continuing our"
+    },
+    {
+      "Time_Start": 360.24,
+      "Time_End": 365.92,
+      "Text": " previous example, device 1 and device 3 have the their Q factor in common, right? They"
+    },
+    {
+      "Time_Start": 365.92,
+      "Time_End": 370.92,
+      "Text": " happen to be equal because the entropy input was so similar. So we can find common"
+    },
+    {
+      "Time_Start": 377.32000000000005,
+      "Time_End": 382.06,
+      "Text": " factors, right? So in this situation where device 1 and device 3 happen to you know have"
+    },
+    {
+      "Time_Start": 382.06,
+      "Time_End": 388.34000000000003,
+      "Text": " this weak entropy problem, we can just perform the greatest common divisor algorithm and"
+    },
+    {
+      "Time_Start": 388.36,
+      "Time_End": 394.46000000000004,
+      "Text": " use that to find Q and then we can divide M by Q and we can find the other factor and then"
+    },
+    {
+      "Time_Start": 394.46000000000004,
+      "Time_End": 400.94000000000005,
+      "Text": " we've broken the the key. So the GCD algorithm is easy, it's not hard in a cryptographic"
+    },
+    {
+      "Time_Start": 400.94000000000005,
+      "Time_End": 406.48,
+      "Text": " sense and there's this this algorithm that Dan Bernstein came up with for doing batch GCD,"
+    },
+    {
+      "Time_Start": 406.48,
+      "Time_End": 412.52000000000004,
+      "Text": " right? So you can get a very large set of keys and find any common factors that those keys"
+    },
+    {
+      "Time_Start": 412.53999999999996,
+      "Time_End": 418.53999999999996,
+      "Text": " might have, right? Which is the real key to efficiency in this situation. To actually use"
+    },
+    {
+      "Time_Start": 418.53999999999996,
+      "Time_End": 424.28,
+      "Text": " this approach the your first step is you need to obtain certificates, right? That have RSA"
+    },
+    {
+      "Time_Start": 424.28,
+      "Time_End": 430.71999999999997,
+      "Text": " public keys in them. And so you you could obtain these through active scans of the"
+    },
+    {
+      "Time_Start": 430.71999999999997,
+      "Time_End": 435.71999999999997,
+      "Text": " internet or through passive monitoring that you know for TLS 1.2 and earlier you can just"
+    },
+    {
+      "Time_Start": 436.5,
+      "Time_End": 443.5,
+      "Text": " observe the certificates on the wire. And then if you have a friend that works at a"
+    },
+    {
+      "Time_Start": 443.5,
+      "Time_End": 448.3,
+      "Text": " certificate authority then you can get the CA logs, right? And that's another really good"
+    },
+    {
+      "Time_Start": 448.3,
+      "Time_End": 455.48,
+      "Text": " thing and um so we have some tools that we've published. TLS scanner for active scanning,"
+    },
+    {
+      "Time_Start": 455.48,
+      "Time_End": 462.02000000000004,
+      "Text": " mercury for passive monitoring and cert analyze for analyzing stand alone certificates as"
+    },
+    {
+      "Time_Start": 462.02,
+      "Time_End": 466.91999999999996,
+      "Text": " well as the batch GCD program which isn't written on this slide but these are all BSD"
+    },
+    {
+      "Time_Start": 466.91999999999996,
+      "Time_End": 471.91999999999996,
+      "Text": " licensed um Linux oriented tools uh implemented in C++ 17 with a lot of with native ASN 1"
+    },
+    {
+      "Time_Start": 476.14,
+      "Time_End": 481.14,
+      "Text": " code. And so the TLS scanner tool can you know scan a a list of hosts you provide in a in a file"
+    },
+    {
+      "Time_Start": 481.59999999999997,
+      "Time_End": 486.59999999999997,
+      "Text": " and it can write out the certificates as a a PEM file. And so you can use this to obtain"
+    },
+    {
+      "Time_Start": 495.18,
+      "Time_End": 499.21999999999997,
+      "Text": " certificates from a set of hosts so if you have like a a set of hosts like say you're you"
+    },
+    {
+      "Time_Start": 499.21999999999997,
+      "Time_End": 505.71999999999997,
+      "Text": " want to do a security audit for some you know bunch of stuff on the internet that you're"
+    },
+    {
+      "Time_Start": 505.71999999999997,
+      "Time_End": 510.96,
+      "Text": " you've deployed or you know somebody who's contracting with you has deployed you can use"
+    },
+    {
+      "Time_Start": 510.98,
+      "Time_End": 515.98,
+      "Text": " this to grab all those certificates. So our certificate tool you can use this to filter uh"
+    },
+    {
+      "Time_Start": 519.62,
+      "Time_End": 525.26,
+      "Text": " against a regular expression or an exact string match in the text fields of a certificate"
+    },
+    {
+      "Time_Start": 525.26,
+      "Time_End": 528.7,
+      "Text": " which is really useful. If you have a giant batch of certificates like you got it from"
+    },
+    {
+      "Time_Start": 528.7,
+      "Time_End": 534.84,
+      "Text": " Shodan or census or some place like that, Rapid 7, then you you can use it to filter out"
+    },
+    {
+      "Time_Start": 534.84,
+      "Time_End": 539.1800000000001,
+      "Text": " things like there's a particular vendor you want to focus on for a security audit. Uh"
+    },
+    {
+      "Time_Start": 539.2,
+      "Time_End": 543.58,
+      "Text": " filtering the giant set of certificates down to a very large but manageable set of"
+    },
+    {
+      "Time_Start": 543.58,
+      "Time_End": 548.58,
+      "Text": " certificates can really help you uh by you know making the analysis go faster. So our tool"
+    },
+    {
+      "Time_Start": 551.9200000000001,
+      "Time_End": 557.72,
+      "Text": " can if you're going to filter you need to provide the PEM output format and it you know"
+    },
+    {
+      "Time_Start": 557.72,
+      "Time_End": 562.72,
+      "Text": " outputs the manageably small set of certificates. So in in in our work so we we wrote these"
+    },
+    {
+      "Time_Start": 562.94,
+      "Time_End": 567.94,
+      "Text": " tools so that we could assess certificates at um you know that that we were uh you know for"
+    },
+    {
+      "Time_Start": 573.72,
+      "Time_End": 580.1600000000001,
+      "Text": " devices that we were analyzing and we we applied this to uh a number of things including"
+    },
+    {
+      "Time_Start": 580.1600000000001,
+      "Time_End": 585.1600000000001,
+      "Text": " internet scan data and we found there's a lot of common strings in issuers that reveal uh"
+    },
+    {
+      "Time_Start": 586.0799999999999,
+      "Time_End": 591.0799999999999,
+      "Text": " different vendor names right so today we're going to be picking on Draytek and we kind of"
+    },
+    {
+      "Time_Start": 594.42,
+      "Time_End": 600.26,
+      "Text": " picked them at random um but just to admit right so my employer is Cisco and and Cisco"
+    },
+    {
+      "Time_Start": 600.26,
+      "Time_End": 605.26,
+      "Text": " small business routers did appear here and uh fortunately we no longer sell that thing. So"
+    },
+    {
+      "Time_Start": 605.62,
+      "Time_End": 610.62,
+      "Text": " the batch GCD tool is where the most of the interesting work gets done for RSA. So in this"
+    },
+    {
+      "Time_Start": 617.34,
+      "Time_End": 623.14,
+      "Text": " tool um which you know I have to give credit to Brandon and Andrew are the the people that"
+    },
+    {
+      "Time_Start": 623.14,
+      "Time_End": 628.14,
+      "Text": " wrote this. I only wrote the ASN 1 export functionality. Uh batch GCD you provide it some"
+    },
+    {
+      "Time_Start": 628.9,
+      "Time_End": 633.9,
+      "Text": " giant set of certificates in a single file that has the the PEM certificate format and and"
+    },
+    {
+      "Time_Start": 639.14,
+      "Time_End": 643.14,
+      "Text": " then you have to provide it with the right keys option if you actually want it to generate"
+    },
+    {
+      "Time_Start": 643.14,
+      "Time_End": 648.42,
+      "Text": " some output data that you could use to demonstrate an exploit. So for each factored RSA"
+    },
+    {
+      "Time_Start": 648.42,
+      "Time_End": 654.42,
+      "Text": " key it is going to write out the private key in a separate RSA private key format it's"
+    },
+    {
+      "Time_Start": 654.4399999999999,
+      "Time_End": 659.62,
+      "Text": " another PEM format and the it's also going to write out the corresponding certificate"
+    },
+    {
+      "Time_Start": 659.62,
+      "Time_End": 664.3399999999999,
+      "Text": " right so if you're analyzing you know millions of certificates you don't want to have to"
+    },
+    {
+      "Time_Start": 664.3399999999999,
+      "Time_End": 668.88,
+      "Text": " wade through that file in order to to find the certificate file corresponding to your"
+    },
+    {
+      "Time_Start": 668.88,
+      "Time_End": 675.12,
+      "Text": " private key file. This tool does two passes over the input data because we want to"
+    },
+    {
+      "Time_Start": 675.12,
+      "Time_End": 681.1999999999999,
+      "Text": " carefully manage our random access memory usage because RAM is a is a scarce resource when"
+    },
+    {
+      "Time_Start": 681.2,
+      "Time_End": 687.2,
+      "Text": " you're trying to do something like batch GCD. So I want to show a demonstration of this"
+    },
+    {
+      "Time_Start": 690.0200000000001,
+      "Time_End": 696.0200000000001,
+      "Text": " attack and let let me explain the setup here. Right so we have uh a victim that owns uh a"
+    },
+    {
+      "Time_Start": 700.6600000000001,
+      "Time_End": 706.32,
+      "Text": " wireless access point that has an exploitable key in it and he has chosen to trust the"
+    },
+    {
+      "Time_Start": 706.32,
+      "Time_End": 712.32,
+      "Text": " self-signed certificate associated with this device. And the victim is at a browser and he's"
+    },
+    {
+      "Time_Start": 714.0200000000001,
+      "Time_End": 719.1800000000001,
+      "Text": " going to visit the manufacturer of this device and we're going to perform a machine in the"
+    },
+    {
+      "Time_Start": 719.1800000000001,
+      "Time_End": 725.1800000000001,
+      "Text": " middle attack against uh his traffic. So I want to acknowledge the MITM proxy tool which we"
+    },
+    {
+      "Time_Start": 727.98,
+      "Time_End": 733.98,
+      "Text": " used in this attack. So I want to acknowledge the MITM proxy tool which we used in this"
+    },
+    {
+      "Time_Start": 736.32,
+      "Time_End": 742.32,
+      "Text": " attack. Okay so we're going to start out this is the attacker's machine. So we've"
+    },
+    {
+      "Time_Start": 752.5600000000001,
+      "Time_End": 759.0200000000001,
+      "Text": " previously obtained a bunch of certificates that are all have this you know dray tech"
+    },
+    {
+      "Time_Start": 759.0200000000001,
+      "Time_End": 765.44,
+      "Text": " string in their issuer and we're going to run the batch GCD program with that file as"
+    },
+    {
+      "Time_Start": 765.48,
+      "Time_End": 769.6,
+      "Text": " input and we're going to ask it to write out the private keys. And you can see we've got"
+    },
+    {
+      "Time_Start": 769.6,
+      "Time_End": 776.0200000000001,
+      "Text": " about a hundred and fifty eight thousand distinct uh RSA keys here. A module modulus is a"
+    },
+    {
+      "Time_Start": 776.0200000000001,
+      "Time_End": 781.6800000000001,
+      "Text": " key in this situation. And so I I wish I had the laptop here today. This is running on my"
+    },
+    {
+      "Time_Start": 781.6800000000001,
+      "Time_End": 786.44,
+      "Text": " framework laptop which has eight cores and you can see in the system utilization we're"
+    },
+    {
+      "Time_Start": 786.44,
+      "Time_End": 792.44,
+      "Text": " keeping all of the eight cores pretty busy at this point. And so this tool can execute"
+    },
+    {
+      "Time_Start": 795.44,
+      "Time_End": 801.1800000000001,
+      "Text": " analyze a batch of about 67 million RSA keys all together. That's assuming an average"
+    },
+    {
+      "Time_Start": 801.1800000000001,
+      "Time_End": 807.6800000000001,
+      "Text": " size of um 2048 bits each which is commonplace. That's going to require about half a terabyte"
+    },
+    {
+      "Time_Start": 807.6800000000001,
+      "Time_End": 814.6800000000001,
+      "Text": " of RAM if you actually go up to that limit. Uh you can rent that on GCP for not too much"
+    },
+    {
+      "Time_Start": 814.6800000000001,
+      "Time_End": 819.6400000000001,
+      "Text": " money. So at this point it's a boring demo but we're about to get to the point where we"
+    },
+    {
+      "Time_Start": 819.64,
+      "Time_End": 826.42,
+      "Text": " find 55 weak keys out of uh the initial set right? So our tool writes out the the lines"
+    },
+    {
+      "Time_Start": 826.42,
+      "Time_End": 831.76,
+      "Text": " corresponding to all of those uh weak keys and we're going to pick one of these things at"
+    },
+    {
+      "Time_Start": 831.76,
+      "Time_End": 837.8,
+      "Text": " random to use in a in a demo. The tool outputs you'll see the line number is the you know"
+    },
+    {
+      "Time_Start": 837.8,
+      "Time_End": 842.64,
+      "Text": " the the number of the certificate and the input file and we have to use the line number so"
+    },
+    {
+      "Time_Start": 842.64,
+      "Time_End": 848.96,
+      "Text": " you can correspond the uh the private key file with the certificate file. And that's the"
+    },
+    {
+      "Time_Start": 848.96,
+      "Time_End": 854.32,
+      "Text": " sort of thing you use. Here we're piping the certificate through uh our tool so you can"
+    },
+    {
+      "Time_Start": 854.32,
+      "Time_End": 859.7,
+      "Text": " see that the subject alt name in the certificate includes www.draytech.com. And this is a"
+    },
+    {
+      "Time_Start": 859.7,
+      "Time_End": 864.7,
+      "Text": " terrible idea to do right? To to say that the subject alt name for this device is on the um"
+    },
+    {
+      "Time_Start": 870.9200000000001,
+      "Time_End": 875.9200000000001,
+      "Text": " here I I'm showing that we are substituting the the the the the the the the the the the the the the"
+    },
+    {
+      "Time_Start": 878.96,
+      "Time_End": 883.96,
+      "Text": " the the the the the the the the the the the the the the the the the the the the the the the the"
+    },
+    {
+      "Time_Start": 883.96,
+      "Time_End": 888.46,
+      "Text": " Here I want to replay that. I think I have time to do this. Sorry my explanation's a little"
+    },
+    {
+      "Time_Start": 888.46,
+      "Time_End": 892.96,
+      "Text": " slow. So you can see we're we're going to replace words like manage management VPN with the"
+    },
+    {
+      "Time_Start": 892.96,
+      "Time_End": 898.4200000000001,
+      "Text": " word hacked right? That's what MITM proxy is going to do for us. So we're running MITM proxy"
+    },
+    {
+      "Time_Start": 898.4200000000001,
+      "Time_End": 904.9200000000001,
+      "Text": " here and so this victim is visiting draytech.com and first he's going to bring up his"
+    },
+    {
+      "Time_Start": 904.9200000000001,
+      "Time_End": 909.6200000000001,
+      "Text": " favorite search engine DuckDuckGo and look up draytech and then we're going to visit it."
+    },
+    {
+      "Time_Start": 909.6200000000001,
+      "Time_End": 915.6200000000001,
+      "Text": " This is the victim's view at this point. And so you know we'll visit draytech and and we're"
+    },
+    {
+      "Time_Start": 918.1200000000001,
+      "Time_End": 924.84,
+      "Text": " surprised to see that uh our man in the middle proxy is working and the we are intercepting"
+    },
+    {
+      "Time_Start": 924.84,
+      "Time_End": 932.34,
+      "Text": " the traffic and uh replacing uh the you know we're we're revealing hacked routers and uh"
+    },
+    {
+      "Time_Start": 932.46,
+      "Time_End": 938.46,
+      "Text": " hacked switches and whatnot right? So um so don't ever put the uh uh your your vendor URI in"
+    },
+    {
+      "Time_Start": 944.34,
+      "Time_End": 949.22,
+      "Text": " the uh subject alt name if you're going to have a cheap device generate the certificate."
+    },
+    {
+      "Time_Start": 949.22,
+      "Time_End": 952.88,
+      "Text": " That's one of the things that you shouldn't do. The other thing you shouldn't do is have"
+    },
+    {
+      "Time_Start": 952.88,
+      "Time_End": 957.88,
+      "Text": " weak entropy right? So uh hopefully that attack made sense. And I want to uh I want to"
+    },
+    {
+      "Time_Start": 963.34,
+      "Time_End": 970.6800000000001,
+      "Text": " uh conclude the presentation with uh a few thoughts here. Batch testing is practical and"
+    },
+    {
+      "Time_Start": 970.6800000000001,
+      "Time_End": 976.8000000000001,
+      "Text": " effective and you know Dan Bernstein and Nadia Henninger showed that this stuff was a"
+    },
+    {
+      "Time_Start": 976.8000000000001,
+      "Time_End": 983.22,
+      "Text": " problem 10 years ago but we wanted to democratize this a little bit by making a uh a full"
+    },
+    {
+      "Time_Start": 983.22,
+      "Time_End": 988.96,
+      "Text": " set of tools available and we found in in our work that showing somebody an exploit is"
+    },
+    {
+      "Time_Start": 989.0400000000001,
+      "Time_End": 995.0400000000001,
+      "Text": " um you know often necessary to get them to understand that yes an exploit's possible. So for"
+    },
+    {
+      "Time_Start": 998.46,
+      "Time_End": 1003.0,
+      "Text": " future work you know we'd like to detect more uh failure modes. There's you know the the"
+    },
+    {
+      "Time_Start": 1003.0,
+      "Time_End": 1009.0400000000001,
+      "Text": " two major ones we found now but there's other failure modes um weak keys especially with"
+    },
+    {
+      "Time_Start": 1009.0400000000001,
+      "Time_End": 1015.3000000000001,
+      "Text": " um RSA and uh we're working on analyzing a large batch of manufacturing certificates and"
+    },
+    {
+      "Time_Start": 1015.3000000000001,
+      "Time_End": 1021.84,
+      "Text": " we hope to share that information soon when we can. And I want to mention that you can"
+    },
+    {
+      "Time_Start": 1021.84,
+      "Time_End": 1026.8400000000001,
+      "Text": " download uh the the software tools and documentation so on github.com slash cisco slash"
+    },
+    {
+      "Time_Start": 1030.14,
+      "Time_End": 1036.8000000000002,
+      "Text": " mercury please look in the in the documentation directory for the batch GCD file which has"
+    },
+    {
+      "Time_Start": 1036.8000000000002,
+      "Time_End": 1041.8000000000002,
+      "Text": " the the instructions about the the main tool here. And you know if I could you know make a"
+    },
+    {
+      "Time_Start": 1042.1399999999999,
+      "Time_End": 1047.1399999999999,
+      "Text": " shout out for people who like to do crypto attacks. As the industry evolves away from RSA"
+    },
+    {
+      "Time_Start": 1051.8799999999999,
+      "Time_End": 1058.84,
+      "Text": " towards uh other crypto algorithms it's going to make it harder to detect weak entropy"
+    },
+    {
+      "Time_Start": 1058.84,
+      "Time_End": 1064.0,
+      "Text": " problems but it is not going to make the weak entropy problem go away. Right so this is a"
+    },
+    {
+      "Time_Start": 1064.0,
+      "Time_End": 1068.68,
+      "Text": " very real thing right we should be looking for other ways that we can convict devices that"
+    },
+    {
+      "Time_Start": 1068.68,
+      "Time_End": 1074.54,
+      "Text": " have weak entropy. So that concludes our presentation for today. Thank you so much for"
+    },
+    {
+      "Time_Start": 1074.54,
+      "Time_End": 1080.3,
+      "Text": " your attention."
+    },
+    {
+      "Time_Start": 1080.3,
+      "Time_End": 1082.3400000000001,
+      "Text": " applause"
+    }
+  ]
+}

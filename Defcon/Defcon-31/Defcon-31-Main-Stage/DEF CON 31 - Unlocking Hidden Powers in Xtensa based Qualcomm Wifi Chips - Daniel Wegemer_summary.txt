@@ -1,0 +1,56 @@
+**Introduction**
+- **Wi-Fi Chips**: Powerful, general-purpose CPUs, but proprietary binaries limit custom code.
+- **Talk Focus**: Extending functionality and facilitating security research on modern **Xtensa-based Qualcomm Wi-Fi chips**.
+- **Nexmon Framework**: Tool for modifying **Broadcom chips**, enabling features like **monitor mode** and **packet filtering**.
+
+**Wi-Fi Chips Overview**
+- **Full-MAC** and **Soft-MAC** chips: Full-MAC runs MAC layer in firmware, requiring direct changes for modifications.
+- **Qualcomm Wi-Fi Chips**: ADH-10K and ADH-10K-CT (by Candela Tech) drivers and firmware available. QCAC-LD driver used for factory processes.
+
+**Wi-Fi System-on-Chip (SoC) Structure**
+- **Application Core**: Runs OpenWRT, manages Wi-Fi cores for 2.4 GHz and 5 GHz via PCIe.
+- **Wi-Fi Core**: Handles MAC layer functions.
+
+**Qualcomm Wi-Fi Chip Firmware**
+- **Xtensa-based**: Little-endian firmware with ROM and RAM parts.
+- **ROM**: Patchable, with code swap mechanism and no default security features.
+- **RAM**: Stored in OpenWRT file system, LC77 compressed, with multiple segments and metadata.
+
+**Firmware Loading and Interface**
+- **Loading Methods**: BMI (for compressed firmware) and copy engine.
+- **Interfaces**: PMI (bootloader management) and WMI (command communication) implemented in ROM.
+
+**Firmware File Structure**
+- **Two Parts**: Identified by IE header, with segment headers providing metadata and compressed data.
+- **Overwriting**: First and second parts have the same address, allowing overwriting of boot-up code with real firmware.
+
+**Memory Layout and Xtensa Architecture**
+- **Memory Layout**: Repetitive patterns suggest different memory access rights based on offsets.
+- **Xtensa Architecture**: Features **literal pools** and **windowed registers** for efficient function calls.
+
+**Literal Pools and Disassembler Challenges**
+- **Literal Pools**: Load instructions use offsets from a fixed literal base instead of being PC-dependent.
+- **Disassembler Support**: IDA77, JITRA, RADAR2, and Binary Ninja lack support for literal pools, requiring patches.
+
+**Patching Existing Code**
+- **Nexmon Framework**: Modified to support Qualcomm-based Wi-Fi chips, allowing C-written patches and calls to existing firmware functions.
+- **GCC Plugin**: Creates Nexmon.pre file with metadata for linker scripts and patch file creation.
+- **Decompression**: Added support for Qualcomm's uncompressed firmware.
+- **Multiple Binaries**: Extended GCC plugin to include target firmware file information.
+
+**Addressing Load Instruction Challenges**
+- **Problem**: Load instructions expect a **libbase** to be set, requiring either communicating existing libbase or using a custom value.
+- **Solution**: Set libbase to zero at function entry, reset to original value at exit, and handle relaxation in assembler.
+
+**Assembler Patching**
+- **Relaxation**: Assembler relaxes call instructions to load and call, requiring resetting libbase between them.
+- **Solution**: Add instruction to reset libbase after finding call x pattern in assembler lookup table.
+
+**Demonstration**
+- **Patching Process**: Overwrite literal pool values, compile C files, assemble, link, and copy relevant sections to create firmware file.
+- **SSH Access**: Copy modified firmware, restart PCIe driver, and verify memory modifications via hexdump.
+
+**Summary and Future Work**
+- **QCAmon Framework**: Modified Nexmon to work with Qualcomm firmware, with demo patch and tools available.
+- **Future Work**: Improve patching ease, explore QCAC-LD driver, and study code swap feature.
+- **Acknowledgments**: Martin Kort and Roku for their contributions and resources.

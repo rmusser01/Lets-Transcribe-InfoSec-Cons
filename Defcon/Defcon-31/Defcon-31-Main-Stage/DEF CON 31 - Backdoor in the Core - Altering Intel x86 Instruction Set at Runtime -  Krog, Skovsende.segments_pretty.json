@@ -1,0 +1,2464 @@
+{
+  "segments": [
+    {
+      "Time_Start": 0.0,
+      "Time_End": 8.040000000000001,
+      "Text": "This text was transcribed using whisper model: large-v2\n\n Hi, and welcome to our talk, Backdoor in the Core."
+    },
+    {
+      "Time_Start": 8.040000000000001,
+      "Time_End": 14.280000000000001,
+      "Text": " My name is Alexander Kroh, and I'm a vulnerability researcher at Vectorize."
+    },
+    {
+      "Time_Start": 14.280000000000001,
+      "Time_End": 20.240000000000002,
+      "Text": " Besides that, I'm also a CTF player, and through that community, that's where I learned this"
+    },
+    {
+      "Time_Start": 20.240000000000002,
+      "Time_End": 23.080000000000002,
+      "Text": " wonderful guy."
+    },
+    {
+      "Time_Start": 23.080000000000002,
+      "Time_End": 29.2,
+      "Text": " We've been playing together for a few years now, and yeah, this is our talk about microcode."
+    },
+    {
+      "Time_Start": 29.2,
+      "Time_End": 34.64,
+      "Text": " He's a graph student at the Danish Technical University, and it's about microcode and"
+    },
+    {
+      "Time_Start": 34.64,
+      "Time_End": 37.96,
+      "Text": " hacking CPUs."
+    },
+    {
+      "Time_Start": 37.96,
+      "Time_End": 43.08,
+      "Text": " But first, before we dig into the microcode itself, we need a little crash course on computer"
+    },
+    {
+      "Time_Start": 43.08,
+      "Time_End": 44.56,
+      "Text": " architecture."
+    },
+    {
+      "Time_Start": 44.56,
+      "Time_End": 52.06,
+      "Text": " So what we see up here is a CPU, it's a CPU core from the Skylake processors."
+    },
+    {
+      "Time_Start": 52.06,
+      "Time_End": 57.120000000000005,
+      "Text": " Inside of it, we have both the front end, that's the up top, and we have the back end"
+    },
+    {
+      "Time_Start": 57.120000000000005,
+      "Time_End": 60.6,
+      "Text": " down beneath it, and some memory subsystem in the bottom."
+    },
+    {
+      "Time_Start": 60.6,
+      "Time_End": 66.4,
+      "Text": " The front end is mostly in charge of doing stuff like fetching new instructions, so that's"
+    },
+    {
+      "Time_Start": 66.4,
+      "Time_End": 75.2,
+      "Text": " where your high level, I'm saying high level for instructions here, that's the x86 instructions"
+    },
+    {
+      "Time_Start": 75.2,
+      "Time_End": 80.72,
+      "Text": " going in there into the fetch queue, and they are getting decoded, and then they will be"
+    },
+    {
+      "Time_Start": 80.72,
+      "Time_End": 83.30000000000001,
+      "Text": " translated into micro operations."
+    },
+    {
+      "Time_Start": 83.3,
+      "Time_End": 87.94,
+      "Text": " And micro operations is what's actually running on the CPU."
+    },
+    {
+      "Time_Start": 87.94,
+      "Time_End": 91.74,
+      "Text": " And micro operations are then scheduled by the back end."
+    },
+    {
+      "Time_Start": 91.74,
+      "Time_End": 97.53999999999999,
+      "Text": " The back end is the ALU, so the arithmetic logic unit, and floating point unit, and stuff"
+    },
+    {
+      "Time_Start": 97.53999999999999,
+      "Time_End": 98.89999999999999,
+      "Text": " like that."
+    },
+    {
+      "Time_Start": 98.89999999999999,
+      "Time_End": 102.66,
+      "Text": " And through that, the resulting stuff can go to memory through the memory subsystem."
+    },
+    {
+      "Time_Start": 102.66,
+      "Time_End": 108.92,
+      "Text": " We are only going to take a very tiny section of this CPU and dive into it today."
+    },
+    {
+      "Time_Start": 108.92,
+      "Time_End": 113.02,
+      "Text": " So the one we are diving into is this little tiny section, it's instruction queue, and"
+    },
+    {
+      "Time_Start": 113.02,
+      "Time_End": 114.61999999999999,
+      "Text": " the decoding phase."
+    },
+    {
+      "Time_Start": 114.61999999999999,
+      "Time_End": 119.3,
+      "Text": " So here, when an instruction comes in, it goes through the queue, and if it's a very"
+    },
+    {
+      "Time_Start": 119.3,
+      "Time_End": 125.32,
+      "Text": " simple instruction, like just a simple move, or addition, XOR, something simple like that,"
+    },
+    {
+      "Time_Start": 125.32,
+      "Time_End": 130.3,
+      "Text": " it will go straight through the simple decoders, and they have a one-to-one sort of mapping"
+    },
+    {
+      "Time_Start": 130.3,
+      "Time_End": 133.57999999999998,
+      "Text": " between micro operations and the high level macro operations."
+    },
+    {
+      "Time_Start": 133.57999999999998,
+      "Time_End": 138.7,
+      "Text": " So we call it macro operations, and micro operations from the ones going deep in the"
+    },
+    {
+      "Time_Start": 138.7,
+      "Time_End": 139.7,
+      "Text": " CPU."
+    },
+    {
+      "Time_Start": 139.70000000000002,
+      "Time_End": 145.18,
+      "Text": " So more complex instructions will go through the complex decoder, and what we are looking"
+    },
+    {
+      "Time_Start": 145.18,
+      "Time_End": 150.86,
+      "Text": " at today is the really heavy instructions, so that's something like return from a system"
+    },
+    {
+      "Time_Start": 150.86,
+      "Time_End": 157.02,
+      "Text": " call, or like when you enter a hypervised space, some of these instructions are multiple"
+    },
+    {
+      "Time_Start": 157.02,
+      "Time_End": 161.10000000000002,
+      "Text": " hundreds of lines long, or multiple hundred micro operations long."
+    },
+    {
+      "Time_Start": 161.10000000000002,
+      "Time_End": 166.36,
+      "Text": " So they can't just be directly decoded into micro operations, they go to the ROM."
+    },
+    {
+      "Time_Start": 166.36,
+      "Time_End": 173.12,
+      "Text": " And on the ROM, we fetch, yeah, we have kind of like our normal CPU, we have micro codes,"
+    },
+    {
+      "Time_Start": 173.12,
+      "Time_End": 178.4,
+      "Text": " so you have an instruction pointer running through and executing code."
+    },
+    {
+      "Time_Start": 178.4,
+      "Time_End": 180.52,
+      "Text": " And today we are looking at that space."
+    },
+    {
+      "Time_Start": 180.52,
+      "Time_End": 183.92000000000002,
+      "Text": " So let's talk, so yeah, so why do we need this?"
+    },
+    {
+      "Time_Start": 183.92000000000002,
+      "Time_End": 189.72000000000003,
+      "Text": " Why do we need this complex set of micro code?"
+    },
+    {
+      "Time_Start": 189.72000000000003,
+      "Time_End": 196.32000000000002,
+      "Text": " Well first of all, we have the complex instructions, those cannot be directly implemented in transistors,"
+    },
+    {
+      "Time_Start": 196.32,
+      "Time_End": 200.42,
+      "Text": " but also bugs do occur in CPUs."
+    },
+    {
+      "Time_Start": 200.42,
+      "Time_End": 205.72,
+      "Text": " So we had like a Spectrum meltdown a few years back, setting the scene of all of this, and"
+    },
+    {
+      "Time_Start": 205.72,
+      "Time_End": 208.98,
+      "Text": " just a few weeks ago, we saw the Simply bug."
+    },
+    {
+      "Time_Start": 208.98,
+      "Time_End": 215.28,
+      "Text": " So more and more of these kind of CPU bugs are popping up here and there, and to fix"
+    },
+    {
+      "Time_Start": 215.28,
+      "Time_End": 219.56,
+      "Text": " these bugs, post production, we need micro code updates."
+    },
+    {
+      "Time_Start": 219.56,
+      "Time_End": 226.12,
+      "Text": " So besides the ROM area where micro code is stored, we also have a small RAM address space."
+    },
+    {
+      "Time_Start": 226.12,
+      "Time_End": 229.56,
+      "Text": " And that is writable, and that's what we're going to look at today."
+    },
+    {
+      "Time_Start": 229.56,
+      "Time_End": 237.20000000000002,
+      "Text": " Normally these updates are signed and encrypted by Intel, so you can't really have that deep"
+    },
+    {
+      "Time_Start": 237.20000000000002,
+      "Time_End": 243.16,
+      "Text": " dive and go look what's actually pushed by Intel to the CPUs, there hasn't really been"
+    },
+    {
+      "Time_Start": 243.16,
+      "Time_End": 249.36,
+      "Text": " a way so far to like inspect that, and we'll see what kind of damage we can do with that,"
+    },
+    {
+      "Time_Start": 249.36,
+      "Time_End": 251.84,
+      "Text": " if we actually get the access."
+    },
+    {
+      "Time_Start": 251.84,
+      "Time_End": 258.96,
+      "Text": " So this is a table showing how the address space is laid out inside of these CPUs."
+    },
+    {
+      "Time_Start": 258.96,
+      "Time_End": 261.94,
+      "Text": " It's a very simple address space, it's totally linear."
+    },
+    {
+      "Time_Start": 261.94,
+      "Time_End": 270.8,
+      "Text": " So it goes from 0 down to 0x800, or 8000, sorry, and somewhere in the middle we see"
+    },
+    {
+      "Time_Start": 270.8,
+      "Time_End": 278.44,
+      "Text": " a split going from read only at 7C00, that's where the writable address space starts."
+    },
+    {
+      "Time_Start": 278.44,
+      "Time_End": 286.36,
+      "Text": " So that's where we can inject micro code, and out on the columns we see the instructions"
+    },
+    {
+      "Time_Start": 286.36,
+      "Time_End": 290.44,
+      "Text": " themselves, we have grouped them together in this table because that's how they're grouped"
+    },
+    {
+      "Time_Start": 290.44,
+      "Time_End": 298.88,
+      "Text": " in the CPU, they're called triads, so one triad is three instructions and one implicit"
+    },
+    {
+      "Time_Start": 298.88,
+      "Time_End": 302.88,
+      "Text": " knob instruction, so every fourth instruction would just be an implicit knob."
+    },
+    {
+      "Time_Start": 302.88,
+      "Time_End": 308.32,
+      "Text": " You can't address them, you can't jump to them, but they won't really execute anything."
+    },
+    {
+      "Time_Start": 308.32,
+      "Time_End": 313.52,
+      "Text": " Besides that we have the last thing, and that's a sequence word, it's stored separately"
+    },
+    {
+      "Time_Start": 313.52,
+      "Time_End": 319.04,
+      "Text": " from the instructions, and the sequence word is what groups these triads together."
+    },
+    {
+      "Time_Start": 319.04,
+      "Time_End": 325.96,
+      "Text": " They are the ones in charge of doing flow controls, so they can like do branching based"
+    },
+    {
+      "Time_Start": 325.96,
+      "Time_End": 331.08,
+      "Text": " on testing instructions and stuff like that."
+    },
+    {
+      "Time_Start": 331.08,
+      "Time_End": 338.0,
+      "Text": " So let's take the first example of how a instruction could be implemented in micro code."
+    },
+    {
+      "Time_Start": 338.0,
+      "Time_End": 343.92,
+      "Text": " This is the XADR instruction, it's exchange and addition in the same time."
+    },
+    {
+      "Time_Start": 343.92,
+      "Time_End": 350.78,
+      "Text": " Normally we see these x86 instructions as a one atomic thing, but they're actually not,"
+    },
+    {
+      "Time_Start": 350.78,
+      "Time_End": 359.28,
+      "Text": " so this x addition is composed of these three micro operations, so let's read through it."
+    },
+    {
+      "Time_Start": 359.28,
+      "Time_End": 365.2,
+      "Text": " So the first thing happening is that we take the source register, in this case on the first"
+    },
+    {
+      "Time_Start": 365.2,
+      "Time_End": 367.2,
+      "Text": " line, and OR it with a zero."
+    },
+    {
+      "Time_Start": 367.2,
+      "Time_End": 374.84,
+      "Text": " The source register is the RBX in this case, because it's on that side, and RAX is the"
+    },
+    {
+      "Time_Start": 374.84,
+      "Time_End": 376.7,
+      "Text": " destination register."
+    },
+    {
+      "Time_Start": 376.7,
+      "Time_End": 381.84,
+      "Text": " So ORing with a zero, that just means like, that's basically just a move."
+    },
+    {
+      "Time_Start": 381.84,
+      "Time_End": 387.56,
+      "Text": " We move it into temp zero, and temp zero is a physical and temporary register inside the"
+    },
+    {
+      "Time_Start": 387.56,
+      "Time_End": 392.28,
+      "Text": " CPU that you normally can't access."
+    },
+    {
+      "Time_Start": 392.28,
+      "Time_End": 394.12,
+      "Text": " So that's a simple move."
+    },
+    {
+      "Time_Start": 394.12,
+      "Time_End": 401.0,
+      "Text": " Then we do a zero extent, but in this case it's 64 bits, so it's basically just a, again,"
+    },
+    {
+      "Time_Start": 401.0,
+      "Time_End": 402.08,
+      "Text": " just a move."
+    },
+    {
+      "Time_Start": 402.08,
+      "Time_End": 406.56,
+      "Text": " So we move it into the R64 source register."
+    },
+    {
+      "Time_Start": 406.56,
+      "Time_End": 411.06,
+      "Text": " So that's basically taking RAX and putting it into RDX."
+    },
+    {
+      "Time_Start": 411.06,
+      "Time_End": 414.96,
+      "Text": " So that's the exchange part of this instruction."
+    },
+    {
+      "Time_Start": 414.96,
+      "Time_End": 417.64,
+      "Text": " After that, we do the final step, and that's the addition."
+    },
+    {
+      "Time_Start": 417.64,
+      "Time_End": 423.52,
+      "Text": " So we take the safe temporary register and add it back into the destination register,"
+    },
+    {
+      "Time_Start": 423.52,
+      "Time_End": 428.79999999999995,
+      "Text": " and we also store the resulting value in the destination register."
+    },
+    {
+      "Time_Start": 428.79999999999995,
+      "Time_End": 432.0,
+      "Text": " And now, at last, we see the final part."
+    },
+    {
+      "Time_Start": 432.0,
+      "Time_End": 434.47999999999996,
+      "Text": " That's the sequence word coming into play."
+    },
+    {
+      "Time_Start": 434.47999999999996,
+      "Time_End": 440.79999999999995,
+      "Text": " And in this case, it's a symbol UN, and that means that the instruction, the macro instruction,"
+    },
+    {
+      "Time_Start": 440.79999999999995,
+      "Time_End": 444.06,
+      "Text": " the EXAT, will end at this point."
+    },
+    {
+      "Time_Start": 444.06,
+      "Time_End": 449.52,
+      "Text": " So we will go and update the instruction pointer and fetch a new one."
+    },
+    {
+      "Time_Start": 449.52,
+      "Time_End": 451.59999999999997,
+      "Text": " Now, simple example."
+    },
+    {
+      "Time_Start": 451.68,
+      "Time_End": 454.64000000000004,
+      "Text": " So what you saw before was the temp zero register."
+    },
+    {
+      "Time_Start": 454.64000000000004,
+      "Time_End": 457.28000000000003,
+      "Text": " That's a new one to most of us."
+    },
+    {
+      "Time_Start": 457.28000000000003,
+      "Time_End": 465.6,
+      "Text": " That's a temporary register only used inside microcode, and it's not visible to the macrocode."
+    },
+    {
+      "Time_Start": 465.6,
+      "Time_End": 470.56,
+      "Text": " And we got 16 of these registers, zero through 15, they're called."
+    },
+    {
+      "Time_Start": 470.56,
+      "Time_End": 476.20000000000005,
+      "Text": " Of course, microcode can also access all of the normal registers, like RAX, RBX, and stuff"
+    },
+    {
+      "Time_Start": 476.20000000000005,
+      "Time_End": 478.12,
+      "Text": " like that."
+    },
+    {
+      "Time_Start": 478.12,
+      "Time_End": 484.0,
+      "Text": " Besides that, we got eight floating point registers, just the same thing as the temp"
+    },
+    {
+      "Time_Start": 484.0,
+      "Time_End": 485.0,
+      "Text": " registers."
+    },
+    {
+      "Time_Start": 485.0,
+      "Time_End": 489.04,
+      "Text": " There's eight of them for XMM instructions, also temporarily."
+    },
+    {
+      "Time_Start": 489.04,
+      "Time_End": 496.64,
+      "Text": " Then we can, of course, access system registers that can be like a segmentation of memory."
+    },
+    {
+      "Time_Start": 496.64,
+      "Time_End": 499.84000000000003,
+      "Text": " Some of those registers, they're the ones that hold the state."
+    },
+    {
+      "Time_Start": 499.84000000000003,
+      "Time_End": 507.24,
+      "Text": " And last, we have the use state register, and that one will hold what modes the CPUs"
+    },
+    {
+      "Time_Start": 507.24,
+      "Time_End": 509.12,
+      "Text": " are running in, and all the critical stuff."
+    },
+    {
+      "Time_Start": 509.12,
+      "Time_End": 513.84,
+      "Text": " So like, are we in 32-bit mode, are we in 64-bit mode, are we in a hypervised space,"
+    },
+    {
+      "Time_Start": 513.84,
+      "Time_End": 515.28,
+      "Text": " and stuff like that."
+    },
+    {
+      "Time_Start": 515.28,
+      "Time_End": 521.52,
+      "Text": " And often the CPU will check that flag and do conditional jumps in microcode based on"
+    },
+    {
+      "Time_Start": 521.52,
+      "Time_End": 522.52,
+      "Text": " what state are we in."
+    },
+    {
+      "Time_Start": 522.52,
+      "Time_End": 526.8,
+      "Text": " Are we in privileged mode, are we in kernel space, stuff like that."
+    },
+    {
+      "Time_Start": 526.8,
+      "Time_End": 530.44,
+      "Text": " Of course, from microcode, we can also access memory."
+    },
+    {
+      "Time_Start": 530.44,
+      "Time_End": 532.52,
+      "Text": " There's multiple ways of doing this."
+    },
+    {
+      "Time_Start": 532.52,
+      "Time_End": 538.68,
+      "Text": " One is, for example, the virtual address space, the ones we usually do from macro operations."
+    },
+    {
+      "Time_Start": 538.68,
+      "Time_End": 543.28,
+      "Text": " So we can store and read memory just as that."
+    },
+    {
+      "Time_Start": 543.28,
+      "Time_End": 548.96,
+      "Text": " We can also access directly from this physical address space, going just around all the page"
+    },
+    {
+      "Time_Start": 548.96,
+      "Time_End": 551.0799999999999,
+      "Text": " tables and stuff like that."
+    },
+    {
+      "Time_Start": 551.0799999999999,
+      "Time_End": 553.56,
+      "Text": " So yeah."
+    },
+    {
+      "Time_Start": 553.56,
+      "Time_End": 561.36,
+      "Text": " And besides that, we have some very, very tiny memory dedicated for only microcode and"
+    },
+    {
+      "Time_Start": 561.36,
+      "Time_End": 562.96,
+      "Text": " inside the CPU."
+    },
+    {
+      "Time_Start": 562.96,
+      "Time_End": 564.48,
+      "Text": " That's the UCode memory."
+    },
+    {
+      "Time_Start": 564.48,
+      "Time_End": 569.32,
+      "Text": " It's a separate address space from where we are storing the actual instructions."
+    },
+    {
+      "Time_Start": 569.32,
+      "Time_End": 572.46,
+      "Text": " So data and instructions are separated completely."
+    },
+    {
+      "Time_Start": 572.46,
+      "Time_End": 580.24,
+      "Text": " But here we have around 0x100 QWertz that we can also use as temporary storage."
+    },
+    {
+      "Time_Start": 580.24,
+      "Time_End": 583.24,
+      "Text": " Each entry is 64-bit wide."
+    },
+    {
+      "Time_Start": 583.24,
+      "Time_End": 587.84,
+      "Text": " And it is used, the difference between those and temporary instructions is that these can"
+    },
+    {
+      "Time_Start": 587.84,
+      "Time_End": 591.24,
+      "Text": " be used across multiple macro instructions."
+    },
+    {
+      "Time_Start": 591.24,
+      "Time_End": 596.44,
+      "Text": " So temp registers is for temporary storage inside one macro instructions."
+    },
+    {
+      "Time_Start": 596.44,
+      "Time_End": 601.6,
+      "Text": " And this can store safe control registers when switching mode and stuff like that."
+    },
+    {
+      "Time_Start": 601.6,
+      "Time_End": 603.48,
+      "Text": " And then we can fetch it out later."
+    },
+    {
+      "Time_Start": 603.48,
+      "Time_End": 609.76,
+      "Text": " So each entry is like, has a dedicated purpose."
+    },
+    {
+      "Time_Start": 609.76,
+      "Time_End": 615.2,
+      "Text": " Other than that, we also have two buses, or a bus and a fabric."
+    },
+    {
+      "Time_Start": 615.2,
+      "Time_End": 619.46,
+      "Text": " These are used for communication within the CPU."
+    },
+    {
+      "Time_Start": 619.46,
+      "Time_End": 623.26,
+      "Text": " One of the very interesting ones is the control register bus."
+    },
+    {
+      "Time_Start": 623.26,
+      "Time_End": 627.3000000000001,
+      "Text": " It can talk to all components inside one single CPU core."
+    },
+    {
+      "Time_Start": 627.3000000000001,
+      "Time_End": 630.6600000000001,
+      "Text": " That could be the caches that are on the core."
+    },
+    {
+      "Time_Start": 630.6600000000001,
+      "Time_End": 635.1,
+      "Text": " So for example, an L1 cache, maybe an L2, something like that."
+    },
+    {
+      "Time_Start": 635.1,
+      "Time_End": 639.82,
+      "Text": " And besides that, we have the very important one, the microcode sequencer."
+    },
+    {
+      "Time_Start": 639.82,
+      "Time_End": 645.88,
+      "Text": " That is the one in charge of scheduling instructions and going through the pipeline."
+    },
+    {
+      "Time_Start": 645.88,
+      "Time_End": 651.04,
+      "Text": " So if we can go to the control register bus, we can access the microcode as well."
+    },
+    {
+      "Time_Start": 651.04,
+      "Time_End": 655.36,
+      "Text": " Other than that, we have the Intel on system fabric."
+    },
+    {
+      "Time_Start": 655.36,
+      "Time_End": 658.4399999999999,
+      "Text": " That is mostly used for external communication."
+    },
+    {
+      "Time_Start": 658.4399999999999,
+      "Time_End": 664.92,
+      "Text": " So the HTT driver and USB stuff and other components that are shared between some of"
+    },
+    {
+      "Time_Start": 664.92,
+      "Time_End": 666.1,
+      "Text": " the cores."
+    },
+    {
+      "Time_Start": 666.1,
+      "Time_End": 671.24,
+      "Text": " So that is mostly for external communication outside of the main core."
+    },
+    {
+      "Time_Start": 671.24,
+      "Time_End": 672.24,
+      "Text": " Yes."
+    },
+    {
+      "Time_Start": 672.24,
+      "Time_End": 673.24,
+      "Text": " Okay."
+    },
+    {
+      "Time_Start": 673.24,
+      "Time_End": 674.84,
+      "Text": " So now we talked a bit about that."
+    },
+    {
+      "Time_Start": 674.84,
+      "Time_End": 678.08,
+      "Text": " How do we place these updates in microcode?"
+    },
+    {
+      "Time_Start": 678.08,
+      "Time_End": 682.6,
+      "Text": " So we talked about that it's a ROM area, and that is read-only."
+    },
+    {
+      "Time_Start": 682.6,
+      "Time_End": 687.64,
+      "Text": " So when Intel pushes an update, how do they actually update a ROM area?"
+    },
+    {
+      "Time_Start": 687.64,
+      "Time_End": 691.72,
+      "Text": " That's where these match and patch registers come into place."
+    },
+    {
+      "Time_Start": 691.72,
+      "Time_End": 697.6600000000001,
+      "Text": " What we see here is the bit fields and how a match and patch register is laid out."
+    },
+    {
+      "Time_Start": 697.6600000000001,
+      "Time_End": 699.2800000000001,
+      "Text": " And we have 32 of these."
+    },
+    {
+      "Time_Start": 699.2800000000001,
+      "Time_End": 703.88,
+      "Text": " And each time we fit a new instruction, we will check these fields."
+    },
+    {
+      "Time_Start": 703.92,
+      "Time_End": 707.28,
+      "Text": " And if we get a hit, we will jump to that address instead."
+    },
+    {
+      "Time_Start": 707.28,
+      "Time_End": 711.92,
+      "Text": " So we have the present bit that will tell if this match and patch register is enabled."
+    },
+    {
+      "Time_Start": 711.92,
+      "Time_End": 717.66,
+      "Text": " Then we have a source field that is if we hit this address, it will jump somewhere else."
+    },
+    {
+      "Time_Start": 717.66,
+      "Time_End": 720.6,
+      "Text": " And that will be what's stored in the destination."
+    },
+    {
+      "Time_Start": 720.6,
+      "Time_End": 726.42,
+      "Text": " And as you see up here, both source and destination are two U addresses."
+    },
+    {
+      "Time_Start": 726.42,
+      "Time_End": 729.44,
+      "Text": " So they are microcode addresses."
+    },
+    {
+      "Time_Start": 729.44,
+      "Time_End": 730.64,
+      "Text": " But they're shifted by one."
+    },
+    {
+      "Time_Start": 730.64,
+      "Time_End": 734.28,
+      "Text": " So we lose one bit of position."
+    },
+    {
+      "Time_Start": 734.28,
+      "Time_End": 737.8,
+      "Text": " And we'll talk a bit about how that works."
+    },
+    {
+      "Time_Start": 737.8,
+      "Time_End": 740.68,
+      "Text": " So here we have an example of a match and patch register."
+    },
+    {
+      "Time_Start": 740.68,
+      "Time_End": 747.56,
+      "Text": " So let's say our CPU is running and the microcode instruction pointer hits 3C8."
+    },
+    {
+      "Time_Start": 747.56,
+      "Time_End": 752.48,
+      "Text": " Then we have a match and patch hit because we see an entry in the match and patch table"
+    },
+    {
+      "Time_Start": 752.48,
+      "Time_End": 754.24,
+      "Text": " with the same value."
+    },
+    {
+      "Time_Start": 754.24,
+      "Time_End": 760.6800000000001,
+      "Text": " That means that we will instead go and jump directly to 7C00 and start executing from"
+    },
+    {
+      "Time_Start": 760.6800000000001,
+      "Time_End": 761.96,
+      "Text": " there instead."
+    },
+    {
+      "Time_Start": 761.96,
+      "Time_End": 767.52,
+      "Text": " And this is what Intel programs into the CPU every time we apply a microcode update."
+    },
+    {
+      "Time_Start": 767.52,
+      "Time_End": 769.8,
+      "Text": " It happens on every reboot."
+    },
+    {
+      "Time_Start": 769.8,
+      "Time_End": 777.5600000000001,
+      "Text": " But we also find out through trial and error that this loss in position means that if we"
+    },
+    {
+      "Time_Start": 777.5600000000001,
+      "Time_End": 782.6400000000001,
+      "Text": " do hit 3C9, we would actually also get a hit."
+    },
+    {
+      "Time_Start": 782.6400000000001,
+      "Time_End": 785.6,
+      "Text": " And then we will jump to the red area instead."
+    },
+    {
+      "Time_Start": 785.6,
+      "Time_End": 791.0400000000001,
+      "Text": " So we will jump one microinstruction further on."
+    },
+    {
+      "Time_Start": 791.0400000000001,
+      "Time_End": 796.36,
+      "Text": " So how can we use this, or should I say abuse this, when researching CPUs?"
+    },
+    {
+      "Time_Start": 796.36,
+      "Time_End": 802.24,
+      "Text": " So a lot of things we have been doing is to do dynamic inspection of state, also to figure"
+    },
+    {
+      "Time_Start": 802.24,
+      "Time_End": 806.96,
+      "Text": " out what this code is doing, but also to figure out what the instruction is doing."
+    },
+    {
+      "Time_Start": 806.96,
+      "Time_End": 811.0,
+      "Text": " So here we have a simple example taken from the ROM."
+    },
+    {
+      "Time_Start": 811.0,
+      "Time_End": 815.88,
+      "Text": " It reads first from the RAM address space into temp3 and temp2."
+    },
+    {
+      "Time_Start": 815.88,
+      "Time_End": 818.36,
+      "Text": " But what if you want to inspect the state?"
+    },
+    {
+      "Time_Start": 818.36,
+      "Time_End": 823.12,
+      "Text": " Well one thing we could do is that we can tell the match and patch registers to go and"
+    },
+    {
+      "Time_Start": 823.12,
+      "Time_End": 824.98,
+      "Text": " jump somewhere else."
+    },
+    {
+      "Time_Start": 824.98,
+      "Time_End": 830.5600000000001,
+      "Text": " So we see the overcrossed line, the red line, that is a test use state."
+    },
+    {
+      "Time_Start": 830.5600000000001,
+      "Time_End": 836.24,
+      "Text": " And then normally we would, the sequence word will tell it to jump somewhere to the general"
+    },
+    {
+      "Time_Start": 836.24,
+      "Time_End": 841.48,
+      "Text": " protection fault and do a fault, because this is a privileged instruction."
+    },
+    {
+      "Time_Start": 841.48,
+      "Time_End": 842.52,
+      "Text": " But we can change that."
+    },
+    {
+      "Time_Start": 842.52,
+      "Time_End": 845.88,
+      "Text": " So we swap that out and say go to the RAM area."
+    },
+    {
+      "Time_Start": 845.88,
+      "Time_End": 852.04,
+      "Text": " And in the RAM we have put our stuff and we will flip the test case."
+    },
+    {
+      "Time_Start": 852.04,
+      "Time_End": 859.12,
+      "Text": " And when we do that, we can tell it to either go and take the left path and say move these"
+    },
+    {
+      "Time_Start": 859.12,
+      "Time_End": 863.6,
+      "Text": " temporary registers into the, into racks and rbx."
+    },
+    {
+      "Time_Start": 863.6,
+      "Time_End": 870.2,
+      "Text": " These are registers that we can inspect from a debugger and from normal user space."
+    },
+    {
+      "Time_Start": 870.2,
+      "Time_End": 876.12,
+      "Text": " Or if we are in a privileged mode, we don't want to screw up this instruction."
+    },
+    {
+      "Time_Start": 876.12,
+      "Time_End": 880.9200000000001,
+      "Text": " So instead we send it to its normal path and send it back the way we came from, so we don't"
+    },
+    {
+      "Time_Start": 880.9200000000001,
+      "Time_End": 885.48,
+      "Text": " mess up the instruction and the CPU will still continue to function and run happily ever"
+    },
+    {
+      "Time_Start": 885.48,
+      "Time_End": 886.48,
+      "Text": " after."
+    },
+    {
+      "Time_Start": 886.48,
+      "Time_End": 890.0,
+      "Text": " Okay, so how do we manage to make these changes?"
+    },
+    {
+      "Time_Start": 890.0,
+      "Time_End": 895.2,
+      "Text": " Now how can we access the microcode sequencer when it's all locked down and locked up by"
+    },
+    {
+      "Time_Start": 895.2,
+      "Time_End": 896.2,
+      "Text": " Intel?"
+    },
+    {
+      "Time_Start": 896.2,
+      "Time_End": 904.2,
+      "Text": " Well, luckily the people at Positive Technology, they found a vulnerability in the Intel management"
+    },
+    {
+      "Time_Start": 904.2,
+      "Time_End": 908.76,
+      "Text": " engine that runs a software called Trusted Execution Unit."
+    },
+    {
+      "Time_Start": 908.76,
+      "Time_End": 911.2,
+      "Text": " And they found a buffer overflow."
+    },
+    {
+      "Time_Start": 911.2,
+      "Time_End": 914.92,
+      "Text": " And that engine runs on a very highly privileged level."
+    },
+    {
+      "Time_Start": 914.92,
+      "Time_End": 918.56,
+      "Text": " And through that we can enable debug features."
+    },
+    {
+      "Time_Start": 918.5600000000001,
+      "Time_End": 923.24,
+      "Text": " Debug features only Intel is supposed to have access to."
+    },
+    {
+      "Time_Start": 923.24,
+      "Time_End": 929.6800000000001,
+      "Text": " And that unlocks hidden instructions and undocumented instructions."
+    },
+    {
+      "Time_Start": 929.6800000000001,
+      "Time_End": 936.5200000000001,
+      "Text": " So yeah, we have, we took the PRC and expanded it to these dev boards."
+    },
+    {
+      "Time_Start": 936.5200000000001,
+      "Time_End": 940.96,
+      "Text": " That's actually the board lying up here that we are presenting from."
+    },
+    {
+      "Time_Start": 940.96,
+      "Time_End": 944.72,
+      "Text": " And we have of course prepared flash images and stuff that you can flash on."
+    },
+    {
+      "Time_Start": 944.88,
+      "Time_End": 949.08,
+      "Text": " So if you buy one of these, you can go and replicate some of our findings."
+    },
+    {
+      "Time_Start": 949.08,
+      "Time_End": 950.08,
+      "Text": " Yeah."
+    },
+    {
+      "Time_Start": 950.08,
+      "Time_End": 958.28,
+      "Text": " The two instructions that we mostly use is the UDEBUG READ and the UDEBUG WRITE."
+    },
+    {
+      "Time_Start": 958.28,
+      "Time_End": 962.72,
+      "Text": " These two instructions can write to microcode."
+    },
+    {
+      "Time_Start": 962.72,
+      "Time_End": 968.0400000000001,
+      "Text": " It can read the data and read and write to the data areas we talked before."
+    },
+    {
+      "Time_Start": 968.0400000000001,
+      "Time_End": 972.46,
+      "Text": " The WRITE instruction also has a special feature where you can put in an address in the regs"
+    },
+    {
+      "Time_Start": 972.46,
+      "Time_End": 977.98,
+      "Text": " register and just tell it to go jump straight to an address you specify in the microcode"
+    },
+    {
+      "Time_Start": 977.98,
+      "Time_End": 979.3000000000001,
+      "Text": " area."
+    },
+    {
+      "Time_Start": 979.3000000000001,
+      "Time_End": 984.2800000000001,
+      "Text": " And it can also talk to the control register bus that we talked about before."
+    },
+    {
+      "Time_Start": 984.2800000000001,
+      "Time_End": 989.1800000000001,
+      "Text": " So that's how we access all of these microcode features."
+    },
+    {
+      "Time_Start": 989.1800000000001,
+      "Time_End": 993.38,
+      "Text": " Really good findings over at the PostExecution Knowledge side."
+    },
+    {
+      "Time_Start": 993.38,
+      "Time_End": 995.46,
+      "Text": " But yeah."
+    },
+    {
+      "Time_Start": 995.46,
+      "Time_End": 997.1800000000001,
+      "Text": " So we tried all of this."
+    },
+    {
+      "Time_Start": 997.1800000000001,
+      "Time_End": 1001.62,
+      "Text": " We made our ROP chain and we got access to these instructions."
+    },
+    {
+      "Time_Start": 1001.62,
+      "Time_End": 1006.1,
+      "Text": " And we found this repo called Custom Processing Unit."
+    },
+    {
+      "Time_Start": 1006.1,
+      "Time_End": 1010.66,
+      "Text": " It's a assembler that someone wrote for assembling microcode."
+    },
+    {
+      "Time_Start": 1010.66,
+      "Time_End": 1013.0600000000001,
+      "Text": " It works from EFIS BS."
+    },
+    {
+      "Time_Start": 1013.0600000000001,
+      "Time_End": 1019.12,
+      "Text": " So you can take and compile microcode and put it on a flash drive."
+    },
+    {
+      "Time_Start": 1019.12,
+      "Time_End": 1022.58,
+      "Text": " And from there you can apply the patches to your CPU."
+    },
+    {
+      "Time_Start": 1022.58,
+      "Time_End": 1025.86,
+      "Text": " And we did that and was hoping that it worked."
+    },
+    {
+      "Time_Start": 1025.86,
+      "Time_End": 1030.86,
+      "Text": " But as soon as we booted up our Linux system that we're running on, all of our microcode"
+    },
+    {
+      "Time_Start": 1030.8600000000001,
+      "Time_End": 1033.18,
+      "Text": " patches, they were gone."
+    },
+    {
+      "Time_Start": 1033.18,
+      "Time_End": 1037.42,
+      "Text": " And our initial thought was like, oh, we can't read their code."
+    },
+    {
+      "Time_Start": 1037.42,
+      "Time_End": 1038.42,
+      "Text": " We don't understand it."
+    },
+    {
+      "Time_Start": 1038.42,
+      "Time_End": 1039.42,
+      "Text": " It must be wrong."
+    },
+    {
+      "Time_Start": 1039.42,
+      "Time_End": 1041.18,
+      "Text": " It can't be anything else."
+    },
+    {
+      "Time_Start": 1041.18,
+      "Time_End": 1044.7,
+      "Text": " So of course we started writing our own assembler."
+    },
+    {
+      "Time_Start": 1044.7,
+      "Time_End": 1046.8600000000001,
+      "Text": " And we turned out to be very wrong."
+    },
+    {
+      "Time_Start": 1046.8600000000001,
+      "Time_End": 1050.0600000000002,
+      "Text": " And their code was running perfectly."
+    },
+    {
+      "Time_Start": 1050.0600000000002,
+      "Time_End": 1054.14,
+      "Text": " But doing this, we took a kind of different approach."
+    },
+    {
+      "Time_Start": 1054.14,
+      "Time_End": 1059.7800000000002,
+      "Text": " So what you have seen so far has been their syntax, the example we had before."
+    },
+    {
+      "Time_Start": 1060.02,
+      "Time_End": 1062.7,
+      "Text": " We made a more dynamic library."
+    },
+    {
+      "Time_Start": 1062.7,
+      "Time_End": 1069.46,
+      "Text": " So actually we made a Linux dynamically shared library that you can put into any C project"
+    },
+    {
+      "Time_Start": 1069.46,
+      "Time_End": 1073.3,
+      "Text": " that can change microcode on the fly."
+    },
+    {
+      "Time_Start": 1073.3,
+      "Time_End": 1078.34,
+      "Text": " So the code, the assembly code, looks a bit more like this."
+    },
+    {
+      "Time_Start": 1078.34,
+      "Time_End": 1084.54,
+      "Text": " So we have more dynamic tooling, but also at the cost of syntax."
+    },
+    {
+      "Time_Start": 1084.54,
+      "Time_End": 1087.66,
+      "Text": " So what we see here is our function as YOLO."
+    },
+    {
+      "Time_Start": 1087.66,
+      "Time_End": 1091.5400000000002,
+      "Text": " The first value or the first array here is your code patch."
+    },
+    {
+      "Time_Start": 1091.5400000000002,
+      "Time_End": 1093.48,
+      "Text": " That is the one we are going to apply."
+    },
+    {
+      "Time_Start": 1093.48,
+      "Time_End": 1096.7,
+      "Text": " It moves 1337 into one of the temp registers."
+    },
+    {
+      "Time_Start": 1096.7,
+      "Time_End": 1099.78,
+      "Text": " Then it do dead beef into RBX."
+    },
+    {
+      "Time_Start": 1099.78,
+      "Time_End": 1102.9,
+      "Text": " And it takes temp zero and moves into RAX."
+    },
+    {
+      "Time_Start": 1102.9,
+      "Time_End": 1105.42,
+      "Text": " So nothing crazy going on here."
+    },
+    {
+      "Time_Start": 1105.42,
+      "Time_End": 1107.5800000000002,
+      "Text": " And then it ends the instruction."
+    },
+    {
+      "Time_Start": 1107.5800000000002,
+      "Time_End": 1112.74,
+      "Text": " Then we put, then we use the patch your code function to put these instructions in the"
+    },
+    {
+      "Time_Start": 1112.74,
+      "Time_End": 1113.74,
+      "Text": " RAM area."
+    },
+    {
+      "Time_Start": 1113.86,
+      "Time_End": 1120.06,
+      "Text": " And after that, we will hook the sys exit function, the sys exit instruction."
+    },
+    {
+      "Time_Start": 1120.06,
+      "Time_End": 1124.18,
+      "Text": " And we use that one because it's kind of a nice playground instruction."
+    },
+    {
+      "Time_Start": 1124.18,
+      "Time_End": 1130.9,
+      "Text": " Because it's never really used by Linux kernel or anyone, because it's an install only instruction."
+    },
+    {
+      "Time_Start": 1130.9,
+      "Time_End": 1133.58,
+      "Text": " So it doesn't work on AMD."
+    },
+    {
+      "Time_Start": 1133.58,
+      "Time_End": 1137.9,
+      "Text": " And that is nice, because when you fetch a DBN or a ponzo or whatever, they will work"
+    },
+    {
+      "Time_Start": 1137.9,
+      "Time_End": 1139.6200000000001,
+      "Text": " on both hardwares."
+    },
+    {
+      "Time_Start": 1139.6200000000001,
+      "Time_End": 1143.54,
+      "Text": " So this instruction is a privileged instruction, never really used."
+    },
+    {
+      "Time_Start": 1143.54,
+      "Time_End": 1148.86,
+      "Text": " So we'll snag that one and use it for our, and repurpose it as we like."
+    },
+    {
+      "Time_Start": 1148.86,
+      "Time_End": 1150.34,
+      "Text": " Yeah."
+    },
+    {
+      "Time_Start": 1150.34,
+      "Time_End": 1151.34,
+      "Text": " So we did that."
+    },
+    {
+      "Time_Start": 1151.34,
+      "Time_End": 1155.1399999999999,
+      "Text": " And we started to play around with the microcode."
+    },
+    {
+      "Time_Start": 1155.1399999999999,
+      "Time_End": 1161.02,
+      "Text": " And one thing we could do with this more dynamic approach, and because our, we do it from the"
+    },
+    {
+      "Time_Start": 1161.02,
+      "Time_End": 1169.1,
+      "Text": " C language, so we also have the power of all of C. And it's dynamic powers in that we can"
+    },
+    {
+      "Time_Start": 1169.14,
+      "Time_End": 1176.14,
+      "Text": " program, from C we can program microcode changes, versus putting it on a flash drive and being"
+    },
+    {
+      "Time_Start": 1176.6200000000001,
+      "Time_End": 1178.5400000000002,
+      "Text": " more statically."
+    },
+    {
+      "Time_Start": 1178.5400000000002,
+      "Time_End": 1185.5400000000002,
+      "Text": " So we did that, and we started just putting in, so we made microcode that traced where"
+    },
+    {
+      "Time_Start": 1186.14,
+      "Time_End": 1191.3000000000002,
+      "Text": " is the current instruction pointer from macrocode, and where is the current microcode instruction"
+    },
+    {
+      "Time_Start": 1191.3000000000002,
+      "Time_End": 1192.1000000000001,
+      "Text": " pointer."
+    },
+    {
+      "Time_Start": 1192.1000000000001,
+      "Time_End": 1197.6200000000001,
+      "Text": " Then we stored that to the normal RAM address space, and we kept doing that."
+    },
+    {
+      "Time_Start": 1197.6200000000001,
+      "Time_End": 1203.94,
+      "Text": " And at some point, when we lost our microcode changes, we know exactly at what instruction"
+    },
+    {
+      "Time_Start": 1203.94,
+      "Time_End": 1206.18,
+      "Text": " we were losing these changes."
+    },
+    {
+      "Time_Start": 1206.18,
+      "Time_End": 1208.8600000000001,
+      "Text": " So we could backtrace, how can we fix that?"
+    },
+    {
+      "Time_Start": 1208.8600000000001,
+      "Time_End": 1214.18,
+      "Text": " And then we discovered that in instruction, let's say instruction that's reading from"
+    },
+    {
+      "Time_Start": 1214.18,
+      "Time_End": 1221.0200000000002,
+      "Text": " the port IO space, so it's reading from hardware, we found that that has a lot of side effects."
+    },
+    {
+      "Time_Start": 1221.0200000000002,
+      "Time_End": 1226.5000000000002,
+      "Text": " And when we took a look at the opposite one, the right instruction, it was like three lines,"
+    },
+    {
+      "Time_Start": 1226.5,
+      "Time_End": 1227.86,
+      "Text": " three instructions long."
+    },
+    {
+      "Time_Start": 1227.86,
+      "Time_End": 1230.02,
+      "Text": " This one was a couple hundred lines."
+    },
+    {
+      "Time_Start": 1230.02,
+      "Time_End": 1233.66,
+      "Text": " It was way bigger than it should be."
+    },
+    {
+      "Time_Start": 1233.66,
+      "Time_End": 1239.78,
+      "Text": " So it turns out that doing execution of the instruction, they have a hidden side effect"
+    },
+    {
+      "Time_Start": 1239.78,
+      "Time_End": 1246.78,
+      "Text": " from InstantSign, where they check the state of the microarchitectural state and reapplies"
+    },
+    {
+      "Time_Start": 1247.34,
+      "Time_End": 1251.46,
+      "Text": " microcode patches if something seems odd."
+    },
+    {
+      "Time_Start": 1251.46,
+      "Time_End": 1254.46,
+      "Text": " That's at least our interpretation of this."
+    },
+    {
+      "Time_Start": 1254.74,
+      "Time_End": 1260.42,
+      "Text": " What we did was that at first, we just tried to nuke out the entire instruction and see"
+    },
+    {
+      "Time_Start": 1260.42,
+      "Time_End": 1264.58,
+      "Text": " if we just like make it a big knob instruction and see if that would work."
+    },
+    {
+      "Time_Start": 1264.58,
+      "Time_End": 1269.7,
+      "Text": " Well, it did work, and we started keeping our microcode changes, but apparently the"
+    },
+    {
+      "Time_Start": 1269.7,
+      "Time_End": 1273.74,
+      "Text": " kernel needs this instruction, so our kernel didn't work."
+    },
+    {
+      "Time_Start": 1273.74,
+      "Time_End": 1276.46,
+      "Text": " But there's a solution for that."
+    },
+    {
+      "Time_Start": 1276.46,
+      "Time_End": 1282.18,
+      "Text": " We just go 10 instructions down, try and disable it from there, no working."
+    },
+    {
+      "Time_Start": 1282.38,
+      "Time_End": 1285.5800000000002,
+      "Text": " Okay, what about five instructions longer down?"
+    },
+    {
+      "Time_Start": 1285.5800000000002,
+      "Time_End": 1290.98,
+      "Text": " And yeah, sure enough, when we chopped off that half of the instruction, we started to"
+    },
+    {
+      "Time_Start": 1290.98,
+      "Time_End": 1293.22,
+      "Text": " getting stable microcode changes."
+    },
+    {
+      "Time_Start": 1293.22,
+      "Time_End": 1298.3,
+      "Text": " So now we can update microcode from a Linux user space environment instead of just through"
+    },
+    {
+      "Time_Start": 1298.3,
+      "Time_End": 1299.98,
+      "Text": " a official."
+    },
+    {
+      "Time_Start": 1299.98,
+      "Time_End": 1303.02,
+      "Text": " So yeah, that's nice."
+    },
+    {
+      "Time_Start": 1303.02,
+      "Time_End": 1307.54,
+      "Text": " So I think we're going to do a demo of this."
+    },
+    {
+      "Time_Start": 1308.42,
+      "Time_End": 1314.82,
+      "Text": " Yeah, so for the first demo, we're going to show this YOLO function, which we had shown"
+    },
+    {
+      "Time_Start": 1314.82,
+      "Time_End": 1316.82,
+      "Text": " before."
+    },
+    {
+      "Time_Start": 1316.82,
+      "Time_End": 1322.8999999999999,
+      "Text": " So we're running this on the off-squared board, which is already red-unlocked and exploited."
+    },
+    {
+      "Time_Start": 1322.8999999999999,
+      "Time_End": 1326.6599999999999,
+      "Text": " So it's just ready to run."
+    },
+    {
+      "Time_Start": 1326.6599999999999,
+      "Time_End": 1332.78,
+      "Text": " If we look at this code again, let me just..."
+    },
+    {
+      "Time_Start": 1332.78,
+      "Time_End": 1334.94,
+      "Text": " This was the YOLO function."
+    },
+    {
+      "Time_Start": 1334.94,
+      "Time_End": 1339.5,
+      "Text": " It sets OXLEAD and REX and OXSTAT and RBX."
+    },
+    {
+      "Time_Start": 1339.5,
+      "Time_End": 1343.66,
+      "Text": " And then we have this wrapper around it, which has some inline assembly that just calls the"
+    },
+    {
+      "Time_Start": 1343.66,
+      "Time_End": 1347.3,
+      "Text": " SSHQ instruction."
+    },
+    {
+      "Time_Start": 1347.3,
+      "Time_End": 1356.26,
+      "Text": " If we then just open it up in GDB."
+    },
+    {
+      "Time_Start": 1356.26,
+      "Time_End": 1362.3400000000001,
+      "Text": " So now we're right before the YOLO function, and if we step over it, now our patch should"
+    },
+    {
+      "Time_Start": 1362.4199999999998,
+      "Time_End": 1364.8999999999999,
+      "Text": " be applied."
+    },
+    {
+      "Time_Start": 1364.8999999999999,
+      "Time_End": 1367.56,
+      "Text": " And now we're right at the search exit instruction."
+    },
+    {
+      "Time_Start": 1367.56,
+      "Time_End": 1372.54,
+      "Text": " So if we step now, what should happen, normally at least, is we should get a general protection"
+    },
+    {
+      "Time_Start": 1372.54,
+      "Time_End": 1377.6999999999998,
+      "Text": " fault because this is a privileged instruction and we're in user space."
+    },
+    {
+      "Time_Start": 1377.6999999999998,
+      "Time_End": 1384.4599999999998,
+      "Text": " But what actually happens is that if you look up at the top, REX is set to OXLEAD and RBX"
+    },
+    {
+      "Time_Start": 1384.4599999999998,
+      "Time_End": 1386.1399999999999,
+      "Text": " is set to OXSTAT."
+    },
+    {
+      "Time_Start": 1386.1399999999999,
+      "Time_End": 1391.3799999999999,
+      "Text": " So our patch was successfully added."
+    },
+    {
+      "Time_Start": 1391.42,
+      "Time_End": 1402.5800000000002,
+      "Text": " And now, for probably the demonstration you've all been waiting for, the backdoor."
+    },
+    {
+      "Time_Start": 1402.5800000000002,
+      "Time_End": 1407.46,
+      "Text": " To show it, we are going to open up a browser."
+    },
+    {
+      "Time_Start": 1407.46,
+      "Time_End": 1418.42,
+      "Text": " And here we have just a site hosted here with a sweet little link here."
+    },
+    {
+      "Time_Start": 1418.42,
+      "Time_End": 1419.42,
+      "Text": " Click to get a calc."
+    },
+    {
+      "Time_Start": 1419.46,
+      "Time_End": 1420.46,
+      "Text": " Let's try and press it."
+    },
+    {
+      "Time_Start": 1420.46,
+      "Time_End": 1423.46,
+      "Text": " And a calc pops."
+    },
+    {
+      "Time_Start": 1423.46,
+      "Time_End": 1433.1000000000001,
+      "Text": " So that's very neat."
+    },
+    {
+      "Time_Start": 1433.1000000000001,
+      "Time_End": 1437.18,
+      "Text": " But our exploit actually doesn't have anything to do with the JavaScript engine."
+    },
+    {
+      "Time_Start": 1437.18,
+      "Time_End": 1457.7,
+      "Text": " So maybe if we open up Firefox, maybe we'll get another calc."
+    },
+    {
+      "Time_Start": 1457.7,
+      "Time_End": 1460.74,
+      "Text": " But we wanted something even more general than that."
+    },
+    {
+      "Time_Start": 1460.74,
+      "Time_End": 1467.06,
+      "Text": " So if we actually just copy the image link here and pop it into our shell and just W"
+    },
+    {
+      "Time_Start": 1467.06,
+      "Time_End": 1477.74,
+      "Text": " get it, another calc pops."
+    },
+    {
+      "Time_Start": 1477.74,
+      "Time_End": 1482.18,
+      "Text": " So apparently just getting this image pops a calc."
+    },
+    {
+      "Time_Start": 1482.18,
+      "Time_End": 1486.8200000000002,
+      "Text": " So how the hell does that even work?"
+    },
+    {
+      "Time_Start": 1486.8200000000002,
+      "Time_End": 1487.8200000000002,
+      "Text": " Okay."
+    },
+    {
+      "Time_Start": 1487.8200000000002,
+      "Time_End": 1488.8200000000002,
+      "Text": " Thanks."
+    },
+    {
+      "Time_Start": 1488.8200000000002,
+      "Time_End": 1489.8200000000002,
+      "Text": " Yeah."
+    },
+    {
+      "Time_Start": 1489.8200000000002,
+      "Time_End": 1497.6200000000001,
+      "Text": " So you're probably all wondering how this works."
+    },
+    {
+      "Time_Start": 1497.6200000000001,
+      "Time_End": 1501.8200000000002,
+      "Text": " So for this, when we were engineering this, we were thinking about, okay, what kind of"
+    },
+    {
+      "Time_Start": 1501.8200000000002,
+      "Time_End": 1504.74,
+      "Text": " instructions can we target?"
+    },
+    {
+      "Time_Start": 1504.74,
+      "Time_End": 1509.3400000000001,
+      "Text": " Where is the place that we should put this backdoor?"
+    },
+    {
+      "Time_Start": 1509.3400000000001,
+      "Time_End": 1511.66,
+      "Text": " So the RAM is very limited."
+    },
+    {
+      "Time_Start": 1511.66,
+      "Time_End": 1513.46,
+      "Text": " We have few spaces."
+    },
+    {
+      "Time_Start": 1513.46,
+      "Time_End": 1516.14,
+      "Text": " And we needed a good instruction."
+    },
+    {
+      "Time_Start": 1516.14,
+      "Time_End": 1517.66,
+      "Text": " What makes up a good instruction?"
+    },
+    {
+      "Time_Start": 1517.66,
+      "Time_End": 1520.5400000000002,
+      "Text": " Well, it needs to be run very frequently."
+    },
+    {
+      "Time_Start": 1520.5400000000002,
+      "Time_End": 1523.46,
+      "Text": " So every program should be using this instruction."
+    },
+    {
+      "Time_Start": 1523.46,
+      "Time_End": 1529.9,
+      "Text": " Furthermore, this instruction that we are hooking into needs to touch some kind of user"
+    },
+    {
+      "Time_Start": 1529.9,
+      "Time_End": 1531.42,
+      "Text": " controlled data."
+    },
+    {
+      "Time_Start": 1531.42,
+      "Time_End": 1538.02,
+      "Text": " Because like we can't store the entire backdoor inside of this tiny micro space."
+    },
+    {
+      "Time_Start": 1538.02,
+      "Time_End": 1542.54,
+      "Text": " So we need something that touches user, that has user input."
+    },
+    {
+      "Time_Start": 1542.54,
+      "Time_End": 1546.46,
+      "Text": " So our attention was drawn to the syscall instruction."
+    },
+    {
+      "Time_Start": 1546.46,
+      "Time_End": 1551.46,
+      "Text": " The syscall instruction is the one in charge of handling kernel requests."
+    },
+    {
+      "Time_Start": 1551.46,
+      "Time_End": 1559.82,
+      "Text": " So when you make a syscall, in the RAX register, you put a number specifying what you would"
+    },
+    {
+      "Time_Start": 1559.82,
+      "Time_End": 1562.7,
+      "Text": " like the kernel to do."
+    },
+    {
+      "Time_Start": 1562.7,
+      "Time_End": 1568.26,
+      "Text": " And in the RCX register, the CPU will put the return address."
+    },
+    {
+      "Time_Start": 1568.26,
+      "Time_End": 1573.64,
+      "Text": " So where should the kernel return to after the syscall has been handled?"
+    },
+    {
+      "Time_Start": 1573.64,
+      "Time_End": 1578.82,
+      "Text": " If it's successful, then we should send it back to user space at the address specified"
+    },
+    {
+      "Time_Start": 1578.82,
+      "Time_End": 1580.38,
+      "Text": " at RCX."
+    },
+    {
+      "Time_Start": 1580.38,
+      "Time_End": 1587.1000000000001,
+      "Text": " And also, a nice feature is that a lot of syscalls take like parameters."
+    },
+    {
+      "Time_Start": 1587.1000000000001,
+      "Time_End": 1591.9,
+      "Text": " And some of those can be that user data that we're looking for."
+    },
+    {
+      "Time_Start": 1591.9,
+      "Time_End": 1594.26,
+      "Text": " So let's jump into some solo code."
+    },
+    {
+      "Time_Start": 1594.26,
+      "Time_End": 1598.8600000000001,
+      "Text": " We can't show the entire microcode changes because it's very, very big."
+    },
+    {
+      "Time_Start": 1598.8600000000001,
+      "Time_End": 1605.98,
+      "Text": " So we'll do a solo C thing that will tell how this backdoor works."
+    },
+    {
+      "Time_Start": 1605.98,
+      "Time_End": 1612.3400000000001,
+      "Text": " So we hook the syscall instruction right in the beginning of the syscall instruction."
+    },
+    {
+      "Time_Start": 1612.3400000000001,
+      "Time_End": 1618.3400000000001,
+      "Text": " And then we first check, is this RAX syscall right?"
+    },
+    {
+      "Time_Start": 1618.3400000000001,
+      "Time_End": 1623.7,
+      "Text": " Because if it's a write instruction, then it either writes to like standard out or it's"
+    },
+    {
+      "Time_Start": 1623.7,
+      "Time_End": 1626.46,
+      "Text": " doing file manipulation or stuff like that."
+    },
+    {
+      "Time_Start": 1626.46,
+      "Time_End": 1633.0600000000002,
+      "Text": " So for example, if Chrome or Firefox is going to cache an image you need for later, then"
+    },
+    {
+      "Time_Start": 1633.0600000000002,
+      "Time_End": 1636.2600000000002,
+      "Text": " it will do a write to the file system."
+    },
+    {
+      "Time_Start": 1636.2600000000002,
+      "Time_End": 1637.7800000000002,
+      "Text": " So that's pretty neat."
+    },
+    {
+      "Time_Start": 1637.7800000000002,
+      "Time_End": 1642.2200000000003,
+      "Text": " Then the next check we make here is that we just check for a magic value."
+    },
+    {
+      "Time_Start": 1642.2200000000003,
+      "Time_End": 1646.94,
+      "Text": " We don't want to execute every image pulled from the internet."
+    },
+    {
+      "Time_Start": 1647.8200000000002,
+      "Time_End": 1652.6200000000001,
+      "Text": " And if one of these cases fail, go do the normal syscall."
+    },
+    {
+      "Time_Start": 1652.6200000000001,
+      "Time_End": 1658.18,
+      "Text": " But if we hit both of these conditions, the first thing we'll do is that we will save"
+    },
+    {
+      "Time_Start": 1658.18,
+      "Time_End": 1660.38,
+      "Text": " the current state of the CPU."
+    },
+    {
+      "Time_Start": 1660.38,
+      "Time_End": 1665.38,
+      "Text": " So we'll take all of the registers that we touched during our actual shellcode and we"
+    },
+    {
+      "Time_Start": 1665.38,
+      "Time_End": 1667.26,
+      "Text": " will store it into memory."
+    },
+    {
+      "Time_Start": 1667.26,
+      "Time_End": 1669.14,
+      "Text": " So that's just what we're doing here."
+    },
+    {
+      "Time_Start": 1669.14,
+      "Time_End": 1673.22,
+      "Text": " We'll save the state of the CPU so we can exit cleanly."
+    },
+    {
+      "Time_Start": 1673.22,
+      "Time_End": 1679.22,
+      "Text": " After that, we set RCX and we put it at RSI."
+    },
+    {
+      "Time_Start": 1679.22,
+      "Time_End": 1687.74,
+      "Text": " And the reason we take RSI is because the RSI register contains an address for the image"
+    },
+    {
+      "Time_Start": 1687.74,
+      "Time_End": 1688.74,
+      "Text": " data."
+    },
+    {
+      "Time_Start": 1688.74,
+      "Time_End": 1690.7,
+      "Text": " So that is the image data itself."
+    },
+    {
+      "Time_Start": 1690.7,
+      "Time_End": 1696.78,
+      "Text": " And then we add a small offset and then we will now say, okay kernel, when you're done"
+    },
+    {
+      "Time_Start": 1696.78,
+      "Time_End": 1703.1000000000001,
+      "Text": " doing your request, now this is a new address that you should return back to."
+    },
+    {
+      "Time_Start": 1703.1000000000001,
+      "Time_End": 1707.0600000000002,
+      "Text": " For handling whatever you're going to do."
+    },
+    {
+      "Time_Start": 1707.0600000000002,
+      "Time_End": 1711.38,
+      "Text": " So when you return to user space, execute actually our image data."
+    },
+    {
+      "Time_Start": 1711.38,
+      "Time_End": 1714.5800000000002,
+      "Text": " But now you may say, oh wait, hold on a minute."
+    },
+    {
+      "Time_Start": 1714.5800000000002,
+      "Time_End": 1719.7400000000002,
+      "Text": " CPUs nowadays has MMUs, memory management units."
+    },
+    {
+      "Time_Start": 1719.7400000000002,
+      "Time_End": 1725.3000000000002,
+      "Text": " So you can't just execute arbitrary data everywhere you like."
+    },
+    {
+      "Time_Start": 1725.3000000000002,
+      "Time_End": 1732.3400000000001,
+      "Text": " That is the neat trick about the syscall instruction because Linux has a syscall called mprotect."
+    },
+    {
+      "Time_Start": 1732.3400000000001,
+      "Time_End": 1741.0600000000002,
+      "Text": " So instead of saving the image and doing the write syscall, well, let's put the sysmprotect"
+    },
+    {
+      "Time_Start": 1741.0600000000002,
+      "Time_End": 1748.0200000000002,
+      "Text": " into Rx and change the request we make to the kernel and say to the kernel, hey, this"
+    },
+    {
+      "Time_Start": 1748.0200000000002,
+      "Time_End": 1754.7,
+      "Text": " address space in RSI, can you please go and make that read, write, and executable at the"
+    },
+    {
+      "Time_Start": 1754.7,
+      "Time_End": 1756.42,
+      "Text": " same time?"
+    },
+    {
+      "Time_Start": 1756.42,
+      "Time_End": 1763.5800000000002,
+      "Text": " And then when the kernel jumps out of the kernel space, it will jump happily into executable"
+    },
+    {
+      "Time_Start": 1763.5800000000002,
+      "Time_End": 1765.5,
+      "Text": " code that we control."
+    },
+    {
+      "Time_Start": 1765.5,
+      "Time_End": 1766.5,
+      "Text": " That is our image."
+    },
+    {
+      "Time_Start": 1766.5,
+      "Time_End": 1772.8200000000002,
+      "Text": " Oh, well, it's storing the metadata of the image, so you don't see anything on the image"
+    },
+    {
+      "Time_Start": 1772.8200000000002,
+      "Time_End": 1774.94,
+      "Text": " itself."
+    },
+    {
+      "Time_Start": 1774.94,
+      "Time_End": 1779.46,
+      "Text": " So let's briefly go over what shellcode we actually put in."
+    },
+    {
+      "Time_Start": 1779.46,
+      "Time_End": 1781.3400000000001,
+      "Text": " It's super simple."
+    },
+    {
+      "Time_Start": 1781.3400000000001,
+      "Time_End": 1787.3400000000001,
+      "Text": " The first thing we do is do a fork, and then we have two processes running parallel."
+    },
+    {
+      "Time_Start": 1787.3400000000001,
+      "Time_End": 1794.66,
+      "Text": " The parent process will now be the new main thread actually handling the browser like"
+    },
+    {
+      "Time_Start": 1794.66,
+      "Time_End": 1795.7800000000002,
+      "Text": " Chrome stuff."
+    },
+    {
+      "Time_Start": 1795.7800000000002,
+      "Time_End": 1803.5400000000002,
+      "Text": " So what we do is we restore the saved context from the ones we saved in memory, just, yeah,"
+    },
+    {
+      "Time_Start": 1803.5400000000002,
+      "Time_End": 1808.14,
+      "Text": " the step we did where we stored all the registers into the image data itself, we'll now pull"
+    },
+    {
+      "Time_Start": 1808.14,
+      "Time_End": 1812.6200000000001,
+      "Text": " that back out and put it back in place in the CPU in that thread."
+    },
+    {
+      "Time_Start": 1812.6200000000001,
+      "Time_End": 1818.7,
+      "Text": " Then Chrome can continue its execution, happy, and won't notice that we have spawned a child"
+    },
+    {
+      "Time_Start": 1818.7,
+      "Time_End": 1819.7,
+      "Text": " thread."
+    },
+    {
+      "Time_Start": 1819.7,
+      "Time_End": 1823.3400000000001,
+      "Text": " Now the child thread, that can just go do all the evil stuff it wants."
+    },
+    {
+      "Time_Start": 1823.3400000000001,
+      "Time_End": 1827.1000000000001,
+      "Text": " In this case, it's popping a calculator."
+    },
+    {
+      "Time_Start": 1827.1000000000001,
+      "Time_End": 1833.38,
+      "Text": " So before we finalize, let's look a bit at how did we do some of this reversion process."
+    },
+    {
+      "Time_Start": 1833.38,
+      "Time_End": 1839.18,
+      "Text": " Of course, there has been some pioneers in the field that started out this, POSIX technology,"
+    },
+    {
+      "Time_Start": 1839.18,
+      "Time_End": 1846.5,
+      "Text": " and custom processing unit, et cetera, but still a lot of unknown instructions is there."
+    },
+    {
+      "Time_Start": 1846.5,
+      "Time_End": 1856.22,
+      "Text": " So how do you reverse instructions in a new microcode assembly language where half of"
+    },
+    {
+      "Time_Start": 1856.22,
+      "Time_End": 1859.8600000000001,
+      "Text": " the opcodes is just doing unknown stuff?"
+    },
+    {
+      "Time_Start": 1859.98,
+      "Time_End": 1866.0200000000002,
+      "Text": " Well, one trick we did is that we used a lot of what we call side-by-side reversing."
+    },
+    {
+      "Time_Start": 1866.0200000000002,
+      "Time_End": 1871.42,
+      "Text": " So on one half of the screen, we take the SOTA code for this instruction, and on the"
+    },
+    {
+      "Time_Start": 1871.42,
+      "Time_End": 1876.5400000000002,
+      "Text": " other half, we will have the actual implementation, and then we can go back and forth and see,"
+    },
+    {
+      "Time_Start": 1876.5400000000002,
+      "Time_End": 1882.14,
+      "Text": " oh, on this side, we have three compares there, or like three writes, or like looking for"
+    },
+    {
+      "Time_Start": 1882.14,
+      "Time_End": 1886.8600000000001,
+      "Text": " bit patterns in the SOTA code, and seeing, oh, we have the same three writes over in"
+    },
+    {
+      "Time_Start": 1886.8600000000001,
+      "Time_End": 1888.7800000000002,
+      "Text": " the actual implementation."
+    },
+    {
+      "Time_Start": 1889.54,
+      "Time_End": 1895.1399999999999,
+      "Text": " And just after that, we have that unknown thing, the unknown opcode, but what is it"
+    },
+    {
+      "Time_Start": 1895.1399999999999,
+      "Time_End": 1898.98,
+      "Text": " in the SOTA code, and can we extract in from that?"
+    },
+    {
+      "Time_Start": 1898.98,
+      "Time_End": 1899.98,
+      "Text": " That is one thing."
+    },
+    {
+      "Time_Start": 1899.98,
+      "Time_End": 1906.26,
+      "Text": " Another is just like tracing, like the dynamic tracing we saw before, holding in the middle"
+    },
+    {
+      "Time_Start": 1906.26,
+      "Time_End": 1908.7,
+      "Text": " of instructions and pulling out the data."
+    },
+    {
+      "Time_Start": 1908.7,
+      "Time_End": 1911.8999999999999,
+      "Text": " That could be like from GDB that you saw before."
+    },
+    {
+      "Time_Start": 1911.8999999999999,
+      "Time_End": 1916.86,
+      "Text": " And also, yeah, just maybe copy-pasting stuff."
+    },
+    {
+      "Time_Start": 1916.98,
+      "Time_End": 1923.7400000000002,
+      "Text": " If we have a big instruction, then copy-paste the whole thing into the RAM address space"
+    },
+    {
+      "Time_Start": 1923.7400000000002,
+      "Time_End": 1925.7,
+      "Text": " and just redirect it."
+    },
+    {
+      "Time_Start": 1925.7,
+      "Time_End": 1930.14,
+      "Text": " Now you have a clone, and now we can start flipping one bit at a time and seeing what"
+    },
+    {
+      "Time_Start": 1930.14,
+      "Time_End": 1932.18,
+      "Text": " slight changes did that affect."
+    },
+    {
+      "Time_Start": 1932.18,
+      "Time_End": 1937.2600000000002,
+      "Text": " Most of the time, it's a CPU crash bit, but some of the times, we do cataloging, and we"
+    },
+    {
+      "Time_Start": 1937.2600000000002,
+      "Time_End": 1943.22,
+      "Text": " see different values in our register after that instruction."
+    },
+    {
+      "Time_Start": 1943.22,
+      "Time_End": 1948.18,
+      "Text": " We talked a bit about playground instructions, like sysexit, because it's never used."
+    },
+    {
+      "Time_Start": 1948.18,
+      "Time_End": 1950.22,
+      "Text": " But there's actually more of these."
+    },
+    {
+      "Time_Start": 1950.22,
+      "Time_End": 1955.42,
+      "Text": " So some of the virtualization instructions for virtual machines, hybridization and stuff"
+    },
+    {
+      "Time_Start": 1955.42,
+      "Time_End": 1964.14,
+      "Text": " like that, that could be VMWrite, VMEnter, and some of the hybridization."
+    },
+    {
+      "Time_Start": 1964.14,
+      "Time_End": 1969.5,
+      "Text": " Those are instructions that is also never used unless you are doing virtual machines."
+    },
+    {
+      "Time_Start": 1969.5,
+      "Time_End": 1972.78,
+      "Text": " But if you don't do that, these instructions will never be used."
+    },
+    {
+      "Time_Start": 1972.78,
+      "Time_End": 1976.34,
+      "Text": " And some of those take arguments in form of registers."
+    },
+    {
+      "Time_Start": 1976.34,
+      "Time_End": 1986.1,
+      "Text": " So there you get playground instructions, which also happens to decode registers."
+    },
+    {
+      "Time_Start": 1986.1,
+      "Time_End": 1990.1,
+      "Text": " And finally, before heading off, we want to talk about future work that we or even you"
+    },
+    {
+      "Time_Start": 1990.1,
+      "Time_End": 1995.62,
+      "Text": " might do, because we are uploading everything right after this and making everything public."
+    },
+    {
+      "Time_Start": 1995.62,
+      "Time_End": 2002.02,
+      "Text": " So we really wanted to find CPU bugs, or should we say exploit CPU bugs, because we actually"
+    },
+    {
+      "Time_Start": 2002.02,
+      "Time_End": 2004.46,
+      "Text": " get a little bit of help from Intel here."
+    },
+    {
+      "Time_Start": 2004.46,
+      "Time_End": 2010.1399999999999,
+      "Text": " If we do apply our microcode patches, the official ones from Intel, then we can also"
+    },
+    {
+      "Time_Start": 2010.1399999999999,
+      "Time_End": 2014.98,
+      "Text": " look inside the imagined patch registers that we saw before."
+    },
+    {
+      "Time_Start": 2014.98,
+      "Time_End": 2023.12,
+      "Text": " Now we know where do Intel like hook from and to in the ROM and RAM address space."
+    },
+    {
+      "Time_Start": 2023.12,
+      "Time_End": 2028.3799999999999,
+      "Text": " So now we can have a look inside what bugs have they already discovered and patched that"
+    },
+    {
+      "Time_Start": 2028.3799999999999,
+      "Time_End": 2031.3,
+      "Text": " we have never seen."
+    },
+    {
+      "Time_Start": 2031.3,
+      "Time_End": 2038.34,
+      "Text": " And our goal or hope is that we could red unlock the CPU, so put it into this Intel"
+    },
+    {
+      "Time_Start": 2038.34,
+      "Time_End": 2042.74,
+      "Text": " debug mode without having the physical access beforehand."
+    },
+    {
+      "Time_Start": 2042.74,
+      "Time_End": 2047.46,
+      "Text": " If we can abuse some of these bugs, we think that it could be possible that one could take"
+    },
+    {
+      "Time_Start": 2047.46,
+      "Time_End": 2054.7,
+      "Text": " control of the micro instruction pointer and point it to some of these debug instructions."
+    },
+    {
+      "Time_Start": 2054.7,
+      "Time_End": 2060.74,
+      "Text": " That would be a very cool thing to do, and hopefully we get the time to do it."
+    },
+    {
+      "Time_Start": 2060.7400000000002,
+      "Time_End": 2065.1000000000004,
+      "Text": " Now last, I want to say thank you to, especially to Kalman Union."
+    },
+    {
+      "Time_Start": 2065.1000000000004,
+      "Time_End": 2069.6400000000003,
+      "Text": " They have been, that's our CTF team, they have been a great help, both sponsoring but"
+    },
+    {
+      "Time_Start": 2069.6400000000003,
+      "Time_End": 2075.7400000000002,
+      "Text": " also having 100 plus hackers around, always available to answer any stupid questions you"
+    },
+    {
+      "Time_Start": 2075.7400000000002,
+      "Time_End": 2079.82,
+      "Text": " might have about a CPU, like, well, thank you guys."
+    },
+    {
+      "Time_Start": 2079.82,
+      "Time_End": 2085.2200000000003,
+      "Text": " And also, really, we acknowledge the work that Mark Elno, Positive Technology and Trust"
+    },
+    {
+      "Time_Start": 2085.2200000000003,
+      "Time_End": 2089.42,
+      "Text": " and Processing Unit has done to lay the ground for this talk."
+    },
+    {
+      "Time_Start": 2089.42,
+      "Time_End": 2093.42,
+      "Text": " Thank you for listening in, and do you all have some questions?"
+    },
+    {
+      "Time_Start": 2094.42,
+      "Time_End": 2109.42,
+      "Text": " Applause."
+    },
+    {
+      "Time_Start": 2109.42,
+      "Time_End": 2111.42,
+      "Text": " Yeah, that's one."
+    },
+    {
+      "Time_Start": 2112.42,
+      "Time_End": 2113.42,
+      "Text": " I can."
+    },
+    {
+      "Time_Start": 2126.42,
+      "Time_End": 2131.42,
+      "Text": " So the question is, what are the primitives could you imagine building from this?"
+    },
+    {
+      "Time_Start": 2131.42,
+      "Time_End": 2135.42,
+      "Text": " So in general, I think this is a very strong primitive, like putting a backdoor so hidden"
+    },
+    {
+      "Time_Start": 2135.42,
+      "Time_End": 2140.42,
+      "Text": " away, it's basically completely undetectable because the OS can't see it."
+    },
+    {
+      "Time_Start": 2141.42,
+      "Time_End": 2146.42,
+      "Text": " But I could imagine, like, for example, game hacking and stuff like that."
+    },
+    {
+      "Time_Start": 2146.42,
+      "Time_End": 2152.42,
+      "Text": " Like, you can hide it away from any, like, a cheat engine check or stuff like that."
+    },
+    {
+      "Time_Start": 2152.42,
+      "Time_End": 2154.42,
+      "Text": " I could imagine that could be useful there."
+    },
+    {
+      "Time_Start": 2154.42,
+      "Time_End": 2156.42,
+      "Text": " Other than that, I don't know."
+    },
+    {
+      "Time_Start": 2156.42,
+      "Time_End": 2157.42,
+      "Text": " I don't know."
+    },
+    {
+      "Time_Start": 2163.42,
+      "Time_End": 2164.42,
+      "Text": " Okay."
+    },
+    {
+      "Time_Start": 2164.42,
+      "Time_End": 2165.42,
+      "Text": " Yeah, that's one."
+    },
+    {
+      "Time_Start": 2166.42,
+      "Time_End": 2168.42,
+      "Text": " Where can you buy the dev boards?"
+    },
+    {
+      "Time_Start": 2168.42,
+      "Time_End": 2170.42,
+      "Text": " Where can you buy the dev boards?"
+    },
+    {
+      "Time_Start": 2170.42,
+      "Time_End": 2176.42,
+      "Text": " Okay, the dev board is a Opsquared, and we, on the slide, you will find a link to our"
+    },
+    {
+      "Time_Start": 2176.42,
+      "Time_End": 2182.42,
+      "Text": " documentation, and on there, it will have the exact dev board that we use."
+    },
+    {
+      "Time_Start": 2182.42,
+      "Time_End": 2189.42,
+      "Text": " You can order it online, and we have a flash image that you can just flash on it, and then"
+    },
+    {
+      "Time_Start": 2189.42,
+      "Time_End": 2191.42,
+      "Text": " you're ready to go to play with this."
+    },
+    {
+      "Time_Start": 2191.42,
+      "Time_End": 2194.42,
+      "Text": " Okay."
+    },
+    {
+      "Time_Start": 2194.42,
+      "Time_End": 2195.42,
+      "Text": " I think there's no more."
+    },
+    {
+      "Time_Start": 2195.42,
+      "Time_End": 2196.42,
+      "Text": " Thank you for listening."
+    },
+    {
+      "Time_Start": 2196.42,
+      "Time_End": 2197.42,
+      "Text": " ."
+    },
+    {
+      "Time_Start": 2197.42,
+      "Time_End": 2198.42,
+      "Text": " ."
+    },
+    {
+      "Time_Start": 2198.42,
+      "Time_End": 2199.42,
+      "Text": " ."
+    },
+    {
+      "Time_Start": 2199.42,
+      "Time_End": 2200.42,
+      "Text": " ."
+    },
+    {
+      "Time_Start": 2200.42,
+      "Time_End": 2201.42,
+      "Text": " ."
+    },
+    {
+      "Time_Start": 2201.42,
+      "Time_End": 2202.42,
+      "Text": " ."
+    },
+    {
+      "Time_Start": 2202.42,
+      "Time_End": 2203.42,
+      "Text": " ."
+    }
+  ]
+}

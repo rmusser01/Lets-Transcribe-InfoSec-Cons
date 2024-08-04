@@ -1,0 +1,1889 @@
+{
+  "segments": [
+    {
+      "Time_Start": 0.0,
+      "Time_End": 7.0,
+      "Text": "This text was transcribed using whisper model: large-v2\n\n Thank you, everybody, for coming to game changing advances in Windows shellcode analysis. So"
+    },
+    {
+      "Time_Start": 13.32,
+      "Time_End": 20.32,
+      "Text": " shellcode, it's always out there lurking somewhere, causing problems. And a problem until very,"
+    },
+    {
+      "Time_Start": 22.12,
+      "Time_End": 29.2,
+      "Text": " very recently is there just has not been adequate tooling to address shellcode. Well, we have"
+    },
+    {
+      "Time_Start": 29.279999999999998,
+      "Time_End": 36.28,
+      "Text": " aimed and succeeded in changing that. And we're thrilled to show you how. So a little bit"
+    },
+    {
+      "Time_Start": 36.519999999999996,
+      "Time_End": 41.519999999999996,
+      "Text": " about ourselves. My name is Dr. Bramwell Brisendine. I am a professor, former director of the"
+    },
+    {
+      "Time_Start": 41.519999999999996,
+      "Time_End": 47.0,
+      "Text": " Verona lab. And I've created quite a number of different tools, the job rocket, shell"
+    },
+    {
+      "Time_Start": 47.0,
+      "Time_End": 54.0,
+      "Text": " wasp, co\u2011creator of Sherem, and also ROP rocket, which we'll be presenting on Sunday."
+    },
+    {
+      "Time_Start": 54.44,
+      "Time_End": 60.24,
+      "Text": " I do have a Ph.D. in cyber operations from Dakota State, which is a highly technical"
+    },
+    {
+      "Time_Start": 60.24,
+      "Time_End": 67.24,
+      "Text": " degree. And now we will let one of my former students, Jake, introduce himself."
+    },
+    {
+      "Time_Start": 67.24,
+      "Time_End": 72.64,
+      "Text": " Hey, everyone. I'm Jake. I'm a recent college grad, now working as a reverse engineer at"
+    },
+    {
+      "Time_Start": 72.64,
+      "Time_End": 76.96000000000001,
+      "Text": " the Johns Hopkins University Applied Physics Laboratory. I worked on the Sherem project"
+    },
+    {
+      "Time_Start": 76.96000000000001,
+      "Time_End": 81.4,
+      "Text": " as a graduate researcher in Dr. Brisendine's Verona lab. And I'm still an active contributor"
+    },
+    {
+      "Time_Start": 81.4,
+      "Time_End": 88.4,
+      "Text": " to the project now. Here's Max. Hello, everybody. My name is Max Gerson."
+    },
+    {
+      "Time_Start": 89.64,
+      "Time_End": 94.16000000000001,
+      "Text": " I go by the nickname of Libra. I work for Trellix in the Advanced Research Center. And"
+    },
+    {
+      "Time_Start": 94.16000000000001,
+      "Time_End": 98.34,
+      "Text": " I like to write blogs about the research I do. I'm a malware analyst and reverse engineer"
+    },
+    {
+      "Time_Start": 98.34,
+      "Time_End": 104.4,
+      "Text": " by trade. I do that both as a personal hobby and for work. And in here, I'm representing"
+    },
+    {
+      "Time_Start": 104.4,
+      "Time_End": 111.4,
+      "Text": " Trellix and presenting the Jitter script that relates to this."
+    },
+    {
+      "Time_Start": 116.24000000000001,
+      "Time_End": 120.12,
+      "Text": " So first, let's talk about why shellcode is a topic of interest to us and why we decided"
+    },
+    {
+      "Time_Start": 120.12,
+      "Time_End": 124.28,
+      "Text": " to develop the Sherem project in the first place. So we see shellcode quite frequently"
+    },
+    {
+      "Time_Start": 124.28,
+      "Time_End": 128.52,
+      "Text": " in the world of malware and exploitation. The common objective of malware is to remain"
+    },
+    {
+      "Time_Start": 128.52,
+      "Time_End": 133.32,
+      "Text": " hidden and obfuscated. So shellcode makes a great tool for these objectives. Its obscure"
+    },
+    {
+      "Time_Start": 133.32,
+      "Time_End": 138.16,
+      "Text": " nature makes it difficult to statically analyze. An example of such a challenge is Windows"
+    },
+    {
+      "Time_Start": 138.16,
+      "Time_End": 143.95999999999998,
+      "Text": " API identification in shellcode. When examining a normal piece of malware like a PE file executable,"
+    },
+    {
+      "Time_Start": 143.95999999999998,
+      "Time_End": 148.88,
+      "Text": " you'd expect to see labeled Windows API calls. But this isn't a luxury we have when we're"
+    },
+    {
+      "Time_Start": 148.88,
+      "Time_End": 154.04,
+      "Text": " dealing with shellcode. Shellcode has to manually go in and resolve API addresses manually."
+    },
+    {
+      "Time_Start": 154.04,
+      "Time_End": 159.56,
+      "Text": " So what you'll wind up with is something like a call EDI instead of a nice, clean call."
+    },
+    {
+      "Time_Start": 159.56,
+      "Time_End": 163.36,
+      "Text": " This call EDI isn't much for us to go off of. So we have to go in and perform a bunch"
+    },
+    {
+      "Time_Start": 163.36,
+      "Time_End": 168.56,
+      "Text": " of static or dynamic analysis and this challenge doesn't scale well either. If there's many"
+    },
+    {
+      "Time_Start": 168.56,
+      "Time_End": 174.04,
+      "Text": " shellcode APIs called, then this is going to take a ton of time for us to go in and"
+    },
+    {
+      "Time_Start": 174.04,
+      "Time_End": 179.16,
+      "Text": " find out. So issues like this and some of the other headaches when dealing with shellcode"
+    },
+    {
+      "Time_Start": 179.16,
+      "Time_End": 183.24,
+      "Text": " are why we decided there's a need for more tooling to solve these challenges. Which is"
+    },
+    {
+      "Time_Start": 183.24,
+      "Time_End": 188.64000000000001,
+      "Text": " where Sherem comes in. Our game changing solution to shellcode analysis."
+    },
+    {
+      "Time_Start": 188.64000000000001,
+      "Time_End": 197.60000000000002,
+      "Text": " So what is Sherem? It's loaded with a bunch of features that we'll cover in this talk."
+    },
+    {
+      "Time_Start": 197.60000000000002,
+      "Time_End": 201.16000000000003,
+      "Text": " We have a shellcode emulator that's built on Unicorn. This helps us deal with some of"
+    },
+    {
+      "Time_Start": 201.16000000000003,
+      "Time_End": 206.20000000000002,
+      "Text": " those Windows API identification problems I was mentioning earlier. And we have a few"
+    },
+    {
+      "Time_Start": 206.20000000000002,
+      "Time_End": 210.68,
+      "Text": " other unique features such as complete code coverage that helps us unravel unexplored"
+    },
+    {
+      "Time_Start": 210.68,
+      "Time_End": 216.16000000000003,
+      "Text": " paths of shellcode. We also include a fully accurate disassembler that's labeled and enhanced"
+    },
+    {
+      "Time_Start": 216.16,
+      "Time_End": 221.48,
+      "Text": " by our emulation results. Then we have a few other features that are helpful for us"
+    },
+    {
+      "Time_Start": 221.48,
+      "Time_End": 227.64,
+      "Text": " unraveling deceptive shellcode encoding and obfuscation. This tool is for Windows shellcode"
+    },
+    {
+      "Time_Start": 227.64,
+      "Time_End": 232.4,
+      "Text": " only but we include support for both 64-bit and 32-bit shellcodes. And now we're revealing"
+    },
+    {
+      "Time_Start": 232.4,
+      "Time_End": 236.24,
+      "Text": " for the first time at this presentation, a brand new GEDRA plug-in that was developed by Max"
+    },
+    {
+      "Time_Start": 236.24,
+      "Time_End": 243.44,
+      "Text": " at Trellix. All right. So let's talk about Sherem's emulator. Sherem's emulator is built"
+    },
+    {
+      "Time_Start": 243.48,
+      "Time_End": 248.4,
+      "Text": " with Unicorn CPU emulation framework. It's able to hook and log over 20,000 Windows APIs"
+    },
+    {
+      "Time_Start": 248.4,
+      "Time_End": 252.8,
+      "Text": " across over 60 DLLs. And it wouldn't be a shellcode emulator unless we also supported"
+    },
+    {
+      "Time_Start": 252.8,
+      "Time_End": 259.0,
+      "Text": " syscalls as well. We've baked in a support for about 99% of those. Sherem does analysis on"
+    },
+    {
+      "Time_Start": 259.0,
+      "Time_End": 263.88,
+      "Text": " raw.bin files as well as the hex byte representation of shellcode. One of the highlights of"
+    },
+    {
+      "Time_Start": 263.88,
+      "Time_End": 269.6,
+      "Text": " this tool is its use for high-level indicator of compromise analysis. Running a shellcode in"
+    },
+    {
+      "Time_Start": 269.6,
+      "Time_End": 274.24,
+      "Text": " emulation provides a detailed summary of what the shellcode is doing. You'll be able to see"
+    },
+    {
+      "Time_Start": 274.24,
+      "Time_End": 279.12,
+      "Text": " things like what Windows APIs were used, what file paths were accessed, or what URLs were"
+    },
+    {
+      "Time_Start": 279.12,
+      "Time_End": 284.6,
+      "Text": " reached out to. Also great is that all of the knowledge we gather from emulation is leveraged"
+    },
+    {
+      "Time_Start": 284.6,
+      "Time_End": 290.12,
+      "Text": " elsewhere in the Sherem tool. So with the high-level details out of the way, I want to dig a"
+    },
+    {
+      "Time_Start": 290.12,
+      "Time_End": 294.16,
+      "Text": " step deeper and talk about some of the implementation details of our emulator. So"
+    },
+    {
+      "Time_Start": 294.16,
+      "Time_End": 297.96000000000004,
+      "Text": " Unicorn's bare bones framework that kind of just gives us the essentials needed to emulate"
+    },
+    {
+      "Time_Start": 297.96,
+      "Time_End": 302.15999999999997,
+      "Text": " code. The shellcode wouldn't get very far into emulation if you just tried to run with"
+    },
+    {
+      "Time_Start": 302.15999999999997,
+      "Time_End": 307.4,
+      "Text": " vanilla Unicorn. There's a bunch of stuff we had to do to set up, to make sure our emulation"
+    },
+    {
+      "Time_Start": 307.4,
+      "Time_End": 314.96,
+      "Text": " looked and behaved like an actual Windows process. So an example of this is PEB walking. The"
+    },
+    {
+      "Time_Start": 314.96,
+      "Time_End": 320.64,
+      "Text": " PEB is an internal Windows structure that is used to resolve DLL address, base addresses. But"
+    },
+    {
+      "Time_Start": 320.64,
+      "Time_End": 326.32,
+      "Text": " as the name implies, this technique is heavily reliant on the PEB structure. So structures"
+    },
+    {
+      "Time_Start": 326.32,
+      "Time_End": 332.59999999999997,
+      "Text": " like the PEB had to be implemented in high fidelity for our code to get anywhere. So now"
+    },
+    {
+      "Time_Start": 332.59999999999997,
+      "Time_End": 336.64,
+      "Text": " the shellcode is able to walk the PEB and find a DLL address. The next step is to parse the"
+    },
+    {
+      "Time_Start": 336.64,
+      "Time_End": 343.28,
+      "Text": " DLL and loop through the tables until we find the DLL API we're looking for. So in our"
+    },
+    {
+      "Time_Start": 343.28,
+      "Time_End": 348.68,
+      "Text": " emulation, what's the shellcode actually parsing as a DLL? The answer is actual DLLs. We"
+    },
+    {
+      "Time_Start": 348.68,
+      "Time_End": 354.96,
+      "Text": " load the DLL straight into memory from disk and apply a special formula to get them to"
+    },
+    {
+      "Time_Start": 354.96,
+      "Time_End": 359.52,
+      "Text": " execution size. As we're loading them into disk, we create references to them in a"
+    },
+    {
+      "Time_Start": 359.52,
+      "Time_End": 365.59999999999997,
+      "Text": " dictionary so we'll be able to look them up at run time once an API is called. Which gets us"
+    },
+    {
+      "Time_Start": 365.59999999999997,
+      "Time_End": 370.91999999999996,
+      "Text": " into API emulation. So now our emulation is able to locate a Windows API, what happens once"
+    },
+    {
+      "Time_Start": 370.91999999999996,
+      "Time_End": 375.4,
+      "Text": " the API is actually called? Our emulator will log the invoked API along with all the"
+    },
+    {
+      "Time_Start": 375.4,
+      "Time_End": 379.96,
+      "Text": " parameters that were passed into it. Once emulation finishes, this information is printed"
+    },
+    {
+      "Time_Start": 379.96,
+      "Time_End": 384.71999999999997,
+      "Text": " out to the screen for the user to see. This information is very useful as it can give you a"
+    },
+    {
+      "Time_Start": 384.72,
+      "Time_End": 389.48,
+      "Text": " really good idea of what the shellcode is doing. In the example on the right here, we have a"
+    },
+    {
+      "Time_Start": 389.48,
+      "Time_End": 394.44000000000005,
+      "Text": " metasploit shellcode and it's really obvious to see here that this is a bind shellcode"
+    },
+    {
+      "Time_Start": 394.44000000000005,
+      "Time_End": 401.84000000000003,
+      "Text": " that's opening a bind interface over port 8721. So now what goes on underneath the hood"
+    },
+    {
+      "Time_Start": 401.84000000000003,
+      "Time_End": 406.88000000000005,
+      "Text": " during an emulated API call? For some APIs, it's not enough to just simply log the call"
+    },
+    {
+      "Time_Start": 406.88000000000005,
+      "Time_End": 412.08000000000004,
+      "Text": " then return an arbitrary value. Take virtual alloc for example. The virtual alloc API goes"
+    },
+    {
+      "Time_Start": 412.08,
+      "Time_End": 416.64,
+      "Text": " and creates a usable region of memory. But the shellcode is probably expecting to actually do"
+    },
+    {
+      "Time_Start": 416.64,
+      "Time_End": 421.4,
+      "Text": " something with that memory. Probably read, write and or execute. If the emulation doesn't"
+    },
+    {
+      "Time_Start": 421.4,
+      "Time_End": 425.32,
+      "Text": " actually go out and create that usable region of memory, the shellcode will probably fail to"
+    },
+    {
+      "Time_Start": 425.32,
+      "Time_End": 430.68,
+      "Text": " emulate properly. So for essential functions like this, we wrote out handwritten hooks that"
+    },
+    {
+      "Time_Start": 430.68,
+      "Time_End": 434.47999999999996,
+      "Text": " will go out and perform whatever steps necessary to keep the high fidelity representation of"
+    },
+    {
+      "Time_Start": 434.47999999999996,
+      "Time_End": 439.71999999999997,
+      "Text": " shellcode emulation alive. So for our virtual alloc example here, our API hook will use"
+    },
+    {
+      "Time_Start": 439.72,
+      "Time_End": 444.40000000000003,
+      "Text": " unicorn's mem map to actually go out and create more memory space for us. Currently we have"
+    },
+    {
+      "Time_Start": 444.40000000000003,
+      "Time_End": 451.88000000000005,
+      "Text": " support for over 600 of these API hooks. Now doing manual written hooks for this for over"
+    },
+    {
+      "Time_Start": 451.88000000000005,
+      "Time_End": 456.28000000000003,
+      "Text": " 20,000 APIs is a big undertaking. So we've implemented as many as we could for all the"
+    },
+    {
+      "Time_Start": 456.28000000000003,
+      "Time_End": 461.04,
+      "Text": " security relevant APIs that shellcode would likely want to play with. We built dictionaries"
+    },
+    {
+      "Time_Start": 461.04,
+      "Time_End": 464.84000000000003,
+      "Text": " that will look up the required parameters for each API as well as their types. Also"
+    },
+    {
+      "Time_Start": 464.84000000000003,
+      "Time_End": 468.24,
+      "Text": " determined through this dictionary is an appropriate default return value based on the"
+    },
+    {
+      "Time_Start": 468.24,
+      "Time_End": 473.44,
+      "Text": " return type for the API. Default return values can also be specified through config options."
+    },
+    {
+      "Time_Start": 473.44,
+      "Time_End": 477.44,
+      "Text": " So now turning over to Dr. Brizendine for some more information on how we emulate syscalls."
+    },
+    {
+      "Time_Start": 486.32,
+      "Time_End": 492.96000000000004,
+      "Text": " All right. Thank you very much, Jake. So Windows syscalls are something that until very"
+    },
+    {
+      "Time_Start": 492.96000000000004,
+      "Time_End": 498.96000000000004,
+      "Text": " recently had not been supported whatsoever in terms of these types of what we're doing. So"
+    },
+    {
+      "Time_Start": 505.16,
+      "Time_End": 511.16,
+      "Text": " Windows syscalls have become very popular, very trendy in the last few years. But up until"
+    },
+    {
+      "Time_Start": 512.1600000000001,
+      "Time_End": 518.1600000000001,
+      "Text": " about 2018 that had not been the case. Previously virtually the only Windows syscall had in"
+    },
+    {
+      "Time_Start": 529.2,
+      "Time_End": 534.4,
+      "Text": " terms of shellcode had been A-counters. A-counters where you can go and search through"
+    },
+    {
+      "Time_Start": 534.4,
+      "Time_End": 540.1600000000001,
+      "Text": " process memory for something like a tag such as woot woot. Once you find that tag then you"
+    },
+    {
+      "Time_Start": 540.16,
+      "Time_End": 546.88,
+      "Text": " can redirect control to that particular location. So we had assumed that naturally that"
+    },
+    {
+      "Time_Start": 546.88,
+      "Time_End": 553.1999999999999,
+      "Text": " there would be many other Windows syscalls out there being used in shellcode. But the"
+    },
+    {
+      "Time_Start": 553.1999999999999,
+      "Time_End": 560.3199999999999,
+      "Text": " reality was that was simply not the case. Instead it was just simply A-counters. Now as part"
+    },
+    {
+      "Time_Start": 560.3199999999999,
+      "Time_End": 566.3199999999999,
+      "Text": " of this research we actually received a $300,000 NSA research grant to develop this. And so"
+    },
+    {
+      "Time_Start": 567.32,
+      "Time_End": 573.32,
+      "Text": " we wanted to make sure that we were able to successfully emulate Windows syscalls. So since"
+    },
+    {
+      "Time_Start": 576.5200000000001,
+      "Time_End": 583.0200000000001,
+      "Text": " that really hadn't been done, we went and developed our own techniques and tooling to help"
+    },
+    {
+      "Time_Start": 583.0200000000001,
+      "Time_End": 590.5200000000001,
+      "Text": " facilitate that. That was a previous DEF CON talk which we also expanded very much so at"
+    },
+    {
+      "Time_Start": 590.52,
+      "Time_End": 596.52,
+      "Text": " Hack in the Box 2023. So how exactly do we emulate these Windows syscalls? Now in terms of"
+    },
+    {
+      "Time_Start": 605.76,
+      "Time_End": 612.34,
+      "Text": " something like stack cleanup, when we have Windows APIs it is necessary to internally do the"
+    },
+    {
+      "Time_Start": 612.34,
+      "Time_End": 618.56,
+      "Text": " stack cleanup. But Windows syscalls, the opposite is true. So the shellcode author is"
+    },
+    {
+      "Time_Start": 618.5600000000001,
+      "Time_End": 624.84,
+      "Text": " responsible for that cleanup. So we do not do that ourselves. And for those of you who are"
+    },
+    {
+      "Time_Start": 624.84,
+      "Time_End": 630.84,
+      "Text": " familiar with Windows syscalls, the way in which we invoke them is we will provide a particular"
+    },
+    {
+      "Time_Start": 630.84,
+      "Time_End": 636.84,
+      "Text": " value in the EAX register such as hex 18 for NT allocated virtual memory. And for every"
+    },
+    {
+      "Time_Start": 638.8000000000001,
+      "Time_End": 644.8000000000001,
+      "Text": " different OS build of Windows, these SSNs will change. And so in order to emulate them, we"
+    },
+    {
+      "Time_Start": 645.58,
+      "Time_End": 651.58,
+      "Text": " need to specify the particular Windows OS that we are wanting to do to make sure we get"
+    },
+    {
+      "Time_Start": 653.7400000000001,
+      "Time_End": 659.7400000000001,
+      "Text": " accurate results. In this example here, we see that we have NT allocate virtual memory. And the"
+    },
+    {
+      "Time_Start": 665.8800000000001,
+      "Time_End": 671.8800000000001,
+      "Text": " particular OS build is identified. With that, we will turn it over to Jake."
+    },
+    {
+      "Time_Start": 675.58,
+      "Time_End": 681.4200000000001,
+      "Text": " So in analyzing SHRM's output, we try to make things as easy on the user as possible to"
+    },
+    {
+      "Time_Start": 681.4200000000001,
+      "Time_End": 685.6200000000001,
+      "Text": " understand the various parameters and values. So for example, it may not be immediately"
+    },
+    {
+      "Time_Start": 685.6200000000001,
+      "Time_End": 691.8000000000001,
+      "Text": " obvious what a value of 0x40 means for an FL protect parameter. But page execute read write is"
+    },
+    {
+      "Time_Start": 691.8000000000001,
+      "Time_End": 697.08,
+      "Text": " a lot more useful. SHRM will also try to parse structures and strings whenever necessary. So"
+    },
+    {
+      "Time_Start": 697.08,
+      "Time_End": 702.5000000000001,
+      "Text": " here in the bottom screen shot we have a call to win exec with calc.exe. You will see that"
+    },
+    {
+      "Time_Start": 702.5,
+      "Time_End": 709.2,
+      "Text": " calc.exe is printed instead of the address that points to it. Another thing we do to make"
+    },
+    {
+      "Time_Start": 709.2,
+      "Time_End": 714.32,
+      "Text": " parsing output easier is include some artifacts that are extracted from regular expressions."
+    },
+    {
+      "Time_Start": 714.32,
+      "Time_End": 719.08,
+      "Text": " Under the artifact section of output, you can find IOC information such as commands run, files"
+    },
+    {
+      "Time_Start": 719.08,
+      "Time_End": 724.28,
+      "Text": " and paths references and URL addresses. Here we have another shell code example. In this one"
+    },
+    {
+      "Time_Start": 724.28,
+      "Time_End": 728.82,
+      "Text": " you can see that a bunch of commands were run, one to stop Windows defender, a couple other"
+    },
+    {
+      "Time_Start": 728.82,
+      "Time_End": 736.9000000000001,
+      "Text": " malicious actions, and we can see a chrome updates artifacts interacted with as well. So one"
+    },
+    {
+      "Time_Start": 736.9000000000001,
+      "Time_End": 740.98,
+      "Text": " optional feature we also include is the ability to pull live artifacts from over the web."
+    },
+    {
+      "Time_Start": 740.98,
+      "Time_End": 745.44,
+      "Text": " Suppose the malicious shell codes reaches out over HTTP to grab some sort of second stage or"
+    },
+    {
+      "Time_Start": 745.44,
+      "Time_End": 750.98,
+      "Text": " other external dependency, you may want to actually go and grab this file as well. This option"
+    },
+    {
+      "Time_Start": 750.98,
+      "Time_End": 755.98,
+      "Text": " is there to support that. If successful, an MD5 hash will automatically be performed on"
+    },
+    {
+      "Time_Start": 755.98,
+      "Time_End": 762.26,
+      "Text": " this download as well. Here's an example of that in action. Here we have a shell code that"
+    },
+    {
+      "Time_Start": 762.26,
+      "Time_End": 769.0600000000001,
+      "Text": " pulls down an executable file called payload.exe. It will pull down that file and load it into"
+    },
+    {
+      "Time_Start": 769.0600000000001,
+      "Time_End": 774.98,
+      "Text": " memory if necessary. You can also see that an MD5 hash of the file is included as part of the"
+    },
+    {
+      "Time_Start": 774.98,
+      "Time_End": 782.4,
+      "Text": " output. Another nice part about emulation output is its ability to apply structure to parameters"
+    },
+    {
+      "Time_Start": 782.4,
+      "Time_End": 788.18,
+      "Text": " and APIs. For parameters that pass entire structures instead of just stand alone values,"
+    },
+    {
+      "Time_Start": 788.18,
+      "Time_End": 794.36,
+      "Text": " Chrome will enumerate through and label all members of the structure. Here's an example of"
+    },
+    {
+      "Time_Start": 794.36,
+      "Time_End": 800.8199999999999,
+      "Text": " that. Instead of just a pointer value for these two structures, you'll see an expanded list of"
+    },
+    {
+      "Time_Start": 800.8199999999999,
+      "Time_End": 808.4,
+      "Text": " all the members of the structure included. Not only does it enumerate and label structures,"
+    },
+    {
+      "Time_Start": 808.4399999999999,
+      "Time_End": 813.8199999999999,
+      "Text": " but it also labels nested structures while it's recursive. For this LP time zone information"
+    },
+    {
+      "Time_Start": 813.8199999999999,
+      "Time_End": 822.1999999999999,
+      "Text": " structure, you'll see the standard date and daylight date nested structures as well. There's"
+    },
+    {
+      "Time_Start": 822.1999999999999,
+      "Time_End": 827.1,
+      "Text": " also instances where APIs will use unions, which is essentially a parameter that shares the"
+    },
+    {
+      "Time_Start": 827.1,
+      "Time_End": 831.74,
+      "Text": " same memory space. Chrome is verbose enough to delineate this level of information in its"
+    },
+    {
+      "Time_Start": 831.74,
+      "Time_End": 839.04,
+      "Text": " output. So the Windows registry is another area of interest for shellcode, which is why we"
+    },
+    {
+      "Time_Start": 839.04,
+      "Time_End": 843.7,
+      "Text": " also developed a registry manager for our emulation. The Chrome registry manager helps us"
+    },
+    {
+      "Time_Start": 843.7,
+      "Time_End": 850.4,
+      "Text": " track and stub out actions for our emulated registry. Registry manager maps hex values to"
+    },
+    {
+      "Time_Start": 850.4,
+      "Time_End": 856.08,
+      "Text": " actual pass. So when registry addresses are printed as output, you'll see the full registry"
+    },
+    {
+      "Time_Start": 856.12,
+      "Time_End": 863.1600000000001,
+      "Text": " path instead of just some random address. We have a bunch of custom hooks written for the"
+    },
+    {
+      "Time_Start": 863.1600000000001,
+      "Time_End": 868.12,
+      "Text": " registry related APIs and try to simulate some sort of success action whenever possible. This"
+    },
+    {
+      "Time_Start": 868.12,
+      "Time_End": 872.34,
+      "Text": " includes having our Chrome registry manager update various things in its faked out registry"
+    },
+    {
+      "Time_Start": 872.34,
+      "Time_End": 876.9200000000001,
+      "Text": " that the shellcode can interact with. For output related to a registry, we also have some"
+    },
+    {
+      "Time_Start": 876.9200000000001,
+      "Time_End": 881.5,
+      "Text": " special parsing mechanisms based on the MITRE framework to pick out any sort of registry"
+    },
+    {
+      "Time_Start": 881.54,
+      "Time_End": 886.58,
+      "Text": " actions that are security relevant to us. Here we have an example of one that does"
+    },
+    {
+      "Time_Start": 886.58,
+      "Time_End": 894.34,
+      "Text": " registry persistence for an executable file. Again, like the rest of our output, it's"
+    },
+    {
+      "Time_Start": 894.34,
+      "Time_End": 898.46,
+      "Text": " formatted in such a way that it's easy to parse for the end user. So for all references to"
+    },
+    {
+      "Time_Start": 898.46,
+      "Time_End": 903.22,
+      "Text": " H key, instead of just hex values, you'll actually see the full registry keys and paths and"
+    },
+    {
+      "Time_Start": 903.22,
+      "Time_End": 911.22,
+      "Text": " data. And all of these registry related things don't just apply to APIs. There's also some"
+    },
+    {
+      "Time_Start": 911.5,
+      "Time_End": 916.22,
+      "Text": " support included for syscalls as well. This is an example of the NT create syscall for"
+    },
+    {
+      "Time_Start": 916.22,
+      "Time_End": 921.14,
+      "Text": " current version slash run to set up persistence. Again, this is immediately obvious due to"
+    },
+    {
+      "Time_Start": 921.14,
+      "Time_End": 929.14,
+      "Text": " the way that the output is labeled. So one final part of Sherm's output is timeless debugging"
+    },
+    {
+      "Time_Start": 929.14,
+      "Time_End": 934.46,
+      "Text": " information. This is essentially just a log of every CPU instruction that we emulated along"
+    },
+    {
+      "Time_Start": 934.46,
+      "Time_End": 939.04,
+      "Text": " with register values. This is useful if you want to go back and review any of the"
+    },
+    {
+      "Time_Start": 939.0799999999999,
+      "Time_End": 943.76,
+      "Text": " instructions that were executed and evaluate the registers at that state. There's also an"
+    },
+    {
+      "Time_Start": 943.76,
+      "Time_End": 949.04,
+      "Text": " option to view a selected number of bytes from the stack as well. So this is what that"
+    },
+    {
+      "Time_Start": 949.04,
+      "Time_End": 952.4599999999999,
+      "Text": " timeless debugging log looks like. Here you can see all of the instructions and all of the"
+    },
+    {
+      "Time_Start": 952.4599999999999,
+      "Time_End": 960.4599999999999,
+      "Text": " registry values before and after each execution. So when developing this tool, we"
+    },
+    {
+      "Time_Start": 960.4599999999999,
+      "Time_End": 965.92,
+      "Text": " conducted a lot of researches from public sandboxes and shellcode repositories. We found"
+    },
+    {
+      "Time_Start": 965.9200000000001,
+      "Time_End": 971.1800000000001,
+      "Text": " that 64-bit shellcode is a lot less common than 32-bit. But rest assured, we also have"
+    },
+    {
+      "Time_Start": 971.1800000000001,
+      "Time_End": 976.8000000000001,
+      "Text": " support for 64-bit shellcode emulation as well. So we have different but similar DLLs and"
+    },
+    {
+      "Time_Start": 976.8000000000001,
+      "Time_End": 981.6800000000001,
+      "Text": " internal window structures for this. So, yeah, anything you can do in 32-bit, you can do in"
+    },
+    {
+      "Time_Start": 981.6800000000001,
+      "Time_End": 987.4200000000001,
+      "Text": " 64-bit for our tool. All right. Now turning back over to Dr. Brizendine for complete code"
+    },
+    {
+      "Time_Start": 987.4200000000001,
+      "Time_End": 993.4200000000001,
+      "Text": " coverage."
+    },
+    {
+      "Time_Start": 1002.7600000000001,
+      "Time_End": 1009.3800000000001,
+      "Text": " Thank you for that. So this is one of the most important game changing aspects of all of"
+    },
+    {
+      "Time_Start": 1009.3800000000001,
+      "Time_End": 1015.46,
+      "Text": " this. Now some of you may be familiar with the idea of code coverage. But this is a very"
+    },
+    {
+      "Time_Start": 1015.5,
+      "Time_End": 1021.84,
+      "Text": " different twist on that concept. So with complete code coverage, we are going to all but"
+    },
+    {
+      "Time_Start": 1021.84,
+      "Time_End": 1027.8400000000001,
+      "Text": " guarantee that virtually every single code path is going to be executed. How do we achieve"
+    },
+    {
+      "Time_Start": 1030.3,
+      "Time_End": 1036.3,
+      "Text": " this functionality? Well, we instantiate it at the assembly level and it works very well. So"
+    },
+    {
+      "Time_Start": 1039.8400000000001,
+      "Time_End": 1044.42,
+      "Text": " whenever we encounter an opportunity where we could go left, we could go right, we have a"
+    },
+    {
+      "Time_Start": 1044.46,
+      "Time_End": 1050.46,
+      "Text": " jump table, whatever the case may be, we can capture metadata at that particular location,"
+    },
+    {
+      "Time_Start": 1052.76,
+      "Time_End": 1058.76,
+      "Text": " including a snapshot of the stack. And we will maintain a list of all of these locations. Once"
+    },
+    {
+      "Time_Start": 1061.76,
+      "Time_End": 1068.46,
+      "Text": " the shellcode is about to terminate, if there are any unvisited code paths, then the"
+    },
+    {
+      "Time_Start": 1068.5,
+      "Time_End": 1074.5,
+      "Text": " shellcode will simply restart. And because we were able to save the CPU register state"
+    },
+    {
+      "Time_Start": 1077.04,
+      "Time_End": 1084.0,
+      "Text": " alongside a snapshot of the stack, we can restore that information. By doing that, we are"
+    },
+    {
+      "Time_Start": 1084.0,
+      "Time_End": 1090.0,
+      "Text": " able to capture APIs and log them that we otherwise would not have been able to do. So to"
+    },
+    {
+      "Time_Start": 1091.0,
+      "Time_End": 1097.0,
+      "Text": " give an example of why that is important, so this could be considered a form of dynamic"
+    },
+    {
+      "Time_Start": 1100.88,
+      "Time_End": 1106.88,
+      "Text": " analysis. So we could do dynamic analysis with a debugger. We possibly could tweak things a"
+    },
+    {
+      "Time_Start": 1108.38,
+      "Time_End": 1115.04,
+      "Text": " little bit to maybe cause it to just go in a direction that it wouldn't otherwise. Or we could"
+    },
+    {
+      "Time_Start": 1115.08,
+      "Time_End": 1121.08,
+      "Text": " detonate something in a piece of or detonate a shellcode in a C style harness in a sandbox and"
+    },
+    {
+      "Time_Start": 1125.62,
+      "Time_End": 1132.04,
+      "Text": " just see what happens. But with complete code coverage, we can guarantee that we will see all"
+    },
+    {
+      "Time_Start": 1132.04,
+      "Time_End": 1138.04,
+      "Text": " of the possible code paths, not simply those that would have been for that particular instance"
+    },
+    {
+      "Time_Start": 1138.84,
+      "Time_End": 1144.84,
+      "Text": " in the sandbox. So to the left there, you can see a shellcode that was written by a student of"
+    },
+    {
+      "Time_Start": 1149.34,
+      "Time_End": 1155.96,
+      "Text": " mine. And there are only two APIs that are identified. Now one of these is get computer name A."
+    },
+    {
+      "Time_Start": 1155.96,
+      "Time_End": 1162.42,
+      "Text": " So it's looking for a very specific computer name. And if it's able to get that computer name,"
+    },
+    {
+      "Time_Start": 1162.42,
+      "Time_End": 1168.42,
+      "Text": " then it's going to do reg set key value. And it's going to establish terminal server. So unless"
+    },
+    {
+      "Time_Start": 1172.64,
+      "Time_End": 1178.8000000000002,
+      "Text": " we have that particular computer name, we should never be able to see that. But with complete"
+    },
+    {
+      "Time_Start": 1178.8000000000002,
+      "Time_End": 1184.8000000000002,
+      "Text": " code coverage, we are able to capture not only the API, but all of the correct parameters that"
+    },
+    {
+      "Time_Start": 1185.3799999999999,
+      "Time_End": 1191.3799999999999,
+      "Text": " would have been there otherwise. So self-modifying code is also an important aspect of shellcode."
+    },
+    {
+      "Time_Start": 1196.48,
+      "Time_End": 1203.72,
+      "Text": " So a lot of times our shellcode may be encoded. And the shellcode will simply decode itself in"
+    },
+    {
+      "Time_Start": 1203.72,
+      "Time_End": 1209.26,
+      "Text": " memory. It will have a decoder stub to help facilitate that process. And we can actually"
+    },
+    {
+      "Time_Start": 1209.28,
+      "Time_End": 1215.28,
+      "Text": " identify that through the use of fuzzy hashing. In particular SS deep. And so if we are able to"
+    },
+    {
+      "Time_Start": 1217.24,
+      "Time_End": 1223.1,
+      "Text": " identify that, then we will simply take the decoded form. And then that decoded form is what we"
+    },
+    {
+      "Time_Start": 1223.1,
+      "Time_End": 1229.18,
+      "Text": " will then perform our analysis on. And then we will also send that to the disassembler. So at the"
+    },
+    {
+      "Time_Start": 1229.18,
+      "Time_End": 1234.68,
+      "Text": " bottom there, you can see that Sheram has identified successfully that this is indeed self-"
+    },
+    {
+      "Time_Start": 1235.0800000000002,
+      "Time_End": 1241.0800000000002,
+      "Text": " modifying code. And this is an example of a shellcode that is actually encoded. But lo and"
+    },
+    {
+      "Time_Start": 1246.42,
+      "Time_End": 1252.42,
+      "Text": " behold, we are seeing the actual APIs that are being called. We are seeing the parameters. So"
+    },
+    {
+      "Time_Start": 1254.16,
+      "Time_End": 1260.8,
+      "Text": " really this is very much a game changer if you're dealing with encoded shellcode. You know,"
+    },
+    {
+      "Time_Start": 1260.82,
+      "Time_End": 1267.9199999999998,
+      "Text": " maybe somebody gives you a piece of shellcode and you're not quite sure what that is. Now your"
+    },
+    {
+      "Time_Start": 1267.9199999999998,
+      "Time_End": 1273.24,
+      "Text": " options could be I'm going to take that, I'm going to put it in a C style harness, I'm going to"
+    },
+    {
+      "Time_Start": 1273.24,
+      "Time_End": 1280.5,
+      "Text": " debug it. Now some parts of shellcode may be very repetitive. So there could be loops that may"
+    },
+    {
+      "Time_Start": 1280.5,
+      "Time_End": 1287.22,
+      "Text": " occur hundreds or even thousands of times. And also the fact that it's decoding itself in"
+    },
+    {
+      "Time_Start": 1287.24,
+      "Time_End": 1294.04,
+      "Text": " memory, it can be very, very tedious. But with Sheram we can instantly see what is going on"
+    },
+    {
+      "Time_Start": 1294.04,
+      "Time_End": 1300.44,
+      "Text": " inside of that shellcode. So maybe a friend gave you a piece of shellcode, you're going to do"
+    },
+    {
+      "Time_Start": 1300.44,
+      "Time_End": 1306.96,
+      "Text": " that for some particular type of exploitation, but they snuck a little something extra in"
+    },
+    {
+      "Time_Start": 1306.96,
+      "Time_End": 1313.96,
+      "Text": " there. Well you could easily identify that. And so this is the exact same shellcode in IDA"
+    },
+    {
+      "Time_Start": 1314.18,
+      "Time_End": 1320.18,
+      "Text": " pro. And it's absolutely correct. But what we're seeing is a series of encrypted bytes. So it's"
+    },
+    {
+      "Time_Start": 1322.8400000000001,
+      "Time_End": 1328.78,
+      "Text": " pretty much absolutely meaningless for the human analyst who is trying to go through this and"
+    },
+    {
+      "Time_Start": 1328.78,
+      "Time_End": 1333.78,
+      "Text": " figure out what's going on. Accurate but just not very helpful, unfortunately. So the decoder"
+    },
+    {
+      "Time_Start": 1334.32,
+      "Time_End": 1340.32,
+      "Text": " stub is going to be part of the encoded shellcode that will decode itself in memory. And it"
+    },
+    {
+      "Time_Start": 1344.66,
+      "Time_End": 1350.66,
+      "Text": " could perform one or even multiple or many operations to decode it byte by byte. To the left"
+    },
+    {
+      "Time_Start": 1354.28,
+      "Time_End": 1358.54,
+      "Text": " you can see IDA pro and to the right you have Sheram which provides a little bit more"
+    },
+    {
+      "Time_Start": 1358.58,
+      "Time_End": 1364.58,
+      "Text": " information. So at this time we're going to take a brief demo. Okay. So we're in Sheram"
+    },
+    {
+      "Time_Start": 1374.3,
+      "Time_End": 1380.3,
+      "Text": " right now. Let's go ahead and \u2011\u2011 okay. So we're in Sheram right now. Let's go ahead and"
+    },
+    {
+      "Time_Start": 1388.54,
+      "Time_End": 1394.54,
+      "Text": " emulate this. So it will take just a small amount of time to emulate it. Right now it's"
+    },
+    {
+      "Time_Start": 1400.52,
+      "Time_End": 1407.0,
+      "Text": " breaking out of some very long loops. We got some output. We have been able to identify a"
+    },
+    {
+      "Time_Start": 1407.0,
+      "Time_End": 1413.76,
+      "Text": " number of APIs as well as the parameters. And various other artifacts have been identified."
+    },
+    {
+      "Time_Start": 1413.76,
+      "Time_End": 1418.92,
+      "Text": " Sheram identifies itself modifying code. So that's very useful. And now we've generated"
+    },
+    {
+      "Time_Start": 1418.92,
+      "Time_End": 1426.1,
+      "Text": " this assembly. So we can see that printed to the screen. So that can be very useful. We have"
+    },
+    {
+      "Time_Start": 1426.1,
+      "Time_End": 1432.1,
+      "Text": " our APIs identified. We have our data down below at the bottom there. So we're going to"
+    },
+    {
+      "Time_Start": 1443.76,
+      "Time_End": 1449.76,
+      "Text": " go ahead and emulate it. So another important aspect of Sheram is its disassembler. Now when"
+    },
+    {
+      "Time_Start": 1455.94,
+      "Time_End": 1461.4,
+      "Text": " I started this research I was severely disappointed by the quality of the disassembly"
+    },
+    {
+      "Time_Start": 1461.4,
+      "Time_End": 1467.4,
+      "Text": " provided by tools like IDA pro or Ghidra. They were to put it simply very much inadequate."
+    },
+    {
+      "Time_Start": 1468.2800000000002,
+      "Time_End": 1474.2800000000002,
+      "Text": " Sometimes it would be as much as 60 or 70% only that was correct. So meaning 40% that was"
+    },
+    {
+      "Time_Start": 1475.6200000000001,
+      "Time_End": 1481.6200000000001,
+      "Text": " wrong. And the root cause of a lot of this was simply misclassification of data as instructions"
+    },
+    {
+      "Time_Start": 1484.5400000000002,
+      "Time_End": 1490.5400000000002,
+      "Text": " or alternatively a cascading effect of that is some instructions were \u2011\u2011 would start"
+    },
+    {
+      "Time_Start": 1491.54,
+      "Time_End": 1497.54,
+      "Text": " disassembling it in an incorrect offset. Simple things like strings would be just disassembled"
+    },
+    {
+      "Time_Start": 1502.04,
+      "Time_End": 1508.04,
+      "Text": " as instructions. So in order to address this, I came up with some static analysis methods"
+    },
+    {
+      "Time_Start": 1512.22,
+      "Time_End": 1519.5,
+      "Text": " to \u2011\u2011 and call that disassembly analysis engine. So in x86 you can have instructions and"
+    },
+    {
+      "Time_Start": 1519.5,
+      "Time_End": 1525.5,
+      "Text": " data that are freely intermixed. And also with shellcode you can play fast and loose with"
+    },
+    {
+      "Time_Start": 1526.64,
+      "Time_End": 1532.64,
+      "Text": " certain conventions. So in order to help deal with this, Sheram will actually utilize multiple"
+    },
+    {
+      "Time_Start": 1534.8,
+      "Time_End": 1540.8,
+      "Text": " analysis phases in order to try to achieve more accurate disassembly of shellcode. And if we're"
+    },
+    {
+      "Time_Start": 1541.56,
+      "Time_End": 1547.56,
+      "Text": " able to accurately distinguish between instructions and data, then we should get vastly superior"
+    },
+    {
+      "Time_Start": 1553.48,
+      "Time_End": 1559.48,
+      "Text": " disassembly. Hypothetically even perfect disassembly. So what Sheram will do is it will maintain"
+    },
+    {
+      "Time_Start": 1561.76,
+      "Time_End": 1567.76,
+      "Text": " complex metadata about each and every byte of shellcode. Now Sheram does work exclusively"
+    },
+    {
+      "Time_Start": 1571.1,
+      "Time_End": 1577.1,
+      "Text": " with shellcode. And so our approach here has been very empirical. Very much based on"
+    },
+    {
+      "Time_Start": 1580.6399999999999,
+      "Time_End": 1586.6399999999999,
+      "Text": " experimentation with actual true shellcode. So I have a large collection of shellcode with \u2011\u2011"
+    },
+    {
+      "Time_Start": 1589.22,
+      "Time_End": 1595.6,
+      "Text": " where I actually possess the source code. And the process was to try to scrutinize it very"
+    },
+    {
+      "Time_Start": 1595.6000000000001,
+      "Time_End": 1601.6000000000001,
+      "Text": " closely. And if I notice at one particular location that something was incorrect, I would try"
+    },
+    {
+      "Time_Start": 1601.6000000000001,
+      "Time_End": 1607.9,
+      "Text": " to identify the root cause as to why that was the case. And if I could identify the root cause,"
+    },
+    {
+      "Time_Start": 1607.9,
+      "Time_End": 1613.9,
+      "Text": " then I could try to then remediate it. And I would remediate it not for that one instance, but"
+    },
+    {
+      "Time_Start": 1615.3200000000002,
+      "Time_End": 1621.3200000000002,
+      "Text": " for all other similar types. The end result was very much improved disassembly. Now it could"
+    },
+    {
+      "Time_Start": 1622.08,
+      "Time_End": 1628.08,
+      "Text": " never be perfect, but it was markedly better than what would be produced by IDA Pro or by"
+    },
+    {
+      "Time_Start": 1632.1599999999999,
+      "Time_End": 1638.1599999999999,
+      "Text": " Ghidra. So some of these can be a little bit much to discuss. There is a white paper that does"
+    },
+    {
+      "Time_Start": 1643.32,
+      "Time_End": 1649.32,
+      "Text": " discuss them in more detail if you wish. But just very briefly, a few of the things that we do to"
+    },
+    {
+      "Time_Start": 1651.54,
+      "Time_End": 1657.54,
+      "Text": " help with this, if we can find repeating data bytes, then we can label those as data, for instance,"
+    },
+    {
+      "Time_Start": 1658.6599999999999,
+      "Time_End": 1664.6599999999999,
+      "Text": " long \u2011\u2011 repeating instances of zeros or Fs. We also might check for valid jump destinations."
+    },
+    {
+      "Time_Start": 1668.32,
+      "Time_End": 1674.32,
+      "Text": " If a shellcode is trying to jump to offset 3000 and it's only 200 bytes long, well, guess what?"
+    },
+    {
+      "Time_Start": 1675.32,
+      "Time_End": 1681.32,
+      "Text": " Offset 3000 doesn't exist. So that's incorrect. So we try to then address that. We can locate"
+    },
+    {
+      "Time_Start": 1683.54,
+      "Time_End": 1689.54,
+      "Text": " hidden calls and jumps. And in this particular case, we're looking for the particular op codes or"
+    },
+    {
+      "Time_Start": 1692.54,
+      "Time_End": 1698.36,
+      "Text": " bytes that produce these. And then we make sure that they are formed \u2011\u2011 they form the correct"
+    },
+    {
+      "Time_Start": 1698.46,
+      "Time_End": 1704.46,
+      "Text": " disassembly if there is a valid branching destination that exists. Something like strings, we"
+    },
+    {
+      "Time_Start": 1708.3200000000002,
+      "Time_End": 1714.3200000000002,
+      "Text": " can easily identify those with Unicode or ASCII. So you can see one of the most important"
+    },
+    {
+      "Time_Start": 1717.5000000000002,
+      "Time_End": 1723.5000000000002,
+      "Text": " aspects of this is we are able to identify functions in our shellcode. And this is really the"
+    },
+    {
+      "Time_Start": 1724.5,
+      "Time_End": 1730.5,
+      "Text": " only way in which you can do that. So if you were to open this up in IDA Pro or Ghidra, you would"
+    },
+    {
+      "Time_Start": 1733.14,
+      "Time_End": 1739.14,
+      "Text": " not see any of these functions identified. You would simply see call EAX, call EDX, and some"
+    },
+    {
+      "Time_Start": 1741.34,
+      "Time_End": 1747.34,
+      "Text": " type of variation to that effect. Now, Cherim, we are able to identify more than 20,000 of these"
+    },
+    {
+      "Time_Start": 1748.3400000000001,
+      "Time_End": 1754.3400000000001,
+      "Text": " Windows APIs as well as virtually all Windows syscalls. We also are able to identify"
+    },
+    {
+      "Time_Start": 1762.8000000000002,
+      "Time_End": 1768.8000000000002,
+      "Text": " disassembly annotations, things such as get PC to self locate in memory, pushrets, heavens gate,"
+    },
+    {
+      "Time_Start": 1770.8000000000002,
+      "Time_End": 1776.1000000000001,
+      "Text": " and those can be labeled for us. PEB identification, so walking the process environment"
+    },
+    {
+      "Time_Start": 1776.1000000000001,
+      "Time_End": 1782.0200000000002,
+      "Text": " block. That's something that each and every shellcode needs to do. It's one of the first steps of"
+    },
+    {
+      "Time_Start": 1782.0200000000002,
+      "Time_End": 1788.0200000000002,
+      "Text": " dynamically resolving runtime API addresses. And so we will call out all of those particular PEB"
+    },
+    {
+      "Time_Start": 1790.0600000000002,
+      "Time_End": 1796.0600000000002,
+      "Text": " features. API tables. So one common thing that shellcode does is it's able to identify a"
+    },
+    {
+      "Time_Start": 1798.94,
+      "Time_End": 1804.94,
+      "Text": " particular location as being a place where a shellcode or a Windows API pointer is located. So"
+    },
+    {
+      "Time_Start": 1807.1000000000001,
+      "Time_End": 1813.4,
+      "Text": " for instance, delete file A, that may always be at that particular offset. So you might have"
+    },
+    {
+      "Time_Start": 1813.4,
+      "Time_End": 1819.4,
+      "Text": " call EDX plus some offset to access that. So let's look at IDA Pro versus Cherim in terms of"
+    },
+    {
+      "Time_Start": 1822.72,
+      "Time_End": 1828.72,
+      "Text": " disassembly. IDA Pro, it cannot determine APIs. How tragic. You pay thousands of dollars and it"
+    },
+    {
+      "Time_Start": 1829.44,
+      "Time_End": 1835.44,
+      "Text": " just doesn't have that information. But we look inside of Cherim and no cost, but you're able to"
+    },
+    {
+      "Time_Start": 1839.06,
+      "Time_End": 1845.06,
+      "Text": " have the APIs identified. Strings. Thank you. Now strings are pretty obvious. ASCII, Unicode."
+    },
+    {
+      "Time_Start": 1852.18,
+      "Time_End": 1858.64,
+      "Text": " We'll identify those. And also things like push stack strings. We can have those identify"
+    },
+    {
+      "Time_Start": 1859.3200000000002,
+      "Time_End": 1865.3200000000002,
+      "Text": " very nicely with our comments. Now one thing that we do do is we utilize emulation data as a"
+    },
+    {
+      "Time_Start": 1873.4,
+      "Time_End": 1879.4,
+      "Text": " way to enhance our disassembly. So now the way in which we do this is very unique. So if we"
+    },
+    {
+      "Time_Start": 1880.4,
+      "Time_End": 1886.4,
+      "Text": " were able to start emulating a shellcode at a particular offset, then we know definitively at"
+    },
+    {
+      "Time_Start": 1891.44,
+      "Time_End": 1897.44,
+      "Text": " this location we have this instruction and it's size two bytes. So we will preserve that"
+    },
+    {
+      "Time_Start": 1899.0800000000002,
+      "Time_End": 1905.0800000000002,
+      "Text": " information and when we go and produce the disassembly, then to put it simply, that would"
+    },
+    {
+      "Time_Start": 1905.28,
+      "Time_End": 1911.28,
+      "Text": " override what would be determined statically. And for things like data, the data will also be"
+    },
+    {
+      "Time_Start": 1915.6999999999998,
+      "Time_End": 1921.6999999999998,
+      "Text": " identified with memory reads and writes and so that information can be clearly labeled for us."
+    },
+    {
+      "Time_Start": 1927.12,
+      "Time_End": 1933.12,
+      "Text": " Now self-modifying code. You might say, well, gee, golly, self-modifying code, each byte is"
+    },
+    {
+      "Time_Start": 1935.1599999999999,
+      "Time_End": 1941.1599999999999,
+      "Text": " going to be both data and instructions. How can we cope with that? Well, what you actually"
+    },
+    {
+      "Time_Start": 1941.1599999999999,
+      "Time_End": 1947.1599999999999,
+      "Text": " could do is you could say, okay, we recognize that data, everything is going to be data at least"
+    },
+    {
+      "Time_Start": 1948.9199999999998,
+      "Time_End": 1954.6999999999998,
+      "Text": " once. So in this case we will not classify it as data unless it's accessed, read to, or written"
+    },
+    {
+      "Time_Start": 1954.6999999999998,
+      "Time_End": 1960.6999999999998,
+      "Text": " to more than once. Distinguishing between data and instructions. So at the top there, that's"
+    },
+    {
+      "Time_Start": 1961.44,
+      "Time_End": 1967.44,
+      "Text": " actual disassembly of instructions. We have call EAX, we're calling virtual alloc, we're creating"
+    },
+    {
+      "Time_Start": 1969.78,
+      "Time_End": 1975.78,
+      "Text": " a region of memory, and the page execute read write is labeled for us. And then down below"
+    },
+    {
+      "Time_Start": 1977.82,
+      "Time_End": 1983.82,
+      "Text": " everything there is data. Now if this was in Ghidra or Idapro, it would just be simply"
+    },
+    {
+      "Time_Start": 1984.82,
+      "Time_End": 1990.82,
+      "Text": " misclassified as instructions, but instead we have our API pointers that are labeled, we have"
+    },
+    {
+      "Time_Start": 1992.86,
+      "Time_End": 1999.1799999999998,
+      "Text": " strings that are labeled, and then other D words which we can surmise maybe things like check"
+    },
+    {
+      "Time_Start": 1999.1799999999998,
+      "Time_End": 2005.1799999999998,
+      "Text": " sums which could help us to resolve those APIs. So the way in which we integrate our emulation"
+    },
+    {
+      "Time_Start": 2006.18,
+      "Time_End": 2012.18,
+      "Text": " data, now we take three different forms. We have the starting form, so if something is encoded"
+    },
+    {
+      "Time_Start": 2018.3,
+      "Time_End": 2024.3,
+      "Text": " we'll take a snapshot of that, and then we do a byte by byte basis every time a particular set"
+    },
+    {
+      "Time_Start": 2027.18,
+      "Time_End": 2033.18,
+      "Text": " of bytes are executed is instructions, we will take a snapshot of that. And then we will"
+    },
+    {
+      "Time_Start": 2036.18,
+      "Time_End": 2042.38,
+      "Text": " finally take a snapshot of the final form of the shell code after it has decoded itself in"
+    },
+    {
+      "Time_Start": 2042.38,
+      "Time_End": 2049.3,
+      "Text": " memory. And then we will merge these together, and it's a very novel way of merging it. So if I"
+    },
+    {
+      "Time_Start": 2049.3,
+      "Time_End": 2055.46,
+      "Text": " was a very clever shell code author, and I wanted to try to conceal what I was doing, I might"
+    },
+    {
+      "Time_Start": 2055.46,
+      "Time_End": 2062.26,
+      "Text": " have the shell code re-encode itself after it decoded itself. Now that doesn't typically"
+    },
+    {
+      "Time_Start": 2062.26,
+      "Time_End": 2068.26,
+      "Text": " happen, but it could. And if somebody were trying to protect the intellectual property of"
+    },
+    {
+      "Time_Start": 2070.96,
+      "Time_End": 2076.42,
+      "Text": " their shell code by doing that, we would still be able to see what that was because we are"
+    },
+    {
+      "Time_Start": 2076.42,
+      "Time_End": 2082.42,
+      "Text": " going to prioritize the executed form of the shell code when we merge these together. Next we"
+    },
+    {
+      "Time_Start": 2083.2000000000003,
+      "Time_End": 2089.2000000000003,
+      "Text": " then prioritize the final form, and then finally we prioritize the starting form. So there is"
+    },
+    {
+      "Time_Start": 2095.7400000000002,
+      "Time_End": 2101.7400000000002,
+      "Text": " the result of all that madness. We can see a decoded shell code with APIs very clearly labeled."
+    },
+    {
+      "Time_Start": 2104.28,
+      "Time_End": 2110.28,
+      "Text": " The parameters are immediately easy for us to see, and it's not just hex values, but the human"
+    },
+    {
+      "Time_Start": 2111.1000000000004,
+      "Time_End": 2117.1000000000004,
+      "Text": " readable equivalents that we can see. Things like, well in this particular case, we can see"
+    },
+    {
+      "Time_Start": 2118.78,
+      "Time_End": 2124.78,
+      "Text": " that it's downloading an evil dot HTA, and then doing WinExec on that. In terms of reporting,"
+    },
+    {
+      "Time_Start": 2129.2400000000002,
+      "Time_End": 2135.2400000000002,
+      "Text": " Cherm has a lot of verbose reporting, all kinds of very useful information, and it has many"
+    },
+    {
+      "Time_Start": 2135.86,
+      "Time_End": 2141.86,
+      "Text": " different types of outputs that it provides for us. ASCII representation of bytes, raw binary,"
+    },
+    {
+      "Time_Start": 2143.86,
+      "Time_End": 2149.86,
+      "Text": " text format, JSON. So if you want to run Cherm headless and maybe integrate that into some kind"
+    },
+    {
+      "Time_Start": 2151.48,
+      "Time_End": 2157.48,
+      "Text": " of web server or web service, then absolutely you could do so. It will also generate a C-style"
+    },
+    {
+      "Time_Start": 2158.9,
+      "Time_End": 2164.9,
+      "Text": " tester, so if you want to then compile that and run that in a debugger, it's just very easy to"
+    },
+    {
+      "Time_Start": 2165.38,
+      "Time_End": 2171.38,
+      "Text": " do. All right, so this time we will hand it off to... This is the time right there. All right,"
+    },
+    {
+      "Time_Start": 2179.3,
+      "Time_End": 2185.3,
+      "Text": " let me adjust this. So, since I'm a major user of Jidra in my day-to-day work during malware"
+    },
+    {
+      "Time_Start": 2187.5000000000005,
+      "Time_End": 2194.2400000000002,
+      "Text": " analysis, and I also encounter shell code, I like the Cherm framework. I figured I would combine"
+    },
+    {
+      "Time_Start": 2194.26,
+      "Time_End": 2200.26,
+      "Text": " the best of both worlds. It's kind of an open secret. I unironically like Java to write in. It's"
+    },
+    {
+      "Time_Start": 2201.5600000000004,
+      "Time_End": 2205.82,
+      "Text": " kind of an open secret that the rest of the world kind of hates Java to write in, so I consider it"
+    },
+    {
+      "Time_Start": 2205.82,
+      "Time_End": 2210.2000000000003,
+      "Text": " as a win-win where I wrote the script in Java for everybody to use, so you don't have to, but you"
+    },
+    {
+      "Time_Start": 2210.2000000000003,
+      "Time_End": 2215.9,
+      "Text": " can still use it. Now, for those unaware, Jidra is a framework for reverse engineering published"
+    },
+    {
+      "Time_Start": 2215.9,
+      "Time_End": 2221.9,
+      "Text": " by the NSA. It's open source. And you can also analyze shell code with this. Now, you can see"
+    },
+    {
+      "Time_Start": 2224.28,
+      "Time_End": 2228.38,
+      "Text": " that you can extend this framework after you've loaded your shell code and analyzed it. You can go"
+    },
+    {
+      "Time_Start": 2228.38,
+      "Time_End": 2234.38,
+      "Text": " to the display script manager, which is the green play button in the top bar, and it will open the"
+    },
+    {
+      "Time_Start": 2235.32,
+      "Time_End": 2240.1600000000003,
+      "Text": " script manager for you. Now, you can go to the hamburger menu. Once you open that, you will see"
+    },
+    {
+      "Time_Start": 2240.1600000000003,
+      "Time_End": 2245.96,
+      "Text": " the folders where your scripts are located, and you can select any location. Alternatively, your"
+    },
+    {
+      "Time_Start": 2245.96,
+      "Time_End": 2251.2400000000002,
+      "Text": " home directory will contain a folder called Jidra scripts. You can put the script in there. And"
+    },
+    {
+      "Time_Start": 2251.2400000000002,
+      "Time_End": 2257.1400000000003,
+      "Text": " afterwards, you can simply double-click it by running. Now, once you do this, it will call"
+    },
+    {
+      "Time_Start": 2257.1400000000003,
+      "Time_End": 2262.98,
+      "Text": " share in the background, and it will allow you to see the script in console, which is located by"
+    },
+    {
+      "Time_Start": 2262.98,
+      "Time_End": 2268.78,
+      "Text": " default at Jidra's bottom, and it will see where comments are placed. You will see the"
+    },
+    {
+      "Time_Start": 2268.78,
+      "Time_End": 2274.0600000000004,
+      "Text": " hexadecimal address afterwards, and given that the disassembly view and decompiler view from Jidra"
+    },
+    {
+      "Time_Start": 2274.0600000000004,
+      "Time_End": 2279.6000000000004,
+      "Text": " are linked, double-clicking on these addresses will jump towards it and will highlight that in"
+    },
+    {
+      "Time_Start": 2279.62,
+      "Time_End": 2284.96,
+      "Text": " your overview. Now, the comments in here allow you to have a quick and easy overview as to what"
+    },
+    {
+      "Time_Start": 2284.96,
+      "Time_End": 2290.96,
+      "Text": " was added by the script and navigate towards interesting parts of the shell code. Now, it's a"
+    },
+    {
+      "Time_Start": 2293.64,
+      "Time_End": 2298.98,
+      "Text": " brief flowchart as to how does this work. You run the script, which runs share in the background."
+    },
+    {
+      "Time_Start": 2298.98,
+      "Time_End": 2304.8199999999997,
+      "Text": " Share can run headless. The script for Jidra itself is written in such a way that it requires no"
+    },
+    {
+      "Time_Start": 2304.84,
+      "Time_End": 2309.92,
+      "Text": " graphical user interface elements, so you can also run the script headless in Jidra, which then"
+    },
+    {
+      "Time_Start": 2309.92,
+      "Time_End": 2315.88,
+      "Text": " runs share in headless. It loads the output once share is done in its execution, which is the"
+    },
+    {
+      "Time_Start": 2315.88,
+      "Time_End": 2322.1600000000003,
+      "Text": " JSON file, and it will load that JSON and convert it into plain Java objects. It will iterate"
+    },
+    {
+      "Time_Start": 2322.1600000000003,
+      "Time_End": 2328.86,
+      "Text": " over all of those, add comments wherever possible based on the output. It will update the"
+    },
+    {
+      "Time_Start": 2329.02,
+      "Time_End": 2335.02,
+      "Text": " disassembly. We just saw the explanation as to why share is able to catch more than, for"
+    },
+    {
+      "Time_Start": 2336.6600000000003,
+      "Time_End": 2342.26,
+      "Text": " example, Jidra, and it will also assign or reassign if there was already a data type, so it's"
+    },
+    {
+      "Time_Start": 2342.26,
+      "Time_End": 2349.1600000000003,
+      "Text": " preferring share's output over Jidra's own analysis in any time along the script's execution."
+    },
+    {
+      "Time_Start": 2349.1600000000003,
+      "Time_End": 2355.28,
+      "Text": " It will log those changes in the script console at the bottom, and it will finish the execution."
+    },
+    {
+      "Time_Start": 2355.7000000000003,
+      "Time_End": 2360.6400000000003,
+      "Text": " How does it look like? I have an overview here of a piece of shell code that I received from"
+    },
+    {
+      "Time_Start": 2360.6400000000003,
+      "Time_End": 2366.6400000000003,
+      "Text": " Bramwell. This is the default way that Jidra shows it to you. If you were to run the script,"
+    },
+    {
+      "Time_Start": 2369.6200000000003,
+      "Time_End": 2375.2200000000003,
+      "Text": " then you will get information. Based on the emulation, you suddenly see that specific offsets"
+    },
+    {
+      "Time_Start": 2375.2200000000003,
+      "Time_End": 2380.82,
+      "Text": " or memory locations refer to, in this case, for example, on line 25, 6, and 7, you see load"
+    },
+    {
+      "Time_Start": 2380.82,
+      "Time_End": 2386.1600000000003,
+      "Text": " library A, but not only do you know this function, and based on MSDN, you know the parameters"
+    },
+    {
+      "Time_Start": 2386.1600000000003,
+      "Time_End": 2392.26,
+      "Text": " and the use case of said function, you also know the value of the argument, so not only the type"
+    },
+    {
+      "Time_Start": 2392.26,
+      "Time_End": 2396.92,
+      "Text": " of argument, but the actual value, so in this case, we know the URL mon is loaded by the shell"
+    },
+    {
+      "Time_Start": 2396.92,
+      "Time_End": 2404.1000000000004,
+      "Text": " code, and we can see that get proc address is used to get URL download to file A. As for data"
+    },
+    {
+      "Time_Start": 2404.1,
+      "Time_End": 2410.1,
+      "Text": " types, Jidra tends to try and guesstimate whatever you have in front of you. In this case, you"
+    },
+    {
+      "Time_Start": 2412.64,
+      "Time_End": 2418.64,
+      "Text": " have unknown bytes. These are, well, they're nothing constructible. However, during emulation,"
+    },
+    {
+      "Time_Start": 2421.2799999999997,
+      "Time_End": 2428.02,
+      "Text": " you will see that the API pointers, checksums, and strings reside here. Now, the strings"
+    },
+    {
+      "Time_Start": 2428.04,
+      "Time_End": 2434.04,
+      "Text": " themselves might be found by Jidra initially, but maybe the ending null byte is or is not included"
+    },
+    {
+      "Time_Start": 2435.32,
+      "Time_End": 2441.32,
+      "Text": " or used by the shell code, whereas Jidra generally assumes it is, and that byte might be useful for"
+    },
+    {
+      "Time_Start": 2442.2,
+      "Time_End": 2446.06,
+      "Text": " the next part. Maybe it's alignment or padding afterwards. It kind of depends on what you're"
+    },
+    {
+      "Time_Start": 2446.06,
+      "Time_End": 2451.56,
+      "Text": " looking for, so this gives you an easy overview as to what you're looking for. If you see any"
+    },
+    {
+      "Time_Start": 2451.56,
+      "Time_End": 2455.96,
+      "Text": " checksums or magic values, you might try and find those online to get more information, and if you"
+    },
+    {
+      "Time_Start": 2456.04,
+      "Time_End": 2461.8,
+      "Text": " see references in the code towards that data, you also know the size of the data rather than just"
+    },
+    {
+      "Time_Start": 2461.8,
+      "Time_End": 2467.8,
+      "Text": " being one byte. As for the disassembly, it wasn't really clear in screenshots if I did more than"
+    },
+    {
+      "Time_Start": 2470.3,
+      "Time_End": 2475.66,
+      "Text": " just one instruction, so I manually patched the first line of set five, pop edx. Once you run the"
+    },
+    {
+      "Time_Start": 2475.66,
+      "Time_End": 2481.5,
+      "Text": " script, this changes to pop edx, which was originally, but this shows that the emulation from"
+    },
+    {
+      "Time_Start": 2481.54,
+      "Time_End": 2487.54,
+      "Text": " Jidra and the changes in there are reworked in whatever you see in here. Now, as for a demo, we"
+    },
+    {
+      "Time_Start": 2495.2,
+      "Time_End": 2501.2,
+      "Text": " can see here that we started offset five. Now you can also see it starts at offset five. Otherwise"
+    },
+    {
+      "Time_Start": 2502.2000000000003,
+      "Time_End": 2508.2000000000003,
+      "Text": " it's just me. And you can see that it has pop edx. Once we go down, we can see that function"
+    },
+    {
+      "Time_Start": 2514.4,
+      "Time_End": 2521.5400000000004,
+      "Text": " calls, for example, are to a memory address. We don't know what we're looking at necessarily, and"
+    },
+    {
+      "Time_Start": 2521.5400000000004,
+      "Time_End": 2526.2000000000003,
+      "Text": " if we go all the way down to the bottom, we can see the bytes that are not classified, and we can"
+    },
+    {
+      "Time_Start": 2526.2000000000003,
+      "Time_End": 2531.36,
+      "Text": " see the strings that are found by Jidra. Opening up the script manager and running it, we'll see"
+    },
+    {
+      "Time_Start": 2531.36,
+      "Time_End": 2537.36,
+      "Text": " in the bottom the log showing us what we can use and what has been added. So this allows us to, in"
+    },
+    {
+      "Time_Start": 2539.7000000000003,
+      "Time_End": 2545.7000000000003,
+      "Text": " one single overview, see what we need. We can see that the pop ex has changed into pop edx, and"
+    },
+    {
+      "Time_Start": 2547.7000000000003,
+      "Time_End": 2551.94,
+      "Text": " once we go down to the function call, we again see the annotation in both the disassembly"
+    },
+    {
+      "Time_Start": 2551.94,
+      "Time_End": 2558.52,
+      "Text": " listing and in the decompiler view where we have both the API but also the value of the"
+    },
+    {
+      "Time_Start": 2558.52,
+      "Time_End": 2564.52,
+      "Text": " arguments, and we can see that in both views. Moving down, we see the checksums located at the"
+    },
+    {
+      "Time_Start": 2570.52,
+      "Time_End": 2576.52,
+      "Text": " bottom. Thank you."
+    },
+    {
+      "Time_Start": 2582.94,
+      "Time_End": 2589.7200000000003,
+      "Text": " This also marks the end of the presentation. You can download and try Cherim on the address on"
+    },
+    {
+      "Time_Start": 2589.7200000000003,
+      "Time_End": 2596.02,
+      "Text": " the top, and you can find the Jidra address on the Trellis GitHub located at the bottom. There was"
+    },
+    {
+      "Time_Start": 2596.02,
+      "Time_End": 2600.44,
+      "Text": " an NSA grant used for the research for Cherim, which is listed at the bottom. Thank you very"
+    },
+    {
+      "Time_Start": 2600.44,
+      "Time_End": 2606.44,
+      "Text": " much for your attention."
+    }
+  ]
+}

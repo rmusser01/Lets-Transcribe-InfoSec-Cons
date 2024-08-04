@@ -1,0 +1,53 @@
+**Introduction:**
+- This talk discusses an **overlooked aspect** of **Border Gateway Protocol (BGP)** security: vulnerabilities in how its implementations parse BGP messages.
+- Software implementing BGP is relied upon for **Internet routing** and for functions such as **internal routing in large data centers**.
+- While there has been a lot of attention given to aspects of BGP protocol security, recent incidents show that a **malformed packet** can cause a **large disruption**.
+- The speakers will present a **quantitative analysis** of previous vulnerabilities in both open and closed-source popular BGP implementations.
+
+**BGP and Its Uses:**
+- BGP is a routing protocol that allows routers to exchange routing information and make decisions on how packets are routed across networks.
+- BGP is used for **Internet routing** but also has other use cases, such as internal data center routing, MPLS layer 3 VPNs, and custom appliances for content providers like Netflix.
+- BGP security is not just a concern for Internet service providers anymore, as any organization using BGP should be responsible for its security.
+
+**BGP Basics and Security:**
+- BGP has a simple state machine and a limited set of messages for peer connections, keep-alive, notification, and updates.
+- BGP packets have a header and content, which are relatively straightforward.
+- BGP, like many early internet protocols, has **no built-in security** features such as authentication or authorization.
+- Mistakes or attacks leading to **network outages and traffic redirection** happen frequently, and while the situation has improved, thousands of incidents of route leaks and hijacks still occur annually.
+- Traditional BGP security focuses on filtering incorrect or malicious routing information, origin validation, and path validation.
+
+**BGP Implementation Vulnerabilities:**
+- BGP implementation vulnerabilities have happened in the past, causing network outages due to different interpretations of BGP messages by routers.
+- The latest systematized work on testing BGP implementations was 20 years ago, and since then, there have been improvements in BGP security features.
+- In the past 20 years, 129 CVEs have been found in BGP implementations, with 95% of them being due to message-parsing issues.
+- There is a mix of CVEs in both open and closed BGP implementations, and while some vendors may appear to have more vulnerabilities, it could be due to better transparency and research rather than being more vulnerable.
+
+**The Threat Landscape:**
+- Threat actors are increasingly focusing on network infrastructure, including routers, switches, and firewalls.
+- CISA has released directives regarding the risks of exposed management interfaces on network infrastructure devices.
+- Several BGP implementations have not been systematically analyzed, and open-source implementations are gaining popularity with the trend of network function disaggregation.
+- There are many different routing protocols, platforms, and network operating systems, both open and closed-source, and the speakers cataloged and selected the most popular ones for their research.
+
+**Previous Vulnerabilities and Their Impact:**
+- Out of 179 non-exploited vulnerabilities that can be mapped to specific devices, 88 (49%) target routers, making them the most popular type of device being attacked.
+- Three out of these 88 vulnerabilities are decades-old CVEs affecting Cisco BGP devices that are still being exploited in 2022, highlighting the continued risk of unpatched devices.
+- These vulnerabilities, which are mainly due to parsing issues in open messages, allow for denial-of-service attacks and are being actively exploited by threat actors.
+
+**New Research and Methodology:**
+- The speakers first conducted manual analysis, finding issues in the design of BGP due to its age and the complexity of parsing TLV parameters and handling optional parameters.
+- They selected both open-source and closed-source BGP implementations for analysis, initially attempting static analysis but then developing a fuzzer to generate malformed input to test the implementations.
+- The fuzzer, implemented using BooFuzz, generates malformed BGP messages and monitors the target for crashes, saving the payload and restarting the target automatically.
+- The speakers found three new denial-of-service vulnerabilities in one BGP implementation, all due to issues with optional parameters.
+
+**Vulnerabilities and Their Impact:**
+- The vulnerabilities lead to a denial-of-service on a vulnerable BGP peer, dropping BGP sessions and rendering the peer unresponsive for a period.
+- Two out of three vulnerabilities can be triggered before the origin of the message is validated, meaning an attacker only needs to spoof a valid IP address.
+- There are over 330,000 hosts with BGP enabled on the Internet, with a significant number running Quagga or FRRouting, and over 1,000 hosts running FRRouting directly.
+- These vulnerabilities have supply chain implications, as FRRouting is an open-source project with over 1,000 forks on GitHub, and it is used as a component in other network operating systems and networking vendor solutions.
+
+**Risk Mitigation and Takeaways:**
+- While routing security is important, it is also crucial to consider software vulnerabilities in BGP implementations and other protocols.
+- Identify devices on your network that use BGP, assess their vulnerabilities, and patch them, taking into account supply chain issues and downstream forks that may not apply patches promptly.
+- The fuzzer developed by the speakers is open-source and can be used to test BGP implementations, and they encourage contributions and extensions to the fuzzer.
+- BGP implementations have generally matured well, but some popular ones have vulnerabilities or are too permissive, so ongoing research and fuzzing are necessary.
+- Threat actors are actively exploiting these issues, and mitigation should not be delegated solely to ISPs but should be everyone's responsibility.

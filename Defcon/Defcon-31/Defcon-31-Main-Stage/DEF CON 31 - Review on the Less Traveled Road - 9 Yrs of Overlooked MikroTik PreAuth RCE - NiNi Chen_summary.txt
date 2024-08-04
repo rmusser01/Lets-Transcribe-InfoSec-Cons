@@ -1,0 +1,57 @@
+**Introduction**
+- NiNi Chen, a security researcher at DEVCORE and member of the Balsn CTF team, presents on finding a pre-auth RCE in MikroTik's RouterOS.
+
+**Motivation**
+- MikroTik's products are widely adopted, with at least 3 million+ devices running RouterOS online.
+- The OS has been a target of attackers, with exploits leaked by the CIA in 2018 and subsequent massive exploits causing havoc.
+- The OS also attracts researchers due to its widespread use and the potential impact of vulnerabilities.
+
+**Background on RouterOS**
+- **RouterOS Architecture**: Based on the Linux kernel, it's a standalone OS with a customized CLI.
+- **Versions**: V7 and V6, considered separate branches due to implementation differences.
+- **Services**: Most services are implemented by MikroTik themselves and share a similar architecture, referred to as Nova Binary.
+- **Communication**: Nova Binaries use Nova Messages (key-value pairs) to communicate with each other.
+- **Access**: Closed-source and closed-ecosystem, with limited official methods for users to access the underlying Linux system.
+
+**Previous Research on RouterOS**
+- **CVEs**: A total of 80 CVEs have been found, with 28 being pre-auth exploitable, 16 in various components, 8 related to DNS poisoning/MITM/firewall evasion, and only 4 leading directly to shell or admin access.
+- **Talks and Articles**: Topics include package format, developer backdoors, password storage, Nova Message analysis, Winbox vulnerabilities, and exploit disclosures.
+
+**Understanding Nova Message IPC**
+- Nova Messages are used for inter-process communication (IPC) and consist of key-value pairs with keys as numbers and values of various types.
+- Messages are sent to the loader via sockets, which then dispatches them to the corresponding binary.
+- The systool and sysform fields in a message contain the IDs of the target binary and handler, respectively.
+- The loader removes the target binary ID and forwards the message to the target process, which removes the handler and passes it to the corresponding handler function.
+
+**Analysis of Past CVEs and Research**
+- Most interesting vulnerabilities were discovered years ago, and MikroTik has become safer over time.
+- However, a vulnerability discovered in 2021 in an APT C2 server suggests that some details may have been overlooked.
+- Most talks and articles focus on jailbreaking, analyzing exploits, and normal message IPC, but there is a gap between researchers and attackers.
+
+**Approach to Finding Pre-Auth RCE Bugs**
+- Focus on entry points to customized IPC and crucial parts of the OS functionality, such as how a DSCP process passes a DSCP packet.
+- Understand the architecture of Nova Binaries and their loopers, which use ports to check socket status and process events.
+- Looper registers a special callback for unit sockets, which dispatch messages to corresponding handlers once received.
+- Handlers have a base class with unimplemented commands, and derived classes that store collections of specific object types.
+- Some functionalities, like CDP and LLDP, don't use normal messages and instead store information directly in ASEC maps.
+
+**Discovery of RADVD Vulnerability**
+- While plugging and unplugging cables, the log file showed that RADVD (a service for SLAAC in IPv6) crashed randomly.
+- Unable to reproduce the crash, the team reversed RADVD and found a potential stack buffer overflow in the ADD DNS function.
+- The vulnerability was caused by memory copy without bounds checking, affecting IPv6 address storage and allowing for stack buffer overflow.
+
+**Exploit Development**
+- The exploit involved sending crafted ICMPv6 packets to the target router, acting as a bad neighbor.
+- Overwriting the return address with an IPv6 address and jumping to a gadget on the stack to run shellcode was the initial plan.
+- However, issues with instruction cache and data cache required flushing the dcache by extending the heap and writing gadgets to it.
+- The exploit was successful on macOS but failed on Ubuntu due to packet reordering and not calculating the exact bytes needed to override the return address.
+
+**REST Condition in Remote Object**
+- The problem was caused by non-blocking methods for creating and deleting remote objects, resulting in a race condition.
+- When sending two RAs quickly, the RA DVD process couldn't get the object ID of the old remote object, leading to soft deletion and mixing the results of two requests.
+- This resulted in a successful exploit on macOS but not Ubuntu, as the timing difference caused a REST condition.
+
+**Conclusion**
+- The vulnerability, assigned CVE-2023-32154, existed for 9 years until it was discovered and has since been fixed.
+- The team combined this exploit with a Canon printer exploit to win the Pwn2Own Toronto 2022 contest.
+- They release tools used in the event to facilitate RouterOS research.

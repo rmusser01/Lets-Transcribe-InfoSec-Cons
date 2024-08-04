@@ -1,0 +1,60 @@
+**Introduction**
+- Speaker: Maxime Clementz
+- Topic: Defeating VPN Always On
+- **VPN Always-On**: A security control for mobile endpoints that remotely access corporate resources through a VPN, preventing data leaks and reducing the attack surface.
+
+**Overview of VPN Always-On**
+- **Trusted Network Detection**: Algorithms used by VPN agents to determine if they are connected to a trusted network.
+- **Captive Portal Detection**: Algorithms to detect if the device is behind a captive portal, allowing limited network access until authentication.
+- VPN agents combine these detections to enforce always-on behavior, restricting access outside trusted networks.
+
+**Initial Attacks**
+- **DNS and LLMNR**: Using PowerShell, DNS and LLMNR protocols can be exploited for data exfiltration or establishing a command-and-control (C2) channel.
+- **Ethernet Management**: Attack effective when the attacker has access to the corporate environment and network plugs.
+- **UDP Datagrams**: Sending datagrams over UDP port 53 can be more effective for exfiltration than a DNS channel due to increased bandwidth.
+
+**Exploiting Captive Portal Detection**
+- By spoofing captive portal detection, attackers can unlock connectivity and steal credentials, establish C2 channels, or exfiltrate data.
+- **Cisco**: Provides 5 minutes of unlocked access and requires the use of an embedded browser.
+- **Pulse Secure (Eventy)**: Allows access to the full LAN but restricts to the embedded browser.
+- **Palo Alto**: No restrictions on binaries, allowing any program to connect to the network.
+
+**Trusted Network Detection Vulnerabilities**
+- **Cisco**: Offers a secure option using TLS certificate fingerprints but is impractical and rarely implemented.
+- **Vulnerable VPN Agents**: Rely on IP values, DNS values, or ping responses, which can be easily spoofed.
+- Attackers can spoof these values to make the VPN agent believe it is connected to the trusted network, bypassing restrictions.
+
+**Windows Filtering Platform (WFP)**
+- **WFP**: An API provided by Microsoft for interacting with the Windows filtering engine.
+- VPN agents use WFP to define layers, sublayers, and filters to control network access.
+- Tools like **NetSH WFP** and **WFP Explorer** allow inspection and manipulation of WFP filters.
+
+**Analyzing VPN Agent Filters**
+- By deleting filters committed to the WFP framework, network connectivity can be restored.
+- Cisco's filters were challenging to inspect due to access restrictions and the use of security descriptors.
+- Using **Frida** scripts to hook API functions, the filters could be accessed and analyzed.
+- **Audit Policy**: Enabled to view changes made to WFP filters, revealing that Cisco frequently commits filters.
+- **Security Descriptor**: Controls access to filters, requiring local service privileges to read.
+- **Token Crafting**: Creating a token with local service privileges allows access to Cisco's filters.
+
+**Comparison of VPN Agent Vulnerabilities**
+- None of the VPN agents are perfect, and each has vulnerabilities to at least one of the discussed attacks.
+- **DHCP**: Not usable due to source port restrictions requiring privileges.
+- **TCP DNS and LLMNR**: Only UDP protocols are permitted by the allow filters.
+- **Eventy's DNS Restriction**: Only system processes are allowed to use UDP53.
+- **Grace Period**: Not observed in Global Protect due to the use of persistent filters instead of dynamic filters.
+
+**Recommendations**
+- Detection of attacks is challenging, so focus on prevention.
+- **ANSSI's Report**: Suggests connecting laptops through a smartphone access point to avoid captive portals.
+- **Trusted Network Detection**: ANSSI recommends using Cisco's TLS certificate fingerprint method or deploying an internal VPN gateway.
+- **Configuration**: Review access rights, TND, and CPD settings.
+- **Implementation**: Consider changing configurations based on identified weaknesses.
+- **Custom WFP Filters**: Deploying custom WFP filters requires knowledge of the Microsoft API.
+
+**Key Takeaways**
+- VPN agents vary in their implementation of always-on features, and none are perfect.
+- Naive attacks can be effective without requiring privileges or complex tools.
+- TND spoofing is a convenient and generic technique for bypassing restrictions.
+- Documentation and open-source tools provide valuable information for attacks and prevention.
+- IT admins should consider configuration mistakes and user modifications as potential vulnerabilities.

@@ -1,0 +1,764 @@
+{
+  "segments": [
+    {
+      "Time_Start": 0.0,
+      "Time_End": 11.0,
+      "Text": "This text was transcribed using whisper model: large-v2\n\n Hello everyone. Thank you for warm introduction. So, I was so nervous before my first DEF CON talk"
+    },
+    {
+      "Time_Start": 11.0,
+      "Time_End": 22.0,
+      "Text": " that I prepared 62 slides for this 20 minute talk. We will try to manage it. So, we'll talk"
+    },
+    {
+      "Time_Start": 22.0,
+      "Time_End": 31.0,
+      "Text": " about Prototype Pollution Vulnerabilities in JavaScript. This talk is based on the joint work"
+    },
+    {
+      "Time_Start": 31.0,
+      "Time_End": 38.0,
+      "Text": " with Musar Balio and Chris Steichel. In this paper we study Prototype Pollution Vulnerabilities"
+    },
+    {
+      "Time_Start": 38.0,
+      "Time_End": 47.0,
+      "Text": " and their gadget and implemented the tools to detect them. I already presented part of"
+    },
+    {
+      "Time_Start": 47.0,
+      "Time_End": 53.0,
+      "Text": " this talk, the exploits that we detected in the real application and details of the gadget"
+    },
+    {
+      "Time_Start": 53.0,
+      "Time_End": 62.0,
+      "Text": " on Black Hat Asia. Today I want to present more details about our methodology, about the tools."
+    },
+    {
+      "Time_Start": 62.0,
+      "Time_End": 74.0,
+      "Text": " Let's start with some introduction in JavaScript and how inheritance work in JavaScript."
+    },
+    {
+      "Time_Start": 74.0,
+      "Time_End": 87.0,
+      "Text": " So, we run Node.js which executes the code in index file. The first line of the code creates"
+    },
+    {
+      "Time_Start": 87.0,
+      "Time_End": 93.0,
+      "Text": " an empty JavaScript object. The runtime allocates a new object with a built-in property proto"
+    },
+    {
+      "Time_Start": 93.0,
+      "Time_End": 100.0,
+      "Text": " that points to the object prototype. The object prototype has a bunch of functions that we can"
+    },
+    {
+      "Time_Start": 101.0,
+      "Time_End": 107.0,
+      "Text": " reuse. For example, toString. To implement inheritance, JavaScript allows to extend the"
+    },
+    {
+      "Time_Start": 107.0,
+      "Time_End": 116.0,
+      "Text": " prototype with a new property. In this example, we define the property x with value 42. Things"
+    },
+    {
+      "Time_Start": 116.0,
+      "Time_End": 123.0,
+      "Text": " get more interesting when we create some other object, in principle unrelated from the first"
+    },
+    {
+      "Time_Start": 123.0,
+      "Time_End": 131.0,
+      "Text": " one. Both objects share the same prototype. When the runtime executes the last line of the"
+    },
+    {
+      "Time_Start": 131.0,
+      "Time_End": 140.0,
+      "Text": " code to print x property for the second um, object, it tries to find prototype in the object"
+    },
+    {
+      "Time_Start": 140.0,
+      "Time_End": 148.0,
+      "Text": " itself. Since x is undefined for the second object, the runtime will look up the property x"
+    },
+    {
+      "Time_Start": 148.0,
+      "Time_End": 154.0,
+      "Text": " in the prototype. In this case, um, it prints 42 to the terminal. Well, let's consider the"
+    },
+    {
+      "Time_Start": 159.0,
+      "Time_End": 167.0,
+      "Text": " threat model of web applications to see how this feature can affect uh, security properties of"
+    },
+    {
+      "Time_Start": 167.0,
+      "Time_End": 175.0,
+      "Text": " the application. Index.js file creates a simple web app that handles two requests, update and"
+    },
+    {
+      "Time_Start": 176.0,
+      "Time_End": 184.0,
+      "Text": " backup. The attacker in our threat model can send any request to the server, for example, update"
+    },
+    {
+      "Time_Start": 184.0,
+      "Time_End": 192.0,
+      "Text": " with any parameters. Let's see what happens when the parameters are in this figure. The code"
+    },
+    {
+      "Time_Start": 192.0,
+      "Time_End": 200.0,
+      "Text": " creates an empty object, it reads proto property, and then the attacker adds uh, the property"
+    },
+    {
+      "Time_Start": 201.0,
+      "Time_End": 207.0,
+      "Text": " shell, uh, with the value calc to object prototype. On this, so this code pattern is called"
+    },
+    {
+      "Time_Start": 213.0,
+      "Time_End": 219.0,
+      "Text": " prototype pollution vulnerability. But how can it affect our application? Let's assume that"
+    },
+    {
+      "Time_Start": 221.0,
+      "Time_End": 228.0,
+      "Text": " this code handler handles backup request. It just executes backup script by the helper"
+    },
+    {
+      "Time_Start": 228.0,
+      "Time_End": 236.0,
+      "Text": " function. Notice that the attacker cannot control any arguments of this helper function. In"
+    },
+    {
+      "Time_Start": 236.0,
+      "Time_End": 244.0,
+      "Text": " this function we can give some options in terms of which shell you want to use. Uh, if we"
+    },
+    {
+      "Time_Start": 244.0,
+      "Time_End": 252.0,
+      "Text": " don't specify this option, it will use the default shell. And then, um, it will run a new process."
+    },
+    {
+      "Time_Start": 252.0,
+      "Time_End": 260.0,
+      "Text": " If the attacker sends backup request after prototype pollution, we execute the function and"
+    },
+    {
+      "Time_Start": 260.0,
+      "Time_End": 266.0,
+      "Text": " options dot shell reads the attacker controlled property from the prototype and runs the"
+    },
+    {
+      "Time_Start": 269.0,
+      "Time_End": 275.0,
+      "Text": " calculator. So, we get remote code execution and this code fragments uh, call it prototype"
+    },
+    {
+      "Time_Start": 276.0,
+      "Time_End": 282.0,
+      "Text": " pollution gadget. If you find gadget in the code of Node.js itself, the impact is much higher"
+    },
+    {
+      "Time_Start": 286.5,
+      "Time_End": 292.5,
+      "Text": " because it potentially affect of all applications. In summary, to achieve remote code execution,"
+    },
+    {
+      "Time_Start": 295.0,
+      "Time_End": 302.0,
+      "Text": " we need two steps. Identifying prototype pollution and identifying gadgets. How to identify"
+    },
+    {
+      "Time_Start": 302.0,
+      "Time_End": 308.0,
+      "Text": " prototype pollution in scale. We implemented static analysis for Node.js applications and uh,"
+    },
+    {
+      "Time_Start": 308.0,
+      "Time_End": 314.0,
+      "Text": " NPM packages. We used stint analysis where we marked the attacker controlled data by the input"
+    },
+    {
+      "Time_Start": 315.8,
+      "Time_End": 321.8,
+      "Text": " uh, label. Uh, however, we cannot define this thing syntactically because not every property"
+    },
+    {
+      "Time_Start": 323.6,
+      "Time_End": 329.6,
+      "Text": " assigned uh, uh, not prop- not every property assignment uh, leads to prototype pollution. Uh,"
+    },
+    {
+      "Time_Start": 332.0,
+      "Time_End": 338.0,
+      "Text": " instead we use uh, what we call multi-label paint analysis to find this thing. Let's see how it"
+    },
+    {
+      "Time_Start": 338.6,
+      "Time_End": 345.0,
+      "Text": " looks uh, at this example. We assume that all arguments uh, of the function are attacker"
+    },
+    {
+      "Time_Start": 345.0,
+      "Time_End": 351.0,
+      "Text": " controlled. Uh, and mark uh, them by input label. We propagate the input label and if we have a"
+    },
+    {
+      "Time_Start": 351.0,
+      "Time_End": 357.0,
+      "Text": " property read with the tainted property name, we change the prototype to proto. It means"
+    },
+    {
+      "Time_Start": 362.58,
+      "Time_End": 368.58,
+      "Text": " attacker can potentially read pro- uh, object prototype um, here. When the analysis detects the"
+    },
+    {
+      "Time_Start": 371.88,
+      "Time_End": 377.88,
+      "Text": " property assignment with receivers that has a proto label, like this one, it reports the code"
+    },
+    {
+      "Time_Start": 378.84,
+      "Time_End": 385.14,
+      "Text": " fragment as potential prototype pollution vulnerability. This is the main idea of our"
+    },
+    {
+      "Time_Start": 385.14,
+      "Time_End": 391.14,
+      "Text": " analysis. We implemented it based on the code QL um, ana- analysis framework. Uh, and uh, it will"
+    },
+    {
+      "Time_Start": 394.21999999999997,
+      "Time_End": 400.02,
+      "Text": " lead that uh, our analysis on one hundred vulnerable packages uh, that we collected. The best"
+    },
+    {
+      "Time_Start": 400.02,
+      "Time_End": 406.4,
+      "Text": " result achieves ninety-seven percent recall. It means we uh, detected ninety-seven uh,"
+    },
+    {
+      "Time_Start": 406.42,
+      "Time_End": 412.76000000000005,
+      "Text": " vulnerabilities out of one hundred. And uh, which is necessary to find vulnerabilities in the real"
+    },
+    {
+      "Time_Start": 412.76000000000005,
+      "Time_End": 417.76000000000005,
+      "Text": " applications. The second question is how to identify the gadgets. We analyzed Node.js code um,"
+    },
+    {
+      "Time_Start": 422.94000000000005,
+      "Time_End": 428.94000000000005,
+      "Text": " and uh, used dynamic analysis uh, to detect property reads from object prototype. Uh, then we"
+    },
+    {
+      "Time_Start": 429.3,
+      "Time_End": 435.3,
+      "Text": " used static analysis to find flows from these properties to internal Node.js function calls. You"
+    },
+    {
+      "Time_Start": 439.6,
+      "Time_End": 444.78,
+      "Text": " can find all details of this analysis in the paper. In presentation I want to show some"
+    },
+    {
+      "Time_Start": 444.78,
+      "Time_End": 450.78,
+      "Text": " interesting results. So, we detected eleven different gadgets in Node.js APIs. The first gadget"
+    },
+    {
+      "Time_Start": 451.00000000000006,
+      "Time_End": 456.00000000000006,
+      "Text": " is spawn function which execute new process. Uh, let's look at this code. Details is not"
+    },
+    {
+      "Time_Start": 463.58000000000004,
+      "Time_End": 468.58000000000004,
+      "Text": " important uh, here. But we see that the property shell and the property end can be uh,"
+    },
+    {
+      "Time_Start": 471.42,
+      "Time_End": 476.42,
+      "Text": " undefined. And there is a flow from these properties to the internal function call. Uh, which"
+    },
+    {
+      "Time_Start": 480.86,
+      "Time_End": 485.86,
+      "Text": " is actually vulnerable. It's simplified version of uh, spawn function from Node.js API"
+    },
+    {
+      "Time_Start": 488.40000000000003,
+      "Time_End": 493.40000000000003,
+      "Text": " implementation. Let's see how remote code execution can be achieved. Suppose that the backup"
+    },
+    {
+      "Time_Start": 496.68,
+      "Time_End": 501.68,
+      "Text": " handler calls spawn with no attacker control at arguments. The attacker first follow the"
+    },
+    {
+      "Time_Start": 502.16,
+      "Time_End": 507.16,
+      "Text": " prototype by update request as we saw earlier. They add property shell with value node to object"
+    },
+    {
+      "Time_Start": 513.2,
+      "Time_End": 518.2,
+      "Text": " prototype. The property end by another request. And send backup request to execute spawn"
+    },
+    {
+      "Time_Start": 521.34,
+      "Time_End": 526.34,
+      "Text": " function. Let's see what happens. When spawn executes, it reads uh, the value of the shell"
+    },
+    {
+      "Time_Start": 526.34,
+      "Time_End": 531.34,
+      "Text": " and end from the prototype. It allows attacker to run Node.js in debugging mode by"
+    },
+    {
+      "Time_Start": 538.08,
+      "Time_End": 543.1,
+      "Text": " controlling environment variables. And connect remotely to execute arbitrary code. For this we"
+    },
+    {
+      "Time_Start": 546.5,
+      "Time_End": 553.24,
+      "Text": " implemented uh, the shell based on Node.js uh, remote debugging protocol. Uh, you can see the"
+    },
+    {
+      "Time_Start": 553.24,
+      "Time_End": 558.24,
+      "Text": " short demo on the slide. The second gadget is the require function. The require function is"
+    },
+    {
+      "Time_Start": 561.14,
+      "Time_End": 566.14,
+      "Text": " used to include external packages to an application. So each application uh, has a lot"
+    },
+    {
+      "Time_Start": 569.92,
+      "Time_End": 574.92,
+      "Text": " require calls. Uh, this is simplified snippet of require function. As we can see it reads a"
+    },
+    {
+      "Time_Start": 575.7199999999999,
+      "Time_End": 580.7199999999999,
+      "Text": " package configuration file, package JSON. And to release the entry point uh, if this is"
+    },
+    {
+      "Time_Start": 586.2199999999999,
+      "Time_End": 591.2199999999999,
+      "Text": " defined in the property main. If main is undefined, Node.js use a default value. Let's see how we"
+    },
+    {
+      "Time_Start": 595.0999999999999,
+      "Time_End": 600.0999999999999,
+      "Text": " can exploit it if the attacker pollute the main property. To exploit the gadget, we need to"
+    },
+    {
+      "Time_Start": 600.96,
+      "Time_End": 605.96,
+      "Text": " require a function call for a package without the main property defined. An example of uh,"
+    },
+    {
+      "Time_Start": 609.4,
+      "Time_End": 614.4,
+      "Text": " such um, a gadget is bytes. One of the popular gadget in NPM um, ecosystem. Let's see how it"
+    },
+    {
+      "Time_Start": 618.5400000000001,
+      "Time_End": 625.1800000000001,
+      "Text": " works when the attacker triggers this code to execute the uh, require call. The attacker"
+    },
+    {
+      "Time_Start": 625.2,
+      "Time_End": 630.2,
+      "Text": " triggers the backup handler which parse a config file of byte package. Since the main"
+    },
+    {
+      "Time_Start": 632.84,
+      "Time_End": 638.74,
+      "Text": " property is undefined, it lookups uh, the property from the prototype. To achieve remote"
+    },
+    {
+      "Time_Start": 638.74,
+      "Time_End": 643.7600000000001,
+      "Text": " code execution, attacker should control this malicious file. As you can guess, this is a"
+    },
+    {
+      "Time_Start": 646.1200000000001,
+      "Time_End": 651.7600000000001,
+      "Text": " strong requirement. Uh, the attacker should be able to upload some malicious file to the"
+    },
+    {
+      "Time_Start": 651.78,
+      "Time_End": 658.52,
+      "Text": " system. For example, using some another vulnerability. Let's see how we can bypass this"
+    },
+    {
+      "Time_Start": 658.52,
+      "Time_End": 663.52,
+      "Text": " limitation by combining these two gadgets. The key idea is to use require gadget to trigger the"
+    },
+    {
+      "Time_Start": 668.1,
+      "Time_End": 673.1,
+      "Text": " spawn gadget. To achieve this, we need to find the existing file that execute spawn function."
+    },
+    {
+      "Time_Start": 673.76,
+      "Time_End": 678.76,
+      "Text": " If we identify a file in Node.js default distribution, then we increase the impact of the"
+    },
+    {
+      "Time_Start": 683.8000000000001,
+      "Time_End": 688.8000000000001,
+      "Text": " exploit because every application uh, use Node.js already have this file. An example of such a"
+    },
+    {
+      "Time_Start": 693.6800000000001,
+      "Time_End": 698.6800000000001,
+      "Text": " file is NPM.js which uh, runs Node instance. Let's look at the end to end uh, execution."
+    },
+    {
+      "Time_Start": 703.12,
+      "Time_End": 708.12,
+      "Text": " The attacker exploits the main property with the path to NPM.js and the end property as"
+    },
+    {
+      "Time_Start": 713.16,
+      "Time_End": 718.16,
+      "Text": " required uh, by spawn gadget. Finally, when backup is triggered, uh, Node.js uh, executes the"
+    },
+    {
+      "Time_Start": 718.98,
+      "Time_End": 723.98,
+      "Text": " require function, loads NPM.js that calls spawn function. The spawn function reads the attacker"
+    },
+    {
+      "Time_Start": 737.26,
+      "Time_End": 743.0,
+      "Text": " controller environment variable from the prototype and runs Node.js in debugging mode as we"
+    },
+    {
+      "Time_Start": 743.02,
+      "Time_End": 749.52,
+      "Text": " saw earlier. So that attacker achieved remote code execution for require call without"
+    },
+    {
+      "Time_Start": 749.52,
+      "Time_End": 754.52,
+      "Text": " additional requirements. The last question is how to exploit real application using or tools and"
+    },
+    {
+      "Time_Start": 760.26,
+      "Time_End": 765.26,
+      "Text": " detected gadgets. Uh, we covered uh, the GitHub uh, for Node.js applications and took 15 uh,"
+    },
+    {
+      "Time_Start": 766.14,
+      "Time_End": 771.14,
+      "Text": " most popular ones. We ran our tool and got some prototype pollution cases. As you can see the"
+    },
+    {
+      "Time_Start": 778.88,
+      "Time_End": 785.22,
+      "Text": " prototype pollution pattern is rare in practice and manual verification is applicable for the"
+    },
+    {
+      "Time_Start": 785.22,
+      "Time_End": 790.22,
+      "Text": " total number of detected cases. We confirmed eight detected cases uh, as exploitable and"
+    },
+    {
+      "Time_Start": 790.22,
+      "Time_End": 795.22,
+      "Text": " reported them to maintainers. You can see we found two cases in NPM CLI. Everyone I think"
+    },
+    {
+      "Time_Start": 801.8000000000001,
+      "Time_End": 806.8000000000001,
+      "Text": " uses up uh, package uh, parserver and uh, rocket chat uh, messenger. The main problem is"
+    },
+    {
+      "Time_Start": 811.84,
+      "Time_End": 816.84,
+      "Text": " um, real exploitation of this um, vulnerability to achieve remote code execution. It's uh,"
+    },
+    {
+      "Time_Start": 817.84,
+      "Time_End": 822.84,
+      "Text": " that code of um, um, some code of the application can breaks your application if you pollute"
+    },
+    {
+      "Time_Start": 828.62,
+      "Time_End": 833.22,
+      "Text": " object prototype. So the code does not expect any additional properties in the object"
+    },
+    {
+      "Time_Start": 833.22,
+      "Time_End": 838.22,
+      "Text": " prototype. Uh, it kept many times uh, in this experiments and I want to show one technique that"
+    },
+    {
+      "Time_Start": 838.72,
+      "Time_End": 843.72,
+      "Text": " I used um, and that you can also um, apply for your research. Let's see a case for parserver. We"
+    },
+    {
+      "Time_Start": 850.6,
+      "Time_End": 856.5400000000001,
+      "Text": " have a parserver. It's a service that provide REST API out of the box and use some database."
+    },
+    {
+      "Time_Start": 856.5400000000001,
+      "Time_End": 861.5400000000001,
+      "Text": " For example MongoDB to store data from the request. Uh, it also use uh, JSBSON. It's a library"
+    },
+    {
+      "Time_Start": 862.54,
+      "Time_End": 867.54,
+      "Text": " of the MongoDB that uh, can serialize and deserialize the data to binary MongoDB format. So we"
+    },
+    {
+      "Time_Start": 876.38,
+      "Time_End": 881.38,
+      "Text": " detected prototype pollution case in parserver. Uh, this example of the code details is not"
+    },
+    {
+      "Time_Start": 883.36,
+      "Time_End": 889.5,
+      "Text": " interesting uh, what's uh, it's not important. What's um, actually important for us that"
+    },
+    {
+      "Time_Start": 889.52,
+      "Time_End": 894.52,
+      "Text": " attacker can control uh, name and uh, the value of uh, the polluted property. We also detected a"
+    },
+    {
+      "Time_Start": 897.24,
+      "Time_End": 902.24,
+      "Text": " gadget in JSBSON um, package. And this gadget can be triggered when JSBSON deserialize some"
+    },
+    {
+      "Time_Start": 906.44,
+      "Time_End": 911.44,
+      "Text": " data from the MongoDB. So this gadget call evolve function for function string from the MongoDB"
+    },
+    {
+      "Time_Start": 911.7600000000001,
+      "Time_End": 916.7600000000001,
+      "Text": " that attacker can store uh, to the MongoDB before. Uh, but the problem that this evolve call"
+    },
+    {
+      "Time_Start": 921.34,
+      "Time_End": 926.34,
+      "Text": " executed uh, only if evolve function option is enabled. As you can guess it's disabled by"
+    },
+    {
+      "Time_Start": 929.5400000000001,
+      "Time_End": 934.5400000000001,
+      "Text": " default in the configuration file. But it can be um, polluted uh, and the gadget reaches from"
+    },
+    {
+      "Time_Start": 935.2199999999999,
+      "Time_End": 940.2199999999999,
+      "Text": " the polluted prototype and we can enable this feature in run time. This is the main idea. So let's"
+    },
+    {
+      "Time_Start": 944.16,
+      "Time_End": 949.16,
+      "Text": " see on the naive way how we can exploit it. Attacker first send a package that should trigger"
+    },
+    {
+      "Time_Start": 951.4599999999999,
+      "Time_End": 957.0,
+      "Text": " prototype pollution vulnerability. The package uh, serialize it to the MongoDB uh, response"
+    },
+    {
+      "Time_Start": 957.0,
+      "Time_End": 962.0,
+      "Text": " deserialize it and trigger prototype pollution. Good. We pollute uh, the option that we need to"
+    },
+    {
+      "Time_Start": 962.3,
+      "Time_End": 967.3,
+      "Text": " trigger a gadget. After that the attacker send a package that should trigger a gadget but"
+    },
+    {
+      "Time_Start": 970.84,
+      "Time_End": 975.84,
+      "Text": " serializer of JavaScript BSON library throws an exception and application crashed. It looks"
+    },
+    {
+      "Time_Start": 978.66,
+      "Time_End": 984.96,
+      "Text": " like unexploitable case. We cannot send any request after prototype pollution. Application"
+    },
+    {
+      "Time_Start": 984.96,
+      "Time_End": 989.96,
+      "Text": " crashed after the first request that we tried to send. How we can bypass it? I hope you"
+    },
+    {
+      "Time_Start": 992.0,
+      "Time_End": 997.0,
+      "Text": " found a way, some kind of race condition. Let's see. If the attacker sent the package that"
+    },
+    {
+      "Time_Start": 1000.0,
+      "Time_End": 1005.02,
+      "Text": " trigger remote code execution gadget first, this package uh, serialize it and MongoDB start to"
+    },
+    {
+      "Time_Start": 1007.88,
+      "Time_End": 1012.88,
+      "Text": " handle it for the some long time. At this moment the attacker sent second gadget that should"
+    },
+    {
+      "Time_Start": 1015.26,
+      "Time_End": 1019.96,
+      "Text": " trigger prototype pollution vulnerability. It's serialize it and deserialize it from the"
+    },
+    {
+      "Time_Start": 1019.98,
+      "Time_End": 1026.42,
+      "Text": " MongoDB and successfully trigger prototype pollution. After that MongoDB decided to stop"
+    },
+    {
+      "Time_Start": 1026.42,
+      "Time_End": 1031.44,
+      "Text": " handling the gadget uh, the first request and uh, pass it to the application. And we trigger"
+    },
+    {
+      "Time_Start": 1033.94,
+      "Time_End": 1040.38,
+      "Text": " remote code execution. This technique I used many times. Usually you need to very short uh,"
+    },
+    {
+      "Time_Start": 1040.38,
+      "Time_End": 1047.38,
+      "Text": " time gap to trigger uh, remote code execution gadget. One of the techniques that I use I just"
+    },
+    {
+      "Time_Start": 1047.4,
+      "Time_End": 1052.4,
+      "Text": " send um, like 20, 50 request to trigger remote code execution and one request that trigger"
+    },
+    {
+      "Time_Start": 1054.72,
+      "Time_End": 1061.72,
+      "Text": " prototype pollution in the middle. Most likely we get some situation that we trigger remote"
+    },
+    {
+      "Time_Start": 1061.72,
+      "Time_End": 1066.72,
+      "Text": " code execution uh, exactly after prototype pollution in the some thread. Okay, let's see how"
+    },
+    {
+      "Time_Start": 1069.46,
+      "Time_End": 1075.3000000000002,
+      "Text": " it looks in, in practice. Some short demo. We run parse server. We need to implement a"
+    },
+    {
+      "Time_Start": 1075.76,
+      "Time_End": 1080.76,
+      "Text": " script to um, to exploit this vulnerability because uh, the second request we need to send in"
+    },
+    {
+      "Time_Start": 1083.26,
+      "Time_End": 1088.26,
+      "Text": " uh, 100, 300 milliseconds after the first one. So it's not possible to do manually. Uh, so this"
+    },
+    {
+      "Time_Start": 1091.74,
+      "Time_End": 1098.58,
+      "Text": " script prepared database to add some data to MongoDB to make it a little bit slower to handle"
+    },
+    {
+      "Time_Start": 1098.6,
+      "Time_End": 1103.6,
+      "Text": " the first request for the long time and send these two um, requests. And you can see that we get"
+    },
+    {
+      "Time_Start": 1108.54,
+      "Time_End": 1113.54,
+      "Text": " calculator from the parse server. So it works. So, in conclusion, uh, we implemented and"
+    },
+    {
+      "Time_Start": 1114.54,
+      "Time_End": 1119.54,
+      "Text": " open-sourced uh, tools to detect prototype pollution vulnerabilities and their gadget. Uh,"
+    },
+    {
+      "Time_Start": 1131.28,
+      "Time_End": 1136.28,
+      "Text": " detected 11 new gadget in Node.js APIs. You also can find them uh, in the GitHub repo. Uh,"
+    },
+    {
+      "Time_Start": 1136.94,
+      "Time_End": 1141.94,
+      "Text": " some gadgets already fixed it, but not all combination of that. And we reported a uh, remote code"
+    },
+    {
+      "Time_Start": 1152.02,
+      "Time_End": 1157.02,
+      "Text": " execution um, vulnerabilities in the popular open-sourced applications. So the interesting"
+    },
+    {
+      "Time_Start": 1159.02,
+      "Time_End": 1164.02,
+      "Text": " question for the future work. One of that, what is the more efficient way to detect gadget? So"
+    },
+    {
+      "Time_Start": 1167.24,
+      "Time_End": 1172.8799999999999,
+      "Text": " we have options like a static analysis, dynamic analysis, we already use some hybrid approach. I"
+    },
+    {
+      "Time_Start": 1172.8799999999999,
+      "Time_End": 1177.8799999999999,
+      "Text": " think it's a good question for the future research. How many new gadget in uh, NPM packages?"
+    },
+    {
+      "Time_Start": 1180.12,
+      "Time_End": 1185.12,
+      "Text": " We did not consider in this research NPM packages, but it's also a large uh, surface for the"
+    },
+    {
+      "Time_Start": 1187.26,
+      "Time_End": 1192.26,
+      "Text": " gadget. How many new gadget in Node.js APIs source code? If we find some efficient way to uh,"
+    },
+    {
+      "Time_Start": 1193.26,
+      "Time_End": 1198.26,
+      "Text": " to detect it, to explore it, probably we can find some new ones. We continue research in this"
+    },
+    {
+      "Time_Start": 1202.42,
+      "Time_End": 1207.42,
+      "Text": " direction. If you're interested um, in this, just follow me on the Twitter. And thank you for your"
+    },
+    {
+      "Time_Start": 1209.76,
+      "Time_End": 1210.26,
+      "Text": " attention."
+    },
+    {
+      "Time_Start": 1210.26,
+      "Time_End": 1217.26,
+      "Text": " Applause"
+    }
+  ]
+}

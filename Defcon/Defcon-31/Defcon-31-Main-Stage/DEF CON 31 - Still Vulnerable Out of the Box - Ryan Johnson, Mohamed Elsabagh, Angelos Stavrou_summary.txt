@@ -1,0 +1,85 @@
+**Introduction**
+- Ryan Johnson, in collaboration with Angelos Stavro and Mohamed El-Sabag, presents research on the security of prepaid Android carrier devices.
+
+**Android Overview**
+- Prepaid smartphones are purchased outright with a fixed-term service contract, often at a lower cost.
+- Major American carriers offer prepaid plans, with Verizon having a significant presence.
+- Android is an open-source operating system developed by Google, allowing vendors to modify and differentiate their products.
+- Various entities contribute software to Android devices, including Google (AOSP), chipset/hardware manufacturers, carriers, vendors, and vendor partners.
+- Pre-installed software is more trusted and privileged than third-party apps, with special access to permissions and system services.
+
+**Application Components and IPC**
+- Android applications have unique user and group IDs, providing a sandbox for files and resources.
+- Applications are identified by package names and request data/capabilities through permissions (normal or dangerous).
+- Apps are not monolithic; they are composed of components: activities, services, broadcast receivers, and content providers.
+- External apps can interact with application components if they are exported, enabled, and have the required permissions.
+- IPC mechanisms include intents, bound services, and network sockets.
+
+**Threat Model**
+- The threat model assumes a local application with 0 or 1 normal-level permission, appearing constrained.
+- The application interacts with insecure interfaces of co-located software, particularly through intents, bound services, and sockets.
+
+**Vulnerabilities in Prepaid Android Carrier Devices**
+- 21 Android carrier devices from different vendors and carriers were analyzed.
+- Common vulnerabilities include leaking non-resettable device identifiers (86%) and GPS coordinates (81%) to a loopback port.
+- Arbitrary file read/write as a system UID (9%), factory reset (24%), arbitrary AT command execution (24%), and arbitrary command execution as a system UID (9%) were also found.
+- A summary of vulnerable devices and their specific issues is provided.
+
+**Non-Resettable Device Identifiers**
+- Google changed the "Read Phone State" permission in Android 10, preventing third-party apps from accessing device identifiers directly.
+- However, pre-installed apps can still access and leak these identifiers to locations accessible by zero-permission third-party apps, such as system properties.
+- A code snippet demonstrates retrieving device identifiers on a TrackPhone TCL A3X.
+
+**GPS Coordinates Leakage**
+- Certain Android devices with MediaTek chipsets have a system binary, MNLD, which opens a debug port (TCP port 7000) when the GPS module is active, emitting GPS coordinates without authentication.
+- A local app with the internet permission can passively or actively access this port to track device location.
+- A source code snippet demonstrates connecting to the debug port and retrieving GPS coordinates.
+- Shodan search reveals 913 internet-facing devices emitting GPS data on port 7000.
+
+**MMI Group App Vulnerabilities**
+- The pre-installed MMI Group app (com.factory.mmigroup) exposes various capabilities, including factory reset, IMEI/serial number leakage, and arbitrary AT command execution.
+- A local malicious app can send intents to the MMI Group app, which dynamically registers for action strings, allowing data retrieval or command execution via system properties.
+- A source code snippet demonstrates initiating a factory reset.
+- Arbitrary AT command injection is possible by controlling the AT command parameter through intent extras, enabling various actions like calling 911.
+- A demo showcases a malicious app executing AT commands without permissions.
+
+**HiddenMenu.apk Vulnerabilities**
+- The com.trackphone.tfstatus package, named hiddenmenu.apk, exposes arbitrary AT command execution to co-located apps.
+- Similar to the MMI Group app, it allows control of the AT command parameter, enabling actions like calling 911 or resetting settings.
+- A source code snippet demonstrates injecting backspace characters to execute custom AT commands.
+
+**Factory Reset via Hidden Menu App**
+- The com.tctGCSHiddenMenuProxy package, a hidden menu app, exposes a programmatic factory reset to local apps without permissions.
+- A broadcast intent can initiate a factory reset, potentially causing catastrophic data loss.
+
+**Arbitrary File Read/Write via Permission Declaration**
+- A vulnerability in the TCL screen recorder app (com.tclscreenrecorder) allows arbitrary file read/write as a system user app.
+- A local app can declare and request a missing permission, bind to the vulnerable service, and interact with it via a messenger to access files.
+- A detailed workflow and source code snippets illustrate the attack.
+
+**Factory Apps and Arbitrary Command Execution**
+- Factory apps, such as engineering/hidden menu apps, provide centralized testing of hardware/software functionality and typically run with system privileges.
+- The Evenwell FQC app (com.evenwell.fqc) and Transion Factory app (com.transion.autotestfactory) expose local arbitrary command execution as a system user.
+- By crashing the FQC app while a specific activity is in the foreground, an attacker can set a system property required for command execution.
+- A malicious app can then execute commands with system privileges, granting permissions, performing a factory reset, recording the screen, etc.
+- A demo showcases a malicious app installing and granting permissions to another app.
+- Evenwell Digitech, the creator of the FQC app, is a Taiwanese company owned by Foxconn.
+- The Transion Factory app has a similar vulnerability, allowing command execution through a shell script.
+
+**ZTE-Specific Vulnerabilities**
+- Three vulnerabilities were discovered in ZTE devices: arbitrary file write as Android system (system server), arbitrary activity component start as a system UI app, and arbitrary file deletion as a system UI app.
+- The arbitrary file write vulnerability is achieved through a zip file employing relative paths and path traversal attacks, allowing overwriting of critical files/databases.
+- A video demo showcases removing the screen lock, deleting photos, and repackaging WhatsApp to access user data.
+
+**Vulnerability Root Causes and Recommendations**
+- Root causes include lack of access control at application component boundaries, insecure handling of zip files, and reliance on package names for security.
+- Vendors should consider proactive scanning and certification to ensure device security.
+- Enterprises should regularly scan assets to enforce security policies, and users should disable/uninstall vulnerable pre-installed apps.
+
+**Vulnerability Discovery and Q-Scout App**
+- Quokka has developed a firmware pipeline to discover vulnerabilities through static analysis, vulnerability patterns, and PoCs.
+- The Q-Scout app can be downloaded to check if a device is vulnerable to any of the presented issues.
+
+**Conclusion**
+- Third-party apps can exploit insecure interfaces in privileged pre-loaded software, emphasizing the need for increased security vetting.
+- The full paper provides additional details, PoCs, and contact information for further discussion.

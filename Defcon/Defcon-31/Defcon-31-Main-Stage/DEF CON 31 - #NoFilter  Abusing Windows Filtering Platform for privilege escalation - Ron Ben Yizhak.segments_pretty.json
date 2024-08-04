@@ -1,0 +1,1814 @@
+{
+  "segments": [
+    {
+      "Time_Start": 0.0,
+      "Time_End": 5.0,
+      "Text": "This text was transcribed using whisper model: large-v2\n\n Hello everyone. My name is Ron Ben-Yitzhak and I'm glad to be speaking here at DEF CON for the"
+    },
+    {
+      "Time_Start": 9.040000000000001,
+      "Time_End": 13.94,
+      "Text": " second year in a row. By the way, thanks for attending my talk at 12 PM on the last day of"
+    },
+    {
+      "Time_Start": 13.94,
+      "Time_End": 19.96,
+      "Text": " this conference. Last year I talked about a new credential dumping technique and today I'm"
+    },
+    {
+      "Time_Start": 19.96,
+      "Time_End": 23.96,
+      "Text": " presenting my new research about how to abuse the Windows filtering platform for"
+    },
+    {
+      "Time_Start": 23.96,
+      "Time_End": 29.96,
+      "Text": " privilege escalation. A little bit about me. I'm a security researcher at Deep Instinct. I'm"
+    },
+    {
+      "Time_Start": 30.02,
+      "Time_End": 36.160000000000004,
+      "Text": " interested in India bypass techniques and I enjoy playing volleyball and rock climbing. Here"
+    },
+    {
+      "Time_Start": 36.160000000000004,
+      "Time_End": 40.36,
+      "Text": " is what we're going to talk about today. I'll start with an overview of non-privilege"
+    },
+    {
+      "Time_Start": 40.36,
+      "Time_End": 44.84,
+      "Text": " escalation techniques and the technical background to understand them. Then I'll show the"
+    },
+    {
+      "Time_Start": 44.84,
+      "Time_End": 49.74,
+      "Text": " process of reverse engineering the execution of an RPC method throughout the entire Windows"
+    },
+    {
+      "Time_Start": 49.74,
+      "Time_End": 54.88,
+      "Text": " filtering platform. Once we understand how this platform works, we'll be able to abuse it to"
+    },
+    {
+      "Time_Start": 54.88,
+      "Time_End": 60.14,
+      "Text": " gain high privilege tokens. The final part will be about how to detect these attacks. And"
+    },
+    {
+      "Time_Start": 60.14,
+      "Time_End": 64.52000000000001,
+      "Text": " I'll also share some interesting findings that you can continue and dig into and maybe you'll"
+    },
+    {
+      "Time_Start": 64.52000000000001,
+      "Time_End": 71.46000000000001,
+      "Text": " find new attacks yourself. Privilege escalation is the ability to execute code in a higher"
+    },
+    {
+      "Time_Start": 71.46000000000001,
+      "Time_End": 77.2,
+      "Text": " level of permissions on the system. It is useful when compromising a weak process. Let's say"
+    },
+    {
+      "Time_Start": 77.2,
+      "Time_End": 81.74000000000001,
+      "Text": " if an attacker gains the ability to execute code in a process that runs as a local service"
+    },
+    {
+      "Time_Start": 81.75999999999999,
+      "Time_End": 87.19999999999999,
+      "Text": " account. This user is limited in the operations it can perform on the system and escalating to"
+    },
+    {
+      "Time_Start": 87.19999999999999,
+      "Time_End": 92.83999999999999,
+      "Text": " higher privileges is necessary. Here is an example for that. On the left we can see the token of"
+    },
+    {
+      "Time_Start": 92.83999999999999,
+      "Time_End": 97.67999999999999,
+      "Text": " a process running as anti-authority system. And on the right is the process of a token running"
+    },
+    {
+      "Time_Start": 97.67999999999999,
+      "Time_End": 104.46,
+      "Text": " as the local service account. The token of this user is uh is limited in the privileges it"
+    },
+    {
+      "Time_Start": 104.46,
+      "Time_End": 109.86,
+      "Text": " holds and it prevents the attacker from further compromising the machine. Anti-authority"
+    },
+    {
+      "Time_Start": 109.86,
+      "Time_End": 114.52,
+      "Text": " system is the most privileged user in the Windows OS. And it is required for performing"
+    },
+    {
+      "Time_Start": 114.52,
+      "Time_End": 120.16,
+      "Text": " attacks like reading the same registry as a stinkering and dumping Kerberos tickets with the"
+    },
+    {
+      "Time_Start": 120.16,
+      "Time_End": 126.24,
+      "Text": " tool. To understand the techniques we'll talk about soon and this talk in general, we first"
+    },
+    {
+      "Time_Start": 126.24,
+      "Time_End": 132.3,
+      "Text": " need to understand what a token is. So I'll quote MSDN. Access token is an object that"
+    },
+    {
+      "Time_Start": 132.3,
+      "Time_End": 136.88,
+      "Text": " describes the security context of a process or a thread. It identifies the user when a thread"
+    },
+    {
+      "Time_Start": 136.9,
+      "Time_End": 143.24,
+      "Text": " interacts with a secureable object or performs a privileged task. A token details the identity"
+    },
+    {
+      "Time_Start": 143.24,
+      "Time_End": 148.82,
+      "Text": " of a process and it is composed of several things. The user that executed it, the groups and"
+    },
+    {
+      "Time_Start": 148.82,
+      "Time_End": 153.57999999999998,
+      "Text": " the logon session it belongs to and the privileges of the process. For example, if it can"
+    },
+    {
+      "Time_Start": 153.57999999999998,
+      "Time_End": 158.66,
+      "Text": " read the memory of other processes, load the driver, shut down the system and more. When a"
+    },
+    {
+      "Time_Start": 158.66,
+      "Time_End": 163.76,
+      "Text": " thread tries to access an object, let's say a named pipe, the security identifiers of the"
+    },
+    {
+      "Time_Start": 163.78,
+      "Time_End": 168.88,
+      "Text": " token are checked to see if the access is allowed. There are two types of tokens. Primary"
+    },
+    {
+      "Time_Start": 168.88,
+      "Time_End": 173.66,
+      "Text": " tokens describe the security context of the user account associated with the process and"
+    },
+    {
+      "Time_Start": 173.66,
+      "Time_End": 180.16,
+      "Text": " impersonation tokens describe the security context of a client process. We'll talk more about"
+    },
+    {
+      "Time_Start": 180.16,
+      "Time_End": 184.85999999999999,
+      "Text": " that in just a bit. To visualize this whole concept, we can look at a software called"
+    },
+    {
+      "Time_Start": 184.85999999999999,
+      "Time_End": 190.6,
+      "Text": " token viewer. Here we can see information about a token belonging to a user named user and"
+    },
+    {
+      "Time_Start": 190.64,
+      "Time_End": 197.38,
+      "Text": " this is a primary token and the session ID is 1. Let's talk more about impersonation. It gives"
+    },
+    {
+      "Time_Start": 197.38,
+      "Time_End": 202.68,
+      "Text": " a thread the ability to execute under a different security context than the owning process."
+    },
+    {
+      "Time_Start": 202.68,
+      "Time_End": 207.92,
+      "Text": " Let's say I'm writing an application for a file server. The process will be executed as the"
+    },
+    {
+      "Time_Start": 207.92,
+      "Time_End": 212.6,
+      "Text": " user network service probably but it will need to check the access of the clients"
+    },
+    {
+      "Time_Start": 212.6,
+      "Time_End": 217.29999999999998,
+      "Text": " connecting to it. This is the purpose of impersonation. A new thread will impersonate the"
+    },
+    {
+      "Time_Start": 217.3,
+      "Time_End": 222.58,
+      "Text": " client and try to access the file. There are several impersonation levels and I won't go"
+    },
+    {
+      "Time_Start": 222.58,
+      "Time_End": 227.38000000000002,
+      "Text": " into details about each one but the level most offensive tools attempt to gain is the third"
+    },
+    {
+      "Time_Start": 227.38000000000002,
+      "Time_End": 232.62,
+      "Text": " one. Impersonation. Which means the thread can impersonate the client security context on"
+    },
+    {
+      "Time_Start": 232.62,
+      "Time_End": 237.62,
+      "Text": " the local system. And again we can look at an example with token viewer. This is another"
+    },
+    {
+      "Time_Start": 240.16000000000003,
+      "Time_End": 244.9,
+      "Text": " token belonging to the user named user and this time it is an impersonation token and the"
+    },
+    {
+      "Time_Start": 244.9,
+      "Time_End": 250.94,
+      "Text": " level is identification. Now let's talk about actual techniques. The first one is based on"
+    },
+    {
+      "Time_Start": 250.94,
+      "Time_End": 256.14,
+      "Text": " the API duplicate token which duplicates the primary token of another process and we can"
+    },
+    {
+      "Time_Start": 256.14,
+      "Time_End": 260.74,
+      "Text": " combine that with the ability to launch a child process with a different token than ours."
+    },
+    {
+      "Time_Start": 260.74,
+      "Time_End": 265.86,
+      "Text": " These are the steps for that. Let's say we have our offensive tool on the left and a process"
+    },
+    {
+      "Time_Start": 265.86,
+      "Time_End": 271.2,
+      "Text": " running as anti-authority system on the right. We start by calling open process token which"
+    },
+    {
+      "Time_Start": 271.2,
+      "Time_End": 277.7,
+      "Text": " gives us a handle to the other process primary token. Then we'll call duplicate token which"
+    },
+    {
+      "Time_Start": 277.7,
+      "Time_End": 283.34,
+      "Text": " gives us a new token with the same security identifiers that you can use with the call to"
+    },
+    {
+      "Time_Start": 283.34,
+      "Time_End": 288.71999999999997,
+      "Text": " create process with token to launch a new child process as anti-authority system. This is a"
+    },
+    {
+      "Time_Start": 288.71999999999997,
+      "Time_End": 294.36,
+      "Text": " very simple technique and it is implemented in PowerSploit and Rubeus. There is another"
+    },
+    {
+      "Time_Start": 294.36,
+      "Time_End": 299.7,
+      "Text": " technique based on the API duplicate handle. The tokens held by a process are listed in the"
+    },
+    {
+      "Time_Start": 299.7,
+      "Time_End": 306.5,
+      "Text": " handle table and here we can see the handle table of else. It holds several tokens and other"
+    },
+    {
+      "Time_Start": 306.5,
+      "Time_End": 312.58,
+      "Text": " processes can gain access to them. Let's see how. Again we have our tool on the left and let's"
+    },
+    {
+      "Time_Start": 312.58,
+      "Time_End": 318.28,
+      "Text": " say else on the right. We start by calling anti-query information process. This gives us the"
+    },
+    {
+      "Time_Start": 318.28,
+      "Time_End": 324.38,
+      "Text": " handle table we just saw. Then we start going over this table and calling duplicate handle on"
+    },
+    {
+      "Time_Start": 324.38,
+      "Time_End": 329.15999999999997,
+      "Text": " each object. This will give us access to that object and we can query it until we find the"
+    },
+    {
+      "Time_Start": 329.18,
+      "Time_End": 334.76000000000005,
+      "Text": " token of anti-authority system. Then once again we can call create process with token. This"
+    },
+    {
+      "Time_Start": 334.76000000000005,
+      "Time_End": 341.0,
+      "Text": " is a very common technique and it is implemented in Meterpreter and Mimikatz. The final"
+    },
+    {
+      "Time_Start": 341.0,
+      "Time_End": 345.86,
+      "Text": " technique is based on the impersonation concept. It is a feature that gets abused by many"
+    },
+    {
+      "Time_Start": 345.86,
+      "Time_End": 350.94000000000005,
+      "Text": " offensive tools. They manipulate common RPC servers to connect one of those threads that will"
+    },
+    {
+      "Time_Start": 350.94000000000005,
+      "Time_End": 357.32000000000005,
+      "Text": " then impersonate system. Let's see how they do it. The tool launches a new thread. The"
+    },
+    {
+      "Time_Start": 357.34,
+      "Time_End": 364.34,
+      "Text": " thread creates a named pipe. Then a new service is created that interacts with this pipe. This"
+    },
+    {
+      "Time_Start": 364.34,
+      "Time_End": 369.88,
+      "Text": " gives the thread the ability to call impersonate named pipe client that will change the"
+    },
+    {
+      "Time_Start": 369.88,
+      "Time_End": 375.82,
+      "Text": " thread security context to anti-authority system. This is another technique, this is another"
+    },
+    {
+      "Time_Start": 375.82,
+      "Time_End": 380.26,
+      "Text": " technique implemented in Meterpreter and also many potato tools manipulate services in"
+    },
+    {
+      "Time_Start": 380.26,
+      "Time_End": 386.94,
+      "Text": " various ways. These techniques are known for a long time and detecting them is easy. We can"
+    },
+    {
+      "Time_Start": 386.96,
+      "Time_End": 391.76,
+      "Text": " look for events of duplicate token or duplicate handle that return a token of anti-authority"
+    },
+    {
+      "Time_Start": 391.76,
+      "Time_End": 397.86,
+      "Text": " system to a process with lower privileges or a thread that impersonates system after calling"
+    },
+    {
+      "Time_Start": 397.86,
+      "Time_End": 402.86,
+      "Text": " one of these APIs. Many tools are very similar and will be detected by the same logic. Now"
+    },
+    {
+      "Time_Start": 410.34,
+      "Time_End": 413.98,
+      "Text": " that we are familiar with privilege escalation techniques, let's talk about how this"
+    },
+    {
+      "Time_Start": 414.42,
+      "Time_End": 420.52000000000004,
+      "Text": " research started. It all began when my teammate Sun Opsula developed a tool for mapping RPC"
+    },
+    {
+      "Time_Start": 420.52000000000004,
+      "Time_End": 426.1,
+      "Text": " methods. The purpose of it was to find ways to manipulate benign services. For example, to"
+    },
+    {
+      "Time_Start": 426.1,
+      "Time_End": 430.56,
+      "Text": " call the service to change the protection of a page in another process or to encrypt the"
+    },
+    {
+      "Time_Start": 430.56,
+      "Time_End": 436.3,
+      "Text": " file. All RPC servers on the system were mapped and methods were marked if the parameters"
+    },
+    {
+      "Time_Start": 436.3,
+      "Time_End": 441.84000000000003,
+      "Text": " that will be sent to the win API are controlled by the RPC clients. The win API could be"
+    },
+    {
+      "Time_Start": 441.84000000000003,
+      "Time_End": 448.08000000000004,
+      "Text": " called directly by the RPC method or after several internal calls. RPC methods were also"
+    },
+    {
+      "Time_Start": 448.08000000000004,
+      "Time_End": 453.38000000000005,
+      "Text": " marked if the specific keywords appear in their names. Let's take a look at the output of the"
+    },
+    {
+      "Time_Start": 453.38000000000005,
+      "Time_End": 459.68,
+      "Text": " tool. Here we can see it found RPC methods that lead to APIs like create remote thread or"
+    },
+    {
+      "Time_Start": 459.68,
+      "Time_End": 465.70000000000005,
+      "Text": " create processes user. It found the calls after 1, 2 or 3 hops. An example of a call will"
+    },
+    {
+      "Time_Start": 465.7,
+      "Time_End": 470.7,
+      "Text": " look like this. The RPC method server pass message is exposed by the DLL D3D10 warp. It will"
+    },
+    {
+      "Time_Start": 473.84,
+      "Time_End": 478.5,
+      "Text": " call an internal non-exported function called build which will then lead to read process"
+    },
+    {
+      "Time_Start": 478.5,
+      "Time_End": 483.52,
+      "Text": " memory. Now let's look at one of the interesting results this tool produced. The DLL called"
+    },
+    {
+      "Time_Start": 485.52,
+      "Time_End": 491.08,
+      "Text": " BFE caught my attention because it exposes many RPC methods and I looked for one with an"
+    },
+    {
+      "Time_Start": 491.09999999999997,
+      "Time_End": 496.9,
+      "Text": " interesting name. This script goes through each RPC interface exposed by this DLL and looks"
+    },
+    {
+      "Time_Start": 496.9,
+      "Time_End": 502.88,
+      "Text": " for the word token in the name of the procedure. This led to a method called BFE RPC open"
+    },
+    {
+      "Time_Start": 502.88,
+      "Time_End": 508.21999999999997,
+      "Text": " token. It sounded interesting to me so I started looking into this DLL and found out it is"
+    },
+    {
+      "Time_Start": 508.21999999999997,
+      "Time_End": 514.12,
+      "Text": " part of the Windows filtering platform. This platform is a native part of the Windows OS and"
+    },
+    {
+      "Time_Start": 514.12,
+      "Time_End": 520.34,
+      "Text": " it can be interacted with by using dedicated APIs. It controls network traffic. It can block"
+    },
+    {
+      "Time_Start": 520.4200000000001,
+      "Time_End": 526.1600000000001,
+      "Text": " or allow it based on several fields like the path of the application, user, address, port and"
+    },
+    {
+      "Time_Start": 526.1600000000001,
+      "Time_End": 532.24,
+      "Text": " more. It does that by hooking the network stack and that allows developing security products"
+    },
+    {
+      "Time_Start": 532.24,
+      "Time_End": 538.74,
+      "Text": " like host firewall and IDS. This platform consists of several components. The first one are"
+    },
+    {
+      "Time_Start": 538.74,
+      "Time_End": 543.22,
+      "Text": " caller drivers. These are user defined drivers that can be loaded and integrated with the"
+    },
+    {
+      "Time_Start": 543.22,
+      "Time_End": 548.08,
+      "Text": " platform to extend its capabilities. They receive network data and can process it in custom"
+    },
+    {
+      "Time_Start": 548.1,
+      "Time_End": 553.8000000000001,
+      "Text": " ways that the platform doesn't offer like the packet inspection, packet modification or"
+    },
+    {
+      "Time_Start": 553.8000000000001,
+      "Time_End": 559.98,
+      "Text": " just perform some custom logging. The second component is the filter engine. This component"
+    },
+    {
+      "Time_Start": 559.98,
+      "Time_End": 565.2800000000001,
+      "Text": " is designed to filter network data by using multiple layers from the OS network stack and the"
+    },
+    {
+      "Time_Start": 565.2800000000001,
+      "Time_End": 570.4200000000001,
+      "Text": " layers are set in user and kernel mode. The user mode component filters RPC and IPsec"
+    },
+    {
+      "Time_Start": 570.4200000000001,
+      "Time_End": 574.82,
+      "Text": " network data and the kernel mode component performs filtering at the network and transport"
+    },
+    {
+      "Time_Start": 574.84,
+      "Time_End": 580.9000000000001,
+      "Text": " layers of the TCP IP stack. It also sends the network data to the caller drivers. The third"
+    },
+    {
+      "Time_Start": 580.9000000000001,
+      "Time_End": 586.08,
+      "Text": " component is the base filtering engine or BFE. This is a user mode service that is"
+    },
+    {
+      "Time_Start": 586.08,
+      "Time_End": 592.4200000000001,
+      "Text": " implemented in the DLL BFE that also exports management functions for user interaction. It"
+    },
+    {
+      "Time_Start": 592.4200000000001,
+      "Time_End": 596.72,
+      "Text": " accepts commands to add or remove filters, offer data and statistics about the platform and"
+    },
+    {
+      "Time_Start": 596.72,
+      "Time_End": 602.5,
+      "Text": " force configuration settings to other components in the system. This is how it all comes"
+    },
+    {
+      "Time_Start": 602.5,
+      "Time_End": 607.48,
+      "Text": " together. The Windows firewall and other security products use an RPC client implemented by a"
+    },
+    {
+      "Time_Start": 607.48,
+      "Time_End": 613.92,
+      "Text": " DLL. It invokes methods in the BFE service which will which then sends device hour requests to"
+    },
+    {
+      "Time_Start": 613.92,
+      "Time_End": 619.2,
+      "Text": " the filter engine in the kernel. Also the various layers in the TCP IP driver use the filter"
+    },
+    {
+      "Time_Start": 619.2,
+      "Time_End": 623.6,
+      "Text": " engine to classify network data which will then go through the relevant filters and caller"
+    },
+    {
+      "Time_Start": 623.6,
+      "Time_End": 629.0,
+      "Text": " drivers. Okay, we're done with the technical background. Time to move on to the reverse"
+    },
+    {
+      "Time_Start": 629.0,
+      "Time_End": 635.08,
+      "Text": " engineering process. Like I said in the overview of the platform, there is a DLL that acts as"
+    },
+    {
+      "Time_Start": 635.08,
+      "Time_End": 640.68,
+      "Text": " an RPC client. It has exported and documented functions that wrap RPC calls to the BFE"
+    },
+    {
+      "Time_Start": 640.68,
+      "Time_End": 646.36,
+      "Text": " service. This is the function that interests us. It's it has several parameters and most of"
+    },
+    {
+      "Time_Start": 646.36,
+      "Time_End": 651.76,
+      "Text": " them are clear. The engine handle can be gained from another win API and we get back an access"
+    },
+    {
+      "Time_Start": 651.76,
+      "Time_End": 656.04,
+      "Text": " token that we can specify the desired access to. There is one parameter I couldn't"
+    },
+    {
+      "Time_Start": 656.04,
+      "Time_End": 662.74,
+      "Text": " understand. The modified ID. So I looked into the code to find out what it is. We're going to"
+    },
+    {
+      "Time_Start": 662.74,
+      "Time_End": 667.5799999999999,
+      "Text": " dig into several components until we'll have the full picture for this query. The first step is"
+    },
+    {
+      "Time_Start": 667.5799999999999,
+      "Time_End": 673.92,
+      "Text": " an RPC client, then the server and the last one is a kernel driver. All the pseudocode"
+    },
+    {
+      "Time_Start": 673.92,
+      "Time_End": 679.0,
+      "Text": " snippets I'll show you today are a bit simplified. I removed variables declaration and error"
+    },
+    {
+      "Time_Start": 679.0,
+      "Time_End": 685.24,
+      "Text": " handling to make them shorter. This is the function in the RPC client and it calls NDR client"
+    },
+    {
+      "Time_Start": 685.24,
+      "Time_End": 690.38,
+      "Text": " call which is the first step in an RPC call. Based on the index that is specified here, we can"
+    },
+    {
+      "Time_Start": 690.38,
+      "Time_End": 696.48,
+      "Text": " tell that the method that will be invoked in the server is BFE RPC open token. This method"
+    },
+    {
+      "Time_Start": 696.48,
+      "Time_End": 702.72,
+      "Text": " receives the modified ID and sends back the process ID and the source handle. The source handle"
+    },
+    {
+      "Time_Start": 702.72,
+      "Time_End": 706.86,
+      "Text": " is then duplicated from another process into the current process and stored in the access"
+    },
+    {
+      "Time_Start": 706.86,
+      "Time_End": 711.86,
+      "Text": " token variable. So the modified ID is still unclear. Let's look at the server now. This is the"
+    },
+    {
+      "Time_Start": 712.36,
+      "Time_End": 717.36,
+      "Text": " method from the RPC server and it is undocumented. But the parameters for the RPC client make"
+    },
+    {
+      "Time_Start": 720.0,
+      "Time_End": 726.1,
+      "Text": " this call clear. It starts by calling driver token query. And if this call is successful, we"
+    },
+    {
+      "Time_Start": 726.1,
+      "Time_End": 732.14,
+      "Text": " get back the token handle. So let's look inside driver token query. What happens here is"
+    },
+    {
+      "Time_Start": 732.14,
+      "Time_End": 737.58,
+      "Text": " that the device I requested sent and the handle to the device is stored in a global variable."
+    },
+    {
+      "Time_Start": 737.58,
+      "Time_End": 744.48,
+      "Text": " Based on cross references, we can tell that this device is called WFP ALE. So what is this"
+    },
+    {
+      "Time_Start": 744.48,
+      "Time_End": 750.0200000000001,
+      "Text": " device? A search for the string in the driver's folder and it led me to the file TCP IP dot"
+    },
+    {
+      "Time_Start": 750.0200000000001,
+      "Time_End": 755.82,
+      "Text": " CS. This driver has a lot of functionalities and it registers many devices. But for now we're"
+    },
+    {
+      "Time_Start": 755.82,
+      "Time_End": 760.76,
+      "Text": " going to focus on the ALE device. I'm up to the control codes and the function functions they"
+    },
+    {
+      "Time_Start": 760.76,
+      "Time_End": 765.76,
+      "Text": " invoke. All of them are undocumented and they are listed here for future use. Now let's look at"
+    },
+    {
+      "Time_Start": 767.64,
+      "Time_End": 773.34,
+      "Text": " the code of the driver. This is the function the BFE service will invoke. It uses an"
+    },
+    {
+      "Time_Start": 773.34,
+      "Time_End": 779.5200000000001,
+      "Text": " undocumented structure I named token entry. It will try to find it based on the ALE ID it"
+    },
+    {
+      "Time_Start": 779.5200000000001,
+      "Time_End": 785.32,
+      "Text": " received which is the modified ID value that we sent. If it is found, duplicate token is"
+    },
+    {
+      "Time_Start": 785.32,
+      "Time_End": 790.8000000000001,
+      "Text": " called. This is when I realized I found something interesting. Invoking APIs in the kernel"
+    },
+    {
+      "Time_Start": 790.8000000000001,
+      "Time_End": 796.36,
+      "Text": " means bypassing user mode hooks. The desired access is hardcoded to be token duplicates and"
+    },
+    {
+      "Time_Start": 796.38,
+      "Time_End": 801.82,
+      "Text": " also the token type is hardcoded to be token primary. If the duplication is successful, we"
+    },
+    {
+      "Time_Start": 801.82,
+      "Time_End": 808.36,
+      "Text": " get back the new token handle in the output buffer. But how an entry is found? Here we can"
+    },
+    {
+      "Time_Start": 808.36,
+      "Time_End": 815.0,
+      "Text": " see that the hash value is calculated based on the ALE ID and then sent to another function."
+    },
+    {
+      "Time_Start": 815.0,
+      "Time_End": 821.14,
+      "Text": " Okay. This is the last step I swear. The driver iterates over a hash table and tries to find"
+    },
+    {
+      "Time_Start": 821.14,
+      "Time_End": 826.12,
+      "Text": " the entry that matches the parameters it receives. If the entry is found, it is returned to"
+    },
+    {
+      "Time_Start": 826.9,
+      "Time_End": 833.24,
+      "Text": " the caller. So this is the recap of the whole process. We use an RPC client that invokes a"
+    },
+    {
+      "Time_Start": 833.24,
+      "Time_End": 838.78,
+      "Text": " method in the BFE service. This service sends a device R request to the TCP IP driver and"
+    },
+    {
+      "Time_Start": 838.78,
+      "Time_End": 844.82,
+      "Text": " after several internal calls, a hash table is looked into. Time to understand what this hash"
+    },
+    {
+      "Time_Start": 844.82,
+      "Time_End": 851.42,
+      "Text": " table is. The table is used by over 30 functions and stores various undocumented structs. We"
+    },
+    {
+      "Time_Start": 851.4200000000001,
+      "Time_End": 857.1,
+      "Text": " can see here names like process information, peer information and connection context. The"
+    },
+    {
+      "Time_Start": 857.1,
+      "Time_End": 862.0000000000001,
+      "Text": " function that inserts tokens appear on the screen. It's too long, I'm not going to read it. The"
+    },
+    {
+      "Time_Start": 862.0000000000001,
+      "Time_End": 868.0400000000001,
+      "Text": " next thing I did is try to debug it and see how it is invoked. But it isn't called at all. Not"
+    },
+    {
+      "Time_Start": 868.0400000000001,
+      "Time_End": 873.6800000000001,
+      "Text": " doing the boot process and not by simple interactions with the machine. What we can tell"
+    },
+    {
+      "Time_Start": 873.6800000000001,
+      "Time_End": 879.32,
+      "Text": " about the insertion function is that it is called by another function named ALE process token"
+    },
+    {
+      "Time_Start": 879.32,
+      "Time_End": 884.96,
+      "Text": " reference. Looking back at the control control code table, we can see that it is invoked by"
+    },
+    {
+      "Time_Start": 884.96,
+      "Time_End": 890.2600000000001,
+      "Text": " device R request. But again, there is a complication. The function in the BFE service that"
+    },
+    {
+      "Time_Start": 890.2600000000001,
+      "Time_End": 895.7,
+      "Text": " send this request isn't exposed directly by RPC. It will be invoked under very specific"
+    },
+    {
+      "Time_Start": 895.7,
+      "Time_End": 901.74,
+      "Text": " circumstances. We want to find a way to trigger this device R request so that uh token entry"
+    },
+    {
+      "Time_Start": 901.74,
+      "Time_End": 906.4200000000001,
+      "Text": " will be will be inserted into the table and we can retrieve it. Let's see how this insertion"
+    },
+    {
+      "Time_Start": 906.4200000000001,
+      "Time_End": 912.7800000000001,
+      "Text": " is done. The function receives a very simple structure as the input buffer. It is made of a"
+    },
+    {
+      "Time_Start": 912.7800000000001,
+      "Time_End": 918.82,
+      "Text": " process ID and a handle to a token. Note that any process ID can be set by the caller. One"
+    },
+    {
+      "Time_Start": 918.82,
+      "Time_End": 924.5000000000001,
+      "Text": " process can specify the ID of another process. This design can be easily abused. The driver"
+    },
+    {
+      "Time_Start": 924.5000000000001,
+      "Time_End": 929.4000000000001,
+      "Text": " changes into the context of the process specified by the PID by obtaining the address of the"
+    },
+    {
+      "Time_Start": 929.4000000000001,
+      "Time_End": 935.1400000000001,
+      "Text": " E process structure and then calling stack attach process. Then the token specified by the"
+    },
+    {
+      "Time_Start": 935.16,
+      "Time_End": 940.74,
+      "Text": " input buffer is duplicated. A new token entry is created based on the LED of the new token and"
+    },
+    {
+      "Time_Start": 940.74,
+      "Time_End": 946.88,
+      "Text": " this entry is inserted into the hash table. The LED is returned to the caller. We finish"
+    },
+    {
+      "Time_Start": 946.88,
+      "Time_End": 952.12,
+      "Text": " reverse engineering the process of adding and retrieving a token from the TCP IP driver. Now"
+    },
+    {
+      "Time_Start": 952.12,
+      "Time_End": 957.12,
+      "Text": " let's see how we can abuse the Windows filtering platform. To recap the last step, we had a"
+    },
+    {
+      "Time_Start": 957.12,
+      "Time_End": 962.12,
+      "Text": " problem. There is no RPC call we can make that will add a token to the table. But if we'll"
+    },
+    {
+      "Time_Start": 968.76,
+      "Time_End": 975.0,
+      "Text": " send this this device I request ourselves, we'll bypass this limitation. We want to gain"
+    },
+    {
+      "Time_Start": 975.0,
+      "Time_End": 981.36,
+      "Text": " access to the device WFP ALE. But guess what? Opening a handle to this device results in"
+    },
+    {
+      "Time_Start": 981.36,
+      "Time_End": 986.1800000000001,
+      "Text": " error access denied. This is because the device is created with a security descriptor by the"
+    },
+    {
+      "Time_Start": 986.2,
+      "Time_End": 991.9000000000001,
+      "Text": " TCP IP driver. Here we can see the creation of the dis- of the device. It is pretty"
+    },
+    {
+      "Time_Start": 991.9000000000001,
+      "Time_End": 997.1800000000001,
+      "Text": " standard. We call IO create device and then IO create symbolic link. But there is another"
+    },
+    {
+      "Time_Start": 997.1800000000001,
+      "Time_End": 1003.0600000000001,
+      "Text": " call to a function named allow BFE generic call. And if we look at the token of the BFE"
+    },
+    {
+      "Time_Start": 1003.0600000000001,
+      "Time_End": 1007.72,
+      "Text": " service, we can see it has a unique security identifier that allows it to access this"
+    },
+    {
+      "Time_Start": 1007.72,
+      "Time_End": 1012.74,
+      "Text": " device. So what can we do? The BFE service has an ho- open handle to this device and we can"
+    },
+    {
+      "Time_Start": 1013.5600000000001,
+      "Time_End": 1018.5600000000001,
+      "Text": " see it in the process handle table. What we can do is to duplicate this process for non- this"
+    },
+    {
+      "Time_Start": 1021.7,
+      "Time_End": 1026.7,
+      "Text": " duplicate this handle to another process. This will give us access to the to the device. And"
+    },
+    {
+      "Time_Start": 1026.7,
+      "Time_End": 1030.98,
+      "Text": " this action is allowed because the security descriptor doesn't block the duplication of the"
+    },
+    {
+      "Time_Start": 1030.98,
+      "Time_End": 1036.34,
+      "Text": " handle. Only creating a new one. The next image shows how well the security descriptor is"
+    },
+    {
+      "Time_Start": 1036.34,
+      "Time_End": 1041.34,
+      "Text": " protecting the device. Um one thing to note there are a few exceptions to this. The"
+    },
+    {
+      "Time_Start": 1042.82,
+      "Time_End": 1047.46,
+      "Text": " few requirements for this action. The first one are debug privileges which are pretty"
+    },
+    {
+      "Time_Start": 1047.46,
+      "Time_End": 1052.32,
+      "Text": " standard for most offensive tools. And also we need a handle to the BFE service with the"
+    },
+    {
+      "Time_Start": 1052.32,
+      "Time_End": 1057.74,
+      "Text": " permissions of duplicating handles and querying information. Gaining this handle isn't"
+    },
+    {
+      "Time_Start": 1057.74,
+      "Time_End": 1062.4,
+      "Text": " suspicious to an EDR. Process hacker does the same thing. That's how it shows us the"
+    },
+    {
+      "Time_Start": 1062.4,
+      "Time_End": 1067.54,
+      "Text": " information about the handle table. And also this type of handle is opened by the RPC"
+    },
+    {
+      "Time_Start": 1067.54,
+      "Time_End": 1074.3799999999999,
+      "Text": " client. So overall it's a pretty legitimate action. Another benefit for sending the device"
+    },
+    {
+      "Time_Start": 1074.3799999999999,
+      "Time_End": 1079.92,
+      "Text": " request directly is avoiding detections. Like I said before specific calls to duplicate"
+    },
+    {
+      "Time_Start": 1079.92,
+      "Time_End": 1084.1599999999999,
+      "Text": " handle or duplicate duplicate token might be detected if they retain the token of"
+    },
+    {
+      "Time_Start": 1084.1599999999999,
+      "Time_End": 1089.1399999999999,
+      "Text": " anti-authority system to a process with lower privileges. And using the RPC client will"
+    },
+    {
+      "Time_Start": 1089.1399999999999,
+      "Time_End": 1095.6399999999999,
+      "Text": " trigger those detections. This is why. We duplicate the handle to the token from the BFE"
+    },
+    {
+      "Time_Start": 1095.64,
+      "Time_End": 1100.64,
+      "Text": " service to the current process here at this point. And the only permission we can have for"
+    },
+    {
+      "Time_Start": 1103.98,
+      "Time_End": 1108.98,
+      "Text": " it is token duplicates because that's how it is set in the driver. We can see it right here."
+    },
+    {
+      "Time_Start": 1111.6000000000001,
+      "Time_End": 1116.72,
+      "Text": " This means that we'll also need to call the API duplicate token to get a new token that can"
+    },
+    {
+      "Time_Start": 1116.72,
+      "Time_End": 1122.24,
+      "Text": " be launched to that can be used to launch a new process. Sending the device our request"
+    },
+    {
+      "Time_Start": 1122.24,
+      "Time_End": 1127.68,
+      "Text": " directly will bypass these detections because the TCP IP driver will duplicate the token for"
+    },
+    {
+      "Time_Start": 1127.68,
+      "Time_End": 1133.08,
+      "Text": " the current process instead of the BFE service. I will say that the initial permissions will"
+    },
+    {
+      "Time_Start": 1133.08,
+      "Time_End": 1138.98,
+      "Text": " still be token duplicates. So we'll need to call the API duplicate handle to change it. But"
+    },
+    {
+      "Time_Start": 1138.98,
+      "Time_End": 1143.32,
+      "Text": " that call will most likely be ignored by an EDR because the source and the destination"
+    },
+    {
+      "Time_Start": 1143.32,
+      "Time_End": 1149.9,
+      "Text": " process are the current process. This object already belongs to us. Time to put all the"
+    },
+    {
+      "Time_Start": 1149.9,
+      "Time_End": 1155.8600000000001,
+      "Text": " pieces together. Our goal is to store a token in the hash table and then retrieve it. We can"
+    },
+    {
+      "Time_Start": 1155.8600000000001,
+      "Time_End": 1160.3000000000002,
+      "Text": " rely on the technique we we talked about before, the one that is based on the API duplicate"
+    },
+    {
+      "Time_Start": 1160.3000000000002,
+      "Time_End": 1165.8400000000001,
+      "Text": " handle. Like before we have our offensive tool and the process running is anti-authority"
+    },
+    {
+      "Time_Start": 1165.8400000000001,
+      "Time_End": 1171.8400000000001,
+      "Text": " system but now we also have the TCP IP driver and the hash table. We'll start by calling"
+    },
+    {
+      "Time_Start": 1171.8400000000001,
+      "Time_End": 1176.0800000000002,
+      "Text": " antiquary information process to gain the handle table but instead of calling duplicate"
+    },
+    {
+      "Time_Start": 1176.1,
+      "Time_End": 1181.8,
+      "Text": " handle, we'll call ALE process token reference. This will cause the driver to store a token"
+    },
+    {
+      "Time_Start": 1181.8,
+      "Time_End": 1188.58,
+      "Text": " in the hash table and send us the LEID. Then we use this value with the call ALE query token"
+    },
+    {
+      "Time_Start": 1188.58,
+      "Time_End": 1193.58,
+      "Text": " by ID to get back this token. Time to see a demo. All demos were recorded on a fully patched"
+    },
+    {
+      "Time_Start": 1198.96,
+      "Time_End": 1203.96,
+      "Text": " Windows 11 machine. So we can see that we have a hash table. We can see that the hash table"
+    },
+    {
+      "Time_Start": 1206.34,
+      "Time_End": 1211.8,
+      "Text": " and this partial commands show us the token held by the WinLogon process. We can see that"
+    },
+    {
+      "Time_Start": 1211.8,
+      "Time_End": 1218.04,
+      "Text": " the first token belongs to anti-authority system. We launch our tool from an elevated command"
+    },
+    {
+      "Time_Start": 1218.04,
+      "Time_End": 1223.04,
+      "Text": " prompt running as a local admin and we get a new console as system. Let's conclude this attack."
+    },
+    {
+      "Time_Start": 1236.52,
+      "Time_End": 1241.86,
+      "Text": " It has a few advantages. We avoid a suspicious caller because a handle to a token isn't"
+    },
+    {
+      "Time_Start": 1241.86,
+      "Time_End": 1247.86,
+      "Text": " duplicated from one process to another. Also, the requirements aren't suspicious. Duplicating"
+    },
+    {
+      "Time_Start": 1247.86,
+      "Time_End": 1253.24,
+      "Text": " a handle to the ALE device should not be detected by security products. Another thing is that"
+    },
+    {
+      "Time_Start": 1253.24,
+      "Time_End": 1257.84,
+      "Text": " I compared this technique to the techniques we talk about talked about before and the token"
+    },
+    {
+      "Time_Start": 1257.84,
+      "Time_End": 1262.98,
+      "Text": " of several services can be duplicated only by this method. Services like the LSM,"
+    },
+    {
+      "Time_Start": 1262.98,
+      "Time_End": 1268.98,
+      "Text": " WinManagement, TaskScheduler and many more. At this point I was happy. I found a new"
+    },
+    {
+      "Time_Start": 1268.98,
+      "Time_End": 1273.94,
+      "Text": " privilege escalation technique but it was based on a known one. I wanted to find something"
+    },
+    {
+      "Time_Start": 1273.94,
+      "Time_End": 1279.24,
+      "Text": " truly novel. Something that will be accepted to DEF CON. So I looked for additional cross"
+    },
+    {
+      "Time_Start": 1279.24,
+      "Time_End": 1285.32,
+      "Text": " references to the token insertion function and I found one that is related to IPsec. So maybe"
+    },
+    {
+      "Time_Start": 1285.32,
+      "Time_End": 1290.32,
+      "Text": " using IPsec will insert the token but what is it? Internet Protocol Security or IPsec is a"
+    },
+    {
+      "Time_Start": 1290.5,
+      "Time_End": 1297.54,
+      "Text": " set of protocols that allows private and secure communication between 2 machines. It creates"
+    },
+    {
+      "Time_Start": 1297.54,
+      "Time_End": 1302.7,
+      "Text": " an encrypted tunnel that supports almost TCP IP protocols and it also protects against"
+    },
+    {
+      "Time_Start": 1302.7,
+      "Time_End": 1308.08,
+      "Text": " several attacks. The first one is network sniffers because the payload of the packet is"
+    },
+    {
+      "Time_Start": 1308.08,
+      "Time_End": 1312.62,
+      "Text": " encrypted. It protects against data modification because each packet contains a"
+    },
+    {
+      "Time_Start": 1312.62,
+      "Time_End": 1317.22,
+      "Text": " cryptographic checksum. So if the data of the packet is modified, the checksum will be"
+    },
+    {
+      "Time_Start": 1317.22,
+      "Time_End": 1323.16,
+      "Text": " altered. It it also protects against identity spoofing because the IPsec communication is"
+    },
+    {
+      "Time_Start": 1323.16,
+      "Time_End": 1327.96,
+      "Text": " established after its mutual authentication. This means that only trusted systems can"
+    },
+    {
+      "Time_Start": 1327.96,
+      "Time_End": 1333.54,
+      "Text": " communicate with one another. The final uh uh the final protection is against denial of"
+    },
+    {
+      "Time_Start": 1333.54,
+      "Time_End": 1338.98,
+      "Text": " service. The IPsec filtering methodology will drop packets that don't match the address"
+    },
+    {
+      "Time_Start": 1338.98,
+      "Time_End": 1344.1200000000001,
+      "Text": " protocol or port of the policy. This means that an application won't process requests from"
+    },
+    {
+      "Time_Start": 1344.1200000000001,
+      "Time_End": 1350.8200000000002,
+      "Text": " unsecured sources. Before exchanging data, a secure commun- connection must be set up. This"
+    },
+    {
+      "Time_Start": 1350.8200000000002,
+      "Time_End": 1356.0000000000002,
+      "Text": " is done by the internet key exchange service. Machines can authenticate with one another"
+    },
+    {
+      "Time_Start": 1356.0000000000002,
+      "Time_End": 1361.9,
+      "Text": " based on Kerberos, certificates or what we're going to use, a pre-shared key. There is"
+    },
+    {
+      "Time_Start": 1361.9,
+      "Time_End": 1366.14,
+      "Text": " another protocol called Auth IP which expands the internet key exchange with more"
+    },
+    {
+      "Time_Start": 1366.14,
+      "Time_End": 1371.72,
+      "Text": " authentication options, most notably NTLM. And the IPsec policy can be configured with the"
+    },
+    {
+      "Time_Start": 1371.72,
+      "Time_End": 1377.08,
+      "Text": " Microsoft management console or the documented APIs. Here we can see an example for it. On the"
+    },
+    {
+      "Time_Start": 1377.08,
+      "Time_End": 1383.02,
+      "Text": " left is the management console and on the right are the APIs. So now our goal is to"
+    },
+    {
+      "Time_Start": 1383.02,
+      "Time_End": 1388.7,
+      "Text": " establish an IPsec connection. To do that, I used an example from MSDN. Again the"
+    },
+    {
+      "Time_Start": 1388.7,
+      "Time_End": 1394.0,
+      "Text": " parameters are pretty clear. The engine handle is already familiar to us. The policy name is"
+    },
+    {
+      "Time_Start": 1394.0,
+      "Time_End": 1398.84,
+      "Text": " just a string and the addresses are known structures. The first parameter I couldn't"
+    },
+    {
+      "Time_Start": 1398.86,
+      "Time_End": 1404.84,
+      "Text": " understand is the provider key. I didn't know which one I should specify. So I just tried to"
+    },
+    {
+      "Time_Start": 1404.84,
+      "Time_End": 1409.1999999999998,
+      "Text": " use every provider key on the system until I found out that the internet key exchange"
+    },
+    {
+      "Time_Start": 1409.1999999999998,
+      "Time_End": 1413.84,
+      "Text": " provider didn't return an error code. The second parameter I didn't understand is the"
+    },
+    {
+      "Time_Start": 1413.84,
+      "Time_End": 1419.58,
+      "Text": " pre-shared key. I wasn't familiar with the structure named by blob but I found out that the"
+    },
+    {
+      "Time_Start": 1419.58,
+      "Time_End": 1425.6599999999999,
+      "Text": " API get app ID from file name returns this type of structure. There is one small problem, it"
+    },
+    {
+      "Time_Start": 1425.68,
+      "Time_End": 1430.78,
+      "Text": " only accepted file names. So I reversed engineered the algorithm and made my own function that"
+    },
+    {
+      "Time_Start": 1430.78,
+      "Time_End": 1437.5600000000002,
+      "Text": " accepts any type of string. Finally I had a function in code. What I did is to set a break"
+    },
+    {
+      "Time_Start": 1437.5600000000002,
+      "Time_End": 1443.0,
+      "Text": " point on in the kernel on the insertion function, configure the IPsec policy on 2 machines"
+    },
+    {
+      "Time_Start": 1443.0,
+      "Time_End": 1449.0400000000002,
+      "Text": " and started praying. I connected from one machine to another and discovered that"
+    },
+    {
+      "Time_Start": 1449.0400000000002,
+      "Time_End": 1454.5400000000002,
+      "Text": " establishing IPsec connections results in inserting tokens to the hash table. This is"
+    },
+    {
+      "Time_Start": 1454.56,
+      "Time_End": 1459.36,
+      "Text": " because metadata is kept on IPsec connections and this metadata includes the token of the"
+    },
+    {
+      "Time_Start": 1459.36,
+      "Time_End": 1465.2,
+      "Text": " process. But I was curious, why is it kept? What is the token used for? So I dug into the"
+    },
+    {
+      "Time_Start": 1465.2,
+      "Time_End": 1470.34,
+      "Text": " documentation and tried testing several configurations but the closest answer I have is"
+    },
+    {
+      "Time_Start": 1470.34,
+      "Time_End": 1475.82,
+      "Text": " this line from MSDN. IPsec impersonates the security context under which the socket is"
+    },
+    {
+      "Time_Start": 1475.82,
+      "Time_End": 1480.68,
+      "Text": " created. I couldn't find the code in the driver that does this impersonation but nonetheless"
+    },
+    {
+      "Time_Start": 1480.7,
+      "Time_End": 1486.66,
+      "Text": " we have what we want. Now our goal is to manipulate the service to create a socket that"
+    },
+    {
+      "Time_Start": 1486.66,
+      "Time_End": 1492.9,
+      "Text": " matches the IPsec policy and this time we'll target a specific service, spooler. We'll start"
+    },
+    {
+      "Time_Start": 1492.9,
+      "Time_End": 1499.14,
+      "Text": " by configuring an IPsec policy from and to the local host. Then we'll call the method"
+    },
+    {
+      "Time_Start": 1499.14,
+      "Time_End": 1504.72,
+      "Text": " RPC open printer which is in a documented RPC method in the spooler service that will cause"
+    },
+    {
+      "Time_Start": 1504.72,
+      "Time_End": 1509.92,
+      "Text": " it to connect to the local host. Then the TCP IP driver will duplicate the token of the"
+    },
+    {
+      "Time_Start": 1509.92,
+      "Time_End": 1516.0600000000002,
+      "Text": " service and store it in the hash table. There is another problem, we don't know the LUID of"
+    },
+    {
+      "Time_Start": 1516.0600000000002,
+      "Time_End": 1521.0600000000002,
+      "Text": " the new token but the value ranges from 1 to 4096 so we can just boot force it. We'll start"
+    },
+    {
+      "Time_Start": 1523.64,
+      "Time_End": 1529.5800000000002,
+      "Text": " guessing the value until we find the right one and the token will be sent to us. Let's see"
+    },
+    {
+      "Time_Start": 1529.5800000000002,
+      "Time_End": 1534.5800000000002,
+      "Text": " another demo. Okay so we start recording events on the machine and again we launch our"
+    },
+    {
+      "Time_Start": 1535.58,
+      "Time_End": 1540.58,
+      "Text": " tool from an elevated command prompt. Now we can see that we cause the spooler service to"
+    },
+    {
+      "Time_Start": 1544.6599999999999,
+      "Time_End": 1549.56,
+      "Text": " create a socket. Then we guess the LUID of the new token and got back a new console as"
+    },
+    {
+      "Time_Start": 1549.56,
+      "Time_End": 1554.56,
+      "Text": " system. Let's conclude this attack as well. IPsec is a very powerful tool that can"
+    },
+    {
+      "Time_Start": 1564.58,
+      "Time_End": 1569.24,
+      "Text": " be used by admins of enterprise networks or for just ensuring secure communication with"
+    },
+    {
+      "Time_Start": 1569.24,
+      "Time_End": 1575.32,
+      "Text": " a server. So configuring an IPsec policy on a machine is totally legitimate. Also the"
+    },
+    {
+      "Time_Start": 1575.32,
+      "Time_End": 1580.72,
+      "Text": " policy doesn't alter the communication of um doesn't alter the communication of the lo- on"
+    },
+    {
+      "Time_Start": 1580.72,
+      "Time_End": 1587.1,
+      "Text": " the local host. No service should be affected by it. And EDRs sh- will most likely ignore"
+    },
+    {
+      "Time_Start": 1587.1,
+      "Time_End": 1592.24,
+      "Text": " local host communication and not log it anywhere. Another benefit is that the driver"
+    },
+    {
+      "Time_Start": 1592.3,
+      "Time_End": 1597.0,
+      "Text": " automatically adds the token to the hash table so we don't need to call ALU process token"
+    },
+    {
+      "Time_Start": 1597.0,
+      "Time_End": 1602.58,
+      "Text": " reference. And the final thing is that the interaction with the spooler service isn't"
+    },
+    {
+      "Time_Start": 1602.58,
+      "Time_End": 1607.94,
+      "Text": " suspicious. We don't receive the handle table of spooler or open a handle to its primary"
+    },
+    {
+      "Time_Start": 1607.94,
+      "Time_End": 1613.52,
+      "Text": " token. The call to open to RPC open printer isn't a known way to manipulate the service for"
+    },
+    {
+      "Time_Start": 1613.52,
+      "Time_End": 1619.86,
+      "Text": " privilege escalation. So now I was really satisfied. This technique is truly different but"
+    },
+    {
+      "Time_Start": 1619.88,
+      "Time_End": 1624.5200000000002,
+      "Text": " you know the saying, give them a finger and they'll take the whole hand. So can we"
+    },
+    {
+      "Time_Start": 1624.5200000000002,
+      "Time_End": 1629.5200000000002,
+      "Text": " manipulate more services and gain other tokens? Yes we can. I set a new goal. To steal a"
+    },
+    {
+      "Time_Start": 1632.3600000000001,
+      "Time_End": 1638.2,
+      "Text": " token of another user logged onto the machine and it can lead to lateral movements if let's"
+    },
+    {
+      "Time_Start": 1638.2,
+      "Time_End": 1643.9,
+      "Text": " say the domain admin is connected to the same machine as us. I looked for RPC servers"
+    },
+    {
+      "Time_Start": 1643.9,
+      "Time_End": 1649.18,
+      "Text": " running as logged on users and not as the local service account or anti-authority system."
+    },
+    {
+      "Time_Start": 1649.2,
+      "Time_End": 1653.8400000000001,
+      "Text": " This script looks for processes running as a domain admin then checking if they expose an"
+    },
+    {
+      "Time_Start": 1653.8400000000001,
+      "Time_End": 1660.38,
+      "Text": " RPC interface and what happened is that I started going over this DLL until I found out the"
+    },
+    {
+      "Time_Start": 1660.38,
+      "Time_End": 1665.38,
+      "Text": " DLL that had what I needed. Sync controller. Once two or more users are logged into the"
+    },
+    {
+      "Time_Start": 1667.92,
+      "Time_End": 1673.3200000000002,
+      "Text": " machine, each session launches the one sync SVC service with the user's permissions. Here"
+    },
+    {
+      "Time_Start": 1673.3200000000002,
+      "Time_End": 1678.4,
+      "Text": " we can see there are two instances of the service, each one with a unique suffix. This service"
+    },
+    {
+      "Time_Start": 1678.42,
+      "Time_End": 1684.16,
+      "Text": " loads the sync controller DLL and this DLL implements an undocumented RPC method. Again the"
+    },
+    {
+      "Time_Start": 1684.16,
+      "Time_End": 1689.26,
+      "Text": " name is too long, I'm not going to read it but it receives a string that causes it to connect"
+    },
+    {
+      "Time_Start": 1689.26,
+      "Time_End": 1694.26,
+      "Text": " to any address we want. Time for one final attack. We'll go over the services and find the"
+    },
+    {
+      "Time_Start": 1696.6000000000001,
+      "Time_End": 1702.44,
+      "Text": " instance of one sync SVC that runs in another session. Since the interface of sync controller"
+    },
+    {
+      "Time_Start": 1702.44,
+      "Time_End": 1707.38,
+      "Text": " is exposed by several services, we need to find the unique LPC port opened by the service"
+    },
+    {
+      "Time_Start": 1707.4,
+      "Time_End": 1712.2,
+      "Text": " that we are targeting. We can see it in the process handle table. Then we'll start a"
+    },
+    {
+      "Time_Start": 1712.2,
+      "Time_End": 1718.3400000000001,
+      "Text": " listener thread on the port 443 and call the RPC method. This will cause the service to"
+    },
+    {
+      "Time_Start": 1718.3400000000001,
+      "Time_End": 1723.3200000000002,
+      "Text": " connect to us and while the socket is active, we can brute force the LUID of the token stored"
+    },
+    {
+      "Time_Start": 1723.3200000000002,
+      "Time_End": 1728.3200000000002,
+      "Text": " in the hash table. Let's see a demo for that. Okay so we look for instances of one sync"
+    },
+    {
+      "Time_Start": 1728.78,
+      "Time_End": 1733.78,
+      "Text": " SVC. There are two. One running as a local admin and one running as a domain admin. Then we"
+    },
+    {
+      "Time_Start": 1745.46,
+      "Time_End": 1752.0,
+      "Text": " look for at the handle table of the service and find the LPC port we want to connect to. We'll"
+    },
+    {
+      "Time_Start": 1752.0,
+      "Time_End": 1758.04,
+      "Text": " start recording events on the machine and we can see that the local admin cannot access the"
+    },
+    {
+      "Time_Start": 1758.06,
+      "Time_End": 1763.06,
+      "Text": " shared drives on the domain controller. We'll tell the tool to target the second session and"
+    },
+    {
+      "Time_Start": 1768.6,
+      "Time_End": 1773.74,
+      "Text": " we can see we cause the service to connect to us. Then we get the new console running as a"
+    },
+    {
+      "Time_Start": 1773.74,
+      "Time_End": 1778.74,
+      "Text": " domain admin and now we can access the shared drives on the domain controller."
+    },
+    {
+      "Time_Start": 1779.72,
+      "Time_End": 1784.72,
+      "Text": " Let's conclude this final talk. No other tool abused one sync SVC before. I didn't see any"
+    },
+    {
+      "Time_Start": 1799.9,
+      "Time_End": 1805.84,
+      "Text": " mentions to the service online. So tri- so calling this RPC method should not trigger EDR"
+    },
+    {
+      "Time_Start": 1805.88,
+      "Time_End": 1812.2200000000003,
+      "Text": " solutions. Also like I said before, it can achieve lateral movements. There's another thing,"
+    },
+    {
+      "Time_Start": 1812.2200000000003,
+      "Time_End": 1817.0200000000002,
+      "Text": " it is possible to be notified about a new logon session and then execute this attack. I might"
+    },
+    {
+      "Time_Start": 1817.0200000000002,
+      "Time_End": 1822.5600000000002,
+      "Text": " add this ability in the future to this tool. So these are all the ways I found to abuse the"
+    },
+    {
+      "Time_Start": 1822.5600000000002,
+      "Time_End": 1828.0000000000002,
+      "Text": " Windows filtering platform. We can gain tokens of system as well as other logged on users."
+    },
+    {
+      "Time_Start": 1828.0000000000002,
+      "Time_End": 1833.7400000000002,
+      "Text": " Now to the final part of this talk. I submitted my findings to the Microsoft security"
+    },
+    {
+      "Time_Start": 1833.78,
+      "Time_End": 1838.6200000000001,
+      "Text": " response center. I explained every attack I found and sent them POC codes. And the"
+    },
+    {
+      "Time_Start": 1838.6200000000001,
+      "Time_End": 1843.6200000000001,
+      "Text": " response was, we determined that this behavior is considered to be by design. Well, what can"
+    },
+    {
+      "Time_Start": 1847.06,
+      "Time_End": 1853.4,
+      "Text": " you do? Let's move on to detection. I tried to make these attacks as stealthy as possible."
+    },
+    {
+      "Time_Start": 1853.4,
+      "Time_End": 1858.56,
+      "Text": " But they can still be detected by the following events. New IPsec policies that don't match"
+    },
+    {
+      "Time_Start": 1858.56,
+      "Time_End": 1863.58,
+      "Text": " the known network configuration or even correlating RPC calls with the existence of an"
+    },
+    {
+      "Time_Start": 1864.3799999999999,
+      "Time_End": 1869.8799999999999,
+      "Text": " IPsec policy. Calling many times to ALE query token by ID is also a strong indication for"
+    },
+    {
+      "Time_Start": 1869.8799999999999,
+      "Time_End": 1876.06,
+      "Text": " this attack. But the best way in my opinion is detecting device IO requests to the ALE device"
+    },
+    {
+      "Time_Start": 1876.06,
+      "Time_End": 1882.36,
+      "Text": " by processes other than the BFE service. For those who prefer log based detection, let's see"
+    },
+    {
+      "Time_Start": 1882.36,
+      "Time_End": 1887.3999999999999,
+      "Text": " if it's possible. The Windows filtering platform generates logs for events but most of them"
+    },
+    {
+      "Time_Start": 1887.42,
+      "Time_End": 1893.74,
+      "Text": " are about packet drops or other types of failures. It is possible to log allowed packets but"
+    },
+    {
+      "Time_Start": 1893.74,
+      "Time_End": 1898.5,
+      "Text": " it is generally not recommended because it will generate a lot of noise. I looked at the"
+    },
+    {
+      "Time_Start": 1898.5,
+      "Time_End": 1905.14,
+      "Text": " logs generated during the attack and saw they are not indicative enough. Let's look at them."
+    },
+    {
+      "Time_Start": 1905.14,
+      "Time_End": 1909.7800000000002,
+      "Text": " This log shows that the spoiler service was allowed to connect to the port 135 on the local"
+    },
+    {
+      "Time_Start": 1909.7800000000002,
+      "Time_End": 1915.92,
+      "Text": " host. There is no mention of an IPsec policy or an RPC method that invoked this connection."
+    },
+    {
+      "Time_Start": 1915.94,
+      "Time_End": 1922.1200000000001,
+      "Text": " But there is a filter ID. Querying this filter returns the following information. Again it's"
+    },
+    {
+      "Time_Start": 1922.1200000000001,
+      "Time_End": 1929.02,
+      "Text": " just allowing local host communication. No mention of IPsec or any data relevance. Let's"
+    },
+    {
+      "Time_Start": 1929.02,
+      "Time_End": 1934.26,
+      "Text": " move to further research. During this research I had a feeling that the TCP IP driver is a"
+    },
+    {
+      "Time_Start": 1934.26,
+      "Time_End": 1939.26,
+      "Text": " goldmine and I'm sure that we as a community can find more ways to abuse it. There are more"
+    },
+    {
+      "Time_Start": 1939.26,
+      "Time_End": 1944.64,
+      "Text": " devices than just ALE with various functionalities and a lot of methods to invoke. Here is"
+    },
+    {
+      "Time_Start": 1944.7,
+      "Time_End": 1950.8000000000002,
+      "Text": " just a partial list of them. Although we talked a lot about the hash table, it's more it's"
+    },
+    {
+      "Time_Start": 1950.8000000000002,
+      "Time_End": 1955.98,
+      "Text": " worth digging into even more. It is used for managing data about various operations and it"
+    },
+    {
+      "Time_Start": 1955.98,
+      "Time_End": 1961.14,
+      "Text": " stores a lot more than just tokens. Some of the data can be valuable for attackers and there"
+    },
+    {
+      "Time_Start": 1961.14,
+      "Time_End": 1968.3600000000001,
+      "Text": " is one thing that caught my attention. Credential information. The TCP IP driver stores"
+    },
+    {
+      "Time_Start": 1968.3600000000001,
+      "Time_End": 1973.42,
+      "Text": " something called process explicit credentials. In much like tokens, it can be retrieved"
+    },
+    {
+      "Time_Start": 1973.44,
+      "Time_End": 1979.52,
+      "Text": " through RPC. Unfortunately the exported function in the RPC client is undocumented. So this"
+    },
+    {
+      "Time_Start": 1979.52,
+      "Time_End": 1984.52,
+      "Text": " query is even more obscure. I tried calling the RPC method with arbitrary values but got"
+    },
+    {
+      "Time_Start": 1987.02,
+      "Time_End": 1991.76,
+      "Text": " back the error code access denied. My immediate response was to execute the code again as"
+    },
+    {
+      "Time_Start": 1991.76,
+      "Time_End": 1997.5600000000002,
+      "Text": " system which worked but if we don't want to do that, we can just skip over this check. This"
+    },
+    {
+      "Time_Start": 1997.5600000000002,
+      "Time_End": 2002.54,
+      "Text": " check is done by the BFE service. So we can just send the device our request directly. The"
+    },
+    {
+      "Time_Start": 2002.56,
+      "Time_End": 2009.46,
+      "Text": " same device that you can see here. I dug into explicit credentials some more and found out"
+    },
+    {
+      "Time_Start": 2009.46,
+      "Time_End": 2015.78,
+      "Text": " that much like token entries, um none are inserted into the table by default. I tried to find"
+    },
+    {
+      "Time_Start": 2015.78,
+      "Time_End": 2021.08,
+      "Text": " configuration that will trigger it but found none. So I did the same thing as before, looked"
+    },
+    {
+      "Time_Start": 2021.08,
+      "Time_End": 2026.08,
+      "Text": " at cross references. Cross references to the insertion function show names like ALE set"
+    },
+    {
+      "Time_Start": 2026.8400000000001,
+      "Time_End": 2031.8400000000001,
+      "Text": " security and ALE process circuit options. So maybe the API WSA set circuit security is"
+    },
+    {
+      "Time_Start": 2035.68,
+      "Time_End": 2042.18,
+      "Text": " somehow relevant. The internet key exchange service uses the query function and cross"
+    },
+    {
+      "Time_Start": 2042.18,
+      "Time_End": 2047.18,
+      "Text": " references in this service show names like initialize SSPI and create SSPI IKE. So like you"
+    },
+    {
+      "Time_Start": 2050.56,
+      "Time_End": 2055.8,
+      "Text": " might guess, it is somehow related to SSPI. This is everything I found on explicit"
+    },
+    {
+      "Time_Start": 2055.82,
+      "Time_End": 2060.1600000000003,
+      "Text": " credentials stored in the TCP IP driver. I encourage the community to dig into this"
+    },
+    {
+      "Time_Start": 2060.1600000000003,
+      "Time_End": 2067.4,
+      "Text": " subject and finish this research. Time to conclude this entire talk. I showed the process of"
+    },
+    {
+      "Time_Start": 2067.4,
+      "Time_End": 2073.1400000000003,
+      "Text": " reverse engineering an RPC call and achieving lateral movement and privilege escalation. We"
+    },
+    {
+      "Time_Start": 2073.1400000000003,
+      "Time_End": 2077.84,
+      "Text": " looked at the various components of the Windows filtering cloud platform, analyzed them and"
+    },
+    {
+      "Time_Start": 2077.84,
+      "Time_End": 2083.2200000000003,
+      "Text": " bypassed the security mechanisms protecting them. Also I shared some leads with you that you"
+    },
+    {
+      "Time_Start": 2083.5400000000004,
+      "Time_End": 2090.78,
+      "Text": " can continue and look into. Several attacks were developed and the advantages are that they"
+    },
+    {
+      "Time_Start": 2090.78,
+      "Time_End": 2096.1800000000003,
+      "Text": " avoid WinAPI that are likely to be monitored. They can execute code as a system and other"
+    },
+    {
+      "Time_Start": 2096.1800000000003,
+      "Time_End": 2101.76,
+      "Text": " logged on user compared to many tools that only elevate the system. They are very stealthy."
+    },
+    {
+      "Time_Start": 2101.76,
+      "Time_End": 2108.76,
+      "Text": " There is barely any evidence in logs. And I tested them against some security products and"
+    },
+    {
+      "Time_Start": 2108.78,
+      "Time_End": 2115.0400000000004,
+      "Text": " no detection was generated. This is the code for the tool. I'll leave the link up a few"
+    },
+    {
+      "Time_Start": 2115.0400000000004,
+      "Time_End": 2120.0400000000004,
+      "Text": " seconds so we can look at it. Okay. Thank you."
+    },
+    {
+      "Time_Start": 2120.04,
+      "Time_End": 2126.04,
+      "Text": " Any questions? You can just talk to me right here."
+    }
+  ]
+}

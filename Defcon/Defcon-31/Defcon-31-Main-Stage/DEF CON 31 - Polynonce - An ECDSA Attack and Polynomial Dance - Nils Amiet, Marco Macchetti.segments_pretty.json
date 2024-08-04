@@ -1,0 +1,859 @@
+{
+  "segments": [
+    {
+      "Time_Start": 0.0,
+      "Time_End": 6.0,
+      "Text": "This text was transcribed using whisper model: large-v2\n\n Hello everyone. Thank you for sticking with us that late in the day. So my name is Niels. I'm a"
+    },
+    {
+      "Time_Start": 13.76,
+      "Time_End": 20.8,
+      "Text": " security researcher at Kudelsky Security. I focus on privacy and I like to process large"
+    },
+    {
+      "Time_Start": 20.8,
+      "Time_End": 26.8,
+      "Text": " data sets and I'm a huge Linux fan. And today I'm also here with my colleague Marco. Hello,"
+    },
+    {
+      "Time_Start": 30.08,
+      "Time_End": 36.64,
+      "Text": " I'm Marco Machetti. I work as a cryptographer for Kudelsky Security and my background is hardware"
+    },
+    {
+      "Time_Start": 36.64,
+      "Time_End": 42.88,
+      "Text": " design, cryptanalysis and applied cryptography in general. So what are we going to talk about"
+    },
+    {
+      "Time_Start": 42.88,
+      "Time_End": 48.8,
+      "Text": " today? This is a new attack that we devised against an algorithm to generate digital"
+    },
+    {
+      "Time_Start": 48.8,
+      "Time_End": 56.16,
+      "Text": " signatures which is called ECDSA. It's well known for being the digital signature algorithm beyond"
+    },
+    {
+      "Time_Start": 56.160000000000004,
+      "Time_End": 60.96,
+      "Text": " the bitcoin block chain. This attack is called Polynos and we will give you some details of the"
+    },
+    {
+      "Time_Start": 60.96,
+      "Time_End": 65.80000000000001,
+      "Text": " attack and the things we tried to put it in practice, how we did it and what we learned in the"
+    },
+    {
+      "Time_Start": 65.80000000000001,
+      "Time_End": 70.54,
+      "Text": " process. And there will be a brief demo and then we will give also some results and"
+    },
+    {
+      "Time_Start": 70.54,
+      "Time_End": 77.92,
+      "Text": " takeaways. Let's head over to the introduction. What is a digital signature? Basically a"
+    },
+    {
+      "Time_Start": 77.92,
+      "Time_End": 84.24000000000001,
+      "Text": " digital signature is just a proof of knowledge of a private key. Everyone can verify your"
+    },
+    {
+      "Time_Start": 84.32,
+      "Time_End": 89.78,
+      "Text": " signatures with your private key but only you can generate signatures with a private key. So in"
+    },
+    {
+      "Time_Start": 89.78,
+      "Time_End": 95.5,
+      "Text": " the real world your signature on a piece of paper is a proof of identity. In the digital world the"
+    },
+    {
+      "Time_Start": 95.5,
+      "Time_End": 101.41999999999999,
+      "Text": " knowledge of your private key is a proof of identity. And on block chains the private key means"
+    },
+    {
+      "Time_Start": 101.41999999999999,
+      "Time_End": 107.91999999999999,
+      "Text": " ownership of the coins. So everyone will try to steal your key if it's on backups, paper notes,"
+    },
+    {
+      "Time_Start": 107.92,
+      "Time_End": 114.64,
+      "Text": " brain wallets and sometimes it's a strong key but it's protected with a weak password."
+    },
+    {
+      "Time_Start": 114.64,
+      "Time_End": 122.22,
+      "Text": " Digital signatures are mildly complex objects. A signature algorithm is actually a set of three"
+    },
+    {
+      "Time_Start": 122.22,
+      "Time_End": 128.14,
+      "Text": " algorithms. You have key generation, signature generation and verification. Is there"
+    },
+    {
+      "Time_Start": 128.14,
+      "Time_End": 134.1,
+      "Text": " randomness inside all of this? Well, yes. Essentially key generation is throwing the dice to"
+    },
+    {
+      "Time_Start": 134.1,
+      "Time_End": 140.64,
+      "Text": " obtain your key pair. And randomness is also present in the signature generation process"
+    },
+    {
+      "Time_Start": 140.64,
+      "Time_End": 143.98,
+      "Text": " along with your private key and the message. You throw the dice again and you obtain a"
+    },
+    {
+      "Time_Start": 143.98,
+      "Time_End": 150.32,
+      "Text": " signature. And verification is just a deterministic algorithm. Well, if everyone wants your"
+    },
+    {
+      "Time_Start": 150.32,
+      "Time_End": 154.94,
+      "Text": " private key, is it possible to obtain your private key just by looking at the signatures? In"
+    },
+    {
+      "Time_Start": 154.94,
+      "Time_End": 160.28,
+      "Text": " general, no. But under some assumption, yes. For example, if you generated the key with low"
+    },
+    {
+      "Time_Start": 160.32,
+      "Time_End": 166.66,
+      "Text": " entropy or short seeds or using a brain wallet, maybe it's easy to guess. But provided that the"
+    },
+    {
+      "Time_Start": 166.66,
+      "Time_End": 172.4,
+      "Text": " key is properly generated, is it possible to obtain it from your signatures? Well, remember"
+    },
+    {
+      "Time_Start": 172.4,
+      "Time_End": 176.74,
+      "Text": " there is randomness in the signature generation. So there is more attack surface that we can"
+    },
+    {
+      "Time_Start": 176.74,
+      "Time_End": 183.08,
+      "Text": " explore. In this paper we target the ECDSA algorithm. This is probably the most deployed"
+    },
+    {
+      "Time_Start": 183.08,
+      "Time_End": 189.08,
+      "Text": " algorithm for digital signatures. EC is for elliptic curve and elliptic curve is just a curve"
+    },
+    {
+      "Time_Start": 189.08,
+      "Time_End": 194.88000000000002,
+      "Text": " on a finite field with some parameters. You all know the Bitcoin curve. And the curve is also"
+    },
+    {
+      "Time_Start": 194.88000000000002,
+      "Time_End": 199.62,
+      "Text": " a set of points. You can perform operation with the points. You can add the points and"
+    },
+    {
+      "Time_Start": 199.62,
+      "Time_End": 204.96,
+      "Text": " multiply a point times a scalar. This is called scalar point multiplication. And why it is so"
+    },
+    {
+      "Time_Start": 204.96,
+      "Time_End": 210.12,
+      "Text": " useful? Because scalar point multiplication, it's easy to do in one direction but it's hard"
+    },
+    {
+      "Time_Start": 210.12,
+      "Time_End": 214.5,
+      "Text": " to invert. And this is called the discrete logarithm problem. And this is the basis of the"
+    },
+    {
+      "Time_Start": 214.5,
+      "Time_End": 220.5,
+      "Text": " security for ECDSA. So what is in detail the set of algorithms for ECDSA? Well, key"
+    },
+    {
+      "Time_Start": 223.12,
+      "Time_End": 227.88,
+      "Text": " generation is quite simple. You just pick an integer, D, in a certain range and this is your"
+    },
+    {
+      "Time_Start": 227.88,
+      "Time_End": 233.42000000000002,
+      "Text": " private key. And the public key you just obtain it through scalar point multiplication. To"
+    },
+    {
+      "Time_Start": 233.42000000000002,
+      "Time_End": 238.92000000000002,
+      "Text": " generate a signature you hash the message first and then again you have to pick an integer in"
+    },
+    {
+      "Time_Start": 238.92000000000002,
+      "Time_End": 243.92000000000002,
+      "Text": " the same range. Again, uniformly at random. And this is called the nonce. And you have to"
+    },
+    {
+      "Time_Start": 244.34,
+      "Time_End": 250.42000000000002,
+      "Text": " have a different nonce for each signature. Then the signature is just two numbers, R and S."
+    },
+    {
+      "Time_Start": 250.42000000000002,
+      "Time_End": 255.42000000000002,
+      "Text": " And R is just the X coordinate of the point which corresponds to your nonce. And S is"
+    },
+    {
+      "Time_Start": 255.42000000000002,
+      "Time_End": 260.8,
+      "Text": " obtained with the expression that is in the slide. And verification is just a deterministic"
+    },
+    {
+      "Time_Start": 260.8,
+      "Time_End": 265.5,
+      "Text": " algorithm. We are not very interested. So the takeaway is that you're also performing key"
+    },
+    {
+      "Time_Start": 265.5,
+      "Time_End": 271.5,
+      "Text": " generation for every signature basically. And if the nonces can be predicted or some bits are"
+    },
+    {
+      "Time_Start": 272.5,
+      "Time_End": 279.38,
+      "Text": " known, then you can use lattice attacks. And you can also use side channel attacks in"
+    },
+    {
+      "Time_Start": 279.38,
+      "Time_End": 284.8,
+      "Text": " combination with lattice attacks to retrieve the key. So what you have to choose to"
+    },
+    {
+      "Time_Start": 284.8,
+      "Time_End": 290.8,
+      "Text": " generate the randomness is to choose your dice. There are good dice like those RNGs based on"
+    },
+    {
+      "Time_Start": 292.22,
+      "Time_End": 297.5,
+      "Text": " cryptographic algorithms like HMAC and AES. These are the good ones. And then you have bad"
+    },
+    {
+      "Time_Start": 297.54,
+      "Time_End": 304.58,
+      "Text": " ones like algebraic generators, LFSRs. And then there are the awful ones like fixed secret"
+    },
+    {
+      "Time_Start": 304.58,
+      "Time_End": 309.62,
+      "Text": " constant, the run functions and these kind of things. And once you choose the dice, you also"
+    },
+    {
+      "Time_Start": 309.62,
+      "Time_End": 315.96,
+      "Text": " have to seed it with entropy. Let's pick one of the bad RNGs. The linear congruential"
+    },
+    {
+      "Time_Start": 315.96,
+      "Time_End": 320.8,
+      "Text": " generator. This has been known for decades. It's a generator that is implemented"
+    },
+    {
+      "Time_Start": 320.8,
+      "Time_End": 326.96,
+      "Text": " basically everywhere. It's in GMP, other libraries and it was also referenced from the"
+    },
+    {
+      "Time_Start": 327.38,
+      "Time_End": 333.53999999999996,
+      "Text": " documentation. Basically an SCG works in this way. You generate a random number and"
+    },
+    {
+      "Time_Start": 333.53999999999996,
+      "Time_End": 339.21999999999997,
+      "Text": " then you apply a linear relation to obtain new numbers with known coefficients A and B."
+    },
+    {
+      "Time_Start": 339.21999999999997,
+      "Time_End": 345.38,
+      "Text": " There is no bias in this so it's good. But in fact it has been shown by previous projects"
+    },
+    {
+      "Time_Start": 345.38,
+      "Time_End": 351.21999999999997,
+      "Text": " that you can use lattice attacks to retrieve the private key. So if your SCG is not full"
+    },
+    {
+      "Time_Start": 351.26000000000005,
+      "Time_End": 359.02000000000004,
+      "Text": " state but it's 128 bit for example for the bitcoin curve, then with as low as 22 signatures"
+    },
+    {
+      "Time_Start": 359.02000000000004,
+      "Time_End": 364.72,
+      "Text": " you can get the private key. But here we want to go beyond. What if you use a full state"
+    },
+    {
+      "Time_Start": 364.72,
+      "Time_End": 370.3,
+      "Text": " SCG? There are no results published so far on this. And what if you increase the degree to"
+    },
+    {
+      "Time_Start": 370.3,
+      "Time_End": 374.72,
+      "Text": " quadratic or even cubic? Then lattice attacks are not possible. And what if you keep the"
+    },
+    {
+      "Time_Start": 374.72,
+      "Time_End": 380.06,
+      "Text": " coefficients unknown, secret? Then you may think you are safe, right? But in fact no. We"
+    },
+    {
+      "Time_Start": 380.06,
+      "Time_End": 386.06,
+      "Text": " show that we can retrieve the private key in a fraction of a second. So how does it work?"
+    },
+    {
+      "Time_Start": 386.06,
+      "Time_End": 391.44,
+      "Text": " Basically we don't care about the R part of the signature but we just look at the S part of"
+    },
+    {
+      "Time_Start": 391.44,
+      "Time_End": 397.86,
+      "Text": " the signature. And we rewrite the expression of S to be a linear relationship between the"
+    },
+    {
+      "Time_Start": 397.86,
+      "Time_End": 403.48,
+      "Text": " knowns and the private key. What does it mean? It means that there is only one secret"
+    },
+    {
+      "Time_Start": 403.48,
+      "Time_End": 408.9,
+      "Text": " behind all your signatures. You can think that it's the private key or you can think that"
+    },
+    {
+      "Time_Start": 408.90000000000003,
+      "Time_End": 416.20000000000005,
+      "Text": " it's one of the knowns or maybe some partial information on more knowns. And so we want"
+    },
+    {
+      "Time_Start": 416.20000000000005,
+      "Time_End": 421.82000000000005,
+      "Text": " to exploit this additional information that is in the S part of the signatures. How can we"
+    },
+    {
+      "Time_Start": 421.82000000000005,
+      "Time_End": 428.86,
+      "Text": " do it? Basically suppose that you are generating your knowns with an SCG. So you"
+    },
+    {
+      "Time_Start": 428.86,
+      "Time_End": 435.66,
+      "Text": " generate first knowns K0 and then you generate K1, K2, K3 in this way. And suppose that"
+    },
+    {
+      "Time_Start": 435.66,
+      "Time_End": 441.58000000000004,
+      "Text": " the attacker doesn't know A1 and A0. These are the secret coefficients. But basically"
+    },
+    {
+      "Time_Start": 441.58000000000004,
+      "Time_End": 446.38000000000005,
+      "Text": " what we can do, you can subtract the second equation from the first and the third from the"
+    },
+    {
+      "Time_Start": 446.38000000000005,
+      "Time_End": 452.34000000000003,
+      "Text": " second and we get this pair of equations here. And then we can solve for A1 in both and"
+    },
+    {
+      "Time_Start": 452.34000000000003,
+      "Time_End": 458.12,
+      "Text": " you can just equate the results and we get this expression here. And we got completely rid of"
+    },
+    {
+      "Time_Start": 458.12,
+      "Time_End": 466.34000000000003,
+      "Text": " the unknown secret coefficients. And then this is the trick. We can replace every knowns in"
+    },
+    {
+      "Time_Start": 466.34000000000003,
+      "Time_End": 471.46,
+      "Text": " this polynomial with the expression in D, the static private key. So basically we get a"
+    },
+    {
+      "Time_Start": 471.46,
+      "Time_End": 476.5,
+      "Text": " polynomial where the only unknown is D. We find the roots of the polynomial. It's easy to"
+    },
+    {
+      "Time_Start": 476.5,
+      "Time_End": 483.16,
+      "Text": " do. And we get the private key. And we extend this to all N degree polynomial"
+    },
+    {
+      "Time_Start": 483.16,
+      "Time_End": 488.54,
+      "Text": " relationships. So we are able to attack quadratic and cubic and higher degrees. And this is a"
+    },
+    {
+      "Time_Start": 488.54,
+      "Time_End": 493.08000000000004,
+      "Text": " recursive algorithm. It's a fast generic. It's not using lattice. And if you want to take a"
+    },
+    {
+      "Time_Start": 493.08000000000004,
+      "Time_End": 499.62,
+      "Text": " look, there is an e-print paper on this. And then I add over to Nils who will explain how we put"
+    },
+    {
+      "Time_Start": 499.62,
+      "Time_End": 507.62,
+      "Text": " this into practice."
+    },
+    {
+      "Time_Start": 507.62,
+      "Time_End": 513.62,
+      "Text": " Thank you, Marco. So with all of that, how can we actually attack things in practice? Well, to"
+    },
+    {
+      "Time_Start": 518.08,
+      "Time_End": 524.08,
+      "Text": " run the polynomial attack, what you will need is at least four signatures. But that's for"
+    },
+    {
+      "Time_Start": 524.08,
+      "Time_End": 529.58,
+      "Text": " the linear case. If you want to target a higher degree relation, then you'll need more than"
+    },
+    {
+      "Time_Start": 529.58,
+      "Time_End": 536.84,
+      "Text": " four signatures. In any case, you'll need to make sure that these signatures are sorted by"
+    },
+    {
+      "Time_Start": 536.84,
+      "Time_End": 543.64,
+      "Text": " the time in which they have been generated. On top of that, you'll need to also have"
+    },
+    {
+      "Time_Start": 543.64,
+      "Time_End": 549.64,
+      "Text": " associated with each signature the message and the public key. If you have all of that and the"
+    },
+    {
+      "Time_Start": 552.1800000000001,
+      "Time_End": 559.9200000000001,
+      "Text": " nonces were indeed generated in a biased way, then you can retrieve the private key. So where"
+    },
+    {
+      "Time_Start": 559.9599999999999,
+      "Time_End": 565.9599999999999,
+      "Text": " can we find ECDSA signatures in practice? Well, one good source of that is Bitcoin. In Bitcoin"
+    },
+    {
+      "Time_Start": 569.42,
+      "Time_End": 574.76,
+      "Text": " you have blocks and inside blocks you have transactions. And these transactions, they"
+    },
+    {
+      "Time_Start": 574.76,
+      "Time_End": 580.76,
+      "Text": " contain inputs and outputs. And good for us, these inputs are signed with ECDSA. So how do we"
+    },
+    {
+      "Time_Start": 580.76,
+      "Time_End": 586.76,
+      "Text": " get what we need? Well, the public key and the signature, they are contained in that input. The"
+    },
+    {
+      "Time_Start": 592.64,
+      "Time_End": 599.98,
+      "Text": " message, however, you have to compute it. And computing that message is a very error prone"
+    },
+    {
+      "Time_Start": 599.98,
+      "Time_End": 605.98,
+      "Text": " and under documented process. You will need to use fields from the current transaction but"
+    },
+    {
+      "Time_Start": 605.98,
+      "Time_End": 611.98,
+      "Text": " also fields from previous transactions. So you will need to keep track of all of that to"
+    },
+    {
+      "Time_Start": 615.48,
+      "Time_End": 621.48,
+      "Text": " compute the message. So to actually get the data, what you'll need is to let your Bitcoin"
+    },
+    {
+      "Time_Start": 624.98,
+      "Time_End": 632.0600000000001,
+      "Text": " client sync and download the whole chain. And we did that. It took about a day. And we got all"
+    },
+    {
+      "Time_Start": 632.1,
+      "Time_End": 637.9000000000001,
+      "Text": " of the blocks until September last year. And when it was synced, we dumped all of the"
+    },
+    {
+      "Time_Start": 637.9000000000001,
+      "Time_End": 643.9000000000001,
+      "Text": " signatures, the pop keys, the messages by just reading the block files from disk. And with"
+    },
+    {
+      "Time_Start": 646.72,
+      "Time_End": 654.22,
+      "Text": " that we dumped about 700 million signatures. We only covered the most common type of Bitcoin"
+    },
+    {
+      "Time_Start": 654.22,
+      "Time_End": 661.1800000000001,
+      "Text": " signature which is pay to public key hash signatures. But that covers more than half of the"
+    },
+    {
+      "Time_Start": 661.1800000000001,
+      "Time_End": 667.1800000000001,
+      "Text": " Bitcoin transactions. Another good source is Ethereum because transactions in Ethereum are"
+    },
+    {
+      "Time_Start": 670.1800000000001,
+      "Time_End": 677.5200000000001,
+      "Text": " also signed with ECDSA. And in that case, the signature is directly in the transaction. The"
+    },
+    {
+      "Time_Start": 677.5200000000001,
+      "Time_End": 683.5200000000001,
+      "Text": " public key, not directly. But there is actually a lesser known feature of ECDSA called ECDSA"
+    },
+    {
+      "Time_Start": 684.24,
+      "Time_End": 690.24,
+      "Text": " recover that you can use to compute the public key based on the signature and the message. Plus"
+    },
+    {
+      "Time_Start": 695.4399999999999,
+      "Time_End": 702.64,
+      "Text": " a third value that I won't discuss but which is in the transaction. The message also must be"
+    },
+    {
+      "Time_Start": 702.64,
+      "Time_End": 708.64,
+      "Text": " computed. To compute the message, the main challenge here is that Ethereum has multiple protocol"
+    },
+    {
+      "Time_Start": 709.14,
+      "Time_End": 715.14,
+      "Text": " versions. And these versions change based on the block number. Meaning if you want to"
+    },
+    {
+      "Time_Start": 718.72,
+      "Time_End": 724.36,
+      "Text": " compute the message for a specific transaction, depending on what block this is, the way you"
+    },
+    {
+      "Time_Start": 724.36,
+      "Time_End": 730.56,
+      "Text": " compute the message changes. So if you want to dump all of the signatures for the whole chain,"
+    },
+    {
+      "Time_Start": 730.56,
+      "Time_End": 735.68,
+      "Text": " you basically have to implement all of these Ethereum versions of the protocol. So we did"
+    },
+    {
+      "Time_Start": 735.72,
+      "Time_End": 741.72,
+      "Text": " that. If you want to have a look at the details, please check out our code. It's on GitHub. To"
+    },
+    {
+      "Time_Start": 744.5600000000001,
+      "Time_End": 751.1,
+      "Text": " actually get the data, you'll need two things. An execution client first such as GIF and a"
+    },
+    {
+      "Time_Start": 751.1,
+      "Time_End": 756.4000000000001,
+      "Text": " consensus client such as Lighthouse. You let these two sync so that it downloads the whole"
+    },
+    {
+      "Time_Start": 756.4000000000001,
+      "Time_End": 762.86,
+      "Text": " chain. For us, that took about three weeks and a ton of disk space. But then we got all of the"
+    },
+    {
+      "Time_Start": 762.86,
+      "Time_End": 768.86,
+      "Text": " blocks until October last year when we did that. We used the JSON RPC API of the execution"
+    },
+    {
+      "Time_Start": 771.7,
+      "Time_End": 777.62,
+      "Text": " client to get the blocks directly parsed in JSON and dumped the signatures, keys and"
+    },
+    {
+      "Time_Start": 777.62,
+      "Time_End": 783.62,
+      "Text": " messages to a file. And we dumped 1.7 billion signatures that way. We also had a look at two"
+    },
+    {
+      "Time_Start": 784.42,
+      "Time_End": 790.42,
+      "Text": " more sources that are not blockchain related. The first is a sample of TLS servers. So why"
+    },
+    {
+      "Time_Start": 800.16,
+      "Time_End": 806.0,
+      "Text": " TLS servers? Well, if you make a TLS handshake with a server, it's going to send you a"
+    },
+    {
+      "Time_Start": 806.0,
+      "Time_End": 811.74,
+      "Text": " signature. And if the key is an ACDSA key, you get an ACDSA signature. So that's what we"
+    },
+    {
+      "Time_Start": 811.74,
+      "Time_End": 819.28,
+      "Text": " collected. The second one is actually a set of data sets from the Minerva attack. These are"
+    },
+    {
+      "Time_Start": 819.28,
+      "Time_End": 825.5,
+      "Text": " publicly available and these are ACDSA signatures that were generated from TPMs, smart"
+    },
+    {
+      "Time_Start": 825.5,
+      "Time_End": 831.5,
+      "Text": " cards and a bunch of software libraries. So a few stats. Here at the top you see that about"
+    },
+    {
+      "Time_Start": 832.5,
+      "Time_End": 838.5,
+      "Text": " 97% of Bitcoin wallets only generated three signatures or less. And at the bottom for"
+    },
+    {
+      "Time_Start": 844.88,
+      "Time_End": 850.88,
+      "Text": " Ethereum, this is a bit less extreme, but only 77% of wallets generated less than four"
+    },
+    {
+      "Time_Start": 851.88,
+      "Time_End": 857.88,
+      "Text": " signatures. The rest, however, so those that have at least four signatures, we can try to"
+    },
+    {
+      "Time_Start": 864.1,
+      "Time_End": 869.84,
+      "Text": " attack. And that means there's at least a few million wallets we can try to break with that"
+    },
+    {
+      "Time_Start": 869.84,
+      "Time_End": 877.18,
+      "Text": " attack. So we implemented the attack in Sage and it's a multi-threaded implementation. The"
+    },
+    {
+      "Time_Start": 877.1800000000001,
+      "Time_End": 883.1800000000001,
+      "Text": " code is out there on GitHub. So just a quick demo. So here we start a TLS server which is"
+    },
+    {
+      "Time_Start": 891.4000000000001,
+      "Time_End": 897.4000000000001,
+      "Text": " vulnerable. It's going to generate biased nonsense. We capture the network traffic, dump it"
+    },
+    {
+      "Time_Start": 898.4,
+      "Time_End": 904.4,
+      "Text": " to a P cap file. Then we make TLS handshakes to that vulnerable server. We stop the capture,"
+    },
+    {
+      "Time_Start": 912.66,
+      "Time_End": 918.66,
+      "Text": " stop the server. Then we read the traffic from that P cap file and dump the signatures,"
+    },
+    {
+      "Time_Start": 919.66,
+      "Time_End": 925.66,
+      "Text": " messages, and public keys to a CSV file. And finally we run the attack against the signatures"
+    },
+    {
+      "Time_Start": 931.74,
+      "Time_End": 937.74,
+      "Text": " in that file. And that's it. We got the private key here. So how did it go? It worked. We"
+    },
+    {
+      "Time_Start": 949.66,
+      "Time_End": 955.66,
+      "Text": " didn't drive in a new Ferrari today. For Bitcoin and Ethereum we used a big machine with lots"
+    },
+    {
+      "Time_Start": 963.5,
+      "Time_End": 971.5,
+      "Text": " of cores. For Bitcoin the attack ran for about two days. We were able to get the private key"
+    },
+    {
+      "Time_Start": 971.5,
+      "Time_End": 977.5,
+      "Text": " of about 700 wallets. But none of these had any money on them. So it looks like something"
+    },
+    {
+      "Time_Start": 979.0,
+      "Time_End": 987.0,
+      "Text": " else had drained them before us. For Ethereum we processed about 20% of the input file"
+    },
+    {
+      "Time_Start": 987.0,
+      "Time_End": 994.5,
+      "Text": " in two days and we only got two private keys. So we stopped it because we thought the cost"
+    },
+    {
+      "Time_Start": 994.5,
+      "Time_End": 1002.5,
+      "Text": " time ratio was not really worth it. These two also had a zero balance here. It turns out that"
+    },
+    {
+      "Time_Start": 1003.08,
+      "Time_End": 1011.08,
+      "Text": " all of the signatures that were generated by these vulnerable wallets actually had repeated"
+    },
+    {
+      "Time_Start": 1011.08,
+      "Time_End": 1019.08,
+      "Text": " nonces. And of course the Polynance attack is also going to find repeated nonces because"
+    },
+    {
+      "Time_Start": 1019.08,
+      "Time_End": 1025.08,
+      "Text": " that's just a particular case of an LCG where the last unknown coefficient is the only one"
+    },
+    {
+      "Time_Start": 1025.4199999999998,
+      "Time_End": 1031.4199999999998,
+      "Text": " which is non-zero and it's equal to that repeated nonce value. But this could also have been"
+    },
+    {
+      "Time_Start": 1033.84,
+      "Time_End": 1039.84,
+      "Text": " found with a simpler attack. For the two others, TLS and Minerva, this was actually pretty"
+    },
+    {
+      "Time_Start": 1042.24,
+      "Time_End": 1049.54,
+      "Text": " quick. So just a few seconds for the TLS set we had and for Minerva a few hours. So you could"
+    },
+    {
+      "Time_Start": 1049.54,
+      "Time_End": 1055.6599999999999,
+      "Text": " just run this on a laptop. We did N equals 4, 5 and 6 signatures because it was quick. But we"
+    },
+    {
+      "Time_Start": 1055.6599999999999,
+      "Time_End": 1061.6599999999999,
+      "Text": " got no successful attacks there. So we wanted to see what happened to those stolen Bitcoin."
+    },
+    {
+      "Time_Start": 1066.62,
+      "Time_End": 1074.12,
+      "Text": " And we tracked that and we found that about 140 Bitcoins were stolen in total. So that's about"
+    },
+    {
+      "Time_Start": 1074.16,
+      "Time_End": 1080.16,
+      "Text": " 10 million USD at Bitcoin speak price. We also saw that some of the addresses that received"
+    },
+    {
+      "Time_Start": 1083.66,
+      "Time_End": 1089.66,
+      "Text": " that stolen money had readable names in them like one hack, one gift, something like this. And"
+    },
+    {
+      "Time_Start": 1091.7800000000002,
+      "Time_End": 1097.7800000000002,
+      "Text": " there is one idiot address that sent the money it stole to another address called one Andreas."
+    },
+    {
+      "Time_Start": 1098.78,
+      "Time_End": 1106.78,
+      "Text": " And this address is owned by a guy who made significant contributions to the Bitcoin"
+    },
+    {
+      "Time_Start": 1106.78,
+      "Time_End": 1113.78,
+      "Text": " ecosystem and when people found out about this in 2017 they decided to make a ton of donations"
+    },
+    {
+      "Time_Start": 1113.78,
+      "Time_End": 1120.44,
+      "Text": " to that guy. So it looks like the one idiot guy stole Bitcoin to give it back to this guy as a"
+    },
+    {
+      "Time_Start": 1120.44,
+      "Time_End": 1126.44,
+      "Text": " donation for charity. And we also saw on some public forums that people had been"
+    },
+    {
+      "Time_Start": 1128.02,
+      "Time_End": 1134.02,
+      "Text": " saying like how many Bitcoin they stole due to repeated nonsense attacks just publicly on"
+    },
+    {
+      "Time_Start": 1135.24,
+      "Time_End": 1141.24,
+      "Text": " the forum. Like oh I have collected 7 Bitcoin so far. So a few takeaways. Make sure you"
+    },
+    {
+      "Time_Start": 1146.06,
+      "Time_End": 1153.36,
+      "Text": " don't generate signatures with a biased nonce. And to make sure you don't do that you should"
+    },
+    {
+      "Time_Start": 1153.3600000000001,
+      "Time_End": 1159.98,
+      "Text": " use something that does deterministic nonce generation such as deterministic ECDSA or"
+    },
+    {
+      "Time_Start": 1159.98,
+      "Time_End": 1165.98,
+      "Text": " EDDSA. We just barely scratched the surface here so there's plenty of other areas that we"
+    },
+    {
+      "Time_Start": 1167.6000000000001,
+      "Time_End": 1173.64,
+      "Text": " didn't touch and that you could apply this attack on. And it's very easy for you to check your"
+    },
+    {
+      "Time_Start": 1173.64,
+      "Time_End": 1179.3200000000002,
+      "Text": " own wallet. You don't need to have the whole chain if you just have the signatures for your"
+    },
+    {
+      "Time_Start": 1179.32,
+      "Time_End": 1186.36,
+      "Text": " wallet, the pub key and the message. You can run this on your laptop basically. So for"
+    },
+    {
+      "Time_Start": 1186.36,
+      "Time_End": 1192.06,
+      "Text": " more research from our team please visit our blog. We have more exciting research on this"
+    },
+    {
+      "Time_Start": 1192.06,
+      "Time_End": 1199.02,
+      "Text": " topic and we hope that people get more secure by releasing our code. It's public. It's on"
+    },
+    {
+      "Time_Start": 1199.02,
+      "Time_End": 1203.4399999999998,
+      "Text": " GitHub. Please check it out. And thank you. Do you have any questions?"
+    }
+  ]
+}

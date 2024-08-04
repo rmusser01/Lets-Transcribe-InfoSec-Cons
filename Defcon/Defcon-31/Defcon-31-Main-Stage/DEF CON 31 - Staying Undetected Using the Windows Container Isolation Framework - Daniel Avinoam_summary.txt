@@ -1,0 +1,130 @@
+**Introduction**
+- The use of **containers** has become integral to resource-efficient and secure environments.
+- **Microsoft** released **Windows Containers** with the **Windows Server 2016** update, offering process or Hyper-V isolation modes.
+- Efficient **file system separation** is crucial, and **Microsoft's** solution involves the use of **repose points**.
+- This presentation will cover the basics of **Windows Containers**, its file system isolation framework, and how it can be manipulated to bypass security measures.
+
+**Speaker Introduction**
+- **Daniel Avinon**, a security researcher at **Deep Instinct**, with a focus on **Windows** internals and low-level programming.
+
+**Agenda**
+- Overview of the **Windows Containers Framework** and its key concepts.
+- Analysis of the **WCFS** driver, responsible for file system isolation, and how it can be utilized to bypass security products.
+- Summary and discussion of effective mitigation strategies.
+
+**Windows Containers Basics**
+- **Job objects** have been a part of **Windows Server** since 2003, allowing the system to control attributes like CPU usage, IO bandwidth, and virtual memory usage of associated processes.
+- **Microsoft** introduced **silos**, an extension of job objects, providing additional features like redirection of system resources (e.g., registry, networking, object manager).
+- **Server silo**, a type of silo used by containers, provides basic job capabilities and resource redirection.
+- **Windows kernel** detects processes assigned to silos using APIs like **PsIsProcessInServerSilo** and **PsIsProcessInSilo**.
+- IO driver snippet from **NTS Kernel** demonstrates how the kernel blocks attempts to unload a driver by a process within a server silo.
+
+**File System Separation**
+- **Repose point**: an **MFT** attribute that can be assigned to files or directories using the **DeviceIoControl** function with the **SetReparsePoint** file system control code.
+- When a file with a repose point is opened, it is handled by a **file system mini-filter driver** based on its repose type.
+- Symbolic links provide an example of repose points in action, where a directory redirects to another location using a repose point with the path to the destination.
+
+**Mini-Filter Drivers Background**
+- **Mini-filter drivers** simplify the IO filtering process for developers by providing a solution through the **filter manager**, a legacy filter that manages other mini-filter drivers.
+- The filter manager takes care of tasks like inserting mini-filters into the device stack, ignoring irrelevant requests, and supporting multiple platforms.
+- It also exposes a dedicated API for mini-filters, known as the **FLT API**, which implements common operations.
+- Each mini-filter can be attached to one or more volumes, creating a **mini-filter instance**, with volumes representing logical storage units (e.g., C drive).
+- Mini-filter instances can intercept pre and post operations of IO functions like create, read, and write.
+- The filter manager also implements the **mini-filter altitude system**, where each mini-filter specifies an altitude (numeric value) upon registration, determining the order of invocation for pre and post operation callbacks.
+
+**Demonstration of Mini-Filters and Repose Points**
+- When a **CreateFile** call is made with a file containing a repose point, the **IO manager** builds an **IRP** (Interrupt Request Packet).
+- The IRP travels down the device stack of the storage device (e.g., C drive) until it reaches the filter manager, which invokes pre-operation callbacks of mini-filters based on their altitudes.
+- After all pre-operation callbacks, the IRP returns to the filter manager and then travels down the storage device stack until it reaches the actual storage device.
+- When the IRP reaches the device, the file is read, and it travels back up the device stack until it reaches the **NTFS** driver, which recognizes the repose point and changes the IRP status to **StatusReparse**.
+- The filter manager receives the IRP again and invokes post-operation callbacks of mini-filters based on their altitudes, this time in the opposite direction.
+- If a mini-filter is responsible for handling the repose point, it gets the content of the repose point from the MFT attribute using **FltFsControlFile** with the **GetReparsePoint** file system control code.
+- The mini-filter then has two options: ignore the request if the repose tag is not associated with it, or extract the correct destination path from the repose point and replace the request file object using **IoReplaceFileObjectName** and **FLT_SET_CALLBACK_DATA_DIRTY**.
+- This causes the IO manager to repass the name in the file object and pass the request back down with the correct path, eventually returning the destination file to the caller.
+
+**Windows Container Isolation File System (WCIFS)**
+- **WCIFS** is the mini-filter driver responsible for file system separation between **Windows containers** and their host.
+- Surprisingly, this driver is loaded by default on all **Windows OS** versions from **Windows 10** onwards, even when the containers option is turned off.
+- WCIFS parses repose points with specific **IO reparse tags**: **IO_REPARSE_TAG_WCI_LINK_1** and **IO_REPARSE_TAG_WCI_1**.
+- Through reverse engineering, the internal buffers of these reparse tags were mapped, revealing a **GUID** and the path to the destination file.
+- To understand how WCIFS handles reparse points, a breakpoint was placed on its post-operation callback, but it didn't invoke due to requirements in the pre-operation callback.
+
+**WCIFS Pre-Operation Callback Requirements**
+- The pre-create function of WCIFS includes a blocking function called **WciUnionExistsForInstance**.
+- This function has two conditions:
+  1. The process that originated the create call is not within the **host silo** (equivalent to the host OS).
+  2. The silo that originated the request must have a registered context within the driver's internal collections.
+- To fulfill the first requirement, create a silo by:
+  1. Creating a job object using **CreateJobObjectA** and giving it a name.
+  2. Converting it to a silo using **SetInformationJobObject** with the undocumented **JobObjectSilo** flag.
+  3. Assigning the current process to this new silo.
+- To fulfill the second requirement, communicate with the mini-filter driver using **FltSendMessage**, which requires reverse engineering the **GetMessage** handler function in the driver's binary to determine the expected structure of the message data.
+- The message data includes fields like the number of unions (representing volumes), reparse tag names, a handle to the silo, and volume union structures with geo IDs and container root IDs.
+- Interestingly, there doesn't seem to be validation of whether the source and target volumes are the same, implying the potential to create a container that redirects to itself.
+
+**WCIFS Reparse Tag Handling**
+- **IO_REPARSE_TAG_WCI_LINK_1**: Acts as a regular link between two files, typically placed on files that can only be opened with specific primitives.
+   - The driver redirects the call to the container's destination volume, returning a handle to the file outside the container's dynamic image.
+- **IO_REPARSE_TAG_WCI_1**: Responsible for file and directory expansion, allowing files to be opened with write primitives and edited.
+   - The driver saves the reparse data in the file's object context and launches a work item to handle the request.
+   - The work item copies the file into the source volume (container's ghost image) and edits a copy of the file instead of the original.
+
+**WCIFS Additional Functionality**
+- WCIFS provides a copy-paste feature, allowing files to be transferred between the container and host volume without entering the container or using reparse points.
+- This is achieved by sending a message to the driver using **FltSendMessage** with **MessageCodeForm**, specifying source and target file paths and volumes.
+
+**Summary of WCIFS Reverse Engineering**
+- Created a silo, inserted a process into it, and registered it as a fake container.
+- Discovered how WCIFS handles reparse points:
+   - **IO_REPARSE_TAG_WCI_LINK_1**: Open one file and receive a handle to another.
+   - **IO_REPARSE_TAG_WCI_1**: Override the file with the content of another or delete a file.
+   - Directly communicate with the driver to copy and paste files.
+
+**Utilizing WCIFS to Bypass Security Measures**
+- **File system protection** is a critical feature of **EDR** (Endpoint Detection and Response) solutions, leveraging advanced algorithms to analyze mini-filter IO logs and detect patterns associated with malware.
+- Security vendors often focus on monitoring processes that open many file handles and exhibit behaviors like reading and overwriting data.
+- WCIFS uses **FLT_READ_FILE**, **FLT_WRITE_FILE**, and **FLT_PERFORM_SYNCHRONOUS_IO** functions, which have a special property: they send the request to mini-filter driver instances attached below the initiating instance, bypassing instances above it.
+- This altitude-based invocation order allows WCIFS to bypass EDR mini-filters, as they are attached at higher altitudes.
+
+**Creating Undetectable Wiper and Ransomware**
+- Wiper:
+   - Create an empty target file with a buffer of zeros or random data.
+   - Set an **IO_WCR1** reparse point on each file, pointing to the target file.
+   - Create a silo, assign the current process to it, and register it as a fake container with the source and target volumes as the same.
+   - Open each file, causing WCIFS to read the content of the target file and write it over the original file without triggering EDR mini-filter callbacks.
+- Ransomware:
+   - Traverse each file, reading and encrypting its content in memory.
+   - Create a target file and write the encrypted data to it (EDR mini-filters will ignore this as it's a new file).
+   - Set an **IO_WCR1** reparse point on each file, pointing to the target file.
+   - Create a silo, assign the process to it, and register it as a fake container.
+   - Open each file, causing WCIFS to read the encrypted data and write it to the original file, effectively encrypting it without detection.
+
+**Demonstration of Undetectable Ransomware**
+- Traditional ransomware that opens, encrypts, and writes encrypted data to the same file gets detected and terminated by the EDR.
+- Using WCIFS to encrypt a folder, all files are successfully encrypted without triggering the EDR.
+
+**Bypassing File System Write Restrictions**
+- Security vendors offer the ability to block file system write operations, useful for enforcing read-only policies or protecting sensitive data.
+- This protection is implemented using mini-filter drivers, which can be bypassed using WCIFS.
+- Demonstration: copying a file to a USB stick is blocked by the EDR due to a read-only policy, but using WCIFS to copy and paste the file bypasses the restriction.
+
+**Bypassing ETW-Based Correlations**
+- **ETW** (Event Tracing for Windows) is a powerful logging mechanism built into **Windows**, with the kernel serving as a crucial log provider for system operations, including file system-related events.
+- Security vendors use these events to identify potential threats and create attack flows through cross-referencing.
+- However, WCIFS performs read and write operations within a kernel work item, which executes in a kernel thread, causing ETW logs to attribute these actions to the system process instead of the responsible process.
+- This misattribution bypasses threat handling correlations based on ETW events, such as events 15 and 16 of read and write from the kernel file provider.
+- Windows tools like **SACL** (System Access Control) intentionally disregard logs originating from the system to avoid unnecessary overhead, further contributing to the bypass.
+
+**Demonstration of ETW-Based Correlation Bypass**
+- A file with a read and execute auditing rule generates logs when accessed by a process like Notepad.
+- Using WCIFS to override a file with the content of a secret file bypasses the auditing policy, resulting in no logs being created for the access to the secret file.
+
+**Summary and Mitigation**
+- Through reverse engineering WCIFS, it is possible to create a counterfeit container and leverage its IO redirection mechanism to bypass security measures.
+- This results in new bypasses for file system-based malware protection, file write restrictions, and ETW-based correlations.
+- Mitigation strategies include detecting suspicious activity in user mode, such as calls to **DeviceIoControl** with specific reparse points or the creation of silos by non-system processes.
+
+**Further Research**
+- WCIFS is one of many mini-filter drivers, and similar abuses may be possible with other drivers.
+- Reparse points can also be set on directories, and the WCIFS driver symbols reference directory expansion and possible redirection handling, warranting further exploration.
+- Mini-filter and ETW-based protection is prevalent, and more bypasses may be achievable using the methods presented.

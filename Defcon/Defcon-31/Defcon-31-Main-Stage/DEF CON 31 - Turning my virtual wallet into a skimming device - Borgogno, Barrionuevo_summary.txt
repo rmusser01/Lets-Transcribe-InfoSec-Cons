@@ -1,0 +1,62 @@
+**Introduction**
+- **Ileana Barrionuevo**: Security engineer and researcher at UTN, Cordoba, Argentina
+- **Dan Borgogno**: Security engineer and researcher at Latus Seguros, Argentina
+
+**Digital Wallets**
+- **Definition**: Allow users to store, transfer, and receive money on their phones
+- **Problem**: When a business wants to receive payments, they need to protect client data, especially when using credit cards
+- **Attack Surface**: 
+    - Critical information sent over **Bluetooth**, which is vulnerable to attacks
+    - Ability to control data flow and payment process, leading to potential reply attacks and payment manipulation
+    - Wide range of attack points, including data entry, hardware, firmware, Bluetooth, application manipulation, and network traffic
+
+**Device Features**
+- Read **EMV** (chip), **MAGstripe** (black stripe on credit cards), and **NFC** payments
+- Support **firmware updates** and **key updates** over the air
+- Use **Bluetooth Low Energy** and **EDR** (3.0)
+- Implement a **key management system** using **UKPT** (a protocol for secure key exchange)
+- Encrypt critical information (e.g., MAGstripe, EMV, and NFC data) before sending it to the backend
+
+**Network Traffic Analysis**
+- Intercepted traffic between application vendors and devices
+- Used tools like **Frida**, **Objection**, **Meet and Proxy**, and **Burp Suite** to analyze and manipulate data
+- **Data Reconstruction**: 
+    - Backend returned encrypted credit card information (e.g., card number, CVV, expiration)
+    - By guessing the first few digits and brute-forcing the remaining ones, they could reconstruct the entire credit card number
+- **Data Reuse**: 
+    - UKPT states that transaction keys should be used once and discarded
+    - By resending a request with encrypted information and a valid payment, they could make a successful transaction, exploiting a grey area in responsibilities between device and digital wallet providers
+
+**Application Analysis**
+- Focused on manipulating objects and instances related to encrypted card information
+- Abused **TUKPT** (a key management protocol) implementation
+- Captured and manipulated encrypted card information during transactions
+- Developed a script to hook methods, serialize requests, and manipulate instances at runtime
+- Demonstrated a successful attack by tampering with the serializer method and sending previous card information
+
+**Bluetooth Analysis**
+- Devices shared the same Bluetooth chip (**iChip YC1021**) supporting Bluetooth 3.0 and 5.0
+- Used a test application and tools like **BiddleJack** and **micro:bits** to analyze Bluetooth traffic
+- Able to sniff critical payment information over Bluetooth Low Energy
+- For Bluetooth EDR (3.0), the data was encrypted, but the pairing mechanism had vulnerabilities
+    - Numeric comparison showed the same six-digit number on the device and phone, but the device had no screen to verify the pairing
+    - Performed a **Man-in-the-Middle** attack using a script to emulate the device and intercept data
+- Demonstrated successful attacks, including **data manipulation**, **over-the-air updates**, and **dual copy bypass**
+
+**Hardware Analysis**
+- Analyzed four devices available in Argentina, focusing on valuable data and hardware vulnerabilities
+- Valuable data included:
+    - **DMC** or **EMV tokens** (for payments)
+    - **Firmware** (for bug exploitation)
+    - **IP Key** (for data decryption)
+    - **UART logs** (for potential information leakage)
+- Devices lacked anti-tampering measures, allowing cleartext data transmission between components
+- Performed a **schemer** attack to capture and transmit credit card information over Bluetooth
+- Demonstrated the attack using a hardware implant and a simple RF transmitter
+
+**Final Thoughts**
+- Companies should use **end-to-end encryption** and implement **anti-tampering measures**
+- **Data reuse** should be denied, and an **expiration** or **TTL** should be added to sensitive data
+- **Digital signatures** could ensure data integrity and prevent manipulation
+- **Auto-bounce pairing** or **NFC pairing** could enhance security and prevent Man-in-the-Middle attacks
+- Acknowledgments: **Adrien Perroneo**, **Marino CodeHackerspace**, and **Joaquin Marella** for their contributions

@@ -1,0 +1,61 @@
+**Introduction**
+- Speaker: Jonathan Birch, Security Engineer at Microsoft
+- Presentation Topic: **Implicit & Mutation-Based Serialization Vulnerabilities in .NET**
+
+**Overview of Serialization Vulnerabilities**
+- **Insecure Serialization**: Exploits leading to remote code execution (RCE) in .NET applications.
+- **Common Assumption**: Exploitation requires direct use of a serializer and the ability to tamper with serialized data.
+- **Talk Focus**: Demonstrating attacks that violate these assumptions and methods to exploit deserialization.
+
+**LightDB: A Case Study**
+- **LightDB**: An open-source .NET library for a NoSQL engine.
+- **Vulnerability**: Use of **Type.GetType** to convert a string into a .NET type, allowing an attacker to specify malicious types.
+- **Impact**: Potential RCE by exploiting the underlying polymorphic serializer.
+
+**Understanding .NET Serialization Vulnerabilities**
+- **Polymorphic Serializer**: Serializer where data dictates the type to be created.
+- **Example**: A box labeled "cat" is deserialized into a "cat" object, but an attacker can provide a box labeled "pain" to execute malicious code.
+- **Common .NET Serialization Gadgets**: Assembly.LoadWithPartialName, ObjectDataProvider, etc.
+
+**Implicit Serialization Vulnerabilities**
+- **LightDB Exploit**: Demonstrated through a JSON blob specifying ObjectDataProvider to launch calc.exe.
+- **MongoDB Exploit**: Similar vulnerability, but with an additional assignability check, requiring the payload to fit expected types.
+- **RavenDB Exploit**: Uses a different serializer (JSON.NET) with unsafe settings, allowing RCE by exploiting a Windows Identity serialization gadget.
+- **ServiceStack.Redis Exploit**: Uses AssemblyInstaller to perform DLL injection by calling LoadLibrary on a malicious path.
+
+**Serialization Mutation Attack**
+- **MartinDB**: A NoSQL engine using JSON.NET with unsafe settings, but with restrictions on serialized data.
+- **Mutation Attack**: Exploiting the ability to control key-value pairs in serialized data to collide with the syntax of an RCE payload.
+- **Example**: Using a Dictionary with a key named "$type" to specify a malicious type, resulting in RCE when deserialized.
+- **Applicability**: This attack works with various serializers and can be used to exploit websites or services accepting key-value data.
+
+**Bypassing Serialization Binders**
+- **Serialization Binder**: Acts as a filter during deserialization, allowing or blocking specific types.
+- **Common Misstep**: Trusting all types from a specific assembly, allowing an attacker to exploit types within that assembly.
+- **Example**: InitializedList type derived from the generic List type, allowing an attacker to specify AssemblyInstaller in the template, resulting in RCE.
+- **Contagion**: Exploiting the ability to omit type specifications for members, properties, or constructor arguments of an object.
+
+**Disclosure and Fixes**
+- **Disclosure**: Vulnerabilities disclosed to vendors in January 2023 or earlier.
+- **Vendor Responses**: Most vendors, except MartinDB, made fixes, but some fixes can still be bypassed.
+- **MongoDB Fix**: Added a strict allowlist for types during deserialization, making it challenging to exploit.
+- **Unfixed Libraries**: MartinDB, JSON.NET (mutation attack), and JavaScript Serializer.
+
+**Best Practices and Recommendations**
+- **Avoid Polymorphic Serializers**: Don't use serializers where data dictates the type.
+- **Don't Call Type.GetType**: Indicates potential unsafe serialization or reflection usage, leading to RCE.
+- **Unsafe Serializers**: Avoid using unsafe serializers anywhere, including for deep copy operations.
+- **NoSQL Engines**: Consider the risks of reading untrusted data, especially with implicit serialization vulnerabilities.
+- **Serialization Binders**: Architect your application to avoid the need for serialization binders, as they are often implemented insecurely.
+
+**Bonus: .NET 6+ Serialization Exploits**
+- **Myth**: .NET 6+ is immune to serialization attacks.
+- **Reality**: Exploiting .NET 6+ is harder due to the absence of some exploitable types, but deserialization gadgets like ObjectDataProvider still exist.
+- **.NET 6+ Gadgets**: AssemblyDependencyResolver and System.IO.FileInfo can be used for pingbacks by calling CreateFile on an SMB or WebDAV URL.
+- **DLL Injection**: AssemblyInstaller can be used for DLL injection if an additional exploit allows file drops.
+
+**Q&A**
+- Vulnerable games: Search on GitHub or NuGet for projects dependent on vulnerable libraries like LightDB.
+- Identifying vulnerabilities: Look for calls to Type.GetType with user-provided strings, indicating unsafe serialization or reflection usage.
+- AssemblyInstaller exploit: Combine with another exploit to perform file drops and ensure the presence of malicious DLLs.
+- Automapper and FastMapper: Haven't looked into them specifically, but reflection-based mappers may have similar vulnerabilities.

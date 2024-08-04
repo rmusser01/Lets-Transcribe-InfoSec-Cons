@@ -1,0 +1,37 @@
+**Introduction**
+- **Dan Petro**: Senior Security Engineer at Bishop Fox, previously a long-time pentester at the company
+- **David Vargas**: Senior Consultant with the Red Team at Bishop Fox
+- Discussion topic: Breaking into secure facilities
+
+**RFID Badge Reader Systems**
+- **Components**: Door, lock, and reader
+- **Reader's role**: Accepts badge, forwards badge number to the controller
+- **Controller's role**: Authenticates and authorizes entry, sends signal to flash green light if entry is allowed
+- **Wiegand**: Current protocol used, unencrypted, allowing for badge cloning and replaying
+
+**OSDP (Open Supervised Device Protocol)**
+- **Intended as a replacement for Wiegand**: Provides encryption and supports multiple readers on the same bus (RS485)
+- **OSDP-SC (Secure Channel extension)**: Adds encryption, not mandatory, leaving some installations unencrypted
+- **RS485**: Allows daisy-chaining of readers, all messages are broadcast, enabling potential access to secure doors via less secure side doors
+
+**OSDP Protocol Issues**
+- **Ineffective sequence numbers**: Only 2 bits, not providing sufficient security against replay attacks
+- **HMAC issues**: Only 32 bits retained, rest discarded, reducing security and enabling potential birthday attacks
+- **Session key derivation**: Uses only 48 bits of entropy from the backend server's nonce, potentially weakening encryption
+
+**Downgrade Attack**
+- Exploits the ability of OSDP devices to choose encryption or not
+- Manipulates the capabilities request to indicate lack of encryption support, resulting in unencrypted data transmission
+
+**Protocol WTFs**
+- **What Are We Paying by the Bit Now?**: Inadequate sequence numbers and HMAC handling, potentially enabling replay attacks
+- **Stop Making Null Ciphers**: Secure channel setup messages (SCS 15 and 16) leave data fields unencrypted, exposing data to eavesdropping
+- **Install Mode Attack**: Persistent install mode allows attackers to request and obtain the encryption key from the controller
+- **Encryption Is Not Magic Fairy Dust**: Lack of asymmetric cryptography, relying on a default key for initial encryption, providing a false sense of security
+
+**Defense Strategies**
+- **Configuration**: Ensure encryption is enforced, disable install mode, and prevent downgrade attacks
+- **Reader Installation**: Consider physically connecting new or reconfigured readers directly to the controller to avoid insecure key exchange over production wires
+- **Tamper Alarms**: Respond promptly to tamper alarms, consider additional physical controls or camera surveillance
+- **OSDP Verified Devices**: Prioritize purchasing OSDP-verified devices to ensure encryption support and proper implementation
+- **Caution**: Don't assume security just because encryption is used; cryptographic protocols are complex and vulnerable to implementation errors

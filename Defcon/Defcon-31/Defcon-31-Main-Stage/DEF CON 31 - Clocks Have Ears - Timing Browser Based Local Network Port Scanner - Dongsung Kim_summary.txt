@@ -1,0 +1,54 @@
+**Introduction:**
+- Talk presented by **Donnie Kim**, a security IT expert at the Security Office, based in Sweden and South Korea, and part of the Tracer group.
+- In May 2020, it was revealed that **eBay** and other companies were **port scanning** their visitors' computers via their websites, with the tool suite of a firm called **Threatmetrics**.
+
+**Browser-Based Port Scanning Implications:**
+- **Privacy**: Can be used to **fingerprint** visitors, tracking them with unique characteristics.
+- **Security**: Can uncover internet services that are a foothold for subsequent attacks like **XSS** or **CSRF**.
+- Various techniques have been used, including image and iframe tags, script tags, and exploits employing **WebRTC** and **WebSocket**.
+
+**Timing-Based Techniques:**
+- Focus on measuring the **timing** of network requests using the **Fetch API**.
+- Restrictions imposed by browsers and web specifications limit observable data to elapsed time and some generic error data.
+- Four components responsible for round-trip time: **browser**, **firewall**, **TCP**, and **TLS+HTTP**.
+
+**Hypotheses on Port States:**
+- If the port is closed and the firewall drops packets or the host is unreachable, the observed time is theoretically infinite (typically an arbitrary timeout is enforced).
+- If the port is closed and the firewall rejects packets, the browser and firewall will take up the observed time.
+- If the port is open and a process is listening, all four components will contribute to the observed time.
+
+**Finding Open Ports on Localhost:**
+- Localhost specifics: Firewall always rejects packets when the port is closed, and the host is always reachable.
+- Algorithm:
+   - Make multiple fetches to a generally closed port (e.g., port 2) and calculate the average timing as a control.
+   - If a fetch takes similar time as the control, the port is closed.
+   - If a fetch takes significantly more time, the port is open.
+- Repeat the algorithm against various ports of interest to get a list of open ports.
+
+**Finding the Router on the LAN:**
+- Only need to determine if the host is responsive or not, regardless of the port state.
+- Algorithm:
+   - If a fetch times out, the host is unresponsive.
+   - If a fetch ends before the timeout, the host is responsive.
+- Repeat the algorithm against a list of potential router IPs and ports to find live routers.
+
+**Finding Open Ports on LAN Clients:**
+- New web standard: **Private Network Access** in Chrome restricts requests to private network resources from HTTPS web pages.
+- HTTP requests to LAN clients from an HTTP web page will return a **CORS** error with a generic "failed to fetch" string.
+- CORS check happens after the TCP connection is successful, indicating an open port.
+- Algorithm:
+   - From an HTTP web page, take measurements using HTTP and HTTPS.
+   - If there is no difference between the observed times, the port is closed, and the firewall rejects packets.
+   - If HTTPS fetch is significantly slower than HTTP, the port is open, and a process is listening.
+- Repeat the algorithm against various LAN clients and ports of interest.
+
+**Proof of Concept: Your LAN.js:**
+- Demonstrates all three techniques: finding open ports on localhost, finding the router, and finding open ports on LAN clients.
+- Scanning process can take several minutes to complete.
+- Able to find various open ports and devices on the LAN, including Airplay, Google Cast, LG Smart Device, Dyson, SMB, Homebridge, router interfaces, and a Philips Hue light bulb.
+
+**Limitations and Takeaways:**
+- Research limitations include the possibility of **false positives** and **false negatives**, as well as the existence of more complex scenarios.
+- **Tor Browser** declines any requests to localhost and local IPs, providing privacy and security.
+- Use **ad blockers** to prevent malicious tracking scripts.
+- **VPNs** can be a mitigation as long as they allow access to the user's local network.

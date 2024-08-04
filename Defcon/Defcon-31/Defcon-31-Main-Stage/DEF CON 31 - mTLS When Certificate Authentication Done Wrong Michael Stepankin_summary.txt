@@ -1,0 +1,58 @@
+**Introduction**:
+- **Michael Stepankin** presents novel attacks on **Mutual TLS (mTLS)** authentication and demonstrates vulnerabilities in popular open-source software.
+
+**mTLS Overview**:
+- **mTLS** is a form of **client authentication** where the **server requests a valid certificate** from the client, similar to how a **browser verifies a server's certificate**.
+- The **TLS RFC** defines the process, which is based on **asymmetric cryptography**.
+- During the **TLS handshake**, the server sends a **certificate request message**, and the client responds with a **certificate message containing a public key** and a **certificate verify message encrypted with a private key**.
+- **Certificates** are **blobs of binary-encoded data** with important fields like the **subject**, **issuer**, and **public key**.
+- The **issuer field** points to another certificate, forming a **chain of trust**.
+
+**mTLS in Java Web Applications**:
+- Developers can enable mTLS in application settings and specify the location of **trusted root certificates**.
+- Clients need to specify the certificate sent to the server, but the **application code remains the same as a normal web application**.
+
+**mTLS Advantages and Disadvantages**:
+- **Faster authentication** as it occurs at the handshake level, and subsequent HTTP requests are automatically authenticated.
+- **Storage benefits** as the server only needs to access the root certificate, similar to **JSON Web Tokens (JWTs)**.
+- **Lack of granular control**: All requests must be authenticated, including public pages and resource files.
+- **Certificate issuance** is not specified by mTLS, leaving it up to the application to define additional mechanisms.
+- **Certificate expiration** is a hassle, requiring frequent rotation.
+
+**Previous Attacks on Certificate Validation**:
+- **Signature forgery** or **modifying certificate content** can break the authentication process.
+- The **complex X.509 format** can lead to **buffer and heap overflows** during parsing.
+- **Lack of basic constraint checking** can be used to bypass authentication.
+
+**Improper Certificate Extraction**:
+- Developers often need to access the **subject name** from the certificate presented during the TLS handshake for **authorization or username identification**.
+- In **Java**, the `SSLSession.getPeerCertificates` method returns an **array of certificates**, allowing clients to send a **full chain of certificates**.
+- Some applications **iterate over the array** to find a certificate that matches specific criteria, assuming the **TLS library verifies all certificates**.
+- **KeyClock**, a popular **authorization server**, was vulnerable to this issue, allowing an attacker to **authenticate with a different username** by sending a list of certificates with the first one properly chained to a root CA.
+- The vulnerability was patched by considering only the **first certificate** from the array.
+
+**mTLS with Reverse Proxy**:
+- In some deployments, the **TLS connection is terminated at a reverse proxy** that checks the certificate and forwards it to the backend server as an additional header.
+- This approach requires **proper network isolation** and protection against **request smuggling vulnerabilities**.
+
+**Following the Certificate Chain**:
+- In large systems, servers may use an **external storage** for **root and intermediate certificates**, known as a **certificate store**.
+- The **X.509 format** defines extensions that provide information on where to find the **issuer's certificate**, such as the **Authority Information Access (AIA) extension**.
+- If the application uses a certificate store, treat values like the **subject**, **issuer**, and **serial number** as potential **insertion points for attacks** similar to those in **Burp Suite Intruder**.
+- The **Bouncy Castle library** in **Java** is vulnerable to **LDAP injection** when using an LDAP-based certificate store due to improper escaping of the subject field in LDAP queries.
+
+**Certificate Revocation**:
+- A controversial topic, as it can impact performance or require the use of affluent revocation lists.
+- The **PKI specification** proposes a **special store for revoked certificates** accessible via **HTTP** or **LDAP**.
+- Two methods for revocation checking are **Online Certificate Status Protocol (OCSP)** and **Certificate Revocation Lists (CRLs)**.
+- If the application takes URLs from certificate extensions (**AIA** or **CRL Distribution Points**) for revocation checking, it may be vulnerable to **SSRF attacks**.
+- In **Java**, LDAP-based revocation checking can lead to **remote code execution (RCE)** via **JNDI injection**.
+- The **Bouncy Castle library** is vulnerable to **HTTP SSRF** when using the **CRL Distribution Points** extension.
+- **AperioCAS**, an authentication server, was found to be vulnerable to **password leakage** when using an external LDAP server for revocation checking, preferring LDAP URLs from the certificate over configured settings.
+- The vulnerability was patched by clearing the login and password from the LDAP connection.
+
+**Summary**:
+- When developing or assessing an mTLS system:
+   - Pay attention to **username extraction** from the mTLS chain, as servers may only verify the first certificate.
+   - Use **certificate stores** cautiously to prevent **LDAP** and **SQL injection**.
+   - Handle **certificate revocation** carefully to avoid **SSRF** or **RCE**. Perform revocation checks **after all other validations**.

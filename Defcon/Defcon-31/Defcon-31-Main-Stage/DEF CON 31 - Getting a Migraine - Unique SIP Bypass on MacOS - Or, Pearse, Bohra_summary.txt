@@ -1,0 +1,89 @@
+**Introduction**
+- Speakers: Jonathan (**JBO**), Mike, and Anurag (unable to attend)
+- Affiliation: Microsoft researchers
+- Topic: Unique **SIP** bypass on **MacOS** 
+
+**MacOS Mechanisms**
+- **System Integrity Protection (SIP)**: Limits capabilities of the **super user** or **root**
+- Leverages **Apple Sandbox** to protect the platform
+- Prevents:
+    - Loading of **untrusted kernel extensions**
+    - Writing to **sensitive filesystem locations**
+- Controlled by **NVRAM variables** (e.g., **CSR active config** on Intel)
+- Has a **domino effect**: Bypassing one mitigation can lead to bypassing all of them
+
+**SIP and File System Restrictions**
+- SIP prevents modification of files with specific **extended attributes** (e.g., **com.apple.rootless**) or configured in **sandbox config rootless.conf**
+- Allow lists can override these restrictions but are out of scope for this talk
+- **LS-LO** command shows files that cannot be modified due to SIP protection
+
+**Entitlements**
+- In macOS, processes are **signed** and granted **entitlements** or **capabilities**
+- Apple has **private entitlements** that grant access to certain capabilities (e.g., **com.apple.rootless.install**, **com.apple.rootless.install.heritable**)
+- These entitlements create a **capability-based security layer** that Apple controls
+- Entitlements are translated into capabilities by the OS, giving Apple the "keys to the kingdom"
+
+**Discovery of drop SIP Process**
+- While hunting for malware, noticed a prevalent process named **drop SIP**
+- Further inspection revealed it to be an **Apple-signed binary** that runs under the **system migration private framework**
+- Drops capabilities that bypass SIP file system checks using the **CS ops** API
+- Removes SIP bypassing capabilities and runs commands without those capabilities
+
+**Exploitation Strategy**
+- Focused on **environment variable poisoning** for interpreters like **bash** and **Perl**
+- **Bash** and **Perl** are child processes of **system migration D**, which has SIP bypassing capabilities
+- **Bash** and **Perl** environment variables (**bash_env**, **Perl5_opt**) allow execution of arbitrary commands
+- **Bash** and **Perl** are protected by SIP, making injection difficult, but environment variable poisoning provides an alternative method
+
+**Initial Exploitation Challenges**
+- Required physical USB drive and user interaction (manual clicking and reboot)
+- Needed to automate the process and remove the need for physical access
+
+**Reversing Migration**
+- **Migration** is a complex system involving multiple processes communicating through **XPC** and **IPC**
+- **Migration assistant** initiates the process, followed by **MV system administration**, **setup assistant**, and **migration daemon (system migration D)**
+- Each process validates the caller has the appropriate private entitlement
+- **System migration D** creates a file in a protected location (**library/system migration/queue**) with metadata for the migration request
+- **System migration D** is the only process that can modify, create, or delete files at that location
+- **System migration D** uses a hidden user (**MV setup user**) to run the migration process
+
+**Exploitation Approaches**
+- **Top-down approach**: Patching system binaries to modify behavior (e.g., prevent logout)
+- **Bottom-up approach**: Bend the private framework used by **system migration D** to our will and call desired functionality directly
+
+**Why the Approaches Failed**
+- Entitlements validation prevented direct access to **system migration D**
+- On newer Apple Silicon devices, patching system binaries is prevented by the kernel
+
+**Alternative Approach**
+- Bypass **migration assistant** and communicate directly with **setup assistant**
+- Discovered the use of the **dash minibuddy yes** flag by **setup assistant**
+- Found additional parameters being used by **setup assistant** (e.g., **dash MB debug**, **resume buddy yes**)
+- Using these parameters, able to initiate migration without logout and with a leaner process
+
+**Automating the Exploit**
+- Created a small (1GB) time machine backup partition on the hard drive instead of using a physical USB drive
+- Poisoned environment variables, set the payload, and used **Apple script** to automate clicking through windows
+- **Apple script** runs **setup assistant** with appropriate parameters, bypassing user interaction
+
+**Demo**
+- Shows real-time demo of overwriting the **Apple Kexex fluid** file, which is SIP-protected
+- Uses **Apple script** to call **setup assistant** with the time machine backup
+- Automates clicking through windows, deselecting everything except a dummy user
+- Exploits run, migration daemon is killed before reboot, and the **Apple Kexex fluid** file is overwritten with the word "migraine"
+
+**Implications of the Exploit**
+- SIP is a double-edged sword: Protects users but can be exploited to create undeletable malware or gain kernel extension execution
+- Exploit can bypass other security layers in macOS, such as **TCC**, allowing an attacker to access the microphone or camera without notification
+
+**Apple's Fixes**
+- **Brutal fix**: No more global environment variables due to SIP enforcement at **launchd**
+- **Tactical fix**: Dropping SIP bypassing capabilities before launching scripts
+- Prevented the use of environment variables to affect **system migration D**
+- Introduced **launch constraints** to ensure only Apple-owned processes can modify system launch daemons
+- Killed entire bug classes, not just the specific exploit
+
+**Conclusion**
+- Apple's fixes were solid and impressive, demonstrating their commitment to security
+- With Apple moving everything to userland and creating separate security layers, similar bypasses may shake the macOS ecosystem
+- Speakers wish to thank Apple for their cooperation and generous bounty, which was donated to charity

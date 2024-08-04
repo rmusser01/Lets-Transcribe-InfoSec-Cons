@@ -1,0 +1,68 @@
+**Introduction**
+- Talk given at DEF CON 31 by Trevor Stevado and Sam Haskins of Loudmouth Security
+- Focuses on **physical access systems** and their vulnerabilities
+
+**Physical Access Systems**
+- Components: **card**, **reader**, **back-end access controller**, **lock**
+- Reader reads credential from card, sends to access controller for validation
+- Access controller confirms validity, sends signal to lock to open door
+
+**Card-to-Reader Interactions**
+- Technologies: **HID prox**, **HID iClass**, **Mifare Classic**, **CEOS** (**HID**), **Mifare Desfire** (**NXP**)
+- Purpose: validate physical presence of credential at specific time
+
+**Types of Attacks**
+- **Card-cloning**: capturing data from card, writing to new card
+- **Downgrade**: reading data from card with standard reader, encoding on lower frequency/security card
+- **Replay**: capturing, replaying sequence of messages between card and reader
+- **Relay**: focus of presentation; relaying RFID card signal over long distance
+
+**History of Access Control Technologies**
+- **HID prox**: simplistic, card broadcasts ID when energized, easily cloned
+- **HID iClass**: introduced shared key between card and reader, proprietary cipher reverse-engineered
+- **Mifare Classic**: uses keys for each sector, proprietary algorithm reverse-engineered
+- **CEOS** and **Mifare Desfire**: use industry-standard ciphers, no public cloning techniques for CEOS
+
+**Relay Attack Scenario**
+- Attacker sends individuals near legitimate employee with Proxmark and near target door with Proxmark
+- Communication between Proxmarks via internet, acting as fake reader and card
+- Messages relayed between real reader and real card, responses sent back
+- Reader can only detect attack through **timing variations**
+
+**ISO 14443 Type A (14A)**
+- Messaging layer for application-specific data, e.g., **CS protocol** or **Desfire protocol**
+- **14A handshake**: exchange of parameters before application-layer data, not encrypted or authenticated
+- **UID CLN message**: card provides UID to reader, not used by CS due to lack of authentication
+- **ATS message**: includes **frame waiting time integer (FWT)**, unauthenticated, sent by card
+
+**Frame Waiting Time (FWT)**
+- Tells reader how long to wait between frames before expecting response from card
+- Can be modified to make reader accept **ridiculous amounts of latency**
+- Highest value of 14 results in wait time of **4,949 milliseconds**
+
+**Original Design**
+- Extension of HF Replay Proxmark standalone mode by Salvador Mendoza
+- Used laptops, BlueShark Bluetooth add-on, web socket connection
+- Successful test: unlocking door in Ottawa with card in Florida
+- Reliability issues due to battery level affecting Proxmark's ability to read card
+- Latency issues: real cards designed for response within milliseconds, not orders of magnitude
+
+**Revised Design**
+- Swapped laptops with phones, Bluetooth with serial link, powered Proxmark from phone
+- Software: HFCardHopper, new module for Iceman's Proxmark 3 firmware, inspired by Salvador Mendoza's design
+- Supports any ISO 14443A protocol, relays initial UID and DATS
+- Custom Android app for easy interface with Proxmark, supports card/reader modes, adjusts FWT
+- Custom hardware: USB-to-UART bridge module, ribbon cable for connection to Proxmark
+
+**Results**
+- Tested on various HID readers: RP40, RPK40, Signo (00, 01, 02)
+- Card technologies: CEOS, EV1, interested in testing EV2 and EV3
+- Distances: successful tests from 12 feet to 2,400 miles (Vegas to Ottawa)
+- Prevalence of technologies: older technologies still in use, small market percentage for newer ones
+- Most access control industry vulnerable to some form of attack
+
+**HID's Response**
+- Responsible disclosure through BugCrowd, triaged and responded
+- Did not accept recommendation to limit FWT due to compliance and backward compatibility
+- Majority of end users do not see relay attacks as viable threat
+- Suggested mitigations: second factor (PIN/biometric), mobile credentials

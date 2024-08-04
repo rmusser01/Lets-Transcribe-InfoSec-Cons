@@ -1,0 +1,50 @@
+**Introduction**
+- Speaker: Ceri Coburn
+- Background: Software developer for 18 years, transitioned to InfoSec 4 years ago, currently focused on red teaming and offensive security tooling
+- Contributions: Author of BuffNet, Sweet Potato, and Sharplock; maintainer of Rubeus
+
+**Kerberos Overview**
+- **Authentication Protocol**: Used by Windows and Unix/Linux-based OSs
+- **Realm**: Machines joined to a common realm for mutual authentication of **principles** (users or computers)
+- **Principle Name**: Comprised of a typical name string (e.g., SAM account name, user principal name, or LDAP distinguished name) and a **principle type** (a hint for the Kerberos authentication scheme)
+
+**Active Directory (AD) Authentication and Authorization**
+- **Complex Search Algorithm**: AD uses multiple attributes to find the user during authentication
+- **Authorization**: Based on the **Privileged Attribute Certificate (PAC)** embedded in the Kerberos ticket
+- **Principle Name Collisions**: Can lead to privilege escalations, as seen in the SAM-related CVEs
+
+**Spoofing Attacks**
+- **SAM-related CVEs**: Exploited by creating a machine account similar to a domain controller, requesting a packless TGT, renaming the account, and requesting a service TGT, resulting in a privilege escalation
+- **Mitigations**:
+    - Patch: Prevented requesting packless TGTs, enforced SAM account name endings with a dollar sign, and made UAC setting changes
+    - SAM account name duplications are now prohibited
+
+**New Spoofing Vector: User Principal Name (UPN)**
+- **UPN**: Comprised of a username, an "@" symbol, and a domain suffix (similar to an email address)
+- **Prerequisites for Abuse**: Write permission on the public information attribute set or generic write access over a computer or user account in AD
+- **Duplicated UPNs**: Not allowed, but invalid UPNs (without a domain suffix) can be set
+
+**Exploiting UPN Spoofing**
+- **Search Algorithm Difference**: Specifying the **NT Enterprise** name type causes AD to search the UPN first, before the SAM account name
+- **Updated Rubeus Argument**: Allows specifying the principle type, enabling spoofing of UPNs
+- **Abuse Factors**: Windows relies on the PAC for authorization, while Unix/Linux systems using the GSS API may rely on the outer ticket for validation, leading to potential privilege escalation
+
+**Enumeration and Exploitation Tools**
+- **Rubeus Update**: Added a new argument to specify the principle type, enabling UPN spoofing
+- **Python Enumeration Tools**: Identify vulnerable Linux/Unix hosts within an AD network by searching for non-Windows machines and checking for GSS API support
+
+**Demo**
+- **Prerequisites**: Generic write access over an account in AD
+- **Steps**:
+    - Modify the UPN of a user account to mimic another account (e.g., domain administrator)
+    - Without specifying the principle type, authentication fails
+    - Using the new Rubeus argument to specify "Enterprise" as the principle type, authentication succeeds, resulting in a ticket with the outer username of "Administrator" but the PAC identifying the original user
+    - GSS API tool identifies non-Windows machines and checks for GSS API support, flagging potentially vulnerable hosts
+    - Using SSH with Kerberos authentication and the modified ticket, successful login as the domain administrator on a vulnerable host
+
+**Mitigations**
+- **Microsoft**: Harden UPNs by enforcing domain suffixes or cross-checking UPNs against SAM account names
+- **Defenders**: Disable GSS API-based authentication for AD-joined hosts or monitor for UPN updates that don't conform to valid formats and investigate anomalies
+
+**Conclusion**
+- Speaker expresses willingness to answer questions and acknowledges Charlie Clark (ExploitPH) for his contributions to the Kerberos-related discussions.

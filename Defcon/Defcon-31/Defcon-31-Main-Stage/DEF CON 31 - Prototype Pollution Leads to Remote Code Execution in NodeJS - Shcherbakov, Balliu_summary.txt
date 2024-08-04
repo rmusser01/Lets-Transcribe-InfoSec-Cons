@@ -1,0 +1,41 @@
+**Introduction:**
+- Talk about **Prototype Pollution Vulnerabilities** in **JavaScript**
+- Based on joint work with Musar Balio and Chris Steichel
+- Paper studies **Prototype Pollution Vulnerabilities**, their **gadgets**, and implements tools for detection
+- Previous presentation at Black Hat Asia focused on exploits in real-world applications and gadget details
+- This presentation will focus on methodology and tools
+
+**JavaScript Inheritance:**
+- Node.js executes code in an index file
+- First line of code creates an empty JavaScript object with a built-in **proto** property pointing to the **object prototype**
+- **Object prototype** contains reusable functions like **toString**
+- JavaScript allows extending the prototype with new properties, enabling **inheritance**
+- If a property is undefined in an object, the runtime will look for it in the prototype
+
+**Threat Model:**
+- Index.js file creates a simple web app handling "update" and "backup" requests
+- Attacker can send any request with parameters
+- By adding the "shell" property with the value "calc" to the object prototype, the attacker can exploit a **prototype pollution vulnerability**
+- If the backup request handler executes a function with attacker-controlled arguments, remote code execution can be achieved
+
+**Identifying Prototype Pollution and Gadgets:**
+- Static analysis implemented for Node.js applications and NPM packages to identify prototype pollution
+- Multi-label taint analysis used to find attacker-controlled data and potential prototype pollution vulnerabilities
+- Dynamic and static analysis combined to detect property reads from object prototypes and flows to internal Node.js function calls
+
+**Detected Gadgets in Node.js APIs:**
+- **Spawn function**: Executes a new process, allowing remote code execution by controlling environment variables
+- **Require function**: Includes external packages, reads package configuration files, and looks for an entry point in the "main" property
+- By polluting the "main" property, an attacker can achieve remote code execution if they control the malicious file
+
+**Exploiting Real Applications:**
+- Analyzed 15 popular Node.js apps on GitHub, detected prototype pollution cases, and confirmed 8 as exploitable
+- Examples include NPM CLI, parser, and rocket chat messenger
+- Exploitation challenge: Code may break if unexpected properties are added to the object prototype
+- Technique: Use race conditions to trigger remote code execution before the application crashes due to prototype pollution
+
+**Conclusion:**
+- Tools developed to detect prototype pollution vulnerabilities and their gadgets in Node.js APIs and NPM packages
+- 11 new gadgets detected in Node.js APIs, some of which have been fixed
+- Remote code execution vulnerabilities reported in popular open-source applications
+- Future work: Explore more efficient ways to detect gadgets, analyze NPM packages, and continue research on Node.js APIs.
