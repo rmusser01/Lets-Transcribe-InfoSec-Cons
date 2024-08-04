@@ -1,5 +1,12 @@
-# Lets-Transcribe-Defcon
-Let's transcribe & summarize every single Blackhat & Defcon talk (to start with...) and make them easily searchable by title, content, or author!
+# Lets-Transcribe-InfoSec-Cons
+Let's transcribe & summarize (almost) every single InfoSec Con talk, and make them easily searchable by title, content, or author!
+
+
+### Conferences Covered So Far:
+- Defcon (8,9,31)
+- SO-Con (All Years)
+- x33fcon (All Years)
+- 
 
 ### Pipeline
 1. Using the tldw project(I'm biased): https://github.com/rmusser01/tldw
