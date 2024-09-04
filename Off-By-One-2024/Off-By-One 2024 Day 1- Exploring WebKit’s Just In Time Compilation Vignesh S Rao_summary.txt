@@ -1,0 +1,47 @@
+**Introduction**
+- **Vignesh S Rao**: A vulnerability researcher at Exodus Intelligence with a focus on web browsers and JavaScript engines.
+
+**JavaScript Engines and JIT Compilation**
+- **JavaScript**: An untyped and interpreted language.
+- **Bytecode**: A lower-level representation of JavaScript code executed by the JavaScript virtual machine (interpreter).
+- **JIT compilers**: Solve performance issues with the interpreter by compiling bytecode into native assembly.
+
+**Interpreter and Baseline JIT**
+- **Interpreter**: Executes JavaScript bytecode through a switch-case structure, but is slow and inefficient.
+- **Baseline JIT**: Compiles bytecode into native assembly, removing the need for a fetch-resolve-update cycle, and optimizing common cases with fast and slow paths.
+
+**Optimizing Compilers**
+- **Optimizing compilers**: Focus on generating highly efficient code, but are slower to generate.
+- **Multiple compilers**: Browsers use multiple compilers, each doing more optimizations than the previous one, to offset the slow compilation.
+- **Speculation on types**: Optimizing compilers work with their own representation of code and speculate on types since JavaScript is untyped.
+
+**JavaScriptCore (JSC) Execution Tiers**
+- **JSC**: WebKit's JavaScript engine with four tiers of execution: interpreter, baseline JIT, DFG, and FTL.
+- **DFG and FTL**: Optimizing compilers that emit faster code but take longer to compile.
+- **Speculation failure**: Shifts control flow back into the baseline tier.
+
+**DFG Typing and Abstract Values**
+- **DFG**: Uses speculated types and abstract values to represent variable types in JavaScript.
+- **Speculated type**: Indicates the most probable type, requiring runtime checks.
+- **Abstract value**: Indicates a proven type at compile time, trusted by the compiler.
+- **DFG AI**: Abstract Interpreter used to calculate abstract values and for constant folding.
+
+**Bug in Abstract Interpreter**
+- **Property accesses in DFG**: Split into "check structure" and "get by offset" opcodes.
+- **GetByStatus**: Tracks property access and contains a vector of GetByVariant, which groups structures with similar property offsets.
+- **Bug**: Incorrectly accessing property offsets in a for loop, leading to incorrect abstract values and potential type confusion.
+
+**Constant Folding and Check Structure Elimination**
+- **Constant folding**: An optimization in DFG IR.
+- **Check structure opcode**: Eliminated if the abstract value of an object reports a single structure, indicating a definite type.
+- **Bug impact**: Incorrect abstract value leads to incorrect elimination of check structure, resulting in a direct pointer access without checks.
+
+**Integer Overflow Bug**
+- **JS Value representation**: Upper 15 bits are null for pointers, set for numbers, and IEEE 754 format for floats.
+- **Float 64 arrays**: User-controlled and hold raw floats, not JS values.
+- **Bug**: Failure to check the top bits during compilation leads to an integer overflow and arbitrary pointer dereference.
+
+**Conclusion and Takeaways**
+- **Complex bugs**: Can remain in the compiler for years, providing avenues for exploitation.
+- **Bug hunting strategies**: Hunt for assumptions, compare implementations, and look for variants and depth in the code.
+- **Demo**: Nan exploit running on an iPhone, reading password information.

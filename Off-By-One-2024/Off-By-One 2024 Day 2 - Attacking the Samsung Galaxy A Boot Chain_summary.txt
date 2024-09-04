@@ -1,0 +1,43 @@
+**Introduction**
+- Research focuses on **Samsung Galaxy A** family devices, particularly their **boot chain**
+- Utilizes a mix of **MediaTek** and **Samsung** code, with **Android** as the OS and **Tigris** as the **Trusted Execution Environment (TEE)**
+- Aims to present multiple 0-day vulnerabilities to gain access and leak secret keys
+
+**Speakers**
+- **Maxime Rossi Bellom**: Security Researcher and Tech Lead at Quarkslab, focusing on hardware and low-level software security of mobile devices and embedded systems
+- **Damiano Melotti**: Security researcher interested in systems security, especially in mobile platforms (Android) and automated vulnerability research
+- **Gabrielle Viala**: Security engineer specialized in vulnerability research and exploitation at Quarkslab, typically focused on desktop-based components but open to low-level technology
+
+**MediaTek Secure Boot Process**
+- Boot process involves **BootROM**, **Preloader**, **Arm Trusted Firmware (ATF)**, **Tigris**, and **Little Kernel**
+- Little Kernel is the main Android bootloader, running on VM1, and implements features like Android Verified Boot and broadband protection
+- Samsung modified Little Kernel to include custom features like Odin recovery protocol, Knox security bit, and a JPEG parser
+
+**JPEG Parser Vulnerability**
+- JPEGs are placed in a signed tar archive in the "app.params" partition, but the signature is never checked at boot
+- JPEG parser vulnerability allows for a heap overflow, which can be exploited to gain code execution in Little Kernel
+- By overwriting a pointer, such as the return address in the stack, with a shellcode placed in the JPEG buffer, they achieved code execution
+- This vulnerability is persistent and impacts multiple Samsung devices based on MediaTek system-on-chips
+
+**Odin Authentication Bypass**
+- Odin is Samsung's recovery protocol, implemented in Little Kernel, allowing flashing of partitions through USB
+- Images flashed through Odin must be authenticated with a signature, using the Partition Information Table (BIT) and a global array
+- However, images not included in the global array do not require authentication, providing an authentication bypass vulnerability
+- By flashing specific partitions without authentication, they can reshape the GeoID Partition Table (GPT) and modify the BIT to include their own partitions
+- This allows them to flash the "apparam" partition containing their malicious JPEG, enabling the previous vulnerability
+
+**Post-Exploitation and Android Control**
+- To control the Android system, certain partitions need to be modified, but this triggers ADB (Android Debug Bridge) verification failures
+- By patching the verification checks, they can bypass these failures and gain control over Android
+
+**Secure Monitor and Trusted Execution Environment (TEE)**
+- The Secure Monitor is a critical component facilitating communication between the non-secure world and the secure world
+- It includes SMC (Special Memory Call) headers that can be exploited to gain arbitrary read access to memory in the secure world
+- By combining this with another vulnerability that allows mapping of arbitrary memory, they can leak memory from the secure world, including keys
+- The raw key material is stored in the file system and sent to the trusted application or chip for encryption/decryption, without revealing the key
+- By intercepting the execution at the right moment, they can leak the key from the memory of the keymaster Trusted Application (TA)
+
+**Conclusion**
+- The presented vulnerabilities allow an attacker to bypass authentication, flash malicious images, execute code in the bootloader, and leak sensitive keys
+- These issues have been fixed, and Samsung was responsive in patching these vulnerabilities
+- The talk highlights the challenges in maintaining security features in low-end devices and the potential impact of seemingly simple vulnerabilities

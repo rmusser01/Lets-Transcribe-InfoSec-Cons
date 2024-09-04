@@ -1,0 +1,136 @@
+**Introduction**
+- Speaker: **Rafie Muhammad**, security researcher at Patchstack
+- Focuses on **web application security** and **WordPress security**
+- WordPress is a **popular Content Management System (CMS)**
+
+**Why Target CMS?**
+- CMS is a **go-to solution** for managing content without technical knowledge
+- Used by **non-technical people** to create websites
+- In 2022, over **67% of websites** utilized a CMS
+- CMS often has **many features** that can be checked for vulnerabilities
+
+**Why Target WordPress?**
+- WordPress covers **around 43% of all websites**
+- Has a **34% share** of the top 1 billion websites
+- Holds a **63% CMS market share** in 2024
+- Is **open-source** and **easy to familiarize** with for beginners
+
+**WordPress Components**
+- **Core**: The CMS platform itself
+- **Plugins**: Additional software installed on WordPress, extending functionality
+- **Themes**: Similar to plugins but focused on visual appearance
+
+**WordPress Research**
+- Vulnerabilities are often found in **plugins** due to their additional features
+- Some **premium themes** may also have many features to check
+- The **WordPress free repository** has about 60,000 plugins and 12,000 themes
+
+**Scanning WordPress Plugins and Themes**
+- Use tools like **wp-directory.net** to search for potentially affected plugins or themes
+- These tools allow searching by **word or regex pattern** in the free repository
+- The **GitHub repository** is also available for manual deployment
+
+**Research Targets**
+- For effective research, choose **plugins or themes** with the right characteristics
+- Plugins/themes with **high popularity** and **active installations** may have minimal critical vulnerabilities
+- Lower-installation plugins may offer **better chances** of finding decent vulnerabilities
+
+**Initial Approach for WordPress Research**
+- For **free versions**, fetch plugins/themes via the WordPress core installer
+- For **premium versions**, try to find a **null/cracked version** on websites like "wayadone.com" or "wplocker.net"
+- **Analyze the code** and use dynamic analysis tools like "xvbuffers"
+
+**Choosing Priority for Tools in WordPress Environment**
+- Prioritize finding vulnerabilities like:
+  - **Privilege escalation**
+  - **Cross-Site Scripting (XSS)**
+  - **SQL injection**
+  - **PHP object injection**
+  - **Remote Code Execution (RCE)**
+  - **Local File Inclusion (LFI)**
+  - **Arbitrary file read/write**
+
+**Case Studies**
+
+## Overlooked XSS Case Studies in WordPress
+
+### Site-Wide Prefetched XSS in a Free News Library
+- Vulnerable library introduced in **version 1.0.8** and patched in **version 2.5.10**
+- Vulnerable code page existed for **8 years and 1 month**
+- Library used in **approximately 1,300 free plugins** and some themes, impacting ~7 billion installations
+- Vulnerability found while looking for vulnerabilities in the **TablePress** plugin, which used this library
+- Vulnerability exists due to lack of input sanitation in the **admin notice** feature
+- Vendor patch added input sanitation using the **sanitizeTextField** function to strip HTML tags
+- Exploit:
+  - Opt-in case: Admin opts-in for email notifications, receives confirmation link, and visits the link
+  - XSS payload included in the confirmation link triggers XSS in the admin account
+
+### Side-Wide Unauthorized Source XSS in MySQL Cache
+- Introduced in **version 5.7.0.1**, vulnerable code page existed for **1.3 months**
+- Initial search was for **broken access control API**, but also found unauthorized XSS
+- Vulnerability exists due to lack of proper access control and input sanitation in custom API endpoint
+- Vendor patch added a **hash tag** and used **santize_text_field** function to escape user input
+- Exploit:
+  - Unauthenticated user performs a pull request with XSS payload in specific parameters
+  - Admin requests any page on the HW admin, triggering XSS in the admin area
+
+### XSS in WordPress Core Function
+- Introduced in **version 6.1.0** and patched in **version 6.1.6**, existed for **one month**
+- Active installations: **2.0**
+- Unique vulnerability involving a **vulnerable WordPress core function**
+- Vulnerability found while looking for XSS in the **trans-customer-first** file
+- Exists due to insufficient input sanitation in the **current_screen** function, allowing XSS in HTML attributes
+- WordPress core patch used the **esc_html** function to properly escape input
+- Exploit:
+  - Specific endpoint: **wp-admin-edit.jsp** with **post type** set to **SACF__**
+  - XSS payload included in the **post status** parameter, triggering XSS in the admin account
+
+### WordPress Core Dedicated XSS
+- Introduced in **version 5.9** and patched in **version 6.5.5**, existed for **2.5 months**
+- Active installations: Any active WordPress core instance
+- Vulnerability found while searching for issues in the **register to debug** process
+- Exists due to insufficient input validation in the **template part** block feature
+- WordPress core patch implemented a **whitelist of allowed tags** to prevent XSS
+- Exploit:
+  - Contributor role user drafts a post
+  - XSS payload included in the **content** parameter, with a link to an external .js file
+  - Previewing the post triggers the XSS
+
+## Privilege Escalation Case Studies
+
+### Unauthenticated Account Takeover in Elementor Plugin
+- Introduced in **version 5.4.0**, patched in **version 5.7.0.1**, kernel reportage: **7.9**
+- Active installations: **5 million+**
+- Initial search was for vulnerabilities in the **custom registration process**, but found in a different feature
+- Vulnerability exists in the **password reset** functionality due to lack of proper checks
+- Vendor patch added a check for a **unique password reset key** sent to the user's email
+- Exploit:
+  - Admin tries to log in but fails due to incorrect password
+  - Attacker executes a script to change the admin's password
+  - Admin gets logged out, and the attacker can log in with the new password
+
+### WordPress Exploitation in HTML5
+- Vulnerable webpage: **Roundcube**
+- Initial search was for issues in the **WordPress explanation process**, found in a tool for WordPress explanation
+- Custom function **html.address.register** allows users to register with a **role field** directly supplied by the user
+- Insufficient validation of user data allows arbitrary roles to be set
+- Vendor patch removed the **role field** from the user data, restricting users to the default role
+- Exploit:
+  - Attacker executes a script to register a new user with administrator role
+  - Successful registration grants administrator privileges to the attacker
+
+### Unauthorized Account Takeover in Jupyter Xcode Plugin
+- Premium plugin, version information unavailable, patched in **version 3.1.2**
+- Initial focus was on the **registration process**, but the vulnerability was found in the social login feature
+- Vulnerability exists due to lack of proper checks and input validation in social login functionality
+- Vendor patch added a requirement for a **Facebook access token**, directly retrieving user data from Facebook API
+- Exploit:
+  - Authenticated user executes a script with the target admin's email and a custom FBID value
+  - The script generates a link that, when visited, logs the user in as the target admin
+
+**Conclusion**
+- WordPress remains a **fertile ground** for security research, especially open-source research
+- Most critical bugs are **simple but overlooked** issues
+- Lack of attention to common actions and processes in plugins and themes
+- Need for more research on **popular components** in the WordPress ecosystem
+- Potential for further research on **libraries** and **South plugin core**

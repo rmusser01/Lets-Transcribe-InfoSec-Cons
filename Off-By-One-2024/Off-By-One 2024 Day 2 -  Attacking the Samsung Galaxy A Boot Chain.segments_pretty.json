@@ -1,0 +1,3309 @@
+{
+  "segments": [
+    {
+      "Time_Start": 0.0,
+      "Time_End": 5.0,
+      "Text": "This text was transcribed using whisper model: large-v2\n\n All right, hello everyone, I hope you can hear me fine."
+    },
+    {
+      "Time_Start": 5.0,
+      "Time_End": 10.0,
+      "Text": " It's good to see many people here and we're happy to present the talk today that is going"
+    },
+    {
+      "Time_Start": 10.0,
+      "Time_End": 18.0,
+      "Text": " to be on attacking Samsung Galaxy A family of devices and in particular their blockchain."
+    },
+    {
+      "Time_Start": 18.0,
+      "Time_End": 23.0,
+      "Text": " Well, we already received a very good introduction, so maybe I can go quickly on this slide, but"
+    },
+    {
+      "Time_Start": 23.0,
+      "Time_End": 29.0,
+      "Text": " this is a research that started last year while working at QuartzLab and today here"
+    },
+    {
+      "Time_Start": 29.0,
+      "Time_End": 34.0,
+      "Text": " we have me, Damiano and Maxime who is going to join me on stage shortly."
+    },
+    {
+      "Time_Start": 34.0,
+      "Time_End": 41.0,
+      "Text": " So this research actually started from a previous research that we had done the year before"
+    },
+    {
+      "Time_Start": 41.0,
+      "Time_End": 44.0,
+      "Text": " on the Android data encryption scheme."
+    },
+    {
+      "Time_Start": 44.0,
+      "Time_End": 50.0,
+      "Text": " In this particular research we wanted to figure out the details of how data encryption at"
+    },
+    {
+      "Time_Start": 50.0,
+      "Time_End": 53.0,
+      "Text": " rest works in modern Android."
+    },
+    {
+      "Time_Start": 53.0,
+      "Time_End": 58.0,
+      "Text": " So what we did was we took a form that had an existing known vulnerability that we could"
+    },
+    {
+      "Time_Start": 58.0,
+      "Time_End": 65.0,
+      "Text": " exploit and we played with the various internal components that are involved with the encryption"
+    },
+    {
+      "Time_Start": 65.0,
+      "Time_End": 69.0,
+      "Text": " of essentially the data that you end up storing on your device."
+    },
+    {
+      "Time_Start": 69.0,
+      "Time_End": 75.0,
+      "Text": " We wanted to know how an attacker would go and try to defeat the schema, how the password"
+    },
+    {
+      "Time_Start": 75.0,
+      "Time_End": 82.0,
+      "Text": " or any authentication factor of the user is involved in the process and we ended up"
+    },
+    {
+      "Time_Start": 82.0,
+      "Time_End": 87.0,
+      "Text": " kind of building a bit of a picture of how this whole thing was working."
+    },
+    {
+      "Time_Start": 87.0,
+      "Time_End": 91.0,
+      "Text": " What we're trying to show today is essentially the same thing, but instead of relying on"
+    },
+    {
+      "Time_Start": 91.0,
+      "Time_End": 97.0,
+      "Text": " an existing vulnerability, we show how starting from the USB stack you can effectively obtain"
+    },
+    {
+      "Time_Start": 97.0,
+      "Time_End": 99.0,
+      "Text": " the same results."
+    },
+    {
+      "Time_Start": 99.0,
+      "Time_End": 105.0,
+      "Text": " So we are working on, we said, the A family of Samsung Galaxy devices."
+    },
+    {
+      "Time_Start": 105.0,
+      "Time_End": 108.0,
+      "Text": " Here's the specific model we used."
+    },
+    {
+      "Time_Start": 108.0,
+      "Time_End": 113.0,
+      "Text": " It's sort of in the low end part of devices."
+    },
+    {
+      "Time_Start": 113.0,
+      "Time_End": 115.0,
+      "Text": " It's relatively cheap."
+    },
+    {
+      "Time_Start": 115.0,
+      "Time_End": 119.0,
+      "Text": " And it runs MediaTek SoC."
+    },
+    {
+      "Time_Start": 119.0,
+      "Time_End": 123.0,
+      "Text": " So there is this mix of MediaTek and Samsung code that is running on the phone."
+    },
+    {
+      "Time_Start": 123.0,
+      "Time_End": 127.0,
+      "Text": " Obviously Android is the OS and for the trusted execution environment that we will be talking"
+    },
+    {
+      "Time_Start": 127.0,
+      "Time_End": 133.0,
+      "Text": " about in the talk, the device is Tigris, which is the one developed by Samsung."
+    },
+    {
+      "Time_Start": 133.0,
+      "Time_End": 141.0,
+      "Text": " And again, there is a node from Bug that is exploitable using MTK Client, a nice tool"
+    },
+    {
+      "Time_Start": 141.0,
+      "Time_End": 148.0,
+      "Text": " that was built to exploit this bug and bypass the secure boot."
+    },
+    {
+      "Time_Start": 148.0,
+      "Time_End": 154.0,
+      "Text": " So we didn't use it in the chain, but it was definitely helpful to make debugging easier."
+    },
+    {
+      "Time_Start": 154.0,
+      "Time_End": 159.0,
+      "Text": " So before diving into our work, a bit of introduction."
+    },
+    {
+      "Time_Start": 159.0,
+      "Time_End": 163.0,
+      "Text": " And we start from the MediaTek secure boot process."
+    },
+    {
+      "Time_Start": 163.0,
+      "Time_End": 166.0,
+      "Text": " There are various components involved, obviously."
+    },
+    {
+      "Time_Start": 166.0,
+      "Time_End": 169.0,
+      "Text": " And the first one is the bootrom, obviously."
+    },
+    {
+      "Time_Start": 169.0,
+      "Time_End": 173.0,
+      "Text": " So the very first piece of software that starts executing."
+    },
+    {
+      "Time_Start": 173.0,
+      "Time_End": 180.0,
+      "Text": " The bootrom spawns the preloader, which is the second stage bootloader, which in turn"
+    },
+    {
+      "Time_Start": 180.0,
+      "Time_End": 182.0,
+      "Text": " starts three different things."
+    },
+    {
+      "Time_Start": 182.0,
+      "Time_End": 188.0,
+      "Text": " On top you see the Arm Trusted Firmware, which is also known as Secure Monitor."
+    },
+    {
+      "Time_Start": 188.0,
+      "Time_End": 194.0,
+      "Text": " This will stay in execution in the highest privilege level of the secure environment."
+    },
+    {
+      "Time_Start": 194.0,
+      "Time_End": 196.0,
+      "Text": " Then we have Tigris."
+    },
+    {
+      "Time_Start": 196.0,
+      "Time_End": 201.0,
+      "Text": " Tigris is the trusted execution environment operating system."
+    },
+    {
+      "Time_Start": 201.0,
+      "Time_End": 206.0,
+      "Text": " It has both a user run and a kernel, so it runs on two different exception levels."
+    },
+    {
+      "Time_Start": 206.0,
+      "Time_End": 208.0,
+      "Text": " And then we have Little Kernel."
+    },
+    {
+      "Time_Start": 208.0,
+      "Time_End": 213.0,
+      "Text": " Little Kernel is the main Android bootloader running on VM1."
+    },
+    {
+      "Time_Start": 213.0,
+      "Time_End": 219.0,
+      "Text": " And this will launch Android, so the kernel can be deployed."
+    },
+    {
+      "Time_Start": 219.0,
+      "Time_End": 228.0,
+      "Text": " So we will start our talk from Little Kernel, so the main Android bootloader."
+    },
+    {
+      "Time_Start": 228.0,
+      "Time_End": 235.0,
+      "Text": " But before diving into that, another little bit of introduction on Android partitions."
+    },
+    {
+      "Time_Start": 236.0,
+      "Time_End": 241.0,
+      "Text": " This is just to say, this is just to kind of put everyone on the same page."
+    },
+    {
+      "Time_Start": 241.0,
+      "Time_End": 247.0,
+      "Text": " Android is usually shipped in different partitions that serve different functions,"
+    },
+    {
+      "Time_Start": 247.0,
+      "Time_End": 252.0,
+      "Text": " and that you can flash or restore independently, more or less."
+    },
+    {
+      "Time_Start": 252.0,
+      "Time_End": 256.0,
+      "Text": " So for example, we have the boot image that has the kernel and run this."
+    },
+    {
+      "Time_Start": 256.0,
+      "Time_End": 259.0,
+      "Text": " VD meta is used for verified boot."
+    },
+    {
+      "Time_Start": 259.0,
+      "Time_End": 264.0,
+      "Text": " But then we have dynamic partitions that are only parsable by user run."
+    },
+    {
+      "Time_Start": 264.0,
+      "Time_End": 269.0,
+      "Text": " So the super partition is the best example with the system vendor."
+    },
+    {
+      "Time_Start": 269.0,
+      "Time_End": 273.0,
+      "Text": " If you are familiar with Android, these names ring a bell."
+    },
+    {
+      "Time_Start": 273.0,
+      "Time_End": 278.0,
+      "Text": " If you're not, just imagine these as the building blocks that you can flash on your operating system."
+    },
+    {
+      "Time_Start": 278.0,
+      "Time_End": 282.0,
+      "Text": " And yeah, Little Kernel has its own partition."
+    },
+    {
+      "Time_Start": 282.0,
+      "Time_End": 287.0,
+      "Text": " And Little Kernel in general is actually an OS by its own."
+    },
+    {
+      "Time_Start": 288.0,
+      "Time_End": 295.0,
+      "Text": " But it's very common as a bootloader in the Android world."
+    },
+    {
+      "Time_Start": 295.0,
+      "Time_End": 300.0,
+      "Text": " It implements some features to recover parts of the system."
+    },
+    {
+      "Time_Start": 300.0,
+      "Time_End": 304.0,
+      "Text": " And in particular, it implements Android verified boot,"
+    },
+    {
+      "Time_Start": 304.0,
+      "Time_End": 310.0,
+      "Text": " which is the feature that allows to have secure boot and verification of Android images,"
+    },
+    {
+      "Time_Start": 310.0,
+      "Time_End": 314.0,
+      "Text": " as well as broadband protection."
+    },
+    {
+      "Time_Start": 314.0,
+      "Time_End": 321.0,
+      "Text": " So Samsung took Little Kernel and modified it to include some custom features,"
+    },
+    {
+      "Time_Start": 321.0,
+      "Time_End": 329.0,
+      "Text": " such as the Odin recovery protocol, which is Samsung's protocol to recover partitions and flash them."
+    },
+    {
+      "Time_Start": 329.0,
+      "Time_End": 331.0,
+      "Text": " Also to update, these kind of things."
+    },
+    {
+      "Time_Start": 331.0,
+      "Time_End": 334.0,
+      "Text": " Then we have the Knox security bit."
+    },
+    {
+      "Time_Start": 334.0,
+      "Time_End": 340.0,
+      "Text": " Knox is a suite of tools that is meant to improve the security of Samsung devices."
+    },
+    {
+      "Time_Start": 340.0,
+      "Time_End": 347.0,
+      "Text": " In particular, the Knox security bit is a way to essentially void warranty when a bootloader is unlocked."
+    },
+    {
+      "Time_Start": 347.0,
+      "Time_End": 351.0,
+      "Text": " And then we have also a JPEG parser and renderer,"
+    },
+    {
+      "Time_Start": 351.0,
+      "Time_End": 357.0,
+      "Text": " which is used to render errors like the ones you see here on the right."
+    },
+    {
+      "Time_Start": 357.0,
+      "Time_End": 363.0,
+      "Text": " So in case something goes wrong at boot time, you have this nice message that tells you what happened."
+    },
+    {
+      "Time_Start": 363.0,
+      "Time_End": 366.0,
+      "Text": " So this version is closed source, honestly."
+    },
+    {
+      "Time_Start": 366.0,
+      "Time_End": 369.0,
+      "Text": " Since Little Kernel is open source,"
+    },
+    {
+      "Time_Start": 369.0,
+      "Time_End": 375.0,
+      "Text": " various engineering is not too complicated because you can help yourself with the open source version."
+    },
+    {
+      "Time_Start": 375.0,
+      "Time_End": 380.0,
+      "Text": " So Max will promise this now and we'll get to the fun stuff."
+    },
+    {
+      "Time_Start": 380.0,
+      "Time_End": 384.0,
+      "Text": " Thank you, Leonardo. I hope we can do well."
+    },
+    {
+      "Time_Start": 384.0,
+      "Time_End": 390.0,
+      "Text": " So the first component that raised our interest was the JPEG parser,"
+    },
+    {
+      "Time_Start": 390.0,
+      "Time_End": 392.0,
+      "Text": " the one implemented by Samsung."
+    },
+    {
+      "Time_Start": 392.0,
+      "Time_End": 400.0,
+      "Text": " And this is because the JPEGs are placed into a tar archive that you can find in the partition called app.params."
+    },
+    {
+      "Time_Start": 400.0,
+      "Time_End": 404.0,
+      "Text": " And this archive is signed, but the signature is never checked at boot."
+    },
+    {
+      "Time_Start": 404.0,
+      "Time_End": 411.0,
+      "Text": " So anyone with the ability to modify the internal memory of the device can actually modify this JPEG."
+    },
+    {
+      "Time_Start": 411.0,
+      "Time_End": 416.0,
+      "Text": " So as a security researcher, it's kind of an interesting primitive."
+    },
+    {
+      "Time_Start": 416.0,
+      "Time_End": 420.0,
+      "Text": " And we all know that sometimes parsing images can be a difficult task."
+    },
+    {
+      "Time_Start": 420.0,
+      "Time_End": 427.0,
+      "Text": " Here we are citing LogoFade, which is a research by Barnaby that was presented last year."
+    },
+    {
+      "Time_Start": 427.0,
+      "Time_End": 437.0,
+      "Text": " They fuzzed a couple of simple image parsers in different bootchains and they discovered many bugs."
+    },
+    {
+      "Time_Start": 437.0,
+      "Time_End": 441.0,
+      "Text": " So this is definitely something interesting for us."
+    },
+    {
+      "Time_Start": 441.0,
+      "Time_End": 447.0,
+      "Text": " And before we get into this parser, we need to understand how these JPEGs are loaded in Little Kernel."
+    },
+    {
+      "Time_Start": 447.0,
+      "Time_End": 449.0,
+      "Text": " So this is the code responsible for that."
+    },
+    {
+      "Time_Start": 450.0,
+      "Time_End": 460.0,
+      "Text": " And as you can see, the first step is that there is a constant size allocation on the buffer of one gigabyte."
+    },
+    {
+      "Time_Start": 460.0,
+      "Time_End": 465.0,
+      "Text": " Then you have this function that we call readJPEG file."
+    },
+    {
+      "Time_Start": 465.0,
+      "Time_End": 467.0,
+      "Text": " So the name is the one we get from reverse engineering."
+    },
+    {
+      "Time_Start": 467.0,
+      "Time_End": 468.0,
+      "Text": " But you get the idea."
+    },
+    {
+      "Time_Start": 468.0,
+      "Time_End": 473.0,
+      "Text": " This function will take the file name as the first parameter,"
+    },
+    {
+      "Time_Start": 473.0,
+      "Time_End": 476.0,
+      "Text": " and it will read the corresponding file name as an archive,"
+    },
+    {
+      "Time_Start": 476.0,
+      "Time_End": 480.0,
+      "Text": " and then load the content into the buffer that was previously allocated."
+    },
+    {
+      "Time_Start": 480.0,
+      "Time_End": 486.0,
+      "Text": " And finally, you have this big image function that will parse and render the JPEG on screen."
+    },
+    {
+      "Time_Start": 486.0,
+      "Time_End": 493.0,
+      "Text": " Now some of you may wonder why we have this 0 as the third argument of the readJPEG function."
+    },
+    {
+      "Time_Start": 493.0,
+      "Time_End": 498.0,
+      "Text": " Actually, this third argument is supposed to be the maximum size."
+    },
+    {
+      "Time_Start": 498.0,
+      "Time_End": 503.0,
+      "Text": " So whenever the system looks for a JPEG in the target,"
+    },
+    {
+      "Time_Start": 503.0,
+      "Time_End": 505.0,
+      "Text": " it will first read the size from the header."
+    },
+    {
+      "Time_Start": 505.0,
+      "Time_End": 509.0,
+      "Text": " And if the size is bigger than the one provided, it will trigger an error."
+    },
+    {
+      "Time_Start": 509.0,
+      "Time_End": 511.0,
+      "Text": " So the size will not be read."
+    },
+    {
+      "Time_Start": 511.0,
+      "Time_End": 516.0,
+      "Text": " Unless the size provided is 0, in that case, well, the check is ignored,"
+    },
+    {
+      "Time_Start": 516.0,
+      "Time_End": 518.0,
+      "Text": " and the file will be read in the buffer."
+    },
+    {
+      "Time_Start": 518.0,
+      "Time_End": 521.0,
+      "Text": " So we have here, first, a minorality for us."
+    },
+    {
+      "Time_Start": 521.0,
+      "Time_End": 523.0,
+      "Text": " It's a heap overflow."
+    },
+    {
+      "Time_Start": 523.0,
+      "Time_End": 527.0,
+      "Text": " The question for us now is, is it exploitable?"
+    },
+    {
+      "Time_Start": 527.0,
+      "Time_End": 532.0,
+      "Text": " So to answer that question, we need to understand how the heap algorithm works."
+    },
+    {
+      "Time_Start": 532.0,
+      "Time_End": 536.0,
+      "Text": " And in this case, you can tell that by default, we have a mini-heap,"
+    },
+    {
+      "Time_Start": 536.0,
+      "Time_End": 538.0,
+      "Text": " which relies on a double-heap list."
+    },
+    {
+      "Time_Start": 538.0,
+      "Time_End": 541.0,
+      "Text": " So we have a list of free chunks."
+    },
+    {
+      "Time_Start": 541.0,
+      "Time_End": 544.0,
+      "Text": " It's all actually all placed in the same memory pool."
+    },
+    {
+      "Time_Start": 544.0,
+      "Time_End": 546.0,
+      "Text": " They're all following each other."
+    },
+    {
+      "Time_Start": 546.0,
+      "Time_End": 548.0,
+      "Text": " And they all start with the header you see on the right."
+    },
+    {
+      "Time_Start": 548.0,
+      "Time_End": 553.0,
+      "Text": " So we have a pointer, prep, pointing to the previous free chunk,"
+    },
+    {
+      "Time_Start": 553.0,
+      "Time_End": 555.0,
+      "Text": " and the pointer prep."
+    },
+    {
+      "Time_Start": 556.0,
+      "Time_End": 561.0,
+      "Text": " Then another pointer pointing to the next memory chunk,"
+    },
+    {
+      "Time_Start": 561.0,
+      "Time_End": 564.0,
+      "Text": " and then the size, and then the contents of the chunk."
+    },
+    {
+      "Time_Start": 564.0,
+      "Time_End": 570.0,
+      "Text": " So if another flow happens, we may override the header of the next chunk,"
+    },
+    {
+      "Time_Start": 570.0,
+      "Time_End": 572.0,
+      "Text": " which includes these pointers."
+    },
+    {
+      "Time_Start": 572.0,
+      "Time_End": 575.0,
+      "Text": " And we found a way to turn this into a mandatory write."
+    },
+    {
+      "Time_Start": 575.0,
+      "Time_End": 579.0,
+      "Text": " This is because of how the allocation routine works."
+    },
+    {
+      "Time_Start": 579.0,
+      "Time_End": 584.0,
+      "Text": " So when the system allocates a chunk, a memory buffer,"
+    },
+    {
+      "Time_Start": 584.0,
+      "Time_End": 586.0,
+      "Text": " it will remove a chunk from the free list."
+    },
+    {
+      "Time_Start": 586.0,
+      "Time_End": 592.0,
+      "Text": " And to do so, it will dereference the next and prep pointers of the chunk being allocated"
+    },
+    {
+      "Time_Start": 592.0,
+      "Time_End": 597.0,
+      "Text": " in order to access the previous and next chunks in the list"
+    },
+    {
+      "Time_Start": 597.0,
+      "Time_End": 602.0,
+      "Text": " to, in turn, modify the pointers next and prep of these two chunks"
+    },
+    {
+      "Time_Start": 602.0,
+      "Time_End": 606.0,
+      "Text": " so that they point to each other and not to the previous chunk."
+    },
+    {
+      "Time_Start": 606.0,
+      "Time_End": 612.0,
+      "Text": " So it means that, basically, we can control these two pointers next and prep"
+    },
+    {
+      "Time_Start": 612.0,
+      "Time_End": 614.0,
+      "Text": " of the chunk being allocated."
+    },
+    {
+      "Time_Start": 614.0,
+      "Time_End": 616.0,
+      "Text": " It leads to a write that we are permitting,"
+    },
+    {
+      "Time_Start": 616.0,
+      "Time_End": 620.0,
+      "Text": " with the only constraint that both values must be writeable addresses."
+    },
+    {
+      "Time_Start": 621.0,
+      "Time_End": 626.0,
+      "Text": " Now, a few words about the mitigations in our relative canaries."
+    },
+    {
+      "Time_Start": 626.0,
+      "Time_End": 628.0,
+      "Text": " There are not many, as you can see."
+    },
+    {
+      "Time_Start": 628.0,
+      "Time_End": 632.0,
+      "Text": " No AS at all, no canaries, and more importantly, the heap is executable,"
+    },
+    {
+      "Time_Start": 632.0,
+      "Time_End": 635.0,
+      "Text": " which makes the exploitation rather simple."
+    },
+    {
+      "Time_Start": 635.0,
+      "Time_End": 637.0,
+      "Text": " It's quite convenient for us."
+    },
+    {
+      "Time_Start": 637.0,
+      "Time_End": 640.0,
+      "Text": " So the exploit strategy becomes something like this."
+    },
+    {
+      "Time_Start": 640.0,
+      "Time_End": 645.0,
+      "Text": " We use our primitive to overwrite a pointer which we call the chunk to,"
+    },
+    {
+      "Time_Start": 645.0,
+      "Time_End": 649.0,
+      "Text": " such as the return address in the stack, in this case."
+    },
+    {
+      "Time_Start": 649.0,
+      "Time_End": 654.0,
+      "Text": " And we will make it point to a shellcode that we place inside our JPEG buffer."
+    },
+    {
+      "Time_Start": 655.0,
+      "Time_End": 660.0,
+      "Text": " So to highlight this with a nice schema,"
+    },
+    {
+      "Time_Start": 660.0,
+      "Time_End": 663.0,
+      "Text": " here we have a representation of the free list."
+    },
+    {
+      "Time_Start": 663.0,
+      "Time_End": 666.0,
+      "Text": " And you see in purple the JPEG buffer that we just allocated."
+    },
+    {
+      "Time_Start": 666.0,
+      "Time_End": 672.0,
+      "Text": " So the next step is that the system will read the JPEG and will feel the buffer."
+    },
+    {
+      "Time_Start": 672.0,
+      "Time_End": 675.0,
+      "Text": " And at some point, it will overwrite."
+    },
+    {
+      "Time_Start": 675.0,
+      "Time_End": 677.0,
+      "Text": " We will overwrite to the next free chunk."
+    },
+    {
+      "Time_Start": 677.0,
+      "Time_End": 680.0,
+      "Text": " And we will replace it with a fake chunk, let's call it like this,"
+    },
+    {
+      "Time_Start": 680.0,
+      "Time_End": 684.0,
+      "Text": " where the next pointer points to the return address in the stack,"
+    },
+    {
+      "Time_Start": 684.0,
+      "Time_End": 687.0,
+      "Text": " and the prep pointer points to the shellcode."
+    },
+    {
+      "Time_Start": 687.0,
+      "Time_End": 691.0,
+      "Text": " Such that when the next allocation happens, the system will deliver chunks next,"
+    },
+    {
+      "Time_Start": 691.0,
+      "Time_End": 695.0,
+      "Text": " and it will replace the return address with the address of the shellcode."
+    },
+    {
+      "Time_Start": 695.0,
+      "Time_End": 698.0,
+      "Text": " And you know what comes next, I guess."
+    },
+    {
+      "Time_Start": 698.0,
+      "Time_End": 702.0,
+      "Text": " When the function returns, we execute our shellcode."
+    },
+    {
+      "Time_Start": 702.0,
+      "Time_End": 704.0,
+      "Text": " So this is the theory."
+    },
+    {
+      "Time_Start": 704.0,
+      "Time_End": 708.0,
+      "Text": " And to validate that, we implemented a little emulator."
+    },
+    {
+      "Time_Start": 708.0,
+      "Time_End": 710.0,
+      "Text": " So we use Unicode for that."
+    },
+    {
+      "Time_Start": 710.0,
+      "Time_End": 713.0,
+      "Text": " I'm sure you're probably all familiar with Unicode."
+    },
+    {
+      "Time_Start": 713.0,
+      "Time_End": 718.0,
+      "Text": " It's a CPU emulator, meaning that it cannot be used to emulate a full system."
+    },
+    {
+      "Time_Start": 718.0,
+      "Time_End": 721.0,
+      "Text": " So, for example, no interruptions."
+    },
+    {
+      "Time_Start": 721.0,
+      "Time_End": 724.0,
+      "Text": " No hardware, no interaction with hardware."
+    },
+    {
+      "Time_Start": 724.0,
+      "Time_End": 727.0,
+      "Text": " But it's not really a problem in our case,"
+    },
+    {
+      "Time_Start": 727.0,
+      "Time_End": 731.0,
+      "Text": " because we can really isolate the data that we want to emulate."
+    },
+    {
+      "Time_Start": 731.0,
+      "Time_End": 734.0,
+      "Text": " And it's also very straightforward and easy to use."
+    },
+    {
+      "Time_Start": 734.0,
+      "Time_End": 739.0,
+      "Text": " So we implemented this little emulator in which we exploited this variability."
+    },
+    {
+      "Time_Start": 739.0,
+      "Time_End": 746.0,
+      "Text": " But the problem we have then is that the same exploit will not work on the real device."
+    },
+    {
+      "Time_Start": 746.0,
+      "Time_End": 750.0,
+      "Text": " And there are a couple of things that are actually going wrong."
+    },
+    {
+      "Time_Start": 750.0,
+      "Time_End": 755.0,
+      "Text": " The first of them is that the heap and the stack will be present in both environments."
+    },
+    {
+      "Time_Start": 755.0,
+      "Time_End": 762.0,
+      "Text": " And the way we solved this was to use the bootramp variability that we described."
+    },
+    {
+      "Time_Start": 762.0,
+      "Time_End": 766.0,
+      "Text": " So we basically used this variability to bypass the sector boot."
+    },
+    {
+      "Time_Start": 766.0,
+      "Time_End": 773.0,
+      "Text": " We patched the exact same heap and stack and imported it into an emulator."
+    },
+    {
+      "Time_Start": 774.0,
+      "Time_End": 779.0,
+      "Text": " There is another way to do so, which we rely on reverse engineering,"
+    },
+    {
+      "Time_Start": 779.0,
+      "Time_End": 783.0,
+      "Text": " because we don't really care about what is inside the memory."
+    },
+    {
+      "Time_Start": 783.0,
+      "Time_End": 786.0,
+      "Text": " We only care about the state of the heap in this context."
+    },
+    {
+      "Time_Start": 786.0,
+      "Time_End": 791.0,
+      "Text": " So we can actually recreate the exact same succession of 3N models."
+    },
+    {
+      "Time_Start": 791.0,
+      "Time_End": 794.0,
+      "Text": " Now, there is something interesting about this bootloader."
+    },
+    {
+      "Time_Start": 794.0,
+      "Time_End": 797.0,
+      "Text": " It is quite deterministic."
+    },
+    {
+      "Time_Start": 797.0,
+      "Time_End": 803.0,
+      "Text": " Without AS at all and with the fact that we are actually booting from more or less always the same state,"
+    },
+    {
+      "Time_Start": 803.0,
+      "Time_End": 810.0,
+      "Text": " all the addresses, offsets, sizes that we find in the stack and in the heap will be the same every boot."
+    },
+    {
+      "Time_Start": 810.0,
+      "Time_End": 814.0,
+      "Text": " Which is why both functions will work in this case."
+    },
+    {
+      "Time_Start": 814.0,
+      "Time_End": 818.0,
+      "Text": " So, going back on what is going wrong in our exploits,"
+    },
+    {
+      "Time_Start": 818.0,
+      "Time_End": 824.0,
+      "Text": " there is also the fact that the heap algorithm will write something at the address shelter plus 4."
+    },
+    {
+      "Time_Start": 824.0,
+      "Time_End": 828.0,
+      "Text": " This is because of the routine removing the check from the priest."
+    },
+    {
+      "Time_Start": 828.0,
+      "Time_End": 833.0,
+      "Text": " You can see here that we will dereference the thread pointer,"
+    },
+    {
+      "Time_Start": 833.0,
+      "Time_End": 837.0,
+      "Text": " which is supposed to point to our shellcode and we will access the second pointer."
+    },
+    {
+      "Time_Start": 837.0,
+      "Time_End": 842.0,
+      "Text": " The system will override the second pointer, which is next, with something else."
+    },
+    {
+      "Time_Start": 842.0,
+      "Time_End": 847.0,
+      "Text": " So basically, we have the second value in our shellcode that is overwritten by the system."
+    },
+    {
+      "Time_Start": 847.0,
+      "Time_End": 850.0,
+      "Text": " There is an easy way to fix that."
+    },
+    {
+      "Time_Start": 850.0,
+      "Time_End": 853.0,
+      "Text": " We just need to skip the next instruction inside the shellcode."
+    },
+    {
+      "Time_Start": 853.0,
+      "Time_End": 856.0,
+      "Text": " If you are familiar with the Amazon, it looks like this."
+    },
+    {
+      "Time_Start": 856.0,
+      "Time_End": 864.0,
+      "Text": " So, we have the first node that will be skipped by the first instruction to happen on this program."
+    },
+    {
+      "Time_Start": 864.0,
+      "Time_End": 872.0,
+      "Text": " The final problem we have is that the heap after the exploits is in rematch with the priest."
+    },
+    {
+      "Time_Start": 872.0,
+      "Time_End": 877.0,
+      "Text": " So, it will crash after the next allocation or after the next boot."
+    },
+    {
+      "Time_Start": 877.0,
+      "Time_End": 879.0,
+      "Text": " There is no easy way to fix that."
+    },
+    {
+      "Time_Start": 879.0,
+      "Time_End": 885.0,
+      "Text": " We need to recreate the priest such that the heap is in a working state."
+    },
+    {
+      "Time_Start": 885.0,
+      "Time_End": 893.0,
+      "Text": " With all that being done, we have the same exploits that will work in the exact same way on both environments."
+    },
+    {
+      "Time_Start": 893.0,
+      "Time_End": 899.0,
+      "Text": " To sum up on this first vulnerability, we have the CD number you see here."
+    },
+    {
+      "Time_Start": 899.0,
+      "Time_End": 903.0,
+      "Text": " It leads to code execution in GitHub kernel and it is persistent."
+    },
+    {
+      "Time_Start": 903.0,
+      "Time_End": 909.0,
+      "Text": " It will survive reboots and factory resets because the partition containing the GPX will never be wiped."
+    },
+    {
+      "Time_Start": 911.0,
+      "Time_End": 916.0,
+      "Text": " Also, since GitHub kernel will load Android, so GitHub kernel is running in EL1,"
+    },
+    {
+      "Time_Start": 916.0,
+      "Time_End": 921.0,
+      "Text": " but since it is loading Android, with a little amount of work,"
+    },
+    {
+      "Time_Start": 921.0,
+      "Time_End": 924.0,
+      "Text": " we can bypass all the checks and take control over Android."
+    },
+    {
+      "Time_Start": 924.0,
+      "Time_End": 927.0,
+      "Text": " So, we will control the full number of objects in that part."
+    },
+    {
+      "Time_Start": 928.0,
+      "Time_End": 935.0,
+      "Text": " And it impacts at least all the Samsung devices we looked into that are based in MediaTek system on chips,"
+    },
+    {
+      "Time_Start": 935.0,
+      "Time_End": 941.0,
+      "Text": " which includes those that are fixed in the boot run vulnerability."
+    },
+    {
+      "Time_Start": 942.0,
+      "Time_End": 946.0,
+      "Text": " Now, there is still one issue we have regarding the objecting,"
+    },
+    {
+      "Time_Start": 946.0,
+      "Time_End": 949.0,
+      "Text": " which is to take control of the full system,"
+    },
+    {
+      "Time_Start": 949.0,
+      "Time_End": 955.0,
+      "Text": " is that we need a way to flash this GPX on the device without being already privileged."
+    },
+    {
+      "Time_Start": 955.0,
+      "Time_End": 960.0,
+      "Text": " So, how to do this? This is the question we ask now and the one we try to answer."
+    },
+    {
+      "Time_Start": 960.0,
+      "Time_End": 966.0,
+      "Text": " For that, we will look into Odin, which is the recovery protocol designed by Samsung,"
+    },
+    {
+      "Time_Start": 966.0,
+      "Time_End": 971.0,
+      "Text": " that is also implemented in GitHub kernel and it basically allows to flash partitions through USB."
+    },
+    {
+      "Time_Start": 972.0,
+      "Time_End": 976.0,
+      "Text": " We have a closed-source client that is called Sovodim,"
+    },
+    {
+      "Time_Start": 976.0,
+      "Time_End": 979.0,
+      "Text": " that is the official one, let's say."
+    },
+    {
+      "Time_Start": 979.0,
+      "Time_End": 982.0,
+      "Text": " But there is also a low-cost one that is quite useful,"
+    },
+    {
+      "Time_Start": 982.0,
+      "Time_End": 989.0,
+      "Text": " because it works very well on Linux, you can use it in common life,"
+    },
+    {
+      "Time_Start": 989.0,
+      "Time_End": 993.0,
+      "Text": " it's angled and it's the one we use in our proof-of-concepts."
+    },
+    {
+      "Time_Start": 994.0,
+      "Time_End": 999.0,
+      "Text": " Internally, Odin works as the following."
+    },
+    {
+      "Time_Start": 999.0,
+      "Time_End": 1003.0,
+      "Text": " So, first of all, all the images flashed to Odin must be authenticated."
+    },
+    {
+      "Time_Start": 1004.0,
+      "Time_End": 1007.0,
+      "Text": " They must contain a signature recruiter,"
+    },
+    {
+      "Time_Start": 1007.0,
+      "Time_End": 1011.0,
+      "Text": " we have an example here of what the signature must look like."
+    },
+    {
+      "Time_Start": 1011.0,
+      "Time_End": 1016.0,
+      "Text": " Internally, there are two structures that Odin will use to do so."
+    },
+    {
+      "Time_Start": 1016.0,
+      "Time_End": 1020.0,
+      "Text": " The first one is the partition information table, that we'll call the bit,"
+    },
+    {
+      "Time_Start": 1020.0,
+      "Time_End": 1025.0,
+      "Text": " and there is also a global array that indicates which partition to authenticate."
+    },
+    {
+      "Time_Start": 1026.0,
+      "Time_End": 1032.0,
+      "Text": " The partition information table is actually placed into a static address in the VMMC,"
+    },
+    {
+      "Time_Start": 1032.0,
+      "Time_End": 1034.0,
+      "Text": " and it describes the partitions."
+    },
+    {
+      "Time_Start": 1034.0,
+      "Time_End": 1038.0,
+      "Text": " Each partition has an entry in the bit, you see an example on the right,"
+    },
+    {
+      "Time_Start": 1038.0,
+      "Time_End": 1043.0,
+      "Text": " and it will give some information such as the size of the partition,"
+    },
+    {
+      "Time_Start": 1043.0,
+      "Time_End": 1046.0,
+      "Text": " the name, where it starts, and so on."
+    },
+    {
+      "Time_Start": 1046.0,
+      "Time_End": 1050.0,
+      "Text": " And the partition that is not present in the bits cannot be flashed through Odin."
+    },
+    {
+      "Time_Start": 1051.0,
+      "Time_End": 1055.0,
+      "Text": " Although the bit can be updated, but as you can imagine, it requires a signed image."
+    },
+    {
+      "Time_Start": 1056.0,
+      "Time_End": 1061.0,
+      "Text": " Now, regarding authentication, we have this global array I mentioned,"
+    },
+    {
+      "Time_Start": 1061.0,
+      "Time_End": 1066.0,
+      "Text": " and it will describe which partitions must be authenticated and how to authenticate them."
+    },
+    {
+      "Time_Start": 1067.0,
+      "Time_End": 1071.0,
+      "Text": " What is interesting, however, is that an image that is not part of this array"
+    },
+    {
+      "Time_Start": 1071.0,
+      "Time_End": 1075.0,
+      "Text": " will not be authenticated, does not require authentication."
+    },
+    {
+      "Time_Start": 1075.0,
+      "Time_End": 1079.0,
+      "Text": " So if we compare the bits that give the list of all partitions that can be flashed,"
+    },
+    {
+      "Time_Start": 1079.0,
+      "Time_End": 1083.0,
+      "Text": " and this array, indicating the one requiring authentication,"
+    },
+    {
+      "Time_Start": 1083.0,
+      "Time_End": 1088.0,
+      "Text": " we end up with a list of partitions that we can flash without authentication."
+    },
+    {
+      "Time_Start": 1089.0,
+      "Time_End": 1091.0,
+      "Text": " Now, just a quick note on this list."
+    },
+    {
+      "Time_Start": 1091.0,
+      "Time_End": 1094.0,
+      "Text": " The up-param partition, the one containing the JPEG, is not part of them,"
+    },
+    {
+      "Time_Start": 1094.0,
+      "Time_End": 1096.0,
+      "Text": " because it is authenticated."
+    },
+    {
+      "Time_Start": 1096.0,
+      "Time_End": 1100.0,
+      "Text": " But there are other interesting partitions that we can actually flash,"
+    },
+    {
+      "Time_Start": 1100.0,
+      "Time_End": 1103.0,
+      "Text": " and two of them are eGPT and sGPT."
+    },
+    {
+      "Time_Start": 1103.0,
+      "Time_End": 1106.0,
+      "Text": " GPT stands for GeoID Partition Table."
+    },
+    {
+      "Time_Start": 1106.0,
+      "Time_End": 1111.0,
+      "Text": " So the GPT is similar to the bit in the sense that it describes the partitions."
+    },
+    {
+      "Time_Start": 1111.0,
+      "Time_End": 1116.0,
+      "Text": " You will find similar information, the names, the sizes, and so on."
+    },
+    {
+      "Time_Start": 1116.0,
+      "Time_End": 1121.0,
+      "Text": " And you can see that it's quite an interesting, quite a powerful primitive,"
+    },
+    {
+      "Time_Start": 1121.0,
+      "Time_End": 1127.0,
+      "Text": " the fact that we can flash without authentication the headers of this GPT table."
+    },
+    {
+      "Time_Start": 1127.0,
+      "Time_End": 1138.0,
+      "Text": " It means that we can, through USB, reshape the GPT table."
+    },
+    {
+      "Time_Start": 1138.0,
+      "Time_End": 1141.0,
+      "Text": " Now, a few words about GPT versus bit."
+    },
+    {
+      "Time_Start": 1141.0,
+      "Time_End": 1146.0,
+      "Text": " As you know, as I explained, they are used for the same thing."
+    },
+    {
+      "Time_Start": 1146.0,
+      "Time_End": 1153.0,
+      "Text": " The bit is actually used for Samsung features, such as ODIN, such as JPEG loading."
+    },
+    {
+      "Time_Start": 1153.0,
+      "Time_End": 1158.0,
+      "Text": " So the up-param partition is actually retrieved through the bit and not through the GPT table."
+    },
+    {
+      "Time_Start": 1158.0,
+      "Time_End": 1165.0,
+      "Text": " And the GPT is used for the rest of the time, like for loading non-grid partitions, for example."
+    },
+    {
+      "Time_Start": 1166.0,
+      "Time_End": 1177.0,
+      "Text": " So when the system starts, it will execute this little routine you see in order to load the bit in memory."
+    },
+    {
+      "Time_Start": 1177.0,
+      "Time_End": 1186.0,
+      "Text": " So as I explained, we have this hard-coded address, which is where the system by default will read the bit from."
+    },
+    {
+      "Time_Start": 1186.0,
+      "Time_End": 1188.0,
+      "Text": " But there is also this interesting routine."
+    },
+    {
+      "Time_Start": 1188.0,
+      "Time_End": 1194.0,
+      "Text": " The system will try to look for a bit partition, and if there is one, it will read it from there."
+    },
+    {
+      "Time_Start": 1194.0,
+      "Time_End": 1199.0,
+      "Text": " So on all the devices we looked into, there was no such bit partition."
+    },
+    {
+      "Time_Start": 1199.0,
+      "Time_End": 1205.0,
+      "Text": " However, it's quite interesting because the code is there anyway, and these two functions rely on the GPT table."
+    },
+    {
+      "Time_Start": 1205.0,
+      "Time_End": 1209.0,
+      "Text": " And we can actually change this in this GPT table."
+    },
+    {
+      "Time_Start": 1209.0,
+      "Time_End": 1212.0,
+      "Text": " So we came up with a polling strategy."
+    },
+    {
+      "Time_Start": 1212.0,
+      "Time_End": 1215.0,
+      "Text": " Here is a representation of the flash memory."
+    },
+    {
+      "Time_Start": 1215.0,
+      "Time_End": 1219.0,
+      "Text": " You see the bit and GPT pointing to the same partitions."
+    },
+    {
+      "Time_Start": 1219.0,
+      "Time_End": 1226.0,
+      "Text": " And the first partition you see, mdflite-hdl, is actually one of those we can flash without authentication."
+    },
+    {
+      "Time_Start": 1226.0,
+      "Time_End": 1233.0,
+      "Text": " So we will replace this partition with a new apparam partition containing our managed-use GPT."
+    },
+    {
+      "Time_Start": 1233.0,
+      "Time_End": 1239.0,
+      "Text": " The second partition, dbmeta-bendo, isn't so flashable without authentication, and it's empty."
+    },
+    {
+      "Time_Start": 1239.0,
+      "Time_End": 1245.0,
+      "Text": " It seems not to be used, so we will replace it with a new bit, which is a copy of the original,"
+    },
+    {
+      "Time_Start": 1245.0,
+      "Time_End": 1249.0,
+      "Text": " except that we will rename mdflite-hdl into apparam."
+    },
+    {
+      "Time_Start": 1249.0,
+      "Time_End": 1252.0,
+      "Text": " And we do the other way around with apparam."
+    },
+    {
+      "Time_Start": 1252.0,
+      "Time_End": 1259.0,
+      "Text": " And the final step is that we will modify the GPT table in order to rename dbmeta-bendo as a bit,"
+    },
+    {
+      "Time_Start": 1259.0,
+      "Time_End": 1265.0,
+      "Text": " such that at the next boot, the system will not read the original bits, but will read the new one."
+    },
+    {
+      "Time_Start": 1265.0,
+      "Time_End": 1273.0,
+      "Text": " And whenever it will try to read GPT as a screen, it will look for the new apparam partition."
+    },
+    {
+      "Time_Start": 1273.0,
+      "Time_End": 1275.0,
+      "Text": " And it actually works."
+    },
+    {
+      "Time_Start": 1275.0,
+      "Time_End": 1277.0,
+      "Text": " You see on the screen dots showing up."
+    },
+    {
+      "Time_Start": 1277.0,
+      "Time_End": 1279.0,
+      "Text": " It means that the exposure worked."
+    },
+    {
+      "Time_Start": 1279.0,
+      "Time_End": 1281.0,
+      "Text": " So the GPEGs are loaded."
+    },
+    {
+      "Time_Start": 1281.0,
+      "Time_End": 1283.0,
+      "Text": " But we still have a little problem."
+    },
+    {
+      "Time_Start": 1283.0,
+      "Time_End": 1288.0,
+      "Text": " Unreal won't boot, and this is because the dbmeta-bendo partition is not present in the GPT table,"
+    },
+    {
+      "Time_Start": 1288.0,
+      "Time_End": 1291.0,
+      "Text": " even though it's not really needed for anything."
+    },
+    {
+      "Time_Start": 1291.0,
+      "Time_End": 1295.0,
+      "Text": " So there is an easy way to overcome this problem."
+    },
+    {
+      "Time_Start": 1295.0,
+      "Time_End": 1300.0,
+      "Text": " We simply take another partition that seems to be useless, in this case the SP partition,"
+    },
+    {
+      "Time_Start": 1300.0,
+      "Time_End": 1303.0,
+      "Text": " and we rename it to dbmeta-bendo."
+    },
+    {
+      "Time_Start": 1303.0,
+      "Time_End": 1305.0,
+      "Text": " And with that done, it actually works."
+    },
+    {
+      "Time_Start": 1305.0,
+      "Time_End": 1308.0,
+      "Text": " The device will boot and everything will be fine."
+    },
+    {
+      "Time_Start": 1308.0,
+      "Time_End": 1311.0,
+      "Text": " So to sum up on this second vulnerability,"
+    },
+    {
+      "Time_Start": 1311.0,
+      "Time_End": 1317.0,
+      "Text": " we have an authentication bypass in Odin that we can use to flash more or less anything we want in the agency,"
+    },
+    {
+      "Time_Start": 1317.0,
+      "Time_End": 1320.0,
+      "Text": " which includes the apparam partition."
+    },
+    {
+      "Time_Start": 1320.0,
+      "Time_End": 1323.0,
+      "Text": " And this vulnerability impacts most Samsung devices."
+    },
+    {
+      "Time_Start": 1323.0,
+      "Time_End": 1325.0,
+      "Text": " At least all of those we looked into."
+    },
+    {
+      "Time_Start": 1325.0,
+      "Time_End": 1328.0,
+      "Text": " That's all using MediaTek system issues."
+    },
+    {
+      "Time_Start": 1329.0,
+      "Time_End": 1332.0,
+      "Text": " Now before I get to the demo, a few words about post-exploitation,"
+    },
+    {
+      "Time_Start": 1332.0,
+      "Time_End": 1336.0,
+      "Text": " because remember that our ultimate goal is to take control over the Android system,"
+    },
+    {
+      "Time_Start": 1336.0,
+      "Time_End": 1339.0,
+      "Text": " and so far we are executing code in the Google kernel."
+    },
+    {
+      "Time_Start": 1339.0,
+      "Time_End": 1344.0,
+      "Text": " And the best way, the easiest way for us to control Android is to modify the partitions"
+    },
+    {
+      "Time_Start": 1344.0,
+      "Time_End": 1347.0,
+      "Text": " that Daniel described at some point."
+    },
+    {
+      "Time_Start": 1347.0,
+      "Time_End": 1351.0,
+      "Text": " And the problem is that we have this ADB Unreal-Grid-fighting feature"
+    },
+    {
+      "Time_Start": 1351.0,
+      "Time_End": 1356.0,
+      "Text": " that will complain if the partitions are different from the original ones."
+    },
+    {
+      "Time_Start": 1356.0,
+      "Time_End": 1362.0,
+      "Text": " So for that, we implemented a little routing in our shellcode"
+    },
+    {
+      "Time_Start": 1362.0,
+      "Time_End": 1367.0,
+      "Text": " that will simply patch all the checks to basically not them."
+    },
+    {
+      "Time_Start": 1367.0,
+      "Time_End": 1372.0,
+      "Text": " And this is quite easy to do because the memory is already writable,"
+    },
+    {
+      "Time_Start": 1372.0,
+      "Time_End": 1375.0,
+      "Text": " so code on the Google kernel is both executable and writable,"
+    },
+    {
+      "Time_Start": 1375.0,
+      "Time_End": 1378.0,
+      "Text": " so no need to play with it."
+    },
+    {
+      "Time_Start": 1378.0,
+      "Time_End": 1381.0,
+      "Text": " I will call Daniel on stage to help me with the demo,"
+    },
+    {
+      "Time_Start": 1381.0,
+      "Time_End": 1385.0,
+      "Text": " so there is a video in case it doesn't work, but I'm sure it will work."
+    },
+    {
+      "Time_Start": 1386.0,
+      "Time_End": 1401.0,
+      "Text": " Okay."
+    },
+    {
+      "Time_Start": 1401.0,
+      "Time_End": 1406.0,
+      "Text": " Okay, so we have to film actually the device."
+    },
+    {
+      "Time_Start": 1406.0,
+      "Time_End": 1408.0,
+      "Text": " I hope you can see the device. Okay."
+    },
+    {
+      "Time_Start": 1408.0,
+      "Time_End": 1418.0,
+      "Text": " So basically this is a normal device."
+    },
+    {
+      "Time_Start": 1418.0,
+      "Time_End": 1421.0,
+      "Text": " And let me first show you something."
+    },
+    {
+      "Time_Start": 1421.0,
+      "Time_End": 1427.0,
+      "Text": " Basically, obviously I enabled ADB for this demo,"
+    },
+    {
+      "Time_Start": 1427.0,
+      "Time_End": 1430.0,
+      "Text": " and what I want to show you is that when I try to call SU,"
+    },
+    {
+      "Time_Start": 1430.0,
+      "Time_End": 1434.0,
+      "Text": " which is used to get privileges on Android, it doesn't work,"
+    },
+    {
+      "Time_Start": 1434.0,
+      "Time_End": 1438.0,
+      "Text": " which is the expected behavior for a normally standard Android device."
+    },
+    {
+      "Time_Start": 1438.0,
+      "Time_End": 1440.0,
+      "Text": " All right?"
+    },
+    {
+      "Time_Start": 1440.0,
+      "Time_End": 1442.0,
+      "Text": " So far so good."
+    },
+    {
+      "Time_Start": 1442.0,
+      "Time_End": 1445.0,
+      "Text": " So what I will do now is simply shut down the device,"
+    },
+    {
+      "Time_Start": 1445.0,
+      "Time_End": 1448.0,
+      "Text": " so like this."
+    },
+    {
+      "Time_Start": 1448.0,
+      "Time_End": 1453.0,
+      "Text": " So here I unlocked the device, but you can actually power off this device"
+    },
+    {
+      "Time_Start": 1453.0,
+      "Time_End": 1458.0,
+      "Text": " by pressing all the buttons together for a couple of seconds."
+    },
+    {
+      "Time_Start": 1458.0,
+      "Time_End": 1460.0,
+      "Text": " Okay, then I will start it in the download mode,"
+    },
+    {
+      "Time_Start": 1460.0,
+      "Time_End": 1463.0,
+      "Text": " so you can also do this without needing a privilege,"
+    },
+    {
+      "Time_Start": 1463.0,
+      "Time_End": 1466.0,
+      "Text": " without having to edit the password."
+    },
+    {
+      "Time_Start": 1466.0,
+      "Time_End": 1481.0,
+      "Text": " So now I started the loading mode, and I will launch the exploit."
+    },
+    {
+      "Time_Start": 1481.0,
+      "Time_End": 1486.0,
+      "Text": " So basically the exploit will flash the partitions as I described it,"
+    },
+    {
+      "Time_Start": 1486.0,
+      "Time_End": 1488.0,
+      "Text": " and here you should see the device rebooting,"
+    },
+    {
+      "Time_Start": 1488.0,
+      "Time_End": 1491.0,
+      "Text": " because there is this little trick I'm not going to explain,"
+    },
+    {
+      "Time_Start": 1491.0,
+      "Time_End": 1497.0,
+      "Text": " but basically we are flashing some Android partitions to take control over it."
+    },
+    {
+      "Time_Start": 1497.0,
+      "Time_End": 1499.0,
+      "Text": " And once it's done, the device will reboot,"
+    },
+    {
+      "Time_Start": 1499.0,
+      "Time_End": 1503.0,
+      "Text": " and you should see Doge showing up, which means that the exploit worked."
+    },
+    {
+      "Time_Start": 1503.0,
+      "Time_End": 1508.0,
+      "Text": " Now we'll have to wait a bit for the device to take a bit of time to start,"
+    },
+    {
+      "Time_Start": 1508.0,
+      "Time_End": 1512.0,
+      "Text": " so there are some Sumatois in the room."
+    },
+    {
+      "Time_Start": 1512.0,
+      "Time_End": 1538.0,
+      "Text": " Maybe this is one of the things that could be improved."
+    },
+    {
+      "Time_Start": 1538.0,
+      "Time_End": 1543.0,
+      "Text": " Okay, so I'll connect again to ADB, and we'll see as soon as it's working."
+    },
+    {
+      "Time_Start": 1543.0,
+      "Time_End": 1563.0,
+      "Text": " And we are good to start."
+    },
+    {
+      "Time_Start": 1563.0,
+      "Time_End": 1567.0,
+      "Text": " To conclude on the first part of this presentation,"
+    },
+    {
+      "Time_Start": 1567.0,
+      "Time_End": 1569.0,
+      "Text": " we have a chain of two boxes,"
+    },
+    {
+      "Time_Start": 1569.0,
+      "Time_End": 1572.0,
+      "Text": " which together leads to the execution of the kernel."
+    },
+    {
+      "Time_Start": 1572.0,
+      "Time_End": 1573.0,
+      "Text": " It's persistent."
+    },
+    {
+      "Time_Start": 1573.0,
+      "Time_End": 1576.0,
+      "Text": " It impacts many Samsung devices of the Galaxy family,"
+    },
+    {
+      "Time_Start": 1576.0,
+      "Time_End": 1579.0,
+      "Text": " which is based on the Jetpack system and chips,"
+    },
+    {
+      "Time_Start": 1579.0,
+      "Time_End": 1581.0,
+      "Text": " and we can trigger this through the USB"
+    },
+    {
+      "Time_Start": 1581.0,
+      "Time_End": 1584.0,
+      "Text": " and take control over the full number as well, which includes Android."
+    },
+    {
+      "Time_Start": 1584.0,
+      "Time_End": 1586.0,
+      "Text": " But there are still some secrets in Android"
+    },
+    {
+      "Time_Start": 1586.0,
+      "Time_End": 1589.0,
+      "Text": " that were stored and protected with the SQL block,"
+    },
+    {
+      "Time_Start": 1589.0,
+      "Time_End": 1591.0,
+      "Text": " and they are still hidden from us."
+    },
+    {
+      "Time_Start": 1591.0,
+      "Time_End": 1594.0,
+      "Text": " So we wanted to show you something complete,"
+    },
+    {
+      "Time_Start": 1594.0,
+      "Time_End": 1600.0,
+      "Text": " so Daniel will now show you how to decrypt these secrets."
+    },
+    {
+      "Time_Start": 1600.0,
+      "Time_End": 1601.0,
+      "Text": " Yes."
+    },
+    {
+      "Time_Start": 1601.0,
+      "Time_End": 1606.0,
+      "Text": " So, well, I mean, the talk could be over now, right?"
+    },
+    {
+      "Time_Start": 1606.0,
+      "Time_End": 1610.0,
+      "Text": " We could all go for lunch and forget about this part."
+    },
+    {
+      "Time_Start": 1610.0,
+      "Time_End": 1616.0,
+      "Text": " But if you remember the system architecture from the slide I presented before,"
+    },
+    {
+      "Time_Start": 1616.0,
+      "Time_End": 1619.0,
+      "Text": " there is this whole part of the system"
+    },
+    {
+      "Time_Start": 1619.0,
+      "Time_End": 1621.0,
+      "Text": " that goes by the name of Secure World,"
+    },
+    {
+      "Time_Start": 1621.0,
+      "Time_End": 1623.0,
+      "Text": " which we haven't touched yet,"
+    },
+    {
+      "Time_Start": 1623.0,
+      "Time_End": 1628.0,
+      "Text": " and is, for the moment at least, still very secure."
+    },
+    {
+      "Time_Start": 1628.0,
+      "Time_End": 1630.0,
+      "Text": " We compromised everything that is in the bottom part,"
+    },
+    {
+      "Time_Start": 1630.0,
+      "Time_End": 1632.0,
+      "Text": " so we took care of Android,"
+    },
+    {
+      "Time_Start": 1632.0,
+      "Time_End": 1636.0,
+      "Text": " but we haven't touched anything on top of the drive."
+    },
+    {
+      "Time_Start": 1636.0,
+      "Time_End": 1639.0,
+      "Text": " So what we want to show for the next ten minutes or so"
+    },
+    {
+      "Time_Start": 1639.0,
+      "Time_End": 1643.0,
+      "Text": " is that maybe secure is not the best word to describe this part of the world."
+    },
+    {
+      "Time_Start": 1643.0,
+      "Time_End": 1648.0,
+      "Text": " And to do so, we're going to start from the secure one."
+    },
+    {
+      "Time_Start": 1648.0,
+      "Time_End": 1652.0,
+      "Text": " So just to give you a little bit more context,"
+    },
+    {
+      "Time_Start": 1652.0,
+      "Time_End": 1654.0,
+      "Text": " the secure monitor is the critical component"
+    },
+    {
+      "Time_Start": 1654.0,
+      "Time_End": 1656.0,
+      "Text": " that makes sure there can be communication"
+    },
+    {
+      "Time_Start": 1656.0,
+      "Time_End": 1659.0,
+      "Text": " between the non-secure world and the secure world."
+    },
+    {
+      "Time_Start": 1659.0,
+      "Time_End": 1661.0,
+      "Text": " So what happens?"
+    },
+    {
+      "Time_Start": 1661.0,
+      "Time_End": 1664.0,
+      "Text": " Imagine that there is, at some point,"
+    },
+    {
+      "Time_Start": 1664.0,
+      "Time_End": 1667.0,
+      "Text": " some application or some system service in the Android system"
+    },
+    {
+      "Time_Start": 1667.0,
+      "Time_End": 1673.0,
+      "Text": " that wants to perform an operation that needs to happen in the secure world."
+    },
+    {
+      "Time_Start": 1673.0,
+      "Time_End": 1675.0,
+      "Text": " Well, there will be a chain of calls."
+    },
+    {
+      "Time_Start": 1675.0,
+      "Time_End": 1680.0,
+      "Text": " For example, it's an encryption with a key."
+    },
+    {
+      "Time_Start": 1680.0,
+      "Time_End": 1686.0,
+      "Text": " So you will have a chain of calls that end up in the HAL layer."
+    },
+    {
+      "Time_Start": 1686.0,
+      "Time_End": 1689.0,
+      "Text": " This, at some point, will also point out to a daemon"
+    },
+    {
+      "Time_Start": 1689.0,
+      "Time_End": 1691.0,
+      "Text": " that will talk to the kernel,"
+    },
+    {
+      "Time_Start": 1691.0,
+      "Time_End": 1695.0,
+      "Text": " and the kernel, at some point, will send an SMC,"
+    },
+    {
+      "Time_Start": 1695.0,
+      "Time_End": 1699.0,
+      "Text": " which is a special instruction in ARM chips"
+    },
+    {
+      "Time_Start": 1699.0,
+      "Time_End": 1703.0,
+      "Text": " that triggers an exception that will be handled by the DL3 monitor."
+    },
+    {
+      "Time_Start": 1703.0,
+      "Time_End": 1705.0,
+      "Text": " So the kernel triggers the SMC,"
+    },
+    {
+      "Time_Start": 1705.0,
+      "Time_End": 1707.0,
+      "Text": " the monitor takes it,"
+    },
+    {
+      "Time_Start": 1707.0,
+      "Time_End": 1709.0,
+      "Text": " and based on that, decides what to do."
+    },
+    {
+      "Time_Start": 1709.0,
+      "Time_End": 1715.0,
+      "Text": " Basically, either it solves whatever needs to be done internally in the monitor,"
+    },
+    {
+      "Time_Start": 1715.0,
+      "Time_End": 1719.0,
+      "Text": " or it forwards the request to the deepest kernel,"
+    },
+    {
+      "Time_Start": 1719.0,
+      "Time_End": 1723.0,
+      "Text": " which will probably, in turn, talk with the key master."
+    },
+    {
+      "Time_Start": 1725.0,
+      "Time_End": 1728.0,
+      "Text": " So, why do we want to look at the monitor?"
+    },
+    {
+      "Time_Start": 1728.0,
+      "Time_End": 1730.0,
+      "Text": " Because that's the most critical component, right?"
+    },
+    {
+      "Time_Start": 1730.0,
+      "Time_End": 1736.0,
+      "Text": " Whatever needs to go to the secure world passes through the monitor."
+    },
+    {
+      "Time_Start": 1736.0,
+      "Time_End": 1740.0,
+      "Text": " And also, because the code is pretty simple,"
+    },
+    {
+      "Time_Start": 1740.0,
+      "Time_End": 1742.0,
+      "Text": " you have these handlers,"
+    },
+    {
+      "Time_Start": 1742.0,
+      "Time_End": 1745.0,
+      "Text": " and these handlers are reachable from the kernel."
+    },
+    {
+      "Time_Start": 1746.0,
+      "Time_End": 1749.0,
+      "Text": " However, the code is, as I said, simple."
+    },
+    {
+      "Time_Start": 1749.0,
+      "Time_End": 1751.0,
+      "Text": " There's a lot of other interactions,"
+    },
+    {
+      "Time_Start": 1751.0,
+      "Time_End": 1754.0,
+      "Text": " so fuzzing is not really feasible."
+    },
+    {
+      "Time_Start": 1754.0,
+      "Time_End": 1758.0,
+      "Text": " What we meant to do with this code was just static analysis."
+    },
+    {
+      "Time_Start": 1760.0,
+      "Time_End": 1763.0,
+      "Text": " So we talked about Tgress a little bit."
+    },
+    {
+      "Time_Start": 1763.0,
+      "Time_End": 1767.0,
+      "Text": " I'll go quickly over it, because we are actually running out of time."
+    },
+    {
+      "Time_Start": 1767.0,
+      "Time_End": 1770.0,
+      "Text": " But this is the OS for Tressall designed by Samsung."
+    },
+    {
+      "Time_Start": 1770.0,
+      "Time_End": 1774.0,
+      "Text": " It comes with different partitions that include different components"
+    },
+    {
+      "Time_Start": 1774.0,
+      "Time_End": 1776.0,
+      "Text": " that magically come together."
+    },
+    {
+      "Time_Start": 1776.0,
+      "Time_End": 1778.0,
+      "Text": " If you want to learn more about it, actually,"
+    },
+    {
+      "Time_Start": 1778.0,
+      "Time_End": 1780.0,
+      "Text": " we're not going to do much here."
+    },
+    {
+      "Time_Start": 1780.0,
+      "Time_End": 1784.0,
+      "Text": " But there are obviously very good references"
+    },
+    {
+      "Time_Start": 1784.0,
+      "Time_End": 1788.0,
+      "Text": " from research that happened in the past,"
+    },
+    {
+      "Time_Start": 1788.0,
+      "Time_End": 1791.0,
+      "Text": " for example, Rescure published a series of proposals"
+    },
+    {
+      "Time_Start": 1791.0,
+      "Time_End": 1793.0,
+      "Text": " that were very interesting and useful."
+    },
+    {
+      "Time_Start": 1794.0,
+      "Time_End": 1798.0,
+      "Text": " So obviously, ATF is also a source, or at least this version."
+    },
+    {
+      "Time_Start": 1798.0,
+      "Time_End": 1801.0,
+      "Text": " So what we do is we take the image,"
+    },
+    {
+      "Time_Start": 1801.0,
+      "Time_End": 1809.0,
+      "Text": " and we want to look for the part where there is a header"
+    },
+    {
+      "Time_Start": 1809.0,
+      "Time_End": 1811.0,
+      "Text": " with a signature,"
+    },
+    {
+      "Time_Start": 1811.0,
+      "Time_End": 1818.0,
+      "Text": " the very code starts where you see the MTKTB magic, in some sense."
+    },
+    {
+      "Time_Start": 1818.0,
+      "Time_End": 1820.0,
+      "Text": " And when you load it in your favorite disassembler,"
+    },
+    {
+      "Time_Start": 1820.0,
+      "Time_End": 1823.0,
+      "Text": " the thing you want to look for is SMC headers."
+    },
+    {
+      "Time_Start": 1824.0,
+      "Time_End": 1827.0,
+      "Text": " So usually there's, well, in this case, there's two."
+    },
+    {
+      "Time_Start": 1827.0,
+      "Time_End": 1831.0,
+      "Text": " One is because there's two ways the communication can happen."
+    },
+    {
+      "Time_Start": 1831.0,
+      "Time_End": 1833.0,
+      "Text": " Either the header wants to talk to the secure board,"
+    },
+    {
+      "Time_Start": 1833.0,
+      "Time_End": 1835.0,
+      "Text": " or the secure board wants to talk to the kernel."
+    },
+    {
+      "Time_Start": 1835.0,
+      "Time_End": 1839.0,
+      "Text": " The interesting one for us is the one exposed to the kernel."
+    },
+    {
+      "Time_Start": 1840.0,
+      "Time_End": 1843.0,
+      "Text": " And then you have these arguments that are literally the registers"
+    },
+    {
+      "Time_Start": 1843.0,
+      "Time_End": 1846.0,
+      "Text": " that are set to be for encoding the SMC."
+    },
+    {
+      "Time_Start": 1848.0,
+      "Time_End": 1850.0,
+      "Text": " So we started looking at these SMC headers,"
+    },
+    {
+      "Time_Start": 1850.0,
+      "Time_End": 1854.0,
+      "Text": " and we very quickly ended up on some interesting ones."
+    },
+    {
+      "Time_Start": 1854.0,
+      "Time_End": 1858.0,
+      "Text": " So this is the one corresponding to that SMC ID."
+    },
+    {
+      "Time_Start": 1858.0,
+      "Time_End": 1861.0,
+      "Text": " And as you can see, it almost feels like a read,"
+    },
+    {
+      "Time_Start": 1861.0,
+      "Time_End": 1863.0,
+      "Text": " arbitrary read-read, right?"
+    },
+    {
+      "Time_Start": 1863.0,
+      "Time_End": 1866.0,
+      "Text": " Because you have an argument that is fully controlled by the attacker,"
+    },
+    {
+      "Time_Start": 1866.0,
+      "Time_End": 1869.0,
+      "Text": " fed into some array, and the header is returned."
+    },
+    {
+      "Time_Start": 1869.0,
+      "Time_End": 1872.0,
+      "Text": " But the argument isn't really ever checked."
+    },
+    {
+      "Time_Start": 1872.0,
+      "Time_End": 1876.0,
+      "Text": " Which means anyone can talk to this,"
+    },
+    {
+      "Time_Start": 1876.0,
+      "Time_End": 1879.0,
+      "Text": " anyone that can talk to this SMC header"
+    },
+    {
+      "Time_Start": 1879.0,
+      "Time_End": 1882.0,
+      "Text": " can essentially read the subheader in the SMC,"
+    },
+    {
+      "Time_Start": 1882.0,
+      "Time_End": 1884.0,
+      "Text": " in the ATX memory."
+    },
+    {
+      "Time_Start": 1886.0,
+      "Time_End": 1892.0,
+      "Text": " So this means we have an interesting read primitive"
+    },
+    {
+      "Time_Start": 1892.0,
+      "Time_End": 1895.0,
+      "Text": " that, however, only gives us access to the memory"
+    },
+    {
+      "Time_Start": 1895.0,
+      "Time_End": 1898.0,
+      "Text": " of the other space of the monitor."
+    },
+    {
+      "Time_Start": 1898.0,
+      "Time_End": 1901.0,
+      "Text": " Which is still pretty interesting,"
+    },
+    {
+      "Time_Start": 1901.0,
+      "Time_End": 1904.0,
+      "Text": " but it can't really give us much,"
+    },
+    {
+      "Time_Start": 1904.0,
+      "Time_End": 1907.0,
+      "Text": " because of other software."
+    },
+    {
+      "Time_Start": 1907.0,
+      "Time_End": 1909.0,
+      "Text": " Because the interesting secrets actually"
+    },
+    {
+      "Time_Start": 1909.0,
+      "Time_End": 1912.0,
+      "Text": " lay in the trusted applications, usually."
+    },
+    {
+      "Time_Start": 1912.0,
+      "Time_End": 1916.0,
+      "Text": " So it would be actually nice if we could map the secrets we wanted"
+    },
+    {
+      "Time_Start": 1916.0,
+      "Time_End": 1921.0,
+      "Text": " right into the other space of DTF."
+    },
+    {
+      "Time_Start": 1921.0,
+      "Time_End": 1923.0,
+      "Text": " Well, it turns out that"
+    },
+    {
+      "Time_Start": 1923.0,
+      "Time_End": 1925.0,
+      "Text": " there is actually a way to do that,"
+    },
+    {
+      "Time_Start": 1925.0,
+      "Time_End": 1927.0,
+      "Text": " and it's actually not so complicated."
+    },
+    {
+      "Time_Start": 1927.0,
+      "Time_End": 1929.0,
+      "Text": " There is another SMC header"
+    },
+    {
+      "Time_Start": 1929.0,
+      "Time_End": 1932.0,
+      "Text": " that corresponds to the ID you see on the slides now."
+    },
+    {
+      "Time_Start": 1932.0,
+      "Time_End": 1935.0,
+      "Text": " Here, SPM actions is, again, after your name."
+    },
+    {
+      "Time_Start": 1935.0,
+      "Time_End": 1939.0,
+      "Text": " It's the one we gave while doing reverse engineering."
+    },
+    {
+      "Time_Start": 1939.0,
+      "Time_End": 1942.0,
+      "Text": " But we guess it has something to do with power management."
+    },
+    {
+      "Time_Start": 1942.0,
+      "Time_End": 1944.0,
+      "Text": " And what happens is that"
+    },
+    {
+      "Time_Start": 1944.0,
+      "Time_End": 1947.0,
+      "Text": " you can pass an address"
+    },
+    {
+      "Time_Start": 1947.0,
+      "Time_End": 1950.0,
+      "Text": " and a size to this function"
+    },
+    {
+      "Time_Start": 1950.0,
+      "Time_End": 1952.0,
+      "Text": " that comes from the arguments,"
+    },
+    {
+      "Time_Start": 1952.0,
+      "Time_End": 1955.0,
+      "Text": " and basically go over every value."
+    },
+    {
+      "Time_Start": 1955.0,
+      "Time_End": 1957.0,
+      "Text": " So you can tell the monitor,"
+    },
+    {
+      "Time_Start": 1957.0,
+      "Time_End": 1959.0,
+      "Text": " please map in your other space"
+    },
+    {
+      "Time_Start": 1959.0,
+      "Time_End": 1962.0,
+      "Text": " from this address, this size."
+    },
+    {
+      "Time_Start": 1962.0,
+      "Time_End": 1966.0,
+      "Text": " And these arguments are actually the same."
+    },
+    {
+      "Time_Start": 1966.0,
+      "Time_End": 1970.0,
+      "Text": " So we get to another vulnerability,"
+    },
+    {
+      "Time_Start": 1970.0,
+      "Time_End": 1973.0,
+      "Text": " which perhaps by itself is not extremely serious,"
+    },
+    {
+      "Time_Start": 1973.0,
+      "Time_End": 1975.0,
+      "Text": " because you just map memory."
+    },
+    {
+      "Time_Start": 1975.0,
+      "Time_End": 1979.0,
+      "Text": " But given the fact that we have the previous vulnerability,"
+    },
+    {
+      "Time_Start": 1979.0,
+      "Time_End": 1980.0,
+      "Text": " if we combine them,"
+    },
+    {
+      "Time_Start": 1980.0,
+      "Time_End": 1983.0,
+      "Text": " it means that we can map arbitrary memory"
+    },
+    {
+      "Time_Start": 1983.0,
+      "Time_End": 1985.0,
+      "Text": " from the secure world,"
+    },
+    {
+      "Time_Start": 1985.0,
+      "Time_End": 1987.0,
+      "Text": " and then read it back."
+    },
+    {
+      "Time_Start": 1987.0,
+      "Time_End": 1989.0,
+      "Text": " The only limit is that we are limited to 8 megabytes."
+    },
+    {
+      "Time_Start": 1989.0,
+      "Time_End": 1992.0,
+      "Text": " Then, since we cannot unmap,"
+    },
+    {
+      "Time_Start": 1992.0,
+      "Time_End": 1995.0,
+      "Text": " the system will start to be quite unstable."
+    },
+    {
+      "Time_Start": 1995.0,
+      "Time_End": 1996.0,
+      "Text": " But that's not a big deal."
+    },
+    {
+      "Time_Start": 1996.0,
+      "Time_End": 1997.0,
+      "Text": " That's still a lot of space,"
+    },
+    {
+      "Time_Start": 1997.0,
+      "Time_End": 2001.0,
+      "Text": " a lot of stuff that we can do."
+    },
+    {
+      "Time_Start": 2001.0,
+      "Time_End": 2003.0,
+      "Text": " And actually, we can use this vulnerability"
+    },
+    {
+      "Time_Start": 2003.0,
+      "Time_End": 2006.0,
+      "Text": " to end up leaking a key store of keys,"
+    },
+    {
+      "Time_Start": 2006.0,
+      "Time_End": 2008.0,
+      "Text": " which is kind of the ultimate level"
+    },
+    {
+      "Time_Start": 2008.0,
+      "Time_End": 2011.0,
+      "Text": " of things that you want to leak."
+    },
+    {
+      "Time_Start": 2011.0,
+      "Time_End": 2013.0,
+      "Text": " I will be quick, I swear."
+    },
+    {
+      "Time_Start": 2013.0,
+      "Time_End": 2017.0,
+      "Text": " There is three professional databases"
+    },
+    {
+      "Time_Start": 2017.0,
+      "Time_End": 2019.0,
+      "Text": " that have 400 keys, essentially."
+    },
+    {
+      "Time_Start": 2019.0,
+      "Time_End": 2022.0,
+      "Text": " You can have software keys,"
+    },
+    {
+      "Time_Start": 2022.0,
+      "Time_End": 2025.0,
+      "Text": " TEE protected keys,"
+    },
+    {
+      "Time_Start": 2025.0,
+      "Time_End": 2027.0,
+      "Text": " which is the case we are going to describe now,"
+    },
+    {
+      "Time_Start": 2027.0,
+      "Time_End": 2030.0,
+      "Text": " and then strongbox protected keys,"
+    },
+    {
+      "Time_Start": 2030.0,
+      "Time_End": 2032.0,
+      "Text": " which are keys that will end up being used"
+    },
+    {
+      "Time_Start": 2032.0,
+      "Time_End": 2036.0,
+      "Text": " in security chips for the phones that have them."
+    },
+    {
+      "Time_Start": 2036.0,
+      "Time_End": 2039.0,
+      "Text": " The idea is that the raw key material"
+    },
+    {
+      "Time_Start": 2039.0,
+      "Time_End": 2041.0,
+      "Text": " should never be the protected environment"
+    },
+    {
+      "Time_Start": 2041.0,
+      "Time_End": 2043.0,
+      "Text": " in the longest."
+    },
+    {
+      "Time_Start": 2043.0,
+      "Time_End": 2046.0,
+      "Text": " So the way it happens actually in practice"
+    },
+    {
+      "Time_Start": 2046.0,
+      "Time_End": 2047.0,
+      "Text": " is that the normal world,"
+    },
+    {
+      "Time_Start": 2047.0,
+      "Time_End": 2048.0,
+      "Text": " as we saw before,"
+    },
+    {
+      "Time_Start": 2048.0,
+      "Time_End": 2049.0,
+      "Text": " at some point we want to perform"
+    },
+    {
+      "Time_Start": 2049.0,
+      "Time_End": 2051.0,
+      "Text": " some operation with the key."
+    },
+    {
+      "Time_Start": 2051.0,
+      "Time_End": 2054.0,
+      "Text": " So the key is actually stored in the file system"
+    },
+    {
+      "Time_Start": 2054.0,
+      "Time_End": 2055.0,
+      "Text": " in a printed form."
+    },
+    {
+      "Time_Start": 2055.0,
+      "Time_End": 2057.0,
+      "Text": " So it will send this key"
+    },
+    {
+      "Time_Start": 2057.0,
+      "Time_End": 2060.0,
+      "Text": " to the environment of choice,"
+    },
+    {
+      "Time_Start": 2060.0,
+      "Time_End": 2062.0,
+      "Text": " either the keymaster trusted application"
+    },
+    {
+      "Time_Start": 2062.0,
+      "Time_End": 2064.0,
+      "Text": " or the trusted chip,"
+    },
+    {
+      "Time_Start": 2064.0,
+      "Time_End": 2066.0,
+      "Text": " again, when the phone has one."
+    },
+    {
+      "Time_Start": 2066.0,
+      "Time_End": 2070.0,
+      "Text": " And this thing will take the key"
+    },
+    {
+      "Time_Start": 2070.0,
+      "Time_End": 2072.0,
+      "Text": " out of this blob"
+    },
+    {
+      "Time_Start": 2072.0,
+      "Time_End": 2074.0,
+      "Text": " using some secrets that are internal"
+    },
+    {
+      "Time_Start": 2074.0,
+      "Time_End": 2076.0,
+      "Text": " to the TA of the chip,"
+    },
+    {
+      "Time_Start": 2076.0,
+      "Time_End": 2077.0,
+      "Text": " use the key,"
+    },
+    {
+      "Time_Start": 2077.0,
+      "Time_End": 2080.0,
+      "Text": " and then return the result of the operation"
+    },
+    {
+      "Time_Start": 2080.0,
+      "Time_End": 2084.0,
+      "Text": " without ever revealing that key."
+    },
+    {
+      "Time_Start": 2084.0,
+      "Time_End": 2086.0,
+      "Text": " So the content of the key"
+    },
+    {
+      "Time_Start": 2086.0,
+      "Time_End": 2088.0,
+      "Text": " is what we want to leak."
+    },
+    {
+      "Time_Start": 2088.0,
+      "Time_End": 2091.0,
+      "Text": " And how can we do that?"
+    },
+    {
+      "Time_Start": 2091.0,
+      "Time_End": 2093.0,
+      "Text": " Again, we described the bugs before"
+    },
+    {
+      "Time_Start": 2093.0,
+      "Time_End": 2096.0,
+      "Text": " and we want to look for the keymaster memory."
+    },
+    {
+      "Time_Start": 2096.0,
+      "Time_End": 2097.0,
+      "Text": " So we're going to ask,"
+    },
+    {
+      "Time_Start": 2097.0,
+      "Time_End": 2099.0,
+      "Text": " where is the keymaster memory?"
+    },
+    {
+      "Time_Start": 2099.0,
+      "Time_End": 2103.0,
+      "Text": " We have some logs that are easily available."
+    },
+    {
+      "Time_Start": 2103.0,
+      "Time_End": 2104.0,
+      "Text": " These are little kernel logs."
+    },
+    {
+      "Time_Start": 2104.0,
+      "Time_End": 2106.0,
+      "Text": " We know it says k-message"
+    },
+    {
+      "Time_Start": 2106.0,
+      "Time_End": 2109.0,
+      "Text": " where k is little kernel in this case."
+    },
+    {
+      "Time_Start": 2109.0,
+      "Time_End": 2110.0,
+      "Text": " Or at least it's very good"
+    },
+    {
+      "Time_Start": 2110.0,
+      "Time_End": 2113.0,
+      "Text": " if the little kernel messages end up here."
+    },
+    {
+      "Time_Start": 2113.0,
+      "Time_End": 2115.0,
+      "Text": " And we have some physical addresses"
+    },
+    {
+      "Time_Start": 2115.0,
+      "Time_End": 2116.0,
+      "Text": " that are expressed here."
+    },
+    {
+      "Time_Start": 2116.0,
+      "Time_End": 2117.0,
+      "Text": " There's one that looks pretty interesting."
+    },
+    {
+      "Time_Start": 2117.0,
+      "Time_End": 2120.0,
+      "Text": " It says TEE reserve."
+    },
+    {
+      "Time_Start": 2120.0,
+      "Time_End": 2121.0,
+      "Text": " And when it turns out that"
+    },
+    {
+      "Time_Start": 2121.0,
+      "Time_End": 2123.0,
+      "Text": " that's where keymaster"
+    },
+    {
+      "Time_Start": 2123.0,
+      "Time_End": 2124.0,
+      "Text": " and the other trusted applications"
+    },
+    {
+      "Time_Start": 2124.0,
+      "Time_End": 2128.0,
+      "Text": " are loaded in memory."
+    },
+    {
+      "Time_Start": 2128.0,
+      "Time_End": 2130.0,
+      "Text": " You can tell that because of the many strings"
+    },
+    {
+      "Time_Start": 2130.0,
+      "Time_End": 2133.0,
+      "Text": " that the trusted applications have."
+    },
+    {
+      "Time_Start": 2133.0,
+      "Time_End": 2136.0,
+      "Text": " And again, the binaries are stored in memory,"
+    },
+    {
+      "Time_Start": 2136.0,
+      "Time_End": 2139.0,
+      "Text": " so you can pretty much compare these strings"
+    },
+    {
+      "Time_Start": 2139.0,
+      "Time_End": 2143.0,
+      "Text": " and make sure that you're looking at the right thing."
+    },
+    {
+      "Time_Start": 2143.0,
+      "Time_End": 2145.0,
+      "Text": " So at this point, our bug becomes"
+    },
+    {
+      "Time_Start": 2145.0,
+      "Time_End": 2147.0,
+      "Text": " more or less clear, I guess."
+    },
+    {
+      "Time_Start": 2147.0,
+      "Time_End": 2150.0,
+      "Text": " We import a key into the Android Keystore."
+    },
+    {
+      "Time_Start": 2150.0,
+      "Time_End": 2152.0,
+      "Text": " We encrypt using that key."
+    },
+    {
+      "Time_Start": 2152.0,
+      "Time_End": 2154.0,
+      "Text": " But we stop the execution"
+    },
+    {
+      "Time_Start": 2154.0,
+      "Time_End": 2158.0,
+      "Text": " right after we begin operations."
+    },
+    {
+      "Time_Start": 2158.0,
+      "Time_End": 2161.0,
+      "Text": " So in a moment where the key will be present"
+    },
+    {
+      "Time_Start": 2161.0,
+      "Time_End": 2165.0,
+      "Text": " in plain text in the memory of the keymaster TA."
+    },
+    {
+      "Time_Start": 2165.0,
+      "Time_End": 2167.0,
+      "Text": " And then we need it."
+    },
+    {
+      "Time_Start": 2167.0,
+      "Time_End": 2169.0,
+      "Text": " So translated to code,"
+    },
+    {
+      "Time_Start": 2169.0,
+      "Time_End": 2172.0,
+      "Text": " this is something like this."
+    },
+    {
+      "Time_Start": 2172.0,
+      "Time_End": 2175.0,
+      "Text": " We are importing, actually, a key that we already know."
+    },
+    {
+      "Time_Start": 2175.0,
+      "Time_End": 2178.0,
+      "Text": " And we will explain later why."
+    },
+    {
+      "Time_Start": 2178.0,
+      "Time_End": 2181.0,
+      "Text": " But obviously, any key can be used."
+    },
+    {
+      "Time_Start": 2181.0,
+      "Time_End": 2183.0,
+      "Text": " So going over the same schema again,"
+    },
+    {
+      "Time_Start": 2183.0,
+      "Time_End": 2187.0,
+      "Text": " we cook the keymaster HAL"
+    },
+    {
+      "Time_Start": 2187.0,
+      "Time_End": 2192.0,
+      "Text": " to intercept the execution"
+    },
+    {
+      "Time_Start": 2192.0,
+      "Time_End": 2195.0,
+      "Text": " right at the moment where we can be."
+    },
+    {
+      "Time_Start": 2195.0,
+      "Time_End": 2198.0,
+      "Text": " And then, when we actually do the leak,"
+    },
+    {
+      "Time_Start": 2198.0,
+      "Time_End": 2200.0,
+      "Text": " we see the key appearing"
+    },
+    {
+      "Time_Start": 2200.0,
+      "Time_End": 2203.0,
+      "Text": " in the buffer that we read."
+    },
+    {
+      "Time_Start": 2203.0,
+      "Time_End": 2207.0,
+      "Text": " But yeah, so again, we are leaking a key we already knew."
+    },
+    {
+      "Time_Start": 2207.0,
+      "Time_End": 2211.0,
+      "Text": " So we could do better than this."
+    },
+    {
+      "Time_Start": 2211.0,
+      "Time_End": 2214.0,
+      "Text": " But again, this is really just for practicality."
+    },
+    {
+      "Time_Start": 2214.0,
+      "Time_End": 2216.0,
+      "Text": " The thing is that you see around,"
+    },
+    {
+      "Time_Start": 2216.0,
+      "Time_End": 2219.0,
+      "Text": " there's a bunch of almost random things."
+    },
+    {
+      "Time_Start": 2219.0,
+      "Time_End": 2221.0,
+      "Text": " We could figure out the right offsets,"
+    },
+    {
+      "Time_Start": 2221.0,
+      "Time_End": 2223.0,
+      "Text": " but maybe they change."
+    },
+    {
+      "Time_Start": 2223.0,
+      "Time_End": 2225.0,
+      "Text": " Who knows? It's easier to enforce."
+    },
+    {
+      "Time_Start": 2225.0,
+      "Time_End": 2227.0,
+      "Text": " At the end of the day, there are not that many options."
+    },
+    {
+      "Time_Start": 2227.0,
+      "Time_End": 2229.0,
+      "Text": " So we can try all possible keys"
+    },
+    {
+      "Time_Start": 2229.0,
+      "Time_End": 2231.0,
+      "Text": " from the leak to the cipher,"
+    },
+    {
+      "Time_Start": 2231.0,
+      "Time_End": 2233.0,
+      "Text": " the ciphertext that we actually have."
+    },
+    {
+      "Time_Start": 2233.0,
+      "Time_End": 2235.0,
+      "Text": " And we will be able to actually find the key"
+    },
+    {
+      "Time_Start": 2235.0,
+      "Time_End": 2237.0,
+      "Text": " even if we didn't know."
+    },
+    {
+      "Time_Start": 2237.0,
+      "Time_End": 2240.0,
+      "Text": " So to show you this, we have another decoder"
+    },
+    {
+      "Time_Start": 2240.0,
+      "Time_End": 2244.0,
+      "Text": " for which I'm going to need Max again."
+    },
+    {
+      "Time_Start": 2244.0,
+      "Time_End": 2260.0,
+      "Text": " So no need for the camera this time,"
+    },
+    {
+      "Time_Start": 2260.0,
+      "Time_End": 2262.0,
+      "Text": " because we..."
+    },
+    {
+      "Time_Start": 2262.0,
+      "Time_End": 2276.0,
+      "Text": " So we prepared a little demo application"
+    },
+    {
+      "Time_Start": 2276.0,
+      "Time_End": 2279.0,
+      "Text": " which is going to appear on the screen soon,"
+    },
+    {
+      "Time_Start": 2279.0,
+      "Time_End": 2284.0,
+      "Text": " which essentially does what you have seen from before."
+    },
+    {
+      "Time_Start": 2284.0,
+      "Time_End": 2288.0,
+      "Text": " So I'm going to wait for Max to launch the script"
+    },
+    {
+      "Time_Start": 2288.0,
+      "Time_End": 2292.0,
+      "Text": " that will give us..."
+    },
+    {
+      "Time_Start": 2292.0,
+      "Time_End": 2294.0,
+      "Text": " that will use Frida to intercept the messages"
+    },
+    {
+      "Time_Start": 2294.0,
+      "Time_End": 2296.0,
+      "Text": " that we care about."
+    },
+    {
+      "Time_Start": 2296.0,
+      "Time_End": 2298.0,
+      "Text": " So here now he's launching the Frida server."
+    },
+    {
+      "Time_Start": 2298.0,
+      "Time_End": 2303.0,
+      "Text": " By the way, Frida is a common instrumentation framework"
+    },
+    {
+      "Time_Start": 2303.0,
+      "Time_End": 2305.0,
+      "Text": " that I haven't introduced because"
+    },
+    {
+      "Time_Start": 2305.0,
+      "Time_End": 2307.0,
+      "Text": " many people know about it."
+    },
+    {
+      "Time_Start": 2307.0,
+      "Time_End": 2311.0,
+      "Text": " But if you don't, have a look. It's really cool."
+    },
+    {
+      "Time_Start": 2311.0,
+      "Time_End": 2312.0,
+      "Text": " So when you look at the logs,"
+    },
+    {
+      "Time_Start": 2312.0,
+      "Time_End": 2314.0,
+      "Text": " just because you are going to be logging"
+    },
+    {
+      "Time_Start": 2315.0,
+      "Time_End": 2317.0,
+      "Text": " some, like the ciphertext,"
+    },
+    {
+      "Time_Start": 2317.0,
+      "Time_End": 2319.0,
+      "Text": " just to make it easier to watch."
+    },
+    {
+      "Time_Start": 2319.0,
+      "Time_End": 2323.0,
+      "Text": " And can I..."
+    },
+    {
+      "Time_Start": 2323.0,
+      "Time_End": 2328.0,
+      "Text": " So I'm going to write my dirty secret here."
+    },
+    {
+      "Time_Start": 2328.0,
+      "Time_End": 2330.0,
+      "Text": " Encrypt."
+    },
+    {
+      "Time_Start": 2330.0,
+      "Time_End": 2337.0,
+      "Text": " And here in the logs, if stuff is working..."
+    },
+    {
+      "Time_Start": 2337.0,
+      "Time_End": 2340.0,
+      "Text": " Yes."
+    },
+    {
+      "Time_Start": 2340.0,
+      "Time_End": 2343.0,
+      "Text": " You're going to be able to see"
+    },
+    {
+      "Time_Start": 2343.0,
+      "Time_End": 2349.0,
+      "Text": " the ciphertext and the initialization vector."
+    },
+    {
+      "Time_Start": 2349.0,
+      "Time_End": 2350.0,
+      "Text": " Now once we have done that,"
+    },
+    {
+      "Time_Start": 2350.0,
+      "Time_End": 2354.0,
+      "Text": " we can use the script I explained about."
+    },
+    {
+      "Time_Start": 2354.0,
+      "Time_End": 2357.0,
+      "Text": " Actually, I haven't fully explained how to do it"
+    },
+    {
+      "Time_Start": 2357.0,
+      "Time_End": 2359.0,
+      "Text": " because we have to be in the kernel, right?"
+    },
+    {
+      "Time_Start": 2359.0,
+      "Time_End": 2361.0,
+      "Text": " So we wrote the custom kernel module"
+    },
+    {
+      "Time_Start": 2361.0,
+      "Time_End": 2364.0,
+      "Text": " that will be able to send the SMC code."
+    },
+    {
+      "Time_Start": 2364.0,
+      "Time_End": 2366.0,
+      "Text": " We haven't gone over that part"
+    },
+    {
+      "Time_Start": 2366.0,
+      "Time_End": 2369.0,
+      "Text": " because it's maybe the least interesting."
+    },
+    {
+      "Time_Start": 2369.0,
+      "Time_End": 2373.0,
+      "Text": " But anyway, we end up leaking some memory"
+    },
+    {
+      "Time_Start": 2373.0,
+      "Time_End": 2377.0,
+      "Text": " out of the ATF address space,"
+    },
+    {
+      "Time_Start": 2377.0,
+      "Time_End": 2381.0,
+      "Text": " which is stored in the sub-graphical file system."
+    },
+    {
+      "Time_Start": 2381.0,
+      "Time_End": 2386.0,
+      "Text": " So now Max is pulling it from..."
+    },
+    {
+      "Time_Start": 2386.0,
+      "Time_End": 2388.0,
+      "Text": " the..."
+    },
+    {
+      "Time_Start": 2388.0,
+      "Time_End": 2389.0,
+      "Text": " in this file system,"
+    },
+    {
+      "Time_Start": 2389.0,
+      "Time_End": 2391.0,
+      "Text": " and then we launch a script"
+    },
+    {
+      "Time_Start": 2391.0,
+      "Time_End": 2394.0,
+      "Text": " that will try all the possibilities in this link"
+    },
+    {
+      "Time_Start": 2394.0,
+      "Time_End": 2396.0,
+      "Text": " to find the secret"
+    },
+    {
+      "Time_Start": 2396.0,
+      "Time_End": 2400.0,
+      "Text": " using the ciphertext and ID that we..."
+    },
+    {
+      "Time_Start": 2400.0,
+      "Time_End": 2403.0,
+      "Text": " that we got."
+    },
+    {
+      "Time_Start": 2405.0,
+      "Time_End": 2409.0,
+      "Text": " So yeah, that's just a little bit of Base64 magic."
+    },
+    {
+      "Time_Start": 2409.0,
+      "Time_End": 2411.0,
+      "Text": " A bit of pressure on Max"
+    },
+    {
+      "Time_Start": 2411.0,
+      "Time_End": 2414.0,
+      "Text": " that missed the typo in this."
+    },
+    {
+      "Time_Start": 2414.0,
+      "Time_End": 2417.0,
+      "Text": " Maybe you can raise the sign with the time again."
+    },
+    {
+      "Time_Start": 2417.0,
+      "Time_End": 2420.0,
+      "Text": " Out of time."
+    },
+    {
+      "Time_Start": 2427.0,
+      "Time_End": 2429.0,
+      "Text": " All right."
+    },
+    {
+      "Time_Start": 2429.0,
+      "Time_End": 2431.0,
+      "Text": " And then..."
+    },
+    {
+      "Time_Start": 2436.0,
+      "Time_End": 2438.0,
+      "Text": " Fingers crossed."
+    },
+    {
+      "Time_Start": 2440.0,
+      "Time_End": 2443.0,
+      "Text": " The terminalism is helpful once again."
+    },
+    {
+      "Time_Start": 2443.0,
+      "Time_End": 2445.0,
+      "Text": " So yeah, the key is..."
+    },
+    {
+      "Time_Start": 2450.0,
+      "Time_End": 2452.0,
+      "Text": " I mean, we can show you the sources"
+    },
+    {
+      "Time_Start": 2452.0,
+      "Time_End": 2453.0,
+      "Text": " if they weren't super dirty,"
+    },
+    {
+      "Time_Start": 2453.0,
+      "Time_End": 2455.0,
+      "Text": " but I'm sure you can trust that we are not."
+    },
+    {
+      "Time_Start": 2457.0,
+      "Time_End": 2459.0,
+      "Text": " All right."
+    },
+    {
+      "Time_Start": 2459.0,
+      "Time_End": 2463.0,
+      "Text": " So let me go back to the presentation."
+    },
+    {
+      "Time_Start": 2465.0,
+      "Time_End": 2466.0,
+      "Text": " Yes."
+    },
+    {
+      "Time_Start": 2466.0,
+      "Time_End": 2469.0,
+      "Text": " So, to wrap up,"
+    },
+    {
+      "Time_Start": 2469.0,
+      "Time_End": 2472.0,
+      "Text": " we presented a total of four vulnerabilities today"
+    },
+    {
+      "Time_Start": 2472.0,
+      "Time_End": 2476.0,
+      "Text": " that led to bypassing the authentication"
+    },
+    {
+      "Time_Start": 2476.0,
+      "Time_End": 2478.0,
+      "Text": " that happens in Odin."
+    },
+    {
+      "Time_Start": 2478.0,
+      "Time_End": 2480.0,
+      "Text": " And this allowed us to flash an image"
+    },
+    {
+      "Time_Start": 2480.0,
+      "Time_End": 2482.0,
+      "Text": " that was malicious"
+    },
+    {
+      "Time_Start": 2482.0,
+      "Time_End": 2486.0,
+      "Text": " and that will be able to execute the vulnerability"
+    },
+    {
+      "Time_Start": 2486.0,
+      "Time_End": 2488.0,
+      "Text": " in the parsing logic on the meter kernel."
+    },
+    {
+      "Time_Start": 2488.0,
+      "Time_End": 2491.0,
+      "Text": " This gave us code execution in the book loader"
+    },
+    {
+      "Time_Start": 2491.0,
+      "Time_End": 2494.0,
+      "Text": " and then allowed us to"
+    },
+    {
+      "Time_Start": 2494.0,
+      "Time_End": 2496.0,
+      "Text": " shield backdoor algorithm."
+    },
+    {
+      "Time_Start": 2496.0,
+      "Time_End": 2500.0,
+      "Text": " And then using two other bugs in the secure world,"
+    },
+    {
+      "Time_Start": 2500.0,
+      "Time_End": 2503.0,
+      "Text": " we need some memory"
+    },
+    {
+      "Time_Start": 2503.0,
+      "Time_End": 2507.0,
+      "Text": " including keys that are supposed to be protected."
+    },
+    {
+      "Time_Start": 2507.0,
+      "Time_End": 2509.0,
+      "Text": " So all these vulnerabilities"
+    },
+    {
+      "Time_Start": 2509.0,
+      "Time_End": 2514.0,
+      "Text": " have been found in low-end Samsung devices."
+    },
+    {
+      "Time_Start": 2514.0,
+      "Time_End": 2515.0,
+      "Text": " And as you can see,"
+    },
+    {
+      "Time_Start": 2515.0,
+      "Time_End": 2518.0,
+      "Text": " they're relatively simple at the end of the day"
+    },
+    {
+      "Time_Start": 2518.0,
+      "Time_End": 2520.0,
+      "Text": " but very impactful"
+    },
+    {
+      "Time_Start": 2520.0,
+      "Time_End": 2522.0,
+      "Text": " also due to the lack of mitigations that we found"
+    },
+    {
+      "Time_Start": 2522.0,
+      "Time_End": 2525.0,
+      "Text": " in the various components that we exploited."
+    },
+    {
+      "Time_Start": 2525.0,
+      "Time_End": 2527.0,
+      "Text": " So this kind of shows how challenging it is"
+    },
+    {
+      "Time_Start": 2527.0,
+      "Time_End": 2529.0,
+      "Text": " to manufacture these devices"
+    },
+    {
+      "Time_Start": 2529.0,
+      "Time_End": 2531.0,
+      "Text": " and maintain security features"
+    },
+    {
+      "Time_Start": 2531.0,
+      "Time_End": 2533.0,
+      "Text": " especially when they're very good"
+    },
+    {
+      "Time_Start": 2533.0,
+      "Time_End": 2536.0,
+      "Text": " but at the same time it's also unfortunate"
+    },
+    {
+      "Time_Start": 2536.0,
+      "Time_End": 2540.0,
+      "Text": " because they were relatively low-end devices."
+    },
+    {
+      "Time_Start": 2540.0,
+      "Time_End": 2543.0,
+      "Text": " But anyway, all the vulnerabilities are now fixed"
+    },
+    {
+      "Time_Start": 2543.0,
+      "Time_End": 2546.0,
+      "Text": " and we also thank Samsung that was super reactive"
+    },
+    {
+      "Time_Start": 2546.0,
+      "Time_End": 2549.0,
+      "Text": " making sure that these get patches."
+    },
+    {
+      "Time_Start": 2549.0,
+      "Time_End": 2552.0,
+      "Text": " And with that, we are done."
+    }
+  ]
+}
