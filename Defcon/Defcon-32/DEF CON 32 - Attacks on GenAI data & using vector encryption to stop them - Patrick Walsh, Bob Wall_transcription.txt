@@ -1,0 +1,334 @@
+{
+  "webpage_url": "https://www.youtube.com/watch?v=Lxg9YyFJ8s0",
+  "title": "DEF CON 32 - Attacks on GenAI data & using vector encryption to stop them - Patrick Walsh, Bob Wall",
+  "description": "As the adoption of GenAI tools has soared, security has done little to keep up. New classes of data, and especially vector data, is flooding into new and untested data stores. Vector databases are getting copies of health data, financial data, HR data, emails, and everything else, but they have no intrinsic security. What's worse, the vectors themselves can be reversed in embedding inversion attacks that turn those vectors back into faces, sentences, and even pictures. We discuss these new attacks and a new branch of cryptography, vector encryption, which allows for privacy preserving searches to happen over the encrypted vectors. We'll discuss the benefits, trade-offs, and current state of the field and the open source software we've built to meet the new need.",
+  "channel_url": "https://www.youtube.com/channel/UC6Om9kAkl32dWlDSNlDS9Iw",
+  "duration": 1578,
+  "channel": "DEFCONConference",
+  "uploader": "DEFCONConference",
+  "upload_date": "20241016"
+}
+
+0.00s - 5.16s | This text was transcribed using whisper model: large-v2
+
+ Welcome, this is the attacks on Gen AI data and using vector encryption to stop
+5.16s - 10.68s |  them talk. I'm Patrick Walsh, this is Bob Wall, we're the co-founders of IronCore
+10.68s - 15.12s |  Labs, where we help people protect data in their cloud applications by making
+15.12s - 22.24s |  application layer encryption more easy and practical and usable. So this talk is
+22.24s - 26.08s |  going to be about the ecosystems around LLMs, but we'll start by talking about
+26.08s - 33.20s |  LLMs specifically, and in particular some limitations of LLMs, right? When an LLM is
+33.20s - 38.44s |  trained, it's trained to predict a plausible completion to a prompt, and
+38.44s - 42.32s |  that means it can sometimes make stuff up that sounds good but isn't necessarily
+42.32s - 46.80s |  right. It's also trained on what, by the time it's released, is typically stale
+46.80s - 50.76s |  data, because it takes a long time to train it, to test it, to fine-tune it, etc.
+50.76s - 56.00s |  And then finally, it hopefully hasn't been trained on your data, and therefore
+56.00s - 59.92s |  if you want it to do things that are cool across, you know, your corporate data,
+59.92s - 63.84s |  your personal data, or something like that, it's not going to work. And to fill
+63.84s - 68.04s |  those gaps, there's a thing called RAG, or Retrieval Augmented Generation.
+68.04s - 72.68s |  Terrible name, basically means stuff extra stuff into the prompt so the LLM
+72.68s - 77.32s |  can answer questions better. And it works a lot like this. You have a chat app, it
+77.32s - 80.48s |  doesn't have to be a chat app, it's just like the most common thing to use, right?
+80.48s - 85.44s |  A user asks a question, and now instead of passing that question to the LLM, the
+85.44s - 90.40s |  first thing it does is a search. And that search is to find relevant documents
+90.40s - 94.76s |  related to the query. That all gets jammed together into a prompt, which then
+94.76s - 99.32s |  goes to the LLM. That's it, that's RAG in a nutshell, you get it. Here's a kind of
+99.32s - 103.20s |  more practical example of what that looks like. There's a system prompt,
+103.20s - 107.28s |  there's a history of the previous questions and answers from the chat, and
+107.28s - 112.08s |  then there's the current, the most recent question, and then stuffed in with that
+112.08s - 117.68s |  is any documents or web pages or whatever it is that might be related to
+117.68s - 121.56s |  what the question was. In this case it's about, hey what's that draft 10Q,
+121.56s - 126.12s |  it's a private document that's not public, and that's how it all gets in to
+126.12s - 130.48s |  the LLM so it can answer questions on that private data. It's fundamental to
+130.48s - 135.04s |  basically how everyone is using these stuff today, if you're using chat inside
+135.04s - 140.28s |  an app. And to make all this work you need to have some type of more
+140.28s - 144.52s |  intelligent search than what we typically do. Call it AI search, call it
+144.52s - 148.32s |  semantic search or whatever you want to, and there's a bunch of ways to do this.
+148.32s - 152.28s |  The most popular right now is an approach called vector search. It's kind
+152.28s - 155.48s |  of what everyone is doing, although it's not the only way to do it.
+155.48s - 161.16s |  And vector search and actually all of those AI search type techniques are
+161.20s - 164.92s |  important because they, they differentiate between different
+164.92s - 168.68s |  meanings of words, they can understand a sentence in context, they can understand
+168.68s - 172.80s |  when arm means a division of an organization versus when arm is a body
+172.80s - 179.16s |  part or, or even a verb, right. And in practice how these types of vector
+179.16s - 184.48s |  search works is you start with some input document, and that input, do we lose
+184.48s - 188.56s |  it, and that input document then gets chunked up into pieces. Sometimes it's by
+188.56s - 193.24s |  sentence, sometimes it's sets of, call it 30 words, or it can be any strategy and
+193.24s - 198.04s |  often overlapping. But each of those pieces gets run through something that's
+198.04s - 203.56s |  very similar to an LLM, that sucks, that's very similar to an LLM, but is in fact
+203.56s - 209.04s |  called a text embedding model. And a text embedding model, unlike an LLM, produces
+209.04s - 214.52s |  something called a vector embedding. That's not great.
+215.52s - 219.80s |  Produces something called a vector embedding. And the vector embedding is
+219.80s - 224.76s |  basically just a long list of very small numbers. And those small numbers can be
+224.76s - 229.40s |  hundreds or thousands in length. And we'll get into what they mean in a
+229.40s - 232.76s |  minute here, but to give you some intuition on these, we'll take, look at a
+232.76s - 236.00s |  list, like a vector that's only three long, right, because you can graph this in
+236.00s - 239.04s |  3D space and you can understand it better. And if we have a bunch of
+239.04s - 243.32s |  different vectors, let's say we have A and B and we have C, we can kind of look
+243.32s - 246.60s |  at this visually and say, oh look, A and B kind of look like they're close
+246.60s - 251.24s |  together and A and C look like they're far apart. And in fact, if we run a
+251.24s - 255.76s |  distance comparison operation like this one, Euclidean distance, although there's
+255.76s - 259.12s |  a bunch of different ones, they all have the same kind of effect, you can see that
+259.12s - 264.72s |  you know A and B are 2.2 apart, whereas A and C are 5.6 apart. And the way this
+264.72s - 269.60s |  works with search is we take a query, right, it's a sentence, and we reduce it
+269.60s - 273.84s |  to, let's say, A. A is a vector representation of what we queried, and
+273.84s - 277.20s |  then we search across all our vectors and we say, give me anything that's
+277.20s - 281.64s |  similar to A, and then hopefully, if it does it right, it returns B but not C.
+281.64s - 286.60s |  That's it. That's what vector search is doing. It's the whole shebang. The vector
+286.60s - 291.68s |  represents the meaning of the content. And to make that work, we have this kind
+291.68s - 295.72s |  of new concept, or at least new to a lot of us, at least to me, although I guess
+295.72s - 299.40s |  it's been around for quite a while, and that's called a vector database. And a
+299.40s - 302.84s |  vector database's purpose is to be able to do these nearest neighbor or
+302.84s - 306.96s |  approximate nearest neighbor searches across the large amounts of data very
+306.96s - 311.00s |  quickly. And there are a lot of these companies now that are doing this. In
+311.00s - 315.20s |  fact, last year we saw hundreds of millions of VC money go into the
+315.20s - 318.28s |  startups that are building vector databases. Startups like Pinecone and
+318.28s - 324.20s |  Weaviate and Quadrant. And despite that, the idea of a vector database is already
+324.20s - 328.44s |  eroding away to nothing because classic databases like Mongo and Postgres and
+328.52s - 332.32s |  Oracle are all adding vector capabilities to their existing databases. So you're
+332.32s - 335.68s |  getting these type of vector comparison nearest neighbor search capability
+335.68s - 340.24s |  pretty much everywhere that you have a database now. Okay, changing tracks for a
+340.24s - 345.96s |  second. We started thinking to ourself, who's using this stuff? Well, we looked at
+345.96s - 351.92s |  the top 10 SaaS companies and we thought, how many of them are doing adding LLM
+351.92s - 355.12s |  capabilities over private data? Which means that they're almost certainly
+355.20s - 359.72s |  using RAG. The answer is 100%. Then we said, well what about security companies?
+359.72s - 363.28s |  They wouldn't jump on to just using all this new technology that we don't know
+363.28s - 368.44s |  how to secure yet, would they? No, 100% of them too. Also adding LLM capabilities on
+368.44s - 373.64s |  top of private data. Think about that for a moment, right? It means that these AI
+373.64s - 377.64s |  systems, whatever cloud services and things you're using, they are hoovering
+377.64s - 381.84s |  up this data. Probably copies of it are going into the vector databases as
+381.88s - 387.92s |  vectors and among other places, which I'll talk about ever so briefly later. So
+387.92s - 393.72s |  do these vectors matter? I was talking to the CEO of one of the vector database
+393.72s - 397.20s |  companies who's raised tens of million dollars last year and he told me that a
+397.20s - 400.68s |  vector was like a hash and it was basically meaningless, except for
+400.68s - 404.84s |  comparison purposes. So which my first thought is, well you clearly don't know
+404.84s - 411.24s |  how people abuse hashes. And my second thought is, you're wrong. So that isn't
+411.28s - 416.04s |  how it works at all. If you look at taking a phrase and you reduce it to an
+416.04s - 420.80s |  embedding vector, an embedding model into a vector, okay, it looks pretty
+420.80s - 426.32s |  meaningless to us. But then again, so does an animated GIF like this cat if you
+426.32s - 430.00s |  look at it in a text editor, right? It just because it's meaningless to us to
+430.00s - 434.36s |  look at doesn't mean it is meaningless to a computer or in this case to an AI
+434.36s - 440.04s |  model. And so the way you go back from a vector to the original text or
+440.08s - 443.92s |  something approximating it is using something called an inversion model. An
+443.92s - 447.96s |  inversion model is just a model that's trained on vectors to sentences so that
+447.96s - 452.56s |  it can make that same prediction. In this case it comes close. It's our
+452.56s - 456.60s |  income is down instead of our earnings is down, right, in this example. 100%
+456.60s - 462.20s |  match on meaning, not 100% match on words. There are some tens of thousands of
+462.20s - 467.12s |  papers on this at this point. It's heavily studied in academia, not widely
+467.24s - 472.84s |  known, I don't think, broadly. Best paper we've seen for text inversions, and it's
+472.84s - 475.68s |  not just text that vectors represent, I'll talk about that in a second,
+475.68s - 482.56s |  recovers 92% of exact words. That means full names, everything coming right back
+482.56s - 487.12s |  out exactly as it went in on the text, okay? The other 8% is basically
+487.12s - 493.28s |  effectively the same anyway. So are these attacks hard? Could, you know, what's the
+493.28s - 497.96s |  skill level for doing this kind of attack? The answer is most of these
+497.96s - 502.08s |  papers have accompanying open-source software on GitHub, and so really you
+502.08s - 504.84s |  just need someone who can run the software, not someone who knows how to
+504.84s - 509.64s |  build the software, which means it's script kitty level. And on that note, we
+509.64s - 512.72s |  actually ran some of these attacks ourselves. We posted some blogs you can
+512.72s - 516.72s |  check out. We did one on, so I mentioned vectors can represent different things.
+516.72s - 520.28s |  They can represent images for image search. They can represent faces or
+520.32s - 524.96s |  voice prints or other things for that. We did one against facial recognition. That
+524.96s - 527.72s |  doesn't use an inversion model. That's a different technique, by the way. It's, so
+527.72s - 530.56s |  it's kind of interesting for that purpose, and we did one on text
+530.56s - 536.36s |  inversions. Really good results. Like, you can really get all the stuff back out or
+536.36s - 542.57s |  very, very near approximations of the inputs. Alright, so let's talk about
+542.57s - 547.25s |  these new vector database companies. They probably have good security, right?
+547.29s - 552.53s |  Actually, no. Super immature. They'll fix it over time. It'll be fine, but if you
+552.53s - 558.77s |  look closely at these as we have, two of them have no default, no authentication
+558.77s - 562.53s |  required by default, right? Making the mistakes of Elasticsearch and MongoDB of
+562.53s - 568.69s |  years past, but not learning. One of them has services that are meant to be
+568.69s - 572.53s |  internal services, and that, you know, there's no protection or authentication
+572.53s - 576.09s |  on them, so that if someone goes to access that because the firewall
+576.09s - 580.37s |  neglected to block a port, direct access back to the data without any
+580.37s - 584.17s |  authentication. Two of them claim to have end-to-end encryption when they only
+584.17s - 590.37s |  have TLS in transport, and more. I could go on. It doesn't matter. The point is
+590.37s - 593.81s |  that these vector database systems, and for that matter the chat apps, either way
+593.81s - 599.09s |  are like total treasure troves of information, and even if you don't use it
+599.09s - 603.05s |  and invert it, they're, they're at least treasure maps of information because
+603.05s - 606.01s |  they point back to the data, and you can, you can query it, and if you think about
+606.01s - 610.93s |  that for a second, imagine that you're in a CTF competition in that corner of this
+610.93s - 614.33s |  thing, and you know, you get into a machine, cool, but now you have to get the
+614.33s - 617.29s |  flag, and it's in a database, you have to get into the database, and now you have
+617.29s - 622.25s |  to reverse the schema, and you know, figure out a query, and find the flag. It
+622.25s - 625.97s |  ain't as easy as it sounds, right? It's a lot of expertise and time to do that,
+626.09s - 635.01s |  versus, you know, give me that data. It is like incredibly far, far easier to attack
+635.01s - 641.01s |  these systems because you can do it in natural language. So what do we think
+641.01s - 645.09s |  about bringing AI into our infrastructure? Maybe we should pause for
+645.09s - 647.77s |  a moment and think a little bit about it, or if it's in there, maybe if you're a
+647.77s - 650.77s |  hacker in the audience, you should think about, holy shit, there's a lot here. Let
+650.77s - 655.37s |  me give you some ideas. Obviously everyone knows about prompt injections.
+655.37s - 659.01s |  Maybe you don't, haven't thought so much about the fact that you can put a prompt
+659.01s - 662.17s |  injection in the documents being searched, and they get pulled into the
+662.17s - 667.17s |  prompt, and you can poison the prompt that way. Logs are everywhere. If you're
+667.17s - 670.53s |  putting private data into the things that go to the LLMs, and the LLMs log it,
+670.53s - 675.01s |  that's a problem, but also the prompt firewalls, if you're using those, are
+675.01s - 678.81s |  logging that stuff too, so the data is kind of exploding, and don't even get me
+678.81s - 682.25s |  started on agents. Talk to me after if you want to hear about my thoughts on
+682.25s - 686.61s |  that, but if you're generating code to run to query a database, you're, you're
+686.61s - 691.17s |  beyond hope. Today though, we're not going to talk about any of that. We're going to
+691.17s - 695.33s |  talk specifically about this vector stuff, and how to protect it. So basically
+695.33s - 698.89s |  today, the way to protect that is to encrypt it, and there's two approaches to
+698.89s - 702.57s |  this, at least in academia, that you could do. One is fully homomorphic encryption,
+702.57s - 707.81s |  and the other is partially homomorphic. So fully homomorphic encryption, there's
+707.81s - 710.45s |  actually quite a few papers on this, and they're fairly interesting. There's a lot
+710.45s - 714.33s |  of different approaches. Some of them require sending all the vectors to the
+714.33s - 718.05s |  server, or some require some other stuff. They typically suffer from being slow,
+718.05s - 722.25s |  and you would have to build your own vector database, and be another logo on
+722.25s - 725.65s |  that wall, and compete with all the other vector databases on every other thing.
+725.65s - 730.29s |  The other option is partially homomorphic encryption, and the idea here
+730.29s - 734.21s |  is that something that's partially homomorphic is, is able to do some
+734.25s - 738.53s |  operations, but not arbitrary operations. And in this case, we're talking about
+738.53s - 744.49s |  optimizing for that nearest neighbor search type of operation. Okay, so in this,
+744.49s - 749.37s |  in this example, partially homomorphic, specific to nearest neighbor searches.
+749.37s - 754.65s |  And to talk more about this paper, and the work that we've done around it, I'm
+754.65s - 765.24s |  going to turn it over to Bob. All right, we found this paper about a way to
+765.48s - 770.76s |  encrypt vectors, and you can see the title, Approximate Distance Comparison
+770.76s - 778.16s |  Preserving Symmetric Encryption. So that's a mouthful, but the, this algorithm
+778.16s - 782.48s |  is a type of property preserving encryption, which means it's kind of like
+782.48s - 786.76s |  order preserving encryption, or maybe deterministic encryption, if you've heard
+786.76s - 790.88s |  of those. The property that this algorithm is preserving, though, is
+791.28s - 797.56s |  distance comparison instead of equality or order. And so if you can preserve the
+797.56s - 802.28s |  ability to compare the distance between two vectors after they've been encrypted,
+802.60s - 807.00s |  that means your vector database continues to work on the encrypted vectors just as
+807.00s - 812.92s |  well as it did on the original vectors. So like deterministic and order preserving
+812.92s - 819.56s |  encryption, there's a trade off. The more secure you make it, the less well the
+819.56s - 824.76s |  compare, the property is preserved, and so the less well queries might work on
+824.76s - 828.88s |  the data. So you can kind of make a, you have a decision to make about whether
+828.88s - 832.72s |  you want a lot of security, and you can tolerate maybe a little less accuracy on
+832.72s - 836.44s |  queries, or you want a lot of accuracy on the queries, and maybe you'll have a
+836.44s - 843.16s |  little bit less protection of the data. But the system works by, if you've got a
+843.16s - 847.08s |  system that's ingesting data, and it's making these vectors, putting them into a
+847.08s - 851.96s |  vector database, it's easy to add this encryption. You just, in the system
+851.96s - 856.16s |  that's already there, after you've taken the data and run it through the
+856.16s - 859.32s |  embedding model and generated the vector embedding, you run it through this
+859.32s - 864.24s |  algorithm and encrypt it, it's still a vector, it looks similar enough to the
+864.24s - 869.64s |  original vector that the vector database is gonna take it and be happy with it. So
+869.64s - 873.84s |  you, you'd use a secret key, you encrypt the vector, you throw it in the vector
+873.84s - 879.96s |  database. So very simple change to the system to be able to do that. Now most of
+879.96s - 884.32s |  these vector database systems support storing metadata along with the vectors,
+884.32s - 889.44s |  and that metadata might have some sensitive data in it too, so you might
+889.44s - 892.92s |  want to consider encrypting that, that's a whole different thing, we're just gonna
+892.92s - 897.54s |  focus on the vectors for right now. So once you've got all of these vectors
+897.54s - 902.04s |  encrypted, you've loaded them into your vector database, when it's time to do a
+902.08s - 906.84s |  query, it's also pretty simple. Again, you, you know, the normal process would be to
+906.84s - 910.56s |  take the query, run it through the embedding model, get a vector, so then you
+910.56s - 915.28s |  just encrypt that vector with the same key and the same algorithm, and then you
+915.28s - 919.12s |  do your normal search. And because the algorithm, the encryption, preserves
+919.12s - 923.76s |  distance comparison, that means that when you give that encrypted query to the
+923.76s - 928.24s |  vector database, it's gonna return the encrypted vectors that are closest to
+928.24s - 933.60s |  the encrypted query, and those are gonna correspond to the decrypted vectors, the
+933.60s - 938.08s |  original vectors, that are closest to the original query. So you get the same
+938.08s - 944.52s |  results out, pretty much, and once you get them out, you can maybe decrypt the
+944.52s - 948.36s |  vectors if you need to, or maybe you've got some metadata that lets you look up
+948.36s - 955.04s |  the associated data in a database or something else. So without the key, an
+955.04s - 960.28s |  attacker can't really understand the queries. They're, they are enough different
+960.28s - 964.32s |  that they can't look at that and kind of know what the query was. They can't
+964.32s - 968.48s |  invert the data that's in the database, even if they hacked it, exfiltrated all
+968.48s - 975.04s |  the data, they can't easily invert it. The results are still fairly accurate. Again,
+975.04s - 980.12s |  that's a trade-off between the security and the accuracy of their searches. The
+980.12s - 985.04s |  whole thing is, it introduces a negligible penalty in terms of
+985.04s - 991.16s |  performance. The encryption process is fast, so you can add this in and not add
+991.16s - 996.12s |  a lot of time to your process. So I'm gonna talk a little bit more about this
+996.12s - 1002.44s |  encryption function. So it's a function, it maps inputs to outputs, and it does it
+1002.44s - 1007.44s |  such that for any distance function, the margin of error that you get when you
+1007.44s - 1012.00s |  compare two encrypted vectors will be within some factor, we'll call that beta,
+1012.00s - 1017.16s |  the approximation factor, of the original distance. And so if you can build a
+1017.16s - 1021.24s |  function that preserves that for any pair of vectors that you give
+1021.24s - 1026.48s |  as an input, then you have a distance comparison preserving encryption
+1026.48s - 1031.84s |  function. So in real systems, we kind of talked about this, the comparison
+1031.84s - 1035.48s |  function is used for nearest neighbor and approximate nearest neighbor
+1035.56s - 1040.76s |  searches, which is what all these vector databases are doing. So, you know, if we
+1040.76s - 1044.56s |  can build, and we can, we've built this function that preserves distance
+1044.56s - 1050.08s |  comparison so we can use it to encrypt these vectors. So the paper introduced
+1050.08s - 1055.00s |  this scale and perturb algorithm, and I won't go into a lot of details about how
+1055.00s - 1061.52s |  it works, but I will give you a few key points about it. So there's a scale
+1061.60s - 1066.56s |  factor, when you, when you set up the algorithm, you randomly choose this scale
+1066.56s - 1075.94s |  factor and you choose a random key. And so there's also, when you go to encrypt
+1075.94s - 1081.94s |  an individual vector, you generate an initialization vector, an IV value, just
+1081.94s - 1085.90s |  the same as you might if you're doing symmetric encryption on data with,
+1085.90s - 1092.98s |  you know, a normal symmetric algorithm. And you perturb each element of the
+1092.98s - 1099.06s |  vector using that key in that initialization vector randomly. So every
+1099.06s - 1101.94s |  element in the vector is going to get wiggled around a little bit, and that
+1101.94s - 1106.22s |  amount that it gets wiggled around depends on that value beta, that
+1106.22s - 1111.98s |  approximation value, and that's how it limits the change in the distance that
+1111.98s - 1120.14s |  you can get. So the paper had this idea of perturbing the vectors as well, and
+1120.14s - 1123.74s |  they basically had this idea of shuffling. If you had all of the vectors
+1123.74s - 1128.82s |  you would shuffle the order of them before you encrypted them, and we wanted
+1128.82s - 1133.26s |  an online algorithm so that you could, you know, you just encrypted the vectors
+1133.26s - 1138.90s |  as you saw them. So we didn't find that shuffling to be beneficial, but we did
+1138.90s - 1143.70s |  add a shuffle where we took the elements of the vector and shuffled them up. So we
+1143.70s - 1147.74s |  randomly changed the order, and it's a deterministic shuffling based on the key.
+1147.74s - 1153.26s |  So when you get done, all of the elements in the vector have been scaled, and then
+1153.26s - 1157.38s |  they get shifted around, which makes it even harder if, even if you knew what the
+1157.38s - 1161.78s |  algorithm, what the embedding model was, all of the elements of the vector are in
+1161.78s - 1165.54s |  different places, which makes it a lot harder to look at it and try to even
+1165.54s - 1173.68s |  guess how it corresponds to the original vectors. So to give a little bit of a more
+1173.68s - 1178.88s |  intuition about this, you can think about these vectors, I mean, a vector is a line
+1178.88s - 1184.22s |  from the origin to some point, and the point is defined by the elements in the
+1184.22s - 1190.30s |  vector, right? Those are the coordinates of that point. And so the beta basically
+1190.30s - 1196.70s |  defines a sphere in n-dimensional space around that point. And so as we perturb
+1196.70s - 1202.06s |  the elements of the vector, the resulting point is somewhere within that sphere, and
+1202.06s - 1206.30s |  the size of that sphere is governed by that beta value, the approximation
+1206.30s - 1212.42s |  factor. So you can see that if you, if you bound the amount that you can move the
+1212.42s - 1216.58s |  point around, and you've bound the amount that you've moved another point around,
+1216.58s - 1221.30s |  the distance between those is bounded too. So that's how it manages to preserve the
+1221.30s - 1227.58s |  distance comparison. So in addition, we talked about, we also scaled the vectors up
+1227.58s - 1231.26s |  so that they're, you know, they get moved around a little bit, they get scaled, so
+1231.26s - 1235.18s |  when, if you just look at them, and then the elements get shuffled, so it's very
+1235.18s - 1241.18s |  difficult to correlate an encrypted vector and the original vector that was encrypted.
+1241.18s - 1247.74s |  Again, because we've preserved that distance comparison, they're still relatively
+1247.74s - 1255.38s |  close together to, with each other. Here's an example. We kind of turned off the shuffle
+1255.38s - 1259.50s |  part of it so it wouldn't be quite as difficult to see, but you can see, you know, we
+1259.50s - 1264.30s |  scaled it up, and then we perturb everything. So sometimes, depending on how much we
+1264.30s - 1268.78s |  perturb stuff, signs on elements might change, you know, they bounce around a little
+1268.78s - 1276.94s |  bit, but they're still in this vector. So we've implemented this algorithm. We've
+1276.94s - 1282.18s |  got an open source library we call IronCoreAlloy that's out there on GitHub. It's
+1282.18s - 1288.86s |  under the AGPL license, so if you can use GPL software, you can go grab it and use it.
+1288.86s - 1296.10s |  If you can't use GPL software, you can talk to us about a different arrangement. Along
+1296.10s - 1299.50s |  with the library, we've got some sample code that shows how you can use it with a
+1299.50s - 1304.74s |  number of different vector databases, and it, as I said earlier, it's easy. So the
+1304.74s - 1308.98s |  examples aren't super complicated. It's pretty easy to drop this into some code that's
+1308.98s - 1313.74s |  going to put data in one of these vector databases. The library isn't written in Rust,
+1313.74s - 1318.74s |  but we've exposed it in Java, Kotlin, and Python. We've got some more language support
+1318.74s - 1327.50s |  on the way. Along with the examples, we've got some results of using this on some
+1327.50s - 1336.74s |  output of different LLMs, open source LLMs, and you can see for an approximation factor
+1336.74s - 1343.10s |  of one and a half, which is a pretty modest one, we don't impact the search performance.
+1343.10s - 1346.70s |  We measured precision and recall loss, which are pretty common measures of search
+1346.78s - 1355.84s |  accuracy. It didn't really impact the search accuracy much at all. So, you know, it works.
+1355.84s - 1361.64s |  So now, once we've encrypted these vectors, suppose we want to run an attack on them.
+1361.64s - 1366.96s |  We're going to run on one of the inversion models that Patrick was talking about. So
+1366.96s - 1371.88s |  we know exactly, somehow we know exactly what the embedding model was that was used. It
+1371.88s - 1375.88s |  was an open source one, so we don't have to, we train this up once and it's going to work
+1375.88s - 1380.64s |  on every embedding that was generated by that embedding model. But we're going to try
+1380.64s - 1386.52s |  to run it on the encrypted vectors. Well, it turns out because we've done the perturbation
+1386.52s - 1395.00s |  and we shifted around all of the elements, okay, we, it's mostly gibberish that we get
+1395.00s - 1404.16s |  out. So, you really can't tell much about them. Even if somebody knows the plaintext
+1404.16s - 1411.00s |  and they have a black box access to the model and they're going to submit vectors, get encrypted
+1411.00s - 1415.60s |  vectors out for a particular key and they're going to train their own inversion model,
+1415.60s - 1421.04s |  the randomization makes that so that it's very difficult and you get a lot less valuable
+1421.04s - 1428.08s |  results. You might get a little bit of the meaning. You're not going to get exact words.
+1428.08s - 1436.56s |  And if you, and again, it depends on what value you use for that approximation model.
+1436.56s - 1442.68s |  If you knew the plaintext and you knew the ciphertext, can you extract the key? No. It's
+1442.68s - 1449.72s |  based on a probabilistic random function that's essentially like a 256-bit keyed hash. And
+1449.72s - 1453.24s |  I don't know about you, but I don't want to spend my next two billion weekends trying
+1453.24s - 1460.24s |  to brute force attack a 256-bit keyed hash. So, I'm going to turn it over to Patrick and
+1460.24s - 1465.37s |  he'll summarize for you.
+1465.37s - 1473.53s |  Okay. So, okay. So, the takeaways that we hope you have here as we just did a real brief
+1473.53s - 1478.65s |  fast run through on what this is and how it works is first and foremost, you should walk
+1478.65s - 1484.65s |  away realizing that RAG produces a lot of copies of data. So, if people are using AI
+1484.65s - 1491.13s |  and LLMs in their applications and somehow that they're operating over data that model
+1491.13s - 1495.81s |  wasn't trained on, probably they're doing this and probably lots of copies of that data
+1495.81s - 1501.53s |  are being made. It's sprinkled everywhere. And vector databases are like a key part of
+1501.53s - 1507.93s |  that. Second thing is that vectors and vector databases can be inverted back to their original
+1508.01s - 1515.53s |  input or something very closely approximating it, right? High fidelity and low effort attack.
+1515.53s - 1519.13s |  And oftentimes an attacker won't even need to do that. If they have access to the chat app,
+1519.13s - 1523.61s |  they can bypass that even. But never mind. If they have access to the vector database,
+1523.61s - 1528.97s |  that's as good as having access to the chat app, right? And then the third takeaway that
+1528.97s - 1534.73s |  we want you to walk away with is this. It isn't that hard in this case because there's a built
+1534.73s - 1541.77s |  open source library to implement a solution to this problem in your software. So, if you
+1541.77s - 1548.41s |  want to, feel free. Check out the results. Go try it online. The results you get in a vector
+1548.41s - 1553.69s |  search are really close to the original. Like it looks the same to me pretty much across the board.
+1553.69s - 1558.01s |  The benchmarks show a few percent differences. There's almost no performance penalty.
+1558.01s - 1563.05s |  From a latency perspective, there's almost no reason not to encrypt your vectors if they
+1563.05s - 1568.57s |  contain sensitive data in them. And that's it. Thanks for your time today. We're going to be out
+1568.57s - 1572.97s |  there probably just outside the Creator Stage area if people want to chat with us or have any
+1572.97s - 1575.13s |  questions. Thanks for your time.

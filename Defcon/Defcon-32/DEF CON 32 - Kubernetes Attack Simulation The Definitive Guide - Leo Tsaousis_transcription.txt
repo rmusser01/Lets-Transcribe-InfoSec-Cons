@@ -1,0 +1,699 @@
+{
+  "webpage_url": "https://www.youtube.com/watch?v=PFeqxSD7Gh8",
+  "title": "DEF CON 32 - Kubernetes Attack Simulation The Definitive Guide - Leo Tsaousis",
+  "description": "So your organization decided to follow the trend and switched to Kubernetes for hosting their applications. And this means that the mission for the SOC, has now changed from monitoring servers and networks, to building detective capability for a container orchestration platform. Where do you even start with for Kubernetes TTPs? What attack signatures should you alert upon, and what logs are there to look for in first place?\n\nA similar challenge arises for the offensive security practitioner: What strategies exist for performing continuous Kubernetes threat emulation? Infrastructure technologies have changed rapidly, and adversaries have adapted. Despite the novelty of attack surface, insider threats still remain relevant, and prevention alone is not enough to manage the risk posed to the modern enterprise.\n\nThis talk will explain the benefits of investing in a proactive approach to the security of your Kubernetes clusters through collaborative purple teams, and will provide a comprehensive guide for doing so \u2013 as informed by our latest research and experience in running attack simulations against large enterprises. Attendees will get up to speed with Kubernetes security monitoring concepts and will take away key advice for planning and executing successful attack detection exercises against containerized environments.",
+  "channel_url": "https://www.youtube.com/channel/UC6Om9kAkl32dWlDSNlDS9Iw",
+  "duration": 1605,
+  "channel": "DEFCONConference",
+  "uploader": "DEFCONConference",
+  "upload_date": "20241016"
+}
+
+0.00s - 2.36s | This text was transcribed using whisper model: large-v2
+
+ Hello, everyone, and thanks for joining this talk.
+2.36s - 4.28s |  Today, we're going to talk about Kubernetes
+4.28s - 7.56s |  and specifically how you can run successful attack simulation
+7.56s - 9.08s |  exercises.
+9.08s - 10.76s |  First of all, a few words about myself.
+10.76s - 11.44s |  My name is Leo.
+11.44s - 13.56s |  I'm a senior security consultant at WithSecure
+13.56s - 15.56s |  based in Manchester, UK.
+15.56s - 17.84s |  I'm focusing mostly on threat simulation
+17.84s - 20.28s |  and, generally speaking, collaborative security
+20.28s - 20.96s |  assessments.
+20.96s - 24.40s |  So one challenge that our clients at WithSecure
+24.40s - 26.68s |  typically come to us with is, how can we
+26.68s - 30.64s |  measure our capability to detect attacks in X environment?
+30.64s - 33.16s |  And the environments we typically see are of all sorts.
+33.16s - 36.72s |  Windows, Linux, mobile, macOS, on-prem cloud,
+36.72s - 39.92s |  and even container orchestration environments like Kubernetes.
+39.92s - 43.72s |  So when, a while ago, one of our more mature clients
+43.72s - 45.92s |  were looking to assess and improve
+45.92s - 48.08s |  their blue team capability against attacks
+48.08s - 50.64s |  in a Kubernetes environment, we approached this
+50.64s - 53.44s |  as we usually do, with a threefold adversary simulation
+53.44s - 53.96s |  assessment.
+54.00s - 56.36s |  So first, we did some threat modeling,
+56.36s - 59.68s |  just to better understand the risks to this novel platform.
+59.68s - 62.36s |  Then, we wrote some tooling in order
+62.36s - 64.32s |  to simulate some attacks at scale.
+64.32s - 66.52s |  And finally, we executed the test cases
+66.52s - 70.48s |  we designed side by side with the blue team,
+70.48s - 72.00s |  researching along the way for means
+72.00s - 74.60s |  to improve visibility and alerting
+74.60s - 76.96s |  within the Kubernetes ecosystem.
+76.96s - 78.96s |  But this research didn't really stop there.
+78.96s - 80.52s |  It didn't stop after that project.
+80.52s - 82.84s |  We kept working on it in the background.
+82.84s - 84.80s |  And this is what we're talking about today.
+84.80s - 87.20s |  We'll start with a very gentle introduction to Kubernetes.
+87.20s - 88.40s |  I know this is Adversary Village.
+88.40s - 89.56s |  It's not a cloud conference.
+89.56s - 92.76s |  So if you're not familiar with Kubernetes, fear not.
+92.76s - 95.52s |  We'll talk about the threats posed to a Kubernetes cluster
+95.52s - 97.64s |  and why threat modeling is essential for the success
+97.64s - 99.80s |  of any security exercise.
+99.80s - 102.04s |  And then we'll dive headfirst into Kubernetes attack
+102.04s - 103.04s |  simulation topics.
+103.04s - 106.12s |  And we're going to look at tools, operational planning,
+106.12s - 108.24s |  and eventually execution.
+108.24s - 110.20s |  And this talk isn't only for offensive security
+110.20s - 111.12s |  practitioners.
+111.12s - 113.88s |  So we'll cover some basic Kubernetes detection concepts
+113.88s - 117.56s |  as well to see things from the perspective of the SOC.
+117.56s - 120.24s |  We'll look at things like log sources, detection engineering,
+120.24s - 121.76s |  and so on.
+121.76s - 124.00s |  And finally, we'll demonstrate everything
+124.00s - 127.16s |  in an end-to-end simulation of an attack against the cluster
+127.16s - 129.08s |  using the tool we will be releasing shortly
+129.08s - 131.44s |  after this talk.
+131.44s - 132.40s |  OK.
+132.40s - 135.60s |  OK, as promised, let's start with some introductions.
+135.60s - 138.00s |  We do that in order to introduce all the things that
+138.00s - 142.08s |  will come into play later, both in the slides and in the demo.
+142.08s - 144.24s |  But the thing is, if you're even remotely familiar
+144.24s - 147.28s |  with Kubernetes, you will know that it's complicated.
+147.28s - 149.68s |  So just a word of caution, this is not
+149.68s - 151.04s |  going to be an in-depth analysis.
+151.04s - 152.84s |  It will be deliberately incomplete.
+152.84s - 155.40s |  In fact, it's probably going to be the fastest introduction
+155.40s - 156.76s |  to Kubernetes ever given.
+156.76s - 158.84s |  So please bear with me.
+158.84s - 162.28s |  So our system in question, the Kubernetes cluster,
+162.28s - 163.80s |  consists of a set of worker machines.
+163.80s - 165.84s |  We call them nodes, right?
+165.84s - 168.24s |  And these nodes run containerized applications.
+168.24s - 169.92s |  They are managed by the control plane
+169.92s - 171.72s |  over there on the left of the slide.
+171.72s - 173.48s |  And in order to run workloads, they
+173.48s - 175.72s |  need to have a container runtime installed,
+175.72s - 178.44s |  such as container D or, in older versions,
+178.44s - 180.60s |  Docker, as well as an agent called
+180.60s - 183.36s |  the kubelet, which communicates with the control plane
+183.36s - 186.56s |  and specifically the API server to receive instructions.
+186.56s - 189.04s |  Now, this component that I mentioned, the API server,
+189.04s - 190.28s |  is in the heart of the cluster.
+190.28s - 193.04s |  It's the front end that all internal and external parties
+193.04s - 194.20s |  communicate with.
+194.20s - 196.32s |  It exposes a REST API, which clients
+196.32s - 198.84s |  can talk to if they want to interact with Kubernetes.
+198.84s - 201.64s |  And I'm talking about clients like users or services,
+201.64s - 203.84s |  like CICD pipelines.
+203.84s - 206.28s |  But it's important to remember that humans most commonly
+206.28s - 210.28s |  use kubectl instead of just sending raw HTTP requests.
+210.28s - 212.24s |  Now, when it comes to running applications,
+212.24s - 215.32s |  the basic building block in Kubernetes is a pod.
+215.32s - 218.00s |  A pod can consist of one or more containers
+218.00s - 221.12s |  whose images are pulled from registries, as well as volumes,
+221.12s - 222.92s |  storage resources.
+222.92s - 224.80s |  What usually happens in the real world
+224.80s - 226.88s |  is that workloads aren't actually
+226.88s - 230.36s |  deployed as individual pods, but as managed collections
+230.36s - 233.68s |  of pods, like daemon certs or deployments.
+233.68s - 235.44s |  But beyond pods and deployments, there's
+235.44s - 238.64s |  a few more types of objects that Kubernetes understands,
+238.64s - 241.76s |  or resources, such as secrets or services.
+241.76s - 244.72s |  And all these resources can then be logically grouped
+244.72s - 247.44s |  into different namespaces for each different project, which
+247.44s - 250.64s |  you can think of like tenants in the cloud world.
+250.64s - 252.06s |  And finally, there's a third layer,
+252.06s - 255.58s |  besides the physical and the logical, that of authorization,
+255.58s - 257.94s |  with the most common authorization model being RBAC,
+257.94s - 259.90s |  role-based access control.
+259.90s - 261.86s |  RBAC defines the potential entities
+261.86s - 264.42s |  and allows you to write policies for the permissions
+264.42s - 267.10s |  that these entities will have against resources.
+267.10s - 269.98s |  So in the context of RBAC, humans
+269.98s - 272.26s |  are represented as user objects that
+272.26s - 274.30s |  can authenticate using various mechanisms,
+274.30s - 278.18s |  like MTLS client certificates, Active Directory, IAM roles,
+278.18s - 279.30s |  and so on.
+279.30s - 281.34s |  And you also get pods or external services
+281.34s - 283.42s |  that are associated with service accounts.
+283.42s - 285.50s |  And service accounts authenticate using tokens,
+285.50s - 288.70s |  JSON Web Tokens, JWTs.
+288.70s - 292.54s |  OK, that was easy, right?
+292.54s - 294.78s |  One thing to remember, though, is that in Kubernetes,
+294.78s - 296.10s |  everything can be replaced.
+296.10s - 297.42s |  It's built to be extensible.
+297.42s - 301.06s |  So it is 100% certain that your mileage will vary.
+301.06s - 303.18s |  And you will have numerous third-party technologies
+303.18s - 305.30s |  running in your cluster, technologies
+305.30s - 307.98s |  like the ones tracked in the CNCF landscape, which
+307.98s - 309.70s |  introduce their own set of risks when
+309.70s - 310.98s |  deployed inside your cluster.
+311.74s - 315.26s |  In order to tailor any security exercise to your environment
+315.26s - 317.74s |  with its own intricacies, it's essential you perform
+317.74s - 319.06s |  some threat modeling first.
+319.06s - 320.74s |  And that means answering a few questions
+320.74s - 323.02s |  like, what are the assets I must protect?
+323.02s - 325.02s |  And where would attacks come from?
+325.02s - 328.26s |  And why would attackers target Kubernetes in first place?
+328.26s - 330.54s |  Let's start with an enumeration of the attack surfaces.
+330.54s - 331.98s |  This will also help us understand
+331.98s - 334.86s |  which levels we must execute in if we're looking
+334.86s - 336.94s |  to simulate these attacks.
+336.94s - 339.54s |  In the most typical scenario, attacks
+339.54s - 341.70s |  will originate from the container level, the code
+341.70s - 342.66s |  running within the pod.
+342.66s - 345.78s |  For example, think of a compromised web service
+345.78s - 348.50s |  or a backdoored image that found its way into your cluster
+348.50s - 349.54s |  somehow.
+349.54s - 351.82s |  And if that pod is assigned a service account,
+351.82s - 353.74s |  the attacker can talk to the control plane
+353.74s - 356.42s |  in a limited security context, hopefully,
+356.42s - 359.10s |  unless they manage to break out of the container.
+359.10s - 361.50s |  That way, they're on the node, the underlying host,
+361.50s - 363.90s |  with potential access to other Kubernetes resources
+363.90s - 366.66s |  from other namespaces and with even higher security
+366.66s - 368.90s |  privileges, as they will most likely impersonate
+368.90s - 370.54s |  the kubelet.
+370.54s - 372.58s |  And of course, there's always a threat of attacks
+372.58s - 374.22s |  from the outside world.
+374.22s - 376.98s |  Think of scenarios like leaked or stolen credentials,
+376.98s - 379.78s |  a compromised service, a malicious user, a coerced user,
+379.78s - 381.90s |  and so on and so on.
+381.90s - 383.34s |  So once they're inside your cluster,
+383.34s - 384.50s |  what will they move towards?
+384.50s - 386.90s |  What's the final objective there?
+386.90s - 389.82s |  An obvious answer to this one is, of course, the workloads.
+389.82s - 392.30s |  If Kubernetes is the underlying platform
+392.30s - 394.46s |  that your critical workloads are running in,
+394.46s - 396.58s |  then it's a way into them.
+396.58s - 398.42s |  It's a way into the workload.
+398.46s - 401.38s |  So compromising Kubernetes could result
+401.38s - 403.50s |  in unauthorized access to the data.
+403.50s - 405.62s |  And we're talking about potentially sensitive data
+405.62s - 408.26s |  that the apps may be handling, like proprietary software,
+408.26s - 410.30s |  as you can see on this slide, that can be stolen
+410.30s - 413.30s |  or even backdoored to achieve a supply chain compromise.
+414.62s - 417.30s |  But actually, that's not the most common incentive.
+417.30s - 420.18s |  In the age of cryptocurrency, every compute resource
+420.18s - 423.46s |  makes for an attractive target for its immediate potential
+423.46s - 424.90s |  for financial returns.
+424.90s - 428.70s |  Compute, in and of itself, is therefore worth protecting.
+428.70s - 430.78s |  And you'll see that various instances have been recorded
+430.78s - 432.34s |  with this particular objective.
+433.46s - 435.54s |  Kubernetes clusters are usually also deployed
+435.54s - 437.14s |  as managed cloud services,
+437.14s - 439.98s |  or broadly speaking, in cloud infrastructure.
+439.98s - 442.22s |  So instead of going for the applications,
+442.22s - 444.22s |  a Kubernetes attacker might actually be looking
+444.22s - 445.78s |  for a way into the cloud infrastructure,
+445.78s - 448.90s |  into the underlying infrastructure.
+448.90s - 451.22s |  But we've also seen Kubernetes attack techniques
+451.22s - 453.38s |  across all phases of the intrusion lifecycle,
+453.38s - 454.90s |  including persistence methods
+454.90s - 457.18s |  that could enable APT-like surveillance
+457.18s - 458.70s |  through a long-term infection,
+459.62s - 461.30s |  and even for defense evasion purposes,
+461.30s - 464.54s |  as, after all, Kubernetes is yet another platform
+464.54s - 466.54s |  where an intruder can dwell in,
+466.54s - 469.02s |  and usually it's a less monitored platform,
+469.02s - 470.46s |  which makes it a great place to hide
+470.46s - 473.34s |  if you want to evade containment measures.
+473.34s - 476.74s |  All right, so we know what adversaries are looking for.
+476.74s - 478.34s |  We know where they'll come from.
+478.34s - 479.94s |  Let's go ahead and simulate them.
+479.94s - 482.90s |  Now, there's a few different approaches to go about this.
+482.90s - 485.90s |  And instead of a stealthy, objective-based exercise,
+485.90s - 488.66s |  we chose to adopt more of a Purple Team methodology.
+488.66s - 490.62s |  And I know different people define Purple Teams differently,
+490.62s - 492.10s |  so let me use the definition given
+492.10s - 493.90s |  by the guys over at SpectreOps.
+493.90s - 496.38s |  It talks about collaboration between offense and defense
+496.38s - 499.54s |  with the aim to increase familiarity with TDPs.
+499.54s - 501.70s |  And for a novel environment like Kubernetes,
+501.70s - 503.74s |  we similarly decided it's more valuable
+503.74s - 505.94s |  to opt for a collaborative engagement
+505.94s - 508.66s |  and try to help the blue team understand attacker behaviors
+508.66s - 510.42s |  instead of vulnerabilities.
+510.42s - 512.46s |  And at WithSecure, we focus a bit more on detection,
+512.46s - 514.66s |  so when we're planning a Purple Team exercise,
+514.66s - 516.02s |  we do it in one of two ways,
+516.02s - 517.42s |  depending on what we want to achieve.
+517.42s - 520.74s |  So we could either aim to cover as many TDPs as possible,
+520.74s - 523.26s |  executing them one after the other in isolation,
+523.26s - 525.42s |  or we could chain a few attacks,
+525.42s - 527.54s |  similar to how a threat actor would move,
+527.54s - 529.78s |  to make it as realistic as possible.
+529.78s - 531.06s |  And even mimic a specific campaign
+531.06s - 533.34s |  from the ones we saw before.
+533.34s - 535.06s |  Okay, let's look at these two options
+535.06s - 536.82s |  in a little bit more detail
+536.82s - 538.82s |  in the context of a Kubernetes exercise.
+540.06s - 541.42s |  So for Kubernetes specifically,
+541.42s - 544.26s |  we found that there aren't as many campaigns documented
+544.26s - 546.46s |  as there are for on-prem infrastructure.
+546.46s - 547.30s |  And as a result,
+547.30s - 549.38s |  there's not a lot of threat intelligence available.
+549.38s - 552.86s |  So when incidents do happen in other organizations,
+552.86s - 555.74s |  they make for a good opportunity for your organization
+555.74s - 558.70s |  to perform an emulation cycle, to perform a campaign.
+558.70s - 560.62s |  In that case, you probably know already
+560.62s - 562.90s |  which threat actor you want to emulate.
+562.90s - 565.22s |  But if not, the security researchers over at Wiz
+565.22s - 567.70s |  maintain this great matrix of cloud threats.
+567.70s - 569.86s |  And that also covers Kubernetes incidents.
+569.86s - 572.06s |  So it aggregates threat intelligence
+572.06s - 573.26s |  from various blog posts,
+573.26s - 575.90s |  like unit 42, Aqua, Sysdig, CrowdStrike,
+575.90s - 577.66s |  all the ones we saw before.
+577.66s - 580.90s |  And you can collect all this threat intelligence,
+580.90s - 583.94s |  analyze it, and finally recreate an attack chain
+583.94s - 586.22s |  and execute this inside your cluster.
+586.22s - 587.74s |  Now, a nice way of documenting
+587.74s - 591.18s |  these different emulation plans is Jupyter Notebooks.
+591.18s - 592.94s |  And we've seen a bit in the demo
+592.94s - 595.58s |  how Jupyter Notebooks can also streamline execution
+595.58s - 597.42s |  of the attack simulation.
+597.42s - 599.62s |  But for more of a one-off assessment,
+600.38s - 601.46s |  or if you're looking to build a baseline
+601.46s - 602.86s |  of your detection capability
+602.86s - 605.14s |  against all the possible TDPs,
+605.14s - 607.46s |  then you first need a list of all the different TDPs
+607.46s - 609.18s |  for the platform in question.
+609.18s - 612.86s |  In 2020, Microsoft released the Threat Matrix for Kubernetes
+612.86s - 615.18s |  which was the first systematic categorization
+615.18s - 617.82s |  of Kubernetes techniques observed until then.
+617.82s - 619.86s |  And it seems to be actively maintained.
+619.86s - 622.70s |  There's also a Mitre Attack Matrix for containers,
+622.70s - 625.66s |  but it doesn't really care about the orchestration platform.
+625.66s - 627.82s |  And I actually got some very good ideas for attacks
+627.82s - 629.98s |  by looking at KubeHunter.
+629.98s - 631.38s |  Although it's a vulnerability scanner,
+631.38s - 633.14s |  it just had a long list of checks supported,
+633.14s - 635.58s |  so it gave me some very good ideas.
+635.58s - 637.22s |  But for more technical instructions
+637.22s - 639.38s |  on how to execute each TDP,
+639.38s - 641.14s |  I found the KubeNomicon to be a good source.
+641.14s - 644.06s |  So shout out to Graham Helton from Google for his project.
+645.02s - 646.86s |  And once you've designed these test cases,
+646.86s - 650.46s |  one good way of describing them is via a code format,
+650.46s - 651.62s |  allowing them to be maintained
+651.62s - 653.90s |  in a version control system like Git.
+653.90s - 655.98s |  And this is a well-known practice in DevSecOps.
+656.26s - 658.74s |  Attack definitions as code, detections as code,
+658.74s - 660.74s |  we can apply it here as well.
+660.74s - 663.54s |  This way, as your Kubernetes environment evolves,
+663.54s - 666.38s |  so does your repository of attacker test cases.
+667.54s - 668.38s |  Fantastic.
+668.38s - 670.18s |  So we have planned everything.
+670.18s - 671.66s |  We are ready to get our hands dirty.
+671.66s - 673.58s |  Let's start bashing kubectl commands.
+674.78s - 676.22s |  No, that wouldn't scale very easily,
+676.22s - 678.30s |  but thankfully there are a few simulation frameworks
+678.30s - 681.14s |  out there to make our lives a bit easier.
+681.14s - 682.38s |  Starting with the familiar ART,
+682.38s - 684.58s |  Atomic Red Team by Red Canary.
+684.58s - 685.42s |  This is Adversary Village.
+685.42s - 686.86s |  I'm sure you're all aware of it.
+686.86s - 689.42s |  Although it does support a few test cases
+689.42s - 690.54s |  on the container level,
+690.54s - 692.86s |  it's not really built for cloud environments.
+692.86s - 694.58s |  So it doesn't really support attacks
+694.58s - 696.54s |  against the Kubernetes control plane.
+696.54s - 698.78s |  On the other hand, Stratus Red Team
+698.78s - 700.54s |  was specifically made for the cloud
+700.54s - 702.06s |  and for attack simulations.
+702.06s - 705.50s |  So it even supports eight pure Kubernetes test cases.
+705.50s - 709.34s |  So it's actually a good choice for this particular purpose.
+709.34s - 711.30s |  However, you will find it's not very easy
+711.30s - 712.50s |  to write new test cases.
+712.50s - 714.54s |  And the fact that it runs outside of your cluster
+715.50s - 716.34s |  kind of restricts the number of different levels
+716.34s - 717.70s |  that it can execute in.
+718.74s - 721.46s |  One tool that can in fact run from within the cluster
+721.46s - 723.78s |  is Pirates by InGuardians.
+723.78s - 726.58s |  It's also widely known, various talks, blog posts,
+726.58s - 727.98s |  webinars out there talking about it.
+727.98s - 728.90s |  It's so well known
+728.90s - 731.62s |  that it's actually been used by threat actors.
+731.62s - 735.02s |  But once again, the attacks it supports are hard-coded
+735.02s - 738.46s |  and the tool itself doesn't really allow for customization.
+738.46s - 741.74s |  So overall, when we were doing this research,
+741.74s - 743.34s |  we realized that none of these tools
+743.34s - 745.06s |  performed exactly what we wanted.
+745.06s - 747.66s |  These options all had some limitations.
+747.66s - 750.70s |  So we decided to extend our own existing tool, Leonidas,
+750.70s - 752.38s |  to add Kubernetes support.
+752.38s - 753.58s |  And if you're not familiar with it,
+753.58s - 755.62s |  no, I did not write the original version.
+755.62s - 758.90s |  It's not named after me, that would be a little bit lame.
+758.90s - 760.42s |  I don't want to talk too much about Leonidas.
+760.42s - 762.30s |  It's an open source tool.
+762.30s - 765.74s |  My colleague Nick Jones originally wrote the AWS version.
+765.74s - 768.78s |  And again, various presentations out there talking about it.
+768.78s - 770.42s |  What made Leonidas attractive
+770.42s - 772.78s |  for the challenge of Kubernetes attack simulations
+772.78s - 774.82s |  was some of its core principles,
+774.82s - 777.26s |  like the fact that it was built with extensibility in mind
+777.26s - 780.10s |  and how friendly it was to write new test cases
+780.10s - 781.98s |  without having to be a developer,
+781.98s - 784.22s |  as well as the ability to run within your environment
+784.22s - 785.86s |  and manage its own resources.
+786.74s - 788.46s |  And these were the concepts that we applied
+788.46s - 790.58s |  when building Kubernetes support for it.
+790.58s - 792.86s |  We wanted something running within the cluster,
+792.86s - 796.10s |  distributed as a disposable image, as an ephemeral image.
+796.10s - 798.30s |  We wanted something that analysts or threat hunters
+798.30s - 800.58s |  could trivially write new TTPs for.
+801.58s - 803.62s |  But we also wanted purple teams
+803.62s - 805.98s |  to have an easy way to execute them
+805.98s - 808.26s |  by just interacting with an API,
+808.26s - 810.70s |  as well as a way for operators and defenders
+810.70s - 813.62s |  to track execution of each action.
+813.62s - 815.06s |  And we can do that through the logs
+815.06s - 817.46s |  that are stored and shipped to the scene,
+817.46s - 821.10s |  along with all the other telemetry that the class generates.
+821.10s - 822.94s |  Now, alongside this new version of Leonidas,
+822.94s - 825.38s |  we are also releasing a set of Kubernetes test cases,
+825.38s - 828.34s |  17 in total, not only to help you get started
+828.34s - 829.78s |  writing attack definitions,
+829.90s - 831.86s |  but also to showcase the tool's capabilities,
+831.86s - 833.34s |  like running kubectl commands,
+833.34s - 834.50s |  running always-level commands,
+834.50s - 836.82s |  and even applying custom YAML manifests,
+836.82s - 838.54s |  a lot of different options.
+838.54s - 841.46s |  Okay, lastly, I want to talk about operations teams
+841.46s - 844.74s |  and how they can apply the security monitoring concepts
+844.74s - 845.82s |  of the traditional SOC
+845.82s - 848.26s |  into container orchestration environment.
+848.26s - 849.62s |  After all, the goal of any exercise
+849.62s - 852.02s |  is to upskill defenders and build the capability.
+853.34s - 855.98s |  The most important building block of security monitoring
+855.98s - 858.10s |  is arguably logs, all right?
+858.10s - 860.26s |  If you look at the official Kubernetes documentation,
+860.26s - 863.74s |  however, you'll find there are plenty of logs available,
+863.74s - 865.26s |  but no standard architecture
+865.26s - 867.30s |  for what we call cluster-level logging.
+867.30s - 869.90s |  This is left to the users to implement.
+869.90s - 872.30s |  Roughly speaking, from all the different types,
+872.30s - 874.46s |  there are, let's say we can categorize all of them
+874.46s - 876.18s |  into three different types of log sources.
+876.18s - 878.82s |  So first, we have logs from your application,
+878.82s - 880.22s |  logs from the code,
+880.22s - 882.98s |  which are exposed to container logs and pod logs.
+882.98s - 885.78s |  You can collect them with the kubectl logs commands,
+885.78s - 886.82s |  but they are ephemeral,
+886.82s - 889.90s |  which means that if the pod terminates, the logs are gone.
+890.90s - 893.10s |  We also have logs from Kubernetes components,
+893.10s - 896.06s |  like the API server, the kubelet, the container runtime.
+896.06s - 897.62s |  Just like container logs,
+897.62s - 900.18s |  these ones are also stored on the nodes,
+900.18s - 903.78s |  which means that actually in a production cluster,
+903.78s - 906.46s |  nodes will be disposable.
+906.46s - 909.18s |  If the VM is replaced, these logs are also gone.
+909.18s - 911.42s |  So you need to take them out of the host while you can.
+911.42s - 913.46s |  And thankfully, there's lots of solutions out there,
+913.46s - 916.70s |  agent-based solutions like Fluentd that can do that.
+916.70s - 917.78s |  And finally, we have logs
+917.78s - 920.46s |  that aren't particularly native to Kubernetes,
+920.46s - 921.46s |  but are still of interest
+921.46s - 924.22s |  for the security of the overall ecosystem.
+924.22s - 925.86s |  If your cluster is a managed service
+925.86s - 927.42s |  from a public cloud provider,
+927.42s - 931.18s |  then that cloud provider's logging and monitoring solutions
+931.18s - 932.34s |  are also crucial to monitor,
+932.34s - 934.86s |  like IAM logs or guard duty and stuff like that.
+934.86s - 935.70s |  And similarly,
+935.70s - 938.18s |  if you host your own internal image repositories,
+938.18s - 941.38s |  we found that logs from these image repositories
+941.38s - 944.86s |  could allow the correlation of certain attacker actions.
+944.86s - 946.54s |  And that's not even the half of it.
+947.38s - 948.90s |  There's just a ridiculous amount of logs
+948.90s - 950.62s |  flowing throughout your cluster,
+950.62s - 953.58s |  but not all of them are useful for detecting attacks.
+953.58s - 956.18s |  The ones that are, are those selected here.
+956.18s - 959.10s |  It's those that answer not so much why something happened,
+959.10s - 962.18s |  but rather who did what, when, and where from.
+963.06s - 965.54s |  And these security-relevant log sources
+965.54s - 967.22s |  map to the execution levels,
+967.22s - 968.98s |  if you remember from the previous slide,
+968.98s - 971.34s |  which provides us visibility on the container level,
+971.34s - 974.30s |  on the node level, and the control plane level.
+974.30s - 975.14s |  And alongside those,
+975.14s - 977.34s |  I also highlighted the cloud IAM logs,
+977.34s - 978.58s |  because if you're running a managed cluster,
+978.58s - 981.06s |  identity is always of security interest.
+982.02s - 982.94s |  I want to take a couple of slides
+982.94s - 984.82s |  to zoom in on the most important log source,
+984.82s - 988.90s |  the true MVP of Kubernetes attack detection, the audit log.
+988.90s - 989.98s |  You can consider the audit log
+989.98s - 992.50s |  as the access logs of the API server,
+992.50s - 993.58s |  which simply means that
+993.58s - 995.18s |  if you're interacting with a control plane,
+995.18s - 998.26s |  you're getting recorded, with some exceptions.
+998.26s - 1000.78s |  The resulting events can be formatted in JSON,
+1000.78s - 1002.78s |  and they answer the security investigation questions
+1002.78s - 1004.30s |  that we raised before.
+1004.30s - 1005.82s |  Important to mention, though,
+1005.82s - 1007.82s |  these are not enabled by default.
+1007.82s - 1010.34s |  To enable them, you need to define a node policy
+1010.34s - 1012.18s |  and reconfigure the API server,
+1012.18s - 1013.34s |  but you can't always do that,
+1013.34s - 1014.94s |  for example, in managed clusters.
+1014.94s - 1016.54s |  Some events will be very noisy,
+1016.54s - 1017.78s |  others will be more important,
+1017.78s - 1019.70s |  so you want to have more detail,
+1019.70s - 1021.94s |  and that's why there's a few different verbosity levels
+1021.94s - 1024.42s |  that you can set for each different type,
+1024.42s - 1026.54s |  each different event type.
+1026.54s - 1029.30s |  You can easily find a sample policy to get started with,
+1029.30s - 1031.90s |  like the one I'm linking in the bottom of the slide,
+1031.90s - 1033.54s |  but it's going to take some tuning
+1033.54s - 1035.26s |  to find the perfect mix.
+1036.30s - 1038.38s |  The API server can also be configured
+1038.38s - 1039.86s |  to store audit logs locally,
+1039.86s - 1041.06s |  or send them to a hook,
+1041.06s - 1044.66s |  and both of these ways allow for wording to a scene.
+1044.66s - 1045.50s |  Once you do that,
+1045.50s - 1047.86s |  you now have the ability to write alert queries
+1047.86s - 1049.10s |  upon these logs,
+1049.10s - 1052.06s |  which brings us to the topic of detection engineering.
+1052.06s - 1053.38s |  In its simplest form,
+1053.38s - 1055.58s |  an alert for suspicious control plane activity
+1055.58s - 1058.14s |  could be captured by the verb and the resource,
+1058.14s - 1060.42s |  such as list secrets,
+1060.42s - 1062.98s |  and this behavior can then be defined in a Sigma rule
+1062.98s - 1065.58s |  for easier management and distribution.
+1065.58s - 1067.46s |  We found that there weren't many Sigma rules
+1067.46s - 1068.30s |  out there available,
+1068.30s - 1071.26s |  in fact, there weren't any Sigma rules out there available
+1071.26s - 1073.50s |  that operated on Kubernetes audit logs,
+1073.50s - 1075.54s |  so we published a few,
+1075.54s - 1077.58s |  and since this log source didn't really exist,
+1077.58s - 1081.38s |  we also introduced it by contributing a backend pipeline
+1081.38s - 1082.50s |  to the Sigma ecosystem
+1082.50s - 1084.22s |  in order to convert rules to actual alerts
+1084.22s - 1086.14s |  that a scene can understand.
+1086.14s - 1088.98s |  But attacks could not only target the control plane,
+1088.98s - 1090.10s |  if you remember from a previous slide,
+1090.10s - 1092.54s |  they could originate from within the container,
+1092.54s - 1094.98s |  but luckily, there's a lot of research in this area,
+1094.98s - 1097.86s |  many solutions available like Falco or Tetragon,
+1097.86s - 1100.06s |  that monitor containers by tapping into the kernel
+1100.06s - 1103.10s |  of the underlying node using eBPF,
+1103.10s - 1106.22s |  and this enables EDR style analysis of the syscalls,
+1106.22s - 1109.34s |  which then allows the authoring of rules in an easy format
+1109.34s - 1111.22s |  for suspicious control plane activity,
+1111.22s - 1113.06s |  sorry, for suspicious process command lines,
+1113.06s - 1114.78s |  for suspicious network activity,
+1114.78s - 1116.62s |  and other system level events.
+1117.94s - 1119.94s |  All right, now it is time for the demo,
+1119.94s - 1121.14s |  so in the upcoming video,
+1121.14s - 1123.78s |  we'll see how we can simulate a fictitious threat actor
+1123.78s - 1125.98s |  who gets access to a cluster and performs some attacks,
+1125.98s - 1128.38s |  we'll do that using Leonidas for Kubernetes,
+1128.38s - 1129.90s |  and after we're on the attack chain,
+1129.90s - 1130.82s |  we'll put our blue hats on,
+1130.82s - 1133.90s |  we'll put our defender hats on, the Viking hat,
+1133.90s - 1138.18s |  and look at Elastic and Falco, which we have set up,
+1138.18s - 1140.14s |  just to see what alerts have been raised.
+1140.14s - 1147.60s |  All right, let me switch to the demo video,
+1147.60s - 1149.12s |  can you all see the video?
+1149.12s - 1150.28s |  Okay, no?
+1152.16s - 1156.50s |  Good thing I asked,
+1156.50s - 1157.82s |  is it this way?
+1160.46s - 1162.14s |  Now, I can't see how to maximize it though,
+1162.14s - 1169.90s |  can I have some tech support here?
+1169.90s - 1173.22s |  Yeah, but I can't see the pointer, so I can maximize it.
+1173.22s - 1174.06s |  You reckon?
+1175.94s - 1177.34s |  Nice.
+1177.34s - 1179.46s |  The problem is that I can't see it.
+1179.46s - 1181.46s |  All right, let's do it.
+1181.46s - 1182.30s |  I won't.
+1183.98s - 1185.54s |  Yeah, but I wanna talk over it.
+1198.39s - 1200.07s |  You can switch your display settings,
+1200.07s - 1204.20s |  so it's, yep, duplicated.
+1204.20s - 1205.92s |  Yep, see it now?
+1205.92s - 1207.60s |  Awesome, fixed.
+1207.60s - 1208.44s |  All right, so,
+1210.60s - 1212.32s |  so first thing we're gonna do is confirm connectivity
+1212.32s - 1213.28s |  to the Kubernetes cluster,
+1213.28s - 1215.44s |  we'll do that using a cluster info command,
+1215.44s - 1216.64s |  and we see that indeed,
+1216.64s - 1218.24s |  the Kubernetes cluster is up and running,
+1218.24s - 1219.96s |  we also have the dashboard up and running,
+1219.96s - 1223.20s |  and you can see we have a couple of namespaces
+1223.20s - 1226.52s |  already there, including one called DharmaProds,
+1226.52s - 1228.52s |  which has just one deployment in there,
+1228.52s - 1229.52s |  it's called HVAC controller,
+1229.52s - 1230.64s |  and once we click it,
+1230.64s - 1232.60s |  we'll see that it includes a couple of pods,
+1232.60s - 1233.80s |  one looking like a database,
+1233.80s - 1235.84s |  and the other one potentially doing something sensitive,
+1235.84s - 1236.76s |  HVAC controller.
+1237.76s - 1238.64s |  And now we're gonna go ahead
+1238.64s - 1240.88s |  and deploy Leonidas into that cluster.
+1240.88s - 1243.12s |  To do that, we'll run a couple of generator commands,
+1243.12s - 1246.08s |  generator is an accompanying tool
+1246.08s - 1248.76s |  that allows deployment of Leonidas.
+1248.76s - 1250.96s |  First, we're gonna generate the Python code
+1250.96s - 1252.20s |  from the attack definitions
+1252.20s - 1253.60s |  that we have previously defined,
+1253.60s - 1256.36s |  and then we're gonna generate the Kubernetes resources
+1256.36s - 1259.24s |  in the standard YAML manifest.
+1259.24s - 1260.96s |  These resources will then go ahead
+1260.96s - 1264.68s |  and kubectl apply into our cluster,
+1264.68s - 1266.96s |  so that we can create the Leonidas deployment
+1266.96s - 1269.08s |  into our namespace, into DharmaProds,
+1269.08s - 1270.60s |  and you see that it started running.
+1270.60s - 1274.20s |  Once it's completed, once deployment is completed,
+1274.20s - 1276.72s |  we'll then expose the port,
+1276.72s - 1279.04s |  we're using a kubectl port forward command,
+1279.04s - 1281.44s |  KL, by the way, is an alias for kubectl,
+1281.44s - 1283.48s |  and we bring it locally to port 5000
+1283.48s - 1285.44s |  so we can interact with it.
+1285.44s - 1287.40s |  And once this is done,
+1287.40s - 1289.40s |  indeed, we can access the API,
+1289.40s - 1292.76s |  it's the familiar API if you looked at Leonidas before.
+1292.76s - 1294.84s |  There are two ways to interact with Leonidas,
+1294.84s - 1297.80s |  one of them is via this very simple client,
+1297.80s - 1300.00s |  you know, providing the values in all these fields
+1300.00s - 1301.36s |  and then hitting execute.
+1302.36s - 1305.32s |  But instead, we're gonna do it through a Jupyter notebook.
+1306.64s - 1308.40s |  And in order to do that,
+1308.40s - 1310.92s |  we first need to start the Jupyter service.
+1310.92s - 1314.20s |  This is gonna open the port 8888.
+1314.20s - 1317.80s |  Once we click it, we'll see the web UI of Jupyter,
+1317.80s - 1319.12s |  navigate to the right directory
+1319.12s - 1320.92s |  of the threat actors notebooks,
+1320.92s - 1323.16s |  and open our own notebook for OF815.
+1323.16s - 1325.88s |  Now, OF815 is our fictitious threat actor.
+1327.68s - 1329.32s |  Like we said before, execute some attacks
+1329.32s - 1330.40s |  against the Kubernetes cluster
+1330.40s - 1331.88s |  and first get some access to it.
+1331.88s - 1334.88s |  We've got a nice little visualization of it right here.
+1334.88s - 1337.16s |  First step for it is to simulate the initial access.
+1337.16s - 1338.16s |  Now, the typical scenario
+1338.16s - 1340.52s |  would be a leaked kubeconfig file.
+1340.52s - 1342.08s |  Actually, before we get to these attacks,
+1342.08s - 1343.40s |  let's look at the Defender tech,
+1343.40s - 1345.60s |  the Defender solutions we have up there, up and running.
+1345.60s - 1347.04s |  We do have Elastic,
+1347.04s - 1351.16s |  where we're forwarding audit logs from our cluster.
+1352.16s - 1354.20s |  Nicely visualized with the verb resource,
+1354.20s - 1355.32s |  like we said before.
+1355.32s - 1358.84s |  And we also have some alert rules configured.
+1358.84s - 1360.08s |  You can see on the right-hand side
+1360.08s - 1361.44s |  that these are all enabled.
+1362.32s - 1364.40s |  And just to make sure that nothing has fired just yet,
+1364.40s - 1365.52s |  we're gonna refresh that page,
+1365.52s - 1367.48s |  see no hits, and we're ready to go.
+1367.48s - 1368.72s |  But before we start executing,
+1368.72s - 1370.16s |  let's also look at Falco.
+1370.16s - 1372.68s |  We've configured this on the nodes of the cluster
+1372.68s - 1375.72s |  to monitor the containers, like we said before.
+1375.72s - 1377.40s |  Cool, all right, let's start running the attack
+1377.40s - 1378.24s |  step-by-step then.
+1378.48s - 1381.88s |  So if we navigate back to the Jupyter Notebook,
+1381.88s - 1384.44s |  we start hitting run through every different cell.
+1384.44s - 1386.40s |  And the first step is to simulate the initial access.
+1386.40s - 1388.92s |  So the typical scenario is a leaked kubeconfig file.
+1388.92s - 1390.00s |  In that kubeconfig file,
+1390.00s - 1392.72s |  there might be a service account token, a JWT.
+1392.72s - 1396.44s |  And this token is what we're gonna instantiate a client with,
+1396.44s - 1397.92s |  a client to Leonidas.
+1397.92s - 1399.16s |  So behind the scenes,
+1399.16s - 1401.48s |  this Jupyter Notebook is running some Python,
+1401.48s - 1402.60s |  bare-bones Python.
+1402.60s - 1404.40s |  We'll publish all of that, by the way, very soon.
+1404.40s - 1406.12s |  And this interacts with the Leonidas service
+1406.12s - 1407.68s |  running within the cluster.
+1407.72s - 1410.60s |  So the first thing, once the attacker has obtained access,
+1410.60s - 1412.04s |  would be to list their own permissions,
+1412.04s - 1414.12s |  just to see what they can do.
+1414.12s - 1416.84s |  You can do that using the self-subject review API.
+1416.84s - 1420.92s |  So we just run that cell then and look at the results.
+1420.92s - 1421.76s |  We observe in the results
+1421.76s - 1424.84s |  that we have some permissions on the pods.
+1424.84s - 1426.60s |  Crew permissions, create, read, update, delete
+1426.60s - 1428.36s |  on the right-hand side of the slide.
+1428.36s - 1430.96s |  And we also have some permissions on the secrets,
+1430.96s - 1432.68s |  which is already a problem.
+1432.68s - 1433.92s |  So using these permissions,
+1433.92s - 1436.36s |  we're gonna go ahead and enumerate the pods.
+1436.36s - 1437.60s |  You'll see, like we saw before,
+1437.60s - 1441.36s |  patient DB, Leonidas deployment, and the HVAC controller.
+1441.36s - 1443.44s |  And using the permissions we have over the secrets,
+1443.44s - 1445.84s |  obviously, we're gonna list the secrets.
+1445.84s - 1448.84s |  With some processing, with some post-processing,
+1448.84s - 1451.56s |  we'll see that one of them looks like a password,
+1451.56s - 1452.64s |  but we don't know yet.
+1452.64s - 1455.40s |  But putting the pieces together, we have the database pod.
+1455.40s - 1457.44s |  We have something that looks like a password.
+1457.44s - 1459.48s |  So why not run a MySQL dump command
+1459.48s - 1461.64s |  to get a dump and prepare it for exfiltration?
+1461.64s - 1464.92s |  Sure enough, we provide the password on the command line.
+1464.92s - 1466.44s |  The dump is being generated,
+1466.44s - 1468.00s |  and we're ready to send that back.
+1468.00s - 1471.48s |  Now, before we finish up with this attack,
+1471.48s - 1474.80s |  the attacker also tries to perform some destructive activity
+1474.80s - 1475.96s |  just to delete a deployment.
+1475.96s - 1478.32s |  But this activity will fail because, as we saw before,
+1478.32s - 1480.56s |  they do not have the permission to do so.
+1480.56s - 1482.32s |  And finally, just to wrap it up,
+1482.32s - 1483.60s |  just to wrap up the threat,
+1483.60s - 1485.80s |  the Jupyter Notebook will print the table
+1485.80s - 1487.44s |  of all the test cases that we executed
+1487.44s - 1490.56s |  for good bookkeeping, timestamps, success status,
+1490.56s - 1492.80s |  and the name of the test case.
+1492.84s - 1497.37s |  Cool, so we'll now, as promised,
+1497.37s - 1501.09s |  turn back to the detection capabilities,
+1501.09s - 1502.09s |  blue team solutions,
+1502.09s - 1504.13s |  and we'll see that two alerts have actually fired,
+1504.13s - 1504.97s |  as promised.
+1507.21s - 1509.61s |  And the same thing stands for Falco,
+1509.61s - 1511.97s |  since it detected the MySQL dump command.
+1513.05s - 1515.53s |  Don't worry about the too many lines.
+1515.53s - 1517.05s |  It's just a misconfigured rule.
+1517.05s - 1518.81s |  Important thing to notice is that it did capture
+1518.81s - 1521.37s |  the MySQL dump command executing within the cluster,
+1521.37s - 1522.41s |  within the container.
+1523.37s - 1524.65s |  And that wraps up the demo.
+1524.65s - 1525.89s |  I do have one more slide.
+1528.49s - 1551.84s |  Whoops, awesome.
+1551.84s - 1553.96s |  All right, that one last slide.
+1553.96s - 1555.12s |  Hopefully you can see just the slide,
+1555.12s - 1556.32s |  not the speaking notes, cool.
+1556.32s - 1560.20s |  All right, I wanna close with just a few key takeaways.
+1560.20s - 1563.92s |  Now, building Kubernetes detective capability is a journey,
+1563.92s - 1565.44s |  and the first step towards it
+1565.44s - 1568.64s |  is to understand the threats posed to your environment.
+1568.64s - 1570.96s |  Once this is done, we saw how the concepts
+1570.96s - 1573.68s |  and the methods of collaborative attack simulation
+1574.44s - 1575.52s |  can be applied to this world as well,
+1575.52s - 1578.32s |  in order to build defenses proactively.
+1578.32s - 1580.32s |  To this end, we're giving the world
+1580.32s - 1582.48s |  a Kubernetes native attack simulation framework,
+1582.48s - 1583.92s |  Leonidas for Kubernetes,
+1583.92s - 1585.56s |  a set of test cases to get started,
+1585.56s - 1587.84s |  along with their corresponding Sigma rules
+1587.84s - 1590.16s |  as a building block for detections.
+1590.16s - 1591.04s |  And that's all from me.
+1591.04s - 1592.24s |  Thank you very much for your time.
+1592.24s - 1594.72s |  If you can find the links mentioned in this QR code,
+1594.72s - 1596.72s |  and you can find me on Twitter if you wanna discuss further.
+1596.72s - 1598.68s |  Thanks to Adversary Village for having me.

@@ -1,0 +1,394 @@
+{
+  "webpage_url": "https://www.youtube.com/watch?v=9bNv3XkhjQA",
+  "title": "DEF CON 32 - BOLABuster-Harnessing LLMs for Automating BOLA Detection - Ravid Mazon, Jay Chen",
+  "description": "BOLA is a prevalent vulnerability in modern APIs and web applications, topping the OWASP API risk chart, and ranking fourth in HackerOne Global Top 10. Its impact ranges from data exposure to total system control loss.\n\nWhile manually triggering known BOLAs is relatively straightforward, automatic detection is challenging due to the complexities of application logic, the wide range of inputs, and the stateful nature of modern web applications.\n\nTo tackle this, we leveraged LLMs to automate manual tasks such as understanding application logic, revealing endpoint dependency relationships, generating test cases, and interpreting results. Our AI-backed approach enables automating BOLA detection at scale, named BOLABuster.\n\nThough in its early stages, BOLABuster identified numerous vulnerabilities in open-source projects. In one case, we submitted 15 CVEs for a project, some leading to critical privilege escalation. Our latest disclosed vulnerability was CVE-2024-1313, a BOLA in Grafana",
+  "channel_url": "https://www.youtube.com/channel/UC6Om9kAkl32dWlDSNlDS9Iw",
+  "duration": 1960,
+  "channel": "DEFCONConference",
+  "uploader": "DEFCONConference",
+  "upload_date": "20241016"
+}
+
+0.00s - 2.00s | This text was transcribed using whisper model: large-v2
+
+ Alright, it is my fantastic
+4.30s - 6.30s |  Opportunity to introduce
+6.32s - 15.72s |  Ravid and Jay talking about bolobuster. All right. All right. Check check everybody hear me
+17.26s - 19.26s |  Okay, great
+19.42s - 26.82s |  So good morning everybody and thanks for joining. We are really excited to present in the absec village and
+27.76s - 30.82s |  Today we are going to talk about bolobuster
+31.82s - 38.30s |  Our methodology that we developed in order to automate detection at scale using
+38.82s - 39.90s |  LLMs
+39.90s - 49.88s |  But first let's introduce ourselves. So my name is Ravid. I'm a security researcher at Palo Alto Networks. I
+51.00s - 56.84s |  expertise in the WAS field which is a web application and API security mainly and
+57.72s - 60.44s |  In my free time, I enjoy watching football games
+61.40s - 63.40s |  traveling the world
+63.48s - 71.30s |  And take care of my dog Mabel. Hi, my name is Jay
+71.30s - 77.18s |  I am a security researcher with Palo Alto Networks and my research has been focusing on identifying the three
+77.82s - 80.06s |  threat and risk in cloud environment and
+80.38s - 87.82s |  Recently I've shift my research focus towards generative AI in particular looking into the potentially adversarial use of
+89.46s - 95.66s |  Generative AI and I'm not not working. I spend most of time with my hyperactive twin boys
+95.66s - 97.66s |  they behave just like
+97.70s - 100.58s |  Minions and head off to the parent there with young kids
+100.58s - 105.90s |  I know how difficult it is to take care of young kids when when working and I'm also a K lover
+105.90s - 113.62s |  So when I'm I also spend a lot of time scrolling to funny K video when I'm not working or working
+118.01s - 125.13s |  Great. So let's go over the agenda for today. So we are going to cover the concept of bola
+125.61s - 127.53s |  We will show you our
+127.53s - 130.45s |  methodology of automating bola hunting using LLM's
+130.89s - 134.69s |  You are going to see a real bola testing. That is part of our
+135.49s - 136.97s |  methodology and
+136.97s - 142.77s |  Finally, we will see how we you will see how we answer down 17 new ball of vulnerabilities
+143.53s - 148.21s |  in one of the most popular opens of project out there and
+149.05s - 155.98s |  Yeah, so broken object level authorization or short for bola
+156.86s - 158.74s |  So
+158.74s - 162.82s |  Our motivation for the research was pretty huge. I would say
+163.42s - 168.58s |  For those of you who doesn't familiar one of familiar with bola. It is ranked at the top
+169.86s - 175.10s |  Risk at the OSP API top 10 and it is also the fourth most
+175.90s - 180.58s |  Reported vulnerability in a k1. So it's really popular and it's really severe
+181.46s - 182.62s |  and
+182.66s - 187.18s |  Yet there is no automation tool that an actually and reliably
+188.10s - 189.86s |  detectable light scale
+189.86s - 191.42s |  so this
+191.42s - 196.58s |  All of this was a big reason for us to try to solve basically an unsolved issue
+197.14s - 200.82s |  today and
+200.82s - 203.98s |  Let's understand first. What is exactly bore?
+204.66s - 206.82s |  So if you take a look at this
+207.62s - 211.66s |  example, we have a patient we have a clinic application and
+212.18s - 216.72s |  We have a patient that can query is visit ID and get is dr. Notes
+217.50s - 219.50s |  pretty straightforward
+219.54s - 223.54s |  but what would happen if this patient would decide to act maliciously and try to
+224.42s - 227.28s |  Fetch another visit ID that does not belong to him
+228.42s - 230.42s |  If you would be able to do it
+230.66s - 237.10s |  It means that the back-end will have an authorization issue and this is basically a bola. So
+238.10s - 242.66s |  In a straightforward way if I can delete or modify
+243.78s - 249.30s |  Let's say J's comment from Twitter or Instagram. This is a clear bola because I
+250.14s - 256.70s |  shouldn't have the permission to access modify or delete another user object that does not belong to me and
+257.74s - 259.74s |  The consequences can be huge
+259.94s - 266.10s |  It can start from data leaks to data manipulation and even the full account takeover as we will see today
+266.58s - 275.66s |  We faced many challenges when we try to automate the process of moral detection
+276.64s - 279.44s |  The first was the complex authorization mechanism
+280.04s - 281.16s |  so
+281.16s - 283.16s |  application these days actually as
+283.48s - 287.60s |  Typically multiple users with multiple roles with multiple resources
+288.32s - 291.80s |  So it's very difficult to say which user can do what?
+292.44s - 298.68s |  Which user is is allowed to do which action exactly and this really can get complex
+300.48s - 303.12s |  Also applications are stateful today
+303.40s - 310.04s |  so each action you make or each API call you make can affect the state of the application and
+311.44s - 317.16s |  Basically each endpoint is dependent on on one another. So imagine you try to delete a
+318.20s - 320.20s |  comment from an article or a post
+321.36s - 327.00s |  So first you would need to create this post and create a comment for this post and only then you will be able to delete
+327.00s - 331.16s |  This comment so that depended on each other. You cannot isolate
+332.84s - 340.16s |  One of them and the execution order is really important and in order to not not have any technical issue
+341.32s - 346.56s |  So it will it is a big challenge to understand that this endpoint depends
+347.28s - 352.30s |  dependencies actually also bola doesn't have a
+353.26s - 356.90s |  There is a lack of vulnerability indicator, basically. So unlike
+357.74s - 360.54s |  XSS or SQL injection, which is pretty straightforward
+361.94s - 364.22s |  To recognize the pattern of the payload
+364.78s - 369.18s |  Bola is a logical error. So it's not really malicious by definition
+369.42s - 373.42s |  So it's hard to analyze and understand whether it is a ball or not
+374.06s - 378.90s |  and lastly the context so
+379.94s - 385.22s |  We try to understand which endpoint in the application and which parameter contains sensitive data
+386.26s - 388.66s |  And it's not that easy to understand it
+389.54s - 391.22s |  and also
+391.22s - 395.62s |  To understand what is the impact actually of each action that we can take in the application?
+396.54s - 399.50s |  so all of this was pretty
+401.62s - 411.66s |  Big challenges that we face during the process. Thanks Ravi for covering the background
+411.66s - 414.54s |  I hope everyone understand why automating data
+415.26s - 418.10s |  Bola detection is difficult. So
+418.82s - 425.14s |  It was only two years ago that we realized that AI may be able to give this problem a glimpse of hopes
+426.18s - 428.50s |  Because of the recent advancement of AI
+429.30s - 434.90s |  We were provided with new tool to solve the problem that were not possible to solve in the past
+435.46s - 437.46s |  So and also in particular
+438.26s - 440.26s |  our challenge of
+440.98s - 448.02s |  extracting context and logic information from textual data aligns well with the capability of
+448.94s - 455.58s |  Large language model. So that's the start of our journey in using AI to solve Bola detection
+457.10s - 459.30s |  Here is a high-level overview of our
+459.90s - 466.66s |  Methodology the only required input of our methodology is an open API spec or a swagger spec
+467.86s - 469.94s |  the first stage identify the
+470.54s - 477.02s |  Endpoint that can be vulnerable to Bola not every endpoint can be vulnerable to Bola
+477.22s - 482.38s |  We use AI to help analyze every endpoint and its parameters
+482.50s - 486.66s |  To determine to select a subset of endpoint as our target
+487.78s - 489.78s |  this step help us
+491.26s - 498.26s |  Narrow down our target endpoint and avoid wasting time on the endpoint that are not at risk
+498.54s - 500.54s |  we call this endpoint as
+501.22s - 502.86s |  potentially vulnerable
+502.86s - 504.86s |  endpoint short for PVE or
+505.62s - 512.02s |  Target endpoint. Well, we will refer to this endpoint as target endpoint or PVE in the rest of the talk
+512.70s - 517.06s |  The next stage uncovers the dependency relationship between endpoint
+517.98s - 520.78s |  modern web application are complex typically
+521.34s - 527.02s |  one endpoint depending down many others for example in order to test an endpoint that
+527.42s - 532.46s |  update an invoice you first need to call the endpoint that create the
+533.34s - 538.06s |  Invoice and in order to create an invoice you first need to call the endpoint that
+538.42s - 544.02s |  Create the transactions that can be included in the endpoint as a result. It is crucial to
+544.82s - 550.90s |  Understand the endpoint that my target endpoint depend on before I can accurately test it
+552.22s - 556.38s |  With the endpoint dependency relationship identifies the next stage
+557.10s - 561.86s |  calculate the execution path to each target endpoint and
+562.46s - 565.38s |  Create a test plan for each target endpoint
+566.86s - 571.14s |  The next stage then transform the test plan into
+571.46s - 575.74s |  Multiple executable bash script using large language model
+576.06s - 583.90s |  There may be one or multiple execution path to each target endpoint and we aim to cover as many path as possible
+584.94s - 586.94s |  finally, we set up a
+587.22s - 589.22s |  target API server and
+589.38s - 591.38s |  Run all the test script
+591.66s - 595.86s |  Generated in the previous step the process of user registration
+596.14s - 603.58s |  User locking and token refresh have all been automated and we also use AI to help analyze the response and logs
+604.06s - 614.37s |  Produced during the test. Let's dive into a little bit more detail in each stage in the first stage
+614.61s - 620.25s |  We try to identify the endpoint with input parameter that reference private sensitive or confidential
+621.25s - 626.97s |  Information these are the endpoint that we target. These are our target endpoint
+628.21s - 633.17s |  For example, let's look at the first endpoint the username here indicated
+633.69s - 640.33s |  Endpoint may reference to data associated with in the individual if this endpoint is vulnerable
+640.57s - 645.17s |  Vulnerable to bola an attacker may be able to reset another users
+645.81s - 647.17s |  password
+647.17s - 650.01s |  Similarly the second if the second endpoint
+650.81s - 653.05s |  put user email is
+654.21s - 659.97s |  Vulnerable to bola an attacker may be able to change another users email
+661.69s - 663.69s |  Traditionally pen tester
+664.53s - 671.61s |  Manually look for this endpoint and their parameters to determine their target endpoint
+671.77s - 674.49s |  This process is slow and cumbersome
+675.33s - 683.37s |  especially for very large applications with hundreds of endpoints, so we use AI's capabilities of
+684.21s - 687.77s |  Reasoning and understanding text to automate this step
+689.25s - 696.25s |  Here is a snippet of our prompt that show how we teach AI to recognize
+697.21s - 699.97s |  parameters that may reference to
+700.53s - 702.21s |  Sensitive data
+702.21s - 707.05s |  Essentially we instruct AI a set of rules and examples
+708.25s - 715.53s |  At the end AI returns us the endpoint and parameters that meet any of the condition
+715.53s - 722.76s |  That we provided. The next stage uncovers the dependency relationship between endpoint
+723.52s - 728.24s |  As I mentioned due to the complexity of modern web application
+729.20s - 733.80s |  Each API call may change the state of the application and
+734.72s - 740.72s |  Affect the outcome of other API on a other API endpoint as a result
+740.72s - 746.16s |  It is crucial to identify their dependency relationship before we can test them
+747.72s - 754.68s |  In this diagram we call the endpoint on the right as consumers and the endpoint on the left as producers
+755.68s - 761.72s |  Producer endpoint output the values that consumer endpoint need as input
+762.08s - 764.16s |  again producer endpoint
+764.72s - 769.60s |  Output the values that consumer endpoint use as input
+769.64s - 774.72s |  This is one of the most important concept in our research in our methodology
+775.20s - 781.64s |  Let's look at this endpoint as an example delete user in order to correctly
+782.16s - 783.92s |  Test this endpoint
+783.92s - 787.72s |  We need to feed it with an existing user name
+787.88s - 792.64s |  If we feed it with a random variable a random user name
+792.72s - 798.76s |  This endpoint will always API code will always fail and give us meaningless result
+798.92s - 803.36s |  That's why we need to identify its producers in this case
+803.52s - 804.56s |  this
+804.56s - 812.32s |  Consumer endpoint has four producers and each of them can output the existing user name that endpoint can use
+812.96s - 819.64s |  Here is a snippet of the prompt that we use to teach AI how to
+820.48s - 822.60s |  recognize dependency relationship I
+823.80s - 829.96s |  Want to emphasize that also we can use heuristic algorithm to match the output
+830.40s - 834.92s |  parameter name of an endpoint with the input parameter name of a
+835.52s - 836.76s |  Consumer
+836.76s - 841.52s |  This heuristic algorithm is not reliable. The reason is that
+842.44s - 850.24s |  Developers sometimes use different parameter names to reference the same data object within the system
+851.36s - 859.12s |  Developer may also use the same parameter names to reference different data object across the system
+859.40s - 866.36s |  That's that's why we use a combination of heuristic and AI to uncover the dependency relationship
+866.40s - 869.40s |  We we need AI to analyze each
+870.64s - 873.28s |  endpoint functionality in order to
+873.96s - 878.40s |  Establish their dependency relationship based on their functionalities
+881.86s - 887.74s |  Once we have the using the dependency relationship uncover in the previous stage
+888.34s - 892.62s |  This stage build up a dependency tree for each
+893.22s - 901.25s |  potentially vulnerable endpoint in this dependency tree the root node represent our
+901.81s - 904.65s |  one of our target endpoint or PVE and
+905.17s - 909.77s |  Any two directly connected node in a tree?
+910.41s - 914.53s |  represent a consumer and producer relationship in which
+915.01s - 920.29s |  Consumer the the parent node is a consumer and the channel is a producer
+921.69s - 925.57s |  Let's use the upper half of a tree as an example in this case
+926.65s - 928.49s |  endpoint is a
+928.49s - 930.49s |  producer of PVE
+930.93s - 934.85s |  endpoint output the value that PVE need as the input and
+935.33s - 941.97s |  Endpoint one itself also has two producer endpoint three and four which produce the
+942.45s - 945.01s |  Output the endpoint one need us
+945.65s - 948.78s |  the input
+948.78s - 954.34s |  Finally in the next stage we turn we calculate the execution path
+955.10s - 958.70s |  to each potentially vulnerable endpoint
+960.18s - 967.30s |  so in the dependency tree a path from the leaf node to the root node represent an
+968.74s - 970.26s |  execution path
+970.26s - 971.74s |  This is a
+971.74s - 972.82s |  reverse
+972.82s - 973.98s |  tree traversal
+973.98s - 981.26s |  so the path is for actually from the leaf node to the root node instead of from the root node to the leaf node and
+982.10s - 987.62s |  Let's plug in some real endpoint to see how we do the calculation in this example
+987.86s - 991.82s |  The target endpoint is delete comment and this endpoint
+992.46s - 996.94s |  has two producers get comment and post comment and
+997.86s - 1004.50s |  And these two producers in turn also each has two producer so at the end
+1005.02s - 1012.18s |  There are four execution path that can all reach the target endpoint delete comment in
+1014.68s - 1017.40s |  the last stage we then turn each
+1018.04s - 1023.84s |  execution path into an executable bash script using large language model and
+1024.84s - 1031.48s |  Run and run the script to actually send HTTP request to the target endpoint
+1032.88s - 1035.92s |  the process is more complicated than just generating and
+1036.68s - 1040.40s |  Sending the request as rabbit will explain in the next few site
+1044.41s - 1048.37s |  great, thank you Jay for the overview of our methodology and
+1049.89s - 1053.69s |  Before we can see actually a real bola test and
+1054.33s - 1057.53s |  View our bola that we found. Let's see
+1058.09s - 1061.69s |  The prerequisites that we have before we can create an actual test
+1062.09s - 1069.97s |  So we use LLMs again to create the user registration process and to collect the login data of the application
+1071.37s - 1075.05s |  So basically we generate user LLM generates user
+1075.29s - 1081.49s |  credentials that meets the criteria in terms of the for example password complexity and etc and
+1082.49s - 1083.93s |  We
+1083.93s - 1089.09s |  Execute the user registration process and we fetch the login data from the spec
+1089.37s - 1096.17s |  so this is crucial in order to then in login the users of the specific test and
+1096.77s - 1098.49s |  get a
+1098.49s - 1100.77s |  Valid and unique token for each one of them
+1101.81s - 1107.13s |  This information will be stored in a dedicated file. So we will have an easy access and usage
+1109.20s - 1112.28s |  Then we will want to isolate the test data
+1113.42s - 1119.56s |  So if you ever saw a swagger or open API spec file, you know that it can be huge
+1119.56s - 1121.56s |  It can be thousand lines of code
+1122.24s - 1125.08s |  especially for the biggest for the bigger applications and
+1126.04s - 1131.12s |  We want to isolate the only the data that is needed for the specific test
+1132.12s - 1135.88s |  So Jay mentioned that we have a consumer and producers in each test
+1135.88s - 1141.12s |  So we would like to have only the data which is relevant to this endpoints
+1142.56s - 1146.24s |  So we will create a new file. We will feed it to AI and
+1146.84s - 1151.68s |  It will save us about 90 to 95 percent of the of the spec
+1152.92s - 1155.60s |  so we do it for efficiency to ensure that a
+1156.24s - 1161.76s |  LLM will get only the accurate data that actually needs for each test creation and
+1162.76s - 1165.80s |  For cost we want to have as lowest
+1166.40s - 1170.80s |  tokens as we can and
+1171.16s - 1177.44s |  Finally we creating the test script and it will be saved as an executable bash script
+1178.20s - 1182.04s |  You can see an example of a very simple
+1182.72s - 1188.76s |  Consumer and producer we have a put user password and a get user to get the user name
+1189.52s - 1192.88s |  This kind of test will be saved in a put get directory
+1193.40s - 1200.52s |  Put would be the parent get will be the child and the test generation actually runs
+1200.92s - 1203.00s |  asynchronously in order to save time and
+1204.72s - 1206.72s |  Right now we averaged
+1207.24s - 1210.48s |  1.5 second for each test creation
+1213.25s - 1219.97s |  Right. So the final step would be the to actually run the test script in the application
+1220.97s - 1222.97s |  So we have an execution order
+1223.57s - 1230.01s |  And our main goal is to avoid any chance that a test would fail due to technical reasons
+1230.65s - 1235.77s |  So we want the test to fail only if the PVE is not vulnerable to bola as should be
+1236.97s - 1243.05s |  so we will first run the test that populate data and resources to the application before we can fetch them and
+1245.00s - 1249.72s |  Also, we will try to push and delete to push update and delete operation to the end
+1250.08s - 1251.92s |  So we want
+1251.92s - 1255.88s |  Experience a scenario where we delete the user or delete the resource and then try to fetch it
+1256.48s - 1262.48s |  So again, the main the main reason for this is is not to have technical issues in a test
+1263.44s - 1265.44s |  That will make it fail eventually
+1265.68s - 1269.79s |  so right after we
+1271.15s - 1276.15s |  Finished our preparing our methodology. We wanted to evaluate our
+1277.15s - 1279.59s |  Bola buster actually and see the result
+1280.19s - 1287.63s |  So what we did is we took the maybe the best API fuzzer, which is open source right now, which is wrestler
+1288.79s - 1293.75s |  Wrestler is a Microsoft developed API fuzzer. You can find on them github and
+1294.75s - 1296.83s |  It's goal is to automate the process of
+1297.91s - 1299.99s |  API testing and to find
+1300.75s - 1302.75s |  vulnerabilities like our goal
+1303.15s - 1307.39s |  So what we did is we took free open source application
+1307.91s - 1311.67s |  Which are deliberately vulnerable to the OWASP API top-10
+1312.43s - 1318.99s |  We took vampy capital and crappy. You can see from the table that they have a known bolas and
+1320.15s - 1327.50s |  We started to test our tool against the wrestler as you can see wrestler could not
+1328.14s - 1330.58s |  identify any bola of this up for
+1331.38s - 1339.22s |  Applications and it made a pretty big number of API calls and thousands and even hundred of thousands
+1341.10s - 1346.26s |  Then we tested our tool again the same application and the results were amazing I
+1347.26s - 1355.14s |  Hope you can see we found all the bolas in each one of the applications and we made significantly lower API calls
+1355.98s - 1360.42s |  So eventually we made less than 1% of the calls that wrestler made
+1361.58s - 1367.82s |  So this is a crucial part. It proved our efficiency and we didn't make
+1369.54s - 1378.93s |  The application load too much and finally we wanted to have a 100% true positive rate
+1380.01s - 1385.33s |  So our goal was to find any bola if there if it exists in application
+1386.25s - 1389.17s |  We we did have some false positive. You can't avoid it
+1389.77s - 1395.05s |  But again, our main goal was to focus on the on the true positive rate, which was
+1396.25s - 1401.08s |  100%
+1401.08s - 1404.36s |  Now we can take a look on a real scenario for a bola test
+1405.18s - 1410.24s |  So we have this eye level example where first Alice create an article
+1410.80s - 1417.64s |  Then Alice create a comment for this article and then Bob will try to delete Alice comment, which is the PVE
+1418.20s - 1425.88s |  So first Alice and Bob will log into the system. They will get a unique token, which will be saved
+1427.95s - 1432.31s |  Alice will create a new article in the system. We will save the article title
+1432.83s - 1438.92s |  We will do the same with a comment. So Alice will create a comment. We will save the comment ID and
+1440.16s - 1446.60s |  finally the PVE the maliciously Bob will try to attempt to delete Alice comment and
+1447.36s - 1449.36s |  This scenario can have two results
+1450.32s - 1452.32s |  If it will be successful
+1452.32s - 1459.96s |  We will have a potentially bola for this endpoint or if the application can defend the bola as well
+1459.96s - 1463.96s |  So it will be forbidden
+1463.96s - 1466.24s |  Let's see the actual snippet of our code
+1467.08s - 1472.48s |  So first of all, we will create a unique random string each time
+1472.88s - 1477.64s |  so we will be able to create an article for multiple tests without
+1478.44s - 1481.48s |  Getting an arrow that it already exists
+1483.08s - 1489.12s |  So as you can see we make a POST request to slash API slash articles
+1489.60s - 1494.56s |  you can see that the we use user a token which reference to Alice and
+1495.16s - 1497.80s |  We use the article title as a random string
+1500.97s - 1504.97s |  We will save the slug which is in this case the article title
+1508.28s - 1509.32s |  next
+1509.32s - 1511.72s |  We will Alice will create a comment
+1511.88s - 1516.40s |  so what's special about this is that if you can if you take a look at the
+1516.76s - 1520.56s |  Actual endpoint you can see that we dynamically use leg
+1521.08s - 1524.60s |  so we saved this parameter from the
+1525.24s - 1530.40s |  Previous request and then we dynamically use it. So now we can reference to it as a
+1531.20s - 1533.20s |  We can know that this
+1533.60s - 1539.54s |  Resource actually belongs to Alice again. We save the comment ID
+1541.30s - 1548.78s |  And then finally we have the PVE and the delete operation and you can see again that we use slug and comment ID
+1550.26s - 1557.14s |  That belongs to Alice and we the main difference and now we use a the user be token
+1557.30s - 1561.74s |  so now we can identify that this request is made by Bob and not Alice and
+1563.06s - 1565.06s |  Lastly we will check if the test passed
+1566.10s - 1568.10s |  now I want to emphasize that
+1568.54s - 1573.86s |  Actually every ball of test that we make is if you think about it, it's malicious by definition
+1574.54s - 1578.02s |  the last request the PVE will always we will try to
+1578.86s - 1582.62s |  To perform an action that you shouldn't be able to perform, right?
+1583.26s - 1588.58s |  Bob shouldn't be able to delete Alice comment. So in case it is successful
+1589.58s - 1594.78s |  We can mark this test as at least potentially vulnerable to bola before we can make
+1595.30s - 1596.42s |  A
+1596.42s - 1600.46s |  Further analysis and verification. Let's say in the application context
+1601.06s - 1606.22s |  So you just need to understand that every every ball of test is is malicious by definition
+1606.62s - 1614.37s |  So, let's see how we actually entered some boas in the world
+1614.89s - 1620.83s |  We have a quick demo of showing the running of the tool
+1622.19s - 1624.79s |  so this this is a Python based and
+1625.79s - 1632.99s |  It will I hope you can see it's testing each API endpoint and in case the result is successful
+1633.55s - 1636.07s |  it will market with bola found and
+1637.11s - 1639.23s |  actual actual API endpoint
+1640.91s - 1647.71s |  After this, we will take the list and we'll further analyze it and try to understand if this is a real bola or not
+1648.35s - 1652.98s |  So all of these applications
+1653.62s - 1656.54s |  It has something in common. We found balls in it
+1657.50s - 1659.50s |  so first of all Harbor and
+1660.66s - 1667.94s |  It is a cloud native container registry. It is basically equivalent to Docker Hub, which I'm sure most of you are familiar with
+1668.94s - 1672.98s |  It is it is a CNCF graduated project. So it's been
+1673.94s - 1675.94s |  In the wild for a while
+1677.18s - 1684.30s |  It is around 2 million downloads these days and we actually found this year we found a new bola
+1685.14s - 1687.14s |  Which we will talk in a bit
+1688.26s - 1693.14s |  And next up Grafana, it's a data visualization and monitoring tool
+1693.70s - 1696.38s |  very very popular is being used by
+1697.18s - 1702.82s |  20 million users actually these days and we also found a new bola there and
+1705.14s - 1708.38s |  Lastly we have easy appointments, which is an open source tool
+1709.50s - 1711.50s |  It has almost 200
+1712.38s - 1719.62s |  Thousand downloads and we actually been able to find 15 new ball of vulnerabilities there. Yeah
+1721.02s - 1723.02s |  Little bit
+1723.54s - 1728.06s |  The most amazing thing about it is actually that seven of them are critical
+1729.06s - 1731.06s |  so they got a CVSS of
+1731.50s - 1733.70s |  9.9 which actually allows a
+1734.78s - 1741.14s |  Low privilege user to gain admin access. Remember we talked about compromise. So we have a full
+1742.10s - 1744.26s |  application compromise in this case
+1747.54s - 1750.86s |  Let's talk about our vulnerability. It's pretty interesting
+1752.46s - 1753.86s |  So
+1753.86s - 1760.94s |  Harbor as a projects in it and you can have you can have roles so you can be an admin a maintainer a developer or
+1760.94s - 1762.94s |  a guest
+1763.18s - 1769.30s |  Basically we found the vulnerable feature to be the project configuration metadata
+1770.30s - 1773.70s |  So, I hope you can see the attributes there for the configuration
+1774.50s - 1778.98s |  Basically an admin can change the project to be private public
+1779.22s - 1784.82s |  You can implement some image vulnerability scanning and and have more power
+1786.30s - 1791.94s |  So our book claimed that in the official documentation that only the admin project should be able to
+1792.42s - 1794.70s |  to create and modify this kind of
+1795.46s - 1797.70s |  configurations which makes sense and
+1798.42s - 1800.42s |  And
+1800.62s - 1805.58s |  Actually, we found out that an unauthorized user can do the same operation
+1805.94s - 1812.54s |  So we tried to play with the roles of the project and we saw that the maintainer for example
+1812.54s - 1814.54s |  Could not make any change via the UI
+1815.10s - 1819.98s |  So this is a maintainer login, which is grayed out. You cannot modify it
+1821.70s - 1823.30s |  But
+1823.30s - 1825.22s |  Maintainer can actually
+1825.22s - 1832.90s |  Create delete and modify these attributes via the API. So there is a big discrepancy between the UI and the API
+1834.06s - 1835.62s |  behavior and
+1835.62s - 1837.62s |  and this vulnerability actually
+1838.02s - 1841.22s |  Create an extent in this in the maintainer privileges
+1841.74s - 1847.58s |  So now a maliciously maintainer could be able to make a private project public
+1848.46s - 1855.18s |  Deploy unverified images and actually control every configuration that that you can control in in a project
+1856.10s - 1857.26s |  and
+1857.26s - 1864.22s |  as you can imagine the consequences can be pretty high so we can compromise the wall integrity of a project and
+1866.18s - 1870.90s |  Actually the security posture so how bow and
+1871.94s - 1873.74s |  verified
+1873.74s - 1875.74s |  That's it. Okay, so
+1876.58s - 1882.10s |  Just would say that how bow identify this vulnerability and you can find it in their security advisory
+1882.14s - 1889.70s |  We got a CV and you can check out our blog about it when we technically talk about how we found this
+1890.30s - 1894.59s |  ball
+1894.59s - 1900.11s |  Thanks. I will just use the last 30 second to share the most important lessons
+1900.11s - 1904.15s |  We learn from working with AI first AI isn't always the best solution
+1904.91s - 1906.91s |  Solution problem with existing
+1907.19s - 1912.79s |  Heuristic solution should not be solved by AI like sorting finding trees or solving equation
+1912.79s - 1918.79s |  Those problem have existing optimal solution and always use heuristic rather than AI
+1918.95s - 1924.51s |  Second don't trust always validate blindly trusting the output of AI can be very very dangerous
+1924.91s - 1930.63s |  So always validate the output of data AI before using them or passing them to the next stage
+1931.23s - 1933.67s |  Finally makes AI's jobs easier
+1934.87s - 1939.39s |  Treat AI like a very capable junior worker who can do simple tasks
+1940.11s - 1945.07s |  Exceptionally well, but starting can start making mistake when the job become more complex
+1945.27s - 1953.19s |  so when working with AI it is always a good idea good strategy to use divide and conquer to simplify its task and
+1954.11s - 1956.11s |  That's thank you so much

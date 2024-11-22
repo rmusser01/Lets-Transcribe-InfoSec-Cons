@@ -1,0 +1,315 @@
+{
+  "webpage_url": "https://www.youtube.com/watch?v=gLOv67LlIQs",
+  "title": "DEF CON 32 - Smishing Smackdown: Unraveling the Threads of USPS Smishing and Fighting Back - S1nn3r",
+  "description": "This past holiday season saw a dramatic rise in SMS phishing (smishing) messages, specifically targeting people pretending to be the USPS. Almost everyone in the United States received one of these messages using a kit sold by the \u2018Smishing Triad\u2019. While many of us knew these were scams many more did not, including someone close to me.\n\nI knew I had to do something about it once I started receiving these texts myself. With my focus in web application testing, I immediately took interest in these smishing kits and how I could exploit them. After a thorough review, some collaboration with other researchers, and a little reverse engineering I was able to find two vulnerabilities in the scammer\u2019s kits allowing me to login to the admin panels.\n\nUsing this I have been able to recover over 390k distinct credit cards that the scammers had gathered using over 40 admin panels and well over 900 unique domains. Along with this was info on the scammers themselves like login IPs, usernames, and some cracked passwords they use.\n\nThis talk will cover the technical details of how I reverse engineered this kit, found these vulnerabilities, and collected the victim and admin data for each of these sites.",
+  "channel_url": "https://www.youtube.com/channel/UC6Om9kAkl32dWlDSNlDS9Iw",
+  "duration": 1834,
+  "channel": "DEFCONConference",
+  "uploader": "DEFCONConference",
+  "upload_date": "20241016"
+}
+
+1.17s - 6.17s | This text was transcribed using whisper model: large-v2
+
+ Good morning. Hey, how's everyone doing? Woo! Excited to be here, second day. Alright, so
+10.67s - 15.81s |  thank you all for coming to my talk today on Smission Smackdown and Robin Threads of the
+15.81s - 22.15s |  United States Postal Service. Smission, SMS efficient and fighting back. So to start off,
+22.15s - 25.95s |  just gonna cover a little bit about who I am. Uh so I work full time as a red team operator.
+25.95s - 31.81s |  I recently graduated university, uh first first full time job, kinda lucky with that. Um
+31.81s - 35.45s |  well in university found around $10,000 in various bug bounty programs, that's how I got
+35.45s - 41.73s |  started in web application testing. And various certifications, blah blah blah. Uh and I
+41.73s - 48.51s |  also recently founded a company, Phantom Security Group with a friend of mine. So, who
+48.51s - 53.51s |  here, show of hands, got one of these text messages? Oh shoot. Okay. Okay. A little bit more
+54.37s - 59.37s |  than I expected. Uh I expected a good amount but um yeah. How did this all start? Just one
+63.61s - 68.61s |  of those text messages that you just saw on screen that most of you got it seemed. Uh and
+70.75s - 76.53s |  that text message was just sent to the wrong man's wife. My wife, as it so happens. And she
+76.53s - 81.77s |  unfortunately fell victim to this scam. And then just a few days later, I got that text
+81.79s - 87.67s |  message. And I'm sitting there, I'm bored, uh we're on winter break between semesters and I
+87.67s - 92.67s |  love hacking web apps. And what did that text have in it? A link to a web app. And so they
+95.97s - 102.05s |  set up the web app for me, it's good to go, it's it's like hack the box, come on. So I loaded
+102.05s - 106.95s |  up that site in my browser, um looks pretty legit, I will admit. And that's actually
+106.97s - 111.97s |  because the they load in most of the resources for the site from the actual USPS.com site. And
+114.47s - 120.91s |  so most of the links they just take you to the USPS official site um but below this
+120.91s - 127.19s |  screenshot and this little red area you can see, delivery failed, you can enter your data and
+127.19s - 131.79s |  this is where they start, the scammers start collecting your data. And so I wanted to get in
+131.79s - 136.03s |  the middle, I wanted to intercept that traffic and do a little bit more digging than the
+136.07s - 140.71s |  simple like Firefox developer tools allowed. So I loaded up burp suite, um community
+140.71s - 146.29s |  edition of course, I'm not rich. Um but the first thing I did and first thing I noticed
+146.29s - 150.25s |  actually was that a lot of the traffic was going to a different domain, a similar one but
+150.25s - 155.65s |  different. And I'm just going to call this the C2 or command and control domain because for
+155.65s - 160.83s |  some of the kits it was on the same server, for some of them it wasn't. And that became my
+160.83s - 164.91s |  new target. And so with burp suite loaded up I could see those HTTP requests and one of the
+164.91s - 169.79s |  first things I noticed was WebSocket traffic. And I was like why is there WebSockets
+169.79s - 175.83s |  going on? Why'd they set up WebSockets just to give us a static HTML page? There's no reason
+175.83s - 181.67s |  to do that. But that turned out to be one of the scammers first of many mistakes. And that's
+181.67s - 186.91s |  because by doing a simple path traversal uh you could grab any file on the system
+186.91s - 193.07s |  basically. So like it was just as simple as dot dot slash dot dot slash etc. You get you get
+193.61s - 198.75s |  the point. Um but yeah with this path traversal LFI whatever you want to call it um I was able
+198.75s - 204.21s |  to read basically everything but this machine that it was on this web application was just a
+204.21s - 208.95s |  bare image. There was the obviously the web application itself that they were using to
+208.95s - 214.33s |  collect information but nothing really else on there so no like SSH keys or other ways that
+214.33s - 220.63s |  you would be able to log in usually uh with this type of vulnerability. Uh so looking around
+220.63s - 225.91s |  very little as I said but I did find the access logs for this server. Um some of the other
+225.91s - 230.41s |  servers uh later on like their access logs so big you can't pull it it just crashes the
+230.41s - 237.01s |  server. But this one I got lucky and I was able to actually pull down the file. And before I
+237.01s - 241.79s |  cover that I'm just going to show what path traversal vulnerability is just so some people
+241.79s - 246.29s |  understand it if you don't work with web apps often. Um but a path traversal is when a web
+246.29s - 250.93s |  application is configured to grab a file from the server and that file is specified through
+250.93s - 256.71s |  some sort of argument. So in this example the file name argument is used to grab gift dot png
+256.71s - 261.71s |  on the left. But if there's not proper sanitize sanitization of user input then an attacker
+265.35s - 270.85s |  can just grab any file from the system. And so usually it's from it starts in the web root
+270.85s - 275.85s |  directory and so you have to do some dot dot slashes to get up a few directories to the top
+275.85s - 280.45s |  and then grab a already known file just so you can test it out so et cetera password in this
+280.45s - 286.57s |  case. So now now that we're caught up on web application testing uh let's get to the access
+286.57s - 292.53s |  logs. So in here uh going to the very top so where usually the setup process is happening for
+292.53s - 297.71s |  the web server we can see that the scammers are using a tool called bt panel. Um some people
+297.71s - 304.25s |  might be familiar with it it's uh Chinese software for server administration through a web
+304.25s - 309.25s |  app and that bt panel software uses phpMyAdmin and looking at the uh you can see the IP
+312.53s - 317.57s |  address of the scammer accessing that phpMyAdmin endpoint and you can tell it's not one of
+317.57s - 323.03s |  those web crawlers web scanners because it's phpMyAdmin underscore a long string of
+323.03s - 327.85s |  characters that's so random that a scanner's not going to find that and also it's returning a
+327.85s - 332.19s |  two hundred okay status code to that which means it's it actually exists that endpoint is
+332.19s - 337.19s |  real. Um yeah I plugged that IP into IP location and some of you might already know where
+339.79s - 345.83s |  it's from but uh we'll get to that in a little bit um but after that obviously just did an
+345.83s - 352.41s |  nmap scan of uh the web application just got to get some scanning started and two open
+352.45s - 359.45s |  ports uh 443 obviously for HTTPS and so we need that open to access the site and then also
+359.45s - 364.45s |  21 for FTP and that that was kind of weird to me uh FTP is slowly dying it's 1970s I think
+367.63s - 373.99s |  um but I tried multiple ways to get in through here uh because usually FTP if it's older set
+373.99s - 379.01s |  up is various different CVEs for it uh also tried brute forcing that didn't work out so I had
+379.77s - 384.77s |  to get back to the web application and also if you look at the scan uh some interesting
+387.41s - 393.29s |  stuff you can find with the SSL certificates is that the subject alternate alternate names it
+393.29s - 398.29s |  contains all the domains that are linked back to that web app so you can just collect them
+400.85s - 405.63s |  that way instead of having to go look online uh find different scammers but this all links
+405.65s - 410.93s |  back to this IP address this web application here but this was interesting information it
+410.93s - 414.93s |  wasn't an RCE or anything I was looking for like SQL injection or something like that I
+414.93s - 419.93s |  want I I wanted to take over this app I didn't want to get information disclosure so I had
+422.31s - 427.07s |  read access to the file system the path traversal I had a bunch of different domain names
+427.07s - 431.61s |  linked back to the web app and I had to I had figured out like a little bit about how the
+431.63s - 436.17s |  backend works with that path traversal vulnerability but I didn't really have any admin
+436.17s - 441.81s |  data besides the IPs access and the access logs um and no victim data at all I didn't know
+441.81s - 446.81s |  who was being scammed exactly general guess just of who it was but I had to dig deeper and
+448.89s - 453.89s |  try harder is offset might say don't kill me for saying that um yeah so I I did just that try
+454.11s - 459.11s |  harder uh and this led to a breakthrough I'm still going to cover it up because uh don't want
+462.31s - 468.69s |  to reveal which endpoint is vulnerable to this but it was a blind unauthenticated time based
+468.69s - 473.69s |  SQL injection vulnerability which in short is a really slow dump of a database uh very very
+476.07s - 481.07s |  slow and the way I was able to find this is just simple single quotation in an argument and
+484.11s - 489.61s |  it returned a 200 okay status code not like a 500 error which what you would expect but in the
+489.61s - 496.61s |  message returned it said error um which none of the other responses did uh when you insert a
+496.61s - 503.39s |  colon in there or colon single quote whatever you're testing with so yeah dumped the
+503.39s - 509.89s |  database for that domain uh some interesting tables in there dumped some of the contents of
+509.89s - 516.81s |  those tables and looking at those tables config was actually surprisingly boring uh most of
+516.81s - 521.41s |  the data in there was just what type of credit cards are you taking in an activation key for
+521.41s - 526.41s |  the kit itself uh some other things like that user info and records were encrypted blobs so I
+528.99s - 533.99s |  tried dumping them and no luck uh it just doesn't work with time based blind injections it
+534.77s - 539.77s |  very hard very slow and also there's a ton of data in them and then that left us the admin
+542.93s - 549.31s |  table so in the admin table there is encrypted user names encrypted tokens like session
+549.31s - 556.21s |  tokens login tokens hash passwords looking like MD5 some permission levels one through four
+556.21s - 561.23s |  and unencrypted last login times and IP addresses for those admin users so that was awesome.
+564.03s - 570.82s |  So can anyone guess the country? Yeah China China you're so smart it was China and this IP
+574.92s - 579.86s |  address up here happens to be from the Shanghai region of China. Yeah this is when I went
+579.86s - 585.00s |  ahead and published my first blog post so I have two blog posts on this the first one was
+585.00s - 591.18s |  published I didn't really know it was a kit I knew it was just a scammer site that they had set
+591.22s - 596.32s |  up I didn't know there was a bunch more out there and so I started looking through some of
+596.32s - 601.32s |  this data cause I I had a bunch but again I wanted to access the admin portion of the site and
+604.76s - 610.36s |  so looking at one of the dumps uh if you noticed it earlier there was a telegram link in the
+610.36s - 615.38s |  description of one of the users going to that telegram profile you see this is WangduU0 uh and
+616.22s - 621.22s |  in his bio it links to another telegram channel which has at the time of taking a
+625.86s - 630.86s |  screenshot a few days ago is over 3700 subscribers excuse me and in this telegram channel we can
+635.64s - 642.44s |  see some demo videos of this kit that they're selling how to posts to set up the kit
+642.44s - 647.00s |  announcements of how secure the product is I mean it's super secure no one's taking your
+647.00s - 656.40s |  victims your account credentials et cetera and then some stuff like this oh you can't hear
+656.40s - 666.88s |  it there's no audio okay it's got some hype up music so yeah who is this who's who's posting
+672.84s - 678.98s |  these videos who's making this kit so that's that WangduU0 character that uh we first found
+678.98s - 685.44s |  a link for and so I actually got to chatting with him on telegram I was pretending I was a uh
+685.44s - 689.78s |  which country I said I was but I I was obviously using Google Translate to talk to him so I
+689.78s - 694.96s |  had to say I didn't speak Chinese and uh all that but got out of him that he's a current
+694.96s - 699.82s |  computer science student in China at least at the time of talking to him uh it was about
+699.82s - 704.10s |  January time frame of this year and so he may have graduated now but at at the time of
+704.16s - 710.26s |  talking he was a computer science undergraduate it seemed like and along with him there's some
+710.26s - 715.26s |  other members of the group that do graphic graphic design uh web developers of course um and
+718.40s - 723.74s |  I got that information from a company called RE Security and it turns out so when Googling
+723.74s - 729.78s |  the WangduU0 character uh two blog posts from RE Security popped up and they had already
+729.80s - 736.40s |  done a good amount of research on this uh USPS submission campaign along with other
+736.40s - 741.40s |  campaigns of this group that they dubbed the submission triad uh had done and uh okay so
+750.04s - 755.04s |  cool thank you. Yeah the submission triad uh they had found some various vulnerabilities in
+757.74s - 763.44s |  the USPS kit beforehand and so they had also found a similar SQL injection vulnerability in
+763.48s - 768.56s |  the kit but the author of the kit had read their blog, patched the vulnerability, started
+768.56s - 774.12s |  encrypting data, he also added captchas to logins um for admins like a bunch of other security
+774.12s - 780.40s |  features um but we'll get into how we bypassed all that. So the RE Security hunter team had
+780.40s - 786.64s |  mentioned in the blog that they had acquired purchased through some means a kit from the
+786.64s - 792.98s |  submission triad. So I'm broke uh these kits cost $200 a month and I'm I'm not paying that
+793.02s - 798.02s |  uh like no. So also I can't support scammers so that's another thing. But yeah so I I begged
+800.76s - 806.00s |  them uh they get back to me they're like hey uh what can we read about what you've done can
+806.00s - 809.60s |  you tell us a little bit what what you're looking into. Talk back and forth and they were
+809.60s - 815.34s |  kind enough to send over the kit for free. And so unzipping the kit one of the first things I
+815.34s - 820.34s |  noticed was default credentials. Admin and a password of one two three four five six.
+823.14s - 828.12s |  And then when you log in for the first time you don't have to change it. So that makes it
+828.12s - 833.26s |  nice and easy for us. Um and I will mention about 20% of the kits I ended up finding still
+833.26s - 839.96s |  had those default credentials. Uh the thing was the hashes so I I it looked like MD5 I
+839.96s - 844.76s |  presumed it was MD5. The MD5 hash for one two three four five six did not line up with what
+844.76s - 849.44s |  was in the pre-prepared database. And so I knew there was something going on there was some
+849.44s - 855.80s |  salt being added maybe it was some similar similar algorithm um that yeah I just didn't
+855.80s - 862.82s |  know about. But the issue was looking at the code it it was gross. Like not even human
+862.82s - 867.82s |  readable. Um very highly obfuscated PHP code. In the along with that PHP code it was using
+871.70s - 876.96s |  introspection so you can't add like echo statements in there to echo stuff out and also it
+877.02s - 884.00s |  had multiple times it was checking where uh checking to see if it was being debugged. And so
+884.00s - 888.96s |  I just couldn't find a way I spent multiple days trying to uh de-obfuscate uh the code in
+888.96s - 894.60s |  there. But that's when a friend of mine actually up here in the first row uh suggested using a
+894.60s - 900.74s |  technique called eval hooking. And so using simple echo statements so you hook the eval
+900.76s - 907.44s |  function which it has to be plain PHP plain text PHP to be executed by the eval function for
+907.44s - 912.08s |  the page to work. So if you just hook into that function echo out what it's executing you can
+912.08s - 918.92s |  slowly figure out what's going on in the code. And so you can see some of my notes here and
+918.92s - 924.32s |  the variable names are disgusting gross uh but up in the middle there's little comments
+924.32s - 930.10s |  added after them. And you can see that the usernames are being encrypted with AES 128 CBC.
+930.12s - 935.12s |  Uh and they're using the key of WDY666666 just meaning length requirements. And then the
+940.16s - 945.16s |  IV of AES 128 wangdu8. Um and so he loves using his own name in these passwords and stuff. So
+950.00s - 953.94s |  now the passwords were a bit trickier though. Uh it took a little bit longer to figure out.
+953.96s - 958.96s |  And the passwords were appended with a salt. Uh so wangdu you again more 6s and then special
+961.52s - 966.60s |  characters. Um and then after that they were hashed three times using empty 5. The gold
+966.60s - 973.60s |  standard for hashing algorithms. I know it's 20 he wrote it in 2023 so like yeah I don't know
+973.60s - 977.88s |  what he's I don't know what he's learning in school but yeah. Then also we look at the
+977.88s - 983.92s |  activation. Uh so looking into the kit I noticed that when I would ex like spin up the
+983.92s - 990.90s |  server it would check it's activation. And so this is some uh base 64 encoded uh well hex
+990.90s - 995.90s |  and then base 64 encoded data. And he hardcoded his IP address for his admin server like
+999.44s - 1004.64s |  right there um in the code. So uh that that's his IP address. I don't I haven't checked
+1004.64s - 1009.64s |  recently if it's still up but you can go say hi to him. Um but also he was double dipping. So
+1011.72s - 1016.68s |  he's charging 200 bucks a month for this kit. He's he he makes tons of reassurances that he's
+1016.68s - 1019.76s |  not stealing their information. No one else is stealing their information. But every time an
+1019.76s - 1024.76s |  admin logs in it sends their login token to him. So he's he can just log in as that user and
+1025.76s - 1030.76s |  take their victim data along with their 200 bucks a month. So no honor. But yeah so now we
+1037.08s - 1044.08s |  have the method for hashing of the passwords. And so I go ahead and make a go tool, little
+1044.08s - 1051.30s |  quick go tool to crack those passwords. And you can see my command line up there uh it's
+1051.30s - 1056.30s |  kind of small up here but uh just using ROKU against the hashes and printing them out. So
+1056.30s - 1062.04s |  you can see like 1 2 3 4 5 6 obviously the default uh but like straight 0's 1 2 3 1 2 3 1 2
+1062.04s - 1068.38s |  3 3 2 1. Admin 3 3 admin 1 etcetera. All these really easy passwords but obviously it's ROKU
+1068.38s - 1073.08s |  so it's only going to crack the easy ones. But the issue was some of the larger panels I was
+1073.08s - 1080.40s |  finding ROKU wasn't cracking those any of those passwords for the users. And so I had to
+1080.40s - 1085.04s |  add normal I had to use password cracking techniques to crack them. So the first thing I
+1085.04s - 1091.74s |  did was rules basically just adding suffixes to the ROKU word list um as it's going through.
+1091.74s - 1096.92s |  Uh just append in 1 to the end exclamation point dollar sign uh other different symbols and
+1096.92s - 1102.02s |  number patterns that I was seeing in a lot of the passwords. And then I also needed a new
+1102.02s - 1108.02s |  word list for this because they're mostly Chinese based. So uh I needed a word list that
+1108.02s - 1113.38s |  wasn't ROKU because ROKU is English obviously uh for the most part. Uh and most other word
+1113.38s - 1119.52s |  lists are like English, French, that sort of thing. Not there's not many uh Asian word lists
+1119.52s - 1124.50s |  out there um for a lot of Asian languages. So the one I ended up choosing was the
+1124.50s - 1129.50s |  Kayonashi word list and it was one of the only word lists I could find actually for this. And
+1129.50s - 1134.30s |  using that word list and these rules I was able to crack over 130 of those hashes for those
+1134.32s - 1141.32s |  admin users. So now we have decrypted usernames. We have cracked passwords. We can just log
+1141.32s - 1147.40s |  into these panels right? Oh and this is like this is the default admin like login screen. Uh
+1147.40s - 1152.54s |  but no you you can't do that. Uh the majority of those admin panels actually have wait
+1152.54s - 1157.98s |  lists set up for IP addresses. And like that okay that's pretty good. Um the luckily for us
+1157.98s - 1163.72s |  though like some of them just didn't set it up. So we were able to test this out on a few
+1163.74s - 1170.04s |  different panels, three to be exact. And uh you enter using a password and solve the
+1170.04s - 1175.18s |  CAPTCHA and then you just log in. And so this is the inside of the panel, this is the main
+1175.18s - 1182.02s |  dashboard. Uh they got nice statistics, uh numbers, everything. Uh and who doesn't love
+1182.02s - 1187.02s |  Excel um or CSV format and stuff. Um so they have that and you can view the domain names that
+1187.24s - 1192.24s |  they were uh scamming people from. But those restrictions on access and slash admin really
+1196.38s - 1202.38s |  hampered what we were able to do or what I was able to do because you couldn't dump any of the
+1202.38s - 1207.36s |  kids except for those three that had the wait list not enabled. And so to bypass that
+1207.36s - 1212.90s |  there's these endpoints that it reaches out to to authenticate, to grab victim data, to grab
+1212.94s - 1218.52s |  admin data, to list those domains that we just saw on the previous slides. Uh and those
+1218.52s - 1223.76s |  endpoints don't have the wait list on them. So they're they're not protected at all. And so
+1223.76s - 1228.50s |  all I had to do was just authenticate directly to those endpoints. Um so here I'm just
+1228.50s - 1234.36s |  authenticating and getting the login token and here this is just accessing the data for the
+1234.36s - 1239.54s |  home panel. So overall statistics for how many phishes. So it looks like all records, this
+1239.58s - 1246.68s |  one had like 9,200 victims it looks like. And so now using this uh I mean I, Burp Suite's
+1246.68s - 1250.92s |  awesome but I didn't want to have to do this every time I found the kit. So I automated the
+1250.92s - 1256.20s |  process and here we'll show a little demo of it. So the capture pops up. Couldn't really find a
+1256.20s - 1261.24s |  bypass for the capture so had to solve it manually unfortunately. And to the capture it goes
+1261.24s - 1266.14s |  through dumps that data for me and so this kit that I just dumped there had 28 victims so
+1266.14s - 1271.62s |  really small brand new one. Uh and then this one we're about to have is going to have over
+1271.62s - 1278.12s |  like 5,000 victims in it. Um so here dumps the pending victims, complete victims. So it's
+1278.12s - 1284.70s |  going to have uh if you dumped over 1,000 victims at one time in a page it would crash the
+1284.70s - 1289.70s |  server. And so I would have to dump like 1,000 a page and then iterate through there however
+1290.34s - 1295.34s |  many pages um it was. And so there we go that's the recording. But like 48 pending victims
+1299.38s - 1306.07s |  and then 4,900 something completed victims. But we need more targets so I had the automation
+1306.07s - 1313.21s |  set up. I needed a better way to get these URLs other than them just texting me cause I only got
+1313.21s - 1319.55s |  a few text messages. So I crowdsource. I set up a site for people to submit URLs to uh and it
+1319.55s - 1323.39s |  would grab so there's a static javascript config file in there and I could grab that like
+1323.39s - 1328.39s |  C2 domain uh from that file and uh that just makes my life easier. But also I found a bunch
+1331.39s - 1336.41s |  of URLs here. So r slash scams on Reddit uh people post screenshots of their text messages.
+1341.31s - 1348.05s |  So I had to hand jam those URLs in which is unfortunate but it was okay. Um but yeah uh just
+1348.05s - 1352.99s |  hand jam those URLs in and one thing I also noticed when going through r slash scams it was
+1352.99s - 1361.14s |  there was a copycat campaign going on. This copycat campaign was interesting to me. Because
+1361.14s - 1366.74s |  they had ripped the entire front end of the submission tree ads kit and just placed it on top
+1366.74s - 1371.46s |  of their backend. And you could tell they had done that because the site was reaching out the
+1371.46s - 1376.90s |  endpoints that didn't exist on this server but would exist on the submission tree ads backend.
+1376.90s - 1381.54s |  So like WebSockets for example like there's no need to set up WebSockets they realized this so
+1381.54s - 1385.80s |  they didn't set up WebSockets but it's still trying to reach out to it because they just
+1385.80s - 1391.80s |  didn't even edit the javascript in the site. So that was interesting uh didn't really end up
+1391.80s - 1396.58s |  exploiting this campaign uh just targeted the submission tree ads one but uh something of
+1396.58s - 1403.62s |  note. So now I I was get gathering those URLs from different places and this was the process
+1403.64s - 1408.82s |  I would go through. I would extract the admin panel URL uh from that static javascript
+1408.82s - 1415.42s |  config file. I would exploit that time based SQL injection against that domain. Uh dump the
+1415.42s - 1422.12s |  admin table, decrypt the usernames from that, put the hashes in the cracker tool uh let that
+1422.12s - 1427.90s |  run for a little bit, took forever. Um and once it was done uh I would hopefully have a new
+1427.92s - 1433.92s |  login that I could add to that automation script that I just showed you. So now after doing
+1433.92s - 1438.92s |  all this uh got some interesting statistics. So this is my chat GPT generated info graphic um
+1443.90s - 1450.64s |  look at that. Uh but total times uh data was entered so this is times uh credit card was
+1450.64s - 1456.44s |  entered. So 1.2 million times a credit card was entered into this site. So they went
+1456.48s - 1459.82s |  through the whole process to enter your credit card. The total unique credit cards though
+1459.82s - 1465.82s |  was 438,000. Um unique IPs 73,000 um unique emails used 54,000 and then domains used by the
+1470.16s - 1475.16s |  scammers they used uh over 1100 domains um which is crazy. The thing is this isn't even all
+1478.00s - 1482.04s |  the data this is the ones I was able to find there's more there was more out there uh they go
+1482.04s - 1488.22s |  up and down all the time getting taken down uh so it the numbers are much larger than this
+1488.22s - 1494.86s |  probably. So now looking at those admin logins uh we can do a simple map of their IP
+1494.86s - 1499.86s |  addresses. You can see where they're logging in from. Get some interesting statistics on
+1499.86s - 1504.46s |  this. You can see a lot of the publicly known proxies are coming from the United States so
+1504.46s - 1509.54s |  they're proxying to the US. Um so there there are some people logging in from the US that
+1509.54s - 1514.54s |  aren't from publicly known proxies. Excuse me. Um some in Europe and so most of them are in
+1517.04s - 1522.06s |  China but obviously anyone can buy this kit so admins are going to be logging in from
+1522.06s - 1527.06s |  throughout the world. But zooming in on Asia you can see cluster in Taiwan you can see a
+1529.90s - 1535.50s |  cluster in I think that's Hong Kong and Shanghai region uh and then also some down in
+1535.50s - 1540.50s |  Philippines and those islands. Now mapping the victims the same way uh this was wild. So
+1545.30s - 1550.38s |  yeah I mean it's USPS so obviously a ton in the US but also like a ton throughout the world
+1550.38s - 1555.18s |  and I'm going to guess this is a combination of people testing out those random links and
+1555.18s - 1561.22s |  also tourists so people traveling they get those text messages and enter their data that way.
+1561.22s - 1566.18s |  Zooming in on the US it's basically a population density map. Um so tons of around the east
+1566.18s - 1572.46s |  coast obviously uh gets a little thin throughout the midwest and then SoCal and up in
+1572.46s - 1579.16s |  Washington, Oregon. Um and also cluster out in Hawaii. So yeah a lot a lot of IP addresses
+1579.16s - 1585.44s |  there. More infographic. Let's look at the top 3 states. Uh California was number 1 with
+1585.46s - 1590.46s |  141,000 victims. Texas had 119,000 and Florida had over 100,000. Uh top 3 email domains used
+1593.90s - 1598.90s |  uh Google, well Gmail was way at the top with 93,000. iCloud with 15 and Yahoo with 12. And
+1602.42s - 1608.92s |  then other stats. So the average credit cards entered out of this 1.2 million entries on
+1608.92s - 1614.56s |  average people entered 2.48 credit cards. So almost rounding up to 3. And the reason for this
+1614.58s - 1617.54s |  was when you go through this process and you enter your credit card it would be like oh this
+1617.54s - 1622.72s |  card's invalid enter a new one. And so people would just keep entering credit cards. I saw 6
+1622.72s - 1628.26s |  credit cards for some of them. It was crazy. Um and so it's unfortunate but they just that's
+1628.26s - 1634.86s |  why unique email addresses and unique credit cards that was such a big difference. Also you
+1634.86s - 1639.96s |  can see the number of .edu emails in there so a lot of professors, staff at universities,
+1640.00s - 1645.30s |  students obviously so 471 there. Uh some people were using the .mil email addresses which I
+1645.30s - 1653.56s |  was kind of surprised about so 3.mils in there and 17.gubs so federal employees. Um so what
+1653.56s - 1659.26s |  happened with all this data? I had all this 1.2 million victim records here. I started
+1659.26s - 1664.16s |  looking for some help. So no one really wanted to reach back out to me though. So I I I
+1664.16s - 1669.84s |  reported through uh internet crime centers like online forum and FBI like reported tip or
+1669.84s - 1676.02s |  whatever and the postal inspectors I emailed them and no one really reached out until the
+1676.02s - 1681.38s |  banks did. Uh one of the major banks threat intelligence teams had like read my blog on I
+1681.38s - 1686.82s |  think like LinkedIn or something and uh they got in touch with me uh set up a meeting with
+1686.82s - 1692.76s |  their team and I just walked through what I'd done and showed uh securely the victim data
+1692.76s - 1697.34s |  with them so that they could go through find their customers uh get those credit cards
+1697.34s - 1702.18s |  canceled make sure any false charges get handled and then they also pass it off to their
+1702.18s - 1706.78s |  network of banks and so just that single major bank they were able to help over 80,000
+1706.78s - 1712.82s |  people which is wild. Um and then with that they also got me in touch with the U.S. postal
+1712.82s - 1717.72s |  inspectors office. They had a contact in their cyber crimes uh division there and so worked
+1717.72s - 1721.26s |  with the postal inspectors I was able to share that admin data as well along with the victim
+1721.26s - 1726.90s |  data and uh a chat export of my conversation with Wangdu Yu because I'd gotten some
+1726.90s - 1732.40s |  interesting information from him in regards to the case that they were doing. Um one thing
+1732.40s - 1736.48s |  that they had mentioned so the bank along with the postal inspectors office is that it's
+1736.48s - 1740.04s |  really hard to identify victims in this case because there's so many different ways your
+1740.04s - 1744.58s |  credit card can get stolen and having this like hard evidence I don't know if it's probably
+1744.58s - 1749.52s |  not admissible in court but having this hard link between this is where you entered your
+1749.52s - 1754.60s |  credit card and they're known for stealing your credit card so there you go you can just
+1754.60s - 1758.70s |  link the two together directly. Um investigation seems to be ongoing there's been no update
+1758.70s - 1765.14s |  um if any of you read the Wired article that was posted just a few days ago uh Matt Bruges
+1765.14s - 1769.24s |  uh from Wired he talked to the postal inspectors office they still say the investigation is
+1769.24s - 1776.66s |  ongoing. And so how do how can we fix this issue? Um other than manning the middle in
+1776.66s - 1783.40s |  every text message uh don't do that by the way uh I'm not an expert in any of these fields
+1783.40s - 1789.40s |  so SMS, iMessage, iOS, Android um but I think some better client side filtering needs to be
+1789.40s - 1794.54s |  done so obviously I'm going to say the buzzword AI um AI can actually be helpful in this
+1794.54s - 1799.28s |  identifying hey why is USPS texting you in the first place and secondly why are they
+1799.28s - 1805.58s |  linking you to this site that's obviously not the USPS's official site. Um so some third
+1805.58s - 1810.56s |  party integrations are actively doing stuff like this so one example um I don't use
+1810.56s - 1814.62s |  them this is just something I found was Truecaller does something similar uh and you can
+1814.62s - 1820.70s |  just integrate it into your at least iOS and I assume Android as well um they'll just do
+1820.70s - 1827.34s |  that filtering for you. So with that, that concludes my presentation. Thank you DefCon uh it's
+1827.34s - 1827.84s |  been amazing.

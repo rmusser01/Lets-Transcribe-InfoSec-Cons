@@ -1,0 +1,1374 @@
+{
+  "webpage_url": "https://www.youtube.com/watch?v=DzIkehasir4",
+  "title": "BlueHat 2024: S07: DCOM Research for Everyone!",
+  "description": "BlueHat 2024: Session 07: DCOM Research for Everyone! Presented by James Forshaw from Google\n\nAbstract: For almost 10 years I've been writing a tool, OleView.NET to aid in the analysis of Windows' COM attack surface for privilege escalation and remote code execution. What started as a merging of the SDK's OleView and Test Container GUIs it expanded out to an all-purpose security research tool adding support for Windows Runtime classes, security descriptor analysis, process parsing along with a PowerShell interface to augment the GUI.\n\nThe final important piece of the tool's functionality, the ability to call arbitrary COM interfaces at runtime without prior knowledge, was missing. This is crucial as it allows a researcher to not only inspect what COM services are registered but directly interact with them. While calling methods on a COM object was always supported for OLE Automation interfaces, for which the .NET Framework has good support, most of the interesting interfaces such as those exposed by privileged services do not just give you the information necessary to call them.\n\nThis presentation is about the research and implementation of this feature. It leverages the fact that almost all COM interfaces that can be called across process boundaries have registered proxies that can be analyzed to extract their marshaling information. That can then be used to reimplement a client. Of course, nothing is that simple, I'll describe many of the challenges that had to be overcome during the research and implementation, some of the false starts and some of the interesting security issues that came out of the work. I'll also demo the tooling so that attendees can have an understanding on how to use it for their own research.",
+  "channel_url": "https://www.youtube.com/channel/UCKmzq2lAhDxLy36KtvVWpaQ",
+  "duration": 2721,
+  "channel": "Microsoft Security Response Center (MSRC)",
+  "uploader": "Microsoft Security Response Center (MSRC)",
+  "upload_date": "20241108"
+}
+
+0.00s - 3.00s | This text was transcribed using whisper model: large-v2
+
+ So, yeah, welcome to Blue Hat.
+3.00s - 4.00s |  It's great to be back.
+4.00s - 8.00s |  I've spoken at Blue Hat two or three times now.
+8.00s - 11.00s |  So it's always good to be back at Microsoft,
+11.00s - 12.00s |  back at the Redmond campus,
+12.00s - 14.00s |  to talk about the types of things that I do
+14.00s - 15.00s |  on a regular basis,
+15.00s - 17.00s |  which is a lot of Microsoft research work.
+17.00s - 19.00s |  So, yeah, I'm James Foreshore.
+19.00s - 21.00s |  I work in Google in the Project Zero team,
+21.00s - 24.00s |  so I do security research
+24.00s - 26.00s |  for primarily sort of external products,
+26.00s - 28.00s |  so I don't tend to look at Google products.
+28.00s - 32.00s |  And my specialist subject is Microsoft products,
+32.00s - 33.00s |  specifically Windows.
+33.00s - 37.00s |  And my specialist subject on that is DCOM and COM.
+37.00s - 40.00s |  So let's get right into it.
+40.00s - 44.00s |  So the basic agenda is,
+44.00s - 46.00s |  for the people in the audience
+46.00s - 47.00s |  who don't know what the hell I'm talking about
+47.00s - 48.00s |  when I'm saying COM,
+48.00s - 50.00s |  I'm going to just give a very brief introduction
+50.00s - 51.00s |  of what COM is,
+51.00s - 54.00s |  why do we actually care about it
+54.00s - 55.00s |  from a security perspective.
+55.00s - 57.00s |  Then I'm going to talk about
+57.00s - 59.00s |  the sort of security research side of things,
+59.00s - 60.00s |  using the right tooling
+60.00s - 62.00s |  to try and improve your ability
+62.00s - 64.00s |  to find interesting security bugs
+64.00s - 68.00s |  in COM and DCOM parts of the operating system.
+68.00s - 70.00s |  Then I'm going to go into some of the improvements
+70.00s - 72.00s |  of the tooling that I've been writing
+72.00s - 75.00s |  for about 10 years,
+75.00s - 77.00s |  talking about DCOM inter-process communication
+77.00s - 80.00s |  and how you can implement your own DCOM clients.
+80.00s - 84.00s |  So then I'll just wrap up with some conclusions.
+84.00s - 85.00s |  So what is COM?
+85.00s - 88.00s |  Well, COM or the Component Object Model
+88.00s - 90.00s |  is a technology
+90.00s - 94.00s |  which has sort of been built into Windows since,
+94.00s - 97.00s |  at least since Windows 3.1
+97.00s - 98.00s |  in various different forms.
+98.00s - 101.00s |  It's evolved significantly over the years,
+101.00s - 104.00s |  but you can kind of consider it to be middleware.
+104.00s - 107.00s |  It's not in and itself
+107.00s - 109.00s |  an actual something you would directly interact with,
+109.00s - 111.00s |  but pretty much every time you use Windows,
+111.00s - 115.00s |  you're interacting with COM in some fashion.
+115.00s - 117.00s |  And it is middleware in the sense
+117.00s - 119.00s |  that one of the big challenges
+119.00s - 121.00s |  of building sort of big systems
+121.00s - 124.00s |  is you want to write, say, a library
+124.00s - 126.00s |  which you can consume in other places.
+126.00s - 128.00s |  Like you don't want to rewrite
+128.00s - 130.00s |  your new AI fancy widget
+130.00s - 134.00s |  in multiple different programming languages
+134.00s - 136.00s |  because you kind of just want to write it once
+136.00s - 139.00s |  and consume it once in anywhere you need it.
+139.00s - 142.00s |  And this is what COM is there to kind of solve.
+142.00s - 145.00s |  It provides a static ABI,
+145.00s - 146.00s |  Application Binary Interface,
+146.00s - 148.00s |  to allow you to sort of interface
+148.00s - 151.00s |  between different programming languages
+151.00s - 153.00s |  and different platforms.
+153.00s - 155.00s |  So, for example, you could write
+155.00s - 157.00s |  your components in Visual Basic,
+157.00s - 159.00s |  this sort of library component,
+159.00s - 161.00s |  but Visual Basic might have
+161.00s - 163.00s |  different sort of memory allocation rules
+163.00s - 166.00s |  and calling conventions to C or C++.
+166.00s - 169.00s |  Or by designing your components
+169.00s - 171.00s |  to adhere to the COM ABI,
+171.00s - 174.00s |  then, of course, it abstracts away
+174.00s - 176.00s |  those complexities,
+176.00s - 178.00s |  provides memory allocation facilities
+178.00s - 181.00s |  that both sides can use of that facility.
+181.00s - 183.00s |  And so you can write a component
+183.00s - 184.00s |  in, say, Visual Basic,
+184.00s - 186.00s |  but consume it from any other language
+186.00s - 188.00s |  which implements the ABI,
+188.00s - 190.00s |  such as obviously Visual Basic itself,
+190.00s - 192.00s |  C, C++, .NET,
+192.00s - 195.00s |  or things like Python, for example.
+195.00s - 199.00s |  But the nice thing about having this fixed ABI
+199.00s - 202.00s |  is, of course, it's sort of that transition layer.
+202.00s - 204.00s |  So, potentially, you can say,
+204.00s - 207.00s |  well, OK, on the left-hand side,
+207.00s - 209.00s |  the component consumer consuming
+209.00s - 211.00s |  this component you've written
+211.00s - 213.00s |  doesn't necessarily know the inner workings
+213.00s - 214.00s |  of how that component works.
+214.00s - 216.00s |  And then on the component provider side
+216.00s - 217.00s |  or the server side,
+217.00s - 221.00s |  it also doesn't know the client's structure
+221.00s - 224.00s |  and memory allocation protocols, et cetera.
+224.00s - 227.00s |  So we can split that COM boundary up,
+227.00s - 229.00s |  and as long as we can somehow
+229.00s - 231.00s |  marshal the sort of parameters
+231.00s - 233.00s |  passed into that COM interface,
+233.00s - 236.00s |  well, we can just slap an RPC channel in the middle.
+236.00s - 238.00s |  And this is what ends up being
+238.00s - 240.00s |  distributed COM or DCOM.
+240.00s - 242.00s |  Effectively, it allows you to
+242.00s - 244.00s |  sort of separate out the components
+244.00s - 246.00s |  and have, effectively, your consumer
+246.00s - 248.00s |  in potentially a different process
+248.00s - 250.00s |  or even on a different machine
+250.00s - 252.00s |  to the component provider or the server.
+252.00s - 254.54s |  So why do we care about it
+254.54s - 255.54s |  from a security perspective?
+255.54s - 257.54s |  Well, when you introduce a technology
+257.54s - 260.54s |  which allows you to relatively easily
+260.54s - 262.54s |  separate out, sort of delegate responsibility
+262.54s - 265.54s |  for some operation to another process,
+265.54s - 267.54s |  you can start putting it in
+267.54s - 269.54s |  at higher privilege levels.
+269.54s - 271.54s |  So say, for example, you're an attacker
+271.54s - 274.54s |  and you're sitting in a really secure sandbox,
+274.54s - 276.54s |  but you do have some level of access
+276.54s - 277.54s |  to the COM infrastructure,
+277.54s - 279.54s |  specifically into a system service
+279.54s - 282.54s |  which is called the DCOM Activator.
+282.54s - 285.54s |  Well, potentially, they can find COM objects
+285.54s - 288.54s |  which they can instantiate from the sandbox.
+288.54s - 290.54s |  And because the Activator is running
+290.54s - 292.54s |  as a high-privileged user,
+292.54s - 294.54s |  it's able to actually instantiate that object
+294.54s - 296.54s |  as a more privileged user.
+296.54s - 298.54s |  And this is used for things like
+298.54s - 300.54s |  Windows Store applications.
+300.54s - 302.54s |  Like if you needed to access a file,
+302.54s - 304.54s |  it would actually talk to a COM server
+304.54s - 305.54s |  running as the user,
+305.54s - 307.54s |  even though the Store application
+307.54s - 308.54s |  is running in a sandbox.
+308.54s - 310.54s |  And this allows you to sort of have
+310.54s - 314.54s |  some level of privilege separation.
+314.54s - 316.54s |  But, of course, if you can find bugs
+316.54s - 318.54s |  in this user land application,
+318.54s - 319.54s |  well, then, potentially,
+319.54s - 321.54s |  that attacker can get out of the sandbox
+321.54s - 324.54s |  and gain normal user privileges.
+324.54s - 326.54s |  And, obviously, taking that further,
+326.54s - 328.54s |  there are some COM services
+328.54s - 329.54s |  which run as privileged users.
+329.54s - 331.54s |  So, again, you can potentially find
+331.54s - 334.54s |  COM services which run a system
+334.54s - 336.54s |  or like an administrator account
+336.54s - 337.54s |  on the machine,
+337.54s - 339.54s |  find bugs in those services,
+339.54s - 340.54s |  and potentially you've now
+340.54s - 342.54s |  privilege escalated.
+342.54s - 343.54s |  And, of course, finally,
+343.54s - 345.54s |  because it is technically transparent,
+345.54s - 347.54s |  this COM object can exist
+347.54s - 349.54s |  on a remote server somewhere.
+349.54s - 351.54s |  And so, again, if you can find bugs
+351.54s - 354.54s |  in this remote interface,
+354.54s - 356.54s |  this remote COM service,
+356.54s - 357.54s |  potentially you can use it
+357.54s - 358.54s |  for lateral movement
+358.54s - 360.54s |  or remote code execution.
+360.54s - 362.54s |  So all these kind of things
+362.54s - 365.54s |  that mean that it's not COM specifically
+365.54s - 367.54s |  which is the thing of interest,
+367.54s - 369.54s |  it's just the facility by which
+369.54s - 371.54s |  potentially you can get attack surface
+371.54s - 373.54s |  and, therefore, find privilege escalations
+373.54s - 376.91s |  and remote code executions.
+376.91s - 377.91s |  So in the good old days,
+377.91s - 379.91s |  you would obviously want to do
+379.91s - 380.91s |  your COM research.
+380.91s - 382.91s |  And the good old days is like,
+382.91s - 384.91s |  I'm saying before the tools
+384.91s - 387.91s |  that I've written, for me anyway.
+387.91s - 388.91s |  Pretty much everything,
+388.91s - 390.91s |  all artifacts associated with COM
+390.91s - 392.91s |  are generally in the Windows registry.
+392.91s - 394.91s |  And anybody who looks at the Windows registry
+394.91s - 396.91s |  knows full well how well structured
+396.91s - 400.91s |  and obvious that information is.
+400.91s - 402.91s |  And if you know anything about COM,
+402.91s - 404.91s |  you know that everything has a GUID.
+404.91s - 406.91s |  So everything has some randomly assigned
+406.91s - 410.91s |  string of hexadecimal digits.
+410.91s - 412.91s |  But, yeah, you could just look in the registry
+412.91s - 414.91s |  and look for COM registration information.
+414.91s - 415.91s |  That's just all there
+415.91s - 417.91s |  under this HKEYCLASSES route.
+417.91s - 418.91s |  I'm not going to go into
+418.91s - 420.91s |  how HKEYCLASSES route is simulated.
+420.91s - 421.91s |  It's a lot more complicated
+421.91s - 422.91s |  than just like a...
+422.91s - 424.91s |  It's not a real key, for example.
+424.91s - 426.91s |  But anyway, you could do that manually,
+426.91s - 427.91s |  if you like.
+427.91s - 429.91s |  And for a long time,
+429.91s - 430.91s |  the SDK has had tooling
+430.91s - 433.91s |  to do basic COM analysis.
+433.91s - 435.91s |  For example, the OLEView tool,
+435.91s - 437.91s |  which comes with the SDK.
+437.91s - 439.91s |  It allows you to enumerate
+439.91s - 441.91s |  all the classes registered on the system.
+441.91s - 443.91s |  You can then sort of double click it
+443.91s - 444.91s |  and it will try and show you
+444.91s - 446.91s |  what interfaces it supports.
+446.91s - 447.91s |  But for most interfaces,
+447.91s - 449.91s |  unless they use,
+449.91s - 450.91s |  as we'll go into something
+450.91s - 451.91s |  called a type library,
+451.91s - 452.91s |  it can't tell you
+452.91s - 453.91s |  what those interfaces do.
+453.91s - 454.91s |  It just tells you, like,
+454.91s - 456.91s |  it supports this interface.
+456.91s - 457.91s |  And it shows you
+457.91s - 459.91s |  various other bits of information
+459.91s - 460.91s |  as you go.
+460.91s - 461.91s |  So, I felt these were
+461.91s - 462.91s |  all a bit limited.
+462.91s - 463.91s |  So, about 10 years ago,
+463.91s - 464.91s |  I started writing
+464.91s - 468.91s |  my OLEView.NET tool.
+468.91s - 470.91s |  Obviously, shamelessly stealing the name
+470.91s - 473.91s |  and tweaking the icon slightly.
+473.91s - 474.91s |  So, it is kind of a successor,
+474.91s - 475.91s |  in my opinion,
+475.91s - 477.91s |  for the OLEView tool.
+477.91s - 478.91s |  But obviously, with the .NET,
+478.91s - 480.91s |  and it's very, sort of,
+480.91s - 481.91s |  almost 1990s,
+481.91s - 482.91s |  but of course,
+482.91s - 485.91s |  it was written in the 2010s, right?
+485.91s - 486.91s |  It has .NET
+486.91s - 487.91s |  because it's written in .NET.
+487.91s - 489.91s |  It's written all in C Sharp, primarily.
+489.91s - 493.91s |  So, this picture looks very similar
+493.91s - 494.91s |  to the one I just showed you
+494.91s - 495.91s |  from OLEView.
+495.91s - 496.91s |  It gives you that same,
+496.91s - 498.91s |  oh, I can just show all the classes.
+498.91s - 499.91s |  I can double click it.
+499.91s - 500.91s |  It will show me the interfaces
+500.91s - 502.91s |  that that class supports.
+502.91s - 503.91s |  And it has a list
+503.91s - 505.91s |  of potential information
+505.91s - 507.91s |  that you can access.
+507.91s - 508.91s |  But it does much more than that.
+508.91s - 509.91s |  For example,
+509.91s - 510.91s |  it's a more modern tool.
+510.91s - 511.91s |  So, it has more
+511.91s - 512.91s |  comprehensive analysis.
+512.91s - 513.91s |  For example,
+513.91s - 514.91s |  it can show you
+514.91s - 515.91s |  Windows Runtime classes,
+515.91s - 517.91s |  which are all based on COM as well,
+517.91s - 518.91s |  but are registered
+518.91s - 519.91s |  in a different way.
+519.91s - 521.91s |  But effectively,
+521.91s - 522.91s |  it can give you the same,
+522.91s - 523.91s |  sort of, similar view
+523.91s - 527.91s |  on Windows Runtime classes as well.
+527.91s - 529.91s |  It's all built on .NET,
+529.91s - 530.91s |  so it's really easy
+530.91s - 531.91s |  to reflect over objects,
+531.91s - 532.91s |  and you can build in
+532.91s - 534.91s |  really easy filtering
+534.91s - 535.91s |  for more complex,
+535.91s - 536.91s |  like, oh, I want to find
+536.91s - 537.91s |  this particular class
+537.91s - 539.91s |  which implements this interface.
+539.91s - 540.91s |  You can all do that
+540.91s - 542.91s |  using the GUI.
+542.91s - 543.91s |  And it also merges
+543.91s - 544.91s |  in other tooling.
+544.91s - 545.91s |  So, for example,
+545.91s - 547.91s |  OLEview didn't allow you
+547.91s - 549.91s |  to invoke methods,
+549.91s - 550.91s |  but there was a separate program
+550.91s - 551.91s |  called TestContainer,
+551.91s - 552.91s |  which allowed you
+552.91s - 554.91s |  to host ActiveX objects
+554.91s - 555.91s |  and invoke methods
+555.91s - 557.91s |  based on type libraries.
+557.91s - 558.91s |  So, it supports that as well.
+558.91s - 559.91s |  So, this is, like,
+559.91s - 560.91s |  just a screenshot
+560.91s - 561.91s |  of hosting
+561.91s - 563.91s |  the Windows Media Player control,
+563.91s - 564.91s |  and then being able to, like,
+564.91s - 565.91s |  launch a URL
+565.91s - 566.91s |  and show a fancy video
+566.91s - 568.91s |  of, like, the terminus
+568.91s - 571.91s |  going around the Earth.
+571.91s - 575.91s |  So, just a very quick demo of that.
+575.91s - 576.91s |  So, usually,
+576.91s - 577.91s |  when you first run it,
+577.91s - 578.91s |  you'll actually spend
+578.91s - 579.91s |  quite a lot of time
+579.91s - 580.91s |  because you'll have to parse
+580.91s - 581.91s |  all the registry information,
+581.91s - 582.91s |  like do all the cross-referencing
+582.91s - 583.91s |  and all that sort of stuff.
+583.91s - 584.91s |  But these are sort of
+584.91s - 586.91s |  some of the categorizations
+586.91s - 587.91s |  of the information
+587.91s - 589.91s |  you can look at.
+589.91s - 590.91s |  So, some of them
+590.91s - 591.91s |  are just different views
+591.91s - 592.91s |  of the same code,
+592.91s - 593.91s |  the same sort of
+593.91s - 594.91s |  underlying resource.
+594.91s - 595.91s |  So, for example, here,
+595.91s - 597.91s |  we're just looking at
+597.91s - 598.91s |  what local services,
+598.91s - 600.91s |  what usually privileged services are
+600.91s - 602.91s |  hosting COM objects.
+602.91s - 603.91s |  And then we can just do, say,
+603.91s - 604.91s |  a basic filtering.
+604.91s - 605.91s |  We want to say,
+605.91s - 606.91s |  just give me COM objects
+606.91s - 607.91s |  with the name background
+607.91s - 609.91s |  and just it'll filter down to those.
+609.91s - 611.91s |  You can do more complex ones.
+611.91s - 612.91s |  So, of course,
+612.91s - 613.91s |  if you double-click that,
+613.91s - 615.91s |  if you wait a second,
+615.91s - 616.91s |  it will come up
+616.91s - 618.91s |  with the associated interfaces.
+618.91s - 619.91s |  It'll also show you
+619.91s - 620.91s |  the factory interfaces,
+620.91s - 621.91s |  which potentially have
+621.91s - 623.91s |  other interesting things in there.
+623.91s - 624.91s |  And then, of course,
+624.91s - 625.91s |  you can bring up
+625.91s - 626.91s |  the property information,
+626.91s - 628.91s |  look at what interfaces are there,
+628.91s - 629.91s |  et cetera,
+629.91s - 630.91s |  look at the security
+630.91s - 636.75s |  of that object.
+636.75s - 639.75s |  Okay, so,
+639.75s - 640.75s |  you've got all this tooling
+640.75s - 641.75s |  and that's, like,
+641.75s - 642.75s |  the GUI is great
+642.75s - 643.75s |  because it allows you
+643.75s - 644.75s |  to just sort of, like,
+644.75s - 645.75s |  click around
+645.75s - 647.75s |  and find interesting stuff.
+647.75s - 648.75s |  And this comes back
+648.75s - 650.75s |  to the sort of research process
+650.75s - 651.75s |  that I generally undertake
+651.75s - 653.75s |  for finding interesting DCOM,
+653.75s - 655.75s |  security vulnerabilities.
+655.75s - 656.75s |  And the first one
+656.75s - 657.75s |  is just that enumerating classes.
+657.75s - 659.75s |  Like, if you just went
+659.75s - 660.75s |  on the registry,
+660.75s - 661.75s |  it's really hard to, like,
+661.75s - 662.75s |  sort of actually analyze
+662.75s - 663.75s |  sort of everything
+663.75s - 666.75s |  about that DCOM registration.
+666.75s - 667.75s |  So, the first thing
+667.75s - 668.75s |  you need to do
+668.75s - 669.75s |  is find a class
+669.75s - 670.75s |  which, say,
+670.75s - 671.75s |  is running as a privileged user
+671.75s - 672.75s |  or potentially running
+672.75s - 673.75s |  on a remote system
+673.75s - 674.75s |  that you want to try
+674.75s - 675.75s |  and attack
+675.75s - 677.75s |  and want to try and analyze.
+677.75s - 678.75s |  And that's what a lot
+678.75s - 679.75s |  of the tooling does.
+679.75s - 680.75s |  But while the GUI
+680.75s - 683.75s |  is great and all,
+683.75s - 684.75s |  ultimately,
+684.75s - 685.75s |  it pales in comparison
+685.75s - 686.75s |  to the flexibility
+686.75s - 687.75s |  of just having
+687.75s - 688.75s |  a PowerShell console
+688.75s - 689.75s |  to talk to a lot of this.
+689.75s - 690.75s |  And because this is all
+690.75s - 691.75s |  written in .NET originally,
+691.75s - 692.75s |  then it's really,
+692.75s - 693.75s |  it was really easy
+693.75s - 695.75s |  to basically just add commands
+695.75s - 696.75s |  to PowerShell
+696.75s - 698.75s |  which inspected
+698.75s - 700.75s |  and enumerated
+700.75s - 701.75s |  the resources
+701.75s - 702.75s |  out of that sort of
+702.75s - 703.75s |  captured information
+703.75s - 705.75s |  from the registry.
+705.75s - 706.75s |  So, again,
+706.75s - 707.75s |  just a quick demo
+707.75s - 708.75s |  of this time
+708.75s - 709.75s |  of the PowerShell module.
+709.75s - 714.82s |  So, we load it up.
+714.82s - 716.82s |  Obviously, just normal PowerShell.
+716.82s - 717.82s |  And it's exposed
+717.82s - 718.82s |  as a module,
+718.82s - 719.82s |  so you can just
+719.82s - 720.82s |  import the module
+720.82s - 721.82s |  or just run a command
+721.82s - 722.82s |  and it will automatically
+722.82s - 723.82s |  do it for you.
+723.82s - 724.82s |  So, there's the get
+724.82s - 725.82s |  com class command,
+725.82s - 726.82s |  for example.
+726.82s - 727.82s |  And it has to first
+727.82s - 729.82s |  load up the registry information.
+729.82s - 731.82s |  But the com class
+731.82s - 732.82s |  basically enumerates
+732.82s - 734.82s |  all the com classes
+734.82s - 736.82s |  that it's actually accessed.
+736.82s - 737.82s |  And so, you can obviously
+737.82s - 738.82s |  do basic stuff with this
+738.82s - 740.82s |  because it's all objects.
+740.82s - 741.82s |  So, you can say,
+741.82s - 743.82s |  I just want the first 10 objects, please.
+743.82s - 744.82s |  Or you can do
+744.82s - 745.82s |  more complex filtering.
+745.82s - 746.82s |  The commands themselves
+746.82s - 747.82s |  also have, like,
+747.82s - 748.82s |  some pre-filtering for you.
+748.82s - 749.82s |  So, you can say,
+749.82s - 751.82s |  just show me all the ones
+751.82s - 752.82s |  which are out-of-process
+752.82s - 753.82s |  com objects,
+753.82s - 754.82s |  rather than, like,
+754.82s - 755.82s |  from a security perspective,
+755.82s - 756.82s |  in-process com objects
+756.82s - 758.82s |  are not that useful.
+758.82s - 759.82s |  You can also say,
+759.82s - 760.82s |  okay, give me anything
+760.82s - 762.82s |  which has a particular name.
+762.82s - 763.82s |  But, of course,
+763.82s - 764.82s |  if you want to do, like,
+764.82s - 765.82s |  a wildcard match,
+765.82s - 766.82s |  then, of course,
+766.82s - 768.82s |  you can do, like,
+768.82s - 769.82s |  actual just filtering
+769.82s - 770.82s |  in PowerShell
+770.82s - 771.82s |  using the sort of
+771.82s - 772.82s |  where object command.
+772.82s - 773.82s |  And, of course,
+773.82s - 774.82s |  being an object model,
+774.82s - 775.82s |  you can just do, like,
+775.82s - 776.82s |  format list.
+776.82s - 777.82s |  It will give you, like,
+777.82s - 778.82s |  a normal summary output.
+778.82s - 779.82s |  But if you do format list,
+779.82s - 780.82s |  it will show you
+780.82s - 781.82s |  all the different properties
+781.82s - 783.82s |  associated with that object.
+783.82s - 784.82s |  It will have,
+784.82s - 785.82s |  it will do sort of
+785.82s - 786.82s |  internal linking.
+786.82s - 787.82s |  So, like, for example,
+787.82s - 788.82s |  there is, like,
+788.82s - 789.82s |  an app ID GUID.
+789.82s - 790.82s |  But then there's
+790.82s - 791.82s |  the app ID entry,
+791.82s - 792.82s |  which is a separate object.
+792.82s - 793.82s |  And it will just
+793.82s - 794.82s |  automatically link those two.
+794.82s - 795.82s |  So, you can just sort of
+795.82s - 796.82s |  go through and sort of
+796.82s - 798.82s |  follow the links around.
+798.82s - 799.82s |  So, again, it's just,
+799.82s - 801.82s |  it's allowing you to
+801.82s - 802.82s |  sort of more easily
+802.82s - 804.82s |  analyze the com attack surface
+804.82s - 805.82s |  that is present
+805.82s - 806.82s |  on your local system
+806.82s - 807.82s |  or wherever you've captured
+807.82s - 811.26s |  the database from.
+811.26s - 812.26s |  So, the second step
+812.26s - 813.26s |  of security research
+813.26s - 814.26s |  is actually verifying that
+814.26s - 816.26s |  those interesting classes
+816.26s - 817.26s |  that you've seen
+817.26s - 818.26s |  and that you've discovered
+818.26s - 819.26s |  using your analysis
+819.26s - 821.26s |  are actually something
+821.26s - 823.26s |  that you can access.
+823.26s - 825.26s |  Because COM does have
+825.26s - 827.26s |  security mechanisms in place
+827.26s - 829.26s |  to allow you to control
+829.26s - 830.26s |  who can access
+830.26s - 831.26s |  what COM objects
+831.26s - 832.26s |  and actually who can invoke
+832.26s - 834.26s |  what COM methods.
+834.26s - 837.93s |  So, generally in COM,
+837.93s - 840.93s |  there's two main security categories.
+840.93s - 841.93s |  On the left-hand side,
+841.93s - 842.93s |  there is the launch
+842.93s - 844.93s |  and activation security category.
+844.93s - 846.93s |  So, this is a security descriptor
+846.93s - 847.93s |  which is inside
+847.93s - 849.93s |  the Windows registry configuration
+849.93s - 851.93s |  for that COM class.
+851.93s - 853.93s |  And this indicates
+853.93s - 855.93s |  who is allowed to launch
+855.93s - 857.93s |  a new instance of that COM server.
+857.93s - 858.93s |  So, like, if that COM server
+858.93s - 860.93s |  doesn't currently exist
+860.93s - 861.93s |  and you say to the decom activator,
+861.93s - 863.93s |  hey, can you activate me,
+863.93s - 864.93s |  can you create me
+864.93s - 866.93s |  a new instance of this COM object,
+866.93s - 867.93s |  it might have to go, okay,
+867.93s - 868.93s |  but I need to go and create,
+868.93s - 871.93s |  start, process, something.exe
+871.93s - 872.93s |  which will actually host
+872.93s - 874.93s |  that object for you
+874.93s - 875.93s |  or start a service
+875.93s - 877.93s |  or whatever it happens to be.
+877.93s - 878.93s |  So, this defines
+878.93s - 879.93s |  are you allowed to launch
+879.93s - 881.93s |  new instances of that object?
+881.93s - 882.93s |  And then you have a second property
+882.93s - 884.93s |  which is are you allowed to,
+884.93s - 886.93s |  if there's already that server running,
+886.93s - 887.93s |  are you allowed to activate
+887.93s - 889.93s |  new instances of that class
+889.93s - 890.93s |  on that object?
+890.93s - 892.93s |  Now, most of the time,
+892.93s - 893.93s |  if you've got launch,
+893.93s - 894.93s |  you've also probably got activate,
+894.93s - 895.93s |  but technically speaking,
+895.93s - 897.93s |  you could configure it either way.
+897.93s - 898.93s |  It's more common to see it
+898.93s - 901.93s |  that you can't launch,
+901.93s - 903.93s |  but you can at least activate.
+903.93s - 904.93s |  But crucially here,
+904.93s - 906.93s |  these are usually pretty good.
+906.93s - 908.93s |  The information provided in the tooling
+908.93s - 909.93s |  is pretty accurate
+909.93s - 911.93s |  because this is actually enforced
+911.93s - 915.93s |  in the decom activator in our PCSS.
+915.93s - 917.93s |  So, this is usually pretty static.
+917.93s - 918.93s |  There can't be any unusual ways
+918.93s - 920.93s |  of sort of mucking around
+920.93s - 921.93s |  with this configuration.
+921.93s - 922.93s |  Conversely, there's then
+922.93s - 924.93s |  a second set of security
+924.93s - 926.93s |  which is the access security.
+926.93s - 928.93s |  This defines what users,
+928.93s - 929.93s |  what groups are allowed
+929.93s - 931.93s |  to actually call methods
+931.93s - 933.93s |  on that com object.
+933.93s - 935.93s |  So, you could actually be in a scenario
+935.93s - 938.93s |  where you can create an object
+938.93s - 939.93s |  and activate it,
+939.93s - 942.93s |  but you can't then call any methods on it,
+942.93s - 943.93s |  which is kind of a weird scenario,
+943.93s - 946.93s |  but it sometimes happens.
+946.93s - 947.93s |  Now, this is enforced
+947.93s - 948.93s |  in the server process itself.
+948.93s - 950.93s |  So, this is enforced in the service
+950.93s - 954.93s |  or in the out-of-process com server.
+954.93s - 955.93s |  And in this case,
+955.93s - 956.93s |  there's a lot of ways
+956.93s - 957.93s |  of configuring this.
+957.93s - 958.93s |  You can configure it
+958.93s - 959.93s |  through the registry,
+959.93s - 960.93s |  but it can also be configured
+960.93s - 962.93s |  at runtime by the server.
+962.93s - 964.93s |  It could configure it using callback,
+964.93s - 966.93s |  so it could actually be like
+966.93s - 968.93s |  individual com calls
+968.93s - 969.93s |  can get authenticated
+969.93s - 970.93s |  rather than just using
+970.93s - 972.93s |  a security descriptor.
+972.93s - 973.93s |  But for the most part,
+973.93s - 974.93s |  it tends to work.
+974.93s - 976.93s |  There are a few tricks
+976.93s - 978.93s |  you can use with my tooling.
+978.93s - 980.93s |  You can pause the actual com server process
+980.93s - 982.93s |  to pull out the exact security descriptor
+982.93s - 986.93s |  that was assigned during that operation.
+986.93s - 987.93s |  And it was used to, like,
+987.93s - 989.93s |  a friend who found
+989.93s - 991.93s |  an interesting bug in Explorer.
+991.93s - 992.93s |  I was able to use this feature
+992.93s - 994.93s |  that showed that Explorer
+994.93s - 996.93s |  was actually running.
+996.93s - 998.93s |  If you run it as an administrator
+998.93s - 999.93s |  without UAC turned on,
+999.93s - 1000.93s |  it would actually, like,
+1000.93s - 1001.93s |  enable very weak security
+1001.93s - 1002.93s |  in its access control,
+1002.93s - 1003.93s |  even though,
+1003.93s - 1004.93s |  according to the configuration,
+1004.93s - 1006.93s |  it should have been actually secure.
+1006.93s - 1010.93s |  So sometimes it can surprise you.
+1010.93s - 1012.93s |  Something interesting to note in that,
+1012.93s - 1013.93s |  you see right in the middle,
+1013.93s - 1015.93s |  there's this special self SID.
+1015.93s - 1017.93s |  And this SID obviously doesn't exist
+1017.93s - 1018.93s |  in reality,
+1018.93s - 1020.93s |  but what it is is it's a placeholder
+1020.93s - 1022.93s |  that com will replace
+1022.93s - 1024.93s |  with the SID of the current
+1024.93s - 1026.93s |  primary token user of the server.
+1026.93s - 1028.93s |  So if a server's running as, say,
+1028.93s - 1030.93s |  system, local system,
+1030.93s - 1032.93s |  that will actually grant access
+1032.93s - 1033.93s |  to the local system.
+1033.93s - 1034.93s |  So it's a really simple way
+1034.93s - 1037.93s |  of making, like, generic security,
+1037.93s - 1039.93s |  which can then be sort of modified
+1039.93s - 1041.93s |  to only allow the creator access
+1041.93s - 1045.30s |  to that resource.
+1045.30s - 1047.30s |  So again, there's various commands
+1047.30s - 1049.30s |  that you can use in the PowerShell
+1049.30s - 1051.30s |  to do sort of analysis
+1051.30s - 1054.30s |  of the com security.
+1054.30s - 1056.30s |  So one of them is just you can
+1056.30s - 1059.30s |  format the security to the console
+1059.30s - 1061.30s |  and just do format security descriptor
+1061.30s - 1063.30s |  and pass it a class or whatever,
+1063.30s - 1065.30s |  and it will print it to the console.
+1065.30s - 1066.30s |  But there's also
+1066.30s - 1068.30s |  the select com access command,
+1068.30s - 1070.30s |  which allows you to pipe in
+1070.30s - 1072.30s |  things like com classes
+1072.30s - 1073.30s |  and filter them.
+1073.30s - 1074.30s |  Basically, you do an access check
+1074.30s - 1076.30s |  and it will filter out the ones
+1076.30s - 1078.30s |  which you would not be allowed to access.
+1078.30s - 1079.30s |  So in this case, we're doing it
+1079.30s - 1080.30s |  without filtering.
+1080.30s - 1083.30s |  We can see that there's 234 com classes
+1083.30s - 1084.30s |  registered on my system
+1084.30s - 1086.30s |  that are running in services.
+1086.30s - 1087.30s |  I pipe that through
+1087.30s - 1089.30s |  the select com access command,
+1089.30s - 1091.30s |  and we'll now end up
+1091.30s - 1094.30s |  with slightly fewer, 19 fewer.
+1094.30s - 1096.30s |  So those 19 objects, in theory,
+1096.30s - 1097.30s |  will not be able to be accessed
+1097.30s - 1099.30s |  by you directly anyway.
+1099.30s - 1100.30s |  So there's almost no point
+1100.30s - 1101.30s |  looking at them.
+1101.30s - 1102.30s |  You can, of course, have a poke
+1102.30s - 1104.30s |  and just see if it's actually like
+1104.30s - 1105.30s |  it's lying to you.
+1105.30s - 1106.30s |  And there's various ways
+1106.30s - 1109.30s |  of configuring the select com access command.
+1109.30s - 1111.30s |  For example, a really important one
+1111.30s - 1113.30s |  is if you want to determine
+1113.30s - 1118.30s |  what you can access from a sandbox,
+1118.30s - 1119.30s |  well, it's really hard
+1119.30s - 1122.30s |  to run the code in a sandbox.
+1122.30s - 1123.30s |  You couldn't easily run it.
+1123.30s - 1124.30s |  If it's quite a strong sandbox,
+1124.30s - 1125.30s |  especially, running PowerShell
+1125.30s - 1127.30s |  in a sandbox is going to give you
+1127.30s - 1128.30s |  a hard time.
+1128.30s - 1129.30s |  So what you can do
+1129.30s - 1131.30s |  is you can specify a process ID
+1131.30s - 1133.30s |  of that sandboxed application,
+1133.30s - 1135.30s |  and the tooling will read the access token
+1135.30s - 1136.30s |  from that process
+1136.30s - 1138.30s |  and then use that instead
+1138.30s - 1139.30s |  as the access checker.
+1139.30s - 1141.30s |  And then that will be able to say,
+1141.30s - 1143.30s |  OK, these sets of com objects
+1143.30s - 1144.30s |  potentially are accessible
+1144.30s - 1147.30s |  from this sandboxed application.
+1147.30s - 1151.00s |  OK, so the final thing
+1151.00s - 1153.00s |  and the majority of this talk
+1153.00s - 1155.00s |  is talking about how to call methods
+1155.00s - 1159.00s |  on unknown com objects.
+1159.00s - 1160.00s |  And it's worth just going into
+1160.00s - 1163.00s |  how the sort of infrastructure works a bit.
+1163.00s - 1164.00s |  So in order to call
+1164.00s - 1166.00s |  an out-of-process com object,
+1166.00s - 1167.00s |  you need something called
+1167.00s - 1173.00s |  a proxy slash stub DLL installed,
+1173.00s - 1174.00s |  or generally.
+1174.00s - 1175.00s |  We'll go into an exception
+1175.00s - 1176.00s |  for that in a second.
+1176.00s - 1177.00s |  And what this is
+1177.00s - 1179.00s |  is this is the marshalling code
+1179.00s - 1181.00s |  to allow you to take in
+1181.00s - 1182.00s |  the parameters from the client
+1182.00s - 1185.00s |  and pretend to be the interface in process,
+1185.00s - 1187.00s |  marshal up those parameters,
+1187.00s - 1189.00s |  and then pass them through the com runtime,
+1189.00s - 1191.00s |  pass them through the RPC runtime,
+1191.00s - 1192.00s |  so that they can be sent
+1192.00s - 1195.00s |  over that RPC channel.
+1195.00s - 1196.00s |  So on the client side,
+1196.00s - 1197.00s |  you have the proxy,
+1197.00s - 1200.00s |  which acts to do the marshalling layer.
+1200.00s - 1203.00s |  And then when it gets to the server side
+1203.00s - 1204.00s |  and the component provider side,
+1204.00s - 1205.00s |  the RPC runtime,
+1205.00s - 1208.00s |  the com runtime sort of unpacks that call
+1208.00s - 1210.00s |  and then passes that data
+1210.00s - 1211.00s |  to the stub class,
+1211.00s - 1214.00s |  which unmarshals the arguments
+1214.00s - 1216.00s |  and passes it finally
+1216.00s - 1218.00s |  to the com server itself.
+1218.00s - 1219.00s |  So it invokes the correct method
+1219.00s - 1224.00s |  on the object inside the com server.
+1224.00s - 1226.00s |  So without having one of these,
+1226.00s - 1228.00s |  even if an object exposes
+1228.00s - 1229.00s |  a particular com interface
+1229.00s - 1231.00s |  to the caller,
+1231.00s - 1233.00s |  to a normal caller,
+1233.00s - 1235.00s |  it'll only be exposed remotely,
+1235.00s - 1237.00s |  like out-of-process,
+1237.00s - 1238.00s |  if one of these proxies
+1238.00s - 1242.60s |  and stub DLLs are installed.
+1242.60s - 1243.60s |  And of course,
+1243.60s - 1244.60s |  everything is configured in the registry.
+1244.60s - 1246.60s |  So obviously,
+1246.60s - 1248.60s |  if you look under the interface key
+1248.60s - 1250.60s |  inside classes root,
+1250.60s - 1252.60s |  you'll find a massive list of GUIDs.
+1252.60s - 1254.60s |  And these GUIDs are the interface IDs
+1254.60s - 1255.60s |  of all the interfaces
+1255.60s - 1257.60s |  that have registered proxies
+1257.60s - 1259.60s |  or proxy stub classes.
+1259.60s - 1261.60s |  And this is actually how like
+1261.60s - 1262.60s |  OLEView and my tooling
+1262.60s - 1264.60s |  does the interface enumeration.
+1264.60s - 1267.60s |  It literally does a brute force search
+1267.60s - 1269.60s |  of let's enumerate every interface ID
+1269.60s - 1272.60s |  from this registry key
+1272.60s - 1274.60s |  and just test every single one.
+1274.60s - 1275.60s |  Hey, do you support this interface?
+1275.60s - 1276.60s |  Do you support this interface?
+1276.60s - 1278.60s |  And everyone it says yes to,
+1278.60s - 1280.60s |  we assume it's not lying to us
+1280.60s - 1284.60s |  and we can actually call.
+1284.60s - 1286.60s |  So how do you actually get one of those DLLs?
+1286.60s - 1288.60s |  Well, you could just write it all manually.
+1288.60s - 1289.60s |  Like technically speaking,
+1289.60s - 1291.60s |  all the documentation is there.
+1291.60s - 1292.60s |  You could just write
+1292.60s - 1294.60s |  your own marshalling layer yourself.
+1294.60s - 1295.60s |  But of course,
+1295.60s - 1296.60s |  that's not what most people do
+1296.60s - 1299.60s |  because that would be quite time consuming
+1299.60s - 1300.60s |  and complex.
+1300.60s - 1301.60s |  So instead, what you would tend to do
+1301.60s - 1303.60s |  if you're writing your own com components
+1303.60s - 1306.60s |  is you'd write an interface definition language file,
+1306.60s - 1307.60s |  an IDL file.
+1307.60s - 1310.60s |  And this contains the definitions
+1310.60s - 1311.60s |  of your interfaces.
+1311.60s - 1312.60s |  So for example,
+1312.60s - 1315.60s |  ISimpleObject shown in the bottom left,
+1315.60s - 1318.60s |  this is like a simple interface definition
+1318.60s - 1321.60s |  and it uses the same syntax as normal RPC.
+1321.60s - 1322.60s |  The only difference is
+1322.60s - 1324.60s |  there's a special attribute for that interface,
+1324.60s - 1325.60s |  the object attribute,
+1325.60s - 1328.60s |  which says this is actually an object interface
+1328.60s - 1332.60s |  rather than a normal RPC interface.
+1332.60s - 1333.60s |  And you can, of course,
+1333.60s - 1335.60s |  define the parameters
+1335.60s - 1338.60s |  and how that is called, etc.
+1338.60s - 1339.60s |  Now, when you add that, say,
+1339.60s - 1340.60s |  to Visual Studio,
+1340.60s - 1341.60s |  it will automatically pass it
+1341.60s - 1342.60s |  to the middle compiler,
+1342.60s - 1344.60s |  the IDL compiler,
+1344.60s - 1346.60s |  which is part of the SDK.
+1346.60s - 1347.60s |  And that generally spits out
+1347.60s - 1348.60s |  two pieces of information
+1348.60s - 1349.60s |  or two files.
+1349.60s - 1351.60s |  It spits out what is called
+1351.60s - 1353.60s |  the stubless proxy file,
+1353.60s - 1354.60s |  which is a C file
+1354.60s - 1356.60s |  which you can compile into your application.
+1356.60s - 1358.60s |  And it also can spit out a type library,
+1358.60s - 1359.60s |  which contains the metadata
+1359.60s - 1361.60s |  associated with that IDL file,
+1361.60s - 1366.60s |  the compiled IDL file.
+1366.60s - 1369.60s |  So you've built your com component,
+1369.60s - 1370.60s |  you've registered it.
+1370.60s - 1372.60s |  Now you actually need to like,
+1372.60s - 1374.60s |  how does com actually interact
+1374.60s - 1376.60s |  and get that interface defined?
+1376.60s - 1379.60s |  So in order to talk to a new com interface
+1379.60s - 1381.60s |  that you don't know exists,
+1381.60s - 1382.60s |  you call query interface.
+1382.60s - 1383.60s |  And this is a method
+1383.60s - 1384.60s |  which is implemented
+1384.60s - 1385.60s |  on every single com object
+1385.60s - 1387.60s |  as part of the Iownown interface,
+1387.60s - 1390.60s |  which everything has to derive from.
+1390.60s - 1391.60s |  So when you call query interface
+1391.60s - 1392.60s |  on a proxy object,
+1392.60s - 1394.60s |  it'll actually end up,
+1394.60s - 1395.60s |  rather than calling the object itself,
+1395.60s - 1398.60s |  it will call into the com runtime.
+1398.60s - 1399.60s |  And the com runtime,
+1399.60s - 1401.60s |  after doing some things like
+1401.60s - 1402.60s |  checking with the remote server,
+1402.60s - 1404.60s |  do you actually support this interface?
+1404.60s - 1405.60s |  And getting back, like,
+1405.60s - 1407.60s |  a reference to that object.
+1407.60s - 1409.60s |  It will then check,
+1409.60s - 1410.60s |  okay, but do I have a proxy
+1410.60s - 1411.60s |  for this object?
+1411.60s - 1413.60s |  It's all very well saying
+1413.60s - 1414.60s |  that the remote server
+1414.60s - 1415.60s |  implements this object,
+1415.60s - 1416.60s |  but do I have a proxy
+1416.60s - 1418.60s |  that I can allow to marshal
+1418.60s - 1421.60s |  to the remote side?
+1421.60s - 1422.60s |  So it looks in the registry
+1422.60s - 1424.60s |  for those interface keys,
+1424.60s - 1425.60s |  and goes, okay, this GUID
+1425.60s - 1426.60s |  is in this thing,
+1426.60s - 1427.60s |  and it points to this
+1427.60s - 1428.60s |  PSFactoryBuffer,
+1428.60s - 1429.60s |  this special object
+1429.60s - 1432.60s |  implemented by your DLL.
+1432.60s - 1433.60s |  This factory buffer
+1433.60s - 1435.60s |  has a function called createProxy,
+1435.60s - 1438.60s |  which spits out two other objects.
+1438.60s - 1440.60s |  It spits out the proxy interface.
+1440.60s - 1442.60s |  This is a com class
+1442.60s - 1443.60s |  which pretends to be
+1443.60s - 1445.60s |  that interface in process.
+1445.60s - 1447.60s |  So it takes the parameters
+1447.60s - 1449.60s |  as specified by the interface,
+1449.60s - 1451.60s |  and through some various
+1451.60s - 1452.60s |  aggregation mechanism,
+1452.60s - 1454.60s |  it basically sort of
+1454.60s - 1456.60s |  has the proxy and this interface
+1456.60s - 1458.60s |  as one object to the caller.
+1458.60s - 1459.60s |  But again, in theory,
+1459.60s - 1461.60s |  the client doesn't realize all this.
+1461.60s - 1462.60s |  But the other thing it creates
+1462.60s - 1463.60s |  is the proxy buffer.
+1463.60s - 1464.60s |  And this is basically
+1464.60s - 1468.60s |  the wrapper for the proxy channel,
+1469.60s - 1470.60s |  the proxy mechanism
+1470.60s - 1472.60s |  that you're going to implement.
+1472.60s - 1473.60s |  The com runtime then
+1473.60s - 1475.60s |  obviously knows where that server is,
+1475.60s - 1477.60s |  so it builds a new object
+1477.60s - 1479.60s |  called the RPCChannelBuffer,
+1479.60s - 1480.60s |  and this is basically
+1480.60s - 1482.60s |  the transport interface
+1482.60s - 1485.60s |  to how to send RPC calls
+1485.60s - 1488.60s |  to the remote server.
+1488.60s - 1489.60s |  It passes it to the connect call
+1489.60s - 1491.60s |  in this RPCProxyBuffer,
+1491.60s - 1492.60s |  and now your proxy
+1492.60s - 1493.60s |  is actually connected
+1493.60s - 1496.60s |  to the out-of-process com object
+1496.60s - 1498.60s |  or to the remote server.
+1498.60s - 1501.60s |  Then finally, the client calls
+1501.60s - 1504.60s |  a method on that proxy interface.
+1504.60s - 1507.60s |  It packages up the arguments
+1507.60s - 1508.60s |  and marshals the arguments
+1508.60s - 1510.60s |  as per the defined list
+1510.60s - 1513.60s |  by your generated output
+1513.60s - 1516.60s |  from the middle compilation.
+1516.60s - 1517.60s |  It ends up in the proxy buffer,
+1517.60s - 1519.60s |  which passes it to the channel buffer,
+1519.60s - 1520.60s |  and now that goes over
+1520.60s - 1521.60s |  the RPCChannel.
+1521.60s - 1522.60s |  And then, of course,
+1522.60s - 1523.60s |  on the opposite side,
+1523.60s - 1525.60s |  there's a sort of corresponding
+1525.60s - 1526.60s |  unpacking sequence
+1526.60s - 1528.60s |  with the stub and et cetera,
+1528.60s - 1529.60s |  and potentially you could end up
+1529.60s - 1530.60s |  in a scenario where
+1530.60s - 1532.60s |  something has a proxy
+1532.60s - 1533.60s |  and you can send the arguments,
+1533.60s - 1535.60s |  but the actual server
+1535.60s - 1536.60s |  doesn't have the stub
+1536.60s - 1537.60s |  to unpack those arguments.
+1537.60s - 1538.60s |  It's certainly possible
+1538.60s - 1540.60s |  those sort of weird scenarios
+1540.60s - 1542.60s |  can exist.
+1542.60s - 1544.60s |  Okay, so that's sort of
+1544.60s - 1545.60s |  a bit of a background
+1545.60s - 1547.60s |  of how com proxying works.
+1547.60s - 1549.60s |  So you know that you can call
+1549.60s - 1550.60s |  that interface in theory.
+1550.60s - 1551.60s |  Well, how do you actually do that,
+1551.60s - 1553.60s |  say, in a PowerShell environment?
+1553.60s - 1555.60s |  Well, the first one, of course,
+1555.60s - 1556.60s |  is what if you just know
+1556.60s - 1558.60s |  what the interface is, right?
+1558.60s - 1559.60s |  You can look in the
+1559.60s - 1560.60s |  Windows header files.
+1560.60s - 1562.60s |  Yes, there's loads of interfaces
+1562.60s - 1563.60s |  which may not be
+1563.60s - 1565.60s |  officially documented,
+1565.60s - 1566.60s |  but they'll probably be
+1566.60s - 1567.60s |  in the header file somewhere.
+1567.60s - 1569.60s |  So you can just do a search
+1569.60s - 1572.60s |  for the interface ID, the GUID,
+1572.60s - 1574.60s |  and see if you find the interface
+1574.60s - 1575.60s |  in the header file.
+1575.60s - 1576.60s |  And then, of course,
+1576.60s - 1577.60s |  you can take that
+1577.60s - 1578.60s |  and you can plug it into your C
+1578.60s - 1580.60s |  or C++ application,
+1580.60s - 1581.60s |  or in this case,
+1581.60s - 1583.60s |  the PowerShell application.
+1583.60s - 1586.60s |  You can just define it
+1586.60s - 1588.60s |  and compile a sort of C-sharp
+1588.60s - 1589.60s |  version of that interface,
+1589.60s - 1590.60s |  and you can try and call it.
+1590.60s - 1592.60s |  Unfortunately, in PowerShell,
+1592.60s - 1593.60s |  because PowerShell is using
+1593.60s - 1594.60s |  all reflection,
+1594.60s - 1595.60s |  while .NET has really good
+1595.60s - 1597.60s |  com interop,
+1597.60s - 1598.60s |  it kind of only works
+1598.60s - 1599.60s |  when you're using
+1599.60s - 1600.60s |  the sort of like
+1600.60s - 1603.60s |  executing intermediate language
+1603.60s - 1604.60s |  part of it.
+1604.60s - 1605.60s |  If you try and do it
+1605.60s - 1606.60s |  through reflection,
+1606.60s - 1607.60s |  at least in the way
+1607.60s - 1608.60s |  in which PowerShell does reflection,
+1608.60s - 1609.60s |  it just sees an object
+1609.60s - 1610.60s |  which is defined
+1610.60s - 1612.60s |  as system.com object.
+1612.60s - 1614.60s |  And so you try and cast it
+1614.60s - 1615.60s |  to an interface,
+1615.60s - 1616.60s |  and it goes,
+1616.60s - 1617.60s |  well, this object doesn't support
+1617.60s - 1618.60s |  this interface,
+1618.60s - 1619.60s |  because there's usually
+1619.60s - 1620.60s |  some magic going on
+1620.60s - 1623.60s |  to implement that in C-sharp.
+1623.60s - 1624.60s |  So you may think,
+1624.60s - 1625.60s |  okay, well,
+1625.60s - 1627.60s |  what if I just cast it in C-sharp?
+1627.60s - 1629.60s |  Surely that'll work, right?
+1629.60s - 1630.60s |  Well, again, no,
+1630.60s - 1632.60s |  because yes, you can cast it,
+1632.60s - 1633.60s |  and now you don't get an error
+1633.60s - 1635.60s |  on the casting process.
+1635.60s - 1636.60s |  But when it gets back
+1636.60s - 1637.60s |  to PowerShell,
+1637.60s - 1638.60s |  it still just sees it
+1638.60s - 1639.60s |  as a com object,
+1639.60s - 1640.60s |  because that sort of
+1640.60s - 1641.60s |  interfaceness disappears,
+1641.60s - 1643.60s |  and it doesn't realize that,
+1643.60s - 1644.60s |  oh, it should have been
+1644.60s - 1646.60s |  this interface realistically.
+1646.60s - 1648.60s |  So again, you try and call run,
+1648.60s - 1650.60s |  and it fails.
+1650.60s - 1651.60s |  So at least for my tooling,
+1651.60s - 1653.60s |  what I've done is
+1653.60s - 1655.60s |  implemented like a dynamic wrapper,
+1655.60s - 1657.60s |  so it's just generated on the fly.
+1657.60s - 1659.60s |  There are some other potential ways
+1659.60s - 1660.60s |  of doing it with the framework,
+1660.60s - 1662.60s |  but it requires like type,
+1662.60s - 1664.60s |  sort of specially imported interfaces,
+1664.60s - 1665.60s |  and it's just like,
+1665.60s - 1666.60s |  you know what?
+1666.60s - 1667.60s |  It's just easier
+1667.60s - 1669.60s |  to dynamically generate wrappers,
+1669.60s - 1670.60s |  and all it does is
+1670.60s - 1671.60s |  it's a forwarding wrapper.
+1671.60s - 1672.60s |  So internally,
+1672.60s - 1676.60s |  you have the interface parameter,
+1676.60s - 1677.60s |  and you just forward
+1677.60s - 1678.60s |  all the calls to it.
+1678.60s - 1679.60s |  So as far as you can tell
+1679.60s - 1681.60s |  from the PowerShell side of things,
+1681.60s - 1683.60s |  you're just calling a real object.
+1683.60s - 1684.60s |  And you can do this
+1684.60s - 1687.60s |  using the get com object interface command,
+1687.60s - 1688.60s |  which takes a type,
+1688.60s - 1690.60s |  and it will cast it
+1690.60s - 1694.60s |  and auto-generate this wrapper for you.
+1694.60s - 1697.60s |  Another place that you can get type information
+1697.60s - 1699.60s |  if you don't necessarily know the Gnome type
+1699.60s - 1701.60s |  is from these type libraries,
+1701.60s - 1703.60s |  which potentially can be installed.
+1703.60s - 1706.60s |  Now, there's a special way of doing proxying
+1706.60s - 1707.60s |  with type libraries,
+1707.60s - 1708.60s |  which allow you to not actually
+1708.60s - 1711.60s |  write a native proxy.
+1711.60s - 1713.60s |  Instead, as long as you've got a type library,
+1713.60s - 1716.60s |  you can register that interface
+1716.60s - 1717.60s |  using a special class ID,
+1717.60s - 1718.60s |  as shown there,
+1718.60s - 1720.60s |  and it will actually automatically
+1720.60s - 1722.60s |  take the type library information
+1722.60s - 1726.60s |  and generate a proxy definition for that.
+1726.60s - 1728.60s |  So it will build all the marshaling code,
+1728.60s - 1730.60s |  which is quite convenient,
+1730.60s - 1731.60s |  because you don't then have to deploy
+1731.60s - 1735.60s |  actual native code for your proxy and stuff.
+1735.60s - 1737.60s |  So again, it's exposed.
+1737.60s - 1738.60s |  You can call get com interface,
+1738.60s - 1740.60s |  which lists all the interfaces in the database.
+1740.60s - 1744.60s |  And then there's an is automation proxy command,
+1744.60s - 1745.60s |  which shows you,
+1745.60s - 1748.60s |  which defines that this is an automation proxy.
+1748.60s - 1750.60s |  It's probably backed by a type library.
+1750.60s - 1751.60s |  Because it's a type library,
+1751.60s - 1752.60s |  it's really easy to parse,
+1752.60s - 1754.60s |  and you can format it into code.
+1754.60s - 1758.60s |  So the commands will also spit out some useful code,
+1758.60s - 1759.60s |  so you can look at it.
+1759.60s - 1761.60s |  But how do we actually then call that?
+1761.60s - 1764.60s |  Well, again, .NET has facilities
+1764.60s - 1766.60s |  for converting type library information
+1766.60s - 1769.60s |  to runtime types to call from,
+1769.60s - 1772.60s |  from C sharp or other .NET languages.
+1772.60s - 1775.60s |  And so here there's get type for I type info,
+1775.60s - 1776.60s |  and you just pass it,
+1776.60s - 1777.60s |  and it will return you a type,
+1777.60s - 1778.60s |  and it will parse the type library
+1778.60s - 1780.60s |  and do all the magic for you.
+1780.60s - 1782.60s |  And so in this case,
+1782.60s - 1785.60s |  if it's backed by type library proxy,
+1785.60s - 1787.60s |  if you specify an interface object
+1787.60s - 1790.60s |  or the interface ID as a GUID,
+1790.60s - 1794.60s |  then the tooling will automatically parse that for you,
+1794.60s - 1795.60s |  call that method,
+1795.60s - 1796.60s |  and generate you a type,
+1796.60s - 1798.60s |  which you can then dynamically wrap
+1798.60s - 1801.60s |  and call the methods on it.
+1801.60s - 1804.60s |  So a quick demo of that.
+1804.60s - 1806.60s |  So in this case, we get a com class,
+1806.60s - 1809.60s |  and then we can use the get com interface command
+1809.60s - 1814.60s |  to do that enumeration of all the interfaces
+1814.60s - 1815.60s |  and just look for any interface
+1815.60s - 1818.60s |  that this com class defines,
+1818.60s - 1821.60s |  which we know to be automation proxies.
+1821.60s - 1822.60s |  So IDispatch is not that interesting.
+1822.60s - 1824.60s |  That's actually sort of more of a low-level thing,
+1824.60s - 1826.60s |  but it's IGatherNotify.
+1826.60s - 1827.60s |  Potentially it's interesting,
+1827.60s - 1828.60s |  and it has a type library.
+1828.60s - 1830.60s |  As you can see in the third column,
+1830.60s - 1832.60s |  it defines that it has a type library.
+1832.60s - 1835.60s |  So we can do, obviously,
+1835.60s - 1838.60s |  the convert to source code form,
+1838.60s - 1842.60s |  and it'll parse it and spit out some IDL
+1842.60s - 1844.60s |  for that interface.
+1844.60s - 1846.60s |  That's just for your own edification.
+1846.60s - 1847.60s |  You can just look at it and go,
+1847.60s - 1850.60s |  oh, yeah, those are the interesting things
+1850.60s - 1851.60s |  associated with that.
+1851.60s - 1854.60s |  But then, of course, you can just call a new com object,
+1854.60s - 1855.60s |  give it the class,
+1855.60s - 1857.60s |  give it the interface ID you want to create,
+1857.60s - 1860.60s |  and then you'll now find that the object it returns back
+1860.60s - 1863.60s |  has all those defined methods on it,
+1863.60s - 1865.60s |  and so you can now invoke those methods.
+1865.60s - 1867.60s |  And if they're in a proxy somewhere,
+1867.60s - 1869.60s |  then that's all good.
+1869.60s - 1873.60s |  Okay, so the final proxy definition
+1873.60s - 1874.60s |  I want to go through
+1874.60s - 1876.60s |  is talking about these stubless proxies.
+1876.60s - 1879.60s |  These are actually the native proxies that you generate.
+1879.60s - 1884.60s |  So the IDL is spat out server underscore p.c,
+1884.60s - 1886.60s |  and inside there it defines a structure
+1886.60s - 1888.60s |  called proxy file info.
+1888.60s - 1891.60s |  And proxy file info is just a holding structure
+1891.60s - 1895.60s |  for pointers to all the different V tables
+1895.60s - 1901.60s |  which define all the different proxies that DLL will contain.
+1901.60s - 1903.60s |  And then each one of those V tables
+1903.60s - 1905.60s |  contains a structure called middle server info,
+1905.60s - 1908.60s |  which contains a pointer to this NDR byte code,
+1908.60s - 1913.60s |  which is basically like byte code marshaling code.
+1913.60s - 1916.60s |  It runs an interpreter basically in the RPC runtime
+1916.60s - 1917.60s |  to do the marshaling for you.
+1917.60s - 1920.60s |  And because this is a defined set of structures,
+1920.60s - 1922.60s |  we theoretically can just parse that
+1922.60s - 1928.60s |  and work out exactly how to marshal those com interfaces calls.
+1928.60s - 1931.60s |  The challenge is actually finding that information.
+1931.60s - 1933.60s |  So if you're lucky,
+1933.60s - 1937.60s |  the DLL implements this get proxy DLL info export.
+1937.60s - 1939.60s |  This is a defined export,
+1939.60s - 1941.60s |  and this just returns you directly
+1941.60s - 1944.60s |  that proxy file infrastructure pointer.
+1944.60s - 1949.60s |  Unfortunately, I think in the 300, 400 DLLs minimum
+1949.60s - 1951.60s |  in system 32 which implement proxies,
+1951.60s - 1954.60s |  I think this is implemented in like 80 or so.
+1954.60s - 1957.60s |  So it's not always going to work.
+1957.60s - 1959.60s |  Another option is that in general,
+1959.60s - 1963.60s |  because it tends to be generated by the same processes,
+1963.60s - 1965.60s |  there's actually just usually a field,
+1965.60s - 1968.60s |  a certain offset in the PS factory buffer object
+1968.60s - 1970.60s |  that just contains the pointer to the proxy file info.
+1970.60s - 1973.60s |  And again, you can just use that information.
+1973.60s - 1975.60s |  And then finally, if you have symbols,
+1975.60s - 1977.60s |  even in public symbols,
+1977.60s - 1979.60s |  again, because the IDL file generates
+1979.60s - 1982.60s |  like a standard set of definitions,
+1982.60s - 1986.60s |  if you look up the a proxy file list structure symbol,
+1986.60s - 1989.60s |  that actually will also point to the proxy file info structure.
+1989.60s - 1991.60s |  So once you've got that,
+1991.60s - 1993.60s |  you can parse the bytecode into some object model
+1993.60s - 1995.60s |  and then do something with that.
+1995.60s - 1996.60s |  But that's not the end of it.
+1996.60s - 1998.60s |  How do you then use that to call?
+1998.60s - 2000.60s |  My first attempt at this was actually
+2000.60s - 2005.60s |  just to generate like a dynamically generated com interface.
+2005.60s - 2008.60s |  And the advantage here is it's using the built-in com marshaling.
+2008.60s - 2010.60s |  We don't have to worry about it being a proxy
+2010.60s - 2012.60s |  or potentially in process.
+2012.60s - 2015.60s |  The trouble is, it's really difficult to get right.
+2015.60s - 2021.60s |  Because you're having to call effectively native APIs, more or less,
+2021.60s - 2023.60s |  it's really difficult when you've got complex structures
+2023.60s - 2025.60s |  like pointers to pointers to pointers.
+2025.60s - 2027.60s |  You've got to make sure that the correct alignment
+2027.60s - 2028.60s |  and all that sort of stuff.
+2028.60s - 2031.60s |  If you get it wrong, you'll just get a crash.
+2031.60s - 2033.60s |  Your client process will crash.
+2033.60s - 2035.60s |  Not a good crash like the server crashing,
+2035.60s - 2036.60s |  your client crashing,
+2036.60s - 2038.60s |  which makes it obviously quite difficult to use
+2038.60s - 2040.60s |  for things like fuzzing and just general playing around.
+2040.60s - 2045.60s |  Because the end result is your whole session could just disappear.
+2045.60s - 2049.60s |  So it turns out I'd already written code to just do normal RPC.
+2049.60s - 2056.60s |  So I can actually generate completely bespoke .NET RPC clients
+2056.60s - 2059.60s |  on the fly just based on this NDR bytecode.
+2059.60s - 2061.60s |  And the beauty of this is it's 100%
+2061.60s - 2064.60s |  as long as I've not made a mistake in my implementation,
+2064.60s - 2068.60s |  it's 100% representation of exactly how that data is marshaled.
+2068.60s - 2071.60s |  But crucially, it's all in memory-safe code.
+2071.60s - 2073.60s |  So there's no pointers to dereference.
+2073.60s - 2075.60s |  There's no potential memory corruptions
+2075.60s - 2076.60s |  that could happen in your process.
+2076.60s - 2080.60s |  You might get an exception if you pass a null object
+2080.60s - 2082.60s |  to something which isn't expecting that.
+2082.60s - 2084.60s |  But again, I'll just get thrown as a .NET exception.
+2084.60s - 2086.60s |  You can catch that and carry on.
+2086.60s - 2089.60s |  The cons, of course, is we need to implement the RPC transport layer,
+2089.60s - 2093.60s |  which is not necessarily trivial.
+2094.60s - 2097.60s |  Fortunately, the DECOM RPC protocol is documented.
+2097.60s - 2101.60s |  You just go on the OpenSpec's Windows Protocols website.
+2101.60s - 2104.60s |  The msdecom thing describes everything, how it works.
+2104.60s - 2106.60s |  Like, it's just normal RPC,
+2106.60s - 2110.60s |  but they stick in an extra argument before the normal arguments
+2110.60s - 2115.60s |  on the outbound RPC this, on the inbound ORPC that.
+2115.60s - 2116.60s |  And these are documented.
+2116.60s - 2119.60s |  Unfortunately, most of the ones we actually want to call
+2119.60s - 2121.60s |  are over ALPC on local systems.
+2121.60s - 2123.60s |  And this isn't documented.
+2123.60s - 2127.60s |  It adds an extra parameter, the local this and the local that.
+2127.60s - 2130.60s |  And these change between different versions of Windows.
+2130.60s - 2132.60s |  They add new features.
+2132.60s - 2136.60s |  And just the actual complexity of even finding the sort of com endpoint
+2136.60s - 2139.60s |  on a local system, it's complicated.
+2139.60s - 2142.60s |  You have to do some various hacks to get this to work.
+2142.60s - 2145.60s |  So ideally, I'd rather not have to do this if I didn't have to,
+2145.60s - 2147.60s |  although I did anyway.
+2147.60s - 2150.60s |  But ideally, you wouldn't have to.
+2150.60s - 2153.60s |  So what I thought, well, can I just not reuse that RPC channel buffer?
+2153.60s - 2157.60s |  That proxy must have a pointer to the assigned RPC channel buffer,
+2157.60s - 2158.60s |  in theory.
+2158.60s - 2161.60s |  Well, the trouble is, again, it's like internal structures.
+2161.60s - 2163.60s |  Like, yes, I know I'm parsing from a known offset.
+2163.60s - 2166.60s |  But like, the proxy stuff is even more complicated
+2166.60s - 2170.60s |  than just like the proxy file info information.
+2170.60s - 2172.60s |  But fortunately, some very old,
+2172.60s - 2174.60s |  the way in which you used to implement proxies
+2174.60s - 2176.60s |  was like more manual process.
+2176.60s - 2178.60s |  And it would call certain methods,
+2178.60s - 2183.60s |  which it turns out are actually documented by Microsoft.
+2183.60s - 2186.60s |  So you have this NDR proxy initialize function.
+2186.60s - 2188.60s |  And the purpose of this is you pass it the proxy interface
+2188.60s - 2190.60s |  that you want to start marshaling for.
+2190.60s - 2193.60s |  And it'll return you back all the sort of information
+2193.60s - 2196.60s |  associated with that proxy so that you can start building
+2196.60s - 2201.60s |  the sort of marshaled arguments to pass to the remote client.
+2201.60s - 2204.60s |  So if we pass in a pointer to a proxy,
+2204.60s - 2207.60s |  we get back this middle stub message structure.
+2207.60s - 2210.60s |  One of the fields in this middle stub message structure
+2210.60s - 2213.60s |  is the pointer to the assigned channel buffer.
+2213.60s - 2215.60s |  So, of course, we can steal that.
+2215.60s - 2220.60s |  And we can now just reimplement that in C Sharp.
+2220.60s - 2222.60s |  It's relatively simple.
+2222.60s - 2224.60s |  You get a buffer for the right size.
+2224.60s - 2226.60s |  And then you just call send and receive.
+2226.60s - 2229.60s |  And we don't have to worry about what RPC transport it's using,
+2229.60s - 2232.60s |  whether it has local this and local that.
+2232.60s - 2234.60s |  You don't need to worry about any of that.
+2234.60s - 2237.60s |  It's just all automatically handled under the hood for you.
+2237.60s - 2239.60s |  There is actually an interesting quirk with this
+2239.60s - 2241.60s |  in that it is a com object.
+2241.60s - 2245.60s |  But if you try and use the com interrupt in .NET to talk to it,
+2245.60s - 2246.60s |  it crashes.
+2246.60s - 2249.60s |  And it crashes because, as I said before,
+2249.60s - 2251.60s |  most of the time com objects don't lie
+2251.60s - 2253.60s |  about what interfaces they support.
+2253.60s - 2255.60s |  Well, in this one case, it does.
+2255.60s - 2259.60s |  It lies that it implements an interface that .NET queries for.
+2259.60s - 2261.60s |  .NET tries to call a method on that,
+2261.60s - 2265.60s |  and it just calls a function with the wrong arguments
+2265.60s - 2266.60s |  and just blows up.
+2266.60s - 2269.60s |  So I actually had to manually invoke,
+2269.60s - 2271.60s |  read the V table and manually invoke the arguments.
+2271.60s - 2273.60s |  But anyway, that's a side thing.
+2273.60s - 2279.60s |  It's just crappy com code, basically.
+2279.60s - 2281.60s |  So putting it all together,
+2281.60s - 2286.60s |  if you specify an interface ID for new com object
+2286.60s - 2290.60s |  or for the get com object interface,
+2290.60s - 2294.60s |  or if you're using it in the invocation inside the GUI,
+2294.60s - 2297.60s |  it will look up whether there's a proxy associated with it.
+2297.60s - 2299.60s |  It will then try and parse that proxy information.
+2299.60s - 2302.60s |  Sometimes there's a few DLLs it can't parse,
+2302.60s - 2304.60s |  like the proxy file info is in the wrong place,
+2304.60s - 2305.60s |  and it will blow up.
+2305.60s - 2307.60s |  And then you get back a wrapper,
+2307.60s - 2310.60s |  which allows you to call methods on that proxy
+2310.60s - 2313.60s |  with all the correct arguments that you expect.
+2313.60s - 2316.60s |  So let's see that in action.
+2316.60s - 2317.60s |  So we're getting a com class.
+2317.60s - 2320.60s |  In this case, we're talking to the bits service.
+2320.60s - 2321.60s |  So if you know anything about Windows,
+2321.60s - 2323.60s |  bits service is running as like system,
+2323.60s - 2324.60s |  running as a privileged user.
+2324.60s - 2326.60s |  We call new com object,
+2326.60s - 2330.60s |  and we, okay, what interfaces does this object support?
+2330.60s - 2334.60s |  Just do a list and show only ones which have a proxy.
+2334.60s - 2337.60s |  So some interfaces obviously are local interfaces
+2337.60s - 2338.60s |  and don't have proxies.
+2338.60s - 2340.60s |  And we'll pick ibits test one.
+2340.60s - 2345.60s |  That seems like a potentially interesting one to poke at.
+2345.60s - 2346.60s |  So there's a get proxy command,
+2346.60s - 2349.60s |  which allows you to sort of get that parse proxy information.
+2349.60s - 2351.60s |  You don't need it to call it necessarily,
+2351.60s - 2353.60s |  but it's useful to have it.
+2353.60s - 2355.60s |  And of course, it has the same sort of formatting commands.
+2355.60s - 2358.60s |  You can say, okay, format it to like an IDL style format.
+2358.60s - 2360.60s |  It's not 100% perfect,
+2360.60s - 2363.60s |  because the NDR byte code is a bit lossy.
+2363.60s - 2367.60s |  So you lose some information.
+2367.60s - 2370.60s |  So we can call get call object interface,
+2370.60s - 2373.60s |  give it the object, give it the interface ID.
+2373.60s - 2375.60s |  And behind the scenes,
+2375.60s - 2378.60s |  it's just magically created you a dynamic wrapper.
+2378.60s - 2381.60s |  And as you can see, proc free is there.
+2381.60s - 2385.60s |  Unfortunately, the proxy loses the naming of the proxy information.
+2385.60s - 2389.60s |  So if you happen to want something a bit easier to use,
+2389.60s - 2392.60s |  you can just run the edit com source code command.
+2392.60s - 2397.60s |  And you can actually just edit the names of the com proxy definition.
+2397.60s - 2399.60s |  And I happen to know by reverse engineering
+2399.60s - 2402.60s |  that this function is called get bits DLL path.
+2402.60s - 2404.60s |  So a bit of guilty knowledge there,
+2404.60s - 2406.60s |  obviously just looking in IDL.
+2406.60s - 2409.60s |  But now we can close that down.
+2409.60s - 2413.60s |  If we reformat that proxy information,
+2413.60s - 2416.60s |  we'll now see it's changed its name
+2416.60s - 2419.60s |  so that you can actually more easily call it.
+2419.60s - 2421.60s |  And now if we re-query for that interface,
+2421.60s - 2425.60s |  it regenerates the com proxy dynamic wrapper.
+2425.60s - 2429.60s |  We can now see there's a get bits DLL path function.
+2429.60s - 2432.60s |  And of course, the final step of this whole process is
+2432.60s - 2434.60s |  let's call it and see what it does.
+2434.60s - 2438.60s |  And you'd be surprised to learn it gets the bits DLL path.
+2438.60s - 2441.60s |  Which is probably not that surprising.
+2443.60s - 2445.60s |  But anyway, so that's all good.
+2445.60s - 2448.60s |  So that's all the tooling stuff.
+2448.60s - 2452.60s |  But it's worth just spending a little bit of time at the end
+2452.60s - 2454.60s |  talking about a bug class that I found
+2454.60s - 2458.60s |  during the research process to try and implement this tooling.
+2459.60s - 2463.60s |  And obviously, I'm not allowed to drop zero days at Blue Hat.
+2463.60s - 2466.60s |  Unfortunately, it turns out that I've not actually found
+2466.60s - 2469.60s |  an exploitable bug with this bug class.
+2469.60s - 2471.60s |  I just know this bug class exists.
+2471.60s - 2473.60s |  So we can talk about the bug class,
+2473.60s - 2476.60s |  and someone else can worry about finding the zero days for it.
+2476.60s - 2482.60s |  Okay, so if you define RPC interfaces,
+2482.60s - 2485.60s |  you can use something called correlation descriptors
+2485.60s - 2488.60s |  or sort of dependent parameters.
+2488.60s - 2492.60s |  So you can basically say, I've got a pointer to a byte array.
+2492.60s - 2495.60s |  And I know that byte array must be a certain size.
+2495.60s - 2498.60s |  And you can specify that that size is coming from
+2498.60s - 2500.60s |  another parameter in the argument.
+2500.60s - 2503.60s |  So typical length pointer kind of construct.
+2503.60s - 2506.60s |  In this case, it's saying this data buffer
+2506.60s - 2509.60s |  must be CB counts in size.
+2509.60s - 2512.60s |  And the reason that this can be defined in the interface
+2512.60s - 2516.60s |  is because, of course, there's obviously a massive security risk here
+2516.60s - 2520.60s |  that if the attacker could specify a CB count of, say, 100,
+2520.60s - 2524.60s |  but only pass a buffer of one, one byte,
+2524.60s - 2526.60s |  then when it gets to the other side,
+2526.60s - 2529.60s |  if there's no way of sort of correlating that information,
+2529.60s - 2531.60s |  then, of course, the server will go, oh, cool,
+2531.60s - 2534.60s |  I can write, like, 100 bytes to this buffer, and it's all fine.
+2534.60s - 2537.60s |  Or it can read 100 bytes from this buffer, and it's all fine.
+2537.60s - 2539.60s |  But, of course, you've only specified one byte,
+2540.60s - 2542.60s |  or you get arbitrary memory disclosure.
+2542.60s - 2544.60s |  And that's generally considered a bad thing.
+2544.60s - 2547.60s |  Okay, so normal proxies, that works fine.
+2547.60s - 2551.60s |  All that works because that's built into this NDR bytecode.
+2551.60s - 2554.60s |  But I noticed that if you compile this as a type library,
+2554.60s - 2559.60s |  it doesn't complain, but it gets rid of this restriction,
+2559.60s - 2562.60s |  this correlation descriptor.
+2562.60s - 2565.60s |  And okay, maybe that's fine, maybe that's not a problem.
+2565.60s - 2569.60s |  So I thought, okay, is there any actual, like,
+2569.60s - 2573.60s |  the problem potentially occurs is if it uses this type library for a proxy,
+2573.60s - 2576.60s |  which then goes over a privilege boundary,
+2576.60s - 2578.60s |  well, if it's lost this correlation,
+2578.60s - 2584.60s |  potentially we can pass the wrong size buffer to the call.
+2584.60s - 2586.60s |  And yeah, I did a search of the SDK
+2586.60s - 2588.60s |  and actually found a couple of examples
+2588.60s - 2593.60s |  where there was actually a registered proxy for this interface,
+2593.60s - 2595.60s |  and it has correlation descriptors,
+2595.60s - 2600.60s |  but it wouldn't exist when you actually, like, use this as a proxy.
+2600.60s - 2601.60s |  So it's utterly useless.
+2601.60s - 2603.60s |  Like, it wouldn't just function generally,
+2603.60s - 2606.60s |  and it's actually a security vulnerability potentially.
+2606.60s - 2609.60s |  But fortunately, this IENUM networks interface,
+2609.60s - 2612.60s |  as far as I can tell, is never used outside of process.
+2612.60s - 2616.60s |  So in process, the fact that that gets lost doesn't really matter.
+2616.60s - 2622.60s |  But the key here is that because it's got the OLE automation attribute,
+2622.60s - 2624.60s |  it can be used in the proxy.
+2624.60s - 2628.60s |  Like, there is restrictions of what type library definitions can be used as proxy.
+2628.60s - 2632.60s |  So this will be used as a proxy as it's registered in the registry.
+2632.60s - 2634.60s |  And you may think, well, how does it even get there in the first place
+2634.60s - 2636.60s |  if it's only used for local purposes?
+2636.60s - 2638.60s |  Well, the register type library function
+2638.60s - 2643.60s |  is what you would usually use to register that information in the registry.
+2643.60s - 2646.60s |  But if you read the definition, it says,
+2646.60s - 2649.60s |  not only will it register that type library in the registry,
+2649.60s - 2655.60s |  it will also register every compatible interface in that type library as proxies.
+2655.60s - 2656.60s |  And that's generally a bad thing.
+2656.60s - 2658.60s |  Like, because say, for example, your installer
+2658.60s - 2661.60s |  installed your native DLL proxy first,
+2661.60s - 2663.60s |  and then called register type library,
+2663.60s - 2665.60s |  it would actually overwrite, potentially,
+2665.60s - 2670.60s |  your actually proper native code proxy DLL.
+2670.60s - 2673.60s |  So that's why that bug class potentially exists.
+2673.60s - 2676.60s |  But as I say, I've not found anything yet.
+2677.60s - 2680.60s |  So just a very quick final video.
+2680.60s - 2682.60s |  This is obviously not a real bug.
+2682.60s - 2685.60s |  This is just something I wrote to simulate it.
+2685.60s - 2688.60s |  And then it's running a server which implements that interface.
+2688.60s - 2693.60s |  If I run the client, then it calls that method with the wrong buffer size,
+2693.60s - 2695.60s |  and we look back at the debugger,
+2695.60s - 2698.60s |  and we've got a pretty nasty-looking crash.
+2698.60s - 2702.60s |  So in conclusion, use tooling. It's cool.
+2702.60s - 2705.60s |  If you want the source code, just go to oliview.net.
+2705.60s - 2707.60s |  That's where the source code lives.
+2707.60s - 2709.60s |  And you can just install it from the PowerShell gallery.
+2709.60s - 2712.60s |  So thanks very much for listening to my talk,
+2712.60s - 2715.60s |  and I hope you have fun using my tooling if you get the chance.
+2715.60s - 2717.60s |  So thank you.

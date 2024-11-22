@@ -1,0 +1,409 @@
+{
+  "webpage_url": "https://www.youtube.com/watch?v=asd33hSRJKU",
+  "title": "DEF CON 32 - OH MY DC  Abusing OIDC all the way to your cloud - Aviad Hahami",
+  "description": "As DevOps and developers are slowly shifting away from storing long-lived static credentials to the more secure, still kinda-new, OIDC alternative - the underlying logic, mechanisms and implementations tend to feel like complicated magic and are mostly overlooked.\n\nIn this talk, we'll begin by recapping what OIDC is, who are the interacting entities when OIDC is used, and how OIDC is taking place to securely access one's cloud using CI/CD flows.\n\nOnce covered, we will be able to alternate our point-of-view between the entities in play and demonstrate potential vulnerabilities in various setups.\n\nStarting with the user PoV, we will show what \"under-configurations\" look like, and continue by demonstrating how new OIDC configuration options can actually be misconfigurations that can result with a compromise.\n\nWe will then see another attack vector where leaking an OIDC token from a single repository in an organization can allow an attacker to abuse under-configurations and access private clouds.\n\nAfter that, we will shift our PoV to be of the Identity Provider (IdP) so that we can look into what happens if an IdP is misconfigured, and disclose a real-world security vulnerability found in one of the most popular CI vendors that allowed us to access any of their customers' cloud environments.\n\nI'll refer to this talk by the Tinder Security team link where they show how they could \"claim\" in the name of other identities due to under-configured WIFs.",
+  "channel_url": "https://www.youtube.com/channel/UC6Om9kAkl32dWlDSNlDS9Iw",
+  "duration": 2259,
+  "channel": "DEFCONConference",
+  "uploader": "DEFCONConference",
+  "upload_date": "20241016"
+}
+
+0.66s - 5.66s | This text was transcribed using whisper model: large-v2
+
+ Yeah, yeah, yeah. What's up? Good to go? Okay. So, uh, hi everybody. Today's talk is, uh,
+9.50s - 15.50s |  called Ohm IDC, where we gonna, uh, learn and see how we can we abuse OIDC setups in the
+15.50s - 21.54s |  context of CI. Um, this is extremely exciting for me. That's my first time speaking in the
+21.54s - 27.32s |  con, so thank you very much for showing up. And thank, thank you very much for having me.
+27.32s - 32.56s |  That was the first voice breakdown, so it's fine. Okay, uh, by the way, if Adnan and John are
+32.56s - 39.56s |  here, thank you for the build up. I hope I'll satisfy that. So, I'll, uh, present myself. My
+39.56s - 46.04s |  name is Aviad Hachami. This is my, uh, Twitter handler. I do security research at Palo Alto. Um,
+46.04s - 51.64s |  I do CI domain mainly. Uh, I welcome you to check my latest publication. Uh, this is Azure
+51.64s - 58.44s |  CLI, um, information leakage with the 8.6 core somehow. Um, but it probably affected all
+58.44s - 63.44s |  your ASG, uh, usages. I also do bug bounty, I DJ, I do graph theory, and FPV drones. Not
+65.28s - 72.28s |  necessarily in this order. Okay. So, before we go into the agenda, I want to try and
+72.28s - 78.00s |  convince you why you should listen. Um, so first thing first, if you're completely new to
+78.02s - 83.36s |  this world or you have like a rough idea of what OIDC is, I hope you get today the full
+83.36s - 89.20s |  context of what's up with that. What's up internally. There's noise. What's up internally and,
+89.20s - 94.24s |  uh, how does it play? If you're already a user, I hope you're gonna learn some pitfalls and
+94.24s - 99.34s |  misconfiguration. I'm gonna, I hope I'm gonna save you some weekends. And if you're a
+99.34s - 103.52s |  bounty hunter, um, like most of us here, I hope you're gonna get some new ideas for
+103.54s - 108.54s |  exploitation. Alright. So, with that, let's go into the agenda. We're gonna start with an
+111.24s - 115.92s |  OIDC overview. Okay, for those of you who are familiar with this, uh, topic, uh, hold on
+115.92s - 122.42s |  tight for a sec. Um, after this, we're gonna move into no configs. Uh, this is just a weird
+122.42s - 128.96s |  term I set up. Um, I'm gonna explain about it, uh, soon enough. We're gonna move into, uh,
+128.96s - 133.36s |  advanced configurations, misconfigurations, and we're gonna learn what happens when the
+134.20s - 139.20s |  CI vendor, um, makes a misconfig and why do we care about the CI vendor in that context. Alright.
+141.38s - 147.58s |  So, first thing first, let's begin with an OIDC overview. So, when I actually rehearsed this
+147.58s - 153.38s |  talk, um, to some of my friends, some of them are, uh, uh, good researchers, uh, used terms
+153.38s - 158.76s |  like workflow, job, uh, the CI config, et cetera, et cetera, and they were, they said at some
+158.76s - 164.94s |  point, this is nice, but I'm not sure how CI works. So, in the case you're like my friend and
+164.94s - 170.08s |  you slept under a rock for the past 10 years, I'm gonna show you what CI is in one slide so we
+170.08s - 176.18s |  can move on. So, extremely quickly, what is CI? Assuming you're a developer, you performed
+176.18s - 181.12s |  some GitHub, uh, operation, maybe push, pull request, et cetera, this was, uh, pushed to your
+181.12s - 186.06s |  VCS provider, GitHub, GitLab, you name it. Um, and it was reflected in your online
+186.06s - 190.86s |  repository. So far, so good. Now, since you've configured your CI provider, cause this is what we
+190.86s - 196.44s |  care about, then the VCS provider notified your CI provider that something happened using a
+196.44s - 201.44s |  webhook with payload, nothing special here. Uh, in, in turn, the CI providers, uh, spin a
+203.78s - 208.78s |  machine for you, it can be any OS according to your configuration, aka workflow. Um, these
+209.48s - 214.48s |  machines do whatever you want, it can be lints, builds, compilations, and since we're in
+216.28s - 222.28s |  2024, they also push to your cloud environments. It can be GCP, AWS, Docker Hub, basically
+222.28s - 228.96s |  everything out there. This is CI, welcome. So, something I want to emphasize is that those are
+228.96s - 233.20s |  all split entities, okay? We're gonna come into that later on, we're gonna show this diagram
+233.22s - 239.26s |  again, but I want you to remember that these are split entities. Cool. Our problem space is
+239.26s - 245.00s |  this small arrow, welcome to the OIDC and CI niche. This small arrow, which basically makes us
+245.00s - 250.04s |  ask, uh, an important question, we're in a machine to machine world, so how does
+250.04s - 255.04s |  authentication happen, right? How can we access Docker Hub, for example? An easy answer,
+257.04s - 262.06s |  right, will be to hard code your secrets, this is great for my bug bounty, please do that. Um,
+262.12s - 266.92s |  but, yeah, continue. Um, the second option will be secrets, right, uh, this is a feature by
+266.92s - 271.66s |  the CI providers, et cetera. Um, but we all know that at some point or another it's gonna leak,
+271.66s - 275.86s |  right? We're gonna see some articles saying company whatever was leaked, was breached
+275.86s - 280.86s |  because of a leakage. So we don't want to do that anymore. And then OIDC comes into help. So
+283.60s - 289.84s |  OIDC is uh, open identity, this is uh, initials for open identity, something I forgot
+289.86s - 294.16s |  because I'm stressed, obviously, but that's fine. Uh, but what I want to emphasize is that it's a
+294.16s - 299.20s |  simple OAuth extension. I believe most of you know what OAuth is at this point in time. If
+299.20s - 304.68s |  you're on YouTube and you're not familiar with, pause now, go learn OAuth, come back. Yeah,
+304.68s - 308.98s |  um, it's, it's the basics. So OIDC comes into help and gonna help us solve this whole
+308.98s - 313.72s |  credentials problem and it's gonna allow us to use um, uh, something called identities that
+313.72s - 318.82s |  we're gonna see in a second. So, what is this OIDC flow? We're gonna learn the vanilla
+318.84s - 323.04s |  version and then the CI version cause they're a bit different. Um, this is just a slide taken
+323.04s - 328.48s |  from Microsoft. Um, you are all familiar with the try to log in, go to the identity provider,
+328.48s - 333.38s |  come get like uh, the token, come back, exchange it. But now we see something different.
+333.38s - 337.56s |  Instead of access token and refresh token, we're relying on something called ID token.
+337.56s - 342.62s |  Welcome. Um, so we're gonna learn what ID tokens are in a second, but I just want to plug
+342.62s - 347.30s |  in some terminology. This is the authent part, the authentication where you actually put
+347.34s - 353.42s |  credentials and this is the auth Z part where you actually authorize someone to access
+353.42s - 357.38s |  something regardless of their authentication state. Obviously they should be authenticated by
+357.38s - 362.40s |  this point in time. So ID tokens. Um, standard JWTs, right, JWTs, base 64. Uh, we're gonna
+365.40s - 370.00s |  decode them and we're gonna get the header which we don't care about for the sake of this
+370.00s - 375.60s |  talk. I'll just add that this is how you verify the integrity of an incoming ID token, but
+375.60s - 380.92s |  I'm not gonna touch this any further. Don't care symbol. And the second part is the actually
+380.92s - 386.02s |  ID token body and we're gonna dive into the contents of it in a sec, but for the, for the
+386.02s - 391.66s |  purpose of this slide, I want you to remember that ID tokens, um, the body of it is a simple
+391.66s - 396.50s |  dictionary where each key is called claim. So now onwards I'm gonna say the token claims
+396.50s - 403.14s |  something. Okay? Good. So let's conclude the OIDC in the vanilla version of it. Um, it's an
+403.14s - 407.92s |  OAuth extension and it allows it to rely on short-lived tokens that are based on identity.
+407.92s - 412.92s |  That's it. TLDR of the whole magic. Right, so let's put it in the context of CICD. If I'm
+415.06s - 419.70s |  bringing back this small snippet here, right, and I told you this is our problem space, we
+419.70s - 424.80s |  have two important questions now. First, this is a machine, how does it authenticate? We
+424.80s - 430.20s |  don't know, we no longer have credentials, so how do we log in? Second question is, is
+430.20s - 435.78s |  assuming this ID token, how do we verify it? What do we verify it and who does this for us?
+435.78s - 442.02s |  Okay? So let's address these questions, um, this is the diagram that you all saw like a few
+442.02s - 447.36s |  slides ago and if I'm gonna call her back, who's in charge of what? And we see that the only
+447.36s - 452.36s |  entity that is in charge about, of the CI machine is the CI provider, right? So what
+454.76s - 459.36s |  actually happens behind the scene, and again I'm gonna pop up this question, how do we get
+459.36s - 464.56s |  the credentials? The CI provider records, reacts, sorry, in accordance to our
+464.56s - 469.24s |  configuration, right? And when we were configured, we were authenticated to the CI
+469.24s - 474.34s |  provider. So in a sense, you can say that when a CI executes, the machine runs on our
+474.34s - 480.12s |  behalf. Hence, it's associated with our identity. And this is important to remember. A CI
+480.12s - 486.22s |  invocation is in the context of the owner of the CI integration. So, in the context of
+486.22s - 491.26s |  CI CD, uh, the CI vendor also gets to be the identity provider. It's the only one that can
+491.26s - 495.70s |  give this machine who it is. Okay? Otherwise, it's just an ephemeral machine, right? Nobody
+495.70s - 500.06s |  knows what it is. Like, why should I give you access to something? So this is the first
+500.06s - 505.80s |  question answered. Now, the second question was, assuming I do have this ID token, who
+505.80s - 510.82s |  authorizes this and how exactly? So, I'm gonna close the global protect. So, um, I'm gonna
+511.82s - 516.82s |  bring back this ID token and this, the Auth Z part is actually composed of two components. The
+519.92s - 524.56s |  first is the ID token. And this is an example ID token that is shipped by, uh, GitHub's
+524.56s - 528.70s |  identity provider. Most of these, uh, example are gonna be on GitHub. I really like you
+528.70s - 534.18s |  folks. Um, so, and if you look at the contents, you see various claims like, uh, the Git
+534.18s - 539.68s |  SHA, the repository name, run ID, et cetera, et cetera, et cetera. Like, claims. And the most
+539.70s - 545.04s |  important for us to remember is, uh, to note, sorry, is the sub. Sub short for subject. And
+545.04s - 550.32s |  this is the default property to assert. When the, uh, basically when we check those claims,
+550.32s - 555.98s |  it's called assertion. Um, and this is the default property to assert. Now, if we actually
+555.98s - 561.60s |  dissect this for a second, we know the following. The repo, short for repository, contains
+561.60s - 567.94s |  the value of the repository claim. Okay? And the ref, right, the ref prefix contains the
+567.96s - 573.54s |  value of the Git ref coming from the ref claim. So, we can actually see that there's a
+573.54s - 579.00s |  format behind the scenes. And we're gonna come back to that later on. So, an ID token, in
+579.00s - 583.64s |  the context of CI, I'm gonna summarize that, contains information about the Git event that
+583.64s - 587.74s |  triggered the pipeline, uh, alongside other vendor information. And we're gonna see
+587.74s - 593.86s |  later on what this other vendor information, where exactly does it bite us. The second
+593.88s - 598.74s |  part, the second component of the AuthZ is the, something called identity federation. As
+598.74s - 604.22s |  the name implies, it, it federates identities coming in. Um, this is an example
+604.22s - 610.56s |  configuration, uh, for AWS specifically. And the file is pretty simple. Um, you have the
+610.56s - 615.30s |  identity name, just a string, the identity provider, this is usually the URL of it. Um, and
+615.30s - 621.54s |  then you set up conditions for who can claim to be this identity. Um, then we see what
+621.58s - 627.32s |  claims we assert, right? We have the sub, does it work? Okay. We have the sub and then we
+627.32s - 631.46s |  have the odd, odd short for audience by the way. And then we see that there, we can define
+631.46s - 636.76s |  the comparators, right? We can do string like or string equals and set the values. Okay, so
+636.76s - 642.86s |  this is roughly, this is how it goes. So, per the question, how exactly do we authorize
+642.86s - 647.58s |  someone? Then we have this entity called identity federation and it's gonna assert tokens
+647.58s - 654.32s |  claims coming, uh, from, uh, CI machines. In this case, obviously. Alright, so now that we
+654.32s - 659.22s |  know that the CI provider is also the identity provider, right? This is something new. And we
+659.22s - 665.64s |  also know that this, uh, we have this federation. Then let's redraw the, the OIDC flow in
+665.64s - 672.14s |  the context of CI. So in the context of CI we actually have this diagram. Now the CI
+672.14s - 677.54s |  provider also gets to be the identity provider, so it hosts both, uh, like both the CI and
+677.54s - 683.12s |  itself, the identity. And also we see on the cloud provider, we have the federation. So the
+683.12s - 688.26s |  flow is as follows. You ask for an ID token, you get an ID token, you go to your cloud, you
+688.26s - 694.42s |  say I wanna access, the clouds verify the integrity, this is done using the header. And then
+694.42s - 699.20s |  it's gonna assert the incoming token against its policies and assuming everything was fine,
+699.20s - 705.10s |  you're gonna get a set of short-lived credentials. This, this microphone hiccups, right? Right?
+705.10s - 710.10s |  Uh, oops. The mic hiccups. It doesn't work. Roughly. Halfway. Okay, Asi, take care of that.
+713.58s - 720.08s |  Okay. Um, I'm gonna plug back in the terminology. This is the auth n bit, okay? And this is
+720.08s - 725.08s |  the auth z bit. Now since the flow is different, what does it imply? I'm gonna border this
+725.08s - 730.08s |  square and let's zoom in. Since everything here happens within the CI provider, if we are
+734.02s - 739.02s |  able to trigger a CI pipeline, we basically granted the owner's identity, okay? Now you can
+740.96s - 747.96s |  limit that using, you can limit that using specific, uh, uh, orders we'll see later on, but if
+747.96s - 753.94s |  you're able to trigger a CI machine, you're basically passed the auth n part, okay? This
+753.96s - 758.50s |  leaves us with the auth z part to guard everything, basically, cause we have the CI machine
+758.50s - 764.08s |  running. And in a sense, if we're able to trigger a CI pipeline, all that stands between us
+764.08s - 768.62s |  and accessing a target's resources is just the policy pattern matching, right? So you can see
+768.62s - 774.16s |  on the bottom part, examples for, uh, subclaims. It can begin with repo, uh, multi-banana
+774.16s - 779.52s |  Zurich, um, the name of the, uh, uh, repository, the git ref. And on the right hand side, you
+779.54s - 785.24s |  can see an example of assertion, for example, repo colon star, and where star will expand to
+785.24s - 791.58s |  everything using pattern matching. Okay, so this was the summary for, uh, OIDC in the
+791.58s - 797.50s |  context of CI. This is how it works. This is the whole magic. So, in the context of CI, we can
+797.50s - 802.00s |  say that it is done by asserting incoming ID tokens from CI machine using an identity
+802.00s - 807.00s |  federation in exchange for credentials. That's it. Easy. Cool. We can move on to the next
+809.54s - 815.68s |  no-configs, and let's have some fun. So, no-configs is basically when there is no one at the
+815.68s - 820.56s |  door. If you think about the Auth Z as the bouncer, if the bouncers allows anyone into the
+820.56s - 826.76s |  club, then anybody can get in, right? So, a no-config is a state, uh, where the federator is
+826.76s - 833.10s |  asserting lax rules, if any. Um, and they will, it will authorize almost any ID token. Okay,
+833.10s - 838.14s |  what does it mean? So let's take a look at these 3 snippets. These are snippets from the
+838.16s - 842.70s |  identity federation example you just saw, but different assertions. So, the first one, we
+842.70s - 847.70s |  have, uh, uh, an asterisk, right? Using pattern matching, it's gonna expand to anything.
+847.70s - 852.38s |  Obviously, you didn't check anything here. Um, second option, repo column star, so
+852.38s - 856.58s |  everything begins with repo. There's nothing specific to your account here. So, again, you
+856.58s - 860.62s |  didn't check anything. And the last one is everything that begins with my org, and
+860.62s - 866.66s |  something to note, there is no slash between the org and the star. So, if you open a GitHub
+866.68s - 872.32s |  organization called my org one, it will satisfy this as well. Cool. Now, this was already
+872.32s - 877.86s |  talked about in, uh, in, uh, 2 talks. One by, uh, Rojan of Tinder, and one by Christoph that
+877.86s - 883.76s |  maybe sits in the audience here. So, hi, Christoph. Um, I also talked about it, uh, on the
+883.76s - 889.50s |  latest, um, b-sides. And basically, I, I really, I highly recommend watching these talks.
+889.50s - 894.68s |  They explain exactly how those misconfigs look like, okay? And how to hunt for them, and how
+894.70s - 900.56s |  to exploit them. I'm not gonna talk about, uh, when there's no config kind of situation, um, and
+900.56s - 906.48s |  yes, go ahead and watch them. So, since we're not talking about the no config situation, what
+906.48s - 912.48s |  happens when I have partial configs? How safe are they, if at all? Let's zoom in. So, the
+912.48s - 916.62s |  first one, we're gonna assert everybody in the org name, right? Repo column org name. Let's
+916.62s - 922.46s |  say I can say anybody in Palo Alto can access this identity. Is this okay? Is this safe? What
+922.46s - 927.74s |  about everybody in Palo with respect to a branch? So, the answer is, the first one is
+927.74s - 931.82s |  potentially unsafe, so does the second one. We're gonna see later how we can exploit and
+931.82s - 938.62s |  abuse such cases. And the workflow example is actually the worst. This is very bad. If you
+938.62s - 943.52s |  configure using the workflow, you're exploited immediately, okay? And we're gonna see how. And
+943.52s - 948.20s |  another thing you gotta ask yourself, how come this claim begins with workflow? All you've
+948.20s - 954.08s |  seen was repo column. How come we're at workflow column? What happened here? Alright, so
+954.08s - 959.64s |  let's move to misconfiguration when you do some configurations, but they're insufficient. Uh,
+959.64s - 964.02s |  we're gonna see some pitfalls for advanced configurations, including a demo. And then we're
+964.02s - 969.92s |  gonna see how you can abuse, uh, pipelines. This is partially what Adnan, uh, talked about in
+969.92s - 976.26s |  the, in the last talk. Um, but we're gonna see how we can abuse lax policies and access, um,
+976.30s - 981.30s |  various identities. So, misconfigs. We're gonna start with a short demo. Um, and just click
+985.42s - 991.66s |  here. Okay. So, what you see here is a video that was uploaded by, uh, JFrog explaining to
+991.66s - 997.00s |  their customers how to configure OIDC in front of, uh, JFrog. So, you can access the
+997.00s - 1001.56s |  artifactory, x-ray, et cetera. So, this is a great feature, by the way. Nothing bad to say
+1001.56s - 1006.60s |  about them. And what we see in this example is how they configure the identity provider on
+1006.60s - 1011.64s |  JFrog's side and how they configure the identity. Here we see the example, uh, claims
+1011.64s - 1016.84s |  GitHub allows us to rely upon. And we can see on the right-hand side that they instruct us to
+1016.84s - 1023.42s |  assert workflow equals JFrog NPM. This is according to their video. Alright. Um, I'm a
+1023.42s - 1029.32s |  naive user. I'm gonna copy-paste that, right? Uh, I just learned OAuth and, and OIDC. So,
+1029.32s - 1035.56s |  this is me creating the same identity provider at JFrog. Um, just naming it my provider,
+1035.56s - 1040.90s |  et cetera, et cetera. Nothing fancy. I mean, some arbitrary, arbitrary identity. And I'm
+1040.90s - 1045.40s |  gonna do the same instruction. I'm gonna assert that the workflow equals corporate usable
+1045.40s - 1050.40s |  workflow. This is coming from my corporation. Alright. Um, I'm gonna save it, uh, and then
+1053.14s - 1056.84s |  I'm gonna copy the snippet. This is for GitHub Actions. Uh, for those of you who are
+1056.84s - 1062.38s |  unfamiliar somehow with this product, this is GitHub's CI. Um, once I saved it, I'm gonna go
+1062.40s - 1067.84s |  to my leaking pond repository and I'm gonna create a new GitHub Actions file. I'm gonna
+1067.84s - 1072.58s |  commit everything. If you are unfamiliar with how the workflows of GitHub Action looks like,
+1072.58s - 1077.26s |  then this is it. This is the recipe. And all you gotta know for the sake of this demo is that
+1077.26s - 1083.06s |  assuming a success, the machine invocation as a whole will be successful. Otherwise, it will
+1083.06s - 1088.06s |  fail. So, uh, I've committed the CI React to my Git event. So, it fires. Um, we're gonna see a
+1088.32s - 1093.32s |  machine being run. And then we're gonna see that this account, as the video instruct us, was
+1095.66s - 1100.46s |  indeed able to access GitHub. Now, let's exploit that. Okay? We're gonna use the special
+1100.46s - 1106.76s |  technique called copy paste. I'm gonna copy the exact same workflow configuration file. And
+1106.76s - 1111.68s |  I'm gonna commit it to my own private, uh, uh, account. Which I was told that it's not safe to
+1111.68s - 1116.72s |  do at Defcon, but whatever. Um, gonna do a special commit message cause it's important for
+1117.60s - 1123.64s |  nothing. And in reaction, the CI will trigger again. Now, what we will see, uh, we're gonna go
+1123.64s - 1127.82s |  into this logs. We're gonna count one, two, three. Worker's gonna pick it up. And we were able
+1127.82s - 1132.82s |  to successfully access the same account. Right? From a different account. Amazing. Magic.
+1132.82s - 1137.82s |  What happened? Right? What happened here? On JFrog's end, we defined the identity
+1140.60s - 1145.20s |  federation to be something, whatever the name of the, uh, provider, but workflow. I'm gonna
+1145.22s - 1150.22s |  set the workflow to be corpusable workflow, correct? Good. When my token showed up and said,
+1151.48s - 1156.46s |  hi, I'm coming from a Vias repository, et cetera, et cetera, and the workflow is called
+1156.46s - 1162.00s |  corpusable workflow, so the federation said, yeah, it's the same claim, get in. And you gotta
+1162.00s - 1167.84s |  ask yourself, where is this value coming from? And the answer is, as always, user input. So
+1167.84s - 1172.84s |  you can just, this is the name of the workflow, you can put any string there and, yeah. So,
+1172.92s - 1177.92s |  copy paste for the win. And we can see, by showing one example, that not all claims are safe,
+1181.36s - 1186.06s |  right? I've showed you once, this is sufficient to say that not all are safe. If we look
+1186.06s - 1192.04s |  into the RFC of RDC, then basically we're instructed to have five required claims, issuer,
+1192.04s - 1196.88s |  subject, audience, expiration, and issued at. Let's translate them to an attacker point of
+1196.88s - 1202.18s |  view, the URL of the provider, the target, just a string that you can modify if you have an
+1202.18s - 1207.66s |  RC in the case of odd. Expiration time for the RDC token is roughly four minutes, and
+1207.66s - 1215.00s |  nobody cares when it was issued. On top of these five claims, we have a plethora of other
+1215.00s - 1219.76s |  custom claims. These are given by the CI vendors, which get to be the identity providers,
+1219.76s - 1225.70s |  right? For example, GitHub supplies with various claims, but all of these are unique to GitHub,
+1225.70s - 1230.48s |  right? Repository owner, runner, environment, run number, whatever, whatever, these are all
+1230.48s - 1235.92s |  GitHub unique. If we go to Circle, they have their own world, right? Workflow ID, VCS origin,
+1235.92s - 1242.80s |  whatever, whatever, and GitLab has their own stuff, right? Nobody, like, what's going on? So,
+1242.80s - 1247.24s |  it adds up to a lot of confusion. If you're at DevOps for a company and you're trying to set up
+1247.24s - 1252.40s |  using custom claims, you can get lost really quickly, because you have so many and there's
+1252.40s - 1258.40s |  almost zero instructions on which values are safe in this context. So, if you'd like to have
+1258.40s - 1264.20s |  a situation like I just showed, a rule of thumb for using custom claims coming from the
+1264.20s - 1269.00s |  vendor is to remember that they're provided regardless of their strength. By strength, I mean
+1269.00s - 1277.34s |  how hard they are to fraud. So, check where the values come from, okay? Now, a hidden pitfall
+1277.34s - 1287.36s |  of this behavior or this basically behavior is the custom claim format feature, okay? So, as
+1287.36s - 1293.60s |  the name suggests, it's a custom format, and it comes to answer a problem where some federators
+1293.60s - 1298.84s |  do not assert custom claims directly, like we saw with JFrog asserting workflow. Some just don't
+1298.84s - 1304.32s |  want to do that. Why? I don't know. It's just a JSON. But therefore, some identity providers
+1304.32s - 1309.64s |  allow reformatting the structure of the subclaim to contain custom claims values, okay? What do I
+1309.64s - 1315.72s |  mean by that? Consider the top option. This is what you're familiar with. It begins with repo
+1315.72s - 1320.64s |  and then the ref, right, the git ref. But now you can put actor ID, this in GitHub's world. So,
+1320.64s - 1325.96s |  now you can put actor ID and repository ID, and it will be later populated with the values with
+1325.96s - 1332.56s |  respect to where this was fired from, where the CI ran from. So, something that can be easily
+1332.56s - 1339.48s |  missed with this feature is that the claims order is critical, all right? Let's see why. Consider
+1339.48s - 1344.60s |  this format and this claim. So, we're going to have repo, my org, and then the name of the
+1344.60s - 1350.84s |  workflow, fine. So, we all know by now that this is very unsafe, right? I just showed you how it
+1350.84s - 1357.00s |  can be abused. But this one is actually safe. The prefix is safe. Why? Because GitHub will
+1357.00s - 1361.08s |  actually put the name of the organization and repository. You can't just fake that, at least not
+1361.08s - 1366.56s |  in this talk. But you can't just fake that. So, this is fine. This is an example of fine, although
+1366.56s - 1372.32s |  it relies on unsafe claim for the second half of it. If you flip it, however, then you're done
+1372.32s - 1380.88s |  with, okay? So, let's see how. In order to abuse such a case, basically, all you have to do is
+1380.88s - 1387.40s |  create a workflow, name it everything after the workflow prefix, go to your favourite CI provider,
+1387.40s - 1393.08s |  change the subclaim to be workflow only, and they will grant you with a pretty and beautiful
+1393.08s - 1398.08s |  signed token that has the exact same claim like the other organisation asserts. Obviously, you
+1398.08s - 1405.28s |  can put whatever, my org in Palo Alto, Microsoft, you can just write whatever. So, a rule of
+1405.28s - 1409.68s |  thumb for this feature is that the claims order is critical. I haven't seen even one manual page
+1409.68s - 1414.44s |  that mentions that. When you use custom claims, they just let you use it, but they don't tell you
+1414.44s - 1422.60s |  what not to do. So, the order is critical. In order to help everybody here to either escape from
+1422.60s - 1430.00s |  these bugs or to exploit them, I've created this tool. You can scan the QR code to get the latest
+1430.00s - 1436.40s |  zero click for your Android. But basically, it lists all the GitHub possible custom claims with
+1436.40s - 1441.00s |  information about the strength of each one. This is a nice guide. It can check your subclaim
+1441.00s - 1446.28s |  format for safety, and it will allow you to modify the subclaim if you want to attack with it or you
+1446.28s - 1450.52s |  just want to fix it for your organisation or repository. There is some hierarchy option, so
+1450.52s - 1455.60s |  it's interesting. This is how the tool looks like. All you've got to bring is your favourite
+1455.60s - 1461.64s |  GitHub token with admin permissions, not necessarily of your organisation, but, yeah. And,
+1461.64s - 1465.16s |  for example, in the inspect mode, you can see that these are the claims, and they're not safe
+1465.16s - 1473.52s |  because it's set right surplus, so go ahead, get a zero click, and, yeah. Okay. Now, this is
+1473.52s - 1479.96s |  behind us, and let's move into pipeline abuses that can lead to OIDC abuse. Basically,
+1479.96s - 1486.32s |  misconfigs that lead to abuses, abuses, sorry, of lax policies. So we saw that this was very
+1486.32s - 1493.04s |  bad, right? We now know why this is, this sucks. But what about these two? We did just say
+1493.04s - 1500.76s |  that, for example, saying everybody in Apollo is fine, right? Or not? So let's abuse those. The
+1500.76s - 1505.56s |  answer is pretty simple. Poison pipeline execution, which is the most common entry vector
+1505.60s - 1512.44s |  for CIs, right? And lax policies. So let's explain for a second. A PPE is a pull request from a
+1512.44s - 1516.92s |  fork that will trigger a vulnerable CI execution in the context of the target, right? We're all
+1516.92s - 1523.64s |  familiar with this by now. I hope so. The second bit, the lax policies, they will allow a token
+1523.64s - 1529.56s |  from the same, from the targeted organisation, sorry, to slip through lax policies, okay? Now
+1529.60s - 1536.32s |  what do I mean by that? Let's see how it plays. Demo. In order to demo that, we have to define a
+1536.32s - 1540.84s |  few entities, right? Let's begin with the identity federation on the resource side. So we're
+1540.84s - 1546.32s |  gonna set up something like this. We wanna assert that the audience equals, uh, the Amazon AWS
+1546.32s - 1551.56s |  thing. Um, and we wanna assert that all the identities coming in from the banana multi
+1551.56s - 1557.28s |  organisation are okay to go in. This is the federation. If you put it, by the way, on AWS, it's
+1557.28s - 1562.60s |  gonna look something like this. And although AWS did some changes in order to enforce more
+1562.60s - 1569.60s |  strict policies, they will allow you to do that. This is fine by AWS. Now for the git part,
+1569.60s - 1575.80s |  let's see what's our setup. We have this organisation called banana multi and we have two, uh,
+1575.80s - 1582.32s |  basically pipelines including the git repo itself. And let's explain. So the upper one, um, is a
+1582.32s - 1588.20s |  pipeline that is configured to connect using OIDC to an S3 role that is, uh, an admin. Um, this
+1588.20s - 1594.20s |  policy is the policy that we just saw, so it's lax. Um, and this is our target. The second pipeline
+1594.20s - 1600.38s |  is called any updateser and, uh, it contains, it's connected to a vulnerable pipeline and then
+1600.38s - 1606.52s |  it's using an OIDC token again to access a restricted S3, uh, uh, bucket or a role and we
+1606.52s - 1613.50s |  obviously cannot use that. So let's see our attack vector. Pretty simple. We're gonna fork the
+1613.50s - 1620.16s |  any updateser and we're gonna, uh, um, basically invoke the CI machine of the, the CI workflow,
+1620.16s - 1625.34s |  sorry, of, uh, and we're gonna invoke the vulnerable CI workflow and we'll try to access the
+1625.34s - 1631.38s |  other accounts. Um, the workflow, by the way, looks something like this. It has to react to pull
+1631.38s - 1636.28s |  request, maybe pull request or pull request target for the GitHub world. Um, and you have to
+1636.28s - 1642.92s |  specify that you want an ID token that the workflow has to say it. Um, the pipeline is gonna
+1642.92s - 1646.90s |  check out the fork. This is the head for the pull request. Uh, we're gonna skip the part where it
+1646.90s - 1652.40s |  actually assumed the AWS role. We don't, we can't use that so we don't care. And then there's an
+1652.40s - 1658.08s |  invocation of a file from the file system which was just cloned from the fork and yeah, we have
+1658.08s - 1663.92s |  RCE. So what we need to do now is make the fork pull request. This is what's called IPP,
+1663.92s - 1670.72s |  indirect points of pipeline execution. And this is the exploit script. Don't rush and, and, and
+1670.72s - 1676.22s |  take pictures. It's just chat GPT. Um, but basically all you have to do before you make this
+1676.22s - 1682.56s |  exploit code, you have to, uh, to do some recon and collect various id- accounts that are, are
+1682.56s - 1687.40s |  connected through using OIDC. Okay? I'm not gonna talk about it in stock, but this is
+1687.40s - 1691.80s |  something you have to do. In this example I'm having 2 roles at the top that I'm gonna try to
+1691.80s - 1697.60s |  exploit. Let's see it in action. So this is the prepare.sh file that is gonna be invoked at
+1697.60s - 1702.60s |  some point. Uh, this is my fork. Any updates sir? And I'm gonna open a pull request. So, uh,
+1705.00s - 1709.32s |  hello it's me. The diff is the same file, nothing but this file. And I'm gonna open the pull
+1709.32s - 1717.27s |  request and it's gonna invoke the CI in response to the trigger. Cool. 3 seconds from now we're
+1717.29s - 1722.29s |  gonna see the machine logs. 1, 2, 3, as I promised. And now in the logs we will see in the
+1724.83s - 1729.89s |  prepare step that it, we will see the output of my script and if we're successful we'll see
+1729.89s - 1735.03s |  sets of credentials. And I wouldn't be here if it would work, so yeah, we have sets of
+1735.03s - 1739.11s |  credentials. So we were able to assume a role that was not allocated to the pipeline we were
+1739.11s - 1743.71s |  running at. While we were not able to assert others, but again you can just spray OIDC
+1743.75s - 1748.43s |  tokens. So this is a very nice technique. You can just collect tokens, find vulnerable
+1748.43s - 1752.99s |  pipelines and start spraying for, to find the locks policies internally, right? You're
+1752.99s - 1760.14s |  already past the auth end. You have the credentials. So give it a shot. 1 second. Okay, uh,
+1763.36s - 1768.16s |  some nice disclosure. I was able to, this is by the way from last year already and, and I was
+1768.16s - 1773.00s |  able to find this, uh, a month ago in Azure and this allowed to access basically all the
+1773.00s - 1778.58s |  identities that had Azure slash star. So yeah, nice technique. Um, the rest did not allow
+1778.58s - 1783.58s |  disclosure, but you're out there. Cool. So rule of thumb in order to avoid this type of stuff,
+1786.46s - 1791.46s |  one is for the CI, please follow the best practices. We're at 2024. Um, we, my team, we've
+1793.46s - 1799.36s |  released plenty of guides on how to, uh, harden your pipelines. Please do so. The second
+1799.36s - 1804.36s |  thing, pursue, uh, policies that are not with wildcards as much as you can or, uh, use other
+1806.56s - 1811.58s |  claims that are safe in order to assert identities. Okay, this brings us to our last topic
+1814.54s - 1818.38s |  of the day and this is when, when the vendor misconfigures. Now that you know that the vendor,
+1818.38s - 1823.46s |  the CI vendor is also the identity provider, now they have to put, to give more attention to
+1823.46s - 1828.32s |  the details, right? They have various products at their hand now and they have to be very
+1828.32s - 1833.32s |  careful. So this is a disclosure for a Circle CI. Um, and basically if you're unfamiliar with
+1834.92s - 1839.82s |  Circle, they're a great CI product. Um, they provide various machines, right? In order for you
+1839.82s - 1845.80s |  to run your workloads and they're super nice and professional folks on a personal level. Okay?
+1845.80s - 1850.48s |  When I looked into, oh, just to explain, uh, Circle, sorry, um, this is you, you perform Git
+1850.48s - 1854.88s |  push. You're all familiar with this diagram by now. Well, you notify Circle with a payload and
+1854.90s - 1859.84s |  they did your CI thing for you. Now when GitHub notifies Circle, by the way, they do that with
+1859.84s - 1865.64s |  the webhook and the payload is everything that was, that is in your Git context. So in a way,
+1865.64s - 1871.02s |  and just to add to the confusion, Circle can supply you with a super set of claims on top of
+1871.02s - 1874.36s |  GitHub's claims. If you think about it, just to add to the confusion from earlier, I see your
+1874.36s - 1880.56s |  faces, so yeah, it's confusing. Um, okay, so when I looked into Circle CI system state, I
+1880.58s - 1884.78s |  noted the following. First, pipelines reacted to fork pull requests if and only if, there's no
+1884.78s - 1889.98s |  typo, uh, the project is configured to do so. Now this is actually a good limitation, right? We
+1889.98s - 1894.46s |  don't want anybody on the internet to run machines for us. Putting aside security, someone's
+1894.46s - 1900.46s |  gotta pay for that. Okay, but second thing that I noted is that pipelines were triggered, uh, on a
+1900.46s - 1906.16s |  workflow change, even from a fork. Okay? And this is not good. Why? This implies every pull
+1906.20s - 1911.20s |  request can be an RC, you can just commit, basically pull request a malicious workflow. Okay,
+1913.88s - 1919.34s |  doesn't look good, but the third part was the, the cherry on top. An IDC token was always
+1919.34s - 1925.18s |  granted to the machine regardless of anything. And this is credentials mishandle and misuse.
+1925.18s - 1931.86s |  Okay? So combining those, I was granted an ID token in the context of any Circle CI project
+1931.86s - 1936.50s |  that allowed fork pull requests. Okay, what does it imply? What does it mean? Is that I was
+1936.50s - 1941.80s |  able to access OIDC gated resources of any Circle CI organization that allowed fork pull
+1941.80s - 1947.88s |  requests. Right, that's basically everybody on Circle that has pull requests and OIDC. Nice
+1947.88s - 1953.02s |  amount. Um, the attack flow is pretty simple, you just saw a demo of that using, uh, another
+1953.02s - 1956.68s |  file, right, the prepare, so I'm not gonna show the same thing, all you've, you had to do
+1956.68s - 1961.16s |  basically is, uh, pull request the workflow. So I'm not gonna show that, I will talk about the
+1961.16s - 1966.96s |  disclosure, however. So in order to show Circle CI that this was indeed a bug, I looked for
+1966.96s - 1973.40s |  instances in the wild to support my case. Um, it wasn't long ago until I found this file. Now,
+1973.40s - 1978.38s |  this was by a company called Darklang, anybody here familiar with those folks? Hands up? No?
+1978.38s - 1984.28s |  Okay. Um, just to explain this file, this is an identity federation for, uh, GCP, and even
+1984.28s - 1988.42s |  though you don't know this, this cell language, uh, GCP's language, you can understand the
+1988.42s - 1992.76s |  mapping here, right? We know that CircleCI.com, we know this is the provider, and we know
+1992.76s - 1997.66s |  project ID is the claim, and we're gonna map it to project, audience to organization ID, and
+1997.66s - 2002.60s |  sub to sub, right? We now know what these claims are. Um, per the condition, the condition was
+2002.60s - 2007.60s |  that any one of these three project IDs is okay to access. And something that I cared, but
+2010.04s - 2015.64s |  then didn't care for the exploitation was that the issue URL and the allowed audience had to
+2015.66s - 2020.84s |  be the organization, uh, ID. Now this is fine as long as you create a pull request within the
+2020.84s - 2024.64s |  organization, Circle will just provide you with the ID, right? You're in the context of the
+2024.64s - 2030.74s |  organization, so this part is fine, we don't need to care about that. Um, so basically, a
+2030.74s - 2036.28s |  fork PR to any of those projects, um, which indeed they allowed fork PRs, uh, granted access
+2036.28s - 2040.96s |  to their clouds, that was it, as simple. Okay, just detect the misconfig, pull request,
+2040.98s - 2046.68s |  enjoy the cloud account. So, good summary on me, I'll disclose to the company so they can fix it,
+2046.68s - 2053.06s |  and meanwhile, meanwhile I'll go to Circle. I went to Darklang's, uh, Discord, asking for, uh,
+2053.06s - 2059.16s |  bug bounty cause I like it, and, but there was none, so I was told to DM, uh, DM someone, um,
+2059.16s - 2063.60s |  this is the someone, PBigger, I don't know if someone is familiar with this name, but yeah, we're
+2063.60s - 2068.88s |  gonna see exactly how you are familiar. But, um, yeah, he told me DM me, which I did, I sent, uh,
+2069.10s - 2073.26s |  I sent them everything, and I also added the line, the reason, at the bottom, sorry, the reason is
+2073.26s - 2076.60s |  not safe, it's not because of you, it's because of a bug in Circle, right? I mean, you're fine,
+2076.60s - 2081.98s |  just defend yourself, it's them, not you. Um, I also asked them to not disclose right now, I
+2081.98s - 2085.74s |  don't know who is aware of that, I don't want anybody to exploit, I'm, uh, white hat at that
+2085.74s - 2090.88s |  point, uh, I don't want anybody to exploit, um, so don't talk to anybody. Um, PBigger replied
+2090.88s - 2094.82s |  that he was investigating, and then he confirmed it and blocked all access. By the way, this is
+2094.82s - 2101.10s |  exactly where OIDC kicks in. By ticking one box, he was able to kill all the GitHub, basically
+2101.10s - 2106.44s |  all the, um, OIDC connections coming from Circle, okay? This is very powerful. No rotations
+2106.44s - 2112.44s |  needed, no credential changes, just one box. Um, he was fixing that, and we were, we
+2112.44s - 2116.88s |  continued chatting, later on, he said again that he was very happy to seal it, to which I
+2116.88s - 2122.62s |  replied, no problem. To which he replied, uh, by the way, I sent a note to the security folks
+2122.62s - 2127.62s |  at CircleCI, I wasn't sure if you knew, but I founded Circle. Yeah. So, just a random dude
+2134.56s - 2141.58s |  on Discord, right? So, a good advice here would be to attempt to not disclose directly to the
+2141.58s - 2148.34s |  board member, or the CEO, it can be a bit awkward and odd. So, yeah. This was, uh, June 23,
+2148.34s - 2153.20s |  Circle since then fixed this bug and sealed it, and now if you look into their OIDC page, you
+2153.20s - 2158.62s |  see this message, what about forks, and basically, uh, you have to opt in now. Like in GitHub, I
+2158.62s - 2162.88s |  told you you have to set up ID token, right? This is the same thing, you have to opt in, this is
+2162.88s - 2168.06s |  done in a different manner, but the same idea. You have to opt in in order to provide a fork, a
+2168.06s - 2174.12s |  machine that is running for fork pull request, an OIDC token. Um, this changes this state, and
+2174.14s - 2180.48s |  now we have a proper handling. You can see that, um, part two is still there. Uh, some
+2180.48s - 2185.48s |  integrations in Circle still react to that, so, enjoy the misconfig. Um, and this is roughly,
+2188.16s - 2192.52s |  this is our conclusions and takeaways. So, first of all, I hope that now you know what OIDC is.
+2192.52s - 2197.30s |  It's not that hard, right? I was talking to folks before and they were giving me weird faces, like
+2197.30s - 2202.30s |  yeah, I know, know OIDC, know. So, I hope you know it now, relax, it's fine, it's chill, okay? Um,
+2204.40s - 2209.54s |  plus you already learned OAuth, this is the big thing to, to swallow here. Um, second thing, and
+2209.54s - 2215.18s |  this is actual takeaways, so, for in using OIDC NCI, do the following, uh, learn the origin of
+2215.18s - 2219.42s |  each claims, I've provided the tool for GitHub again, but, um, learn the claims for your
+2219.42s - 2225.46s |  identity providers, uh, pursue policies without wildcards, and always think, always think which
+2225.46s - 2230.46s |  other identities can satisfy my conditions. Last bit, please harden your pipelines, sometimes
+2230.70s - 2235.70s |  it's too easy, that's it. So, yeah. Um, and yeah, but that's basically it, thank you very much. Um,
+2241.18s - 2250.53s |  yeah, I'm here for questions, if there are any. Questions? Beers? Shots? No? See you around.

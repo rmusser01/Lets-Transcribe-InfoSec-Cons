@@ -1,0 +1,537 @@
+{
+  "webpage_url": "https://www.youtube.com/watch?v=cFW0sYSo7ZM",
+  "title": "DEF CON 32 - From getting JTAG on the iPhone 15 to hacking Apple's USB-C Controller - Stacksmashing",
+  "description": "With the iPhone 15 & iPhone 15 Pro Apple switched their iPhone to USB-C - and introduced a new proprietary USB-C controller: The ACE3.\n\nBut the ACE3 does more than just handle USB power delivery: It's a full microcontroller running a full USB stack connected to some of the internal busses of the device, and we even managed to access JTAG on the iPhone 15 through it. It also provides access to UART, the internal SPMI bus, etc. Previous variants of the ACE, namely the ACE2 found in MacBooks, could easily be dumped and analyzed using SWD - and even be persistently backdoored through a software vulnerability we found.\n\nOn the ACE3 however, Apple upped their game: Firmware updates are personalized, debug interfaces seem to be disabled, and the external flash is validated and does not contain all the firmware. However using a combination of reverse-engineering, RF side-channel analysis and electro-magnetic fault-injection it was possible to gain code-execution on the ACE3 - allowing dumping of the ROM, and analysis of the functionality.\n\nThis talk will show how to use a combination of hardware, firmware, reverse-engineering, side-channel analysis and fault-injection to gain code-execution on a completely custom chip, enabling further security research on an under-explored but security relevant part of Apple devices.",
+  "channel_url": "https://www.youtube.com/channel/UC6Om9kAkl32dWlDSNlDS9Iw",
+  "duration": 2214,
+  "channel": "DEFCONConference",
+  "uploader": "DEFCONConference",
+  "upload_date": "20241016"
+}
+
+0.24s - 7.02s | This text was transcribed using whisper model: large-v2
+
+ Hey everyone, welcome to my talk, Ace of the Sleeve, hacking into Apple's new USB-C controller.
+7.02s - 8.02s |  First off, who am I?
+8.02s - 10.48s |  My name is Thomas Roth, aka Stack Smashing.
+10.48s - 14.64s |  I'm a security researcher for hardware and firmware, and I'm also a co-founder at this
+14.64s - 17.44s |  online training platform called Hackstreet.io.
+17.44s - 21.00s |  You can find me on Twitter, YouTube, and so on.
+21.00s - 26.02s |  Now, as always, like any research, it's built on top of other people's work, right?
+26.02s - 31.90s |  And so I want to thank, for example, Sigusa, who built a kernel module we will use, Oli
+31.90s - 37.34s |  for the Thunderbolt patcher, the Azahi Linux team, without whose reverse engineering work
+37.34s - 42.46s |  I couldn't do anything, Carlo Maragni, who just always was there when I talked and had
+42.46s - 49.50s |  to rant about fault injection, Biasca, Fabian, and Caro, Mark Zingier for the central scrutinizer,
+49.50s - 54.10s |  and also the TAD12 dev team, who did some awesome work.
+54.18s - 56.14s |  Now, a bit on the backstory.
+56.14s - 61.66s |  Apple used to have this proprietary connector called Lightning, and it could do fairly obvious
+61.66s - 65.62s |  things such as charging, USB, video, and audio.
+65.62s - 71.14s |  But it could also do some really cool stuff, for example, JTAG, UART, SDQ, and so on.
+71.14s - 77.14s |  And you could buy cables for this on the black market, and there was also the Bonobo cable,
+77.14s - 81.18s |  but we decided we want to build an open-source version of this, and we called it the Tamarind
+81.18s - 82.18s |  Cable.
+82.18s - 87.50s |  And the Tamarind Cable is essentially a $20 Lightning debugging interface that we introduced
+87.50s - 90.86s |  two years ago at DEF CON, so it's good to be back.
+90.86s - 96.46s |  However, Apple decided to throw all of my work away by switching from Lightning to,
+96.46s - 107.24s |  you know, this thing here, that was supposed to be audio here, but she's talking that we
+107.24s - 109.68s |  can do charging, data, audio, and video.
+109.68s - 113.60s |  But I think they made a mistake during the keynote, because they forgot, you know, all
+113.60s - 114.60s |  the cool stuff.
+114.60s - 115.60s |  Like, who cares about charging?
+115.60s - 118.40s |  We want JTAG on the iPhone.
+118.40s - 123.88s |  And you know, if you look at the USB-C connector, it has a ton of pins, and so surely we can
+123.88s - 129.88s |  somehow get some of these to speak JTAG, UART, or, you know, anything interesting, not just
+129.88s - 131.24s |  charging.
+131.24s - 136.00s |  And then I realized that the iPhone is not the first USB-C device that, you know, Apple
+136.00s - 137.00s |  made.
+137.00s - 140.56s |  And I never looked at any of these, but luckily for me, other people did.
+140.56s - 146.72s |  And they figured out that Apple essentially uses the USB power delivery negotiation to
+146.72s - 148.64s |  do some cool stuff.
+148.64s - 153.24s |  And it turns out that this power delivery negotiation is happening in something called
+153.24s - 155.32s |  the USB-C port controller.
+155.32s - 162.28s |  It's essentially a tiny microcontroller in the MacBook, and that one handles all of this.
+162.28s - 166.92s |  And essentially, the charger communicates with it through these two lines, the configuration
+166.92s - 173.64s |  lines, and this is all handled by a microcontroller that sits close to the USB-C ports.
+173.64s - 177.40s |  And you know, a microcontroller will have some kind of firmware, and some smart people
+177.40s - 180.96s |  years ago figured out you can just dump that firmware.
+180.96s - 186.48s |  So you solder a couple of wires into your very expensive MacBook, dump the firmware,
+186.48s - 190.96s |  and then they wrote an awesome blog post because they reverse-engineered the firmware, and
+190.96s - 196.44s |  they figured out that the Apple Type-C port controller, which we call Ace, actually contains
+196.48s - 199.36s |  a lot of secret functionality.
+199.36s - 205.04s |  And they found that Apple uses something called VDM, or Vendor Defined Messages, to let us
+205.04s - 208.88s |  change the configuration of certain pins on the USB-C connector.
+208.88s - 215.72s |  And so for example, we can change the SBU, the Sideband Use Pins, to be serial.
+215.72s - 222.56s |  And so we can, you know, send the VDM action 306 to the Ace controller, and then we get
+222.56s - 225.92s |  a serial console on the MacBook.
+225.92s - 229.72s |  And it turns out that to this Ace, there's much more connected than just serial.
+229.72s - 236.64s |  You can also do JTAG, Thunderbolt, even I2C, or on the iPhone there's SPMI and so on.
+236.64s - 241.92s |  And so that's kind of cool, but how can we actually send these Vendor Defined Messages?
+241.92s - 244.92s |  Because this is not just like regular USB.
+244.92s - 250.56s |  Instead we actually have to use special tooling to be able to send these messages.
+250.60s - 256.44s |  And again, some very smart people from the Asahi Linux team found out that the back left
+256.44s - 261.40s |  port on the MacBook Pro is special, and can actually send those commands, and they reverse
+261.40s - 263.16s |  engineered all of that stuff.
+263.16s - 268.56s |  And so there's a nice tool that you can just use to send these commands from a Mac to another Mac.
+268.56s - 272.92s |  Also, Marc Zenier built this thing called the Central Scrutinizer, which is essentially
+272.92s - 277.80s |  a serial adapter that is able to send all of these things, and can give you, you know,
+277.80s - 282.28s |  a UART shell on a MacBook, and so on and so forth.
+282.28s - 283.28s |  Now I saw this.
+283.28s - 284.28s |  It's Pico based.
+284.28s - 289.88s |  I love the Pico, and so I ordered a couple of PCBs and started experimenting with this.
+289.88s - 295.16s |  And essentially all it contains is a small USB-C controller and a couple of level shifters.
+295.16s - 300.60s |  Now I wanted to try to get serial on the iPhone 15 that was freshly released, because everyone
+300.60s - 306.68s |  was harassing me that my stuff doesn't work anymore, so I had to get with the times.
+306.68s - 309.88s |  Now unfortunately, it didn't work on the iPhone 15 out of the box.
+309.88s - 315.20s |  I had to actually solder on a small USB switch and provide power to the iPhone and so on.
+315.20s - 320.24s |  Now this might just be my incompetence, because this is the first time I ever touched USB-C,
+320.24s - 323.16s |  and so I just tried random stuff until it happened to work.
+323.16s - 330.80s |  And so if you know USB-C better than me, feel free to tell me what I'm doing right or wrong.
+330.80s - 335.64s |  But after doing all of this, I essentially had the Central Scrutinizer working on the
+335.64s - 345.32s |  iPhone, and so I can hit some keys, and suddenly I get the serial console on the iPhone 15.
+345.32s - 351.28s |  That's pretty cool, but also pretty useless, because what do we do with serial output?
+351.28s - 355.72s |  We want to get JTAG or SPMI or something interesting, right?
+355.72s - 360.56s |  And again, the Asahi Linux people did a ton of cool reverse engineering work on all of
+360.56s - 365.96s |  that USB PD stuff, and they have a gigantic document where they document all the actions
+365.96s - 370.44s |  and so on and so forth, and if you keep scrolling and scrolling and scrolling, you will find
+370.44s - 375.96s |  a small note that says, by the way, there's this action called 0206, and there's a good
+375.96s - 382.08s |  chance this is SWD, but nobody ever seems to have like publicly tried this.
+382.08s - 388.04s |  So I took my Central Scrutinizer, hooked my oscilloscope debugger and so on up to this,
+388.04s - 393.80s |  and tried to connect to it, and it didn't work.
+393.80s - 399.72s |  But you know, turns out there are two cables, so I just reversed them, gave it another try,
+399.72s - 403.64s |  and suddenly we get a success message.
+403.64s - 409.86s |  We found the debug port with the ID 4BA02477.
+409.86s - 414.36s |  We just got JTAG on the iPhone 15 by just sending 206.
+414.36s - 418.60s |  Awesome.
+418.60s - 424.28s |  Unfortunately, this is a production device, and so JTAG is locked.
+424.28s - 428.08s |  So essentially, we can't debug it because it's a production device.
+428.08s - 431.70s |  On the black market, you can probably find an iPhone that is not locked, but it will
+431.70s - 436.24s |  run you like 100K or something, so I can't do that.
+436.24s - 440.84s |  But we got JTAG, useless JTAG.
+440.84s - 445.00s |  You know, but we can still explore some other buses, and so it turns out that on the iPhone
+445.00s - 450.72s |  15, there's actually more than just UART and so on on this connector, but also SPMI
+450.72s - 451.72s |  and other things.
+451.72s - 457.64s |  And so in December last year, we released a PCB called the Tamron C adapter, which is
+457.64s - 463.44s |  essentially a fork of the Central Scrutinizer with bidirectional level shifters, a USB power
+463.44s - 466.96s |  switch that can actually charge the iPhone if you want to let it run for a long time
+466.96s - 468.24s |  for research.
+468.24s - 472.84s |  And we can use it to explore all the buses on the iPhone 15, including SPMI, which I
+472.84s - 478.56s |  think we released the first public analyzer for, and it also runs a full JTAG probe.
+478.56s - 480.36s |  And so you can experiment with this.
+480.36s - 482.60s |  It's fully open source.
+482.60s - 484.60s |  And if you use it, it looks like this.
+484.60s - 487.88s |  Now, this is cool, but again, also kind of useless.
+487.88s - 494.40s |  However, what's interesting is that all this stuff is implemented on the iPhone side in
+494.40s - 497.02s |  this chip called the ACE3.
+497.02s - 501.64s |  And the ACE3 essentially sits between the USB port and the system on a chip, and it
+501.64s - 506.76s |  makes for a very interesting target, because on the iPhone 15, the ACE3 can actually run
+506.76s - 511.20s |  a full USB port, like it can come up as a USB device.
+511.20s - 515.96s |  If you go into recovery and plug your iPhone in, you're actually communicating with the
+515.96s - 521.60s |  ACE3, and that makes it an interesting target, because imagine if you compromise this part
+521.60s - 526.68s |  of the device, you could do attacks on the system on a chip without any way for anyone
+526.68s - 531.16s |  to know, like there would be essentially zero traces.
+531.16s - 537.36s |  So I was interested in this, but I wanted to first understand the predecessor, the ACE2,
+537.36s - 540.16s |  because there's a lot of public work on the ACE2 already.
+540.16s - 547.32s |  And the ACE2 is essentially a custom Texas Instruments USB-C controller.
+547.32s - 549.00s |  It's an ARM chip.
+549.00s - 553.52s |  It's connected to the SoC via I2C, and you can find it on all MacBooks, starting with
+553.52s - 559.88s |  the T2 Macs up to the M3 Macs, and so very recent Macs even still use this.
+559.88s - 569.00s |  It turns out that it's just essentially a re-labeled TPS65986 with a custom ROM, essentially.
+569.00s - 575.60s |  Now, I opened up my MacBook, I recreated the work by the TAD12 dev team, I dumped this
+575.60s - 580.56s |  on an M1 MacBook, and so I got an up-to-date firmware, started reverse engineering it,
+580.56s - 585.28s |  and found the command handling, built tooling to talk to it, and so on and so forth.
+585.28s - 589.80s |  And interestingly, the firmware even contains some privileged commands, such as memory read
+589.80s - 591.68s |  write, modify, and so on.
+591.68s - 595.96s |  It's like peek and poke, but unfortunately those are locked on production devices, but
+595.96s - 599.60s |  if you manage to change a single bit, you can unlock them.
+599.60s - 605.08s |  And so, yeah, that's kind of cool.
+605.08s - 609.68s |  The way we communicate from the system on a chip, like from macOS with the ACE, is using
+609.68s - 616.32s |  a bus called Apple HPM bus, which stands for Host Port Microcontroller, and we communicate
+616.32s - 620.24s |  with it by sending these 4-byte commands, they're called 4CC.
+620.24s - 625.16s |  It's essentially a 4-byte integer, but it happens to be ASCII, and so they're like commands
+625.16s - 630.24s |  such as, you know, GAID, or, you know, reset, and so on and so forth.
+630.24s - 633.64s |  And we built a small tool called ACE Tool to communicate with that, and so if you want
+633.64s - 639.08s |  to, we have the full list of commands online, we have a tool online to try them out, so
+639.08s - 640.20s |  it makes for fun.
+640.20s - 644.50s |  But the reason I'm telling you this is that we can do one very important thing.
+644.50s - 646.38s |  We can read the status of the chip.
+646.38s - 650.62s |  We can determine whether it's in application mode, or whether it's in boot mode.
+650.62s - 654.58s |  And we can also determine whether it's in DFU mode and so on, and so if the chip fails
+654.58s - 656.18s |  to boot, we can measure it.
+656.18s - 659.20s |  If the chip successfully boots, we can also measure this.
+659.20s - 662.76s |  This will become important later, so yeah.
+662.76s - 668.22s |  The ACE 2 also has an external flash connected, and this SPI flash does not actually contain
+668.22s - 673.46s |  the full firmware, but it actually just contains patches for the ROM.
+673.46s - 679.46s |  And so essentially, you can patch every single function in the ROM using this flash.
+679.46s - 683.46s |  This makes reverse engineering terribly annoying, because when you start reversing the firmware,
+683.46s - 685.38s |  you have like a function call.
+685.38s - 691.34s |  That function call goes to another segue function, which does like stupid stuff with the registers.
+691.34s - 698.30s |  Then it dereferences a pointer list, which will be loaded from the flash.
+698.30s - 701.86s |  And then it actually jumps to the function, and so everything has like three layers of
+701.90s - 706.90s |  indirection, which breaks all your tooling for cross-referencing, and so on and so forth.
+706.90s - 711.26s |  And so we built some scripts to make this easier, but there are thousands of these functions,
+711.26s - 715.86s |  and so it's terribly annoying to reverse without additional tooling.
+715.86s - 719.46s |  But because it has an external flash, this chip is getting updates.
+719.46s - 725.78s |  And so on macOS, there's a tool called USB-C Firmware Flasher, and with this, it gets regular
+725.78s - 727.24s |  updates and so on.
+727.32s - 734.24s |  These updates are unfortunately protected using RSA-3072, but that signature is only
+734.24s - 738.96s |  checked during updates, so there's no secure boot on the chip whatsoever.
+738.96s - 743.80s |  So if you find code execution and can modify the external flash contents, you get persistence
+743.80s - 747.60s |  for free, like you don't have to do anything.
+747.60s - 752.12s |  And so I found a vulnerability in the ACE2, as you do.
+752.12s - 756.60s |  Well, it's not actually, you will see, it's complicated.
+756.60s - 761.60s |  And I got told it would be fixed in fall, so in the submission report, I can see fall
+761.60s - 762.60s |  2024.
+762.60s - 770.48s |  However, after I said that at BlackHat, I got told by Apple, oh yeah, that's a mistake.
+770.48s - 772.40s |  We are not going to fix it.
+772.40s - 777.28s |  And so I learned two days ago that I can actually drop a vulnerability here.
+777.28s - 786.76s |  So I'm doing, thank you, so I spent the last two hours writing slides, so this is going
+786.76s - 790.00s |  to be a bit of PowerPoint karaoke.
+790.00s - 796.12s |  But essentially, it turns out that not only does the ACE have SWD to the system on a chip,
+796.12s - 800.36s |  but the system on a chip also has SWD to the ACE2.
+800.36s - 804.94s |  And so the SoC can debug the ACE2.
+804.94s - 809.08s |  And the way this works is that there are the two lines that you need for SWD, SWD.IO and
+809.08s - 815.36s |  SWD.CLOCK are general purpose IOs on the SoC.
+815.36s - 819.32s |  And GPIO on Apple SoC is basically just a memory range.
+819.32s - 822.32s |  And if you write to it, you can fiddle with the IOs.
+822.32s - 827.04s |  You can put them into read mode, output mode, high, low, and so on and so forth.
+827.04s - 830.56s |  And thanks to the Asahi Linux team, we know how to talk to them.
+830.56s - 836.24s |  And thanks to Segusa's IO kernel read-write module, we can actually do writes to those
+836.24s - 841.56s |  pages using a kernel module, which requires disabling SIP and so on.
+841.56s - 849.04s |  And so we can control the pins that talk to the debug port of the ACE through the kernel.
+849.04s - 855.80s |  And so let's bitbang SWD through the macOS kernel, because, you know, I don't have enough
+855.80s - 857.24s |  stuff to debug or something.
+857.24s - 858.24s |  I don't know.
+858.24s - 862.64s |  Anyway, and so basically, we have our user space application.
+862.64s - 867.28s |  That user space application talks to the IO kernel read-write module that I loaded
+867.28s - 872.64s |  into the macOS kernel, which talks to the memory-mapped IO peripherals, which toggles
+872.64s - 877.52s |  the physical pins, which then talk to the ACE2.
+877.52s - 882.72s |  And I implemented a debug probe over this that lets us dump and modify the ACE2 from
+882.72s - 885.70s |  user space and looks like this.
+885.70s - 892.00s |  So you can just essentially call .h2 dump, assuming you have this kernel module loaded.
+892.00s - 894.88s |  It will dump the firmware of the ACE2.
+894.88s - 899.08s |  Now the problem with this is I wanted to, you know, build some payloads, and I want
+899.08s - 903.16s |  to debug those payloads, and I don't always want to have my MacBook open to debug the
+903.16s - 904.44s |  payload.
+904.44s - 907.68s |  And so I want to debug.
+907.68s - 910.52s |  So I ported this entire thing into OpenOCD.
+910.52s - 917.68s |  And so introducing Tamarin kernel, which is essentially an OpenOCD driver that bitbangs
+917.68s - 922.00s |  SWD on Apple SoCs through the IO kernel read-write module.
+922.00s - 927.32s |  And so you can actually debug more than just the ACE2.
+927.32s - 933.32s |  There are other peripherals that have debug enabled, thank you.
+933.32s - 937.64s |  And also I found a way to disable the signature verification, because it's, you know, patchable
+937.64s - 938.64s |  from external.
+938.64s - 945.64s |  I can just, if I get code execution, it turns out that, remember how all functions are patchable?
+945.64s - 949.20s |  Also the signature verification functions are patchable, and so you can just disable
+949.20s - 954.36s |  them from the external flash, and afterwards you can actually just load your own firmware
+954.36s - 955.92s |  through user space.
+955.92s - 960.52s |  And all modifications survive a full system restore, so even if you wipe your Mac, the
+960.52s - 962.56s |  ACE2 will still be compromised.
+962.56s - 964.92s |  And so we can backdraw the ACE2, yeah.
+964.92s - 969.04s |  And I'm going to, like all these things I have to release, like today, as I learned
+969.04s - 973.52s |  I can release this two days ago, so I don't have this packaged nicely, and there's still
+973.52s - 979.64s |  a lot of swear words in the code, let's say, so I'll fix that and publish it on GitHub.
+979.64s - 983.48s |  But we have the ACE2, which is on the way out.
+983.48s - 985.68s |  It's an old chip, it doesn't do a whole lot.
+985.68s - 990.96s |  The iPhone 15 Pro uses the successor, which is far cooler.
+990.96s - 993.60s |  And so we have to check the ACE3.
+993.60s - 1000.20s |  The ACE3 is actually a Texas Instruments SN25A12, and when I started this, there was zero public
+1000.20s - 1002.52s |  information on this, literally zero.
+1002.52s - 1006.72s |  In fact, I started tweeting about the chip, and afterwards I got emails from like the
+1006.72s - 1011.20s |  gray market salespeople who sell like the stolen chips online, and they were like, hey,
+1011.20s - 1015.46s |  can we pay you to write a product description for this chip, because we can't find anyone
+1015.46s - 1017.68s |  else who ever talked about it.
+1017.68s - 1024.96s |  And so the ACE3 is used in the iPhone 15 and on the MacBook Pro M3 with Pro and Max processors.
+1024.96s - 1028.28s |  And the ACE3 is far more complex than the ACE2.
+1028.28s - 1031.16s |  It runs a full USB stack called Port DFU.
+1031.16s - 1033.66s |  It has access to some more internal buses.
+1033.66s - 1039.00s |  It has very interesting potential, because it's so, because it can run full USB, if we
+1039.00s - 1045.18s |  managed to, you know, find another checkmate-style boot ROM issue, we could in theory get persistence
+1045.18s - 1049.94s |  for a jailbreak by just putting it in the ACE3 instead of having to gain persistence
+1049.94s - 1051.86s |  in the SOC itself.
+1051.86s - 1055.74s |  I haven't done any of that, it's just some of the motivation that drove me to hack this
+1055.74s - 1058.06s |  chip.
+1058.06s - 1063.22s |  So I started looking at how is this chip protected, like what's different, and it turns out that
+1063.22s - 1064.70s |  everything has changed.
+1064.70s - 1069.66s |  It doesn't use the USB-C firmware flasher anymore, it uses different upgrade mechanisms
+1069.66s - 1072.10s |  between the iPhone 15 and the MacBook.
+1072.10s - 1077.36s |  In fact, I believe on the iPhone 15, it actually uses SWD to update the chip, which is kind
+1077.36s - 1078.54s |  of cool.
+1078.54s - 1083.58s |  And the updates are fully personalized, so each chip will get their own firmware.
+1083.58s - 1087.42s |  But you know, I still had this vulnerability that I think, you know, I can theoretically,
+1087.42s - 1092.18s |  I now can debug the ACE3, so I wanted to try it on the ACE3, so I ordered a MacBook
+1092.18s - 1097.38s |  M3, and the trick didn't work.
+1097.38s - 1104.22s |  So easy select, easy choice, send it back, or, you know, I'm a hardware hacker, open
+1104.22s - 1105.98s |  it up.
+1105.98s - 1110.70s |  So I opened up the MacBook, and remember I had to do this quickly, because the Amazon
+1110.70s - 1116.30s |  return window for this machine was just 30 days.
+1116.30s - 1121.10s |  And the first thing you will notice is that there are again the same debug ports that
+1121.10s - 1126.90s |  we already saw on the previous MacBooks, and on the previous MacBooks, we could dump the
+1126.90s - 1128.22s |  chip this way.
+1128.22s - 1132.62s |  And so just for labeling, this is the ACE3, it's much bigger than the ACE2, and there's
+1132.62s - 1137.66s |  no Texas Instruments chip that looks similar to this one, and so we really have zero idea
+1137.66s - 1139.26s |  what this chip does.
+1139.26s - 1143.78s |  There's again an external SPI flash, and these nice debug connectors.
+1143.78s - 1150.30s |  Now I started probing these, and in combination with the terminal, with the tamering kernel,
+1150.30s - 1157.54s |  I could essentially see that yes, I'm talking SWD on the right lines, but it seems like
+1157.54s - 1161.96s |  the debug port is disabled, so no luck.
+1161.96s - 1166.14s |  So instead I decided to dump the external flash, so again, like I couldn't solder in
+1166.14s - 1170.10s |  this, because again, Amazon return window, so I used these needle probes to just like
+1170.10s - 1171.90s |  probe the flash lines.
+1171.90s - 1176.42s |  And eventually I got a full firmware dump.
+1176.42s - 1177.42s |  Reversing time.
+1177.42s - 1179.26s |  Turns out, it's essentially the same.
+1179.26s - 1184.42s |  Only patches get loaded from the external flash, and everything seems to be different
+1184.42s - 1189.02s |  on the hardware side, so for example the CRC peripheral is at a different address as far
+1189.02s - 1190.78s |  as I can tell.
+1190.78s - 1192.10s |  It's just patches.
+1192.10s - 1196.02s |  And there's some weird regions with high entropy, which is always a bad sign, because that means
+1196.02s - 1199.34s |  that there's some cryptography very likely going on.
+1199.34s - 1203.70s |  And yeah, that will spoil our day if they implemented secure boot.
+1203.70s - 1207.90s |  However, some successful things was that I was able to reverse engineer the firmware
+1207.90s - 1213.70s |  header, and so I found a couple of CRCs and so on, and my naive hope was, okay, I just
+1213.70s - 1219.06s |  you know, patch the firmware, fix the CRCs, and surely this chip will boot, and so let's
+1219.06s - 1222.82s |  flip a bit in a $3,000 MacBook.
+1222.82s - 1228.78s |  Unfortunately, I couldn't get it to boot a modified firmware, but at least I didn't fully
+1228.78s - 1229.78s |  brick it.
+1229.78s - 1235.98s |  So in the end, what I tried, I tried my software vulnerability, I tried physical SWD access,
+1235.98s - 1239.82s |  I tried modifying and switching the flash contents, even like between the different
+1239.82s - 1244.98s |  ACE chips, but they all seem to have a unique signature, like even you can't take the left
+1244.98s - 1248.82s |  ACE and put it on the right ACE and so on and so forth.
+1248.82s - 1253.58s |  I tried fuzzing, and I actually found a timing side channel that lets me enumerate the commands
+1253.58s - 1257.58s |  that the ACE3 supports, but that doesn't really give me anything.
+1257.58s - 1264.98s |  So yeah, essentially we have a completely undocumented, not documented, apologies, chip,
+1264.98s - 1268.98s |  we have no firmware, and only some simple commands.
+1268.98s - 1274.58s |  Time to give up, or do we try fault injection?
+1274.58s - 1279.30s |  So fault injection is an awesome technique, because essentially we can introduce faults
+1279.30s - 1283.92s |  into a chip, which allows us to modify the behavior of the running software.
+1283.92s - 1288.36s |  So for example, we might be able to flip bits in registers and memory, we might be
+1288.36s - 1292.44s |  able to skip instructions and so on, and there are a lot of different techniques for this.
+1292.44s - 1297.04s |  There's voltage glitching, laser, BBI, electromagnetic, and so on.
+1297.04s - 1302.56s |  They all have one thing in common, which is that they very easily break chips.
+1302.56s - 1307.90s |  The most common way to do glitching is using voltage fault injection, and there you essentially
+1307.90s - 1313.08s |  drop the power to the chip for a very short amount of time, at just the right point in
+1313.08s - 1314.36s |  time.
+1314.36s - 1318.80s |  And the problem is, this pretty much requires soldering and removal of a ton of capacitors
+1318.80s - 1322.80s |  and so on, and it's best performed if you know what's going on.
+1322.80s - 1326.32s |  We don't even know the pinout, we don't know what is the core voltage, what is the main
+1326.32s - 1331.74s |  voltage rail, we don't know what other chips are on there, and so on and so forth.
+1331.74s - 1336.92s |  But there's an alternative called EMFI, electromagnetic fault injection.
+1336.92s - 1342.24s |  The idea is we create a high voltage pulse into a coil, and this lets us inject current
+1342.24s - 1345.56s |  directly into precise locations in the chip.
+1345.56s - 1350.64s |  And this again can let us skip instructions, change register values, and so on.
+1350.64s - 1353.84s |  And we don't really need target preparation for this.
+1353.84s - 1361.12s |  It's just we point our chip shouter at the chip, we zap it, and the chip is hacked.
+1361.12s - 1363.26s |  Wonderful, in theory.
+1363.26s - 1369.36s |  The problem is, we need to know the very precise timing on when we need to glitch, because
+1369.36s - 1373.96s |  otherwise we're just going to glitch something else.
+1373.96s - 1377.28s |  How do we figure out the timing on something that we know nothing about?
+1377.28s - 1380.00s |  We just know it doesn't boot, period.
+1380.00s - 1387.44s |  Brute force, I thought about it, but the boot is so slow that it would take forever to try.
+1387.44s - 1391.84s |  And the more we try to glitch at the wrong point in time, the more likely we are to break
+1391.84s - 1392.84s |  the chip.
+1392.84s - 1396.16s |  So we really want to get this right.
+1396.16s - 1402.08s |  I had another idea, which is, what if we find a side channel?
+1402.08s - 1408.24s |  What if we find a side channel to get this precise timing on when to inject our glitch?
+1408.24s - 1411.76s |  Normally, now I decided to use an EM side channel.
+1411.76s - 1415.60s |  So I used an EM probe to measure the chip.
+1415.60s - 1419.08s |  And normally you would use a very high-end oscilloscope for this, but I wanted to use
+1419.08s - 1422.76s |  a cheap, affordable hacker to make this more accessible.
+1422.76s - 1428.36s |  And I just glued a random coil onto a PC-byte probe and just dropped it onto the chip.
+1428.36s - 1430.80s |  So this is just held with gravity.
+1430.80s - 1433.80s |  And this way we can capture the magic chip waves.
+1433.80s - 1435.24s |  And we can actually see this.
+1435.24s - 1440.48s |  As we restart the chip, we can actually see that there is activity on the spectrum at
+1440.48s - 1442.68s |  around 48 megahertz.
+1442.68s - 1444.68s |  Now this activity could be anything, right?
+1444.68s - 1450.64s |  This could be the power rail, this could just be the spy flash line or so, but it's something.
+1450.64s - 1452.80s |  And so the idea is simple.
+1452.80s - 1455.72s |  We start recording the spectrum on the hackRF.
+1455.72s - 1459.00s |  We reboot the ACE3 using the ACE tool I showed earlier.
+1459.00s - 1465.96s |  We get the electromagnetic recording, and then we just do some very simple DSP.
+1465.96s - 1472.00s |  Which just took the better half of a week to generate a ton of different measurements
+1472.00s - 1474.60s |  and so on and so forth, filtering this and that.
+1474.60s - 1478.48s |  But eventually I had a line that I thought, okay, this looks like it might tell us something
+1478.48s - 1479.76s |  about the chip.
+1479.76s - 1483.48s |  And this is completely gut feeling, like I didn't do any science here, I just tried
+1483.48s - 1487.88s |  to play with filters, and eventually I got this line.
+1487.88s - 1493.52s |  Now the problem with this recording is that you want to collect a lot of traces and average
+1493.52s - 1495.02s |  them together.
+1495.02s - 1499.84s |  The problem is they will all be at different offsets in time, because we don't have a precise
+1499.84s - 1503.00s |  way on how to start the recording.
+1503.00s - 1508.36s |  And so we could align these in software, however the hackRF actually has a nice feature, which
+1508.36s - 1511.20s |  is it has hardware trigger inputs.
+1511.20s - 1515.38s |  And so we can actually trigger the recording using a hardware signal.
+1515.38s - 1519.64s |  This doesn't work in the latest hackRF firmware, so it was again like hours of trying different
+1519.64s - 1523.68s |  firmwares until one would actually trigger correctly.
+1523.68s - 1525.72s |  And now we just need a trigger.
+1525.72s - 1531.12s |  Now remember that we have access to the flash lines, and the flash lines have a line called
+1531.12s - 1532.60s |  chip select.
+1532.60s - 1538.96s |  And the chip select line will go low just as our firmware is being loaded.
+1538.96s - 1543.40s |  And so this is perfect to offset a glitch from if we want to bypass secure boot of what
+1543.40s - 1546.24s |  just got loaded from flash.
+1546.24s - 1554.64s |  So easy plan, we start recording on the hackRF, we reboot the ACE3, the hackRF gets triggered
+1554.64s - 1558.80s |  by the chip select line, and we get a perfectly aligned recording.
+1558.80s - 1564.68s |  And in theory it should look like this, if you take pictures for presentation, in reality
+1564.68s - 1570.00s |  your desk will look like this, and it will just be a gigantic mess.
+1570.00s - 1575.04s |  So in the end, we have perfectly aligned recordings, and we can actually average them together
+1575.04s - 1580.40s |  to get a nice, meaningful signal where if anything else put in noise, we can just filter
+1580.40s - 1582.80s |  it away essentially.
+1582.80s - 1588.76s |  But you know, now we just have a fancy line, how do we actually use this to time our glitch?
+1588.76s - 1594.32s |  Well, we can change the flash contents to be invalid, so that the boot fails.
+1594.32s - 1600.04s |  We reboot the ACE3 and record the EM emissions, and then we compare the differences.
+1600.04s - 1605.04s |  Sounds easy, but in reality this takes hours, because you have to set up these needle probes,
+1605.04s - 1607.80s |  which takes like, you know, 20 minutes.
+1607.80s - 1613.04s |  You try to flash the chip until it works, then you do the capture, and measure, and
+1613.04s - 1614.24s |  so on.
+1614.24s - 1617.76s |  And then you do this again, and again, and again, until you get everything right.
+1617.76s - 1621.88s |  And in the end, you end up with a trace that might look like this, where you have the original
+1621.88s - 1625.20s |  firmware, and the modified firmware.
+1625.20s - 1629.04s |  And we can see that this trace looks super different, right, like there's a clear point
+1629.04s - 1632.24s |  in time where they start to differ.
+1632.24s - 1637.92s |  What's even better is we can test our hypothesis by modifying the CRCs.
+1637.92s - 1644.68s |  So remember that we have these three CRCs, and so in theory, if we fix just some of them,
+1644.68s - 1647.20s |  we should see a delay in our boot, in our EM trace.
+1647.20s - 1653.00s |  Like, we should see that our trace changes at a later point in time.
+1653.00s - 1660.08s |  So I tried this, so I have the original firmware, then I set one of three CRCs to be correct,
+1660.08s - 1663.00s |  and you can see we have exactly the same signal as before.
+1663.00s - 1669.52s |  Then I tried two of three CRCs to be correct, and no change, so I was worried that this
+1669.52s - 1671.36s |  might not actually work.
+1671.36s - 1676.60s |  But then when I set the third CRC to be correct, we can see that the boot actually goes much
+1676.60s - 1682.08s |  further, and that the boot fails at a much later point in time.
+1682.08s - 1685.60s |  And so why not just glitch here, right?
+1685.60s - 1687.36s |  So simple enough.
+1687.36s - 1688.76s |  We now have some timing.
+1688.76s - 1694.24s |  Now we just need to position our chip shoulder, because normally for EMFI, it's very important
+1694.24s - 1696.72s |  where you are glitching.
+1696.72s - 1702.46s |  And so if you were doing this professionally, to give a talk at big security conferences,
+1702.46s - 1705.84s |  you would use a big XY table to scan the chip.
+1706.08s - 1710.12s |  Unfortunately, like literally the week before I did this, I had a small accident with my
+1710.12s - 1716.36s |  CNC, and I got 230 volts onto the ground line, and completely bricked my computer, my screen,
+1716.36s - 1720.04s |  and my CNC controller.
+1720.04s - 1721.04s |  That was fun.
+1721.04s - 1724.36s |  And so I couldn't do this, but I really wanted to try this attack.
+1724.36s - 1729.24s |  So I just did the dumbest thing you probably could have done, which is I choose the biggest
+1729.24s - 1734.56s |  tip I had, I just placed it on the chip.
+1734.56s - 1740.36s |  So that way I was sure that I was at least hitting something in there.
+1740.36s - 1744.36s |  And so I had this nice setup with the chip shoulder.
+1744.36s - 1748.64s |  Then the triggering was done by a chip whisperer, Husky.
+1748.64s - 1753.62s |  The trigger connection is just the chip's leg line, using a PC byte, and a connection
+1753.62s - 1755.08s |  to ground.
+1755.08s - 1758.08s |  What's not shown is the days of debugging this took.
+1758.08s - 1761.28s |  And again, this is a photo op, reality looked like this.
+1761.28s - 1765.20s |  And like as soon as you bump the table, everything would just drop off.
+1765.20s - 1768.84s |  So yeah.
+1768.84s - 1771.12s |  So we are ready to glitch essentially.
+1771.12s - 1775.16s |  So my first attempt was, I would just change the version string.
+1775.16s - 1780.32s |  So from Mac OS, I can read out the version of the firmware that is running on the ACE.
+1780.32s - 1785.36s |  And so on my MacBook, this was 2.45.
+1785.36s - 1790.60s |  And so I decided in the flash, I would just change that single byte.
+1790.60s - 1794.40s |  And I fixed all the other CRCs around it.
+1794.40s - 1797.04s |  And then I armed the Husky and the chip shouter.
+1797.04s - 1800.12s |  I reboot the ACE3 via ACE tool.
+1800.12s - 1802.12s |  I wait for the glitch.
+1802.12s - 1807.36s |  And then remember earlier, I told you that we can check what the status of the chip is.
+1807.36s - 1810.72s |  I just check whether it's successfully booted.
+1810.72s - 1812.92s |  And this worked wonderfully, right?
+1812.92s - 1816.00s |  So I just, I can just try again and again and again.
+1816.00s - 1819.20s |  And in theory, we should eventually get successful.
+1819.20s - 1826.20s |  And so I built this tiny Jupyter notebook to do all of this and started it.
+1826.20s - 1829.16s |  And you can see we got like 1.6 attempts per second.
+1829.16s - 1834.16s |  So each reboot takes like 1.6 seconds.
+1834.16s - 1836.12s |  That's when the trouble started.
+1836.12s - 1840.60s |  The problem is sometimes the ACE completely stops responding and I can't get it to boot
+1840.60s - 1841.60s |  again.
+1841.60s - 1842.60s |  I don't get any output.
+1842.60s - 1845.16s |  So I need to reboot the machine.
+1845.16s - 1851.04s |  The problem is if I reboot the machine while the charging controller doesn't have a firmware,
+1851.04s - 1853.68s |  the MacBook will stop charging.
+1853.68s - 1857.68s |  And essentially, I have eight hours of trying to glitch the chip.
+1857.68s - 1861.64s |  And then the battery runs out, then I have to restore the flash, which takes hours again
+1861.64s - 1866.52s |  with the probes, restore the firmware, charge it up, and then do the whole thing opposite
+1866.52s - 1869.20s |  again.
+1869.20s - 1872.84s |  So I did that for a couple of days.
+1873.52s - 1875.00s |  It was like sunken cost fallacy.
+1875.00s - 1879.68s |  I started, then I thought like, hey, maybe I should build a battery emulator and just
+1879.68s - 1881.68s |  like feed it externally.
+1881.68s - 1883.48s |  But I thought, ah, no, I'm so close.
+1883.48s - 1886.84s |  I'm sure it will happen any minute now.
+1886.84s - 1889.88s |  So I kept doing this, but eventually I got success.
+1889.88s - 1896.48s |  I managed to get into the app mode on the ACE3.
+1896.48s - 1906.96s |  And by checking the version number, I can actually see I was successful.
+1906.96s - 1911.16s |  I changed it to version 42, and we glitched the ACE3.
+1911.16s - 1917.28s |  But the problem is we only changed the external patches.
+1917.28s - 1921.24s |  And we don't actually know what these patches patch because we don't know the actual ROM.
+1921.24s - 1926.12s |  And so essentially, we have this flash, which is full of random functions, but we don't
+1926.12s - 1927.56s |  ever know what they do.
+1928.20s - 1930.48s |  We don't know, how can I trigger them?
+1930.48s - 1932.32s |  Will they actually be executed?
+1932.32s - 1936.44s |  And then even if you manage to execute them, we don't have any input or output.
+1936.44s - 1939.24s |  We don't even have a driver to wiggle a pin or something.
+1939.24s - 1945.32s |  So I was considering, oh, can I do maybe some looping that I can measure via EM or so?
+1945.32s - 1947.60s |  But yeah, essentially, we can replace functions.
+1947.60s - 1949.10s |  We don't know what they do.
+1949.10s - 1954.92s |  And even if we execute them, even if we 100% know we get them to execute, we have no way
+1954.92s - 1956.60s |  to get data out.
+1957.24s - 1962.00s |  However, I started looking around a lot through the ACE3 flash, and you can see that there
+1962.00s - 1969.96s |  are a lot of 4CC strings here again, like this, UFPF, DFUF, USBW, and so on and so forth.
+1969.96s - 1975.56s |  And I thought probably there are some similarities between the ACE3 firmware and the ACE2 firmware.
+1975.56s - 1980.48s |  And maybe I get lucky and they patched a function in both chips, the old one and the new one.
+1980.48s - 1987.04s |  And so after hours of staring in Binary Ninja, I found a function that is actually almost
+1987.04s - 1990.04s |  identical between the two.
+1990.04s - 1992.04s |  And this is the USBW command handler.
+1992.04s - 1998.00s |  And USBW command handler, I have no idea what that does, but it's a command that I can send
+1998.00s - 2001.20s |  to the ACE that will get executed.
+2001.20s - 2003.60s |  And remember, and so I can replace it.
+2003.60s - 2007.52s |  And remember how earlier I saw the memread function?
+2007.56s - 2012.48s |  I essentially took that implementation from the ACE2, modified it, simplified it slightly,
+2012.48s - 2017.16s |  and then had a function that was by Apple built to give me memory.
+2017.16s - 2020.52s |  And so I essentially Apple built my exploit payload.
+2020.52s - 2023.08s |  So I'm very thankful for that.
+2023.08s - 2028.20s |  And so in the end, I essentially had a very simple payload that is a trivial memory reader
+2028.20s - 2032.32s |  that takes in an address and returns four bytes at that address.
+2032.32s - 2037.76s |  So again, attempt two, we replaced the USBW command handler.
+2037.76s - 2039.16s |  And we start glitching.
+2039.16s - 2043.48s |  And we again, you know, wait for the battery to run out, start over, and so on and so forth.
+2043.48s - 2046.80s |  The glitch was not very stable at this point in time.
+2046.80s - 2052.00s |  And so, but eventually, I got a success.
+2052.00s - 2058.88s |  And so I decided I will just send the USBW command with the address 0000.
+2058.88s - 2063.76s |  And I got this back, 000620.
+2063.76s - 2065.80s |  And you know, this is a little endian machine.
+2065.80s - 2067.28s |  So you reverse it.
+2067.28s - 2072.56s |  And if you do a lot of arm reversing, you will immediately spot why this indicates success.
+2072.56s - 2074.32s |  This is the stack pointer reset value.
+2074.32s - 2078.12s |  We just read address zero of the physical memory of the chip.
+2078.12s - 2083.16s |  And so we can read and also write arbitrary memory on the ACE3.
+2083.16s - 2092.13s |  So time to dump.
+2092.13s - 2094.81s |  And again, like I, my payload was not the greatest.
+2094.81s - 2097.77s |  And so I could dump four bytes at a time.
+2097.77s - 2101.37s |  And so it took hours and the battery ran out.
+2101.37s - 2110.13s |  And I had to reflash, restore, recharge, glitch again, and then dump it again.
+2110.13s - 2113.17s |  But eventually, I had the full firmware.
+2113.17s - 2117.17s |  A full dump of the ACE3, ROM and RAM, and so on and so forth.
+2117.17s - 2118.41s |  So awesome.
+2118.41s - 2122.37s |  We can actually start reverse engineering this chip.
+2122.37s - 2127.41s |  And the main thing that I learned during this is dumping unknown silicon is actually possible.
+2127.41s - 2130.05s |  Like, I knew almost nothing about this chip, right?
+2130.05s - 2131.77s |  And it's not super difficult.
+2131.77s - 2135.61s |  It just takes a lot of persistence and, you know, dealing with annoyances.
+2135.61s - 2141.33s |  And we can actually get code execution without having firmware, even on a microcontroller.
+2141.37s - 2143.29s |  I thought that was really cool.
+2143.29s - 2147.25s |  And now we can actually start researching the ACE3.
+2147.25s - 2152.37s |  Now, the equipment I used with like the chip shoulder, Husky and so on, this is all very
+2152.37s - 2153.37s |  expensive, right?
+2153.37s - 2156.65s |  Like the total is probably like 8k or something.
+2156.65s - 2158.77s |  And you know, so let's make it cheaper.
+2158.77s - 2164.81s |  So I imported the entire attack onto the Pico MP, which is like a super low cost electromagnetic
+2164.81s - 2166.97s |  fault injection tool.
+2166.97s - 2172.17s |  And I put a firmware on the chip shoulder that does all the triggering on the chip select
+2172.17s - 2174.65s |  line and so on and so forth automatically.
+2174.65s - 2180.61s |  And so you can now attack the ACE3 and dump it for $60, which I think is pretty fair.
+2180.61s - 2186.18s |  And so, yeah.
+2186.18s - 2189.34s |  With that said, that's all I have for you today.
+2189.34s - 2192.50s |  We have a bit of time for Q&A, but thank you.
+2192.50s - 2196.04s |  And also, if you're interested in actually trying some fault injection, we are running
+2196.04s - 2198.42s |  a glitching lab over at the Embedded Systems Village.
+2198.42s - 2203.50s |  And so come by and you can actually bypass some protections on chips by zapping them
+2203.50s - 2206.06s |  or fiddling with the voltage rails and so on.
+2206.06s - 2206.90s |  So yeah, thank you.

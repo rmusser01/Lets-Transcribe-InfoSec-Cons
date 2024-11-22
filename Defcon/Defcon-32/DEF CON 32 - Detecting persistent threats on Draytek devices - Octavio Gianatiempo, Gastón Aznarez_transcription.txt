@@ -1,0 +1,620 @@
+{
+  "webpage_url": "https://www.youtube.com/watch?v=BiBMsw0N_mQ",
+  "title": "DEF CON 32 - Detecting persistent threats on Draytek  devices - Octavio Gianatiempo,  Gast\u00f3n Aznarez",
+  "description": "Advanced attackers are increasingly choosing edge devices as targets, many of which are security appliances such as VPNs and Firewalls. They run closed-source firmware, and defenders and researchers must understand it to assess its security and integrity. We faced this firsthand when a client that used Draytek equipment was compromised. With at least 500k Draytek routers exposed to the Internet globally, no working tools exist to extract their firmware and assist researchers and defenders working with them.\n\nWe reverse-engineered Draytek's firmware format, developed tools to extract it, and discovered that its RTOS kernel can load code modules dynamically. These stored modules remain active even after firmware upgrades, inadvertently facilitating persistent threats. We crafted and uploaded malicious modules using our tools and newly found vulnerabilities to achieve persistence.\n\nEnd-users lack straightforward means to detect such compromises. In response to this threat, we developed our own module to assess the integrity of other modules loaded in memory, mitigating its impact. In our pursuit of a more secure internet, we are sharing our knowledge and opening our tools to the community, enabling observability, hardening, transparency, and vulnerability research on Draytek edge devices.",
+  "channel_url": "https://www.youtube.com/channel/UC6Om9kAkl32dWlDSNlDS9Iw",
+  "duration": 2142,
+  "channel": "DEFCONConference",
+  "uploader": "DEFCONConference",
+  "upload_date": "20241016"
+}
+
+0.00s - 1.60s | This text was transcribed using whisper model: large-v2
+
+ Hi, everyone.
+1.60s - 4.92s |  There is more people than I expect at 10 AM.
+4.92s - 9.08s |  Thank you very much for being here.
+9.08s - 12.84s |  You are the ones who survived until the last day in DEFCON.
+12.84s - 15.04s |  Awesome.
+15.04s - 18.12s |  Welcome to Taking Off the Blindfold,
+18.12s - 24.20s |  Detecting Persistent Threats on Drytech Edge Devices.
+24.20s - 26.72s |  We are part of the Faraday Research Team.
+26.72s - 29.60s |  My partner here is Octavio Geno-Tiempo.
+29.60s - 31.52s |  I am Gaston Asnares.
+31.52s - 36.20s |  And we have some experience working with firmware.
+36.20s - 40.16s |  We have a foundation on computer science.
+40.16s - 42.72s |  And we like to play CDF.
+42.72s - 49.33s |  As a resume, we would like to break things and do research.
+49.33s - 51.93s |  So what we are going to see today.
+51.93s - 54.77s |  First, we are going to see a motivation for this research
+54.77s - 56.69s |  and this talk.
+56.69s - 58.49s |  We are going to see some reverse engineering
+58.49s - 60.85s |  on drytech firmwares.
+60.85s - 63.97s |  We are going to talk about vulnerabilities and attack
+63.97s - 65.93s |  vectors.
+65.93s - 68.45s |  We are going to see mitigation strategies.
+68.45s - 70.73s |  And at least, we are going to see
+70.73s - 74.82s |  some conclusions and takeaways.
+74.82s - 78.38s |  OK, how this started.
+78.38s - 82.70s |  We had a call of a client saying that it was compromised.
+82.70s - 85.66s |  And when we came to the scene, we
+85.66s - 90.34s |  see a lot of outdated drytech equipment
+90.34s - 92.42s |  in the edge of the network.
+92.42s - 99.26s |  Most of them were SOHO models that runs our RTOS.
+99.26s - 100.98s |  And we started making some analysis.
+100.98s - 104.26s |  We found previous vulnerabilities
+104.26s - 110.26s |  with proven exploits on high-end models of the drytech routers
+110.26s - 113.74s |  that runs Linux.
+113.74s - 116.78s |  And we started making some questions about it.
+116.78s - 120.34s |  Like, are these vulnerabilities exploitable
+120.34s - 122.78s |  on the SOHO routers?
+122.78s - 126.02s |  There is other vulnerabilities that are unknown.
+126.02s - 129.58s |  And the principal question was, were these routers
+129.58s - 134.02s |  the entry point of the attackers?
+134.02s - 135.90s |  OK, we know that there is an increasing
+135.90s - 140.10s |  threat of advanced attack targeting edge devices.
+140.10s - 144.18s |  We could name some examples, like the sewer rat that
+144.18s - 148.14s |  was a sophisticated malware targeting SOHO routers.
+148.18s - 150.70s |  We also could name the hiatus rat
+150.70s - 153.46s |  that was a malware targeting drytech routers,
+153.46s - 157.98s |  but the high-end models.
+157.98s - 161.46s |  And at least we could name Benin Sartine
+161.46s - 168.46s |  that was an NSA tool targeting Cisco routers that was leaked
+168.46s - 173.36s |  by the shadow brokers group.
+173.36s - 178.68s |  OK, so what is the attack surface of these routers?
+178.68s - 186.96s |  We found over 5,100 exposed devices, mostly in the UK.
+186.96s - 189.64s |  And we found a lot of vulnerabilities,
+189.64s - 193.16s |  from an information disclosure to an authenticated
+193.16s - 194.52s |  remote code execution.
+194.52s - 198.57s |  So there is a lot of stuff.
+198.57s - 204.17s |  OK, so we had a Vigor 2925 in our office,
+204.17s - 209.05s |  running MIPS 32 RTOS.
+209.05s - 213.05s |  And we wanted to start making some research on that,
+213.05s - 215.09s |  but we have a problem.
+215.09s - 217.81s |  The code is closed source.
+217.81s - 222.41s |  So first, we had to reverse engineer the firmware format.
+222.41s - 225.37s |  We had to extract the firmwares, understand
+225.37s - 229.81s |  previous vulnerabilities, and then look for new ones.
+229.81s - 238.12s |  And finally, determine if this was the attack vector or not.
+238.12s - 240.32s |  So the first thing we did was trying
+240.32s - 242.48s |  to extract this firmware using a minwalk,
+242.68s - 243.32s |  but it failed.
+243.32s - 244.96s |  It produced no results.
+244.96s - 247.28s |  So we tried to look for some specialized tools,
+247.28s - 249.36s |  and we found this one, DRYTOOLS.
+249.36s - 251.56s |  So this didn't work with new firmwares.
+251.56s - 255.04s |  The last commit was 12 years ago, and that's why.
+255.04s - 258.08s |  So luckily for us, we found a talk
+258.08s - 261.36s |  by Philippe Loret at Hexagon 2022,
+261.36s - 264.72s |  where he described that by emulating DRYTEXT bootloader,
+264.72s - 268.96s |  we can extract, we can make it extract the RTOS kernel.
+268.96s - 270.88s |  The disadvantage of this approach
+270.88s - 272.44s |  is that this is a manual process,
+272.44s - 274.80s |  and you have to tweak the addresses for each firmware
+274.80s - 276.60s |  version.
+276.60s - 278.24s |  And the other problem that it has
+278.24s - 280.56s |  is that these firmware images have
+280.56s - 284.36s |  other executable components apart from the RTOS kernel
+284.36s - 288.88s |  and file systems that you cannot extract this way.
+288.88s - 292.12s |  So our approach was to reverse engineer the format
+292.12s - 295.64s |  and to try to write a tool that can extract all firmware
+295.64s - 299.28s |  versions from different models, extracting all file systems,
+299.28s - 303.68s |  and extracting all the executable components.
+303.68s - 305.84s |  We named our tool DRYTEXT Arsenal.
+305.84s - 307.40s |  It's a collection of tools.
+307.40s - 309.48s |  We wrote this in Python.
+309.48s - 310.24s |  It's open source.
+310.24s - 313.88s |  You can check it out at that repository.
+313.88s - 317.20s |  And the idea is to support for all these new firmware
+317.20s - 319.96s |  versions, and we will be showing,
+319.96s - 322.28s |  along these presentations, all the features
+322.28s - 326.05s |  that we implemented.
+326.05s - 328.77s |  So let's talk about the firmware format.
+328.77s - 331.09s |  It has two main sections.
+331.09s - 332.69s |  One is called the binary section,
+332.69s - 334.77s |  and the other one, the web section.
+334.77s - 337.93s |  Both start with a header that contains
+337.93s - 340.85s |  the size and a pointer to the following section.
+340.85s - 343.21s |  But in the first one, we also have information
+343.21s - 347.45s |  about the firmware version and some metadata.
+347.45s - 352.49s |  So the web section has a file system that is compressed
+352.49s - 354.61s |  and contains all the static files
+354.61s - 358.21s |  that the router serves for the web UI.
+358.21s - 360.73s |  In the first section, the binary section,
+360.73s - 364.61s |  we have the boot loader that is raw MIPS 32 code.
+364.61s - 367.53s |  This is the part that Philippe emulated.
+367.53s - 372.41s |  And then this is followed by the compressed RTOS kernel.
+372.41s - 375.37s |  And after that, we have a very interesting part of firmware
+375.37s - 377.09s |  that is the DLM code.
+377.09s - 381.37s |  This is also a file system, but it's compressed and encrypted.
+381.37s - 384.77s |  And we will talk a lot about it.
+384.77s - 389.09s |  So to work with this, we made a specification
+389.09s - 391.73s |  of the structure of the firmware using KTI structs.
+391.73s - 393.61s |  And the advantage of using this is
+393.61s - 396.69s |  that you can manipulate the firmware images with any
+396.69s - 398.33s |  language that you want from this list.
+398.33s - 400.73s |  We used Python, but you can find this in the repo
+400.73s - 404.97s |  and use the language that you prefer.
+404.97s - 407.45s |  Well, by knowing all this, we started
+407.45s - 409.09s |  to tackle the reverse engineering
+409.09s - 411.13s |  of the compression algorithm.
+411.13s - 415.17s |  So during boot, the RTOS is decompressed
+415.17s - 418.49s |  to the same memory space as the boot loader.
+418.49s - 421.13s |  We did this following the steps described
+421.13s - 423.29s |  by Philippe in his talk.
+423.29s - 425.69s |  But when we started reverse engineering this,
+425.69s - 430.09s |  we mapped all this in memory, the boot loader and then
+430.09s - 431.89s |  the RTOS after that.
+431.89s - 435.29s |  And that allowed us to discover that the decompression
+435.29s - 438.69s |  function is used during runtime to decompress other things,
+438.69s - 440.93s |  for example, the file systems.
+440.93s - 443.37s |  And we also discovered some interesting strings,
+443.37s - 446.33s |  like the one that you can see down to the right, that
+446.33s - 449.09s |  says lc4 decompression failed.
+449.09s - 452.37s |  But if it was lc4 decompression algorithm,
+452.37s - 456.25s |  why we couldn't start it with linwalk?
+456.25s - 459.13s |  And the reason for this is that while they
+459.13s - 463.53s |  use a standard lc4 compression block format,
+463.53s - 468.61s |  they have written a custom frame format.
+468.61s - 472.65s |  So it's just a custom magic that is
+472.65s - 475.29s |  followed by a succession of block size and block
+475.29s - 477.49s |  data multiple times.
+477.49s - 482.57s |  So we wrote a decompressor and a compressor for that format.
+482.57s - 485.93s |  And then we moved on to the most interesting part
+485.93s - 488.69s |  that is the DLM section.
+488.69s - 492.53s |  So it turns out that the DLM stands
+492.53s - 494.17s |  for Dynamic Kernel Modules.
+494.17s - 496.77s |  So this real-time operating system
+496.77s - 501.01s |  has the ability to load code modules during runtime
+501.01s - 502.17s |  dynamically.
+502.17s - 506.57s |  And this feature works independently
+506.57s - 508.49s |  from the firmware.
+508.49s - 514.33s |  So during boot, we can see that the modules that
+514.33s - 517.37s |  come with the firmware image are loaded.
+517.37s - 518.89s |  There are three modules.
+518.89s - 523.13s |  And they are called vr9-geo-ip, vr9-app-e.
+523.13s - 527.49s |  We will talk a lot about this one, and vr9-ssh.
+527.49s - 530.13s |  So the first one contains information
+530.13s - 532.53s |  about the geolocation of IPs.
+532.53s - 536.61s |  The second one is used to block traffic from the users that
+536.61s - 538.93s |  are in the LAN.
+538.93s - 542.97s |  And the last one contains the implementation of SSH server.
+542.97s - 545.85s |  And this is really interesting because this implementation
+545.85s - 550.28s |  is separate from the firmware.
+550.28s - 554.40s |  So these modules can be updated during runtime.
+554.40s - 559.40s |  And if you install a new version of App Enforcement Module
+559.40s - 563.72s |  or SSH, these are loaded first and prevent
+563.72s - 567.36s |  the modules that come with the firmware to be loaded.
+567.36s - 571.04s |  You can see down to the right that, for example,
+571.04s - 574.36s |  in this case, the vr9-app-e module was loaded first.
+574.36s - 579.32s |  And then when the router tries to load
+579.32s - 584.28s |  the version that comes in the firmware image, it will fail.
+584.28s - 587.16s |  So doing some more reverse engineering,
+587.16s - 589.04s |  we found out that the modules are compressed
+589.04s - 594.76s |  using the same algorithm that is used for the RTOS,
+594.76s - 596.76s |  but they are also encrypted.
+596.76s - 599.20s |  So we recognize that the algorithm used
+599.20s - 602.44s |  was a modified version of XDA.
+602.44s - 605.40s |  And this is a symmetric encryption algorithm.
+605.40s - 608.44s |  And what this means is that the keys for decrypting these DLMs
+608.44s - 610.32s |  are present in the firmware.
+610.32s - 613.74s |  So we looked for them, and we wrote a decryptor and encryptor
+613.74s - 615.16s |  for the modules.
+615.16s - 618.48s |  So if you take a DLM, you decrypt it using this,
+618.48s - 622.52s |  and you decompress it using the modified version of LC4,
+622.52s - 625.16s |  then what you get is a relocatable ELF.
+625.16s - 627.48s |  And this is very interesting, because all these terminal
+627.48s - 630.80s |  functions that this ELF uses, they
+630.80s - 632.60s |  have to have their symbol names.
+632.60s - 637.37s |  So they are really easy to reverse engineer.
+637.37s - 639.65s |  And this also means that the firmware
+639.65s - 641.37s |  must have an ELF loader.
+641.37s - 643.89s |  So we looked for that code, and we found
+643.89s - 646.65s |  that there is also a symbol table.
+646.65s - 649.65s |  This symbol table was described before by Philippe Loret,
+649.65s - 653.29s |  but only as an aid for reverse engineering,
+653.29s - 655.33s |  because imagine that you have a table where
+655.33s - 658.89s |  you have function names followed by function pointers.
+658.89s - 661.65s |  But now we know that this table is actually
+661.65s - 667.01s |  used by the ELF loader to link these modules to the kernel.
+667.01s - 671.57s |  So the advantage that this gives to us
+671.57s - 674.21s |  is that if we manage to write our own modules,
+674.21s - 676.37s |  we can use all these functions without knowing
+676.37s - 679.92s |  their actual addresses.
+679.92s - 684.56s |  So we implemented all these in our tool.
+684.56s - 688.04s |  We have two functions, one called
+688.04s - 690.32s |  parse firmware that will print a lot of information
+690.32s - 692.52s |  about the firmware image, and the other one
+692.52s - 696.48s |  called extract that will extract all these pieces of the image.
+696.48s - 699.84s |  It will decrypt and decompress all the modules.
+699.84s - 704.44s |  It will extract all the file systems for the web server,
+704.44s - 708.00s |  and it will generate a binary image that
+708.00s - 711.04s |  contains the bootloader followed by the RTOS kernel,
+711.04s - 713.72s |  but decompressed.
+713.72s - 716.88s |  So if you want to start reverse engineering this,
+716.88s - 719.00s |  you must know the loading address.
+719.00s - 722.96s |  And what we realize is that all Drytech bootloaders
+722.96s - 725.72s |  start by calling the decompression function.
+725.72s - 727.52s |  So this function is always located
+727.52s - 729.48s |  near the start of the image.
+729.48s - 733.92s |  And since all this has to be loaded aligned to the page,
+733.92s - 737.44s |  then we can search for the address of this compression
+737.44s - 738.44s |  function.
+738.44s - 741.00s |  And if we remove the last three numbers,
+741.00s - 743.28s |  what we get is the address, the loading
+743.28s - 744.72s |  address of the whole image.
+744.72s - 749.48s |  So with that, you can start your reverse engineering process.
+749.48s - 752.36s |  We also implemented this in a functionality
+752.36s - 754.88s |  called find loading address.
+754.88s - 757.92s |  And when we had all that, we moved on
+757.92s - 760.68s |  to try to find some vulnerabilities and attack
+760.68s - 769.18s |  vectors.
+769.18s - 772.94s |  OK, so let's talk something about vulnerabilities.
+772.94s - 776.54s |  We are going to show some of them.
+776.54s - 779.06s |  Starting with the basics, we found
+779.06s - 782.02s |  that they had an insecure password storage.
+782.02s - 785.18s |  That means they stored the passwords and the credentials
+785.18s - 787.38s |  in plain text in memory.
+787.38s - 790.42s |  So if someone had access to the memory,
+790.42s - 795.26s |  they could read the credentials or maybe change another exploit
+795.26s - 798.62s |  to leak them.
+798.62s - 802.26s |  We also found non-constant time comparison
+802.26s - 805.66s |  on the credential.
+805.66s - 810.86s |  So they use a function that takes different amounts of time
+810.86s - 813.58s |  to compare different passwords, depending
+813.58s - 819.42s |  on how much correct characters are in the string.
+819.42s - 825.73s |  And that leads to a side attack channel, a timing attack.
+825.73s - 830.29s |  OK, so DirectX implements a second step authentication
+830.29s - 832.41s |  that's really nice.
+832.41s - 837.13s |  But that was predictable, because the code generation
+837.13s - 840.81s |  was done using a self-random function.
+840.81s - 848.57s |  But with the seed, they use the time elapsed since boot.
+848.57s - 853.09s |  So if you know for how long the router is running,
+853.09s - 858.81s |  you could predict the second factor authentication codes.
+858.81s - 864.09s |  We also found an older reference in the HCP server
+864.09s - 868.77s |  that leads to the native service attack.
+868.77s - 872.49s |  But the interesting in that is that it was exposed to one.
+872.49s - 875.41s |  So if the router was exposed to internet,
+875.41s - 880.17s |  you could trigger that non-reference.
+880.17s - 883.37s |  And if we combine both vulnerabilities,
+883.37s - 887.37s |  we could predict the second step authentication codes,
+887.37s - 891.25s |  because we could make the router crash.
+891.25s - 895.29s |  And then we know the time elapsed since boot,
+895.29s - 898.89s |  and we predict the codes.
+898.89s - 903.05s |  And that's what we are going to see in the next demo.
+903.05s - 905.53s |  We could see on the right the serial communication
+905.53s - 906.21s |  with the router.
+909.89s - 912.09s |  No, that's on the left.
+912.09s - 915.09s |  On the right top is the script that we run.
+915.09s - 922.65s |  It triggers the non-reference, and the router is rebooting.
+922.65s - 925.77s |  It will take two or three reboots,
+925.77s - 929.81s |  because it crashed hard.
+929.81s - 934.53s |  And on the right bottom, we have the web UI,
+934.53s - 940.86s |  where we are going to try to log in.
+940.86s - 943.50s |  So now it boots.
+943.50s - 949.77s |  We are going to wait until the router initializes itself.
+950.61s - 960.61s |  And now we are trying some different codes.
+960.61s - 969.51s |  And we were able to predict the code, and we are logged in.
+969.51s - 973.59s |  So Octavio talked something about the APP enforcement
+973.59s - 975.47s |  signature feature.
+975.47s - 977.31s |  It's really great.
+977.31s - 980.11s |  If you have an enterprise and you
+980.11s - 985.23s |  want to block to your employees on web or I don't know,
+985.23s - 991.19s |  you will update the signatures in order to block that traffic.
+991.19s - 996.31s |  And how this process is made, there are two ways.
+996.31s - 997.75s |  The first one is the manual.
+997.75s - 1002.43s |  We will see on the right bottom that says Import.
+1002.43s - 1006.43s |  If we click there, we could upload any file
+1006.43s - 1008.99s |  with some checks.
+1008.99s - 1013.79s |  And the second way is the automatic way,
+1013.79s - 1018.47s |  in which we have to select the update server
+1018.47s - 1022.83s |  or select the default one.
+1022.83s - 1025.23s |  And we have to schedule the updates.
+1025.23s - 1030.03s |  So for example, every day at some point of the day,
+1030.03s - 1035.39s |  it will check if there is some update for the signatures.
+1035.39s - 1041.11s |  And how they implement this, the signatures,
+1041.11s - 1046.63s |  you could think on JSON formats or YAML or something like that.
+1046.63s - 1051.71s |  But Drytech has the idea to implement this as a module.
+1051.71s - 1054.39s |  So to update the signatures, they
+1054.39s - 1061.63s |  upload an L file with code and everything.
+1061.63s - 1064.47s |  OK, let's talk about some vulnerabilities
+1064.47s - 1066.47s |  related to the modules.
+1066.47s - 1073.35s |  The first one is they not also update certificates with code,
+1073.35s - 1076.63s |  but they don't check for certificates
+1076.63s - 1079.11s |  or have SSL enforcement.
+1079.11s - 1083.43s |  So if someone manipulates the configuration of the router
+1083.43s - 1086.47s |  or the DNAs, maybe DNS hijacking,
+1086.47s - 1091.59s |  they could upload a module to all the Drytech routers
+1091.59s - 1094.63s |  that has this feature.
+1094.63s - 1099.71s |  And we have found two post-authentication endpoints.
+1099.71s - 1103.63s |  The first one is the one that I told in the last slide.
+1103.63s - 1107.19s |  And the second one is that we found an endpoint
+1107.19s - 1112.39s |  to upload configurations files that doesn't have some checks.
+1112.39s - 1116.19s |  So they allow us to upload an arbitrary DLM.
+1116.19s - 1119.75s |  Now it's not only the APPA module,
+1119.75s - 1123.43s |  but we could upload any modules that we want.
+1123.43s - 1129.75s |  Maybe we could, I don't know, upload another SSH module.
+1129.79s - 1132.91s |  So we have three ways for an attacker
+1132.91s - 1134.63s |  to install malicious modules.
+1134.63s - 1136.83s |  The first one is the post-authentication endpoints
+1136.83s - 1141.19s |  that we talked about in the last slide.
+1141.19s - 1143.95s |  We have the module upload process
+1143.95s - 1147.59s |  that is hijacking the configuration or the DNS.
+1147.59s - 1149.71s |  And the last one is the supply chain,
+1149.71s - 1152.75s |  because the modules are very easy to craft.
+1152.75s - 1158.07s |  So they are easily appended to the firmware.
+1158.07s - 1160.99s |  And anyone with physical access or, I don't know,
+1160.99s - 1163.63s |  exploiting some vulnerability, they
+1163.63s - 1171.94s |  could upload the module before selling it.
+1171.94s - 1173.94s |  OK, so knowing all of this, we could
+1173.94s - 1176.02s |  start making some modules.
+1176.02s - 1177.82s |  We implemented two commands.
+1177.82s - 1179.42s |  The first one is the MIPS compile
+1179.42s - 1186.94s |  that is going to make a compilation of source code
+1186.94s - 1193.86s |  into a relocatable ELF of the architecture of MIPS32.
+1193.86s - 1198.14s |  And we also have another command that is up to DLM.
+1198.14s - 1200.82s |  As the name said, it will convert an ELF
+1200.82s - 1203.46s |  to a DLM, compressing and encrypting
+1203.46s - 1205.30s |  with the provided keys.
+1205.30s - 1209.22s |  So we could append some web headers
+1209.22s - 1215.37s |  so we could upload them through the web UI.
+1215.37s - 1217.69s |  So we are going to see a demo.
+1217.69s - 1225.73s |  We could see on the left the version of the APPA module.
+1225.73s - 1227.45s |  On the right, in the middle, we are
+1227.45s - 1232.01s |  going to run a server, a custom server that
+1232.01s - 1242.70s |  is pointing the configuration of the auto-updates.
+1242.70s - 1248.54s |  So on the top right, we could see the serial interface
+1248.54s - 1250.86s |  with the router.
+1250.86s - 1255.58s |  OK, so once the server is up, we are going to send,
+1255.58s - 1259.42s |  we are going to trigger a new DLM.
+1259.42s - 1260.14s |  So it's triggered.
+1260.14s - 1263.58s |  We could see the router has fetched
+1263.58s - 1265.62s |  the new module in our server.
+1265.62s - 1268.66s |  We could see the Faraday logo because it's our module.
+1268.66s - 1272.66s |  And if we log in again, we could see
+1272.66s - 1275.34s |  that the version of the module has changed.
+1275.34s - 1284.86s |  And we have some logs that said that it don't allow this.
+1284.86s - 1289.10s |  OK, let's make something more funnier.
+1289.10s - 1291.50s |  We are going to make a SSH backdoor.
+1291.50s - 1292.62s |  Why not?
+1292.62s - 1295.86s |  Because we have the module.
+1295.86s - 1301.46s |  So the original behavior of the SSH module is the top one.
+1301.46s - 1303.78s |  When we have a new connection, it's
+1303.78s - 1306.42s |  going to call the authentication function.
+1306.42s - 1308.42s |  And the authentication function will
+1308.42s - 1312.70s |  say that it fails or it authenticates.
+1312.70s - 1318.58s |  But what we are going to do is when a new connection enters,
+1318.58s - 1321.54s |  when a new connection is open, that
+1321.54s - 1323.62s |  is going to call our hook.
+1323.62s - 1326.62s |  And it's going to check our credentials.
+1326.62s - 1329.90s |  So if they are right, it authenticates.
+1329.90s - 1332.94s |  If not, it's going to call the original function
+1332.94s - 1334.78s |  because we don't want to change all
+1334.78s - 1339.40s |  the behavior of the SSH module.
+1339.40s - 1341.12s |  How is the roadmap for this?
+1341.12s - 1344.60s |  First, we have to do a reverse engineer of the SSH module
+1344.60s - 1347.76s |  to find that function that makes the authentication.
+1347.76s - 1349.16s |  We are going to skip that part.
+1349.16s - 1351.72s |  And we are going to say that the target function is the SSH
+1351.72s - 1356.40s |  account and LDAP auth function.
+1356.40s - 1360.24s |  After that, we have to write and compile the hook.
+1360.24s - 1365.68s |  We have to merge the hook with the original module.
+1365.68s - 1371.52s |  And we have to modify all the relocations in the entry table.
+1371.52s - 1377.23s |  And last, we have to upload the DLM.
+1377.23s - 1379.07s |  So on the right, we could see the source
+1379.07s - 1384.55s |  code of our hook function that takes the same arguments
+1384.55s - 1390.83s |  as the target function, an SSH instance, and a packet.
+1390.83s - 1394.23s |  And it will check for our credentials.
+1394.23s - 1396.47s |  If they are right, it will return one
+1396.47s - 1398.43s |  that says it authenticates.
+1398.43s - 1401.55s |  And if not, it will call the target function.
+1404.59s - 1407.71s |  OK, in order to compile this, we use
+1407.71s - 1412.58s |  our command MIPS compile.
+1412.58s - 1415.42s |  And then we have to merge both binaries,
+1415.42s - 1418.90s |  both relocatable ELFs.
+1418.90s - 1424.66s |  So as I said, a relocatable ELF has all the symbols
+1424.66s - 1426.70s |  with no fixed address.
+1426.70s - 1429.98s |  So they had a relocation table that
+1429.98s - 1438.42s |  will set everything that uses a symbol has to be modified
+1438.42s - 1442.62s |  to point to that symbol after linking.
+1442.62s - 1444.82s |  So we have all the symbols there.
+1444.82s - 1451.78s |  And once we merge it, we have the symbols of both modules.
+1451.78s - 1457.30s |  We wrote a command to do this that
+1457.30s - 1463.06s |  is with the name of MIPS merge that takes two ELF files
+1463.06s - 1468.70s |  and as an output has one file.
+1468.70s - 1472.86s |  OK, now we have to modify the relocations table.
+1472.86s - 1476.58s |  So first, we find all the relocation
+1476.58s - 1479.98s |  that talks about the target function.
+1479.98s - 1484.06s |  We could see on the top right the two examples.
+1484.06s - 1487.34s |  We are going to use the first one.
+1487.34s - 1494.26s |  If we print the code that is on that address on the bottom
+1494.26s - 1498.38s |  left, we could see that the jump is a jump instruction.
+1498.38s - 1503.34s |  But the jump instruction only has his opcode
+1503.34s - 1506.10s |  but doesn't have an address where to jump.
+1506.10s - 1508.18s |  That is because the relocation entry
+1508.18s - 1510.70s |  will set which one is going to be
+1510.70s - 1512.90s |  that address on link in time.
+1512.90s - 1516.02s |  And we could see there that is the target function.
+1516.02s - 1520.42s |  So we modify that entry to give us
+1520.42s - 1529.19s |  a result the right that points to the hack function.
+1529.19s - 1533.50s |  So time to hack.
+1533.50s - 1536.54s |  OK, so on the top right, we are trying
+1536.54s - 1539.18s |  to log in with our credentials.
+1539.18s - 1541.42s |  But we could see that it fails.
+1541.42s - 1549.51s |  So on the bottom left, we upload our backdoor module.
+1549.51s - 1552.51s |  And once it's uploaded, we could see that the file
+1552.51s - 1554.55s |  was written successfully.
+1554.55s - 1561.42s |  But we have to reboot the router.
+1561.42s - 1563.66s |  And once it reboots, we are going
+1563.66s - 1567.78s |  to try again with our credentials.
+1567.78s - 1577.65s |  We could see that the module was loaded.
+1577.65s - 1579.73s |  OK, so we tried to log in.
+1579.73s - 1582.29s |  And we could see that we were in.
+1582.29s - 1594.54s |  And we could see some loss in the serial communication.
+1594.54s - 1598.62s |  So this attack that Gaston showed is really dangerous.
+1598.62s - 1602.70s |  Imagine that an attacker can craft a modified SSH module,
+1602.70s - 1605.70s |  upload it to your dry-tech router,
+1605.70s - 1608.46s |  and you have no way of detecting this.
+1608.46s - 1611.58s |  Moreover, if you update the firmware,
+1611.58s - 1613.38s |  the module will be still there.
+1613.38s - 1615.82s |  It will persist, and even will persist
+1615.82s - 1617.70s |  if you reset the configuration of the router,
+1617.70s - 1619.58s |  because it's stored in a separate file
+1619.58s - 1621.82s |  system in the flash.
+1621.82s - 1626.30s |  So we started to think about some mitigation strategies.
+1626.30s - 1629.62s |  The first one, the obvious that we thought about,
+1629.62s - 1631.14s |  was just to remove the feature.
+1631.14s - 1633.42s |  Because who wants to have dynamic modules
+1633.42s - 1634.86s |  on their router?
+1634.86s - 1638.58s |  But there might be some users that use this feature.
+1638.58s - 1642.70s |  So well, instead of noping all the calls
+1642.70s - 1648.30s |  to module loading during boot and during the update process,
+1648.30s - 1651.14s |  we decided to think for a better solution.
+1651.14s - 1657.10s |  And we devised a mechanism for checking
+1657.10s - 1661.22s |  in-memory integrity of the other modules that are loaded.
+1661.22s - 1664.26s |  These mechanisms should fetch signatures from a server,
+1664.26s - 1665.94s |  because the modules will get updates.
+1665.94s - 1668.38s |  So you have to update the signatures.
+1668.38s - 1672.90s |  But this time, you have to check the certificates.
+1672.90s - 1675.70s |  So once you've got those signatures,
+1675.70s - 1679.10s |  you have to find the loaded modules in memory,
+1679.10s - 1682.94s |  calculate the actual signatures, and compare them.
+1682.94s - 1684.98s |  And if there is a mismatch, then you
+1684.98s - 1687.46s |  have to notify the user somehow.
+1687.46s - 1689.46s |  And all this functionality should
+1689.46s - 1692.18s |  be included with the firmware.
+1692.18s - 1696.02s |  So what we did, as a proof of concept,
+1696.02s - 1698.22s |  was to use the open source module
+1699.06s - 1701.38s |  to introduce this code to the router.
+1701.38s - 1703.78s |  Because it's much easier to write a module
+1703.78s - 1705.50s |  than to patch the firmware, because you
+1705.50s - 1709.14s |  have all these functions from the symbol table
+1709.14s - 1710.94s |  that you can use.
+1710.94s - 1715.82s |  So there are two things that we have to solve.
+1715.82s - 1717.82s |  The first one is how to calculate
+1717.82s - 1721.26s |  a signature for a valid DLM.
+1721.26s - 1724.78s |  And the second one is to find the actual DLMs in memory
+1724.78s - 1726.86s |  and do the comparison.
+1726.86s - 1732.18s |  So we focused on that, and we accepted some limitations.
+1732.18s - 1735.86s |  We will not check the signatures every time a module is
+1735.86s - 1737.78s |  loaded, as it should be.
+1737.78s - 1739.22s |  We will only check signatures when
+1739.22s - 1741.38s |  our defensive module is loaded.
+1741.38s - 1746.62s |  And we will not try to notify users for now.
+1746.62s - 1749.06s |  So the first problem that we have to solve
+1749.06s - 1752.50s |  is how to calculate a hash or a signature for a DLM.
+1752.50s - 1756.74s |  We'll hash each signature with md5,
+1756.74s - 1761.06s |  because md5 was available on this symbol table.
+1761.06s - 1763.66s |  And we will hash only the static sections,
+1763.66s - 1767.10s |  because the dynamic sections will change once loaded.
+1767.10s - 1769.38s |  If the static section contains data,
+1769.38s - 1771.26s |  we'll hash it right away.
+1771.26s - 1774.62s |  But if it contains code, then, as Gaston
+1774.62s - 1778.18s |  explained during the module installation when it's linked,
+1778.18s - 1780.34s |  all the jams and the function calls
+1780.34s - 1785.90s |  will get the actual addresses of the functions written to them.
+1785.90s - 1789.22s |  So we will hash only the opcodes for these sections.
+1789.22s - 1793.90s |  And the opcodes in MIPS are the first six bits.
+1793.90s - 1798.10s |  So once we got that, we have to find all the modules that
+1798.10s - 1799.54s |  are loaded.
+1799.54s - 1803.50s |  When the ELF loader installs a module,
+1803.50s - 1806.42s |  it creates an object to represent the module.
+1806.42s - 1808.66s |  And the space for this module is allocated
+1808.66s - 1811.70s |  using the linear allocator of the router.
+1811.70s - 1814.98s |  So this allocator maintains a list
+1814.98s - 1819.34s |  of all the chunks that it has assigned.
+1819.34s - 1823.06s |  If we manage to find this object that represents the DLM,
+1823.06s - 1825.78s |  we'll get the DLM name, a pointer
+1825.78s - 1828.50s |  to the text section of that module,
+1828.50s - 1830.32s |  and a pointer to the main section
+1830.32s - 1834.14s |  that will get executed after the module is loaded.
+1834.14s - 1839.06s |  So the loader copies all the sections
+1839.06s - 1841.58s |  in a predefined order, one after the other,
+1841.58s - 1843.14s |  after the text section.
+1843.14s - 1845.62s |  This order is usually defined by the compiler.
+1845.62s - 1850.54s |  And we will assume that this order doesn't change.
+1850.54s - 1853.62s |  So on the bottom, you can see a little bit
+1853.62s - 1856.50s |  of the code of this defensive module, the part where
+1856.50s - 1861.18s |  we traverse the list of chunks from this allocator.
+1861.18s - 1866.70s |  And we will check if each chunk corresponds to a module object.
+1866.70s - 1868.58s |  If the chunk corresponds to a module object,
+1868.58s - 1870.30s |  we will print some information.
+1870.30s - 1873.54s |  And if this module happens to be the SSH one,
+1873.54s - 1878.06s |  then we will calculate the hashes and compare them.
+1878.06s - 1879.58s |  So here's the demonstration.
+1879.58s - 1883.18s |  This router is the one that has been backdoored
+1883.18s - 1886.02s |  and has a modified version of the SSH.
+1886.02s - 1890.38s |  Then we upload our defensive module using the UI on the left.
+1890.38s - 1895.78s |  And you can see right there that once it's uploaded,
+1895.78s - 1897.46s |  it will try to find all the modules,
+1897.46s - 1898.86s |  printing their information.
+1898.86s - 1901.26s |  And when it reaches the SSH module,
+1901.26s - 1904.18s |  it will start comparing the hashes for each section.
+1904.18s - 1908.58s |  And it will find that there is a mismatch between the hashes
+1908.58s - 1912.38s |  on the second section.
+1912.38s - 1916.98s |  So to wrap this up, some conclusions and takeaways.
+1916.98s - 1919.50s |  All these vulnerabilities were found
+1919.50s - 1923.70s |  by us analyzing only the bigger 2925 router.
+1923.70s - 1925.50s |  But they are present in several models
+1925.50s - 1929.06s |  because all the SOHO routers use this real-time operating
+1929.06s - 1930.06s |  system.
+1930.06s - 1935.46s |  And even some of the higher-end routers that run Linux
+1935.46s - 1939.14s |  emulate the same real-time operating system.
+1939.14s - 1942.02s |  So we found all these vulnerabilities and some more
+1942.02s - 1943.38s |  that we didn't show.
+1943.38s - 1944.90s |  And they are all patched by now.
+1944.90s - 1949.78s |  But we don't have CBA IDs yet.
+1949.78s - 1953.54s |  And well, some conclusions on the offensive side.
+1953.54s - 1956.58s |  The code for this real-time operating system is huge.
+1956.58s - 1958.42s |  It's really complex.
+1958.82s - 1961.62s |  We only analyzed a little bit of it.
+1961.62s - 1965.02s |  Imagine that the functions that are present in the symbol table
+1965.02s - 1968.66s |  are maybe not up to 5% of all the functions
+1968.66s - 1970.02s |  in this firmware.
+1970.02s - 1972.10s |  So there are probably more vulnerabilities here
+1972.10s - 1973.34s |  to be found.
+1973.34s - 1976.54s |  And that is why we are open sourcing our tool.
+1976.54s - 1978.70s |  And we would love for you to try it.
+1978.70s - 1981.06s |  And we would love to know if it's useful
+1981.06s - 1982.62s |  and if you find something.
+1982.62s - 1986.70s |  So there's the repository if you want to check it out.
+1986.70s - 1990.26s |  And now some conclusions on the defensive side.
+1990.26s - 1993.02s |  We show that it's possible to create a defensive module
+1993.02s - 1995.66s |  to check the integrity of other modules in memory.
+1995.66s - 1998.10s |  But in an ideal situation, this feature
+1998.10s - 2000.22s |  should be implemented by the vendor.
+2000.22s - 2002.82s |  It should fetch these updated signatures
+2002.82s - 2006.54s |  from a trusted server, verifying the certificates.
+2006.54s - 2008.54s |  And for all this to work, if this feature
+2008.54s - 2011.14s |  is included in the firmware, also
+2011.14s - 2014.46s |  we must have a secure blockchain to trust
+2014.46s - 2017.76s |  that this is working right.
+2018.04s - 2019.80s |  To close, some takeaways.
+2019.80s - 2023.24s |  We think that closed source firmware, as this example,
+2023.24s - 2026.60s |  is just another case of security by security.
+2026.60s - 2028.76s |  All these vulnerabilities that we have found
+2028.76s - 2033.00s |  are really simple, and they would
+2033.00s - 2035.72s |  have been reported sooner by the community
+2035.72s - 2040.12s |  if it were easier to reverse engineer these routers.
+2040.12s - 2043.60s |  So some things as plain text password storage,
+2043.60s - 2047.16s |  the use of insecure functions to compare sensitive data,
+2047.16s - 2050.04s |  predictable random number generation,
+2050.04s - 2053.28s |  and even the lack of SSL certificate validation.
+2053.28s - 2056.92s |  So given all the increase in attacks
+2056.92s - 2059.24s |  that we are seeing to edge devices,
+2059.24s - 2061.18s |  it would be really important for vendors
+2061.18s - 2064.40s |  to include features that facilitate observability,
+2064.40s - 2066.76s |  vulnerability research by the community,
+2066.76s - 2070.52s |  and to implement threat detection solutions.
+2070.52s - 2071.80s |  So this is it.
+2071.80s - 2074.36s |  Thank you for your time, first for coming so early.
+2074.36s - 2078.04s |  And if you have any questions, please ask us.
+2078.04s - 2080.00s |  There's a mic here if you want to ask.
+2083.08s - 2089.75s |  First question gets a share.
+2089.75s - 2112.44s |  Well, thank you, guys.
+2112.44s - 2114.76s |  OK, the question was if there is memory protection
+2114.76s - 2117.20s |  between the modules and the RTOS, and there's not.
+2117.20s - 2118.96s |  All these runs on the same memory space.
+2118.96s - 2122.28s |  So from a module, you could modify the RTOS code
+2122.28s - 2135.26s |  and vice versa.
+2135.26s - 2137.78s |  Well, thanks again for coming.

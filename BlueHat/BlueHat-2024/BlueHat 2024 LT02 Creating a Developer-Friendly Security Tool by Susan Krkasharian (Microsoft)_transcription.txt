@@ -1,0 +1,208 @@
+{
+  "webpage_url": "https://www.youtube.com/watch?v=qLrbP1po6gs",
+  "title": "BlueHat 2024: LT02: Creating a Developer-Friendly Security Tool by Susan Krkasharian (Microsoft)",
+  "description": "BlueHat 2024: LT02: A Security Engineer\u2019s Journey: Creating a Developer-Friendly Security Tool Presented by Susan Krkasharian from Microsoft\n\nAbstract: In this session, I will share my journey as a junior security engineer developing \u201cAntiSSRF,\u201d a secure software library designed to protect Microsoft services against Server-Side Request Forgery (SSRF) attacks. SSRF vulnerabilities, now present in both the OWASP Top 10 and OWASP API Top 10, are critical because they allow attackers to make unauthorized requests from a server, potentially exposing sensitive data and internal services. In Azure, this can lead to severe breaches, including unauthorized access to cloud resources and data exfiltration.  \n\nTargeted at a broad audience, including security engineers and software engineering managers who aim to enhance application security through code, this session will provide insights into the building of AntiSSRF, highlighting the importance of providing developers with robust tools to safeguard applications, as developers may not always be aware of the intricate nuances required to protect against such vulnerabilities. \n\nI will share the journey of developing AntiSSRF, from initial ideation and prototyping to production-ization. I will cover challenges faced, such as securing DevOps pipelines and maintaining compliance with Microsoft SFI security standards. I will also discuss the strategies used to drive adoption, including evangelism, addressing performance concerns and code defects, and leveraging static code analysis to surface additional services that could benefit from AntiSSRF.\n\nThis lightning talk aims to provide valuable insights into the overall effort required to create and maintain a secure code library, highlighting that creating a secure library involves much more than just writing code; it requires a holistic approach to security, compliance, and user engagement.",
+  "channel_url": "https://www.youtube.com/channel/UCKmzq2lAhDxLy36KtvVWpaQ",
+  "duration": 650,
+  "channel": "Microsoft Security Response Center (MSRC)",
+  "uploader": "Microsoft Security Response Center (MSRC)",
+  "upload_date": "20241112"
+}
+
+0.00s - 5.00s | This text was transcribed using whisper model: large-v2
+
+ Hi, everyone. My name is Susan, and I'm on the Azure DevSec team at Microsoft.
+5.00s - 9.00s |  And today, I wanted to talk to you about creating Anti-SSRF,
+9.00s - 12.00s |  a secure software library designed to protect Microsoft against
+12.00s - 15.00s |  server-side request forgery attacks.
+15.00s - 18.00s |  So, first, the agenda.
+18.00s - 21.00s |  We'll talk about why we decided to target SSRF
+21.00s - 24.00s |  and the solutions we came up for, which is called Anti-SSRF.
+24.00s - 26.00s |  And then we'll go into the journey.
+26.00s - 29.00s |  So, goals, challenges, and adoption.
+29.00s - 34.00s |  And finally, we'll look back on our learnings and wins in the area.
+34.00s - 37.00s |  So, first, a little bit about SSRF vulnerabilities.
+37.00s - 40.00s |  They occur when an attacker tricks a server into making
+40.00s - 43.00s |  unauthorized requests on their behalf,
+43.00s - 47.00s |  potentially gaining access to sensitive data or internal services.
+47.00s - 51.00s |  And this exploits the server as kind of a confused deputy
+51.00s - 54.00s |  to perform unauthorized actions.
+54.00s - 57.00s |  And in clouds such as Azure, this could lead to severe breaches,
+57.00s - 63.00s |  such as unauthorized access to cloud resources and data exfiltration.
+63.00s - 66.00s |  And it's becoming more and more of a problem.
+66.00s - 71.00s |  SSRFs have joined the top 10, OS top 10, OS API top 10,
+71.00s - 74.00s |  and OS top 10 proactive controls list.
+74.00s - 79.00s |  So, they're just becoming more and more of a common problem.
+79.00s - 81.00s |  They can have disastrous impact.
+81.00s - 85.00s |  They can lead to token exfiltration, internal services enumeration,
+85.00s - 90.00s |  bypassing firewalls, and they're also often used in attack chains
+90.00s - 96.00s |  where the server can be used as a proxy to hide malicious activities
+96.00s - 100.00s |  or expose overscope secrets.
+100.00s - 104.00s |  So, we took a multi-pronged approach to tackling SSRF,
+104.00s - 106.00s |  like the entire class of vulnerabilities.
+106.00s - 111.00s |  So, we split it up into three categories, protect, detect, and respond.
+111.00s - 114.00s |  For protect, we came up with anti-SSRF,
+114.00s - 118.00s |  and we wrote SEO guidance, which we'll talk about later today.
+118.00s - 122.00s |  For detection, we came up with both dynamic and static analysis.
+122.00s - 125.00s |  For dynamic analysis, our team developed Dusseldorf,
+125.00s - 129.00s |  which is an internal platform to detect out-of-band web vulnerabilities,
+129.00s - 131.00s |  such as SSRF.
+131.00s - 135.00s |  And we also worked with the CodeQL team to develop static analysis queries.
+135.00s - 139.00s |  And finally, for response, we provided support to our engineers
+139.00s - 143.00s |  dealing with SSRF cases, encouraged them to use anti-SSRF,
+143.00s - 146.00s |  and also worked with our MSRC team.
+146.00s - 150.00s |  So, whenever they did have SSRF cases, we identified any new antipatterns
+150.00s - 155.70s |  and added them to our detection and prevention mechanisms.
+155.70s - 158.70s |  So, with that, we created anti-SSRF,
+158.70s - 165.20s |  a secure software library to protect Microsoft against SSRF.
+165.20s - 168.20s |  I started this project about a year into my journey at Microsoft
+168.20s - 171.20s |  when I found an SSRF vulnerability in a pen test
+171.20s - 173.20s |  that led to token exfiltration.
+173.20s - 177.20s |  Other than the fact that this was my first finding as a full-time employee
+177.20s - 181.20s |  and the fact that it created such significant damage really intrigued me,
+181.20s - 185.20s |  so I wanted to dive further into the class of vulnerabilities.
+185.20s - 190.20s |  And when the engineering team asked us for solutions on how to fix the issue,
+190.20s - 192.20s |  I realized the solution was nuanced,
+192.20s - 196.20s |  and it didn't make sense to reinvent the wheel every time an SSRF was found.
+196.20s - 200.20s |  So, we decided we needed a standard solution.
+200.20s - 203.20s |  So, we developed the first version of anti-SSRF,
+203.20s - 207.20s |  which we called URI Validator.
+207.20s - 210.20s |  So, the reason why we wanted a standard solution is,
+210.20s - 214.20s |  as security engineers, we're great at finding issues in other people's code,
+214.20s - 219.20s |  but a large part of our responsibility is to also offer a solution.
+219.20s - 223.20s |  Also, with a standard solution, our developers are always protected
+223.20s - 225.20s |  in case we need to make a change.
+225.20s - 227.20s |  We'll make the change once,
+227.20s - 230.20s |  and that'll be pushed to everybody who's already onboarded.
+230.20s - 234.20s |  So, some of the nuances that we cover,
+234.20s - 237.20s |  developers might have to make some mistakes with.
+237.20s - 240.20s |  For example, if they use regular expressions,
+240.20s - 244.20s |  firstly, it's really hard to get regular expressions right.
+244.20s - 248.20s |  I don't know if anybody in this room has gotten it right on the first try,
+248.20s - 250.20s |  but they're really hard to get right,
+250.20s - 254.20s |  and they also don't cover all the aspects of SSRF,
+254.20s - 256.20s |  so you can also bypass those.
+256.20s - 259.20s |  So, we decided a standard solution was needed.
+259.20s - 262.20s |  With our library, the developers will pull in the dependency,
+262.20s - 264.20s |  make a handful of code changes,
+264.20s - 266.20s |  30 minutes later, they're always protected,
+266.20s - 270.20s |  never have to worry about the scenario again.
+270.20s - 272.20s |  So, after a bunch of research,
+272.20s - 275.20s |  redesigning, refining what we wanted,
+275.20s - 278.20s |  we released URI Validator in 2022,
+278.20s - 281.20s |  and last year we added some additional defenses
+281.20s - 284.20s |  and rebranded as anti-SSRF.
+286.96s - 288.96s |  So, when starting this project,
+288.96s - 292.96s |  my primary goals were to enhance application security through code,
+292.96s - 295.96s |  and also make it extremely easy to integrate
+295.96s - 298.96s |  with developers' existing code.
+298.96s - 301.96s |  Finally, our developers juggle so many different things
+301.96s - 304.96s |  on a daily basis, performance, scalability,
+304.96s - 306.96s |  reliability, and security,
+306.96s - 309.96s |  it's impractical to expect them to be equally skilled
+309.96s - 311.96s |  in all of these areas,
+311.96s - 313.96s |  and that's where we come in as security engineers.
+313.96s - 317.96s |  We'll complement their strengths with our security expertise,
+317.96s - 319.96s |  and in turn, leverage theirs
+319.96s - 321.96s |  to make sure our code is also on par
+321.96s - 325.96s |  with Microsoft's coding standards.
+325.96s - 329.96s |  We faced a few challenges, to say the least.
+329.96s - 334.96s |  First, as a security engineer early in career,
+334.96s - 338.96s |  I had limited experience in software development,
+338.96s - 341.96s |  so it was my turn to be on the other side
+341.96s - 345.96s |  of the software engineer versus security conversation.
+345.96s - 348.96s |  This gave me an invaluable shift in perspective
+348.96s - 352.96s |  on what developers would need in a tool that they're using,
+352.96s - 356.96s |  and what would make things easier for them to use.
+356.96s - 359.96s |  We also faced some of the hardest problems
+359.96s - 363.96s |  in the field of computer science, naming things.
+363.96s - 367.96s |  We went through several iterations of debating method names
+367.96s - 369.96s |  and refining the design just to make it as intuitive
+369.96s - 373.96s |  and easy to use as possible.
+373.96s - 376.96s |  And the next phase was diving into the complexities
+376.96s - 379.96s |  of software development, so actually starting the coding,
+379.96s - 382.96s |  ran into a lot of code defects, bugs,
+382.96s - 384.96s |  why is nothing working moments,
+384.96s - 387.96s |  begging my teammates to approve JIT requests,
+387.96s - 390.96s |  further reinforced my decision to become a security engineer
+390.96s - 393.96s |  rather than a developer.
+393.96s - 396.96s |  But yeah, apart from writing the code,
+396.96s - 399.96s |  we also wrote secure DevOps pipelines
+399.96s - 403.96s |  that were also Microsoft SFI compliant,
+403.96s - 406.96s |  set the pipelines up to write the code,
+406.96s - 409.96s |  to sign the code, and...
+412.96s - 415.96s |  set them up to sign the code and publish it securely,
+415.96s - 420.40s |  including an automated regression test suite.
+420.40s - 424.40s |  So we finally had a final product.
+424.40s - 427.40s |  The next step was spreading the word
+427.40s - 429.40s |  and driving adoption.
+429.40s - 432.40s |  As great as the product was, we still needed to build trust
+432.40s - 435.40s |  with our developers and make sure that they were on board
+435.40s - 439.40s |  with integrating our solution into their existing code.
+439.40s - 442.40s |  So imagine a security engineer, not even a developer,
+442.40s - 444.40s |  with less than three years of experience,
+444.40s - 447.40s |  pitching their tools for use on machines
+447.40s - 449.40s |  that handle incredibly high workloads
+449.40s - 451.40s |  every day around the world.
+451.40s - 454.40s |  Thankfully, we had the support of engineers and architects
+454.40s - 456.40s |  with many more years of experience
+456.40s - 459.40s |  helping build trust with our developers.
+459.40s - 463.40s |  But these hurdles really required clear communication
+463.40s - 467.40s |  and genuine engagement with our developers to work through.
+467.40s - 470.40s |  And finally, for adoption, we had several partnerships
+470.40s - 473.40s |  that were really helpful in driving adoption.
+473.40s - 476.40s |  So we worked with the MSRC team very closely.
+476.40s - 478.40s |  When they had SSRF cases,
+478.40s - 480.40s |  they connected us with the engineering teams,
+480.40s - 483.40s |  and we suggested anti-SSRF,
+483.40s - 486.40s |  provided any guidance that was needed.
+486.40s - 489.40s |  And while our approach with MSRC was a little more reactive,
+489.40s - 493.40s |  we also took a more proactive approach with our CodeQL team.
+493.40s - 496.40s |  So we would provide them with vulnerable samples,
+496.40s - 499.40s |  and we would work together to identify patterns
+499.40s - 501.40s |  that could lead to SSRF
+501.40s - 505.40s |  and would write queries to detect it in code.
+505.40s - 508.40s |  Finally, we wrote comprehensive SDL guidance,
+508.40s - 510.40s |  which is a developer-focused,
+510.40s - 513.40s |  easy-to-consume set of documentation
+513.40s - 519.40s |  that helps recommend solutions for issues like this.
+519.40s - 523.40s |  And because the library was initially implemented in C Sharp,
+523.40s - 525.40s |  we also included instructions
+525.40s - 532.19s |  on how to implement the same protections in other languages.
+532.19s - 534.19s |  So apart from the software development learnings,
+534.19s - 537.19s |  I also learned the importance of clear communication
+537.19s - 539.19s |  with our developers,
+539.19s - 544.19s |  the importance of having an easy-to-use library for our developers,
+544.19s - 549.19s |  and providing comprehensive documentation and support.
+549.19s - 551.19s |  So it just makes those conversations
+551.19s - 553.19s |  of onboarding to the library much easier
+553.19s - 556.19s |  once you have all of these.
+556.19s - 558.19s |  And so the lessons learned throughout this journey
+558.19s - 561.19s |  really underscore the necessity of a comprehensive approach
+561.19s - 565.79s |  to secure tool development.
+565.79s - 569.79s |  So our next steps are to open-source anti-SSRF
+569.79s - 573.79s |  and expand to other languages and frameworks.
+573.79s - 577.79s |  So first we're going to target Microsoft languages,
+577.79s - 580.79s |  the languages that Microsoft uses.
+580.79s - 582.79s |  And once we open-source it,
+582.79s - 584.79s |  we're hoping that the community will also expand it
+584.79s - 590.20s |  to languages that people outside of Microsoft use as well.
+590.20s - 593.20s |  So our efforts have really paid off in this space.
+593.20s - 598.20s |  Across the company, over multiple severities of issues,
+598.20s - 601.20s |  we have decreased the medium time to remediate issues
+601.20s - 605.20s |  faced by MSRC by 50%.
+605.20s - 607.20s |  And we've achieved our goal
+607.20s - 609.20s |  of making the library so user-friendly
+609.20s - 612.20s |  that a developer integrated it into their code
+612.20s - 614.20s |  in less than 30 minutes.
+614.20s - 617.20s |  And what began as a single engineer's project
+617.20s - 619.20s |  has now expanded to a larger team
+619.20s - 622.20s |  targeting even more languages and frameworks.
+622.20s - 626.20s |  And today, anti-SSRF protects numerous Azure services
+626.20s - 628.20s |  running mission-critical workloads,
+628.20s - 631.20s |  further showing the trust that developers have placed in it.
+631.20s - 635.45s |  Finally, I wanted to thank all the brilliant people
+635.45s - 638.45s |  who have helped with this project and collaborated.
+638.45s - 640.45s |  It really would not have been possible without you.
+640.45s - 642.45s |  And I wanted to thank you all for taking the time to listen.
+642.45s - 644.45s |  I look forward to seeing you later.

@@ -1,0 +1,419 @@
+{
+  "webpage_url": "https://www.youtube.com/watch?v=MDndWJxfP-U",
+  "title": "DEF CON 32 - The hack, the crash and two smoking barrels.  - Thomas Sermpinis",
+  "description": "This is not a talk in which I will demonstrate exploit chains obtained from the underworld after signing with blood. It\u2019s about sharing meaningful stories from said underworld. The automotive underworld of huge corporations, short deadlines and lukewarm engineers. The one where companies fight for packing more and more functionality inside your computer on wheels, without paying attention to one of the things that our life actually depends on right now, cybersecurity.\n\nWhile others talk about extremely significant remote vulnerabilities, I will focus on a high-level view of architecture and design of vehicles and where security fits in these processes. I will go through a journey of exploitation, from discovering 0days, to persuading engineers for the significance of a finding, by putting him in the driving seat and engaging the breaks mid-journey.\n\nI will conclude, trying to understand why this is happening, why this behavior towards security still exists in the automotive industry, and how a small manufacturer managed to create one of the most secure embedded systems I faced in my career. All this, with a series of demos in real targets, and a real ECU on stage.\n\nOur ultimate goal is to help people understand the state of the industry, spark the interest which can come out of hacking a computer on wheels, and try to raise awareness with a bit of hack, a bit of crash and two smoking barrels.",
+  "channel_url": "https://www.youtube.com/channel/UC6Om9kAkl32dWlDSNlDS9Iw",
+  "duration": 2378,
+  "channel": "DEFCONConference",
+  "uploader": "DEFCONConference",
+  "upload_date": "20241016"
+}
+
+0.50s - 5.50s | This text was transcribed using whisper model: large-v2
+
+ Hello. So thank you for joining um it's an immense honor to be here with you today uh
+9.68s - 13.84s |  something that I would never expect to happen. But this is the hack the crash and two
+13.84s - 20.08s |  smoking barrels and how I almost killed an engineer. And I must mention that uh basically I
+20.08s - 24.58s |  had no lawyers advising me before my talk so I will not if if you will not be able to reach
+24.58s - 30.12s |  me after the talk it was nice meeting you. And now while you are here because some
+30.14s - 34.62s |  people in the industry really pissed me off and I wanted to be the one taking the stage.
+34.62s - 40.42s |  And now that I got probably your attention let's start. I'm Thomas and yeah my
+40.42s - 44.50s |  pictures are usually so bad that uh making it black and white didn't really help. It's like
+44.50s - 50.16s |  my accent it can only go worse. And people also know me as Crow Tom. And the main thing
+50.16s - 55.04s |  you need to know about me is that I lead an amazing team uh in Auxilium Pentest Labs
+55.04s - 60.50s |  they are uh competing in the car hacking village right now and they are second. Um and I
+60.50s - 65.50s |  also love to hack like everything day, night, whatever. Mainly to prove to me and you that
+67.78s - 73.18s |  our world is hacking in on in really thin threads. And that most products are created with
+73.18s - 78.82s |  two main components. A bit of laziness and a sprinkle of capitalism. And for more you can
+78.82s - 84.26s |  always go to my website. What we will really really talk about today is vehicle
+84.28s - 88.62s |  security. Or how I like to call it all the stupid things that automotive industry is doing
+88.62s - 94.62s |  still in 2024. We will try to understand where we are uh where we are heading and if there are
+94.62s - 98.70s |  any if there is any light in the end of the tunnel. Hoping to get more people interested in
+98.70s - 103.36s |  the industry I love and highlight the significance of all the safety related hardware that no
+103.36s - 109.70s |  one cares about. What we will definitely not talk about is extreme exploit chains. I love to
+109.72s - 115.22s |  hack but I'm the worst at it. And this means that I'm not here to teach you how to do it but to
+115.22s - 120.92s |  show you why you should be here too and why you should care. Also if you were alerted into
+120.92s - 124.66s |  coming to my talk because of the title I'm sorry to tell you that during the process of the
+124.66s - 128.86s |  testing preparation and development of my talk no engineers were actually killed or
+128.86s - 135.10s |  suffocated due due to lack of oxygen. And let's start with the state of the industry and
+135.10s - 140.64s |  what a better start than one of my favorite examples of my living room on wheels. Uh as
+140.64s - 145.22s |  this car is not actually a result of pin by ride episode but still packs more functionality
+145.22s - 149.96s |  and entertainment than my living room. This example of a computer on wheels might be one of
+149.96s - 154.86s |  the extreme ones but it's becoming kind of the norm to be honest. Vehicles are getting
+154.86s - 160.10s |  connected, getting richer services and functionality something that the users ask for I
+160.10s - 165.10s |  guess. What they don't ask for though is for these services to be implemented in an insecure
+165.10s - 171.82s |  way. We see examples of improper and insecure implementation of new functionality every day
+171.82s - 178.66s |  and we have a handful of examples making the news every week. And while news outlets are
+178.66s - 185.70s |  mainly interested in the financial aspect of the thing um no one wants like their car to be
+185.70s - 190.70s |  stolen to be honest. I will mostly focus today on the safety aspect of those security issues.
+193.54s - 197.84s |  And while the industry waits for the security software defined vehicle messiah today we will
+197.84s - 202.88s |  start with the complicated architectures that look like this. Uh here we have a representative
+202.88s - 207.72s |  example of a vehicle architecture with individual parts being electronic control control
+207.72s - 212.90s |  units. Different embedded components that most of the time have a single specific purpose
+212.90s - 219.50s |  inside the vehicle. All these are segmented in several isolated buses to avoid external
+219.50s - 225.18s |  communication or interruption and segment them by functionality and criticality. What you
+225.18s - 230.38s |  can also see is the fact that some of the interfaces are getting exposed internally though.
+230.38s - 234.62s |  And as we saw previously this is a kind of a necessity considering new technology and
+234.62s - 239.66s |  requirements needed to exist to make it make it happen. As an example the onboard charging
+239.66s - 245.06s |  ECU has an exposed interface handling the communication between the charger and the vehicle
+245.06s - 250.06s |  and the main head unit that the user inter uh interacts with is exposed to the internet through
+250.06s - 256.04s |  a telematics unit. Most of the times for SOS calls, OTA updates and more interconnected
+256.04s - 261.88s |  functionality. Now of course the purpose of this talk is not to cover everything automotive
+261.88s - 266.94s |  related but we need to get a bit of understanding on what we are seeing here and what the demos
+266.96s - 273.06s |  are representing later. Uh for this reason we will mainly focus on CAN uh which many of you
+273.06s - 278.54s |  might know as it exists for more than 40 years. Um and you would be surprised if I tell you
+278.54s - 283.84s |  that the majority of the ECUs we are testing still come with this interface. And of course
+283.84s - 289.78s |  the need of a single ABS ECU 30 plus years ago does not even come close to modern needs. So
+289.78s - 295.82s |  the the protocol has several iterations but still the main issue from my point of view is that
+295.86s - 300.74s |  there is no encryption as a standard and no message authentication. This makes CAN messages
+300.74s - 306.44s |  flowing on those buses prone to interception, injection and replication in cases that no
+306.44s - 312.72s |  additional protections are implemented. Which is more common than you think even 40 years
+312.72s - 318.28s |  after its inception. Of course this is not only uh the only technology which is currently
+318.28s - 323.90s |  used in modern vehicles but it's one of the most commonly used and that's why it's important
+323.90s - 328.42s |  to stress its flaws considering the stubbornness of automotive companies to stick with
+328.42s - 334.68s |  archaic and insecure technologies. As we speak for the current state of automotive security
+334.68s - 340.62s |  it's worth mentioning that um what started to be enforced to all manufacturers homologating
+340.62s - 346.64s |  vehicles uh in UNESCO member countries. Um but I don't want to bore with you as USA does
+346.64s - 353.40s |  not have any specific binding regulation similar to this. But it's worth mentioning that
+353.40s - 359.18s |  it's a starting point for shaping the completely unregulated mess that exists till now in our
+359.18s - 365.32s |  industry but of course it's still a regulation with all the negatives that come with it.
+365.32s - 370.12s |  Considering that I will have a relatively negative talk I want to state from now that while
+370.12s - 374.36s |  the majority of the industry has a negative approach to cyber security there are several
+374.36s - 379.94s |  people that still strive for secure and safe vehicles every day with their work, research and
+379.94s - 385.22s |  discussions. Though not everything is sunshine and flowers and automotive is mainly based on
+385.22s - 389.78s |  hundred plus year old mechanical engineering industries that were recently forced to
+389.78s - 395.36s |  implement a lot of things they had no idea about and innovate in an environment with really
+395.36s - 400.50s |  short life cycles and restricting safety requirements that will make most of us cry in any
+400.50s - 405.50s |  case in many cases. I struggled a lot though so let me tell you my story. To start with I have to
+406.06s - 411.06s |  tell you that I'm tired of hearing about the state of automotive security by professionals in
+415.24s - 419.68s |  commercial events referring to a couple of good examples in the sea of OEMs and tier one
+419.68s - 425.24s |  suppliers developing products in this industry. Tesla and BMW are not the only companies
+425.24s - 430.98s |  out there. And yes while I really appreciate their work in some cases we are here to talk
+431.00s - 436.80s |  about the industry as a whole and not the two examples that are out of the ordinary. And I'm
+436.80s - 441.78s |  saying this because vulnerability disclosure programs are not the norm here. The small
+441.78s - 447.88s |  amount of OEMs that escaped from their mechanical engineering past attitude or they
+447.88s - 452.96s |  started in this new generation of automotive manufacturers is not representative for the
+452.96s - 458.10s |  whole industry. And even the companies that incentivize and support researchers they only
+458.12s - 462.92s |  give payouts to findings that are heavily security critical but no mention to safety
+462.92s - 468.90s |  critical issues and exploit chains. And I'm saying this because the last two years I
+468.90s - 474.90s |  discovered twenty five safety related findings out of which only two were accepted until now.
+474.90s - 479.40s |  And not because they are out of scope or not applicable but because there is no way to
+479.40s - 485.18s |  actually disclose them. To start to start talking about them though uh we need to get an
+485.20s - 489.86s |  understanding of one of the protocols we approach today in our example POCs namely the
+489.86s - 494.64s |  Unified Diagnostics Protocol which lives in the application layer of the ECUs and allows
+494.64s - 499.54s |  diagnostic functionality such as reading and erasing faults, reprogramming, testing and
+499.54s - 505.02s |  monitoring. It commonly consists of several services that handle specific actions and the
+505.02s - 510.68s |  common one here that we will try to use in uh in these examples in these demos is the ECU
+510.72s - 515.86s |  reset or service eleven which is commonly used to perform a reset on the ECU as the name
+515.86s - 521.00s |  implies but of different types so depending on the supplied subservice we can specify if it's a
+521.00s - 526.60s |  hard a soft or any other supported uh type of reset on the ECU. And finally I have to
+526.60s - 531.58s |  mention that the hard ECU reset is most in most cases it's equivalent to a comp to a
+531.58s - 538.58s |  complete power cycle and we will see how this can go really bad for the ECU. Now the last
+538.58s - 543.02s |  five years me and my team performed almost two hundred penetration testing and research
+543.02s - 548.70s |  projects in the automotive industry. Uh is the screen? Yeah. In the automotive industry
+548.70s - 554.84s |  sorry. And this means that first of all we got a broad understanding and experience of how
+554.84s - 559.98s |  security is implemented and discovered several nasty things along the way. While we try to
+559.98s - 564.38s |  work with all these people to make the products more secure the issue is that I'm not able to
+564.38s - 569.36s |  talk about those so I had to find a way to share some of those juicy things. So it was
+569.36s - 574.32s |  during a warm summer in Arizona when I had the rental unit from a brand which I tried my
+574.32s - 580.06s |  best to hide here. And during my free time and during night as if I was testing during the day
+580.06s - 585.44s |  in Arizona I would not be here. Uh I started working uh like poking around uh this thing
+585.44s - 590.44s |  that you see there and I had my first hit. In this case we triggered something that is not
+590.88s - 597.78s |  a hundred percent clear what it is. From the context given in the error created on the
+597.78s - 602.12s |  heads up display. For this reason we need to dig deeper and understand the architecture of
+602.12s - 609.12s |  the vehicle, understand how, why, in which extent something is affected. Is this error real? Is
+609.12s - 615.14s |  it expected behavior? Does it even have any security or safety impact or not? This is the
+615.14s - 621.24s |  only, this is only a part of the questions that I have to answer at this point in order to
+621.24s - 627.88s |  move forward. And that's what I did. In the first demo you see how we discovered that the
+627.88s - 633.62s |  affected ECU uh and by issuing a simple ECU reset on the user accessible onboard
+633.62s - 638.06s |  diagnostics board the ECU resets and the light of the affected blind spot blind spot
+638.06s - 645.00s |  detection sensor is engaged. Of course I didn't stop there and because at this point a lot of
+645.02s - 651.16s |  educated guesses can be done considering uh what was discovered. As is the finding has no
+651.16s - 656.70s |  big safety related severity outside of the fact that it can distract the driver. By listing the
+656.70s - 661.38s |  known facts though we can assume where the affected ECU is located in the architecture and
+661.38s - 668.18s |  how this can be escalated further by a malicious user. What we know is that first of all we can
+668.18s - 673.56s |  power cycle the ECU and what and that there are no preconditions that can restrict this
+673.58s - 680.22s |  action. Like a vehicle speed uh restriction for example. Additionally from the function of the
+680.22s - 685.22s |  assistive driving uh we can assume that the blind spot detection sensor is connected with the
+685.22s - 692.00s |  functionality of the ADAS itself. By this we can easily prove that the sensor can be
+692.00s - 697.08s |  triggered mid drive. Uh as a direct result it can confuse the driver because of the engagement
+697.10s - 702.84s |  of a sensor in an unexpected situation. But more importantly we can engage serious
+702.84s - 708.68s |  safety implications to the ADAS system like steering interruption during a lane change or
+708.68s - 713.78s |  even braking engagement during a false safety related incident on the blind spot detection
+713.78s - 719.48s |  sensor. Of course I don't want to check these assumptions myself um and I hope I don't need to
+719.48s - 726.16s |  mention that you you should always check safety related issues in a safe environment. Who has
+726.18s - 731.48s |  the ability and the environment? The manufacturer of course. And for this reason I had to find a
+731.48s - 736.32s |  way to report the finding and prove those assumptions. Now going through the process of
+736.32s - 742.02s |  vulnerability disclosure I initiated uh by trying to find a communication channel uh with the
+742.02s - 747.46s |  OEM and a couple of years ago that this happened. The problem is that there was no
+747.46s - 751.30s |  vulnerability disclosure program. No one was answering to me regarding this from the
+751.34s - 757.38s |  contact options and the people I discovered online. But of course I didn't give up. I kept
+757.38s - 763.56s |  hacking. And getting our ha- hands a bit dirtier here we need to introduce the main access
+763.56s - 769.12s |  control mechanism in UDS diagnostics called security access. Which as you understand from
+769.12s - 775.14s |  my diagram is a simple challenge response. The client requests a random seed, the ECU generates
+775.14s - 782.16s |  what seed uh that seed and calculates the key using the secret algorithm and secret key. And
+782.16s - 786.46s |  after that the client needs to know the same secrets, use the random seed and calculated key
+786.46s - 792.90s |  to send to the ECU where the ECU verifies uh verifies this uh calculated key and grants or
+792.90s - 798.30s |  rejects that access to the client. The implementation highly highly depends on the
+798.30s - 803.54s |  cyber security requirements of the OEM most of the times. Uh and when these are loosely
+803.54s - 809.32s |  developed we see some unimaginably sloppy implementations, backdoors and weak sources of
+809.32s - 817.99s |  randomness um or any other random aspect of uh the process. Where this access control is
+817.99s - 824.57s |  used no- commonly I would say mostly software updates and reprogramming and the most
+824.57s - 831.57s |  commonly used uh in high severity instances um is these ones. Um mainly also the ones that
+831.57s - 837.47s |  we care about and that shows the level of access they can give us in cases of compromise. And
+837.47s - 842.29s |  of course it's automos- automotive so the process is not encrypted. But it's behind an
+842.29s - 847.29s |  ADPS and it's a challenge response right? Knowing that the process is unencrypted we already
+849.63s - 855.37s |  know that we can intercept and replay a seed and the applicable calculated key for the process.
+855.37s - 861.67s |  Message authentication also does not exist in 99 percent of the times here so that should not
+861.67s - 867.75s |  be an issue most probably. But even with access to the bus managing to intercept the seed and
+867.75s - 873.51s |  the applicable key should not yield to elevated access as the process heavily based on the
+873.51s - 879.69s |  random aspect of the seed. Um if we cannot control the seed we cannot replay a successful
+879.71s - 886.23s |  seed key pair to obtain elevated access to the target ECU. Or can we? And going back to our
+886.23s - 891.33s |  friend ECU reset I want to remind you that one of the subservices capable of full power
+891.33s - 897.49s |  cycling the ECU is the hard ECU reset. This is the direct outcome though. Indirectly by
+897.49s - 902.51s |  completing a power cycle we also perform a reset to the system clock in many cases. And here
+902.77s - 909.61s |  we see the effects of this assumption. Uh while the seed of the target ECU can be considered
+909.61s - 915.65s |  really secure at 32 bytes we can see that we can reset the system clock with an ECU reset and
+915.65s - 920.75s |  after a predefined and fixed delay between the reset and the seed request the supplied
+920.75s - 925.75s |  random seed is always the same with a staggering hundred percent accuracy. In this case we
+926.01s - 932.75s |  invalidated the assumption of what is needed in a challenge response when we can intercept
+932.75s - 938.55s |  successfully a seed and key pair. With that in mind we only need one seed key pair to obtain
+938.55s - 943.19s |  elevated access to the unit. Which can potentially be obtained at the service visit or during
+943.19s - 950.19s |  an OTA update from the head unit. Fast forward two years later and I eventually discovered
+950.21s - 956.25s |  someone that was willing to help me report those issues to the OEM. I prepared a well
+956.25s - 960.81s |  structured report of of my vulnerabilities and sent it to the contact point working for the
+960.81s - 967.25s |  OEM. The issues were acknowledged a couple of days later but privately. At this point we know
+967.25s - 973.29s |  that these findings were not only affecting the model and model year I tested but several
+973.29s - 978.83s |  models and bra- and of the brand and numerous model years. So we are talking about a
+978.83s - 985.77s |  significant number of affected vehicles. The drama starts here though. Despite the help
+985.77s - 990.81s |  from the contact point OEM decided that the cost of fixing the issue exceeds the expectations
+990.81s - 997.65s |  for this model. The excuse is that future electrical and electronic architecture that they
+997.65s - 1003.03s |  designed will mitigate those issues in the models for 2025 and 2026. Which of course
+1003.03s - 1008.33s |  directly means that the currently sold architecture is still vulnerable and that the OEM
+1008.33s - 1013.91s |  is not willing to either fix or disclose the findings publicly. As a romantic myself I
+1013.91s - 1019.17s |  decided to not publish the findings. I wanted to act professionally especially in comparison
+1019.17s - 1024.95s |  to the norm in my industry and irresponsibility brings chaos. I'm not the one feeding this
+1024.95s - 1029.95s |  beast. Trying to find a solution I decided to uh to propose a responsible disclosure to a generic
+1030.89s - 1035.89s |  VDP namely the ASRG Automotive Security Research Group which out of many things they are
+1039.03s - 1044.77s |  also an officially recognized CNA. So after a short discussion with my contact point and the
+1044.77s - 1049.77s |  OEM uh I decided to report the issue to ASRG. Something that needs to be mentioned out here
+1052.03s - 1057.05s |  here for the sake of compli- completeness sorry. Uh is that I disclosed the finding in a generic
+1059.99s - 1064.99s |  email from the website of the VDP. And not to anyone directly just the generic available email
+1067.75s - 1073.03s |  address that was uh on the website. At this point and after a couple of email exchanges with
+1073.03s - 1078.03s |  me the OEM and the ASRG the OEM stops responding completely. I was completely clueless of
+1080.73s - 1086.15s |  what there is to follow. Uh despite my continuous effort to resolve the issue and find why
+1086.17s - 1093.19s |  this happened um the OEM wasn't responding to all uh of our requests. Or to any of our
+1093.19s - 1098.23s |  requests. And not only they didn't give me a reason but I was directly accused by third
+1098.23s - 1103.69s |  parties which I never contacted or revealed my findings to that I'm collaborating with
+1103.69s - 1109.17s |  hostile nations. You don't accuse me of doing something like this especially when I tried so
+1109.17s - 1115.27s |  much to responsibly disclose this shit and not and the only thing they did was find excuses.
+1115.29s - 1121.97s |  And to be honest I don't want to dex dox anyone uh this is not why I'm here. I'm here to share
+1121.97s - 1128.21s |  my experience and maybe shake the industry a bit out of this limbo they are into. But what
+1128.21s - 1133.11s |  happened is that the that the person that handled my case in the public VDP had the
+1133.11s - 1139.41s |  citizenship of a supposed hostile nation which the legal department of the OEM decided that
+1139.41s - 1144.95s |  it's not good for their image. You want to hear some plot twist uh basically this guy
+1144.97s - 1150.91s |  does not live in this nation he has another residency on the homeland of the OEM and guess
+1150.91s - 1156.21s |  what I recently learned that he has chosen to handle this topic because of an affiliation
+1156.21s - 1161.75s |  with the OEM and he has he was the best person for this job. But the OEM research can go that
+1161.75s - 1167.59s |  far of course or they didn't even care to be honest. After all the drama and after I contact
+1167.59s - 1172.13s |  all the parties saying that this level of accusations from third parties and the fact that
+1172.15s - 1177.15s |  they disclosed they disclosed the private findings outside of the legal framework was
+1177.15s - 1181.93s |  unacceptable. I also announced to them that the findings will be published published on the
+1181.93s - 1186.93s |  day of DEF CON today. And of course this is the day they answered. Something that needs to
+1190.57s - 1195.41s |  be mentioned here is that during the initial discussion for the findings I was clearly
+1195.41s - 1201.35s |  asked if the finding is discovered by the directly connecting to the ECU or from the OBD
+1201.37s - 1208.17s |  port. Um as the OBD port is user accessible and the findings are applicable and if it's only
+1208.17s - 1213.35s |  applicable to the direct connection will mark the findings as mitigated by the IDPS system.
+1213.35s - 1218.35s |  Something that I don't agree but it was reasonable. This though not so much. Um yeah. So
+1221.99s - 1226.05s |  yeah today I'm releasing these 2 vulnerabilities as I said I don't want to dox anyone I want
+1226.05s - 1231.77s |  a safe future with cars that can support their functionality in a secure way but in in this
+1231.77s - 1236.77s |  case the OEM instead of communicating decided to play politics and it's not only them this is
+1238.67s - 1244.31s |  the common trend. Researchers are not the ones to blame here with falsified accusations. As in
+1244.31s - 1250.09s |  most cases we are more than happy to collaborate and help each other. And not only
+1250.09s - 1255.25s |  researchers, pen testers too. Let's crash it and see where it brings us in this case. As we
+1255.25s - 1259.99s |  saw previously politics play a big role. Not only in public disclosure but in private
+1259.99s - 1264.69s |  projects too. Throughout my time with automotive security projects I heard a lot of excuses by
+1264.69s - 1271.71s |  engineers and management only uh on why they don't want to accept or fix an issue. The usual
+1271.71s - 1276.71s |  suspects are loosely developed requirements uh or internal or external. Strict deadlines and
+1276.91s - 1281.91s |  long product life cycles along others of course. By my conclu but my conclusion is always that
+1286.15s - 1291.23s |  it's a culture issue. Either the company culture or the respective local culture affects the way
+1291.23s - 1296.53s |  companies consume, approach and mitigate issues. Of course it's a complex issue where
+1296.53s - 1302.27s |  regulators, governments and external parties are contributing to the development and
+1302.27s - 1308.83s |  production of a full vehicle. But in the end the people I interacted and worked with uh out of
+1308.83s - 1315.01s |  these projects construct my perception of this industry. But considering the culture and how
+1315.01s - 1321.35s |  the findings are approached what do we need to do to persuade them about the severity? Which
+1321.35s - 1326.85s |  level should we reach and why people uh and which people should we contact? Who is
+1326.87s - 1333.71s |  responsible for the person that will die if my next finding is not fixed? Even if you develop the
+1333.71s - 1339.91s |  target with security in mind uh and with the best of intentions logical flaws can exist and
+1339.91s - 1344.39s |  exploited. Developers of different components usually only interact with a vehicle
+1344.39s - 1349.39s |  simulation ignoring how one action can have a security or safety event outside the scope of the
+1349.51s - 1354.51s |  functional testing. And this is how safety related findings can be discovered in most
+1357.69s - 1364.03s |  unexpected for the manufacturer behavior. A completely unrelated issue of seemingly minimal
+1364.03s - 1370.43s |  secure uh security impact can have a devastating safety outcome. As a first use case we can
+1370.43s - 1374.81s |  easily get the example of electric vehicles where I was testing the security not only of a
+1374.83s - 1379.77s |  battery management system on the on board charging but the batteries themselves. By
+1379.77s - 1384.61s |  analyzing the communication and while I was close to the car I discovered that there is a sound
+1384.61s - 1389.91s |  generated when I was injecting uh an unauthenticated message. When I started discussing
+1389.91s - 1395.65s |  with one of the engineers it ended up being the battery contra- contractors of the AV. I was
+1395.65s - 1400.55s |  immediately concerned at that point knowing that wear and tear of the con- contact uh surface
+1400.57s - 1405.57s |  can increase the resistance and lead to excessive excessive heating. And you know what
+1405.57s - 1410.61s |  comes with after excessive heating and localized uh especially heating for extended
+1410.61s - 1416.95s |  periods of time? It's of course fire. Um of course I cannot burn an engineer and I cannot
+1416.95s - 1422.09s |  conduct a test to prove physics the physics behind behind it without risking the battery pack
+1422.09s - 1427.29s |  burning nonstop for days. So the topic ended there, the vehicle is out, all engineers are
+1427.33s - 1434.41s |  safe, a couple of hundreds of thousands of users are not. Same applies to hydrogen and the
+1434.41s - 1439.81s |  loving OEM that could not understand why small leaks in hydrogen in the hydrogen tank can
+1439.81s - 1445.75s |  affect uh the specific rotations of the valve and can lead to suffocation of the whole
+1445.75s - 1452.54s |  garage we were working in in a couple of minutes. As I said in the start uh I have no
+1452.54s - 1457.90s |  magical exploit chains but to prove this finding in an effective way doesn't take much.
+1457.90s - 1464.18s |  Considering that at the current state we can easily spoof messages in an unencrypted way
+1464.18s - 1469.68s |  and perform a power cycle with an unrestricted service we can easily find a way to reproduce
+1469.68s - 1474.96s |  the issue from an exposed interface. Because most of the times manufacturers try to use the
+1474.96s - 1481.00s |  obscurity factor as a way of mitigation for those findings. But as we saw in the
+1481.00s - 1486.44s |  architecture modern vehicles are getting more connected than ever so find the exposed
+1486.44s - 1491.44s |  interface, directly communicate uh with the ECU uh and start sending, that's my advice.
+1494.28s - 1500.62s |  Even if it needs some cutting around. Now of course after that you have to listen to all the
+1500.62s - 1505.90s |  excuses about how your exploit is not realistic and how physical security mitigates issues
+1505.90s - 1510.40s |  in digital security when at this point it's time to put them inside the vehicle and show
+1510.46s - 1517.04s |  them adjustable injections where they will either believe you or they will believe in God. Of
+1517.04s - 1521.84s |  course for safety reasons and when I'm ready to unleash my magical exploit chain there is
+1521.84s - 1527.04s |  always some party pooper that restricts me from doing so and thank you to this party pooper
+1527.04s - 1533.18s |  but uh I guess in many times it's not only that they don't believe you but they even want to
+1533.18s - 1538.80s |  prove you wrong during the night because that's who we are. Next day I found this in the
+1538.82s - 1544.26s |  garage after some engineer tried to engage the injection from the OBD port from for the
+1544.26s - 1550.88s |  sake of completeness this is how I left it the previous day. Continuing with the trend of
+1550.88s - 1557.88s |  naiveness though both from mine and the engineer side I got my hands on an ECU unrelated to
+1557.88s - 1563.08s |  commercial project and I thought here we are let's do some exploitation. So I started my
+1563.08s - 1567.76s |  common workflow tried to exploit trying to exploit UDS and trying to evaluate the source of
+1567.78s - 1572.78s |  randomness but after several hours it didn't seem feasible so I had to resort resort in other
+1575.02s - 1580.02s |  solutions. So I did this thing apart and started getting a better understanding of its guts. I
+1582.20s - 1588.34s |  analyzed the hardware parts one by one and started getting deeper inside my rabbit hole. To
+1588.34s - 1594.28s |  realize that it's one more case of automotive SOC architecture with all the pros and cons
+1594.30s - 1599.94s |  that come with it. The biggest thing that has to be said about it um and which will help us
+1599.94s - 1605.84s |  understand some of the issues later on is the fact that ECUs are considered safety related
+1605.84s - 1611.28s |  components with which require real time responsiveness due to the safety related nature
+1611.28s - 1617.66s |  on the products that utilize them. So by opening one of the targets we can easily see what
+1617.66s - 1623.80s |  happens here. Not only one SOC but two exist on the target board. And this is because of the
+1623.82s - 1629.82s |  safety related functionality we mentioned earlier. An instruction needs to be executed twice
+1629.82s - 1636.26s |  in either two different controllers um in this case the secure and application controller
+1636.26s - 1642.20s |  which we discovered or two different isolated cores and then compared between the two. If the
+1642.20s - 1648.14s |  output of the instruction is the same it gets executed if not a fallback procedure has to be
+1648.14s - 1653.28s |  followed depending on the system. Of course this architecture is applicable to higher severity
+1653.32s - 1658.80s |  safety related devices like airplanes with more secure controllers needed but this is out
+1658.80s - 1670.50s |  of the scope at least for today. Why this is important? Uh because in the devices in which is
+1670.94s - 1676.84s |  applicable their fail- failure will result in loss or damage of equipment, environmental
+1676.84s - 1681.84s |  harm, injury or even death of some users or the surrounding people. And moving closer to the
+1681.98s - 1686.98s |  hardware we see that not only the supplier was kind enough to spoil the fun and let us uh tell
+1689.28s - 1695.22s |  us when uh one of where one of the JTAG headers is on the board but they included a second
+1695.22s - 1701.10s |  header for the secure controller. Unfortunately there uh after connected connecting my
+1701.10s - 1708.12s |  debugger I discovered that both the JTAG interfaces are locked. And after I desperately
+1708.12s - 1714.02s |  started clicking on my power supply I realized something really interesting. And here you
+1714.02s - 1720.39s |  can see uh did it start? Yes so here you can see that the device is locked by normally
+1723.59s - 1728.59s |  connecting my uh JTAG debugger to the to the unit to the target ECU and by connecting the JTAG
+1729.59s - 1734.59s |  on the first seconds after boot you can see a nice easter egg that we get debug on the secure
+1742.73s - 1747.87s |  controller. So yes we got access to the secure controller in this case we basically got to
+1747.87s - 1754.11s |  enable the debug access in a really short period of time during boot uh and as a result we can
+1754.13s - 1758.61s |  control the execution and dump the memory of the vulnerable controller. I love automotive
+1758.61s - 1764.95s |  security. I know that you're not yet tired of the fails so on the same ECU and because we are
+1764.95s - 1769.59s |  talking about the telematics unit there is a Qualcomm modem SOC running which comes with
+1769.59s - 1774.73s |  these magical pins that if sorted provide us with a nice Qualcomm download mode and after
+1774.73s - 1779.39s |  discovering some other pins seemingly matching a USB port pin out and performing the
+1779.41s - 1785.45s |  dangerous act of connecting a random USB from an ECU purchased from eBay we realized that our
+1785.45s - 1791.69s |  assumptions are correct. After I dumped the firmware with more than one ways as you see I
+1791.69s - 1796.43s |  realized that the automotive related controller has several references to the system clock
+1796.43s - 1800.63s |  which confused me even more. As my process of discovering weak sources of randomness
+1800.63s - 1806.57s |  till now was unbeatable. So what is happening here? Went back to my terminal and performed
+1806.59s - 1813.73s |  some more tests and as you see here uh when the seed capture goes faster we can make some
+1813.73s - 1818.71s |  really important observations. Which is that the middle byte of the seed is incrementing by
+1818.71s - 1823.71s |  one. My assumptions seemed more correct than ever but I was also more confused than ever. Uh
+1825.65s - 1830.55s |  there was some missing piece that I was struggling to find. Some implemented mitigation that
+1830.55s - 1837.54s |  was in front of me but could not see it. What this mitigation was? Of course security
+1837.56s - 1841.90s |  through obscurity as always with automotive and I started thinking what if the ECU is
+1841.90s - 1847.14s |  restricting software power cycles for safety reasons. As we are talking about a telematics
+1847.14s - 1853.24s |  unit that has to be always available for SOS calls. And if that's the case how can we
+1853.24s - 1858.94s |  control a power cycle in more than uh more ways than an ECU reset? And that's where my
+1858.94s - 1865.32s |  favorite re- relay comes into play. And we immediately see not only a duplicate but a
+1865.34s - 1872.13s |  complete compromise of the unit here. POC for this will be published under my tool Karen
+1874.67s - 1879.83s |  Caribou Next uh but it's nothing that you cannot easily make in a couple of minutes. The
+1879.83s - 1883.91s |  main reason that this happens is because there is always a battery in those telematics
+1883.91s - 1889.41s |  systems to mitigate downtime and unexpected power cycle that will restrict the unit from
+1889.41s - 1894.41s |  performing an SOS uh call during an emergency. So we got a bit pranked for a second there but
+1894.75s - 1899.75s |  found a way through eventually. And for the smarties out there that uh this is not only
+1902.75s - 1908.77s |  applicable to controlled uh environments with power supplies but many of these nowadays
+1908.77s - 1915.01s |  come uh with external on or internal for pass sensor vehicles battery isolators. Mainly
+1915.01s - 1921.45s |  used in safety related incidents to cut power and mitigate the risk of fires and other
+1921.45s - 1926.99s |  issues. Uh but I used to I used it to bypass restrictions that were only possible on
+1926.99s - 1931.73s |  individual ECUs. And now by controlling the power supply externally through the battery
+1931.73s - 1937.67s |  isolator we can perform all these attacks in a combined manner in full vehicles. Here we
+1937.67s - 1942.91s |  see the exposed battery isolator of heavy duty vehicles. And here we see something I
+1942.91s - 1947.89s |  discovered a couple of weeks ago. The battery isolator of a passenger vehicle which of
+1947.89s - 1952.93s |  course made me laugh but uh it will make me cry probably in the future when I will get into
+1952.93s - 1959.01s |  more politics with the manufacturers about the applicability of my future findings. This is a
+1959.01s - 1965.17s |  sample list of the applicable findings for the ECU. And of course I had no response so I guess
+1965.17s - 1971.85s |  nothing to see here. But it's not only dark and stormy days. While everything we said now is
+1971.85s - 1978.09s |  applicable to most of the OEMs. While this is only a small uh this is only a small subject
+1978.09s - 1984.09s |  sub subset of the issues we see every day. And they clearly are some relics of
+1984.09s - 1989.77s |  vulnerabilities discovered in modern vehicles and components. And while several CVEs are
+1989.77s - 1996.51s |  currently stuck you saw because of uh the unacceptable attitude of the industry. There is
+1996.51s - 2001.81s |  always someone that breaks the norm and makes us smile and not because they made everything
+2001.81s - 2008.25s |  perfect but because they proved a point. So one small manufacturer came to us for some common
+2008.25s - 2013.85s |  service. We started evaluating the unit and after several several tries we didn't manage to
+2013.85s - 2019.79s |  discover a single entry point to the custom ECU. While the hardware used was one of the
+2019.79s - 2026.43s |  cheapest of the self hardware a developer can buy. And what was the solution in this case? One
+2026.43s - 2031.09s |  of the cheapest of the self hardware a developer can buy. And we're talking about this
+2031.09s - 2037.83s |  mighty ESP32 a low cost, low power SOC that was fitting perfectly the needs of the OEM in
+2037.83s - 2043.27s |  this case. Of course it's not built for safety critical functionality and its main focus is
+2043.27s - 2049.85s |  automation. But for the case we needed for for the case needed there was nothing more
+2049.85s - 2055.75s |  needed by the OEM in this case. And from a security standpoint it proved a big point. Because
+2055.77s - 2061.55s |  this ten dollar ESP32 in contrary to what comes with hundreds of thousands of dollars of
+2061.55s - 2067.71s |  automotive uh worth of automotive SOCs comes standard with an RNG. It uses a combination of
+2067.71s - 2073.29s |  thermal noise sourced from the hardware analog to digital converter and combines it with
+2073.29s - 2078.99s |  the asynchronous clock mismatch for true random generation as we call it in this industry. And
+2079.01s - 2084.01s |  I say it again with ten dollars but does it solve completely the problem here? Of course
+2086.31s - 2091.73s |  not. There are still ways to bypass these mitigations but the point is how difficult and
+2091.73s - 2097.29s |  financially viable you make it for an attacker to perform an attack like this. It's not about
+2097.29s - 2101.93s |  how sophisticated an exploit is in the end it's about who has the biggest biggest budget to
+2101.93s - 2107.37s |  invest. So the mitigation is clearly about how expensive you make it for an attacker to break
+2107.39s - 2113.39s |  into your system, steal your IP or even potentially perform coordinated attacks. And while
+2113.39s - 2118.03s |  looking at systems like the PlayStation running non safety critical chips that implement
+2118.03s - 2122.87s |  state of the art mitigations for these issues and our computer on wheels cannot even mitigate
+2122.87s - 2128.27s |  the basics I'm left to wonder is there any light in the end of the tunnel? And my answer is
+2128.27s - 2135.27s |  that it's up to us all of us here to make the best out of it. The best out of our work and our
+2135.31s - 2140.65s |  research. To pass out our culture to the people that we're working with. From the higher to
+2140.65s - 2146.29s |  the lower level. Not with bitching not with attitudes but with scientific proof with our
+2146.29s - 2152.63s |  POCs with our posts and our talks. Let's make the world a safer place one POC at a time. And
+2152.63s - 2157.63s |  in honor to this year's theme remember to take back the internet we need to engage. Thank you.
+2158.53s - 2186.35s |  Any questions? Hi awesome talk thank you. Um did you think about going to NHTSA the National
+2190.79s - 2195.59s |  Highway Transportation Safety Administration who is responsible for implementing safety
+2195.59s - 2201.47s |  standards for car manufacturers? Yeah look there are several things that we can do. I agree
+2201.47s - 2208.31s |  with you. The problem is that you have to take several steps into reaching a point that I
+2208.31s - 2214.01s |  will follow your advice. I mean the specific advice you gave right now. It's like I agree
+2214.01s - 2220.99s |  with you but I would expect that the manufacturer already handled it. Of course in many of
+2220.99s - 2225.99s |  the cases maybe I did it. I cannot reveal it to you but maybe I did it. But I have to say that
+2229.23s - 2233.43s |  there is a need for something to change in this industry and that's what I had to clarify
+2233.49s - 2238.49s |  here. Totally agree and it that would be the perfect world wouldn't it if you know people I think
+2241.83s - 2246.83s |  most engineers want to do the right thing. They want to operate securely and write good code
+2246.83s - 2251.85s |  and and all the rest of it. But then to your point there's that sprinkle of capitalism and um
+2254.75s - 2259.75s |  budgetary this and that and somebody says well it's good enough. And then you know that's that's
+2260.01s - 2265.01s |  why we do sometimes need those government agencies even though they themselves are not the
+2266.35s - 2272.71s |  most efficient right. I agree there needs to be a balance but I think there needs to be a
+2272.71s - 2278.79s |  balance in all the ways you know even for who talks where. You know there are the commercial
+2278.79s - 2283.19s |  conferences that everyone brags about from the industry. We also need to talk about stuff. We
+2283.19s - 2289.57s |  also need to be able to get the stand and start discussing about these things. Thank you very
+2289.59s - 2296.00s |  much it was awesome. Thank you. Hi again thank you for the talk. Amazing talk. But um do you
+2296.00s - 2301.18s |  think emerging tech emerging technologies such as automotive ethernet or secure CAN transceivers
+2301.18s - 2306.32s |  might help mitigate some of the risk? Definitely definitely and we see a change in the
+2306.32s - 2310.82s |  industry. As I said software defined vehicles and centralized architecture is something that
+2310.82s - 2317.06s |  we we hear about a lot of years now but it's not yet implemented in many vehicles and that's
+2317.08s - 2323.04s |  why I was talking about the differences between uh mainstream OEMs and the new type of OEMs
+2323.04s - 2327.88s |  that are basically IT companies that started building cars. So this is the main difference.
+2327.88s - 2331.76s |  They have way more experience in this but the industry just needs to catch up. They are
+2331.76s - 2338.75s |  exposing so many things and they need to do something about it. Thank you. Thanks. Thank you
+2338.75s - 2342.11s |  for thank you for your talk. This was great. My question is regarding your tool kit. Is
+2342.11s - 2347.09s |  everything you know hand built? Can you? My question is about your tool kit. Is everything
+2347.09s - 2352.33s |  Python scripts that you build or is there a software or platform uh that we? Um no basically
+2352.33s - 2358.17s |  it's a modular tool and this is not only the POC but you can use it to perform the same
+2358.17s - 2364.21s |  attacks to other vehicles. What's the name of that tool? Uh Carrying Caribou Next. Uh it's a
+2364.21s - 2368.21s |  fork of the original Carrying Caribou which is a state of the industry for a lot of years
+2368.21s - 2373.89s |  but I just made the fork because of uh the slowness of the development of this project. Thank
+2373.89s - 2374.93s |  you. You're welcome.

@@ -1,0 +1,169 @@
+{
+  "webpage_url": "https://www.youtube.com/watch?v=zH6qbJuqhOM",
+  "title": "DEF CON 32 - Mutual authentication is optional - Xavier Zhang",
+  "description": "Physical access control systems are often exploited in a number of ways. It could be weaknesses found within the credential itself, the antiquated communication protocol, the hardware itself, or the firmware it is running. But more often than not, it is a combination of factors that allow a variety of attacks from multiple dimensions. Some are extremely trivial and require little to no skill to perform, whereas some attacks require a bit more setup and knowledge of how the underlying technology works. We will go into detail on how these systems work, why verifying mutual authentication is important for physical access control systems and the exploits that can be accomplished, as well as ways to mitigate these exploits to make your facility more secure. This talk will include interactive demos involving official HID readers and hardware, proxmark3, and the flipper zero.",
+  "channel_url": "https://www.youtube.com/channel/UC6Om9kAkl32dWlDSNlDS9Iw",
+  "duration": 1031,
+  "channel": "DEFCONConference",
+  "uploader": "DEFCONConference",
+  "upload_date": "20241016"
+}
+
+0.14s - 5.14s | This text was transcribed using whisper model: large-v2
+
+ All right. Are we ready? So today's talk is called Mutual Authentication is Optional. And
+8.48s - 14.08s |  it's going to get into how we can uh get past HID I-class SE readers that are enforcing
+14.08s - 19.22s |  secure credentials. We'll also go over a technical overview of all the other I-class
+19.22s - 24.22s |  credentials. So who am I? So my name is uh Xavier. And I like all things physical security
+25.12s - 30.12s |  and I am a RFID researcher. I'm a HID credential enthusiast. I like NFC. So yeah, that's me.
+39.56s - 43.70s |  So today we're going to cover a few things in our agenda today. We're going to go over
+43.70s - 49.14s |  cloning, downgrading, emulation, and we're going to get into buildings enforcing secure
+49.14s - 54.14s |  credentials without one. So we're going to go over a few ways to get an exploit HID I-class
+55.04s - 60.04s |  credentials to gain unauthorized access into a facility. So we're going to go over four
+62.94s - 68.22s |  different attacks today in varied degrees of complexity. So the most simple one attack
+68.22s - 74.62s |  we're going to go over is cloning, which is going to be the least complicated attack.
+74.62s - 79.86s |  Most I-class legacy credentials use the standard mas- standard authentication key, which
+79.86s - 84.86s |  has been a- a- which has been a- obtained in the Heart of Darkness paper in 2010. Now, if
+87.56s - 93.40s |  you've not read this legendary paper yet, you should go, it's totally worth a read. If the
+93.40s - 98.40s |  systems are not standard key, those keys can be extracted using a attack called low-class.
+102.61s - 107.59s |  Overall, these credentials are fairly trivial to make a copy of. It's been, it's it's it's
+107.59s - 112.99s |  been done for over a decade now, so nothing much to write home about. But we're going to have
+112.99s - 119.13s |  to cover it anyways. Our next attack we're going to go over is a downgrade attack, where we're
+119.13s - 123.17s |  going to take a secure credential, we're going to move the uh payload over to a insecure
+123.17s - 131.37s |  credential. So for example, this would be turning an SE credential into a legacy credential.
+131.37s - 137.99s |  We're also going to cover emulation today. So what if that downgrade didn't work? We're going
+138.01s - 143.51s |  to do something by emulating a virtual credential. So this can be done with like ele- electronic
+143.51s - 149.99s |  tools such as the Proxmark 3 or the Flipper 0. This exploits the HID tra- transitional
+149.99s - 156.59s |  credentials, also known as SR. And finally, the fun part of today's talk is going to be exploiting
+160.03s - 166.97s |  the bugs in reader firmware to gain access to facilities that only su- only enforce using a
+166.99s - 174.93s |  secure credential. So we're going to go over some background tech today, so you guys sort of
+174.93s - 179.37s |  know what we are talking about. So, you guys are all familiar with physical access control
+179.37s - 186.15s |  systems, right? You probably interacted with one without thinking twice. There are a ton of
+186.15s - 191.15s |  those HID Rev-E readers scattered around this convention floor today. Uh, WGAN protocol. That
+199.85s - 204.81s |  is the signaling protocol between the reader and the controller. Simple signaling protocol
+204.81s - 211.19s |  over two wires. Really old actually. Developed by John Wiegand in 1975. Still used today in the
+211.19s - 216.73s |  majority of installations. It is basically just binary data that is being transmitted to the
+216.73s - 221.93s |  reader, to the door controller. And it is up to the controller to determine access. The reader is
+221.93s - 227.27s |  just there to read the credential. These are usually padded with a preamble to tell the
+227.27s - 234.05s |  controller what bit length the uh, the credential is. And also has a uh, checksum to ve- verify
+234.05s - 240.82s |  the data integrity. You know, access control systems, access control controllers are pretty
+240.82s - 247.60s |  dumb. They can't tell what type of credential is presented for the most part. So they only read
+247.60s - 251.84s |  credentials. So in the case of my class, it is going to read any credential that has the same
+251.84s - 256.84s |  key. And we know that- well the cards have the same key for the most part. This just doesn't
+256.84s - 263.98s |  cover like special functions such as readers in key rolling or any uh- and they- they're just
+263.98s - 271.02s |  gonna- it's up to the controller to determine access. Whether to allow or deny the access. And
+271.02s - 276.36s |  finally card cloning. That is just gonna be making a physical copy of a credential onto another
+276.36s - 282.46s |  credential. Just a direct copy. Card emulation would be to make a digital copy of a physical
+282.46s - 288.80s |  credential. With the- and emulating that with a device like a Proxmark 3 or a Flipper 0. A real
+288.80s - 295.76s |  world use case for this would be the HID Transitional Credentials called SR, iClass SR.
+295.76s - 302.84s |  And uh, those have a unique part where these uh, the secure part of the credential, the se-
+302.84s - 307.88s |  secure identity object is actually s- is actually cryptographically bound to the card's serial
+307.88s - 314.48s |  number. And since there are no uh, serial number changeable iClass cards, you're unable to make a
+314.84s - 321.62s |  direct copy. Which means we're going to emulate those. Here are just an overview of all the
+321.62s - 326.50s |  different uh, HID credential types. Starting with Prox. It's a bit out of scope for today's
+326.50s - 333.64s |  topic but we have a reader here anyway. It's a- it's a low frequency credential. And then moving
+333.64s - 338.88s |  on to the- around 2000 when we have iClass Legacy that first came out. And uh, those were
+338.88s - 346.38s |  unique because those were actually encrypted with a 64-bit key. These were broken in 2010 by
+346.50s - 350.56s |  Miloš Maryak during the Heart of Darkness attack. Where two readers were actually
+350.56s - 354.64s |  destructively attacked in a way to dump the firmware to derive the master identification
+354.64s - 363.99s |  keys. Going on to around the 2010s we have the uh, we have iClass SE. Also known as SIO
+363.99s - 373.94s |  Enabled. SIO meaning secure identity object. And SEOS would still be the uh, flagship
+373.94s - 382.00s |  credential from HID up to today. So we're going to go over a few possible attack vectors. So
+382.00s - 388.02s |  we're going to go over card only attacks and card and reader attacks. Card only attacks are
+388.02s - 392.92s |  very simple because it involves one thing. The physical credential itself and that's it. But
+392.92s - 397.66s |  you can only do a limited things with um, with just the card. One attack that's possible is
+397.66s - 403.86s |  just a downgrade to iClass Legacy because they would just send the same PAX payload on a
+403.86s - 409.84s |  different type of media. You can think of cards as just an encrypted storage device like a USB
+409.84s - 414.84s |  stick but crappier. Since you can just read the distance from quite a distance in the case of
+414.84s - 422.96s |  iClass. The power efficiency, simple cryptography and the ISO 15693 protocol all contribute to
+422.96s - 432.78s |  enhanced read ranges using long range readers. This is when card and reader attacks come in.
+432.82s - 438.26s |  Card and reader attacks are very fun because you would think the reader on the building is there
+438.26s - 445.67s |  to secure the, secure the building right? But we're going to use that exact reader that's
+445.67s - 450.05s |  outside the building and use that to compromise the security of the building which we'll get
+450.05s - 461.81s |  into a bit later. So how secure are each of these HID credentials? So starting with the least
+461.81s - 467.69s |  secure one that is broken for over a decade now, we have iClass Legacy. The cryptography is
+467.69s - 472.93s |  completely broken. Keys are leaked. Card's serial number is not relevant in the PAX payload
+472.93s - 481.17s |  which means cloning is extremely trivial. And elite keys are recoverable by low class attack.
+481.17s - 489.51s |  PAX payload is easily transferable by copying block six to nine to the, to another card. We
+489.51s - 495.41s |  have iClass SR which is a transitional credential and the application instruction area on the
+495.41s - 502.91s |  card is going to tell the reader that it has a secure identity object. This is good for
+502.91s - 509.09s |  transitioning between uh buildings that have SE secure readers and legacy readers. And these
+509.09s - 514.85s |  are easily downgradable to iClass Legacy or you can emulate this credential with the correct
+514.85s - 523.04s |  card serial number for a complete clone. Going to iClass SE, standard key and the key
+523.06s - 529.46s |  deprivation function are not leaked and the keys are not recoverable by low class. Currently
+529.46s - 534.48s |  we still do not have the master authentication key for SE. These can be standard, elite keyed
+534.48s - 539.48s |  or custom keyed and these can also be duplicated if it's an open format like uh HID 26 bit and
+542.38s - 547.38s |  you'll be able to use a HID encoder to uh create another SE card, actually a legit copy because
+548.00s - 553.00s |  they are freely encodable, it's an open format. These are also downgradable to Legacy or SR and
+557.68s - 564.19s |  these can also be emulated which we'll get into and it will work on most readers. So we're
+564.19s - 568.69s |  going to get pa- so how are we going to get past HID readers that are enforcing secure
+568.69s - 573.99s |  credentials? The first would be a downgrade. So using official HID hardware against their
+573.99s - 579.31s |  credentials to perform downgrade attacks. So so we're going to use a HID Omni key reader
+579.31s - 583.85s |  which is the official HID hardware that plugs into a computer, acts like a keyboard and we're
+583.85s - 588.85s |  just going to configure it to uh spit out the uh payload data along with the commands in the
+590.95s - 596.49s |  Proxmark 3 to just make another copy without ever typing on the computer. We have a we have a
+596.49s - 615.47s |  quick demo of this here. And one of the cards is SE and one of the cards is Legacy. We're just
+615.47s - 620.75s |  going to put the Legacy card on the Proxmark and we're going to read the SE card on the uh HID
+620.75s - 628.44s |  reader. Types out the command and there you go. The downgrade is done. Like this person said,
+641.58s - 645.78s |  like the cheapest way isn't even to use the flipper with that add-on board to downgrade the SE
+645.78s - 651.46s |  cards anymore. You can literally just buy that HID reader on Amazon for about $130, load up
+651.46s - 660.15s |  that config and it's ready to downgrade any amount of standard keyed SE credentials. So now
+660.15s - 665.13s |  we're going to get into I-Class SR. We have another way. So we're going to emulate an I-Class
+665.13s - 670.67s |  SR with the correct card serial number and the secure identity object. And to accomplish this
+670.67s - 675.13s |  we're going to actually need to do something special which is dump the SIO, the secure identity
+675.13s - 683.06s |  object. So here in this example we're going to get the publicly accessible parts of the card
+683.06s - 687.96s |  which is the uh the card serial number, the E-Purse and the application instruction area from
+687.96s - 692.90s |  that I-Class SE card. And uh we're going to populate those values in a dump file and get them
+692.90s - 697.90s |  ready to emulate. And that those bytes 0006 instructs the reader that hey there is an SIO.
+700.14s - 703.74s |  We're going to use the reader on the building that's supposed to secure against uh secure the
+703.74s - 712.82s |  building against uh like attackers to generate a successful challenge to dump the card. So once
+712.82s - 717.00s |  you have emulated that partial card against that reader you're going to gather a trace. So that's
+717.00s - 720.40s |  what the reader is uh that's what the reader is sending to the card and we're intercepting that
+720.40s - 727.40s |  data. And we see here where we underline here as that there is a MAC that that we got. A
+727.40s - 730.68s |  message authentication code and that is what we're going to use to generate a successful
+730.68s - 737.94s |  challenge to dump that credential. So after we have got gotten that we're going to run that
+737.94s - 743.24s |  standard uh dump command. And what what you got? The card just puked out all of its secure
+743.24s - 748.84s |  contents that's supposed to be secure. So manual dumping of that SIO is possible on the
+748.86s - 754.44s |  Proxmox 3 on the command line. But to build on that recently Eric Betts, Betsy, also
+754.44s - 759.40s |  implemented NRMAC dumping on the Flipper Zero very recently with a very intuitive workflow.
+759.40s - 763.68s |  And this allows reading the publicly accessible parts of the card without authentication.
+763.68s - 769.96s |  Emulating that on the reader and and using that to generate a successful challenge to dump the
+769.96s - 776.96s |  card. This as a side effect also allows users of the Flipper Zero who do not have a NARD
+777.02s - 783.56s |  add-on board or the secure access module to dump the credential. Send it to someone who has
+783.56s - 790.56s |  that reader and to use that to use that and use that to decrypt the copy and make a logical
+790.56s - 796.90s |  copy off-site. So we're going to prepare our traditional transitional credential by just
+796.90s - 803.08s |  transferring those over to the to another card. Like we see here those uh the the blue
+803.10s - 808.10s |  blocks are transferred under the uh under the legacy payload and there we go we have the SR
+810.80s - 822.62s |  credential already done. So now we're going to get into the readers that enforce secure
+822.62s - 828.96s |  credentials. So now we do since we have a full dump of that SE card already we can emulate
+828.96s - 833.60s |  the high security SIO only secure credential using a bug in reader firmware that was
+833.62s - 838.52s |  originally discovered by NVX about a year and a half ago and also ported over to the uh
+838.52s - 845.56s |  Flipper Zero by editing some code. So these actually work on signal readers revision uh on
+845.56s - 852.40s |  firmware 10.0 5.6 or older and REV-E readers are still not patched at the moment. And you can
+852.40s - 856.20s |  also use reader manager to inspect those signal readers without even being close to them
+856.20s - 870.70s |  and you can verify what firmware they are running. So we can make we can make installations
+870.74s - 877.28s |  more secure in a few ways. By using a high security key set such as standard two. Elite custom
+877.28s - 883.92s |  keys for SE installations. Updating firmware. Disabling or disabling all legacy technologies
+883.92s - 889.66s |  and issuing secure credentials such as SEOS, DESPIRE, mobile credentials. And now we're
+889.66s - 894.94s |  going to get into some fun stuff. What not to do. Over the years I've seen a lot of terrible
+894.94s - 901.64s |  installations of secure credentials being issued to clients. Such as this one here. You can
+901.64s - 905.96s |  see this is a very popular vendor in Canada. They're located in B.C. and they have all the
+905.96s - 910.72s |  latest signal readers on all their buildings. But um all their readers are pro- all their
+910.72s - 914.22s |  credentials are programmed the same facility code as laid out in their official documentation
+914.22s - 922.05s |  that's available publicly online. And what do you know? All the all the legacy technologies
+922.05s - 927.05s |  are enabled on that reader too. So yeah. You can just they are easily downgradable. And that's
+929.69s - 934.85s |  not even the worst part. Is that you don't even need the credential to make a copy because
+934.85s - 940.13s |  since we know that the facility code is the same we can just uh if the numbers aren't rubbed
+940.13s - 944.71s |  off on the back yet we can just uh take those numbers and just encode another one. And it's
+944.71s - 952.08s |  gonna work. So given what we know we can literally make a copy of that fob in that picture
+952.10s - 957.44s |  there. And we can make a logical copy that is gonna work on all of those readers from this
+957.44s - 965.16s |  specific integrator. And that concludes my presentation for today. I want to say I have a
+965.16s - 970.16s |  special thanks for the uh RFID hacking community. Uh Eric Betts also known as Betsy. Has the uh
+972.56s - 977.56s |  pretty good documentation on all the uh I-class credentials and how the data is laid out. NBX
+977.98s - 982.98s |  who discovered, originally discovered the authentication bypass bug which allows
+984.06s - 989.06s |  working uh allows um working I-class SE emulation. As well as the people class emulation
+991.00s - 996.00s |  code for the Flipper Zero. Kate or Miss Steel Dev. Genius on all things HID. And have to
+999.16s - 1004.18s |  thank her for uh taking in my uh HID readers that I have pricked by bad firmware updates. And
+1005.04s - 1010.04s |  Iceman. And I wouldn't be here without Iceman urging me to do this talk on uh I-class SE
+1014.58s - 1021.60s |  today. So if you have any questions I'll be at the NFC table in the RF village. And thank you
+1024.04s - 1025.04s |  for attending.

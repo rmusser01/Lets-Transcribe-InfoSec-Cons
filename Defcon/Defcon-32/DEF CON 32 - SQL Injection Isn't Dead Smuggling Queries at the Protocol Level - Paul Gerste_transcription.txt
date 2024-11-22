@@ -1,0 +1,376 @@
+{
+  "webpage_url": "https://www.youtube.com/watch?v=Tfg1B8u1yvE",
+  "title": "DEF CON 32 - SQL Injection Isn't Dead  Smuggling Queries at the Protocol Level - Paul Gerste",
+  "description": "SQL injections seem to be a solved problem; databases even have built-in support for prepared statements, leaving no room for injections. In this session, we will go a level deeper: instead of attacking the query syntax, we will explore smuggling attacks against database wire protocols, through which remote, unauthenticated attackers can inject entire (No)SQL statements into an application's database connection.\n\nUsing vulnerable database driver libraries as case studies, we will bring the concept of HTTP request smuggling to binary protocols. By corrupting the boundaries between protocol messages, we desynchronize an application and its database, allowing the insertion of malicious messages that lead to authentication bypasses, data leakage, and remote code execution.\n\nTo put our findings into context, we will explore the real-world applicability of this new concept by comparing how robust various languages and frameworks are against these attacks. We will also discuss how smuggling attacks are not specific to database wire protocols but affect all kinds of binary protocols, from databases over message queues to caching. We will end the session with inspirations for future research to explore the topic further.",
+  "channel_url": "https://www.youtube.com/channel/UC6Om9kAkl32dWlDSNlDS9Iw",
+  "duration": 2293,
+  "channel": "DEFCONConference",
+  "uploader": "DEFCONConference",
+  "upload_date": "20241016"
+}
+
+0.00s - 7.92s | This text was transcribed using whisper model: large-v2
+
+ Welcome everybody to SQL injection isn't dead smuggling queries at the protocol level or how I
+7.92s - 14.40s |  like to call it sql injection lower decks because usually with sql injection you're at the high
+14.40s - 18.72s |  level like at the bridge where the captain and the high-ranking officers are and they're speaking
+18.72s - 25.28s |  their query language and their business language but today we're going to go down to the lower decks
+25.28s - 31.84s |  where the mechanics are and where they shift around the bits and bytes so to hook you at the
+31.84s - 37.52s |  beginning i have a small teaser this code snippet is a small http request handler written in go
+37.52s - 44.08s |  and it just takes a user id from the body and uses it in a prepared statement to select the user
+44.08s - 48.80s |  and if you think everything's fine here there's no way for sql injection then you should stay
+48.80s - 54.32s |  because i'm going to prove you wrong and at a high level in this talk we're going to look at
+54.32s - 60.64s |  how applications talk to their databases over the network and how attackers can inject in that
+60.64s - 68.48s |  connection and what can go wrong and also how prevalent the problem is a bit about me i'm paul
+68.48s - 73.28s |  i'm a vulnerability researcher at sonar's rnd team and if you don't know sonar we're the home
+73.28s - 78.08s |  of clean code so we help developers write clean code which also means secure code and that's why
+78.08s - 84.96s |  we look at a lot of code and try to find stuff there so for the rough outline first we're going
+84.96s - 89.84s |  to look at the idea of all of this research and then we'll go into the main part of the talk which
+89.84s - 95.28s |  is attacking the database wire protocols and we're going to focus on postgres and mongodb here
+96.00s - 101.52s |  then we'll put things into perspective by looking at the real world applicability of the research
+101.60s - 106.32s |  and then give you some ideas for future research future research and draw some takeaways
+107.92s - 115.52s |  so in short the idea is to do request smuggling but for binary protocols and of course for this
+115.52s - 121.36s |  i have to mention james kettle's http desync attacks where you basically cause a disagreement
+121.36s - 126.56s |  between two systems over the end of a http request for example between a reverse proxy
+126.56s - 131.92s |  and an upstream backend and if they don't agree on where a message ends or a http request in this
+131.92s - 138.56s |  case then the attacker can do some bad things and the root causes of this were manifold but some
+138.56s - 144.16s |  examples are text parsing where one system would only accept the exact word chunked and the other
+144.16s - 149.76s |  one would also allow a tapped character in front or they were logical where one system used the
+149.76s - 154.16s |  content length header and the other used the transfer encoding and then things were off again
+155.12s - 159.60s |  but what about other protocols and specifically what about binary protocols
+160.72s - 166.88s |  where do they have made message boundaries how do they do it um some of them have delimiters where
+166.88s - 171.36s |  for example in null terminated strings the null byte is the delimiter that tells the end of the
+171.36s - 177.28s |  string or you might have length fields and there's an entirely entire family of protocols that are
+177.28s - 182.24s |  called tlv or type length value protocols because they have a type field and then a length field
+182.32s - 188.88s |  and then the rest of the message is the value so how could we desync in these protocols
+189.52s - 194.24s |  for delimiters it sounds quite easy you just have to find a way to put a delimiter where it's not
+194.24s - 200.88s |  supposed to be in a value of course it's not that simple but at least you directly have an idea of
+200.88s - 205.84s |  what you could do but for length fields i was stuck for a moment and thought about okay you
+205.84s - 210.64s |  have a length field it has a fixed size it has a fixed location in the message so what could go
+210.64s - 216.96s |  wrong there and then i thought okay maybe some endianness issues or maybe integer overflows and
+216.96s - 223.68s |  i wanted to go deeper into that so for that i first looked at the modern web application landscape
+223.68s - 229.36s |  where are binary protocols used there so at the center you always have the application
+229.36s - 237.04s |  and it talks to databases or caches storages message queues structured logging and so on
+237.04s - 242.08s |  and i wanted to focus on the connection between the application and the database
+243.20s - 248.80s |  and that was because i thought that if i would find something it would have a great applicability
+248.80s - 254.96s |  because every almost every web app has a database then there's a big potential severity because
+254.96s - 259.60s |  databases are high value targets because they either contain interesting data like personal
+259.60s - 266.08s |  information or relevant data to the application for example used for authentication and then also
+266.08s - 272.16s |  the exploitability should be quite good because what web app has a database but doesn't let the
+272.16s - 280.53s |  user query something from that database right so we have kind of guaranteed user input so let's
+280.53s - 286.77s |  start in and look at some database wire protocols and for that i have a small overview of four
+287.57s - 294.61s |  popular databases and how their messages in their protocols look like so for postgres this is how a
+294.61s - 300.37s |  message looks like you have a type byte then a four byte length and then the value which in this
+300.37s - 307.73s |  case is just the string that's an sql statement for mysql it looks kind of similar you first have
+307.73s - 313.49s |  the length it's only three bytes but then you have a one byte sequence which would allow you to send
+313.49s - 319.73s |  multiple packets that would be reassembled to one big message at the end and there of course
+319.81s - 327.33s |  you have the value for redis which is not exactly a binary protocol but their docs kind of read like
+327.33s - 332.93s |  this uh because they talk about oh you have this byte so i wanted to include it anyways there you
+332.93s - 338.53s |  first have a type byte then you have a length but it's not a fixed size field it's a decimal integer
+338.53s - 343.33s |  that has to be parsed then you have a delimiter and then the value and then another delimiter
+344.13s - 350.13s |  and finally for mongodb it's a little bit longer you first have the message length again a four
+350.13s - 354.45s |  byte field then you have a little bit more metadata for example the opcode is like the
+354.45s - 359.41s |  message type and then the value is a little bit more of a complicated binary structure called
+359.41s - 368.90s |  vson so let's start with postgres again this is how a packet looks there one byte type identifier
+368.90s - 375.54s |  four byte integer length fields and then the value so i thought about okay four bytes integer
+375.54s - 381.54s |  fields you can fit quite big numbers in there like two to the power of 32 minus one which is
+381.54s - 388.50s |  roughly the size of four gigabytes but maybe what if we could somehow make a query that's
+389.06s - 395.62s |  bigger than that how do actually libraries handle this um this kind of too large thing
+396.58s - 402.02s |  and for that i started to look into code of postgres client libraries and i found the first
+402.02s - 408.98s |  bug this is the code of a library called pgx it's written in go and this function is supposed to
+408.98s - 416.18s |  encode the content of a message into a larger message buffer so first it writes the message
+416.18s - 421.62s |  type in this case it's a b for a bind message then it saves the offset where it should later
+421.62s - 427.94s |  write the size to then it adds all of the actual data of the message and finally it writes the
+427.94s - 434.98s |  size and to do that it first slices the message buffer to the exact size of what is included in
+434.98s - 441.06s |  the length for example not the type byte then it takes the length of this slice buffer and here
+441.06s - 448.02s |  the length is of type int which in most modern systems is a 64-bit integer but then this is
+448.02s - 454.90s |  truncated down explicitly to an int32 so we have a problem here because if the length was bigger
+454.90s - 460.58s |  than what can be expressed in an int32 we now have a truncation and the number becomes very small
+460.58s - 467.06s |  but then the library still sends all of the data after that so then if the database has to parse
+467.06s - 471.86s |  this message it will just see a very small length and only parse a very small message
+471.86s - 477.78s |  and then try to parse whatever is coming after that as more messages but in fact it's data from
+477.78s - 485.54s |  the first message so let's look at this again with example messengers so here we have a very
+485.54s - 490.66s |  small one we have a four byte value and then the length becomes eight because the size of the length
+490.66s - 497.54s |  field itself is also included in the length so it's a length of eight this is how the largest
+497.54s - 503.46s |  possible message looks like you can see the length is filled to the brim with hex ffff because the
+503.46s - 508.98s |  value is just almost four gigabytes of ace but still everything's good because the application
+508.98s - 516.10s |  can express this length in the four bytes and so the database will parse the same size but if we
+516.10s - 521.94s |  make it just a little bit larger we can see that the truncation happens because the most significant
+521.94s - 527.46s |  bit is not represented in the length anymore so the length is just four which means this is a tiny
+527.46s - 532.10s |  message and then after that in the connection there comes some garbage ace that the database
+532.10s - 538.50s |  can't really understand but if the attacker chooses not ace but some bytes that the database
+538.50s - 546.10s |  can understand they can craft an injected message here so let's zoom out again and look at this again
+546.66s - 553.14s |  this is the small message all is good this is the large message that does not cause a truncation
+553.14s - 559.94s |  so both the application and the database see it and parse it the same way but if we make the size
+559.94s - 565.46s |  a little bit too big the application thinks it's writing this big number but actually because of
+565.46s - 571.46s |  the truncation bug it writes a small number so when the database parses it it sees one small
+571.46s - 578.82s |  message and then garbage or if the payload is cleverly crafted it sees more messages that can
+578.82s - 583.38s |  contain attacker controlled sql statements like this one that adds a new admin user
+583.94s - 591.70s |  so the impact is quite high here um you can inject entire sql statements you're not limited to union
+591.70s - 597.06s |  based or subquery based sql injection like with the very classic ones it's more like if you have
+597.06s - 602.74s |  stack queries enabled so you can just finish the first statement that you're injecting into and
+602.74s - 607.94s |  then have a whole another one that can be an insert even if the other one was a select and so on
+608.90s - 613.62s |  so this means the attacker can essentially read write and delete all the data in the database
+613.62s - 618.42s |  with the permissions of the application and if the database is configured insecurely this can
+618.42s - 624.66s |  already lead to code execution um or you just have all of the data from the database which is
+624.66s - 630.98s |  bad enough the only thing that's a little bit less convenient than with classic sql injections
+630.98s - 637.14s |  is that data exfiltration is a little bit uh less straightforward because if you're
+637.14s - 643.06s |  injecting more messages into the connection then the application will still only process the answer
+643.06s - 648.82s |  for the first message so you don't directly get the results of your injected message where you
+648.82s - 654.58s |  maybe select all the password recept tokens of users um so you have to go a different route of
+654.58s - 659.62s |  maybe doing a subquery and then using an insert to put this data you want to exfiltrate in another
+659.62s - 664.58s |  table and then use business logic of the application to access the data so it still works
+664.58s - 671.14s |  just a little less convenient but how does this look in the real world uh some of you might have
+671.14s - 676.58s |  already noticed that if we control all of these a's that we have in a message why can't we just
+676.58s - 681.78s |  directly put any sql statement in the first place why do we need to have the overflow and you would
+681.78s - 688.66s |  be correct because this was just a simplification so let's look at how this actually looks um this
+688.66s - 694.74s |  is a two-line code snippet the id here is user controlled in this case it's a very small one
+695.38s - 699.70s |  and then we have our query you might recognize it from the teaser code snippet
+699.70s - 704.58s |  that uses the id to select a user from the database and the resulting packet or message
+704.58s - 709.22s |  that's sent over the wire looks like this we have our type byte then a small length
+709.22s - 715.46s |  and then we have the value with a trailing null byte all is fine here but now if the attacker
+715.46s - 721.78s |  makes the user controlled id very large four gigabytes then suddenly the length in the packet
+721.78s - 727.30s |  is smaller than before even then even though we send more data so we see that the truncation
+727.30s - 734.10s |  happened and now when the database tries to parse this packet it will see okay it's a length of 38
+734.10s - 740.66s |  bytes so i'm going to parse until that and after that it will try to parse the next message so the
+740.66s - 746.98s |  attacker has to put their cleverly crafted payload at that exact offset in this big buffer
+746.98s - 755.38s |  of ace but how does the attacker know this offset um the offset depends on the query that they are
+755.38s - 760.50s |  injecting into and especially on the injection point in the query and the length of the whole
+760.50s - 766.18s |  query so if you know these things you can just calculate the offset and you're done but maybe
+766.18s - 770.42s |  you're lazy and don't want to do the math or you don't know the query because it's kind of a black
+770.42s - 777.46s |  box test um so what can you do then and of course the naive solution is to brute force the offsets
+777.46s - 782.98s |  uh but unfortunately now you're for each try you have to send four gigabytes which is slow even on
+782.98s - 788.58s |  local setups and on like production setups it creates a lot of noise and risks denial of service
+788.58s - 795.38s |  because it's a lot of data so can we make this more reliable and the first technique uh i tried
+795.38s - 800.82s |  out here was to borrow something from binary exploitation from 20 plus years ago which is
+800.82s - 806.90s |  called a knob sled and mapped to this problem we just use a lot of very small message at the
+806.90s - 812.74s |  beginning of the buffer so that when we hit the start of one of these messages uh everything's
+812.74s - 817.14s |  fine because the message is parsed and then the next one and then the next one and so on until
+817.78s - 825.06s |  at the very end the big message with the actual attacker sql payload is parsed and executed but
+825.06s - 832.10s |  if we hit any other byte um the database will cause a fatal error because it cannot parse there
+832.10s - 836.50s |  and it will close the connection between the application and the database but usually that's
+836.50s - 841.38s |  not too bad because applications have connection pools and they just reopen connections if they
+841.38s - 847.86s |  get closed so let's visualize this this is the smallest possible message in the postgres wire
+847.86s - 856.10s |  protocol so we repeat this a lot of times and in the end we have our actual payload so if the offset
+856.10s - 862.58s |  happens to align with the first or the fifth and so on byte then we're good but if it hits one of
+862.58s - 868.26s |  the other bytes then there's this fatal parsing error and the connection is closed so if that
+868.26s - 876.50s |  happens we can try again and now we just prepend one padding byte and then if it if the offset
+876.50s - 881.78s |  happened to align with the second byte and so on then now this attempt would be lucky otherwise we
+881.78s - 890.42s |  just try again and again and again until we're lucky at the last try so this means that after
+890.42s - 895.22s |  a maximum of five attempts uh the attack is successful because each try has a 20 percent
+895.22s - 901.22s |  chance of success and we can repeat the attack but still in the worst case we have to send
+901.22s - 906.34s |  five times four gigabytes which can still be a lot so maybe we can make it even better
+907.54s - 913.22s |  and for this i looked at what was holding us back with the last strategy and here it was the
+913.22s - 917.70s |  length bytes because those were not valid type bytes so not a valid start of a message
+918.26s - 924.66s |  so maybe we can make them valid type bytes and i call this technique trampolines and what we do
+924.66s - 931.54s |  here is first we just use the queue which is a valid type byte for each byte because this is also
+933.14s - 940.66s |  some big length it's hex 51 51 and so on and we can see down below the whole attacker
+941.38s - 948.34s |  payload and we'll see how things are parsed when the offset hits certain bytes here
+949.06s - 954.82s |  so if it hits the very beginning the database parses it like this first q is the type byte and
+954.82s - 961.62s |  then q q q q is the length of the first message so the database will parse the following whatever
+961.62s - 967.94s |  q q q q means as a number bytes and try to run this as a query and of course this will cause
+967.94s - 973.54s |  like a semantic syntax error but this does not close the connection so the database will just
+973.54s - 978.50s |  complain with an error response but continue parsing the next message so this is like jumping
+978.50s - 985.38s |  over this many bytes so that's the trampoline right there and where we land after that we have
+985.38s - 992.34s |  a pre-constructed message that has the exact size that then does another jump that ends up at right
+992.34s - 1000.58s |  at the end of the attacker payload where the actual sql statement message is so if we would
+1000.58s - 1006.50s |  have hit any of the other bytes things look slightly different but not too different here
+1006.50s - 1015.14s |  the length is parsed as q s s s the s is also a very valid type byte now it jumps over some more
+1015.14s - 1021.14s |  bytes and it lands at a different pre-constructed message that again has the exact size that it does
+1021.14s - 1029.70s |  the right jump to land at the end but does this actually work like we plan to do and unfortunately
+1030.42s - 1036.90s |  after i tried to implement this i noticed well postgres has a logical maximum message size next
+1036.90s - 1043.62s |  to the actual size that you can possibly fit into four bytes and this is just under one gigabyte
+1043.62s - 1049.54s |  so the first byte of the length can never be larger than hex 3f so that's bad because with
+1049.54s - 1056.66s |  the q that doesn't work so what if we just use 3f as the type and all of the length bytes then
+1056.98s - 1064.42s |  it also doesn't work because hex 3f is not a valid type byte and also none below that at least
+1064.42s - 1070.58s |  not for messages from the application to the database so i had to use a compromise here which
+1070.58s - 1077.70s |  is an alternating pattern and with this now every second byte is a valid type byte so a valid start
+1077.70s - 1083.70s |  of a message so hit we if we hit any of those bytes we're good because everything is parsed
+1083.70s - 1088.42s |  okay and then we can do our trampolines like i just showed and if we hit any of the other
+1088.42s - 1094.34s |  bytes like a null byte then we get the error and the connection is closed but still we can try again
+1094.34s - 1100.82s |  so after a maximum of two attempts we are successful which is much better than the initial
+1100.82s - 1108.45s |  brute force all right let's see how many vulnerable libraries there were that we found
+1108.45s - 1113.49s |  and this is just a selection we looked at more but these are only the ones that were
+1113.49s - 1119.41s |  potentially vulnerable so for go we tested four libraries and we found all of them to be
+1119.41s - 1125.33s |  vulnerable and also exploitable and i'm going to go into exploitability in a minute unfortunately
+1125.33s - 1131.01s |  only one of them fixed the issues we reported and the others did not so they are still vulnerable
+1131.01s - 1136.05s |  in the latest version for c sharp there was one library we looked at it was vulnerable and
+1136.05s - 1142.29s |  exploitable but unfortunately they fixed and also backported it to older branches of the library
+1143.25s - 1149.89s |  so that's great to see and then for java and javascript we tested a bunch of libraries and
+1149.89s - 1155.49s |  a lot of them were in theory vulnerable they had overflows without the right checks but they were
+1155.49s - 1161.17s |  not exploitable and this was most of the times due to language limitations where for example you
+1161.17s - 1167.17s |  cannot have large enough strings or buffers that would be more than four gigabytes so the length
+1167.17s - 1171.97s |  would never overflow the four byte length field and we're going to look into these language
+1171.97s - 1179.09s |  differences later so short disclosure timeline for transparency we send out the advisories in
+1179.09s - 1186.61s |  february this year then pgx fixed in march and pgsql fixed in may and for a pg and pg driver
+1186.61s - 1193.49s |  the maintainer first responded to our advisory but then stopped and didn't implement fixes until now
+1193.49s - 1198.37s |  and for pq we couldn't even reach the maintainers we tried to do it via their github made an issue
+1198.37s - 1204.93s |  or made a pull request with the fix but they got no attention unfortunately so now let's go from
+1204.93s - 1210.37s |  vulnerable libraries to exploitable applications so first we have a set of applications that
+1210.37s - 1216.13s |  use these libraries or have used libraries in a vulnerable version um and these for example
+1216.13s - 1221.57s |  include grafana or gitty or sync thing but we weren't able to confirm if there's an exploitable
+1221.57s - 1228.53s |  path here so there might be but we haven't proven it yet and then there's a set of applications
+1228.53s - 1235.25s |  that we found to be vulnerable in a non-default configuration for example metamost or gox and then
+1235.25s - 1241.49s |  there was also the sweet spot which is applications that are vulnerable in the default config and our
+1241.49s - 1248.05s |  example here was harbor and harbor is a container registry it's a cncf graduate project which means
+1248.05s - 1254.13s |  it's quite mature and people are using it it's also apparently part of vmware tanzu kubernetes
+1254.13s - 1258.77s |  but we didn't look into more of that so we don't know if it's exploitable in that scenario as well
+1259.73s - 1266.45s |  but in its default version it's vulnerable in the default configuration and also pre-authentication
+1266.45s - 1273.25s |  which is quite bad so they fixed this in version 2.11 which is the latest one by updating their
+1273.25s - 1278.45s |  dependency so if you have a harbor instance you definitely should update to the latest version
+1279.25s - 1285.57s |  and i'm going to try to demo the harbor exploit now i'm going to try to do it live i also have a
+1285.57s - 1295.33s |  backup video um but let's see so first i will try to log in as the attacker to show that there should
+1295.33s - 1302.53s |  be no attacker user as you can see the login doesn't work so now if we start the exploit
+1303.17s - 1311.97s |  and i hope this works over the unstable internet um we have to wait a bit so there we see the query
+1311.97s - 1316.69s |  that the exploit is sending this is an insert query that will insert the attacker user into the
+1316.69s - 1322.69s |  database so then we could log in and as we can see it's sending a lot of bytes four gigabytes
+1322.69s - 1329.41s |  so it takes some time and if it works successfully then we should be able to log in
+1329.41s - 1336.21s |  and have administrative privileges in the hardware application so that we then could send our mess
+1336.21s - 1341.41s |  with the containers in there so we saw an error which is expected here so if i now try to log in
+1341.41s - 1351.52s |  again we should log in successfully i hope okay it doesn't seem to work i have to switch to the
+1351.52s - 1362.91s |  backup video and there on the left now we try to log in again and there we can see we can now log
+1362.91s - 1376.22s |  in and have admin privileges all right that was postgres now also let's look at mongodb to show
+1376.22s - 1383.58s |  that it's not a postgres and go only problem so to look back this is what a message in mongodb
+1383.58s - 1388.70s |  looks like we have a four byte length field this time it's little endian then we have two metadata
+1388.70s - 1393.26s |  fields that are not relevant here and then we have the opcode which is like the message type
+1393.26s - 1397.82s |  and then the value is a complex binary structure that's called bison which i think stands for
+1397.82s - 1404.38s |  binary json and it's some nested data that's serialized to tlv sections so they also have
+1404.38s - 1410.22s |  lengths again and to directly look at some code it's a little bit more but i'm gonna walk you
+1410.22s - 1416.54s |  through it we first have a line here that takes the content bytes so it takes the query and puts
+1416.54s - 1423.74s |  it into this bison representation then it computes the total length of the message by adding the
+1423.74s - 1430.62s |  header length and and so on and this is saved as a type u size variable again on most modern systems
+1430.62s - 1438.54s |  this is a 64-bit integer and then again this is truncated explicitly to an int32 because that what
+1438.54s - 1444.46s |  fits into the field so the developer had to cut it down here but of course this is the same issue
+1444.46s - 1450.62s |  as before if the length was larger what can then what can be expressed here um we have our
+1450.62s - 1458.62s |  truncation and things go wrong the exact same way as it did for postgres so for crafting a payload
+1458.62s - 1464.06s |  for mongodb it's a little bit more involved because we have to avoid bad bytes the payload
+1464.62s - 1470.54s |  must be valid utf-8 because the strings are serialized as utf-8 to the wire so we cannot
+1470.54s - 1476.54s |  create any bytes that are invalid utf-8 but the problem is the message type that we need to write
+1476.54s - 1483.50s |  in order to craft the right injected message is 0xdd07 and that's always invalid utf-8 so
+1483.50s - 1490.94s |  how can we do that and also size fields inside the message could become some byte values that
+1490.94s - 1495.82s |  would also be invalid utf-8 so we have to be careful there as well and the solution was to
+1495.82s - 1502.54s |  just use other metadata of the message we're injecting into to create these byte values and i
+1502.54s - 1508.14s |  have an example for that so this is a normal mongodb query it just queries for a movie based
+1508.14s - 1514.70s |  on a few attributes and this is serialized to the following bson document in the beginning we have
+1514.70s - 1521.02s |  in blue the length of the whole document then in red we have a type identifier that says the next
+1521.02s - 1528.22s |  key value pair has a string value then in yellow we have the key which in this case is title with
+1528.22s - 1533.50s |  a trailing null byte then in blue again we have the length of the following string and then in
+1533.50s - 1538.86s |  green we have the actual string with a terminating null byte then we have the next key value pairs
+1538.86s - 1544.30s |  and so on and at the end we have another null byte that shows the end of the document so if we want
+1544.30s - 1551.26s |  to have the hex sequence dd07 anywhere in here we cannot use the yellow and green parts because
+1551.26s - 1558.14s |  they have to be a valid utf-8 but what we can do is for example use the length of a string and just
+1558.14s - 1565.50s |  make the string the length that will when serialized to bytes will be the exact byte sequence we need
+1565.50s - 1571.58s |  so here we need to subtract one because there's a appended null byte but then we have the dd07
+1571.58s - 1578.06s |  there and with this trick now we can craft the entire injected message i cannot go into all of
+1578.06s - 1582.46s |  this here because we don't have time but this is the trick you need to be able to do it
+1584.30s - 1590.86s |  so we also looked at libraries here and uh we found the official rust mongodb client library
+1590.86s - 1597.18s |  to be vulnerable and exploitable we sent out our advisory also in february and they fixed in march
+1597.18s - 1601.66s |  so if you use this especially if you use it in production which i doubt because it's rust
+1601.66s - 1610.05s |  but then you should update to 2.8.2 okay let's now take a step back we've seen all the cool
+1610.05s - 1616.13s |  bugs and the exploitation but is this actually applicable to the real world we've seen the demo
+1616.13s - 1621.57s |  but maybe this was just a lucky punch so let's talk about constraints and especially about the
+1621.57s - 1627.25s |  elephant in the room which here weighs four gigabytes because a lot of you probably are
+1627.33s - 1633.49s |  thinking well can we actually send four gigabytes into all the applications aren't apps limiting
+1633.49s - 1639.33s |  input sizes and you would be right now there's a lot of common protections like default body size
+1639.33s - 1645.33s |  limits of your favorite web framework or maybe json and forum decode maximum sizes or you have
+1645.33s - 1652.13s |  your reverse proxy that's limiting request size and so on and i also encountered this and thought
+1652.13s - 1657.49s |  about some potential bypasses here so the first idea is that sometimes endpoints are just
+1657.49s - 1663.89s |  unprotected so maybe your framework doesn't have a default size limit and also sometimes the
+1663.89s - 1669.25s |  developers explicitly disable the limits this was the case with harbor for example they have an
+1669.25s - 1675.65s |  nginx reverse proxy which usually has a one megabyte request limit but they explicitly disabled
+1675.65s - 1681.73s |  it i guess because they need to receive big docker images so they need more uh request size but this
+1681.73s - 1687.73s |  also meant that the whole api is now not limited anymore and the goal framework that's used under
+1687.73s - 1694.69s |  the hood of the server did not limit this so we could send our big payload the next trick would
+1694.69s - 1700.61s |  be to use compression this on the one hand allows you to send your attacker payload much quicker
+1700.61s - 1704.61s |  because you can compress it down and don't have to send four gigabytes over the internet
+1705.33s - 1709.33s |  and also there can be logic bugs where maybe your reverse proxy or your framework
+1709.89s - 1716.45s |  first checks the request size but does the decompression after that so the check is
+1716.45s - 1723.49s |  essentially useless because your compressed data will inflate a lot and you can craft a big
+1723.49s - 1729.09s |  payload that after decompression still causes the overflow so for nginx for example this works
+1729.09s - 1733.89s |  because nginx does not look at the body it doesn't try to decompress it it just looks at the raw
+1733.89s - 1739.97s |  size of the request so if your backend does decompression then you could bypass this and
+1739.97s - 1745.97s |  also for example the javascript fastify framework does both checks the body size and also does the
+1745.97s - 1752.29s |  decompression but it does it in the wrong order so you can bypass the limit then you might also
+1752.29s - 1758.45s |  have websockets support on the server of your target this is cool because websockets also in
+1758.45s - 1764.05s |  theory supports compression it's not always enabled but it can help you but even without
+1764.05s - 1771.73s |  that a single websocket request can be super large i think it's a 64-bit integer the size field so
+1772.53s - 1777.97s |  you can definitely send four gigabyte messages with that and maybe the middlewares and filters
+1777.97s - 1783.73s |  that are present in your framework don't apply to each individual websocket message so maybe there's
+1783.73s - 1791.01s |  no limit there then you could also use alternate body types for example a multi-part form instead
+1791.01s - 1796.93s |  of a json body and maybe the limits are different there or the developer forgot to configure a limit
+1796.93s - 1803.09s |  so this could be another bypass and then this one which i like the most is a little bit more
+1803.09s - 1808.61s |  creative and open which i call server-side creation which is you just find other means of
+1808.61s - 1814.77s |  bringing a big string to the server without sending it in your requests and one example is
+1814.77s - 1821.49s |  ssrf where you point some functionality of the server to an attacker server which then returns
+1821.49s - 1826.21s |  a very large response and if this one gets saved into the database or used in a query
+1826.77s - 1831.97s |  it will also cause the overflow and this for example worked in gogs where you have a webhooks
+1831.97s - 1838.37s |  feature but beyond the ssrf you might also have templating or translation that you could use to
+1838.37s - 1843.73s |  inflate a string and this all depends on the business logic and the features of the server
+1843.73s - 1850.18s |  so that's where you can get creative to find bypasses all right now that we've seen how we
+1850.18s - 1855.94s |  might bypass limitations of frameworks and servers we also need to look at languages we already seen
+1855.94s - 1861.78s |  some differences at the vulnerable libraries so we need to see how well languages handle large
+1861.78s - 1867.38s |  payloads like how big can strings and buffers be and also what about integer overflows does
+1867.38s - 1873.54s |  every language have silent integer overflows or maybe some languages are safe so for the large
+1873.54s - 1880.10s |  payloads we can see that go python and rust out of the languages we we looked at uh have large
+1880.10s - 1887.14s |  enough string and buffer sizes that you can send four gigabytes and they can handle it for java
+1887.14s - 1893.38s |  you're out of luck and we also saw see the song seen this with unexploitable libraries in java
+1894.26s - 1901.22s |  and that's because strings and buffers here are backed by arrays which have integer indexes so you
+1901.22s - 1909.22s |  cannot index more than i think yeah two to the power of 31 here for c sharp the string size is
+1909.22s - 1915.14s |  not big enough but the buffer size is so if you have multiple strings that you control then you
+1915.14s - 1920.98s |  can still end up with a buffer that becomes bigger than four gigabytes and for javascript it totally
+1920.98s - 1926.34s |  depends on the implementation for node strings are much smaller compared to the other languages
+1926.34s - 1934.88s |  but buffers can be large enough for integer overflows we can see that for addition overflows
+1934.88s - 1941.92s |  which just means you add two integers and we can see that in go java and c sharp c sharp a silent
+1941.92s - 1948.16s |  integer overflow happens so it will just wrap around for javascript there will be no overflow
+1948.16s - 1952.96s |  things will just get more inaccurate because it's javascript and they use floats under the hood
+1954.00s - 1961.20s |  and in python you have arbitrarily sized integers so you cannot overflow that and in rust it depends
+1961.20s - 1966.00s |  on how you build your project if you build it in debug mode the compiler will emit a
+1966.64s - 1970.00s |  check that checks for overflows but in a release build it will not do that
+1970.00s - 1978.40s |  and for serialization overflows which basically is the case when you have a standard function in
+1978.40s - 1985.36s |  your language that allows you to write a integer to a fixed size field does this function check
+1985.36s - 1990.48s |  for overflows or not and in all of the type safe languages this does not does not apply because
+1990.48s - 1997.60s |  the types that the function can receive cannot overflow the size field or the field that it
+1997.60s - 2003.20s |  gets serialized to but this just means that the developers now have to do the check before
+2003.20s - 2009.60s |  casting to this type and we've seen that this leads to bugs in our go and rust examples in
+2009.60s - 2015.76s |  javascript it's again implementation dependent i think in node.js it does the check but in
+2015.76s - 2023.44s |  bun or dino it might not do it and in python the struct.pack function actually does a check if you
+2023.44s - 2028.32s |  pass a too large integer it will throw an error if you try to serialize it to a too small field
+2030.08s - 2036.64s |  so to summarize the real world applicability we can say that in a lot of times we can send large
+2036.64s - 2045.44s |  payloads past the limits for silent integer overflows or truncations we also seen that in
+2045.44s - 2051.84s |  many languages it works or the developers do the mistake for the language and we also seen that you
+2051.84s - 2060.26s |  can definitely exploit some real world applications with this all right now let's look at what is
+2060.26s - 2066.58s |  there more to do in this kind of research for binary protocol smuggling but first i have to
+2066.58s - 2072.66s |  give a small disclaimer here please don't go out and send four gigabytes to every api endpoint in
+2072.66s - 2077.46s |  your bug bounty scope because you will crash systems you will get blocked and you will ruin
+2077.46s - 2082.98s |  a devops engineer's day because they have to look at the monitoring alert so don't do it please
+2084.34s - 2090.58s |  but speaking of this it would be cool to actually have a non-invasive detection mechanism
+2090.58s - 2095.46s |  in white box tests it's okay you can make your local testing environment and just hammer it with
+2095.46s - 2102.10s |  gigabytes of data but of course in black box tests that doesn't work so if we could find a methodology
+2102.10s - 2107.94s |  to find for example a fingerprint of a database client library being used and we would know that
+2107.94s - 2113.94s |  this library is vulnerable to these kind of texts then we could either directly report it or only do
+2113.94s - 2121.30s |  the large payload then and if this would be a tool it would be great to aid you in pen tests and so on
+2123.14s - 2129.22s |  and of course it would be awesome to research a lot of more stuff more protocols like there's
+2129.22s - 2134.10s |  more databases than we stuff then stuff we looked at today and there's all of the other systems
+2134.10s - 2139.94s |  caches message queues and so on that the application has to talk to we can also try
+2139.94s - 2144.90s |  to find more decent techniques for example look into protocols that use delimiters and not size
+2144.90s - 2152.26s |  fields and we can also find more large payload message which is ways to bypass the filters of
+2152.26s - 2159.46s |  a framework for example to bypass the request size limits or maybe we can find generic ways
+2159.46s - 2165.54s |  of making a server craft a very large string maybe there's some way to do this
+2167.62s - 2173.46s |  and of course all of the stuff we looked at today had four bytes length fields but what about two
+2173.46s - 2179.46s |  byte length fields this would be much easier to exploit sending 65 kilobytes instead of four
+2179.46s - 2187.54s |  gigabytes is much easier you don't have the hassle with all the limitations and i already already
+2187.54s - 2192.34s |  started to look into this a little bit so stay tuned for more to come in the future but feel
+2192.34s - 2201.76s |  free to also go out and check this yourself so let's wrap things up i have a few takeaways and
+2201.76s - 2207.68s |  the first one is that i think integer overflows are still relevant in memory safe languages of
+2207.68s - 2214.00s |  course in c if you have an integer overflow it's easily easy to get some memory corruption with it
+2214.00s - 2220.56s |  so uh that's done but in memory safe languages um the worst case that can happen is a array out
+2220.56s - 2227.04s |  of bounds or whatever but with these data attacks in the binary protocols that we've seen today
+2227.84s - 2233.04s |  now we have a new way of exploiting these and i think developers kind of forgot about integer
+2233.04s - 2239.28s |  overflows and maybe researchers as well at least in the memory safe languages then we also seen
+2239.28s - 2246.56s |  that it's entirely feasible to send large amounts of data even with protections because there's many
+2246.56s - 2253.04s |  ways how you can bypass these protections and finally to get back to the title sql injection
+2253.04s - 2259.44s |  isn't dead of course it was never dead at least not in the real world we've seen a lot of real
+2259.44s - 2266.16s |  world applications uh and with sql injections but on paper you could say uh developers have the right
+2266.16s - 2273.04s |  tools to write secure sql based applications they have parameterized queries they have
+2273.04s - 2278.32s |  query builders they have orms so if they use all of this and the application is safe
+2278.88s - 2284.00s |  so if you can't hack it you just have to go a level deeper thank you

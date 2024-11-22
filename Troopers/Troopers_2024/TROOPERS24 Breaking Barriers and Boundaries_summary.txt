@@ -1,0 +1,77 @@
+## Introduction
+- Talk by **Alexander Heinrich** and **Jiska Classen** at the **TROOPERS24 IT security conference**
+- Discussing how to break barriers in satellite messaging on iOS
+
+## Satellite Messaging Features
+- **Emergency SOS**: Allows users to contact first responders when off the grid and unable to make an emergency call
+- **Find My Satellite**: Share location every 15 minutes with friends, without Wi-Fi or satellite coverage
+- **Roadside Assistance**: A US-only feature for getting help when stuck with no cellular coverage
+- **Text Messaging**: Allows users to send SMS over satellite (US-only, with network provider restrictions)
+- **Demo Mode**: Helps users familiarize themselves with the UI without actively sending anything over the air
+
+## Technical Details
+- Satellite communication is based on the **Global Star satellite network**, which includes satellites and ground stations
+- Apple uses internal terms: **target** for satellite and **anchor** for ground station
+- With iOS, users can extract a map of the Global Star services used by Apple, including ground stations and supported countries
+
+## Find My Location Sharing
+- When sharing or requesting a friend's location, a connection is set up with an Apple server
+- The request is forwarded via Apple's push notifications to the friend's iPhone, which then starts sending location updates back to the Apple server
+- Apple has added **end-to-end encryption** for location sharing, using a public-private key pair
+
+## Satellite Location Sharing
+- Apple uses **LLC keys** (also called transport keys) for secure satellite communication
+- iPhone generates 30 LLC keys, including a **last resort** key for continued satellite communication
+- Apple generates a **server key** for each public LLC key, which is stored on Apple's site and sent back to the iPhone
+- These keys facilitate a **key exchange** on the phone, enabling a secure connection even when offline
+- iPhone uses its **baseband modem** for satellite communication, connecting to a satellite that reflects the signal to a ground station
+
+## Emergency SOS
+- Emergency texting is initiated when a call to emergency services fails
+- Users fill out a questionnaire, provide medical ID, and send location updates
+- Battery state is sent using **two bits**, indicating four possible battery states
+- Text compression codecs are downloaded for all languages set on the phone, and messages are compressed accordingly
+- Roadside assistance uses a similar text stack but with a different UI
+
+## Reverse Engineering Options
+- Passive setup involves accessing the **communication between the iPhone and baseband** using a baseband debug profile
+- This provides insights into the satellite communication process, including orientation updates, target and general config list, activation steps, and message transmission
+- Active setup requires a real phone to tamper with settings and observe behavior, using tools like **Frida**
+
+## Free Satellite Messaging
+- Idea to send free satellite messages using Find My location sharing
+- Attempted to send arbitrary text messages by replacing the location data with custom messages
+- Initially successful, but Apple reduced the byte limit and now requires an internet connection to receive messages
+- Created a demo app, **Satellite Send**, which uses private APIs and entitlements to trigger location sharing and send custom messages
+
+## Receiving Messages
+- Requires access to various keys and files used by the Find My app
+- A request is sent to Apple's server, including the **Find My ID** (Apple ID) and **location ID** of the user
+- Apple responds with location timestamp, location, and format, which can be decoded to retrieve the message
+
+## Security Vulnerabilities
+- Discovered a vulnerability in the **beacon store key** metadata, allowing unauthorized access to sensitive data
+- Fixed in recent updates (iOS 14.5 and 17.5) by requiring a password and removing the key from the general attribute
+
+## Bypassing Restrictions
+- Korean security research devices have restrictions on Find My Friends, preventing location sharing
+- By changing the **model number** and performing a full reset, it is possible to bypass this restriction
+- However, this method doesn't work for Korean Apple IDs created on the device
+- Regional restrictions can be bypassed by changing the **country code** in the configuration plist
+- Editing the property list for the last location sent allows sending messages more frequently than every 15 minutes
+
+## iOS 18 Updates
+- New message types added: **carrier pigeon iMessage light** and **set SMS**
+- Feature flags and config plist updated to include emergency, find my, roadside, iMessage light, and set SMS services
+- By changing the country code, it is possible to use the iMessage and SMS over satellite features in Europe
+
+## Saftelite Messenger
+- A satellite messenger app, **Saftelite**, has been released
+- It allows sending arbitrary text messages on a jailbroken phone, with country restrictions and a 15-minute limit
+- Does not include any bypasses for restrictions
+
+## Q&A
+- Work in progress on analyzing the radio side of satellite communication
+- Emergency SOS messages are likely dispatched by Apple to local emergency centers
+- Message length is limited to 160 bytes, and sending photos over iMessage is not supported
+- Saftelite app provides a free alternative to satellite messaging with fewer restrictions

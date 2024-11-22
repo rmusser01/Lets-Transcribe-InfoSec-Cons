@@ -1,0 +1,978 @@
+{
+  "webpage_url": "https://www.youtube.com/watch?v=_wUsM0Mlenc",
+  "title": "DEF CON 32 - Reverse engineering and hacking Ecovacs robots - Dennis Giese, Braelynn Hacker",
+  "description": "Were you ever wondering why a vacuum robot or a smart air purifier needs multiple cameras and microphones? How secure are these devices? Can the devices be used to potentially spy on you?\n\nFor the past 5 years we have been presenting ways to hack and root vacuum robots at various events like the c3 or the DEFCON. In all these cases it covered vacuum robots by Roborock, Dreame, Xiaomi and some smaller companies. However, did we ever take a look at other vendors and maybe some new interesting device classes? In this talk we do exactly that, and will take a deep dive into Ecovacs robots! Ecovacs is the current market leader for smart home robots and recently expanded in other areas of home robotics.\n\nYou will be surprised how many worrisome things we found: broken crypto, missing TLS certificate verification, honor-system based ACLs, lots of RCEs, broken factory resets and unauthorized live camera access.\n\nWe will discuss our and other researchers experience with reporting bugs to the company and why one cannot trust third party certification agencies. In regard to trust, we will also address why you need to be careful with the choice of your spouse or flatmates.\n\nCome with us on a journey of having fun hacking interesting devices while exploring bad oversights, real problems and the ignorance of the manufacturer. Learn what ways there are to root these devices and to use them in a privacy-preserving way.",
+  "channel_url": "https://www.youtube.com/channel/UC6Om9kAkl32dWlDSNlDS9Iw",
+  "duration": 2500,
+  "channel": "DEFCONConference",
+  "uploader": "DEFCONConference",
+  "upload_date": "20241016"
+}
+
+0.00s - 1.12s | This text was transcribed using whisper model: large-v2
+
+ Hello, everyone.
+1.12s - 3.44s |  Welcome to our talk about the reverse engineering
+3.44s - 6.20s |  of and hacking of Ecovacs robots.
+6.20s - 8.24s |  Thank you for being here at this time.
+8.24s - 11.12s |  I know it's kind of loud, but I hope we figured it out.
+11.12s - 14.80s |  So before we start, I would like to introduce ourselves.
+14.80s - 16.60s |  So first, I'm Dennis.
+16.60s - 21.56s |  I'm a security researcher or also a hardware hacker.
+21.56s - 24.36s |  And I'm primarily looking into wireless and embedded security
+24.36s - 25.44s |  and privacy.
+25.44s - 27.32s |  So I try to look at any device which
+27.32s - 28.56s |  kind of is interesting for me.
+28.56s - 30.26s |  So I try to reverse engineer everything,
+30.26s - 32.48s |  which is kind of basically around us.
+32.48s - 36.56s |  You might know me as a vacuum and IoT collector.
+36.56s - 39.72s |  So I have like probably over 600, 700 IoT devices
+39.72s - 43.64s |  and 60 or 70 vacuum robots to start counting.
+43.64s - 47.24s |  And my general goal is to get root access and root
+47.24s - 48.84s |  vacuum robots.
+48.84s - 51.08s |  I have also a website, which is called robotinfo.dev,
+51.08s - 53.52s |  where I try to kind of document what kind of hardware
+53.52s - 55.48s |  is in robots, what kind of software is running,
+55.48s - 61.07s |  what kind of methods exist for routing.
+61.07s - 61.59s |  Cool.
+61.59s - 63.95s |  Hi, I'm Braylin.
+63.95s - 66.87s |  I hack things for the Leviathan Security Group during the day.
+66.87s - 69.01s |  But this talk is entirely personal research
+69.01s - 71.75s |  and does not reflect their views.
+71.75s - 74.35s |  My general focus has been application security and APIs
+74.35s - 75.67s |  for quite a few years now.
+75.67s - 78.59s |  But I started robot hacking during COVID.
+78.59s - 81.09s |  Just for fun, I took apart a broken robot vacuum
+81.09s - 83.27s |  and tried to hack it.
+83.27s - 86.19s |  So now I am hardware hacking for fun,
+86.19s - 91.31s |  mostly looking at robots, cameras, and smart locks.
+91.31s - 94.03s |  All right, so let's talk about the goals of this talk.
+94.03s - 95.79s |  So generally, what we try to do is
+95.79s - 97.75s |  that we want to give you some understanding
+97.75s - 100.67s |  about the security and privacy risks of IoT devices.
+100.67s - 102.27s |  We want to give you some overview on how
+102.27s - 104.99s |  we did vacuum robot hacking.
+104.99s - 106.87s |  We want to show you the vulnerabilities
+106.87s - 108.27s |  and how to find them.
+108.27s - 110.23s |  And typically, our general goal is
+110.23s - 112.55s |  to get somehow root access without to disassemble
+112.55s - 114.27s |  the device.
+114.27s - 116.63s |  So there has been some past research on that.
+116.63s - 119.43s |  So if you hack this kind of niche products,
+119.43s - 121.47s |  the good thing is you can probably get every year
+121.47s - 123.09s |  or every two years a nice DEF CON talk.
+123.09s - 125.79s |  So basically, over the last five, six years,
+125.79s - 130.83s |  we kind of used the topic, and it keeps giving.
+130.83s - 133.19s |  So if you find your niche product,
+133.19s - 134.51s |  just go ahead with that.
+134.51s - 136.27s |  This will be very rewarding.
+136.27s - 138.15s |  Some disclaimers.
+138.15s - 141.03s |  So we don't claim that vendors are using the sensors
+141.03s - 144.51s |  to spy on you, but we could technically do that.
+144.51s - 146.47s |  The other thing which we do is that we primarily
+146.47s - 149.57s |  cover physical attacks or proximity attacks.
+149.57s - 153.67s |  So we don't necessarily attack devices through the cloud.
+153.67s - 155.35s |  One thing which we want to stress always
+155.35s - 157.19s |  is many vendors have problems.
+157.19s - 160.27s |  And it's basically independent of origin, size, market share.
+160.27s - 164.67s |  But in this talk, we especially focus on Ecovacs.
+164.67s - 166.19s |  And all this research is basically
+166.19s - 167.55s |  part of private projects.
+167.55s - 169.39s |  So there's no sponsorships by companies.
+169.39s - 171.67s |  There's no organizations behind that.
+171.67s - 173.43s |  Any statements are our own opinion,
+173.43s - 175.87s |  and we are not representing anyone.
+175.87s - 178.63s |  So what kind of devices are we covering in this talk?
+178.63s - 181.03s |  So basically, we're covering Ecovacs robots,
+181.03s - 184.11s |  which you see on the left side, up to the X2.
+184.11s - 186.43s |  And we're also covering lawn mowing robots
+186.43s - 189.67s |  and the air purifiers, so the AirBot series.
+189.67s - 193.03s |  Technically, all the stuff which we do also applies to Yidi,
+193.03s - 197.63s |  because Yidi is basically a sub-brand of Ecovacs.
+197.63s - 199.63s |  And we only focus on devices which run Linux,
+199.63s - 203.19s |  so no dumb robots, only cool stuff.
+203.19s - 204.39s |  So about the stock.
+204.39s - 206.43s |  Well, this is basically a result of five years
+206.43s - 207.83s |  of research and experiments.
+207.83s - 210.71s |  And technically, we are not the first ones or the only ones
+210.71s - 212.83s |  who do research on Ecovacs.
+212.83s - 215.59s |  The vendor knows about most of our findings.
+215.59s - 217.91s |  They tried to fix some of them, but failed.
+217.91s - 220.95s |  So they failed very sadly.
+220.95s - 222.39s |  And for other vulnerabilities, which
+222.39s - 224.81s |  are really, really, really bad, they, for whatever reason,
+224.81s - 226.51s |  have chosen to ignore them.
+226.51s - 228.83s |  Also here, I want to give a shout-out to Chris Anderson,
+228.83s - 231.19s |  who also found independently all this stuff.
+231.19s - 233.15s |  And we, at some point, connected to each other.
+233.15s - 234.07s |  We're like, oh, wait.
+234.07s - 235.07s |  We know about this vulnerability.
+235.07s - 236.47s |  We know about this vulnerability.
+236.47s - 238.35s |  So there's probably way more people out there
+238.35s - 240.75s |  who know about that stuff.
+240.75s - 242.95s |  Typically, that kind of things are like a collaborative
+242.95s - 243.45s |  effort.
+243.45s - 244.91s |  So on the right, you see a picture
+244.91s - 246.77s |  where we were at a CCC camp in Germany,
+246.77s - 249.75s |  and we're just messing with the lawnmowing robots.
+249.75s - 254.59s |  Or we were hacking the cameras of the robots in India.
+254.59s - 256.39s |  So let's start with the motivation.
+256.39s - 258.91s |  Why do we want to root devices at all?
+258.91s - 260.79s |  Well, one of the things for us as hackers
+260.79s - 262.67s |  is, well, we want to play with cool hardware,
+262.67s - 264.11s |  because stuff is kind of cheap.
+264.11s - 267.11s |  The other thing is, we want to obviously stop the devices
+267.11s - 270.07s |  from constantly phoning home.
+270.07s - 273.75s |  A lot of people have a very good smart home automation system,
+273.75s - 274.63s |  like Home Assistant.
+274.63s - 277.51s |  And they want to use that instead of the cloud.
+277.51s - 279.67s |  Also, one thing which becomes more and more important
+279.67s - 280.75s |  is the rate to repair.
+280.75s - 282.87s |  So basically, if the device is broken,
+282.87s - 284.59s |  we want to figure out what the reason is.
+284.59s - 288.75s |  And it's easier to figure it out if you have root access.
+288.75s - 290.99s |  Also, we want to verify the privacy claims of vendors.
+290.99s - 293.43s |  Because vendors, they say a lot of things,
+293.43s - 296.19s |  but it's not necessarily true.
+296.19s - 298.79s |  So why don't we trust the companies?
+298.79s - 300.59s |  So one of the things with IoT devices
+300.59s - 302.39s |  is they are connected to your home network,
+302.39s - 304.55s |  and they have internet all the time.
+304.55s - 306.79s |  The communication to the cloud is typically encrypted,
+306.79s - 309.79s |  and you have no idea what they're actually sending out.
+309.79s - 312.79s |  From our own experience, we know that developing secure hardware
+312.79s - 315.23s |  and software is extremely difficult.
+315.23s - 317.15s |  And in the past, we caught vendors basically
+317.15s - 319.39s |  with some shady behavior.
+319.39s - 320.91s |  The other thing is these devices,
+320.91s - 322.51s |  I mean, they not only have cameras,
+322.51s - 325.23s |  but nowadays, they more and more have microphones.
+325.23s - 327.91s |  And the question is, why do we need that?
+327.91s - 329.55s |  Generally, if you have cameras, well,
+329.55s - 331.11s |  there's some risk with that.
+331.11s - 334.55s |  And devices might store pictures indefinitely.
+334.55s - 337.23s |  And from our own research, we know that some of them
+337.23s - 340.33s |  do, both in the cloud and locally.
+340.33s - 341.91s |  And the other thing which we run into
+341.91s - 345.23s |  is if you buy used devices from eBay or Amazon,
+345.23s - 347.39s |  you don't know if the previous owner installed a root
+347.39s - 347.99s |  kit onto that.
+347.99s - 350.87s |  So as a new owner, you have no way to verify the software.
+350.87s - 352.95s |  And as a result, you might have a malicious device
+352.95s - 355.07s |  in your home which spies on you.
+355.07s - 358.03s |  So basically, root access is more or less the only way
+358.03s - 361.15s |  to figure out that the device is clean.
+361.15s - 364.27s |  Speaking of vendors, we have this story around, I think,
+364.27s - 366.27s |  one and a half years ago, where basically iRobot
+366.27s - 368.99s |  got caught that they were making pictures of people
+368.99s - 372.87s |  and selling them to Venezuela from labeling them
+372.87s - 374.07s |  by gig workers.
+374.07s - 375.75s |  And the other thing is, well, this device
+375.75s - 376.75s |  contains a lot of data.
+376.75s - 379.99s |  So companies are very interested in collecting data
+379.99s - 380.95s |  about your homes.
+380.95s - 384.03s |  And one of the rumors was that Amazon was trying to buy iRobot
+384.03s - 387.67s |  not because of the great robots, but because of the data.
+387.67s - 389.67s |  One question which we will answer later,
+389.67s - 392.59s |  if you can rely on certifications,
+392.59s - 394.59s |  because all the devices which we have analyzed
+394.59s - 397.07s |  in the last two or three years have certifications,
+397.07s - 399.43s |  including EchoVax.
+399.43s - 403.23s |  So I want to give you a very brief overview of our hacking
+403.23s - 404.47s |  journey so far.
+404.47s - 406.07s |  And for me personally, everything
+406.11s - 408.15s |  started back in 2017.
+408.15s - 411.31s |  I was giving a talk at the CCC and at DEF CON.
+411.31s - 413.77s |  And this was a work together back then with Danny Vigema.
+413.77s - 415.43s |  And we targeted the Xiaomi vacuum robots,
+415.43s - 417.27s |  the first generation, and the Roborock.
+417.27s - 420.03s |  And the over-the-air update system was completely broken.
+420.03s - 423.31s |  So we were able to just push local firmware updates.
+423.31s - 425.23s |  Then it became a little bit more complicated.
+425.23s - 427.23s |  So the vendors kind of locked on things.
+427.23s - 428.91s |  For the newer Roborock devices, we
+428.91s - 430.91s |  had to basically figure out a custom bootloader
+430.91s - 433.11s |  tool, which required teardown.
+433.11s - 435.99s |  And we were kind of slightly annoyed about that.
+435.99s - 438.91s |  So back then, we took a first look at EchoVax.
+438.91s - 441.79s |  And after my CCC talk back then, some influencer
+441.79s - 444.95s |  gave me an EchoVax D-Board 900, which he got from EchoVax.
+444.95s - 446.83s |  And this had the very, very early firmware
+446.83s - 449.71s |  with the bug symbols in there, which was very, very helpful.
+449.71s - 451.33s |  One thing which I figured out back then
+451.33s - 452.87s |  is that the firmware is unprotected.
+452.87s - 453.91s |  TLS is completely broken.
+453.91s - 455.43s |  There's no integrity protections.
+455.43s - 457.67s |  You can root a device via man-in-the-middle.
+457.67s - 460.23s |  And you can just push malicious OT updates.
+460.23s - 462.75s |  But one of the problems was the hardware was extremely weak.
+462.75s - 464.79s |  So it wasn't really interesting for us.
+464.79s - 467.11s |  And as a result, we never published the results on that,
+467.11s - 469.15s |  because, I mean, why would we?
+469.15s - 471.35s |  So over time, we had to develop new methods,
+471.35s - 475.35s |  because it became more and more difficult to root Roborock
+475.35s - 476.75s |  and Xiaomi devices.
+476.75s - 482.35s |  So in 2021, I released a method for newer Roborock devices
+482.35s - 483.95s |  and also Dreamy.
+483.95s - 486.27s |  By the way, the CyberDog is a Dreamy device technically,
+486.27s - 489.11s |  where we were able to bypass secure boot and some security
+489.11s - 491.11s |  features and be able to root it again.
+491.11s - 494.79s |  And it became, again, complicated in 2023.
+494.79s - 497.79s |  We were looking again at Dreamy, Roborock, Navel, and Shark
+497.79s - 501.87s |  and figured out a secure bypass for some bootloader magic.
+501.87s - 505.67s |  The issue with all of these is finding new rooting methods
+505.67s - 507.87s |  become very annoying, and it takes a long time.
+507.87s - 510.27s |  For the last one, we need basically multiple months.
+510.27s - 511.75s |  So we tried to find a new vendor,
+511.75s - 514.35s |  which we would attack again.
+514.35s - 516.83s |  So we went back to EchoVax.
+516.83s - 518.55s |  And by that time, EchoVax started
+518.55s - 521.31s |  to release more and more powerful devices.
+521.31s - 523.71s |  And they were very similar to other devices,
+523.71s - 524.87s |  but they were lower priced.
+524.87s - 525.83s |  So this is perfect.
+525.83s - 528.03s |  So one of the first devices which I analyzed back then
+528.03s - 530.59s |  was then the D-Bot X1.
+530.59s - 532.67s |  And basically, as soon as I unpacked it from the box,
+532.67s - 535.15s |  it took me exactly 30 minutes to basically get root access
+535.15s - 537.35s |  and have a modified file system on it.
+537.35s - 540.19s |  So this was a perfect target for future endeavors
+540.19s - 542.55s |  in the Fed company.
+542.55s - 544.47s |  In the penalty of that, as mentioned before,
+544.47s - 548.35s |  Braylin was messing with EchoVax and Yeti robots.
+548.35s - 551.15s |  And so it found very similar things.
+551.15s - 552.55s |  One thing which I need to address
+552.55s - 554.75s |  is a lot of vendors, they saw my talks,
+554.75s - 557.83s |  and they started to obfuscate or introducing countermeasures
+557.83s - 559.23s |  against our rooting attempts.
+559.23s - 561.91s |  For example, Shark Robot, or their contractor,
+561.91s - 564.99s |  they kind of just were hiding vias and everything.
+564.99s - 565.87s |  So they upgraded.
+565.87s - 566.79s |  We upgraded, too.
+566.79s - 568.27s |  Basically, we got an x-ray machine.
+568.27s - 570.27s |  And now, we started to just x-ray things
+570.27s - 574.43s |  because it's faster than just measuring through traces.
+574.43s - 578.55s |  So let's talk about the EchoVax ecosystem.
+578.55s - 581.07s |  So why are we looking at EchoVax generally?
+581.07s - 583.51s |  It turns out that this company is fairly old.
+583.51s - 586.47s |  They were founded back then in 1998 in China.
+586.47s - 591.15s |  And they produced initially OEM vacuum cleaners.
+591.15s - 593.11s |  Introduced their own brand of vacuum robot
+593.11s - 595.63s |  in 2007 with a D-Bot.
+595.63s - 598.23s |  And in 2020, we had the market share of 17%.
+598.23s - 600.07s |  So this was basically the latest number
+600.07s - 601.95s |  which we were able to find.
+601.95s - 603.53s |  We couldn't find a newer number.
+603.53s - 605.61s |  And so back then, we were second to iRobot.
+605.61s - 607.89s |  But their global market share is way higher nowadays.
+607.89s - 610.45s |  So we assume that they're probably
+610.45s - 613.93s |  the top two or top three manufacturers.
+613.93s - 618.73s |  So their market cap is five times higher as iRobot.
+618.73s - 620.81s |  They produce a bunch of different products.
+620.81s - 622.31s |  So for example, vacuum robots, which
+622.31s - 623.81s |  is kind of what you would expect.
+623.81s - 625.31s |  But they have also window cleaners,
+625.31s - 626.41s |  which clean your window.
+626.41s - 628.33s |  They have mobile air purifiers.
+628.33s - 629.53s |  They have lawn mowing robots.
+629.53s - 632.37s |  And they have some other products.
+632.37s - 633.97s |  So let's take a look at the hardware.
+633.97s - 635.57s |  Well, so typically, if you look at the hardware,
+635.57s - 636.93s |  we kind of try to figure out, OK,
+636.93s - 638.45s |  what's going on in the device.
+638.45s - 641.21s |  And so what we have on one side is the SoC, which
+641.21s - 643.05s |  is basically running Linux.
+643.05s - 646.09s |  It's responsible for navigation, mapping, and connectivity.
+646.09s - 647.53s |  So it's connected to the storage.
+647.53s - 650.97s |  It has access to sensors like LiDAR, camera, microphones.
+650.97s - 653.25s |  It has the connectivity, so Wi-Fi, Bluetooth,
+653.25s - 655.49s |  and Ultra Wideband in some devices.
+655.49s - 658.45s |  On the other side, we have the MCU, the microcontroller,
+658.45s - 660.85s |  which is responsible for all the retail operation stuff.
+660.85s - 664.13s |  So controlling the wheels, infrared sensors, fans,
+664.13s - 665.41s |  and drop sensors.
+665.41s - 668.49s |  Typically, you want to have your drop centers real-time operated
+668.49s - 671.53s |  because you don't want to wait one second until the robot is
+671.53s - 672.89s |  already flying down the stairs.
+672.89s - 675.65s |  So you want to do that real-time.
+675.65s - 677.37s |  All right, so one of the first devices
+677.37s - 680.01s |  which I saw, I mentioned back in 2018,
+680.01s - 681.37s |  was the D-Bot 900 series.
+681.37s - 683.09s |  This was basically like a rocket ship
+683.09s - 685.73s |  with one core, 128 megabyte of RAM,
+685.73s - 687.49s |  and 256 megabyte of NAND flash.
+687.49s - 689.73s |  So not great.
+689.73s - 692.33s |  Sensor-wise, we had back then LiDAR already, infrared sensors,
+692.33s - 693.41s |  but it was just too weak.
+693.41s - 695.25s |  So even if you have root access, there's
+695.25s - 696.79s |  literally nothing we can run on that
+696.79s - 699.13s |  because it runs out of memory.
+699.13s - 700.45s |  Thankfully, later on, they started
+700.45s - 702.33s |  to put more performance chips into it.
+702.33s - 707.97s |  So the X1, in this case, was interesting and cheap.
+707.97s - 710.73s |  And they recycled from there on the hardware
+710.73s - 711.81s |  for multiple generations.
+711.81s - 714.13s |  So for us, it makes sense to look into that
+714.13s - 716.09s |  because we basically could repeat our knowledge
+716.09s - 718.21s |  on newer models.
+718.21s - 722.49s |  In our example, the X1 was also interesting
+722.49s - 724.13s |  because it had a station.
+724.13s - 726.41s |  So both station and robot were creating
+726.41s - 727.49s |  their own Wi-Fi network.
+727.49s - 729.17s |  We had a voice assistant, so microphones,
+729.17s - 730.33s |  which is always good.
+730.33s - 731.93s |  And we had the remote view feature,
+731.93s - 733.65s |  so you could access the camera remotely,
+733.65s - 736.09s |  which is always great for hacking.
+736.09s - 737.93s |  If you take a look at the hardware,
+737.93s - 739.85s |  it's more or less the same hardware as the X2,
+739.85s - 742.13s |  so the newer generations, which we have here.
+742.13s - 745.05s |  And it's based on the Horizon X3 SoC.
+745.05s - 748.77s |  So this is a quad-core ARM Cortex-A
+748.77s - 750.37s |  with a Cortex-R in it.
+750.37s - 753.97s |  And it has also AI acceleration on the same chip.
+753.97s - 757.37s |  They used 2 gigabyte of RAM, 512 megabyte of SPI flash,
+757.37s - 759.57s |  and a GD32 MCU, which is basically
+759.57s - 762.17s |  like a copycat SDM32.
+762.17s - 763.89s |  The X2, by the way, they used EMMC flash
+763.89s - 766.17s |  because they figured out they don't have enough flash,
+766.17s - 767.49s |  so we needed more stuff.
+767.49s - 769.57s |  One chip which was especially interesting for us
+769.57s - 773.05s |  is they have a special chip for voice processing, which
+773.05s - 774.85s |  is the Baidu AI chip.
+774.85s - 777.33s |  And it has its own firmware, and they supposedly
+777.33s - 782.01s |  use it for regular detection, but who knows.
+782.01s - 784.29s |  So let's talk about the sensors.
+784.29s - 786.85s |  Well, the X1 has a LiDAR sensor, which is kind of cool.
+786.85s - 789.01s |  It has a microphone array for whatever reason,
+789.01s - 792.41s |  or for the voice assistant, but I mean, why would you use it?
+792.41s - 793.89s |  And it has camera and line lasers,
+793.89s - 796.77s |  so basically to detect objects in front of it.
+796.77s - 798.69s |  And it has obviously a lot of infrared sensors
+798.69s - 800.53s |  to kind of detect if it runs into something,
+800.53s - 803.05s |  if it drops from somewhere, or if it runs over your cat.
+804.85s - 806.49s |  A device which is very, very similar
+806.49s - 811.57s |  is the AirBot Z1, which we call the SpyBot out of reasons.
+811.57s - 813.49s |  It was released last year.
+813.49s - 816.13s |  It's based on the same design like as the X1,
+816.13s - 819.13s |  but it has one additional camera and six microphones.
+819.13s - 820.73s |  And the features of that is, well,
+820.73s - 824.33s |  you can use it as a Bluetooth speaker, which follows you.
+824.33s - 827.09s |  It's an air filter and humidifier,
+827.09s - 829.81s |  and it has a home patrol mode, so it
+829.81s - 831.61s |  will drive around in your home.
+831.61s - 834.61s |  And if an intruder gets in, it will kind of alarm you.
+834.61s - 837.49s |  The thing is, you can also use it to talk to someone at home.
+837.49s - 839.25s |  And basically, if you walk away, the robot
+839.25s - 842.21s |  will kind of follow you and kind of focus on your face.
+842.21s - 843.93s |  The cool thing here is you basically
+843.93s - 846.37s |  get two robots for the price of one.
+846.37s - 849.25s |  What they did is they basically recycled their old robots.
+849.25s - 851.85s |  So the top part of the air purifier
+851.85s - 854.37s |  is basically an X1, a vacuum robot.
+854.37s - 858.13s |  The bottom part is an old 900 series device.
+858.13s - 859.53s |  And there's an ethernet cable which
+859.53s - 862.21s |  runs through the whole big thing, which connects
+862.21s - 864.21s |  both of them via ethernet.
+864.21s - 867.01s |  So very efficient.
+867.01s - 871.09s |  So let's talk about the lawn mowings, lawn mowing robots.
+871.09s - 873.85s |  They have been released in 2023 in Europe.
+873.85s - 878.25s |  And this year, I think recently post-CES, this year in US.
+878.25s - 880.77s |  It's kind of cool because they have for navigation GPS,
+880.77s - 883.57s |  but also they used visual and time-of-flight cameras,
+883.57s - 885.61s |  so they can kind of create a point cloud.
+885.61s - 890.13s |  And they use ultra-wide-band beacons to kind of navigate.
+890.13s - 892.85s |  And feature-wise, you can put an LTE module into them,
+892.85s - 895.57s |  so you can connect them even if the Wi-Fi doesn't
+895.57s - 897.65s |  have connectivity.
+897.65s - 900.05s |  And again, they have a remote view and patrol function,
+900.05s - 902.69s |  so they will patrol your garden.
+902.69s - 904.45s |  Now, you might be paranoid and say, wait,
+904.45s - 907.93s |  I don't want a company to watch my garden.
+907.93s - 908.93s |  Of course, don't worry.
+908.93s - 909.73s |  They're certified.
+909.73s - 912.61s |  They say, yeah, you can watch your garden, patrol your garden,
+912.61s - 914.65s |  but your data stays safe.
+914.65s - 918.89s |  And we are certified because we use encryption and stuff.
+918.89s - 921.93s |  If you ever run into the issue to reverse engineer devices
+921.97s - 925.13s |  like that, be prepared that you need a lot of space.
+925.13s - 928.73s |  So this has been a lot of screws.
+928.73s - 931.77s |  And it took hours and hours and hours to disassemble it,
+931.77s - 933.49s |  and even more hours to reassemble it.
+933.49s - 935.21s |  And two screws were missing, and I still
+935.21s - 936.45s |  don't know where they are.
+936.45s - 940.05s |  So always keep track of your screws.
+940.05s - 943.09s |  So if you take a look at the lawnmower,
+943.09s - 947.53s |  it has an octa-core Rockchip SoC with an AI accelerator,
+947.53s - 949.09s |  like a GPU, basically.
+949.09s - 952.53s |  4 gigabyte of RAM, 16 gigabyte of eMMC flash,
+952.53s - 954.01s |  and it has multiple MCUs.
+954.01s - 956.25s |  So it has a display, which you can control.
+956.25s - 958.45s |  It has its own STM32-like display.
+958.45s - 962.61s |  I tried to run Doom, but it doesn't have enough flash.
+962.61s - 964.01s |  And also, even the knife assembly,
+964.01s - 968.53s |  which controls the cutting, it has also its own MCU.
+968.53s - 971.17s |  Sensor-wise, it has a 360-degree camera on top.
+971.17s - 972.13s |  It has a front camera.
+972.13s - 973.93s |  It has a time-of-flight sensor.
+973.93s - 975.05s |  It has rain detectors.
+975.05s - 975.97s |  It has bump switches.
+975.97s - 979.85s |  So they put every sensor in there, which you can have.
+979.85s - 982.81s |  Thankfully, they gave us a lot of debug ports.
+982.81s - 986.85s |  So all the models since 2019 have very similar debug ports,
+986.85s - 990.73s |  which give you UART, 3.3 volt, SWG, and USB.
+990.73s - 993.97s |  And it's easy to debug, and you can root a device
+993.97s - 996.65s |  or get a root shell, basically, without breaking
+996.65s - 998.17s |  any of the warranty seals.
+998.17s - 1002.14s |  Cool.
+1002.14s - 1003.86s |  Now let's talk about some of the software
+1003.86s - 1005.26s |  that Ecovacs employs.
+1005.26s - 1007.94s |  So these things run on Linux OS.
+1007.94s - 1011.74s |  They're basically just a mobile Linux server.
+1011.74s - 1013.66s |  They are using ROS, Melodic Merenia,
+1013.66s - 1016.46s |  for the robotics portion or handling.
+1016.46s - 1020.02s |  They also have a custom software suite called Medusa.
+1020.02s - 1022.38s |  And there's a couple of interesting software packages
+1022.38s - 1027.06s |  that are on the robot, including Python 2.7, which
+1027.06s - 1029.10s |  is very handy for hackers.
+1029.10s - 1034.06s |  They also use the AWS Kinesis SDK for remote camera access
+1034.06s - 1036.58s |  outside of China and the Alibaba Aliyun
+1036.58s - 1039.98s |  SDK for remote camera access inside of China.
+1039.98s - 1042.94s |  So the good thing is that there are little to no protections
+1042.94s - 1046.22s |  against rooting, which is what hackers like.
+1046.22s - 1049.10s |  So let's briefly touch on some AI models that they're using.
+1049.10s - 1052.58s |  They use TensorFlow and OpenCV for detection.
+1052.58s - 1056.78s |  Some of the typical objects include furniture, cables,
+1056.78s - 1059.86s |  pets, and pet remains.
+1059.86s - 1062.66s |  The lawnmower also can detect small animals and face recon.
+1062.70s - 1068.34s |  But on the right is a screenshot of our favorite object
+1068.34s - 1071.74s |  that it can detect.
+1071.74s - 1074.62s |  So just wanted to touch on firmware updates.
+1074.62s - 1076.74s |  We've been keeping track of their firmware updates
+1076.74s - 1080.26s |  since we've obtained the robot.
+1080.26s - 1084.10s |  The US version was released in 2023.
+1084.10s - 1089.50s |  And they have, why did that go so quick?
+1089.50s - 1093.46s |  They had been putting out monthly firmware updates
+1093.46s - 1095.26s |  since then.
+1095.26s - 1098.38s |  And they stopped in March 2024.
+1098.38s - 1099.94s |  So we're kind of questioning if this
+1099.94s - 1104.30s |  is the end of life for this pretty new product.
+1104.30s - 1106.58s |  Their changelogs are also not very informative.
+1106.58s - 1110.10s |  So we have a theory that they are dropping device support
+1110.10s - 1113.78s |  very quickly, which is unfortunate.
+1113.78s - 1117.34s |  So the mobile app structure, there's
+1117.46s - 1120.74s |  a core app, the EchoVax Home app.
+1120.74s - 1124.98s |  And then when you add robots, plugins
+1124.98s - 1126.38s |  are downloaded dynamically every time
+1126.38s - 1129.78s |  you add one to your account.
+1129.78s - 1131.86s |  Now we'll talk about security and privacy.
+1131.86s - 1135.42s |  So when we first started researching EchoVax robots,
+1135.42s - 1137.74s |  we wanted to see if they had a bug bounty program.
+1137.74s - 1141.54s |  And this is the only page that we found for their security
+1141.54s - 1142.62s |  program.
+1142.62s - 1144.78s |  They claim that they have a public bulletin board
+1144.78s - 1148.22s |  if you report bugs to their just kind of email address.
+1148.22s - 1149.98s |  They want you to email bugs to them,
+1149.98s - 1152.98s |  which is not a secure method to do that generally.
+1152.98s - 1156.10s |  So yeah, there's no real collaborative bug bounty
+1156.10s - 1156.82s |  program.
+1156.82s - 1159.22s |  And they don't respond to our reports or emails.
+1159.22s - 1161.74s |  They just kind of ignore us.
+1161.74s - 1165.82s |  Some bugs are silently patched, we've noted.
+1165.82s - 1168.30s |  But their privacy policy, it doesn't,
+1168.30s - 1170.78s |  there's no guarantees that the data stays in your locale,
+1170.78s - 1173.66s |  which is kind of scary.
+1173.66s - 1177.62s |  Regional AWS services are used for the EU and US and China,
+1177.62s - 1178.86s |  of course.
+1178.86s - 1181.62s |  Some photos and videos are sent to Ali Cloud Video
+1181.62s - 1182.94s |  for AI analysis.
+1182.94s - 1186.02s |  In certain models, they claim that you have to opt in.
+1186.02s - 1189.46s |  I'm not sure if they honor that, but more research is needed.
+1189.46s - 1191.58s |  But of course, lots of telemetry data
+1191.58s - 1195.50s |  is collected, as with most IoT devices these days.
+1195.50s - 1197.70s |  So what are we concerned about?
+1197.70s - 1200.46s |  These vacuums have microphones and cameras.
+1200.46s - 1203.06s |  So can they be enabled remotely without user notice?
+1203.06s - 1206.62s |  And where's the data sent to?
+1206.62s - 1209.54s |  And of course, we need to be concerned with AI and privacy.
+1209.54s - 1213.26s |  So why do these robots need face recon AI models?
+1213.26s - 1218.98s |  And is this telemetry data being used to train their AI?
+1218.98s - 1224.18s |  So after Dennis's DEF CON talk last year
+1224.18s - 1228.18s |  about Roborock vacuums, they posted this really interesting
+1228.18s - 1232.34s |  blog post titled, Can Robot Vacuum Cameras Be Hacked?
+1232.38s - 1236.38s |  And they claim that their cameras are encrypting all data
+1236.38s - 1237.50s |  gathered by the device.
+1237.50s - 1243.38s |  But who knows?
+1243.38s - 1246.10s |  So they post a bunch of certifications
+1246.10s - 1249.30s |  from 2 Vineland, which costs quite a bit of money.
+1249.30s - 1252.86s |  And they claim to be meeting and exceeding all standards.
+1252.86s - 1254.74s |  They even have a splash screen when
+1254.74s - 1256.62s |  you load their mobile app, claiming
+1256.62s - 1258.54s |  that they meet ISO standards.
+1258.54s - 1261.74s |  Again, not in line with our findings,
+1261.74s - 1263.82s |  which we will talk about now.
+1263.82s - 1268.82s |  So data harvesting, the mobile apps and the robot
+1268.82s - 1270.18s |  are pretty chatty.
+1270.18s - 1272.98s |  Just a lot of communication with the EchoVox servers.
+1272.98s - 1274.86s |  Their key data collection API endpoints
+1274.86s - 1277.10s |  are called Big Data and Data Upload.
+1277.10s - 1280.06s |  So it's not like they're hiding what they're doing.
+1280.06s - 1282.30s |  They're pretty upfront about it.
+1282.30s - 1284.86s |  So some example of telemetry data that's collected
+1284.86s - 1288.18s |  are live coordinates of the robot location in your home,
+1288.26s - 1290.74s |  Wi-Fi access points, network data,
+1290.74s - 1294.10s |  and additional debug information is sent to EchoVox servers
+1294.10s - 1296.98s |  if the robot gets stuck somewhere,
+1296.98s - 1300.26s |  and possibly AI pictures, even if not opted in.
+1300.26s - 1302.62s |  So what are they retaining in their cloud?
+1302.62s - 1305.34s |  Maps and pictures are stored in a NoSQL database.
+1305.34s - 1308.98s |  So anyone who knows the object ID of the map
+1308.98s - 1310.06s |  can access that data.
+1310.06s - 1314.18s |  There's no access controls on these points of information,
+1314.18s - 1315.46s |  which is, I don't know.
+1315.46s - 1317.34s |  I don't want random people with an EchoVox account
+1317.38s - 1319.18s |  to be able to see a map of my house.
+1320.10s - 1322.62s |  The maps associated with the robots,
+1322.62s - 1324.54s |  they seem to remain on servers,
+1324.54s - 1326.66s |  even if you do a factory reset
+1326.66s - 1328.98s |  or repair the device to a different account.
+1328.98s - 1331.82s |  Also deleting your actual EchoVox account has no effect.
+1331.82s - 1334.26s |  The map remains indefinitely on their servers,
+1334.26s - 1338.50s |  even if you supposedly remove all of your information
+1338.50s - 1340.10s |  from your account.
+1341.26s - 1343.74s |  So, oh, what's wrong?
+1344.70s - 1346.98s |  Oh, sorry, skipped over one point.
+1348.18s - 1352.18s |  Oh, the JWTs that are used for authentication are also,
+1352.18s - 1354.50s |  they also remain valid after you delete your account,
+1354.50s - 1356.26s |  so you can continue using your account
+1356.26s - 1357.74s |  even though you deleted it.
+1359.70s - 1361.98s |  And access to the robot is still possible.
+1361.98s - 1363.94s |  So not ideal security.
+1365.30s - 1367.54s |  So what are they storing on the device?
+1367.54s - 1369.10s |  There's a user data partition,
+1369.10s - 1370.98s |  and it's not encrypted, of course.
+1370.98s - 1372.98s |  Why would they encrypt that?
+1372.98s - 1375.14s |  There's lots of logs, configs, maps,
+1375.14s - 1377.54s |  and pictures that are stored on this partition,
+1377.54s - 1379.18s |  including the live video pin,
+1379.18s - 1381.34s |  which is stored in an MD5 hash,
+1381.34s - 1383.30s |  and the robot lawnmower,
+1383.30s - 1386.50s |  the lawnmower robot pin, which is stored in plain text.
+1386.50s - 1388.02s |  There's also Wi-Fi credentials
+1388.02s - 1390.86s |  and your neighbor's Wi-Fi access points,
+1390.86s - 1392.70s |  so they're kind of just mapping the whole world
+1392.70s - 1394.78s |  with their robot vacuums.
+1394.78s - 1398.62s |  There's also the HelloYiku traffic logs,
+1398.62s - 1401.42s |  which are, that's their voice assistant.
+1401.46s - 1404.98s |  So keeping track of what you say to your robot.
+1404.98s - 1407.86s |  So always keep in mind that if you're selling a used device
+1407.86s - 1409.82s |  that even if you factory reset it,
+1409.82s - 1413.70s |  there's a risk to your privacy.
+1413.70s - 1417.50s |  And additionally, Flashware leveling will always be a problem
+1417.50s - 1419.10s |  but that's for a different talk.
+1420.02s - 1423.38s |  So one of our big findings was that
+1423.38s - 1427.22s |  they did not configure their TLS properly.
+1427.22s - 1429.14s |  So the EchoVax home app
+1429.14s - 1432.18s |  mobile application correctly checks certificates,
+1432.18s - 1435.78s |  but the robot specific plugins don't always do that.
+1435.78s - 1439.74s |  So the plugins sometimes accept self-signed certificates,
+1439.74s - 1443.30s |  which is very risky to use on an insecure Wi-Fi network,
+1443.30s - 1446.66s |  like at an airport, hotel, or the DEF CON open Wi-Fi,
+1446.66s - 1447.90s |  please don't do that.
+1448.90s - 1451.90s |  There's no warning or error shown in the app.
+1451.90s - 1456.90s |  And this traffic will leak your authentication tokens
+1456.98s - 1458.66s |  and will allow the attacker to have access
+1458.66s - 1461.18s |  to your account for up to seven days
+1461.18s - 1463.70s |  and access to video feeds, like everything.
+1464.82s - 1466.02s |  Here's an example of the traffic
+1466.02s - 1467.38s |  that we were able to intercept.
+1467.38s - 1472.02s |  We've redacted the authentication token
+1472.02s - 1473.74s |  just for good measure.
+1475.66s - 1477.82s |  And additionally, they misconfigured TLS
+1477.82s - 1480.18s |  in their robots themselves as well.
+1480.18s - 1481.98s |  The MQTT and TLS connections,
+1481.98s - 1484.90s |  they accept self-signed certificates on some devices,
+1485.86s - 1489.98s |  which allows for man in the middle attacks
+1490.02s - 1493.70s |  and over the OTA updates can be injected.
+1496.30s - 1498.98s |  The tool that we use for this is CertMidim by Apple Oxman.
+1498.98s - 1500.38s |  It's highly recommended.
+1500.38s - 1503.63s |  It's pretty fun.
+1503.63s - 1506.07s |  And this is partially one of the reasons
+1506.07s - 1506.99s |  why this is happening.
+1506.99s - 1510.03s |  They are running bash scripts from the robot
+1510.03s - 1515.03s |  with no check certificate on WGIT, not ideal.
+1516.93s - 1519.19s |  So another thing that we found was that
+1519.75s - 1521.83s |  the robots have audio warnings
+1521.83s - 1523.91s |  when the camera is accessed from the mobile app
+1523.91s - 1527.27s |  at the start of access and every five minutes afterwards,
+1527.27s - 1528.75s |  a sound file is played.
+1529.67s - 1532.43s |  So the problem is that local sound files
+1532.43s - 1534.23s |  are stored on the data partition,
+1534.23s - 1537.39s |  which isn't encrypted and can just generally be accessed.
+1537.39s - 1540.07s |  So the sound files can be deleted and replaced.
+1541.71s - 1546.03s |  So we can replace the warning audio with an empty file.
+1546.03s - 1549.07s |  So nothing will happen when you access the live video feed,
+1549.95s - 1552.79s |  we'll tell you why that's a huge problem in a second.
+1552.79s - 1560.22s |  So this finding was reported at CCC last year,
+1560.54s - 1562.94s |  but they fixed it and then we broke it again.
+1562.94s - 1565.14s |  So we're going to tell you about it again.
+1565.14s - 1567.10s |  So the app allows for live video
+1567.10s - 1569.18s |  and audio access on the robot.
+1569.18s - 1572.42s |  And this functionality is provided by AWS Kinesis.
+1572.42s - 1574.98s |  The owner and shared users of the EchoVax account
+1574.98s - 1577.02s |  can access this feature.
+1577.02s - 1578.78s |  It is protected by a pin
+1578.82s - 1581.90s |  and the pin will be asked for before connecting.
+1581.90s - 1584.82s |  And it can only be changed and reset by the account owner.
+1584.82s - 1587.58s |  And the reset requires account credentials.
+1587.58s - 1589.90s |  So here's how the pin works.
+1589.90s - 1592.50s |  Mobile app will ask the user for the pin.
+1593.94s - 1596.94s |  The EchoVax cloud will act as a kind of broker.
+1596.94s - 1598.74s |  So now we ask the robot,
+1598.74s - 1601.86s |  hey, does this pin hash match with your local hash
+1601.86s - 1603.22s |  that's stored on the robot?
+1603.22s - 1607.10s |  If yes, the robot decides that it is correct,
+1607.10s - 1609.22s |  sends that response to the mobile app,
+1610.10s - 1615.10s |  and then the WebRTC session over AWS Kinesis will be started
+1616.14s - 1621.29s |  and both will join the AWS Kinesis session.
+1621.29s - 1623.85s |  So what happens if the pin is incorrect?
+1623.85s - 1626.81s |  We go through that same process, but with an incorrect pin.
+1627.97s - 1631.52s |  Why?
+1631.52s - 1636.41s |  Sorry, I don't know how to use PowerPoint.
+1636.41s - 1641.33s |  Okay, so what is it doing?
+1642.21s - 1647.21s |  Okay, sorry about that.
+1653.91s - 1656.91s |  Okay, so we asked ourselves,
+1656.91s - 1660.19s |  are the pin verification and WebRTC session tied together?
+1660.19s - 1666.27s |  So why is it, this is truly annoying.
+1667.35s - 1668.55s |  Why is it doing this?
+1673.57s - 1681.90s |  Okay, sorry, animations have a mind of their own right now.
+1681.94s - 1684.14s |  It's fine, just continue.
+1684.14s - 1686.02s |  It's slides by themselves.
+1686.02s - 1689.05s |  I can't stop it.
+1689.05s - 1690.65s |  This is entirely automated.
+1690.65s - 1691.49s |  There's like a button
+1691.49s - 1694.25s |  that's pressed down right now automatically.
+1694.25s - 1695.09s |  Sorry for that.
+1706.15s - 1707.51s |  You need to turn animations on.
+1707.51s - 1715.39s |  I don't know how to.
+1715.39s - 1716.31s |  Okay, it's just.
+1716.31s - 1717.51s |  No, it's not.
+1726.28s - 1728.24s |  Anyway, the takeaway message here is,
+1728.24s - 1729.52s |  we don't know why the animations are broken,
+1729.52s - 1732.16s |  but basically it doesn't matter
+1732.16s - 1733.64s |  if the pin is correct or not correct.
+1733.64s - 1735.76s |  You can convince the app that the pin is still correct
+1735.76s - 1738.08s |  and we'll just establish a session.
+1738.08s - 1739.44s |  And we have a demo here.
+1743.88s - 1745.64s |  Do you know how to disable?
+1745.64s - 1760.72s |  Sorry.
+1760.72s - 1761.72s |  Dennis, disable the track.
+1761.72s - 1779.10s |  Sorry, I swear it worked before.
+1779.10s - 1780.06s |  Have you seen that?
+1780.06s - 1786.36s |  It might be on our slides.
+1786.36s - 1788.36s |  Just try the slideshow again.
+1790.36s - 1791.20s |  I mean, they're fine.
+1791.20s - 1792.04s |  I think there's something to that.
+1792.04s - 1794.04s |  Yeah, just try the slideshow.
+1794.04s - 1797.38s |  See something?
+1797.38s - 1798.82s |  That starts from the beginning.
+1798.82s - 1800.06s |  No, no, just wait.
+1800.06s - 1800.90s |  This one?
+1800.90s - 1801.74s |  Yeah.
+1801.74s - 1806.90s |  Okay.
+1807.74s - 1808.70s |  Okay, we have automated slides for some reason,
+1808.70s - 1810.30s |  so we're just gonna work with it.
+1810.30s - 1812.50s |  Okay, we can't work with this.
+1812.50s - 1814.06s |  Fuck me.
+1814.06s - 1815.78s |  Why is this happening?
+1815.78s - 1834.05s |  This is really awful.
+1834.05s - 1834.89s |  Okay, now it's working.
+1834.89s - 1835.85s |  Okay.
+1835.85s - 1836.85s |  Trust Microsoft.
+1838.65s - 1839.61s |  Sorry about that.
+1839.61s - 1840.81s |  Okay, so.
+1842.21s - 1843.05s |  Right.
+1843.05s - 1845.61s |  So, as we were trying to go through.
+1849.32s - 1861.88s |  Oh my God.
+1861.88s - 1863.60s |  Okay, so we're trying to verify the pin,
+1863.60s - 1865.16s |  but the pin is incorrect.
+1865.16s - 1867.88s |  So, are these tied together?
+1867.88s - 1869.04s |  The WebRTC session.
+1869.04s - 1872.28s |  So, can we intercept this request
+1872.28s - 1875.04s |  or the response that pin is incorrect
+1875.04s - 1878.52s |  and tell the app that the pin is actually correct?
+1878.52s - 1880.72s |  And the answer was yes, we were able to do that.
+1880.72s - 1883.04s |  So, now we have a malicious session
+1883.04s - 1885.52s |  and we have an AWS Kinesis stream.
+1886.56s - 1888.96s |  So, can we bypass that altogether
+1888.96s - 1891.00s |  and just patch the pin query out of the app?
+1891.00s - 1893.24s |  And again, yes, we were able to do that,
+1893.24s - 1895.08s |  but we just wanna make it abundantly clear
+1896.00s - 1898.48s |  that this is an issue with Echo of Access implementation.
+1898.48s - 1900.24s |  This is not an issue with AWS.
+1900.24s - 1903.24s |  So, don't sue us AWS, please.
+1903.24s - 1905.64s |  So, in short, the pin protection.
+1905.64s - 1907.52s |  Pin protection is implemented in the app,
+1907.52s - 1910.76s |  but it's client-based authentication and ACL enforcement.
+1910.76s - 1912.04s |  So, the robot doesn't keep track
+1912.04s - 1913.84s |  of successful authentications.
+1913.84s - 1915.36s |  The log of the video stream access
+1915.36s - 1917.36s |  relies on the honesty of the app.
+1917.36s - 1919.56s |  And this is really bad in combination
+1919.56s - 1922.68s |  with the TLS issues that we just touched upon.
+1922.68s - 1924.28s |  And it's even worse if the sound files
+1924.28s - 1925.68s |  have been tampered with.
+1925.68s - 1927.48s |  So, here's just a video demo.
+1927.48s - 1929.56s |  This was reported in 2023.
+1929.56s - 1931.84s |  An unsuccessful fix was pushed.
+1931.84s - 1935.16s |  Some plugins were updated and no firmware fixes,
+1935.16s - 1937.64s |  which is where the real problem was.
+1937.64s - 1942.28s |  So, we can downgrade the app with a bad plugin
+1942.28s - 1943.72s |  and it still works.
+1943.72s - 1945.20s |  So, here's just a quick video demo.
+1945.20s - 1946.60s |  This is just Burp Suite.
+1946.60s - 1949.24s |  We have some find and replace queries to simplify it.
+1950.28s - 1953.20s |  We enter a wrong pin, 111, a couple of times.
+1954.76s - 1956.24s |  Not the right pin.
+1956.24s - 1957.72s |  So, we continue.
+1957.72s - 1961.48s |  Then we enable our find and replace queries in Burp Suite.
+1961.48s - 1963.68s |  Enter again the wrong pin.
+1963.68s - 1967.12s |  And we are dropped into a video streaming session
+1967.12s - 1971.72s |  and successfully bypass the pin mechanism.
+1971.72s - 1975.66s |  And here we are.
+1975.66s - 1976.50s |  Cool.
+1976.50s - 1978.79s |  So?
+1978.79s - 1979.63s |  All right.
+1979.63s - 1981.19s |  So, let's talk about free lawnmowers.
+1981.19s - 1983.15s |  Who wants a free lawnmower?
+1983.15s - 1984.59s |  Okay, now you learn how.
+1984.59s - 1985.87s |  Actually, please don't.
+1985.87s - 1987.15s |  We're not free.
+1987.19s - 1990.63s |  So, the ECOWAS G1 has an anti-theft mechanism
+1990.63s - 1992.71s |  where, basically, if you pick up the robot
+1992.71s - 1997.27s |  and you don't trigger the alarm, basically,
+1997.27s - 1999.47s |  you need to enter a pin to unlock it.
+1999.47s - 2001.15s |  As an owner, you can also enable alarms.
+2001.15s - 2002.07s |  So, basically, if you pick it up,
+2002.07s - 2004.55s |  or if someone picks it up, some alarm will go off.
+2004.55s - 2006.67s |  The problem here is, well, the pin is implemented
+2006.67s - 2008.67s |  basically in the SOC in the Linux operation system
+2008.67s - 2012.03s |  and the pin is stored just on a plain text file on the robot.
+2012.87s - 2014.99s |  The thing, generally, with lawnmowers
+2014.99s - 2018.31s |  is that other lawnmowers have the same issue.
+2018.31s - 2020.07s |  So, as a general recommendation,
+2020.07s - 2022.79s |  do not keep your mowers outside unprotected.
+2022.79s - 2026.31s |  And, you know, we kind of hope that Equivax
+2026.31s - 2027.75s |  and other vendors would somehow find
+2027.75s - 2030.19s |  a more secure location for the pin,
+2030.19s - 2031.83s |  for example, like in one of the MCUs,
+2031.83s - 2035.39s |  so to kind of, you know, have a better locking mechanism.
+2035.39s - 2037.99s |  So, let's talk about our main point today
+2037.99s - 2040.47s |  and this is the Bluetooth remote code execution,
+2040.47s - 2042.91s |  which we found at some point last year,
+2042.91s - 2044.91s |  which we were hoping that we would patch until today,
+2045.87s - 2046.87s |  but we didn't.
+2046.87s - 2048.63s |  So, what's it about?
+2048.63s - 2051.99s |  So, newer vacuum robots and all lawnmowing robots so far
+2051.99s - 2054.91s |  use BLE, Bluetooth LE, basically for their provisioning.
+2054.91s - 2056.67s |  So, if you initially, like, kind of pushed
+2056.67s - 2057.83s |  your Wi-Fi credentials onto it,
+2057.83s - 2059.35s |  they have a mechanism for that.
+2060.87s - 2063.31s |  For lawnmowers in particular, the Bluetooth is always active
+2063.31s - 2066.31s |  because we use it as a fallback way to control them.
+2066.31s - 2068.35s |  And for vacuums, it's typically active
+2068.35s - 2070.19s |  for the first 20 minutes after booting.
+2070.19s - 2073.19s |  And every time they reboot in the middle of the night
+2073.19s - 2076.23s |  for, like, memory cleaning purposes.
+2076.23s - 2077.07s |  There's also a different way
+2077.07s - 2078.75s |  to kind of force a robot to reboot remotely,
+2078.75s - 2081.15s |  but we don't want to talk about that yet.
+2081.15s - 2083.39s |  So, the communication between the app
+2083.39s - 2085.23s |  and the robots over Bluetooth
+2085.23s - 2088.95s |  is done by the GAT protocol, basically.
+2088.95s - 2091.19s |  And the payload is encrypted with a static AES key,
+2091.19s - 2093.39s |  which is something similar, it's not exactly that one,
+2093.39s - 2095.35s |  but it's like one, two, three, four, five, six, seven,
+2095.35s - 2098.15s |  eight ECOVACs, like something of that nature.
+2099.23s - 2101.75s |  And the input validation of whatever happens
+2101.75s - 2105.31s |  with the data afterwards is, let's say, not great.
+2105.31s - 2107.15s |  And that's kind of bad if you think about
+2107.15s - 2108.07s |  that they kind of say like,
+2108.07s - 2109.55s |  oh, hey, our robots have cameras,
+2109.55s - 2113.11s |  but trust us because we have been certified by the TÜV.
+2114.47s - 2115.91s |  So, and as a quick reminder,
+2115.91s - 2118.43s |  these devices have cameras and microphones.
+2118.43s - 2120.51s |  So, let's create a payload.
+2120.51s - 2122.67s |  First, what do we want to execute is basically,
+2122.67s - 2124.83s |  we want to play the boot music,
+2124.83s - 2126.83s |  which you heard before, on the robot.
+2126.83s - 2129.03s |  So, we take the command which causes that,
+2129.03s - 2131.03s |  be embedded in some JSON payload,
+2131.03s - 2134.15s |  and we generate encrypted payload.
+2134.15s - 2135.83s |  The payload looks something like this.
+2135.83s - 2138.75s |  Basically, there's some, a bunch of tech stuff.
+2138.75s - 2141.79s |  What happens if you send it to one of the robots,
+2141.79s - 2144.11s |  basically, it will receive the payload,
+2144.11s - 2147.95s |  it will decrypt it, it will basically extract
+2147.95s - 2150.43s |  one particular argument from there,
+2150.43s - 2151.75s |  and will generate a command line
+2151.75s - 2154.19s |  and put the argument which is extracted
+2154.19s - 2156.59s |  into the environment variable there.
+2156.59s - 2158.35s |  So, the command line which we get at the end of the day
+2158.35s - 2159.23s |  is something like this.
+2159.23s - 2161.79s |  As you see, we basically use command injection there.
+2161.79s - 2164.39s |  And then, it will happily execute a thing as root.
+2165.47s - 2166.75s |  And we tested this attack, basically,
+2166.75s - 2168.63s |  over a 50 meters distance,
+2168.63s - 2171.59s |  and even longer, like 100 meters for lawnmowers
+2171.59s - 2174.31s |  because we have a more powerful Bluetooth antenna.
+2174.31s - 2177.91s |  So, and we have a demo here for like the G1,
+2177.91s - 2179.91s |  which is like the lawnmowing robot.
+2179.91s - 2184.59s |  What we do here is we send the payload from an Android phone
+2184.59s - 2187.27s |  and you will see that we will get a succession back
+2187.27s - 2188.11s |  in a second.
+2188.11s - 2189.35s |  So, we're sending a payload now.
+2189.35s - 2191.71s |  You saw it connected back to us, a reverse shell,
+2191.71s - 2193.91s |  and now we can type on the robot
+2193.91s - 2196.51s |  and we see that we are root,
+2196.51s - 2198.23s |  we see what kind of version we're running,
+2198.23s - 2200.63s |  and so the robot basically connected back to us.
+2201.51s - 2203.15s |  We have also another demo,
+2204.55s - 2206.11s |  more of the robot,
+2206.11s - 2208.23s |  but I will skip that out of timing issues.
+2209.15s - 2211.55s |  And we have also a live demo, potentially.
+2212.71s - 2213.55s |  It takes one.
+2213.55s - 2214.39s |  Okay, I skipped that too.
+2214.39s - 2215.39s |  I will do it.
+2215.39s - 2216.83s |  Okay, we have three minutes left.
+2217.83s - 2218.75s |  So, what can you do with that
+2218.75s - 2222.51s |  if you have a BLE code execution fail?
+2222.51s - 2223.95s |  So, what we thought about is like,
+2223.95s - 2225.35s |  hey, how can we chain that?
+2225.35s - 2227.99s |  So, generally, if you live in a very close populated area,
+2227.99s - 2229.27s |  there might be more Equivax users
+2229.27s - 2230.47s |  because especially like Equivax
+2230.47s - 2232.03s |  is like one of the market leaders.
+2232.03s - 2234.47s |  So, what we can do is like we just attack an initial object
+2234.47s - 2237.27s |  like a vacuum robot, sorry, lawnmowing robot,
+2237.27s - 2238.31s |  put a payload onto that,
+2238.31s - 2240.11s |  and then the robot has all the tools
+2240.11s - 2241.75s |  which it needs to talk to other devices.
+2241.75s - 2244.23s |  So, it can infect the next robot which has some distance
+2244.23s - 2246.55s |  and that one can infect again the next one.
+2247.23s - 2248.07s |  And then it becomes a problem
+2248.07s - 2248.95s |  because the third one might start
+2248.95s - 2251.47s |  to infect back the lawnmower.
+2251.47s - 2253.67s |  So, we just had it as a proof of concept.
+2253.67s - 2255.59s |  We didn't want to have a whole routing protocol
+2255.59s - 2256.43s |  to figure it out.
+2256.43s - 2258.35s |  So, you know, sorry about that.
+2259.55s - 2261.75s |  Let's talk about routing very, very quickly.
+2261.75s - 2264.39s |  So, there is a lot of countermeasures in there
+2264.39s - 2265.23s |  in the software.
+2265.23s - 2268.19s |  They use a lot of XOR and byte shifting to hide strings.
+2268.19s - 2269.55s |  They have a lot of anti-debugging features.
+2269.55s - 2272.11s |  For example, they detect LD preload in the buggers
+2272.11s - 2274.79s |  and they use, for some of the device, not all of them,
+2274.79s - 2277.51s |  Secure Boot and Android Verified Boot.
+2277.51s - 2278.83s |  So, to get a root shell,
+2278.83s - 2280.51s |  well, you can connect over UART,
+2280.51s - 2282.83s |  but the problem is every device has a different password
+2282.83s - 2284.71s |  and it's hard-coded and it's, sorry,
+2284.71s - 2287.15s |  it's not hard-coded, it's set at boot time.
+2287.15s - 2289.23s |  And the function is very obfuscated,
+2290.11s - 2291.83s |  but there's one particular tool which generates that
+2291.83s - 2293.23s |  and this is how it's basically generated.
+2293.23s - 2295.47s |  So, they take a bunch of like random MAC addresses
+2295.47s - 2297.59s |  probably from the developer's computer at some point,
+2297.59s - 2299.43s |  put the serial number in there, the model number,
+2299.43s - 2301.95s |  create a SHA-256 and then make it base64
+2301.95s - 2303.99s |  and that's the root password.
+2303.99s - 2305.87s |  If you want to generate it for your own robot,
+2305.87s - 2307.15s |  there's a tool, you can just go there,
+2307.15s - 2308.15s |  just enter your serial number,
+2308.15s - 2310.15s |  it will kind of give you a password.
+2310.15s - 2313.15s |  For firmware updates, they're encrypted but not signed.
+2313.15s - 2315.59s |  The key is kind of dynamically generated
+2315.59s - 2317.03s |  and it's like, was kind of very difficult
+2317.03s - 2320.43s |  to reverse engineer it, but it's basically AS128.
+2320.43s - 2322.03s |  And this is the format string which we use
+2322.03s - 2323.71s |  to kind of generate a key,
+2323.71s - 2325.95s |  which is like someone's random email address.
+2325.95s - 2327.51s |  So, we use like a bunch of random stuff,
+2327.51s - 2329.39s |  mix it together and that's the AS key.
+2330.43s - 2333.75s |  So, as mentioned, some root file systems
+2334.51s - 2335.51s |  are not protected, so we can just modify them,
+2335.51s - 2337.75s |  especially on X1 and Z1.
+2337.75s - 2340.15s |  We can just repack it and have like our own system.
+2340.15s - 2341.75s |  One thing which was kind of interesting for us
+2341.75s - 2344.83s |  is we can get persistence in autostart.
+2344.83s - 2347.03s |  We left the debugging feature on some of the devices
+2347.03s - 2349.91s |  where if there's autostart folder exists on data,
+2349.91s - 2352.31s |  which is not protected, you can put a shell file into it
+2352.31s - 2354.47s |  and it will just happily execute it next time.
+2354.47s - 2355.87s |  So, it's not protected in any way,
+2355.87s - 2357.83s |  so it's persistent forever.
+2358.95s - 2360.39s |  Problem is, for whatever reason,
+2360.39s - 2361.87s |  on some of the devices, we disabled it
+2361.87s - 2364.99s |  and some of them not, I mean, it's kind of random.
+2364.99s - 2367.43s |  If you wanna be persistent over factory sets,
+2367.43s - 2370.03s |  well, they only delete the files,
+2370.03s - 2372.55s |  so what you think you can do is like basically,
+2372.55s - 2374.43s |  because we don't recreate the file system,
+2374.43s - 2377.07s |  just make files immutable with chatter
+2377.07s - 2380.07s |  and that way, you know, they will stay there forever.
+2380.07s - 2382.63s |  Okay, I will talk really quick about the takeaway lessons.
+2382.63s - 2384.91s |  First, can you rely on certifications?
+2384.91s - 2387.31s |  No, you can't, bad news.
+2387.31s - 2389.43s |  If you have vulnerable devices,
+2389.43s - 2391.67s |  like the lawnmower, make sure that you turn it off
+2392.47s - 2394.03s |  until we push a fix.
+2394.03s - 2396.67s |  Don't use them, turn them off if you don't use them.
+2396.67s - 2398.87s |  For devices which don't have BLE,
+2398.87s - 2401.31s |  just don't update them if you wanna keep root access.
+2401.31s - 2404.15s |  For vulnerable apps, don't connect to DEF CON Open.
+2404.15s - 2405.75s |  Bad idea.
+2405.75s - 2407.95s |  Used devices, be very careful with used devices.
+2407.95s - 2409.99s |  They might come with a compromised firmware.
+2409.99s - 2412.07s |  It's very difficult to verify.
+2412.07s - 2413.75s |  If you do factory set before selling,
+2413.75s - 2415.47s |  you know, do that definitely,
+2415.47s - 2418.27s |  but be aware that it might not help against everything.
+2419.35s - 2420.99s |  One thing, choose your partners wisely.
+2420.99s - 2422.95s |  You can use those things as stalker tools.
+2422.95s - 2423.99s |  I will skip that really quick
+2423.99s - 2425.87s |  and just finish with the summary.
+2425.87s - 2428.91s |  So we have a root access on most of the released,
+2428.91s - 2431.35s |  or I think actually all of the released Ecovacs robots.
+2431.35s - 2433.15s |  So we can use the UART interface
+2433.15s - 2435.15s |  and authentication to get into the device.
+2435.15s - 2437.59s |  We can use the BLE remote code execution right now
+2437.59s - 2440.31s |  to get initial access on devices remotely,
+2440.31s - 2441.59s |  hopefully your own.
+2441.59s - 2444.91s |  You can get persistence and run some custom firmware
+2444.91s - 2447.31s |  on some of the devices which don't have protections.
+2447.31s - 2450.83s |  We were able to verify the claims of the vendors
+2451.67s - 2454.63s |  and we found a lot of like security and privacy issues.
+2454.63s - 2457.27s |  And this both applies to the app, robots, clouds,
+2457.27s - 2459.19s |  and the certification for whatever reason
+2459.19s - 2460.43s |  even didn't prevent that.
+2460.43s - 2464.27s |  So I am not a firm believer in certifications nowadays.
+2464.27s - 2468.11s |  And, but this allows you to look further into IoT devices
+2468.11s - 2469.15s |  and into AI.
+2469.15s - 2472.55s |  And so hopefully this will be for our security,
+2472.55s - 2474.11s |  for everyone's security.
+2474.11s - 2475.19s |  Some quick acknowledgements.
+2475.19s - 2476.99s |  I would like to thank Daniel, Chris,
+2476.99s - 2478.71s |  as well as Timster and Apple.
+2478.71s - 2479.83s |  And if you have any questions,
+2479.83s - 2481.23s |  I think we have time.
+2481.23s - 2482.31s |  Maybe we have time.
+2482.31s - 2483.15s |  Actually, okay.
+2483.15s - 2485.39s |  You can ask us questions when we are basically done.
+2485.39s - 2486.83s |  Sorry for the problems.
+2486.83s - 2488.83s |  Thank you for being here.
+2488.83s - 2491.71s |  If you have any other questions like remote,
+2491.71s - 2492.67s |  this is our email addresses.
+2492.67s - 2493.83s |  Feel free to reach out.
+2494.87s - 2496.19s |  Yeah, thank you very much.

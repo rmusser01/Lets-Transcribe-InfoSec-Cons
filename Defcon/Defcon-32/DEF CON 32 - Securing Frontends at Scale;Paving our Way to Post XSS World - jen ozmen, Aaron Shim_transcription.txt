@@ -1,0 +1,633 @@
+{
+  "webpage_url": "https://www.youtube.com/watch?v=vEzLsRXjatw",
+  "title": "DEF CON 32 - Securing Frontends at Scale;Paving our Way to Post XSS World - jen ozmen, Aaron Shim",
+  "description": "Cross-site scripting (XSS) remains a top web vulnerability. Google has invested heavily in defenses, and in this talk, we'll share our blueprint for protecting your code. We'll discuss how we implemented runtime and compile-time protections across hundreds of products used by billions, highlighting technical lessons and best practices. We'll also glimpse into the future of anti-XSS defenses and explore how we can make the web safer for everyone.",
+  "channel_url": "https://www.youtube.com/channel/UC6Om9kAkl32dWlDSNlDS9Iw",
+  "duration": 1481,
+  "channel": "DEFCONConference",
+  "uploader": "DEFCONConference",
+  "upload_date": "20241016"
+}
+
+2.10s - 6.10s | This text was transcribed using whisper model: large-v2
+
+ Hello, my name is Aaron, and I guess I have to apologize.
+6.10s - 9.34s |  The resemblance is a little hard to see in that picture
+9.34s - 11.26s |  because my hair is not nearly as luscious
+11.26s - 12.62s |  as it is in that photo.
+12.62s - 15.46s |  But I'm sorry, your mineral content in the water,
+15.46s - 17.74s |  as you've all found out, really awful here.
+19.06s - 21.98s |  But yeah, like Jen, I work at Google.
+21.98s - 24.22s |  We do web security on hundreds
+24.22s - 25.58s |  and thousands of different web apps.
+25.58s - 28.22s |  I've been at Google for a little under seven years,
+28.22s - 29.86s |  and before my stint in security,
+29.86s - 31.34s |  I came from the developer side.
+31.34s - 34.42s |  I've worked on products like Google Docs and GCP,
+34.42s - 35.62s |  on customer-facing stuff.
+35.62s - 37.86s |  So when we approach this work
+37.86s - 40.82s |  of trying to make our web apps as secure as possible,
+40.82s - 43.18s |  we approach it with a special empathy for the developer,
+43.18s - 46.02s |  where we want to ship the most secure products,
+46.02s - 47.50s |  but also we don't want to get in the way
+47.50s - 51.10s |  of delivering really dynamic and new user features.
+52.14s - 53.86s |  Cool, thanks, Aaron.
+53.86s - 55.90s |  Here's a quick look at our agenda for today.
+55.90s - 58.98s |  So we'll start with a quick intro to XSS.
+58.98s - 60.66s |  I assume most of you are familiar with it,
+60.98s - 62.50s |  so we'll still go over some examples.
+62.50s - 64.42s |  And then we'll talk about runtime mitigation,
+64.42s - 66.98s |  specifically those that come with content security policy,
+66.98s - 68.42s |  and it's different flavors.
+68.42s - 70.02s |  Then we'll talk about how we use those
+70.02s - 72.74s |  to secure our applications at scale.
+72.74s - 75.46s |  And we'll move on to how we imagine the post-XSS world,
+75.46s - 76.96s |  and end with a call to action.
+77.94s - 79.94s |  Cool, so cross-site scripting.
+81.30s - 84.18s |  It's just some data to motivate that this is a big problem.
+84.18s - 86.16s |  Google runs a vulnerability reward program
+86.16s - 88.18s |  where we pay out security researchers
+88.18s - 90.10s |  when they report their bugs to us.
+90.82s - 93.82s |  As you can see here, over 50% of the bugs reported
+93.82s - 95.58s |  are web-related, that makes sense.
+95.58s - 97.18s |  Google is a web company.
+97.18s - 102.18s |  And then the rest, out of those 50%, almost 35 are XSS.
+103.18s - 104.70s |  So this was a really big problem,
+104.70s - 106.50s |  and that's why we've developed techniques
+106.50s - 107.94s |  to remediate this at scale.
+109.02s - 111.26s |  So let's talk about what XSS really is.
+111.26s - 114.26s |  The root cause is user input gets mixed up with code,
+114.26s - 116.42s |  and then gets interpreted as code.
+116.42s - 119.18s |  Because HTML is dynamic and mixes static data
+119.18s - 121.86s |  with logic that should execute, as you see here.
+121.86s - 122.86s |  This is very prevalent.
+122.86s - 124.70s |  And this leads to malicious scripts
+124.70s - 126.94s |  getting injected into a trusted site.
+126.94s - 130.22s |  In this example, you see, very simple example,
+130.22s - 132.18s |  there's a description that's supposed to be dynamic,
+132.18s - 133.78s |  but if this is user-controlled,
+133.78s - 136.66s |  we can inject the following script and get it to execute.
+136.66s - 138.06s |  And there, you have an XSS.
+139.34s - 141.54s |  An XSS, when exploited, lets the attacker
+141.54s - 144.26s |  take control of the account of a logged-in user.
+144.26s - 146.48s |  This means the attacker can do anything the victim can,
+146.48s - 147.46s |  so it's pretty powerful,
+147.50s - 149.90s |  and that's why we try really hard to avoid it.
+149.90s - 152.06s |  We also call this the client-side version
+152.06s - 154.10s |  of remote code execution,
+154.10s - 157.30s |  as they share a similar concept of arbitrary code execution.
+157.30s - 161.26s |  And here's another format you might be used to seeing XSS.
+161.26s - 163.62s |  We usually pop an alert with the document domain
+163.62s - 166.06s |  as a proof of concept when we find an XSS vector.
+167.62s - 169.98s |  So a quick example of DOM XSS,
+169.98s - 173.58s |  the client-signed variant of cross-site scripting.
+173.58s - 177.30s |  The root cause here is DOM APIs are not secure by default.
+178.14s - 181.54s |  JavaScript and JavaScript loves turning strings into code
+181.54s - 185.50s |  through APIs like innerHTML or script.innerText.
+185.50s - 187.94s |  Here's a very simple example of how this might happen.
+187.94s - 189.66s |  In this code snippet, location hash
+189.66s - 191.22s |  is a user-controlled string.
+191.22s - 194.30s |  We take that and happily insert it into innerHTML.
+194.30s - 196.70s |  In this case, with the example here,
+196.70s - 199.46s |  the onError alert statement will execute,
+199.46s - 200.82s |  and then we have XSS.
+200.82s - 202.46s |  But no one codes like this anymore, right?
+202.46s - 204.20s |  Thanks to modern frameworks like React
+204.20s - 205.92s |  that abstract away DOM manipulations,
+205.92s - 207.02s |  nobody has to do this.
+208.30s - 211.30s |  Except not.
+211.30s - 214.38s |  As you can see in this fresh bit of internet outrage,
+214.38s - 216.58s |  an enterprising developer has managed
+216.58s - 218.94s |  to work in a innerHTML assignment
+218.94s - 221.54s |  inside a very functional React component.
+221.54s - 223.54s |  It's supposed to be a really advanced system
+223.54s - 225.74s |  that takes care of the virtual DOM dipping,
+225.74s - 227.30s |  all of the different re-rendering things
+227.30s - 228.86s |  so that you don't have to do this yourself,
+228.86s - 230.74s |  but this developer, they really want to take it
+230.74s - 232.18s |  into their own hands.
+232.18s - 234.18s |  And this is the crux of the problem.
+234.18s - 236.62s |  Just because a framework can abstract away
+236.66s - 238.46s |  the complex DOM operations,
+238.46s - 239.90s |  doesn't mean that it can prevent
+239.90s - 241.54s |  a developer from using them.
+241.54s - 243.30s |  And these issues are really easy
+243.30s - 244.62s |  to introduce in your code base.
+244.62s - 246.94s |  It really takes a developer, a code reviewer,
+246.94s - 250.34s |  having a bad day, and once it sneaks into your product,
+250.34s - 252.58s |  then it's really hard to eradicate.
+252.58s - 256.18s |  So do we stand a chance against this class of problems?
+256.18s - 257.22s |  And we think we do.
+257.22s - 259.64s |  We've all heard of content security policy
+259.64s - 262.36s |  and how it can solve all your process scripting, right?
+262.36s - 265.86s |  Well, we do admit that content security policy
+265.86s - 268.82s |  is a little bit difficult to understand and configure.
+268.82s - 272.10s |  It really is more like a meta feature than a feature.
+272.10s - 274.30s |  It has a lot of bells and whistles and knobs
+274.30s - 276.82s |  that you can change, a lot of directives,
+276.82s - 278.46s |  what do you have to set on these directives,
+278.46s - 280.50s |  and it is a little confusing
+280.50s - 282.18s |  because it tries to cover everything,
+282.18s - 284.80s |  any sort of resource that loads on your page.
+284.80s - 286.78s |  But hopefully, when we go on this journey together,
+286.78s - 289.38s |  we can talk about some of the configurations
+289.38s - 291.66s |  that we've found to work at scale
+291.66s - 294.02s |  and cover many classes of cross-site scripting,
+294.02s - 298.00s |  and we'll see why they work together.
+298.90s - 299.78s |  And before we begin,
+299.78s - 303.54s |  since we are talking about cross-site scripting
+303.54s - 307.30s |  and CSP and protections that Google uses,
+307.30s - 308.22s |  maybe we'll take a look
+308.22s - 310.68s |  at what is actually working in the wild.
+310.68s - 313.54s |  So here we have an example of particular Google web app
+313.54s - 315.26s |  that some of you may have used.
+315.26s - 317.10s |  You know it has a really complicated UI
+317.10s - 319.92s |  with a lot of interactive user features
+319.92s - 322.12s |  and a small call-out to this team.
+322.16s - 323.40s |  They've been great partners
+323.40s - 326.04s |  in really shipping the best and greatest
+326.04s - 329.08s |  and the latest web protection mitigations
+329.08s - 331.60s |  and working really hard to keep their end users safe.
+331.60s - 333.68s |  So let's open up Chrome DevTools
+333.68s - 335.20s |  and see what we are actually shipping
+335.20s - 336.88s |  on a real-life product.
+336.88s - 338.36s |  And as you can see here,
+338.36s - 341.90s |  we see a couple different content security policies,
+341.90s - 343.26s |  a lot of them, as a matter of fact.
+343.26s - 344.84s |  But like we said before,
+344.84s - 347.12s |  not all of them are specifically
+347.12s - 348.76s |  for cross-site scripting defenses
+348.76s - 350.28s |  because it's a meta feature
+350.28s - 352.44s |  that can also turn off other
+352.44s - 354.28s |  potential dangerous vectors as well.
+354.28s - 356.00s |  We don't have time to get into the other protections,
+356.00s - 357.24s |  but if you have questions,
+357.24s - 359.28s |  we will be sticking around for a little bit after
+359.28s - 361.86s |  so we can go into more detail after the talk.
+361.86s - 364.24s |  But for now, we'll focus on these two,
+364.24s - 367.32s |  the ones that we find really powerful protections
+367.32s - 368.76s |  against cross-site scripting,
+368.76s - 371.44s |  namely the nonce-only CSP
+371.44s - 375.19s |  and the trusted types header.
+375.19s - 377.11s |  Cool, and we'll go into some details.
+377.11s - 378.83s |  So nonce-only CSP,
+378.83s - 381.21s |  in the example we saw before,
+381.61s - 382.65s |  it's pretty self-explanatory.
+382.65s - 384.55s |  It's the one with the nonce directive.
+385.81s - 387.61s |  More specifically, a nonce-only policy
+387.61s - 390.09s |  takes a form that looks a bit like this.
+390.09s - 391.97s |  Internally, we recommend a nonce-only
+391.97s - 395.09s |  or a strict CSP for most of our modern web apps.
+395.09s - 397.39s |  What this does is only what's allow-listed
+397.39s - 398.97s |  under the script source directive
+398.97s - 400.11s |  can run on the page.
+400.11s - 401.57s |  Other scripts will be blocked.
+401.57s - 404.01s |  So in this case, any script with the right nonce,
+404.01s - 406.89s |  which is a random value that's generated per request,
+407.77s - 408.73s |  can run on the page.
+408.73s - 411.01s |  So the templating systems usually propagate
+411.77s - 413.09s |  the nonce for each script tag on the HTML,
+413.09s - 416.93s |  and the header has to send the right value for the nonce.
+416.93s - 418.49s |  So the header and the HTML work together
+418.49s - 420.05s |  to indicate which scripts are trusted,
+420.05s - 422.65s |  and the browser can act accordingly.
+422.65s - 424.41s |  Another CSP directive that's useful
+424.41s - 427.77s |  for a nonce-only policy is the strict dynamic directive.
+427.77s - 431.13s |  This directive enables a transitive trust for scripts.
+431.13s - 433.43s |  So if you have one script with the right nonce,
+433.43s - 435.25s |  it's allowed to load other scripts,
+435.25s - 437.21s |  and the trust is propagated.
+437.21s - 438.53s |  When we don't have this directive,
+438.53s - 440.63s |  only scripts with the right nonce can execute
+441.25s - 443.45s |  and if they load other scripts, they'll be blocked.
+443.45s - 445.79s |  So although this slightly relaxes the policy,
+445.79s - 449.03s |  we found that it's also made adoptions a lot easier
+449.03s - 450.07s |  for complex web apps,
+450.07s - 452.47s |  so that's the trade-off that we're working with.
+454.19s - 455.07s |  So thanks, Jen.
+455.07s - 457.83s |  So as Jen mentioned, a nonce-only CSP is great
+457.83s - 460.27s |  if you have the backend or the server-side render content
+460.27s - 461.75s |  working in close conjunction
+461.75s - 463.47s |  with the frontend or client-side code
+463.47s - 464.99s |  because you have to generate these nonces
+464.99s - 467.99s |  that are new for every single response.
+467.99s - 470.39s |  But what if you don't have control over the backend?
+471.15s - 472.27s |  Then we have to use a close relative
+472.27s - 475.11s |  of the nonce-only CSP called the hash-based CSP.
+475.11s - 477.23s |  And the way it works is it's very similar
+477.23s - 479.71s |  to a nonce-based policy, but as you've noticed,
+479.71s - 482.75s |  instead of the nonce value, we provide a hash value.
+482.75s - 484.45s |  And this is really powerful
+484.45s - 487.49s |  because we don't have to regenerate this CSP
+487.49s - 489.11s |  for every response load.
+489.11s - 493.03s |  The hash is fixed, presumably because on every response,
+493.03s - 495.91s |  your script is mostly the same.
+495.91s - 498.51s |  And this is really powerful
+498.51s - 500.55s |  when you don't have control over that backend
+500.55s - 505.55s |  so you can put in the logic to do this nonce generation.
+505.63s - 507.53s |  And this is also super useful
+507.53s - 510.39s |  for the SBA, single-page applications,
+510.39s - 513.27s |  because when you are doing the final bundling process
+513.27s - 516.07s |  for your final HTML, you know what script has
+516.07s - 518.27s |  are going to be there in your SBA bundle
+518.27s - 520.71s |  and use that to generate your hash.
+520.71s - 522.85s |  And there you go, a fixed CSP policy
+522.85s - 524.63s |  that offers this protection
+524.63s - 527.45s |  that you can even drop into a meta tag
+527.45s - 529.13s |  at the top of the HTML file.
+529.13s - 532.69s |  And in more detail, so what you have on the left
+532.69s - 534.65s |  is sort of like what your bundle might look like
+534.65s - 536.33s |  for a particular single-page application.
+536.33s - 537.61s |  You got a couple scripts loading
+537.61s - 540.73s |  to actually get the user interaction going.
+540.73s - 543.25s |  And we would actually rewrite this, in this case,
+543.25s - 547.43s |  into a dynamic loader inside an inline script block
+547.43s - 549.37s |  because that is one of the characteristics
+549.37s - 550.77s |  of a hash-based CSP for now.
+550.77s - 553.97s |  You need to know exactly what's in the script content
+553.97s - 555.09s |  in order to make the hash.
+555.09s - 558.73s |  So usually you do this by actually inlining the block.
+558.73s - 562.85s |  And if you have resources that would load over the network,
+562.85s - 565.49s |  then you turn it into a JavaScript
+565.49s - 567.85s |  that would dynamically add it to the page.
+567.85s - 571.69s |  And once we have that, we also added some preload tags
+571.69s - 574.45s |  so that we actually get the parallelization going
+574.45s - 575.87s |  for fetching these resources.
+575.87s - 578.01s |  You can take the script block, create the hash,
+578.01s - 581.57s |  and stick it in as a meta tag that carries a CSP,
+581.57s - 582.87s |  and there you go.
+582.87s - 585.91s |  The HTML is self-contained and offers its protection
+585.91s - 592.20s |  with a CSP baked in.
+592.20s - 594.28s |  The next CSP-delivered mitigation
+594.28s - 596.20s |  that we want to talk about is Trusted Types.
+596.20s - 597.88s |  Specifically, Trusted Types is geared
+597.88s - 600.36s |  towards protecting DOM-based XSS.
+600.36s - 602.48s |  So in the example that we saw before,
+602.48s - 605.16s |  it's the one that says Require Trusted Types For,
+605.16s - 609.24s |  and that's the directive that you need to send.
+609.24s - 611.36s |  So we want to point out that the attack surface is
+611.36s - 613.16s |  large here for DOM XSS.
+613.16s - 614.96s |  There's over 60 JavaScript APIs that
+614.96s - 617.40s |  can turn strings into code and lead to arbitrary code
+617.40s - 620.08s |  execution, and DOM XSS is usually
+620.08s - 622.08s |  very easy to introduce and hard to detect.
+622.08s - 623.64s |  Calls to these APIs could be going
+623.64s - 625.68s |  through multiple levels of indirections.
+625.68s - 627.52s |  It could be in a transitive dependency,
+627.52s - 629.08s |  or it could exist in libraries that we
+629.08s - 630.32s |  don't have control over.
+630.32s - 632.32s |  So how can we make this better?
+632.32s - 634.60s |  And we need a runtime mitigation for this,
+634.60s - 636.36s |  and this is where Trusted Types comes in.
+636.36s - 637.84s |  The main idea behind Trusted Types
+637.84s - 640.76s |  is to make security decisions explicit and auditable.
+640.76s - 642.96s |  To do this, Trusted Types will restrict the access
+642.96s - 644.84s |  to the dangerous DOM APIs.
+644.84s - 646.56s |  We mentioned previously, and it'll
+646.56s - 649.24s |  require typed objects instead of plain strings
+649.24s - 652.72s |  to be passed into the over 60 APIs.
+652.72s - 654.40s |  So in this case, instead of strings
+654.40s - 657.12s |  that represent script URLs, HTML, or scripts,
+657.12s - 659.84s |  we'll require typed objects such as TrustedScriptURL.
+659.84s - 662.12s |  And we'll discuss how to generate these typed objects,
+662.12s - 665.20s |  but this is the main idea.
+665.20s - 667.28s |  This is what the header looks like, again.
+667.28s - 669.68s |  This tells the browser to reject string assignments
+669.68s - 671.40s |  to injection syncs, and effectively, it
+671.40s - 673.20s |  provides a runtime type checking mechanism
+673.20s - 675.28s |  on top of JavaScript.
+675.28s - 678.44s |  If you remember the example from our DOMXSS slide before,
+678.44s - 680.80s |  we're using a plain string here within our HTML.
+680.80s - 682.44s |  And if Trusted Types were enforced,
+682.44s - 685.20s |  we would throw an error that looks like this.
+685.20s - 687.80s |  So the browser will tell you you need a trusted HTML,
+687.80s - 690.52s |  and it won't use a string.
+690.52s - 692.88s |  We want to highlight that most security guarantees
+692.88s - 694.84s |  of Trusted Types come from a policy,
+694.84s - 696.68s |  and the policy is what I mentioned
+696.68s - 700.00s |  of how we could generate a trusted object.
+700.00s - 702.72s |  So you can think of it as a wrapper that takes in a string
+702.72s - 704.76s |  and returns a TrustedType.
+704.76s - 706.30s |  And we apply this policy to strings
+706.30s - 708.20s |  before inserting them into the DOM sync.
+708.20s - 710.08s |  And the processing you do within the policy
+710.08s - 711.96s |  should make sure the string won't
+711.96s - 714.60s |  lead to any unintended code execution,
+714.60s - 716.80s |  therefore preventing DOMXSS.
+716.80s - 719.84s |  So in this example, we use a sanitizer from DOMPurify.
+719.84s - 721.68s |  We check for the presence of TrustedTypes
+721.68s - 724.76s |  in the JavaScript namespace for browser compatibility,
+724.76s - 726.90s |  and then use the correct factory if it exists.
+726.90s - 729.40s |  But if you don't want to keep writing this verbose if block
+729.40s - 732.32s |  because it is a bit clunky, DOMPurify also
+732.32s - 734.20s |  works with TrustedTypes off the shelf.
+734.20s - 737.32s |  So it will do the policy creation and the browser
+737.32s - 739.64s |  compatibility checking under the hood for you
+739.64s - 745.19s |  if you pass in the right config for TrustedTypes.
+745.19s - 746.03s |  Thanks, Jen.
+746.03s - 748.31s |  So now that we've talked about our security features
+748.31s - 750.63s |  that we believe are powerful against cross-site scripting
+750.63s - 752.35s |  today, we'll touch a little bit on how
+752.35s - 755.03s |  to use them in your application and offer a bit of the lessons
+755.03s - 758.39s |  that we've learned from securing our apps at scale at Google.
+758.39s - 760.51s |  So before we begin, we'd like to make a quick plug
+760.51s - 762.39s |  for an article that presents many of the ideas
+762.39s - 765.25s |  that we'll discuss in the next section, but in written form.
+765.25s - 767.65s |  This approach is used widely in our team and in our org,
+767.65s - 769.35s |  and this article goes into a little bit more detail
+769.35s - 771.55s |  than what we have time for in some of the ideas
+771.55s - 773.37s |  that we'll elaborate on next.
+773.37s - 775.85s |  It's on the Google Security Engineering blog
+775.85s - 779.97s |  at bughunters.google.com, along with other great content
+779.97s - 781.81s |  like this, and also similar to, I think,
+781.81s - 782.89s |  the theme of this village.
+782.89s - 784.81s |  So please check us out.
+784.81s - 787.37s |  So back to the main show, what are some of the tactics
+787.37s - 790.97s |  that we use to adopt these security features at scale
+790.97s - 792.61s |  on hundreds of different web apps?
+792.61s - 793.69s |  So some of the lessons that we've
+793.69s - 796.21s |  learned that we find most useful are, number one,
+796.21s - 798.97s |  use the frameworks that will help you in this journey.
+798.97s - 803.13s |  Number two, try to shift left to get developers an indication
+803.13s - 805.39s |  whether this feature is incompatible with code
+805.39s - 808.33s |  that they're writing as early as possible in the process.
+808.33s - 811.77s |  Number three, some tools that we've built and we also
+811.77s - 814.41s |  rely on throughout this process that we found useful.
+814.41s - 817.81s |  And number four, a quick note about third-party dependencies
+817.81s - 820.53s |  and how they might complicate your adoption process.
+820.53s - 822.93s |  So the first big idea is, if you're
+822.93s - 825.67s |  starting a new code base from scratch,
+825.67s - 827.05s |  let's think about which frameworks
+827.05s - 829.17s |  we can use that will give us security superpowers.
+829.17s - 832.45s |  And the big idea behind that is that, at our scale,
+832.45s - 835.57s |  at at-scale defense against cross-site scripting at Google,
+835.57s - 837.65s |  we rely on frameworks with, number one,
+837.65s - 840.41s |  context-aware templating, and number two,
+840.41s - 842.81s |  built-in compatibility with these security features
+842.81s - 846.13s |  that are secure by default. And as a quick aside,
+846.13s - 848.65s |  we haven't talked too much about context-aware templating
+848.65s - 851.21s |  right now, but we don't have too much time to get into that.
+851.21s - 854.05s |  But the gist of it is, you want to have a templating system
+854.05s - 856.01s |  that does reasonable enough things
+856.01s - 859.57s |  to prevent a lot of server-side rendered cross-site scripting
+859.57s - 860.37s |  from happening.
+860.37s - 861.65s |  Catch us after the talk, and we are
+861.65s - 863.15s |  happy to chat about templating, too,
+863.15s - 865.73s |  which is beyond the scope of this talk.
+865.73s - 868.93s |  So what we want to cover on this slide
+868.93s - 870.73s |  and for the rest of the talk is what
+870.73s - 873.17s |  we call the safe coding philosophy at Google.
+873.17s - 875.25s |  And this is the idea that we want
+875.25s - 877.77s |  to give tools to developers that take away
+877.77s - 880.29s |  a lot of the uncertainty from the developer
+880.29s - 882.49s |  on how to use and configure these security
+882.49s - 884.57s |  features correctly, because they are really
+884.57s - 887.29s |  easy to misconfigure in really subtle ways.
+887.29s - 889.05s |  And we want the security to not really
+889.05s - 891.81s |  get in the way of feature development
+891.81s - 893.69s |  and shipping great things to our users,
+893.69s - 895.81s |  so we want to abstract away some of these decisions
+895.81s - 898.29s |  in a clear and understandable manner.
+898.29s - 901.45s |  And the key to do this is through our frameworks
+901.45s - 902.61s |  and our APIs.
+902.61s - 905.73s |  And we'll say that this is possible at Google
+905.73s - 907.41s |  because you do have tight control
+907.41s - 909.77s |  over the internal frameworks that you use in-house
+909.77s - 911.65s |  and also tight control over the guidance
+911.65s - 914.57s |  that we give to our developers on how to use these frameworks.
+914.57s - 916.69s |  But I imagine many of the web developers
+916.69s - 919.31s |  here aren't building internal web apps for Google,
+919.31s - 921.85s |  so how can we get some of these benefits?
+921.85s - 924.15s |  And thankfully, our colleagues have
+924.15s - 926.47s |  worked hard to ensure compatibility
+926.47s - 929.41s |  with some of these security features in frameworks
+929.41s - 932.03s |  that are available outside of our internal ecosystem
+932.03s - 932.65s |  as well.
+932.65s - 934.19s |  For instance, some of the frameworks
+934.19s - 937.95s |  are also available externally, like Angular and Lit.
+937.95s - 940.11s |  All the hardening work that we do there
+940.11s - 942.23s |  translates to benefits for the ecosystem
+942.23s - 944.15s |  and for everyone in the world to use.
+944.15s - 945.79s |  But if you're also using frameworks
+945.79s - 949.67s |  that are not entirely within the Google ecosystem
+949.67s - 953.07s |  or very Google-inspired, we also have our colleagues
+953.07s - 955.39s |  at Meta, who did a lot of work to make
+955.39s - 957.59s |  React compatible with CSV and Trusted Types.
+957.59s - 959.75s |  And some of the frameworks that are based on React,
+959.75s - 962.79s |  like Next.js, thanks to volunteers and other colleagues,
+962.79s - 965.11s |  have compatibility as well.
+965.11s - 965.75s |  Great.
+965.75s - 969.17s |  So on to the second idea, how to shift left and enforce early.
+969.17s - 970.63s |  And this is just the idea that we
+970.63s - 972.43s |  want to add these headers and protections
+972.43s - 974.75s |  as early as possible, maybe in your dev server,
+974.75s - 976.87s |  so that when things go wrong, your developers
+976.87s - 979.19s |  can see the error and act on it as soon
+979.19s - 981.87s |  as they've written the code so that they can fix it
+981.87s - 984.03s |  while the context of what they're trying to do
+984.03s - 985.59s |  is fresh in their minds.
+985.59s - 989.23s |  And more technically, a way to do this is, well,
+989.23s - 992.27s |  here in this example, we have a configuration
+992.27s - 993.67s |  for a Vite dev server.
+993.67s - 996.59s |  I hear that's what all the web developers are using nowadays.
+996.59s - 998.87s |  We are all onto Vite now.
+998.87s - 1002.75s |  And here we see a Node.js express-style middleware
+1002.75s - 1004.79s |  inside this configuration for the dev server.
+1004.79s - 1008.67s |  That just dumps in these headers.
+1008.67s - 1010.63s |  But if you don't have control over your dev
+1010.63s - 1013.75s |  server or your serving stack, as you mentioned before,
+1013.75s - 1016.43s |  meta tags at the top of an HTML file
+1016.43s - 1018.27s |  also can deliver these headers.
+1018.27s - 1020.19s |  And for the observant among you, you
+1020.19s - 1023.55s |  will see that here we have our hash-based CSP again.
+1023.55s - 1027.99s |  Because if you are baking a CSP into a static HTML page,
+1027.99s - 1029.67s |  you really want it to be a hash-based CSP
+1029.67s - 1032.51s |  so that the nonce value isn't blown
+1032.51s - 1034.03s |  the first time you use it.
+1034.03s - 1037.47s |  And we saw an example of how to do the refactoring
+1037.47s - 1038.99s |  to make a hash-based CSP before.
+1038.99s - 1040.27s |  And it was a little cumbersome.
+1040.27s - 1042.51s |  So how can you do that more easily?
+1042.51s - 1046.59s |  And the answer is we have an experimental tool
+1046.59s - 1048.43s |  available in GitHub and NPM that does
+1048.43s - 1050.95s |  a lot of this transformation for you.
+1050.95s - 1053.63s |  This is available as a Webpack plugin,
+1053.63s - 1056.39s |  but also as a utility library that
+1056.39s - 1058.39s |  takes in a string of the HTML and does
+1058.39s - 1060.39s |  a refactoring like this.
+1060.39s - 1062.47s |  I mean, I know there's a lot of code on the screen.
+1062.47s - 1064.91s |  But it just takes in a string and outputs a string.
+1064.91s - 1067.15s |  And it will shuffle around the nodes,
+1067.15s - 1069.35s |  do the hashing, add the meta tags for you.
+1069.35s - 1071.23s |  And this is really powerful because this
+1071.23s - 1073.95s |  is a very framework-agnostic way that now has
+1073.95s - 1077.67s |  proven to have outlasted the popularity of Webpack plugins
+1077.67s - 1080.07s |  because they just keep changing the configurations.
+1080.07s - 1083.55s |  But yeah, but this is really powerful
+1083.55s - 1085.95s |  because if we remember the example from before
+1085.95s - 1089.39s |  with the Vite middleware, it composes almost perfectly.
+1089.39s - 1092.07s |  This is just a copy-paste job of the last two slides.
+1092.07s - 1094.43s |  And yeah, and I think one of the lessons
+1094.43s - 1096.43s |  we've learned in building some of this tooling
+1096.43s - 1099.39s |  is if you keep it as agnostic as possible in terms
+1099.39s - 1102.79s |  of frameworks and just separate the logic from the framework,
+1102.79s - 1105.19s |  then you can just snap the pieces together
+1105.19s - 1108.39s |  when a new framework comes along.
+1108.39s - 1111.91s |  So on to the next section.
+1111.91s - 1113.19s |  Thanks, Eric.
+1113.19s - 1116.27s |  In addition to using the header to spot violations early,
+1116.27s - 1118.31s |  we really advocate for using some other tools
+1118.31s - 1120.59s |  to help you with adopting these defenses.
+1120.59s - 1122.51s |  We'll introduce a bunch of helpful tools,
+1122.51s - 1126.11s |  but they can categorically be broken down into, first
+1126.11s - 1129.35s |  of all, tools for understanding features and violations.
+1129.35s - 1131.23s |  We mentioned that CSP is notoriously
+1131.23s - 1132.99s |  hard to configure and understand.
+1132.99s - 1135.27s |  And the CSP evaluator solves that problem.
+1135.27s - 1138.27s |  It's available as either a website or a Chrome extension,
+1138.27s - 1140.11s |  which will give you some high-level guidance
+1140.11s - 1141.59s |  on the configuration of your CSP.
+1141.59s - 1146.67s |  It can detect directives and then kind of explain them.
+1146.67s - 1148.47s |  We're also actively working on a tool
+1148.47s - 1149.83s |  called Trusted Types Helper.
+1149.83s - 1153.03s |  This isn't released yet, but it will be soon,
+1153.03s - 1155.51s |  for streamlining the Trusted Types adoption process.
+1155.51s - 1157.87s |  One of the most time-consuming and painful stages
+1157.87s - 1160.07s |  of Trusted Types enforcement is finding the source
+1160.07s - 1161.83s |  of violations and trying to fix them.
+1161.83s - 1164.63s |  So this Chrome extension will create a DevTools tab
+1164.63s - 1166.87s |  that helps you demystify Trusted Types violations
+1166.87s - 1168.07s |  and suggest some refactoring.
+1168.07s - 1170.31s |  So stay tuned.
+1170.31s - 1172.09s |  Another category of tools are those
+1172.09s - 1175.75s |  that help with refactoring using static analysis.
+1175.75s - 1178.47s |  We have a huge static analysis pipeline at Google.
+1178.47s - 1180.01s |  And we took the most effective checks
+1180.01s - 1182.39s |  that we run on our internal static analysis
+1182.39s - 1185.49s |  tooling and linter and built it on top of ESLint.
+1185.49s - 1187.15s |  And that is Safety Web.
+1187.15s - 1189.79s |  This project is also in active development,
+1189.79s - 1191.87s |  but it is available on GitHub.
+1191.87s - 1193.43s |  As you can see in the example here,
+1193.43s - 1196.03s |  it'll detect unsafe usages of risky APIs.
+1196.03s - 1197.83s |  And you can refactor these unsafe calls
+1197.83s - 1200.63s |  with another tool we provide called Safe Values.
+1200.63s - 1204.39s |  So Safe Values is a library designed to steer developers
+1204.39s - 1206.39s |  to make safer choices.
+1206.39s - 1208.27s |  It will prevent unsafe assignments
+1208.27s - 1211.27s |  using TypeScript type checking unless the value is trusted,
+1211.27s - 1213.91s |  either from a trusted source or by transformation
+1213.91s - 1214.83s |  that makes it trusted.
+1214.83s - 1219.47s |  For example, sanitizing in HTML makes it trusted.
+1219.47s - 1221.55s |  As we mentioned, we were going to add a quick note
+1221.55s - 1223.39s |  about third-party dependencies.
+1223.39s - 1225.43s |  This is the complicated part.
+1225.43s - 1227.97s |  And it's a big aspect of making your application
+1227.97s - 1230.19s |  compatible with these features.
+1230.19s - 1232.43s |  For both trusted types and CSV, all code
+1232.43s - 1234.75s |  running on your site needs to be free of violations
+1234.75s - 1235.67s |  of these policies.
+1235.67s - 1238.27s |  Otherwise, they will be blocked by the browser.
+1238.27s - 1240.07s |  This is a hard part because we won't always
+1240.07s - 1242.99s |  know which dependencies are incompatible until we've
+1242.99s - 1243.99s |  introduced them.
+1243.99s - 1246.03s |  And it's also hard to fix because the potential
+1246.03s - 1247.99s |  refactoring sites don't exist in our code,
+1247.99s - 1250.91s |  but code that others have written and others control.
+1250.91s - 1252.35s |  We're currently working on tooling
+1252.35s - 1254.39s |  that will make informed decisions about which
+1254.39s - 1256.27s |  dependencies might be compatible with which
+1256.27s - 1257.79s |  features in the ecosystem.
+1257.79s - 1260.47s |  But this is a part where we could use some help as well.
+1260.47s - 1263.23s |  As CSV and trusted types gain more widespread browser
+1263.23s - 1265.75s |  adoption, you can help us by making pull requests
+1265.75s - 1267.83s |  if you do end up patching third-party dependencies
+1267.83s - 1273.16s |  that you find along your journey of adopting these features.
+1273.16s - 1273.72s |  Thanks, Jen.
+1273.72s - 1276.68s |  So I know we talked a lot about the mitigations
+1276.68s - 1279.00s |  and the tools that are used today to protect our apps.
+1279.00s - 1280.50s |  But let's talk a bit about where we
+1280.50s - 1282.80s |  want to go from here and the more secure world
+1282.80s - 1285.40s |  that we'd like to see in the future.
+1285.40s - 1288.12s |  And here are the key ideas we talked about today
+1288.12s - 1291.44s |  that form the basis of this protection, this pipeline
+1291.44s - 1294.60s |  of protection, if you will.
+1294.60s - 1297.68s |  So the running theme is abstracting security decisions
+1297.68s - 1301.16s |  away from developers in a clear and secure by default way.
+1301.16s - 1302.88s |  When all of these elements work together,
+1302.88s - 1305.08s |  starting from the first stage when the code is written
+1305.08s - 1306.54s |  all the way to the final point when
+1306.54s - 1309.02s |  the code is executed in the client's browser,
+1309.02s - 1311.74s |  we have protection at every stage of the development
+1311.74s - 1312.86s |  lifecycle.
+1312.86s - 1315.50s |  And this should make most cross-site scripting solvable.
+1315.50s - 1317.94s |  And we see this working at Google scale.
+1317.94s - 1320.22s |  On our most recent in-house frameworks
+1320.22s - 1323.22s |  that follow a lot of these guidelines from these pillars,
+1323.22s - 1325.10s |  we see so few cross-site scripting.
+1325.10s - 1327.50s |  And none of them are trivial attack chains.
+1327.50s - 1331.18s |  And all of them really have some weird logic bug
+1331.18s - 1332.98s |  or some legacy system involved.
+1332.98s - 1335.58s |  So we are seeing the effects of this working
+1335.58s - 1337.50s |  at scale across billions of users
+1337.50s - 1339.18s |  and hundreds of different web apps.
+1339.18s - 1340.54s |  But how can we make this safer?
+1340.54s - 1341.62s |  Where do we go from here?
+1341.62s - 1343.42s |  What's the next logical step?
+1343.42s - 1345.42s |  And we believe that, remember how
+1345.42s - 1346.62s |  we talked about trusted types?
+1346.62s - 1351.42s |  And it blocks a lot of these inherently unsafe DOM APIs
+1351.42s - 1354.26s |  in the web platform, or at least makes it harder to use.
+1354.26s - 1357.14s |  What if we take that to the conclusion of the idea
+1357.14s - 1359.46s |  and actually ban all of those usages
+1359.46s - 1362.06s |  at runtime of these legacy DOM APIs
+1362.06s - 1366.62s |  that are a little bit inherently unsafe as they've
+1366.62s - 1367.54s |  been designed?
+1367.54s - 1371.42s |  Can you build apps where we don't use any of those APIs?
+1371.42s - 1373.82s |  And that's our future vision of where we go from here.
+1373.82s - 1376.74s |  If we have new platform-level APIs for operations
+1376.74s - 1379.26s |  that we currently use DOM APIs for,
+1379.26s - 1381.86s |  such as maybe a browser-included sanitizer
+1381.86s - 1385.10s |  implementation for HTML, maybe a templating solution,
+1385.10s - 1386.86s |  then we've really come full circle
+1386.86s - 1388.74s |  and have our runtime enforcements
+1388.74s - 1391.66s |  influence a new suite of secure-by-default web platform
+1391.74s - 1394.38s |  APIs to bring decisions that nudge developers
+1394.38s - 1397.42s |  towards safer choices, maybe at the framework level,
+1397.42s - 1399.62s |  from the very beginning when the first line of code
+1399.62s - 1401.94s |  is written in a new code base, all the way
+1401.94s - 1407.38s |  to the moment when it is executed on the client's
+1407.38s - 1408.70s |  browser.
+1408.70s - 1410.54s |  And this is a future we hope to get to,
+1410.54s - 1412.94s |  one where we can safely lock down all the accesses
+1412.94s - 1416.14s |  to many DOM APIs, along with a new suite of platform APIs
+1416.14s - 1419.14s |  to replace those operations in a safe-by-default manner.
+1419.14s - 1420.50s |  And we call this approach, we've
+1420.50s - 1421.90s |  nicknamed it Perfect Types.
+1421.90s - 1424.74s |  It is the logical evolution of Trusted Types.
+1424.74s - 1426.50s |  And we see this as the next evolution
+1426.50s - 1428.62s |  of Trusted Types and a post-cross-site scripting
+1428.62s - 1429.26s |  world.
+1429.26s - 1431.74s |  This, combined with the strict CSP configurations
+1431.74s - 1434.50s |  we talked about and our framework-based approaches,
+1434.50s - 1436.18s |  secure-by-design, safe-by-design,
+1436.18s - 1438.18s |  should guide us to a new post-cross-site scripting
+1438.18s - 1438.70s |  world.
+1438.70s - 1441.70s |  And taking a step back for a second for an even bigger
+1441.70s - 1445.82s |  picture, and as a final plug, this safe coding philosophy
+1445.82s - 1447.98s |  and safe-by-design, trying to steer developers
+1447.98s - 1449.48s |  in the right direction, is something
+1449.48s - 1451.66s |  that extends beyond just JavaScript, cross-site
+1451.66s - 1455.10s |  scripting, and is a core priority for all Google-scale
+1455.10s - 1456.18s |  security efforts.
+1456.18s - 1458.46s |  You can read more about our organization's work
+1458.46s - 1459.14s |  at these links.
+1459.14s - 1462.20s |  And Google is a signer of CISA's Secure-by-Design Pledge,
+1462.20s - 1465.02s |  along with other industry and government leaders in the space.
+1465.02s - 1466.82s |  And we've committed to sharing our knowledge
+1466.82s - 1470.26s |  on how to build a safer future together.
+1470.26s - 1472.74s |  All right, well, that is the end of our talk.
+1472.74s - 1474.38s |  So thank you, everyone, for listening.
+1474.38s - 1476.02s |  Hopefully, this was a good guide on how
+1476.02s - 1477.46s |  to think about solving XSS.
+1477.46s - 1479.62s |  I'll leave you to it.

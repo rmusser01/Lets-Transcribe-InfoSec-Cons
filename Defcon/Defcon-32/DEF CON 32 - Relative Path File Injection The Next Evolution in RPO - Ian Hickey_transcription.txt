@@ -1,0 +1,226 @@
+{
+  "webpage_url": "https://www.youtube.com/watch?v=3y_6oSZwLr0",
+  "title": "DEF CON 32 - Relative Path File Injection  The Next Evolution in RPO - Ian Hickey",
+  "description": "Most web security professionals are familiar with Relative Path Overwrite (RPO) attacks that allow injecting malicious CSS via a quirk in how browsers handle paths. But what if you could use a similar technique to get victims to download malicious files by clicking an innocuous looking download link on a trusted site? In this presentation, we'll unveil a new attack vector dubbed Relative Path File Injection (RPFI) that abuses path handling to turn benign websites into malware delivery platforms. Attendees will learn the anatomy of an RPFI attack, see demos of it in action, and learn how to detect this overlooked vulnerability class in the wild. We'll also release an open source GitHub repo with proof of concepts for users to try for themselves. RPFI represents a new breed of polyglot-based attack that exploits gaps between web specifications and real-world implementations.",
+  "channel_url": "https://www.youtube.com/channel/UC6Om9kAkl32dWlDSNlDS9Iw",
+  "duration": 1750,
+  "channel": "DEFCONConference",
+  "uploader": "DEFCONConference",
+  "upload_date": "20241016"
+}
+
+0.00s - 5.00s | This text was transcribed using whisper model: large-v2
+
+ So it is my pleasure to welcome Ian Hickey to the stage talking about relative path file
+8.54s - 15.46s |  injection, the next evolution in relative path. Right? Okay. Let's give it up.
+25.24s - 30.44s |  Thank you for having me today at the AppSec Village, DEF CON 32. Thank you for having
+30.44s - 35.44s |  AppSec Village here as well. I'm a software developer. I don't work in security. I work in
+39.00s - 44.74s |  ed tech. But every once in a while I like to spend some brain power looking at some
+44.74s - 52.03s |  security things. And the last time I was doing this in April or May, I had a couple of
+52.03s - 58.87s |  discoveries that I thought were interesting and I'm going to share them with you today. So
+58.87s - 63.67s |  many of you know that there's something called relative path overwrite. That was
+63.67s - 68.67s |  discovered in 2014 by Gareth Hayes of Port Swigger Research. And relative path overwrite
+71.55s - 76.55s |  is a way to if you can inject CSS onto an HTML page and if a website is vulnerable to path
+83.13s - 88.13s |  confusion, then you can actually get the default link tag in HTML to interpret the current
+88.89s - 93.89s |  HTML page as a CSS style sheet and under some circumstances it will execute the CSS in older
+105.67s - 111.01s |  Internet Explorer, used to be able to use things like an expression tag and execute
+111.01s - 116.01s |  JavaScript from CSS. So it was a pretty ‑‑ it was a pretty interesting way to do that.
+118.25s - 123.25s |  To get JavaScript execution. So what I've been looking at is Port Swigger Research has these
+128.21s - 132.51s |  impossible labs and one of these impossible labs I've been looking at for a couple of
+132.51s - 136.71s |  years and I'll go back and I'll play with different things and just see if I can make any
+136.71s - 141.71s |  progress on it. In this case it was ‑‑ there's context in HTML where you can't execute
+142.71s - 147.71s |  JavaScript. The browser won't let you. And some of those places are no scripts or within a
+151.55s - 156.55s |  frame set tag. It interprets ‑‑ it interprets any HTML that you can inject as just plain
+161.51s - 169.70s |  text. And because it's plain text, you can't do anything with it. So the first insight
+169.70s - 174.70s |  that I had into this was ‑‑ see here, here's an example of a B tag but it's just text. You
+177.20s - 183.54s |  can't display anything. The first interesting sort of insights I had into this was actually
+187.54s - 192.54s |  you can execute JavaScript but you would have to have AngularJS installed. And you'd have
+195.84s - 200.84s |  to be using AngularJS and it's been end of life for quite some time. But you can't
+201.62s - 206.62s |  ‑‑ there is a way to do it. So if you have a no frames tag inside of a frame set tag and
+209.34s - 214.34s |  there happens to be AngularJS on the page, then you can just instantiate AngularJS and
+217.50s - 222.50s |  execute some JavaScript. That's cool. In the original relative path overwrite, if you needed
+223.50s - 228.50s |  to inject CSS into the page, and again, it didn't matter where you did it. Because in both
+236.22s - 241.22s |  cases, those parsers are not taking into consideration the rules that the browser follows.
+246.08s - 251.08s |  Angular will happily execute JavaScript anywhere on the page it finds it. And in this case,
+252.80s - 257.80s |  when it's interpreting a HTML page as a style sheet, it doesn't care where it finds CSS, it
+258.64s - 263.42s |  will just execute it. So that was a starting point. And then the epiphany was sort of, okay,
+263.42s - 269.30s |  well, you can use other parsers to execute JavaScript within these contexts where you're not
+269.30s - 275.22s |  supposed to be able to do it. So what other parsers are there that will do the same thing?
+275.22s - 281.46s |  One thing to note about both of these things is that they're lenient parsers. Meaning it does
+281.46s - 288.22s |  not matter that there's HTML surrounding the thing that they're looking for. All that it
+288.22s - 293.42s |  matters is that it eventually finds it. So that was my starting point. What else is there? So
+293.42s - 298.42s |  I started making a list of all the different types of parsers there are. There's SVG parsers
+301.22s - 306.22s |  and XML and PDF and rich text and markdown and after spending more time than I would care to
+306.78s - 311.78s |  admit with markdown parsers, I started thinking about PDF a lot. PDF can actually be
+316.90s - 321.40s |  handwritten. A lot of people think of it as a binary format and there might be binary mixed in
+321.40s - 326.40s |  with it but you can actually just write a PDF file and as plain text. So if you have plain text
+327.40s - 333.75s |  injection like we're talking about here in one of these contexts such as no script, no frames,
+341.55s - 346.55s |  then you can inject PDF. Well, PDF can execute JavaScript. PDF can submit forms. PDF can
+351.75s - 356.75s |  there's tons of research into malicious PDFs. So I started playing with it. I started
+357.75s - 362.75s |  using it. And the second big epiphany that I had that just really surprised the shit out of me is
+364.89s - 369.89s |  that PDFs are also super lenient because PDFs start with these magic characters and end with
+373.39s - 378.13s |  magic characters. It doesn't really care what it finds before and after that. So you can
+378.13s - 385.13s |  actually take this HTML document with PDF persistently injected into it and you can save
+385.13s - 390.13s |  this as a PDF and it will actually execute. And this is what this is here. This is just an
+394.13s - 399.13s |  embedded HTML file renamed as PDF and it displays as a PDF and it executes JavaScript. How
+404.30s - 409.30s |  many people how are you going to convince people to download an HTML file as a PDF? Like are
+410.18s - 415.18s |  you going to put something on the page that says right click here, save it as whatever? They
+420.34s - 425.34s |  just won't do it. So I started thinking about ways to get people to download these PDFs
+430.72s - 435.72s |  without me having to explicitly convince them of anything. And when I started thinking about
+436.72s - 441.72s |  the original relative path overwrite which interprets the current page as a CSS style sheet,
+443.84s - 449.48s |  well, the reason why it does that is because the browsers are stupid. They just whenever you
+449.48s - 454.98s |  return back from the server it's going to use and if you happen to be using a server that when
+454.98s - 460.90s |  you add a forward slash at the ends returns the current page back, well, if the current page
+460.90s - 465.90s |  happens to be have PDF injected into it, then that's what you're going to get. So that's exactly
+471.86s - 476.86s |  what I did and I'm going to show you how it works now and before we even get into it, just so
+479.96s - 484.96s |  everyone sees because it's easier to simply see what's happening than to explain it. Someone
+485.88s - 490.88s |  goes to a website. There is a download link on the website and the download link happens to use a
+499.88s - 506.58s |  relative path. Well, if you click this download link, all that's going to happen is it's going to
+506.58s - 514.12s |  download whatever the file was that you intended to download and if we open this up, all this
+514.82s - 524.71s |  is is, you know, oh, sorry, sorry. Let's see if I can make that bigger for you. Sorry, let me go to,
+543.92s - 548.92s |  whoop, whoop, one second. Okay. Good PDF download. So I've downloaded this PDF and I'm
+552.04s - 557.04s |  going to open it with Google Chrome. It's just a normal harmless PDF. No big deal. However, all you
+562.98s - 567.98s |  have to do is add a forward slash at the ends and you notice it lost its styling. The reason it lost
+570.66s - 575.66s |  its styling is because now the browser is confused. If you look in the, if you look at what it's
+576.52s - 581.52s |  actually trying to include as the style sheet, what you find now is it's actually getting the
+586.76s - 591.76s |  current page that's relative path over it. It's confused so it's returning this back. The effect
+594.10s - 599.10s |  of that, once it loses its styling, is that if you now click this, it's actually going to return the
+599.82s - 604.82s |  current page as the PDF. Which means when someone opens this, it's not going to be the same PDF
+609.10s - 618.71s |  that, that they expected to open. Instead, it's going to execute JavaScript. So what just
+623.11s - 628.11s |  happened? Where did, where did the new PDF come from? Well, the PDF lives on the server because
+629.05s - 634.05s |  the HTML lives on the server and you've persistently saved PDF content into that HTML page,
+639.73s - 644.73s |  right? And it's sufficiently confused so when they go to download, it downloads what you want
+645.57s - 650.57s |  them to download instead of whatever they were trying to download. I mean, this is dangerous. If
+652.07s - 657.07s |  you think about it, what if this was a, what if this was a text PDF site? What if this was a text
+658.11s - 663.11s |  PDF site or something? It's not going to be just one link that this happens with. It'll be every
+663.11s - 668.11s |  link on the page that uses a relative download. As soon as they click it, it's going to download
+668.11s - 674.13s |  whatever that PDF is. So the things that you can do with PDF are pretty interesting, right?
+674.13s - 679.13s |  Depending on the PDF reader that the user happens to be using. So you have, you have something
+680.13s - 685.13s |  like Fox Pro, I think it's called, that allows you to do commands when the PDF opens, right? You
+693.37s - 699.21s |  can execute shell commands. So there's nothing stopping you to simply populate your PDF with a
+699.21s - 706.21s |  launch command that executes shell commands as long as the user has permission to be doing it to do
+706.21s - 711.21s |  whatever you want, right? You can run scripts. You can download new scripts. You can, you know,
+713.47s - 717.97s |  whatever. In fact, if you want to stay in the web context, I imagine you could probably open a
+717.97s - 724.15s |  Chrome browser headless with the user's data set as their data and then just go explore the
+724.15s - 729.15s |  Internet as them, right? Because why couldn't you? So it's pretty dangerous. But thinking this
+729.87s - 734.87s |  through a little bit more, it's interesting that you can do it with PDF and all I did here was this
+740.15s - 745.15s |  would be, you know, say it's a profile page and you have some public, you know, blurb about
+747.75s - 752.75s |  yourself that you've put this PDF in. However you get the persistent content injection onto the
+753.55s - 758.55s |  page. But as long as it's there in some capacity and as long as you can save it as a PDF, which we can,
+762.79s - 769.17s |  because there's a simple download link, then it will execute. So in the original relative path
+769.17s - 774.17s |  overwrite, what you needed was a link tag with a relative with a relative path to the style sheet. In
+775.07s - 780.07s |  this case, you need an anchor tag with a relative path to the PDF. And if it's not HTML, the
+787.35s - 792.35s |  download has to be fully qualified. Meaning if you don't have sample PDF here as download, then it
+794.65s - 799.65s |  won't accept downloading the HTML as a PDF. The content disposition will be wrong. So that's the
+799.65s - 804.65s |  basic requirement for executing this. It has to be a page. So think like a, you know, PDF
+810.39s - 816.93s |  library or, you know, places where you can inject content and then it says, hey, save your whole
+816.93s - 821.93s |  history or something like that. But this technique is going to be more useful the more file types
+821.93s - 828.34s |  that we find that you can do this with, right? So so PDF is great. If they happen to be using a PDF
+837.42s - 843.56s |  viewer that supports executing shell commands, et cetera. But there has to be other lenient
+843.56s - 849.86s |  parsers and lenient file types that you can use to do similar things. So then I started exploring
+849.86s - 864.74s |  that. So Gareth Hayes, I was talking to him about this just to make sure that he hadn't heard of it
+864.74s - 870.62s |  being discovered before either. And he suggested I talk to a gentleman by the name of Orange
+870.62s - 875.62s |  Albertini who specializes in polyglot file types. He's he's a maven. He's the type of guy that his
+879.16s - 884.16s |  business card, you can put it into a super Nintendo emulator. And even though it's a PDF, it'll still
+884.48s - 889.48s |  play in the emulator. It's crazy. And we were brainstorming other types of lenient file types where
+894.70s - 901.28s |  this sort of thing might work with. And we went, you know, zip file types to tar. Tar is another
+901.28s - 906.24s |  like plain text one that you can sort of hand write. And it took me down this road looking at that.
+906.24s - 910.46s |  And while I was exploring it, I was thinking about, well, what would you put in it? Shell scripts.
+910.46s - 915.46s |  And then anyone who's dealt with enough shell scripts knows that shell scripts can actually be really
+917.02s - 922.02s |  lenient when they're run too. So what this means is if you happen to be what the user is trying to download
+927.98s - 932.98s |  is a shell script, and you have some sort of content injection, you can actually get them to get them to
+933.50s - 938.50s |  download, you know, whatever, PowerShell file or a batch file or, you know, batch scripts. And in some
+951.40s - 956.40s |  Linux distributions, and I'm looking at especially Windows sub WSL2 with U12, et cetera, you can
+963.04s - 968.04s |  actually get them to download. And with some of these things, it will actually happily execute an HTML
+969.34s - 974.42s |  file as a shell script. And it will error on every single line until it gets to something that it
+974.42s - 979.42s |  understands and then it will execute it. But if someone's going to a site looking to download a shell
+980.80s - 985.80s |  script, it's going to say, hey, download this code and then run it as a super user, right, because that's
+986.46s - 991.46s |  what they always say. So if they do that, and the link that they clicked happens to have a forward
+995.30s - 1000.30s |  slash at the end, it's susceptible to, you know, path confusion, et cetera, then the script that they
+1003.54s - 1008.54s |  get is an HTML page, and when they run it, it's going to run. And what that looks like is what that
+1009.40s - 1015.80s |  looks like is something like this where every single line, HTML, the head, all of it, errors, line by
+1028.38s - 1034.66s |  line by line, and then it gets to echo hello world and it executes it and then it exits and that's it.
+1034.66s - 1040.22s |  By the time they realize something happened, it's going to be too late, right? So I managed to get
+1040.24s - 1045.24s |  this working with WSL2. I managed to get it working with PowerShell, which does the exact same thing,
+1048.58s - 1054.62s |  right? It will execute every single line of the HTML file because it's a PS1 file or whatever, and then
+1054.62s - 1060.62s |  it gets to hello world, it executes it, and then it continues, you know, just executing nonsense. The
+1060.62s - 1065.64s |  closest I could get it with regular Linux shells is you have to be able to inject something right after
+1066.04s - 1071.04s |  HTML, so it's far-fetched, but I threw it in there in case anyone has any ideas on how to get that
+1075.18s - 1080.18s |  working. I did actually get this similar thing working on OSX and Linux if a user is using, you know,
+1086.72s - 1091.72s |  Box Pro or whatever it is, because you can have a launch command that simply reads whatever it is in
+1092.72s - 1097.72s |  its own file and then, you know, executes it line by line. So it can be done. It can be done. And so
+1105.10s - 1110.10s |  that's, so now we have two, three, four types of files. Ideally we would have dozens, hundreds.
+1113.56s - 1118.56s |  There's so many file types out there to get this type of stuff working well. So I kept on, you know,
+1121.74s - 1126.74s |  I kept on investigating other things. What does not mind there being HTML, right? What will
+1128.04s - 1133.04s |  someone simply download from the internet and then throw into something and have it execute, right?
+1134.72s - 1139.72s |  So pretty much all server-side, server-side templating languages are like this, right? So if
+1145.26s - 1150.26s |  someone's looking for, you know, a Ruby or a whatever, a cold fusion script or a, you know, a
+1152.20s - 1157.20s |  anything else, they're probably going to grab it and then just throw it into whatever it is to test
+1160.54s - 1165.88s |  it, at which point it's already executed anything it needs to execute, right? And the cool thing
+1165.88s - 1171.38s |  there is that any of the server-side languages, they don't, they're expecting there to be HTML,
+1171.38s - 1175.92s |  right? They're expecting there to be all this, all this other stuff in there so they won't
+1175.92s - 1180.92s |  complain. And so these are the ones that I found that it would work with out of box, right? So
+1182.56s - 1187.56s |  you have this PHP. Similar thing right here, if we look at this vulnerable PHP. So all this is
+1194.44s - 1199.44s |  going to do, if we go here, is the safe download, let's unblock this, safe download goes ahead
+1208.21s - 1213.21s |  and it downloads this PHP file, open it up, show you what this, it's generated. And what this did is
+1219.52s - 1224.52s |  because it's server-side it already executed this and it says welcome user, no big deal. We do it
+1226.26s - 1242.11s |  the other way, forward slash, all of a sudden they download it, this time welcome bad guy, right?
+1244.95s - 1249.95s |  So there's nothing stopping you, it doesn't have to be bad guy, it could be read the contents of a
+1251.29s - 1256.29s |  password file, whatever, send it somewhere, anything you want it to. If you can get people, the
+1258.99s - 1263.33s |  thing that's sort of insidious about this, even though there's like user interaction that could take
+1263.33s - 1268.33s |  place, is that the user's going to a server that's trusted, right? There's nothing untrusted about this
+1271.71s - 1277.35s |  server, they've been to it a thousand times and they're clicking a download link. There's no
+1277.37s - 1282.37s |  difference if that, if you were able to just break into the server and replace the file, right?
+1282.37s - 1287.37s |  Because the effect's the same. And, but what would be really interesting is if you didn't have to do
+1293.67s - 1298.67s |  this whole download portion of it at all, right? And that's the hardest part, is how do you get someone
+1299.67s - 1304.67s |  to, you know, if someone's going to go download a PDF, click on a link and download a PDF, there's a
+1309.55s - 1314.75s |  high chance that they're going to go look at the PDF, right? I mean, that's what it's intended for,
+1314.75s - 1319.39s |  they're going to trust that whatever's in there, it should be, you make a PDF that looks like a tax
+1319.39s - 1325.81s |  document and submits back to your server, whatever. But it would be great if they didn't have to
+1325.83s - 1331.29s |  download the thing in the first place. So I started thinking about how that could possibly work.
+1331.29s - 1336.29s |  And that's pretty tricky, right? But there's been a rise in all of these HTML over the wire sort of
+1344.13s - 1349.81s |  frameworks. There's live wire, there's hot wire, there's HTMX. And all of these things, what
+1349.81s - 1354.81s |  they're doing is they're getting HTML from the server instead of putting all the HTML client side,
+1359.81s - 1364.91s |  right? And the HTML they get from the server could be, you know, pre-rendered with, like, the
+1364.91s - 1370.41s |  user's profile picture and, you know, user name or something like that. But they're going to suffer
+1373.91s - 1379.79s |  the same, the same type of issue if they happen to be on a server that returns the current
+1379.79s - 1385.79s |  page when there's a forward slash at the end. So something like that, what it would look like is,
+1396.58s - 1402.58s |  so I'm not using any of the frameworks. This is just straight jQuery. But what this does is, when
+1405.00s - 1411.00s |  the, when the page loads, it attempts to get some, get some DOM element and then inject it into
+1417.44s - 1423.44s |  this main div, right? And again, it's the same thing. All we're doing is, you know, doing a, you
+1429.28s - 1435.28s |  don't need to do this. All it's doing is just, you know, using jQuery HTML, just setting the HTML.
+1437.28s - 1449.36s |  No big deal. And if we go look at what this script does, what's that? There's nothing on this page.
+1450.36s - 1456.36s |  There's literally nothing on this page. So all this does is it doesn't do anything initially. You can
+1460.78s - 1469.59s |  see when it goes to get the, let me see if I can make this bigger. Excuse me? Oh, gotcha, gotcha.
+1473.63s - 1480.17s |  So, so nothing too interesting is happening on this page yet. It gets jQuery. It reaches out and
+1480.17s - 1485.37s |  it gets this thing that says welcome user. No big deal. And then it tries to inject the welcome
+1485.37s - 1491.37s |  user into the page. But you add a forward slash on to the end and now it actually gets the current
+1494.71s - 1505.77s |  page. And one second. Let's see what just happened. What did I do? Oh, there it goes. So, so in
+1506.35s - 1516.12s |  this case what just happened is when it reached out to get it, the, the ID that it found was for a
+1527.96s - 1534.36s |  frame set and HTML is probably the most lenient parser of all because it has this really weird
+1534.36s - 1540.36s |  behavior where if you try to inject HTML tags into other HTML tags that it doesn't like, it will
+1541.70s - 1547.70s |  simply strip those tags away. And that's exactly what happened here is because when it
+1550.98s - 1563.16s |  founds, whoop, it's not letting me leave. Okay. Whoop. Yeah, so when it founds the, the string
+1570.54s - 1576.54s |  frame set, it, when it injected it into this main tag, it actually stripped the frame set away. So
+1577.74s - 1582.70s |  even though the browser is saying hey, this frame set is completely innocuous, we're just going to
+1582.70s - 1588.70s |  treat it like text, the framework itself can take that and inject it automatically. So, there's
+1590.12s - 1596.70s |  places where maybe you weren't concerned about people getting content injection before but now you
+1596.70s - 1600.48s |  have to be worried about it. And how do you mitigate something like this? Well, there's all the
+1600.48s - 1606.48s |  standard ways to mitigate it. Like one, you have to stop using, either use a base tag so that things
+1608.90s - 1614.82s |  aren't relative. They have a, things aren't relative. You can make them root relative by adding a
+1614.82s - 1620.82s |  forward slash at the beginning, right? Content security policy, all these things, you have to do
+1621.06s - 1627.06s |  something. But also educating people, you can't actually trust a file download if it's using a
+1628.90s - 1634.90s |  relative, if it's using a relative path. So, basic mitigations in place. Yeah. All the, all the
+1635.72s - 1644.38s |  basic mitigations, so path handling, it's important to check if the server that you're using is
+1657.06s - 1663.30s |  vulnerable to this type of path handling. If you add a forward slash at the end of the URL and it
+1663.30s - 1669.30s |  loses all of its styling, it's a pretty good indication that it has this issue. Default PHP
+1669.30s - 1675.30s |  server has this issue. I did make a GitHub for this. If anyone wants to play with it themselves,
+1675.30s - 1683.63s |  you can find it on GitHub. Yeah. So, this is a novel file injection vector. I figured out a
+1683.91s - 1689.91s |  number of server side scripts, shell scripts, PDFs, but there has to be, there has to be dozens
+1700.37s - 1707.29s |  more if, you know, people want to explore it. I rarely do bug bounties because I don't work in
+1707.33s - 1713.33s |  security. So I do do it sometimes. But it feels like a job to me. So, so I try not to. I would
+1715.25s - 1721.83s |  imagine there's a number of these vulnerabilities that you can go and find. If you're so
+1721.83s - 1727.83s |  inclined, no one's ever looked for them before. So, yeah. I think, I think that there's a lot
+1730.61s - 1736.21s |  more that can be done there with the shell scripts on Linux to figure out how to get them to
+1736.21s - 1742.21s |  execute. And, yeah. I think if any of you do bug bounties, you should go out and try to find
+1743.95s - 1745.71s |  it. And that is my talk.

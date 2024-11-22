@@ -1,0 +1,280 @@
+{
+  "webpage_url": "https://www.youtube.com/watch?v=wgXichA5ukY",
+  "title": "BlueHat 2024: S06: Deprecating Azure AD Graph API is Easy and Other Lies We Tell Ourselves",
+  "description": "BlueHat 2024: S06: Deprecating Azure AD Graph API is Easy and Other Lies We Tell Ourselves Presented by Nestori Syynimaa from Microsoft\n\nAbstract: Azure AD Graph API and AzureAD PowerShell module were introduced in 201x to replace the MSOnline PowerShell module utilizing a \u201cprovisioning API\u201d. In 2019, we announced that AzureAD and MSOnline modules and their back-end APIs will deprecate by June 2020. However, the deprecation date has been postponed multiple times ever since. Both PowerShell modules have been deprecated as of March 30, 2024, but the back-end APIs are still functional until June 30, 2025.\n\nIn April 2024, we announced the general availability of Microsoft Graph activity logs, which allows our customers to identify activities conducted by compromised accounts and other problematic behaviours of applications. However, these logs are not available for Azure AD Graph API. For this reason, adversaries likely keep using Azure AD Graph API with compromised user identities until its deprecation.\n\nThis talk covers the history of the Azure AD Graph API, sheds light on why its deprecation has been so difficult, how to migrate to MS Graph API, and finally, how to detect & prevent malicious Azure AD Graph API usage.",
+  "channel_url": "https://www.youtube.com/channel/UCKmzq2lAhDxLy36KtvVWpaQ",
+  "duration": 1115,
+  "channel": "Microsoft Security Response Center (MSRC)",
+  "uploader": "Microsoft Security Response Center (MSRC)",
+  "upload_date": "20241108"
+}
+
+0.00s - 5.00s | This text was transcribed using whisper model: large-v2
+
+ So, I don't have any fancy title slides, so we go with this one.
+5.00s - 7.00s |  So, yeah.
+7.00s - 14.00s |  I joined microsoft in january, and i work in mystic.
+14.00s - 17.00s |  And, yeah, welcome to my talk.
+17.00s - 20.00s |  So, first i want to thank a few people.
+20.00s - 23.00s |  First steven for the title.
+23.00s - 27.00s |  So, he was like presenting the same thing, but for ntlm last
+27.00s - 32.00s |  Year in this same conference. So, i stole that from him.
+32.00s - 36.00s |  And then christopher bass for checking the information what
+36.00s - 40.00s |  I'm going to present to you. Yeah, so this is my fourth,
+40.00s - 44.00s |  Fifth time in this building. Third time as a speaker.
+44.00s - 46.00s |  Sorry. In blue hat.
+46.00s - 49.00s |  And third time in a row as a speaker.
+49.00s - 52.00s |  First time in this room and first time as a microsoft
+52.00s - 55.00s |  Employee. So, a lot of new things to me,
+55.00s - 57.00s |  Too. Yeah.
+57.00s - 60.00s |  So, the title, deprecating azure id graph is easy and
+60.00s - 64.00s |  Otherwise we tell to ourselves. So, what does deprecation mean?
+64.00s - 67.00s |  Deprecation means to intend to retire.
+67.00s - 69.00s |  Okay. So, it's a fun to make
+69.00s - 72.00s |  Distinction here. I thought that deprecation is
+72.00s - 78.42s |  Something else, but that's what i've been told.
+78.42s - 80.42s |  Okay. Four things.
+80.42s - 87.42s |  So, first, introduction to azure id, both work.
+87.42s - 90.42s |  And then i'm going to talk about how we can detect using
+90.42s - 93.42s |  Those apis or this api, how to prevent that and why.
+93.42s - 97.42s |  There's a reason for that. Also, what should i do when
+97.42s - 104.49s |  Things are retired. This works fine.
+104.49s - 110.49s |  Okay. So, let's start with, like,
+110.49s - 118.49s |  What we have, actually. So, there are three apis,
+118.49s - 121.49s |  Three and a little bit more modules.
+121.49s - 125.49s |  So, the first api was called provision api.
+125.49s - 130.49s |  That's undocumented api. That has been there a long time.
+130.49s - 134.49s |  And it was, it didn't have, the content was soap.
+134.49s - 137.49s |  So, it was xml-based web service.
+137.49s - 140.49s |  So, it wasn't that handy, i suppose.
+140.49s - 144.49s |  There's one module that is using that, and that's called
+145.49s - 155.49s |  Yeah. And then there's another api
+155.49s - 160.49s |  Called azure id graph api. That's based on json.
+160.49s - 164.49s |  And i guess that would be easier to implement, like, web
+164.49s - 170.49s |  Applications, like portals to use api that talks json instead
+170.49s - 174.49s |  Of soap, i presume. And the last one is microsoft
+174.49s - 179.49s |  Graph api, which i think miriam was talking about in her, like,
+179.49s - 185.34s |  Previous talk. But let's put these on timeline.
+185.34s - 188.34s |  Okay. So, it was quite fun to do this.
+188.34s - 191.34s |  So, i've been wondering why this deprecation has been so
+191.34s - 193.34s |  Difficult before i joined microsoft.
+193.34s - 197.34s |  And because now i work for microsoft, i could find that
+197.34s - 199.34s |  Out. But not entirely.
+199.34s - 202.34s |  So, there are some days that we don't know, because people
+202.34s - 206.34s |  Don't know. They are so old things.
+206.34s - 211.34s |  So, back in 2018 or something, there was a thing called bpos,
+211.34s - 213.34s |  Or business productivity online suite.
+213.34s - 219.34s |  Anybody? yeah. So, that was before office 365.
+219.34s - 223.34s |  And then we had this provisioning api.
+223.34s - 227.34s |  And actually, it turned out that even though we have not
+227.34s - 230.34s |  Documented this, people have been using that.
+230.34s - 235.34s |  So, they reverse engineered that like i did for my
+235.34s - 238.34s |  Toolkit. So, yeah, it was just funny to
+238.34s - 243.34s |  Hear that others did that, too. And then at some point, we got
+243.34s - 248.34s |  This msonline module, which i still like a lot, because i
+248.34s - 252.59s |  Remember those comments from my heart.
+252.59s - 258.59s |  Then around this time, we published azure ad, graph api.
+258.59s - 262.59s |  And then a module for that. Okay.
+262.59s - 264.59s |  Now this doesn't work. Oh.
+264.59s - 269.38s |  Too fast. So, there seems to be a buffer
+269.38s - 271.38s |  Of some kind. Okay.
+271.38s - 273.38s |  One more. Come on.
+273.38s - 277.38s |  Yes. Now we are back on track.
+277.38s - 281.38s |  So, a new module. Azure ad or azure preview.
+281.38s - 284.38s |  So, there's two versions. One for, like, supported
+284.38s - 287.38s |  Comments, and another one was for not so supported, or beta
+287.38s - 292.38s |  One, if you will. And now, these modules were
+292.38s - 296.38s |  For administering the directory part of the cloud.
+296.38s - 300.38s |  So, azure ad. Nothing else.
+300.38s - 305.70s |  Just that. And also, i remember it was
+305.70s - 309.70s |  Back in 20-something. Maybe when the azure ad
+309.70s - 313.70s |  Module came out. So, i was getting a lot of
+313.70s - 316.70s |  E-mails that we are deprecating this msonline module.
+316.70s - 319.70s |  Please start to use the azure ad module.
+319.70s - 322.70s |  But that didn't work out that well.
+322.70s - 326.70s |  But then finally, we got this new api, microsoft graph api.
+326.70s - 329.70s |  And this is for everything. So, it's not just the
+329.70s - 333.70s |  Directory part, but everything, like e-mail and teams and
+333.70s - 338.70s |  Sharepoint, one drive, anything.
+338.70s - 341.70s |  And then we said this four years ago.
+341.70s - 345.70s |  So, now we are going to deprecate those old apis and
+345.70s - 349.70s |  Modules. And, again, deprecation means
+349.70s - 352.70s |  Intent to retire. So, we are going to retire
+352.70s - 355.70s |  Those at some point. Now, that point has been
+355.70s - 359.70s |  Moving, as you probably know. And there are some reasons for
+359.70s - 364.70s |  That. So, then we, yeah, it still
+364.70s - 368.70s |  Works. Published a module for
+368.70s - 373.70s |  Microsoft graph api called microsoft graph.
+373.70s - 378.70s |  It's also called, like, i think the official name is
+378.70s - 383.70s |  Microsoft graph api sdk, as in software development kit.
+383.70s - 386.70s |  And that actually quite, it's a good description for the
+386.70s - 390.70s |  Module, because it is created automatically from the graph
+391.70s - 393.70s |  Description, graph api description, so
+393.70s - 400.30s |  Specification. Now, why was this so difficult
+400.30s - 404.30s |  To retire then? well, it didn't have all the
+404.30s - 407.30s |  Features than the other modules had.
+407.30s - 413.30s |  And that happened around 2022. So, now we have what we call,
+413.30s - 418.30s |  Like, a feature parity, which means now the api and also the
+418.30s - 421.30s |  Module has the same functionality than the
+421.30s - 424.30s |  Previous ones had. So, that was one of the
+424.30s - 430.77s |  Biggest reasons why we haven't been able to retire those.
+430.77s - 434.77s |  And there's one reason also for admins.
+434.77s - 438.77s |  Who of you are administrators? okay.
+438.77s - 442.77s |  Now, you who, like, lift your hand, how many of you are
+442.77s - 447.98s |  Developers? not so many, but some.
+447.98s - 452.98s |  So, the problem here was that ms online module and azure
+452.98s - 455.98s |  Modules were meant for administrators to administer
+455.98s - 458.98s |  Things. The microsoft graph is more
+458.98s - 461.98s |  Like for programmers so that they can do programs and develop
+461.98s - 464.98s |  Things. So, admins didn't like that
+464.98s - 468.98s |  Because they know what they want to do, but they didn't want to,
+468.98s - 472.98s |  Like, learn how the api works. So, which api to call and so on.
+472.98s - 476.98s |  So, that was also a reason why i didn't like the module.
+476.98s - 480.98s |  But now in june we published something new.
+480.98s - 484.98s |  So, we have now microsoft graph module.
+484.98s - 487.98s |  That is meant for admins, by admins.
+487.98s - 491.98s |  So, you can just, again, use the module for administrating
+491.98s - 496.29s |  The directory part. So, we should have everything
+496.29s - 503.18s |  Now up and running. So, in april, we're going to
+503.18s - 506.18s |  Retire the provision api and the module.
+506.18s - 512.18s |  And then we're also going to retire the azure ad module.
+512.18s - 517.18s |  So, api should be there until first of july next year.
+517.18s - 521.18s |  After that, that's it. I promise you.
+521.18s - 528.65s |  Yeah, so, this is the timeline. Okay.
+528.65s - 531.65s |  Now, the top reasons why this has been so difficult.
+531.65s - 535.65s |  So, the first one is that there has been some feature parity
+535.65s - 537.65s |  Things which we have now, like, closed.
+537.65s - 541.65s |  So, there's no gap anymore. So, everything should be there.
+541.65s - 544.65s |  There are some apps created by us that doesn't support that
+544.65s - 548.65s |  Yet, but i'll get back to that later.
+548.65s - 552.65s |  And then there have been some active uses by customers.
+552.65s - 556.65s |  So, last year, it was a couple of hundred thousands of
+556.65s - 560.65s |  Tenants were using azure ad graph still.
+560.65s - 563.65s |  But a number is going down now at least.
+563.65s - 567.65s |  Next year, this time, there shouldn't be nobody using that
+567.65s - 570.65s |  Anymore. Okay.
+570.65s - 574.65s |  So, then detecting api uses and why this is important, i'll
+574.65s - 578.65s |  Tell it to you in a minute. But first, let's see how the
+578.65s - 581.65s |  Cloud works. One slide.
+581.65s - 586.65s |  Okay. So, we have a module here.
+586.65s - 591.65s |  And if i want to do something, i need first to authenticate.
+591.65s - 595.65s |  So, i go to android and say this is client this.
+595.65s - 599.65s |  I want to access that resource.
+599.65s - 605.65s |  And if android likes my proof of identity, and i have access
+605.65s - 609.65s |  To that resource and to that application, i will get access
+609.65s - 613.65s |  Token. And then with that access token,
+613.65s - 616.65s |  I will go to call the api i want to call.
+616.65s - 619.65s |  So, that's how cloud works. Simple.
+619.65s - 624.65s |  One slide. Now, here is this client id.
+624.65s - 628.65s |  So, when i authenticate it, and i got the access token, the
+628.65s - 632.65s |  Access token contains which client id i'm using.
+632.65s - 637.65s |  It also has information that which resource id i'm using.
+637.65s - 641.65s |  So, these are important things. So, the client and the
+641.65s - 646.34s |  Resource. Okay.
+646.34s - 649.34s |  So, what can we detect currently?
+649.34s - 654.34s |  So, for api, we can detect the authentication part.
+654.34s - 658.34s |  There's nothing there for that. And we can detect the api
+658.34s - 666.25s |  Calls for azure id graph. Okay.
+666.25s - 671.25s |  Now, we can see the signing. So, if you are signing in with
+671.25s - 676.25s |  Any client to use that api, you can see that in the signing
+676.25s - 681.25s |  Logs, but you can't see if you are accessing the api.
+681.25s - 685.25s |  And that's why bad guys like about this.
+685.25s - 689.25s |  Because you can't detect that. And that's why there are tools
+689.25s - 695.25s |  Like my internals, it's still using azure id graph api,
+695.25s - 700.25s |  Because i haven't bothered to update that.
+700.25s - 706.25s |  But there is in intro id recommendations, if you go to
+706.25s - 712.25s |  Azure portal, and you go to overview, and then you change
+712.25s - 716.25s |  The recommendation tab, it should show you which apps are
+716.25s - 719.25s |  Using azure id. Even though you can detect
+719.25s - 722.25s |  That in anywhere else, you can see that from there.
+722.25s - 725.25s |  There are some first-party applications that doesn't show
+725.25s - 729.72s |  Up there yet, but we are going to fix that.
+729.72s - 733.72s |  And then for the microsoft graph, you can see both the
+733.72s - 738.16s |  Signing events and also the usage events.
+738.16s - 741.16s |  And that's a good thing. Okay.
+741.16s - 748.16s |  Now, how to detect, so, the api, let's start with that.
+748.16s - 751.16s |  Again, you can detect. And why?
+751.16s - 755.16s |  Because it's using the same client id and resource id than
+755.16s - 761.16s |  The azure id graph is using. But for azure id graph api, so
+761.16s - 765.16s |  If you can see the resource id in the sign-in logs, then you
+765.16s - 769.16s |  Can, well, then you know that somebody has logged in and get
+769.16s - 774.16s |  The access token for that. And same with microsoft graph.
+774.16s - 779.16s |  And for applications then, okay, so you can detect using
+779.16s - 784.16s |  The ms online module. And azure id, because they are
+784.16s - 788.16s |  The same. And then also the default
+788.16s - 792.16s |  Client for microsoft graph api is that one.
+792.16s - 796.16s |  So if you look to sign-in logs, you can detect these kind of
+796.16s - 801.27s |  Things. Okay.
+801.27s - 806.27s |  Then preventing. This is a hard part.
+806.27s - 810.27s |  So for different apis, so for promising api, you can actually
+810.27s - 814.27s |  Disable the whole api. So there's a thing called
+814.27s - 818.27s |  Authorization policy where you can set that block msol
+818.27s - 821.27s |  Powershell equals one or two, i can't remember.
+821.27s - 825.27s |  But if you do that setting, nobody can use that api anymore
+825.27s - 828.27s |  Regardless of the client they are using.
+828.27s - 833.27s |  The other apis you can't switch off, basically.
+833.27s - 837.27s |  Okay. Now for the powershell modules.
+837.27s - 842.27s |  So for ms online module and azure id, you can't switch that
+842.27s - 849.27s |  Off as such, but you can choose that you require assignment for
+849.27s - 854.27s |  Those applications. So you go to that application
+854.27s - 860.27s |  Module. In the portal, you click that,
+860.27s - 864.27s |  Okay, you can use this, but it requires assignment.
+864.27s - 867.27s |  So only those people who are assigned this application id can
+867.27s - 873.51s |  Use that module. And for microsoft graph, you
+873.51s - 877.51s |  Can use conditional access policy where you can block that.
+877.51s - 881.51s |  But, okay, even though that you block the clients, it doesn't
+881.51s - 884.51s |  Block the access to apis, so you need to remember that.
+884.51s - 886.51s |  Those are two different things. Two things.
+886.51s - 888.51s |  You have the client and you have the api.
+888.51s - 892.51s |  You can't block apis except the first one, but you can block the
+892.51s - 895.51s |  Clients which users are usually using.
+895.51s - 898.51s |  So if you don't want them to use those powershell commands
+898.51s - 902.51s |  Anymore, just do that. So you can prevent that
+902.51s - 907.24s |  Actually. But this doesn't stop the
+907.24s - 914.24s |  Hackers, but the normal users. Okay.
+914.24s - 920.24s |  What to do then when these things, because these things
+920.24s - 924.24s |  Are going to be retired, so what should i do?
+924.24s - 928.24s |  Oh, that's very small text. Okay.
+928.24s - 933.24s |  So there are microservices that are using apis, already graph
+933.24s - 936.24s |  Api on the back end. You don't need to care about
+936.24s - 940.24s |  Those. We will fix them.
+940.24s - 945.24s |  Then we have some microsoft, like, clients that are still
+945.24s - 951.24s |  Using those azure graph apis. So we have the azure
+951.24s - 954.24s |  Powershell module i just talked to you about, and we are going
+954.24s - 958.24s |  To return that in a minute. And then we have, like, az
+958.24s - 962.24s |  Cla and az powershell modules. So they are already new
+962.24s - 965.24s |  Versions, just upgrade the existing one, and that will be
+965.24s - 969.24s |  Okay. And there are other applications
+969.24s - 973.24s |  That already support ms graph api, so just update them.
+973.24s - 978.24s |  But there are some clients that doesn't work yet, our bad, but
+978.24s - 982.24s |  We are going to fix those too. So just keep, you know,
+982.24s - 986.24s |  Yourself posted that what is happening, follow us in social
+986.24s - 990.24s |  Medias and so on, and when the new clients are there, just
+990.24s - 996.90s |  Upgrade, and that's it. So the biggest thing here is
+996.90s - 999.90s |  Those powershell modules, because we are deprecating
+999.90s - 1002.90s |  Those. You might have scripts for
+1002.90s - 1006.90s |  Administrating stuff, like, who does have? i have a lot.
+1006.90s - 1009.90s |  So that's the biggest thing. Those client things, they are
+1009.90s - 1012.90s |  Just update, but it still requires something from your
+1012.90s - 1017.90s |  Side, but the biggest problem, i would say, is the powershell
+1017.90s - 1025.72s |  Modules. So what can we do with those?
+1025.72s - 1029.72s |  We have a couple of things. So the first one is that now,
+1029.72s - 1033.72s |  Because we have that microsoft graph module, just update your
+1033.72s - 1037.72s |  Scripts, meaning that rewrite everything, and learn to be a
+1037.72s - 1040.72s |  Programmer. So that's not for everybody.
+1040.72s - 1045.72s |  Or you can use the newest module, and again, rewrite all
+1045.72s - 1049.72s |  Your codes again. But it's a little bit easier,
+1049.72s - 1053.72s |  Because you don't need to be a programmer, just replace the
+1053.72s - 1056.72s |  Scripts with other new commands.
+1056.72s - 1060.72s |  Or then you can use the graph module, and there's a new
+1060.72s - 1065.72s |  Function that says enable aliases, which means that now
+1065.72s - 1070.72s |  You can use those azure radio module commands as is, so you
+1070.72s - 1074.72s |  Don't need to do anything. Well, most of that, at least it
+1074.72s - 1079.00s |  Should work like that. So this is like for you guys
+1079.00s - 1083.00s |  Who are administrators, so you need to try that at least.
+1083.00s - 1088.00s |  It could be like, okay, it's in preview now, so it's not ga,
+1088.00s - 1092.82s |  But it works. Okay.
+1092.82s - 1098.82s |  It's always nice to be a last presenter before a bit like you
+1098.82s - 1102.82s |  And something. And i didn't have any demos,
+1102.82s - 1105.82s |  So it's a little bit shorter presentation.
+1105.82s - 1108.82s |  With that, thank you for having me.

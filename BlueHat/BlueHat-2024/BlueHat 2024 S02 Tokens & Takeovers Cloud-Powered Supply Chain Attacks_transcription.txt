@@ -1,0 +1,446 @@
+{
+  "webpage_url": "https://www.youtube.com/watch?v=diJl15Uwv8I",
+  "title": "BlueHat 2024: S02: Tokens & Takeovers: Cloud-Powered Supply Chain Attacks",
+  "description": "BlueHat 2024: Session 02: Tokens & Takeovers: Cloud-Powered Supply Chain Attacks Presented by Nitesh Surana from Trend Micro and Gaurav Mathur from Microsoft\n\nAbstract: It takes one single misconfigured token to jeopardize cloud resources and their downstream dependent systems; a recent example being an overly permissive SAS token leading to the 2023 leak of 38 TB of Microsoft AI research data.\n\nAfter Microsoft's account of the incident, we did our own part in hunting for overly permissive SAS tokens. We found two different ways of controlling a widely used official Microsoft tool called PC Manager. One could eventually execute a classic supply chain attack across multiple releases of MS PC Manager that were sprinkled across the web in multiple blogs, support forums using 'aka.ms' URL shorteners, an official Microsoft website and WinGet packages. Using the SAS tokens, we could takeover every release of MS PC Manager.\n\nFurthermore, we will share our findings wherein one could inject malicious stored procedures on database backups for tutorials mentioned in official Azure docs, modify JavaScript resources being used on multiple websites using one single SAS token. To conclude, we will share what practitioners can do to proactively hunt for sensitive information in URL parameters such as SAS tokens in their environments.",
+  "channel_url": "https://www.youtube.com/channel/UCKmzq2lAhDxLy36KtvVWpaQ",
+  "duration": 2266,
+  "channel": "Microsoft Security Response Center (MSRC)",
+  "uploader": "Microsoft Security Response Center (MSRC)",
+  "upload_date": "20241108"
+}
+
+0.00s - 7.24s | This text was transcribed using whisper model: large-v2
+
+ Cool. So, hello, everyone. Good morning. And welcome to Tokens and Takeovers, Cloud-Powered
+7.24s - 13.72s |  Supply Chain Attacks. I'm a little sad today because I don't have an AI topic to talk about.
+13.72s - 19.84s |  And if you see the colon that I've used there, it's not the GP regenerated title. So, yeah.
+19.84s - 26.48s |  We've seen supply chain attacks that have happened in the past in various domains. So,
+26.48s - 33.08s |  Polyfill is a popular JavaScript library which is used for browser compatibility. So, due
+33.08s - 39.76s |  to a domain hijack, over 100,000-plus websites, a bunch of NPM packages, they were actually
+39.76s - 46.64s |  compromised. Then you have the CCleaner attack, in which the CCleaner tool was backdoored,
+46.64s - 53.52s |  which had over, like, 2.3 million-plus downloads, wherein a developer PC was compromised.
+53.52s - 59.96s |  And SolarWinds, where the Orion updates were backdoored, which eventually, like, propagated
+59.96s - 67.20s |  to over 18,000-plus customers with big names. CodeCoff. So, CodeCoff compromise included
+67.20s - 72.76s |  a CI compromise where the secrets were exfiltrated, and they were abused as well.
+72.76s - 77.32s |  So, open source dependencies, NPM packages, they have been in the news for a very long
+77.32s - 84.88s |  time being compromised via dependency confusion or malicious dependencies, typosquatting,
+84.88s - 90.04s |  dependency hijacking, and all. And this is some fantastic research done from Alex Berson,
+90.04s - 97.72s |  where he talks about supply chain attacks by leveraging dependency confusion.
+97.72s - 104.08s |  And of course, we cannot just proceed on without talking about Andres, who found the infamous
+104.48s - 110.64s |  backdoor, just because he noticed, like, a 500-millisecond delay, which was very impressive.
+110.64s - 116.08s |  And in all of these attacks, when we retrospect and think about how these attacks have happened,
+116.08s - 121.16s |  there's a pattern to all of them. Like, attackers go after that one single component on which
+121.16s - 125.92s |  systems are dependent and systems are, you know, downstream and upstream dependent as
+125.92s - 126.92s |  well.
+126.92s - 133.80s |  These attacks can happen because of weak dependency links, weak passwords, domain takeovers, CI
+134.52s - 139.24s |  hijacking, CI-specific attacks, developer-targeted attacks, and a lot more. And the components
+139.24s - 144.76s |  may be open source softwares, third-party service providers, and exploitation of lesser-known
+144.76s - 147.72s |  but widely used tooling as well.
+147.72s - 152.68s |  And this also brings us to something that is called implicit trust. So let's say a friend
+152.68s - 160.36s |  shares some link that looks like this. It's AKMS, which is the URL shortener that is used
+160.36s - 166.24s |  by Microsoft, or some subdomain, which is an official Microsoft subdomain, or some Microsoft-owned
+166.24s - 171.92s |  GitHub repository. So there's this implicit trust that plays in picture. Since these are
+171.92s - 179.00s |  official resources, any executables, binaries, scripts, or any procedures that you work on,
+179.00s - 182.44s |  they will be implicitly trusted. And that is something that we will be exploring in
+182.44s - 187.24s |  the next 40 to 45 minutes.
+187.24s - 191.40s |  So my name is Nitesh. I work in Trend Micro with a focus on cloud threat and security
+191.40s - 198.44s |  research. So I've been in the top 100 MSRC MVRs twice for the past two years. My work's
+198.44s - 203.36s |  been presented in a bunch of conferences left and right. And you can find my work by going
+203.36s - 205.12s |  to this Twitter profile.
+205.12s - 206.12s |  And with me, I have Gaurav.
+206.12s - 207.12s |  Am I audible?
+207.12s - 208.12s |  Yes.
+208.12s - 215.76s |  Awesome. Hey, everyone. This is Gaurav. I am a senior program manager in MSRC. And I've
+215.76s - 219.64s |  had the opportunity to work with Nitesh on his research and would be very happy to share
+219.64s - 221.44s |  with you our side of things.
+221.44s - 227.40s |  All right. Cool. So the menu for today is something like this. We'll go through a basic
+227.40s - 232.04s |  introduction of Azure Storage. I know everybody knows about it, but just to make sure that
+232.04s - 236.08s |  everybody is on the same page. Then we'll go through a bunch of episodes that I've divided
+236.08s - 240.52s |  into four sections. And then we'll walk through some takeaways.
+240.52s - 247.24s |  So let's do our homework first. So storage accounts is Microsoft's cloud-stored solution.
+247.24s - 251.58s |  It's scalable, durable, available, secure as well, a bunch of flavors, different use
+251.58s - 257.28s |  cases. You can access via REST API or HTTPS, or you can use SMB, NFS, and other protocols
+257.28s - 259.04s |  as well.
+259.04s - 263.48s |  These are the most popular types of storage services that are supported and used as well.
+263.48s - 268.00s |  So you have blob, files, queues, and tables. These are based on your requirements or the
+268.00s - 273.88s |  use cases that you have. And it's very trivial to think of how these cloud-based storage
+273.88s - 279.24s |  solutions are used, sharing Web resources and these tags, sharing files, datasets, models,
+279.24s - 285.92s |  Python packages, backups, hosting static sites, and a lot more, which is not very new as well.
+285.92s - 290.60s |  So to access files that you have stored in a storage account based on the blob type of
+290.60s - 295.60s |  storage, so in this case, we have the name of the account as Sally, followed by the container
+295.60s - 299.96s |  name or the directory, which is named pictures, followed by the name of the blob, which is
+299.96s - 301.96s |  image001.jpg.
+301.96s - 307.64s |  Similarly, for file shares, you have this URL using which you can access. So name of
+307.64s - 312.20s |  the storage account is Sally, followed by the name of the file share is pictures, followed
+312.20s - 316.44s |  by the name of the folder or the blob, like you can reference either of these, which is
+316.44s - 318.68s |  image001.jpg.
+318.68s - 324.62s |  Now to access, like, files stored in a storage account, there are various ways to do it.
+324.64s - 331.30s |  So the first is the shared key. So there are two 512-bit keys that come in two flavors,
+331.30s - 334.98s |  primary and secondary, so you can use one when you're rotating the other. And it gives
+334.98s - 340.10s |  access to the storage account objects and the configuration as well.
+340.10s - 343.98s |  Then there are shared access signatures, and you probably know where this is going. So
+343.98s - 349.70s |  SAS URLs are basically signed using the shared key, and it's used to delegate access to resources
+349.70s - 352.10s |  in a storage account.
+352.10s - 357.04s |  Then you have Enter ID, previously known as Azure AD, and you have anonymous access based
+357.04s - 359.42s |  on the use case that you have.
+359.42s - 364.54s |  So for this session, we'll be focusing on shared access signatures.
+364.54s - 370.26s |  So using these keys and the SAS URLs, you can access to you can access a storage account
+370.26s - 374.98s |  using the Azure Storage Explorer, and this is how it looks like. Or if you're brave enough,
+374.98s - 379.26s |  you can use cURL or just the REST API.
+379.26s - 385.70s |  So SAS tokens is just a bunch of URL parameters. It's a signed URL that grants access to the
+385.70s - 392.02s |  Azure storage data. So the string in yellow that you see on the screen is the SAS token.
+392.02s - 397.86s |  And there are a bunch of specific URL parameters, as you can notice. So we'll go through this
+397.86s - 402.38s |  entire URL. So we have the name of the storage account, which is account name, followed by
+402.38s - 407.30s |  the service host, followed by the name of the container is images, the name of the blob
+407.30s - 415.06s |  for the file is image.jpg, followed by the accessible service, accessible services that
+415.06s - 419.58s |  are defined as blob, files, queues, and tables in the SS parameter.
+419.58s - 424.94s |  Then you have the APIs accessible for, like, the APIs that can be accessible using the
+424.94s - 429.56s |  SAS token. So in this case, service level, container level, and object level.
+429.56s - 434.54s |  Then you have the SAS permissions. So these are the permissions that are imbibed by this
+434.78s - 438.94s |  SAS token on the objects of the storage account. And you have a bunch of permissions there
+438.94s - 442.82s |  that we'll take a look into later. And then we have the expiry of the SAS token, which
+442.82s - 447.58s |  is set to sometime in 2099, which is pretty far from here.
+447.58s - 453.74s |  Cool. So signatures are per SAS token. And to validate a SAS token, you don't really
+453.74s - 459.34s |  need to validate the usage by writing files. This bit will get interesting as we move further
+459.34s - 464.34s |  in the talk. And you don't need to use the SAS token to show the write privilege.
+464.34s - 468.38s |  So let's see if a SAS token has read and write permissions. You just need to show the
+468.38s - 474.02s |  read. It also implies that you can write. So these URL parameters are well-defined,
+474.02s - 476.18s |  and they are well-documented as well.
+476.18s - 482.02s |  So this is just to emphasize that this SAS token has read, write, delete, and list operations
+482.02s - 487.42s |  that one can do. And the expiry of this SAS token is sometime in 2099.
+487.42s - 491.38s |  There are three types of SAS tokens. So the first is account SAS token, using which you
+491.42s - 497.98s |  can delegate access to one or more Azure storage services. Basically, it has the SS URL parameter.
+497.98s - 504.98s |  The maximum validity can be set to infinity. And it is secured with the shared key.
+504.98s - 509.42s |  Similarly, for service SAS tokens, you can only access one specific service, either of
+509.42s - 514.30s |  the four. And based on that, you can delegate access. And then you have user delegation
+514.30s - 520.78s |  SAS tokens, which are secured using the intra-ID. And it works only for blob storage.
+520.78s - 523.42s |  And the maximum validity for this is seven days.
+523.42s - 528.74s |  So as we see that the upper limit of the validity of account and SAS tokens is set to infinity,
+528.74s - 534.10s |  I mean, it can be set to infinity, these are more prone to misconfigure as well.
+534.10s - 540.62s |  Additionally, a shared key can be used to generate a bunch of SAS tokens. And these
+540.62s - 546.82s |  SAS tokens may or may not have the same set of permissions. So this also means and kind
+546.82s - 552.18s |  of also implies that the SAS generation is not an Azure activity. What I mean by this
+552.18s - 557.50s |  is, if I find a shared key, I can create a bunch of SAS tokens and there is no Azure
+557.50s - 564.34s |  activity that an end user can look into. So there are no logs for SAS generation.
+564.34s - 568.82s |  So which also kind of implies that the tracking of created SAS tokens is a challenge unless
+568.82s - 573.18s |  and until you are using stored access policies or the other access policies that you need
+573.18s - 579.02s |  to manually enable. And let's say if you find a particular SAS token and you want to
+579.02s - 582.86s |  invalidate that SAS token, you'll have to rotate the storage account's primary access
+582.86s - 588.98s |  key, which in turn also invalidates the remaining SAS tokens that were ever created.
+588.98s - 595.22s |  So this was the basic of how SAS tokens work and how SAS tokens are in Azure storage in
+595.22s - 602.46s |  general. Now we'll reflect on the basics. So SAS token is just a bunch of URL parameters.
+602.46s - 609.26s |  And where do you find URL parameters? Probably everywhere. So this is a quote that I've taken
+609.26s - 614.94s |  from Daniel Misler. So he mentions about URLs get logged by server side. You can find it
+614.94s - 620.98s |  in proxy logs. You can find it everywhere. And let's think about it. There are more sources
+620.98s - 625.06s |  to it. You can find it on VirusTotal. You can find it on websites. You can find it in
+625.06s - 630.34s |  the Wayback Machine or the ArchiveOrg. And there are many other sources about this.
+630.34s - 636.10s |  So that brings us to the beginning. So we'll go through some history first. So in October
+636.10s - 643.18s |  2019, there was this blog from Not So Secure where they talk about identifying and exploiting
+643.18s - 650.42s |  Azure storage keys. So they also talk about SAS tokens. Fast forward to September 2023,
+650.42s - 655.90s |  there was a mitigation done by Microsoft wherein researchers from Viz, they were able to access
+655.90s - 660.70s |  sensitive data in a storage account that belonged to possibly Azure Machine Learning
+660.70s - 667.02s |  Workspace. And using that, they could basically have write permissions on that storage account,
+667.02s - 674.08s |  which contained around 30 terabytes of data. And there was this comment from the blog that
+674.08s - 678.62s |  Microsoft did on their part where they mentioned that the GitHub secret scanning service is
+678.62s - 685.10s |  now reporting all the overly permissive SAS tokens. And the root cause has been identified
+685.10s - 691.42s |  and the system is confirmed. And that was kind of the end of the story. And if there
+691.42s - 697.72s |  are any questions, we can take that up. All right. I think that was not very obvious.
+697.72s - 705.32s |  Cool. So, well, we were just getting started. And with that, I begin the scene one, which
+705.32s - 709.40s |  is with Microsoft documentation. So, okay. So I'm at a Microsoft conference, and I really
+709.40s - 714.56s |  want to ask this. How many of you trust Microsoft documentation? Everybody. Even I do that.
+714.64s - 720.92s |  Right? So here's the thing. So Microsoft documentation is pretty much there out there. It's not closed
+720.92s - 725.68s |  source. Right? And it basically contains the how-tos of Azure services. So let's say if
+725.68s - 729.60s |  I want to go and learn a particular service, I will go through the documentation and I
+729.60s - 734.20s |  will follow the steps, step by step, and try to understand how the service works and what
+734.20s - 737.60s |  are the logs generated, what can I do with it, and all that.
+737.60s - 742.84s |  And additionally, these Microsoft documentation that you see on learn.Microsoft.com, you can
+742.84s - 748.36s |  suggest changes on these documentations as well by opening a GitHub issue in this GitHub
+748.36s - 755.16s |  org. Yeah. So while swifting through a bunch of
+755.16s - 760.60s |  SAS tokens that we found on GitHub, we came across this particular mention of something
+760.60s - 765.76s |  like an SQL statement or a SQL statement, which talks about creating a credential with
+765.76s - 771.04s |  an identity where the secret variable contains a SAS token, which expires sometime in the
+771.24s - 776.32s |  future. And this was the same SAS token that was mentioned in the SQL managed instance
+776.32s - 782.24s |  documentation. And I was like, hmm, SQL managed instance is a scalable cloud database service.
+782.24s - 786.92s |  So let's say if a user is following this documentation, what can go wrong, since we have a cool-looking
+786.92s - 790.88s |  SAS token? So zooming in, the name of the storage account
+790.88s - 797.20s |  in this case is MITutorials, followed by the SAS token, which allows for read, write, delete,
+797.20s - 803.36s |  list, append, create, update permissions on all the blobs, files, queues, and tables
+803.36s - 808.92s |  for service container and object-level APIs. And this token expires sometime in 6th of
+808.92s - 814.40s |  September 2028. So that was pretty much far in the future.
+814.40s - 818.00s |  And using the SAS token and Azure Storage Explorer that I showed you in the previous
+818.00s - 823.60s |  slides, I was able to mount this storage account on my personal laptop using the SAS token,
+823.60s - 827.28s |  and we were able to gain access to a bunch of database backup files. So these database
+827.28s - 832.00s |  backup files are not customer data. They just contain some test data for tutorials just
+832.00s - 836.16s |  to make sure, like, customers are onboarded or users are onboarded. And no production
+836.16s - 840.04s |  data was found. But these were just a bunch of database backup
+840.04s - 846.08s |  files, and what cool could be done with these? Enter stored procedures. So using stored procedures,
+846.08s - 850.28s |  you can leverage some sort of command execution by backdooring these database backup files
+850.28s - 855.40s |  that you find, and using which, you can possibly execute code on anybody who is trying to follow
+855.40s - 861.48s |  this documentation. And this issue was reported to Microsoft, and it was fixed as well. So
+861.48s - 866.28s |  this is the ZDICAN for the report. And we could possibly achieve code execution via
+866.28s - 872.96s |  backdoored stored procedures, which is fine. And now we come on to the second scene, which
+872.96s - 880.72s |  is wwwscan. So this also contained our hunting on VirusTotal, archive.org, WaybackURLs, Google
+880.72s - 887.04s |  Docs, and everything else, and Microsoft subdomains as well. So we'll now talk about that.
+887.04s - 891.96s |  So storage accounts talk about scalability. So one can possibly use it as a CDN as well
+891.96s - 897.52s |  without using Azure Edge, and if you don't have a lot of Web sites. So these storage
+897.52s - 904.00s |  accounts can be used to, I mean, to distribute your Web content to a bunch of Web sites.
+904.00s - 907.96s |  And so the idea was that, hey, could we find read-write SAS tokens that are being used
+907.96s - 912.70s |  on Web sites and possibly try to do something there?
+912.70s - 918.96s |  So we scanned the Internet with this very simple GREP expression, because that always
+918.96s - 924.08s |  works. And we were able to find a bunch of SAS tokens. So in this case, we have the script
+924.08s - 929.84s |  tag, which contains this source, which basically it is fetching this JavaScript file from a
+929.84s - 935.54s |  file share using a SAS token. And using the signature field, which contains the signature
+935.54s - 939.24s |  of the SAS token, we were able to find a bunch of other Web sites. So this is on a different
+939.24s - 943.64s |  Web site. We found a SAS token, which had read-write permissions. So you probably know
+943.64s - 945.96s |  where this is going.
+945.96s - 951.24s |  So the SAS token actually allowed for modification of the JavaScript file itself. And since we
+951.28s - 957.28s |  had access to the file share, we could possibly gain other Web site resources as well. And
+957.28s - 962.32s |  that implies read and write permissions. And, no, this was not on a Microsoft subdomain.
+962.32s - 968.44s |  And yeah, so this was also missing the subresource integrity checks. So SRI is basically a feature
+968.44s - 974.30s |  that enables browsers to verify that the resources that are fetched, for example, from a CDN,
+974.30s - 978.76s |  they are delivered without any unexpected manipulation in the middle. And it works by
+979.24s - 985.16s |  allowing you to basically provide a cryptographic hash. And that is also missing from this instance.
+985.16s - 989.62s |  So basically, if I come back to my scenario, if one of the Web sites or the applications
+989.62s - 994.84s |  where these SAS tokens have been mentioned, one could modify the JavaScript files or the
+994.84s - 1001.16s |  image resources and possibly compromise the remaining dependent Web sites on the storage
+1001.16s - 1002.48s |  account as well.
+1002.48s - 1007.68s |  So multiple Web sites with read-write SAS tokens where the JavaScript file and Web resources
+1007.68s - 1014.36s |  could be modified. Due to missing SRI checks, it was very trivial to perform. And this could
+1014.36s - 1019.76s |  lead to endless possibilities like credential harvesting, browser-based crypto mining.
+1019.76s - 1024.36s |  And coming to browser-based crypto mining, there was this very cool talk at NDC Oslo
+1024.36s - 1030.40s |  last year where they talk about where Scott Helm from Report URI, he talks about uncovering
+1030.40s - 1035.80s |  a cryptojacking attack that affected over 5,000-plus Web sites. That is because of a
+1035.92s - 1041.12s |  JavaScript file takeover that was being used in those Web sites.
+1041.12s - 1047.60s |  With now, now I bring you the Scene 3, which is of Microsoft PC Manager. So I just want
+1047.60s - 1054.00s |  to ask a quick question. Do you use PC Manager or have you heard of PC Manager? Okay. Wow,
+1054.00s - 1057.08s |  I have two. Cool.
+1057.08s - 1062.36s |  So basically, Winget, so we'll do some homework first. Winget is a package manager for Windows
+1062.36s - 1068.28s |  10 and 11. And it comes with a CLI. It is downloadable. It's open source as well.
+1068.28s - 1074.80s |  So using Winget, you can basically install applications on your Windows 10 and 11. And
+1074.80s - 1080.04s |  these applications are defined in some manifest YAML files. And these manifest YAMLs are basically
+1080.04s - 1084.96s |  sourced in from two different sources as of now, which is the Microsoft Store and the
+1084.96s - 1090.72s |  other is the Winget GitHub repository that I've mentioned here.
+1090.72s - 1095.64s |  And the YAML looks something like this. So we have a bunch of fields with a bunch of
+1095.64s - 1101.60s |  descriptions here. So basically, this YAML file defines how do you install a given application.
+1101.60s - 1106.94s |  So you have the package identifier, version, package locale, publisher, package name, license.
+1106.94s - 1111.88s |  But if you're interested in installer URL and installer SHA-256.
+1111.88s - 1117.34s |  So we came across a particular instance where, okay, that's too small. So we came across
+1117.34s - 1121.66s |  a particular instance where we found something that looked like a SAS token, but the installer
+1121.66s - 1127.90s |  URL was not really a blob URL or a file URL that we could identify.
+1127.90s - 1131.82s |  And now Microsoft PC Manager is that tool that we as kids used to have back in the days
+1131.82s - 1138.98s |  to download RAM and speed up Windows devices, boost clean managed apps, startup optimizer,
+1138.98s - 1142.46s |  file utilities. I mean, I still use it. It's pretty cool.
+1142.46s - 1147.54s |  So using Winget, you can install PC Manager by running this command. So Winget install
+1147.54s - 1153.82s |  dash E dash dash ID followed by Microsoft.PCManager. And we had something that looked like a SAS
+1153.82s - 1158.02s |  token. So what is happening here? Let's try to figure out.
+1158.02s - 1164.46s |  By sending this invalid request where I'm trying to list out, like, files in this URL,
+1164.46s - 1169.50s |  I get an error message that the URL doesn't the URI does not exist and does not represent
+1169.50s - 1174.10s |  any resource. But in the URI path, I was able to find out the underlying storage account
+1174.10s - 1178.58s |  which looks like it belongs to the Azure China region.
+1178.58s - 1183.90s |  And this is cool. So we have a storage account that is probably hosted in the Azure China
+1183.90s - 1188.46s |  region, and we have a SAS token, and we have Azure Storage Explorer. So the next thing
+1188.46s - 1194.42s |  that I found myself was I was able to mount this storage account using the SAS token.
+1194.42s - 1198.30s |  And if you notice, the bunch of files that I've highlighted in the red box, we have a
+1198.30s - 1204.30s |  bunch of exe files, a zip file that on which we had read and write access.
+1204.30s - 1210.98s |  And if you okay. Cool. Somebody was clapping. All right. Cool. And, yeah, so it turns out
+1210.98s - 1216.76s |  that we could browse the container named MVP in the storage account using the storage explorer.
+1216.76s - 1219.98s |  And there were a bunch of internal builds as well which contained, like, 20 gigs of
+1219.98s - 1225.02s |  internal builds. So the impact was that we had read, write,
+1225.02s - 1231.94s |  and list permissions on around 358 gigs of releases of PC Manager from this storage account.
+1231.94s - 1238.26s |  And we had the ability to replace or modify the MSIX files, the MSI installer files, the
+1238.26s - 1243.78s |  zip installers as well. And possibly, in fact, end users of PC Manager
+1243.78s - 1248.66s |  via Winget. But that was not really possible. That we'll see in a bit. And this is a quick
+1248.66s - 1253.46s |  POC that I crafted. Additionally, PC Manager has this feature
+1253.46s - 1259.96s |  of auto-updation that is enabled by default. So it could be possible that we could achieve
+1259.96s - 1264.66s |  a supply chain attack by replacing the releases, although we could not sign those binaries.
+1264.66s - 1270.94s |  But tell me how many of us will actually think before validating whether a non-signed binary
+1270.94s - 1275.22s |  is being delivered from a Microsoft official storage account. That's a big question. Right?
+1275.22s - 1281.46s |  So this was still a potential angle. And there were certain Winget defenses in place which
+1281.46s - 1285.34s |  were pretty cool. So installer SHA-256 property that we saw
+1285.34s - 1290.42s |  in that YAML file would actually disallow this code execution from happening. So let's
+1290.42s - 1295.74s |  say if I replace that, I mean, replace the file that is being referenced by the SAS token,
+1295.74s - 1301.56s |  and if I do Winget install PC Manager, that will never go through because I won't be able
+1301.56s - 1307.10s |  to bypass the SHA-256 match that is happening on the CLI. So it does not really result into
+1307.10s - 1311.14s |  a direct code execution. And there are flags to, although, disable
+1311.14s - 1315.74s |  integrity checks, but they also need admin privileges. So this is how you can enable
+1315.74s - 1321.10s |  the hash override. And then you can install the package by ignoring the security hash,
+1321.10s - 1327.46s |  which is not cool enough. So that brings me to the ‑‑ I like to
+1327.46s - 1333.62s |  mention this as the director's cut of Microsoft PC Manager again, which is Scene 4. Well,
+1333.62s - 1337.66s |  if you know that you can do better, you should obviously do better. I mean, I do not think
+1337.66s - 1342.26s |  much about putting this up on my deck, but compromise-wise, Winget was fine. I mean,
+1342.26s - 1347.10s |  I don't use Winget daily in and out. So were there any sources from where else I could
+1347.10s - 1350.60s |  get PC Manager, and how popular was this tool anyway?
+1350.60s - 1355.58s |  So we did some searching on Google, and we came across a bunch of blogs that, okay, we
+1355.58s - 1360.20s |  have a bunch of blogs here from PC World, Bleeping Computer, saying they talk about
+1360.20s - 1366.52s |  Microsoft PC Manager. All right? So while exploring these blogs, we came across
+1366.52s - 1372.60s |  this particular subdomain that was mentioned as PCmanager.Microsoft.com. And the same subdomain
+1372.60s - 1378.14s |  was also mentioned in the publisher info for the App Store page for PC Manager.
+1378.14s - 1384.20s |  So I find myself on this subdomain. And the idea was that since the distribution of PC
+1384.20s - 1388.12s |  Manager was happening from a storage account using a SaaS token with overly permissive
+1388.12s - 1394.96s |  permissions, maybe we could find something similar. It might be likely.
+1394.96s - 1400.32s |  So while I was exploring how this download feature works, so I click on download. It
+1400.32s - 1408.92s |  redirects me to AKMS. So AKMS is the URL shortener that you use. And this URL shortener, in turn,
+1408.92s - 1416.24s |  gives me a 301 response and sends me to a different URL. And if you can notice, we have
+1416.24s - 1422.16s |  a service SaaS token, which allows for container and object level read, write, delete, and
+1422.16s - 1429.48s |  list permissions up to 6th of March, 2024. And the interesting bit here was that we found
+1429.48s - 1435.64s |  these AKMS URLs that were also mentioned in a bunch of support forums. So if you can notice,
+1435.64s - 1442.02s |  so these are the same AKMS URLs, which actually use an overly permissive SaaS token.
+1442.02s - 1446.34s |  And using the SaaS token and using the Storage Explorer and using Azure Storage Account,
+1446.34s - 1454.06s |  you were able to mount this as well. And we had, like, permissions on 118 gigs of releases.
+1454.06s - 1458.90s |  And this time, we were going through the official subdomain, which was kind of interesting because
+1458.90s - 1465.06s |  we had kind of bypassed the Winget protection mechanism. Right? And this was a quick POC
+1465.06s - 1468.88s |  that we developed with Microsoft. So here's a quick video. Yeah. So here's a quick video.
+1468.88s - 1473.52s |  So I go on Google and I search for PC manager. I hit enter and I click on the first link
+1473.52s - 1477.80s |  because it's an official subdomain. I will implicitly trust it. So when I go to this
+1477.80s - 1482.00s |  page and I click on inspect element because that's the most hacker thing to do. And then
+1482.00s - 1488.00s |  I go to network and I click on download. And I'll just save the file because I don't want
+1488.00s - 1497.88s |  to delete it. And then I'll copy this link URL. Okay. This link address. And I'll open
+1497.88s - 1504.36s |  Azure Storage Explorer and I'll click on connect to an Azure storage using the SaaS URL. Like,
+1504.36s - 1510.48s |  I will try to mount the MVP container here. Next. So I'll paste this URL and I'll just
+1510.48s - 1515.20s |  go over the SaaS token again because even I myself was not able to believe this. So
+1515.20s - 1520.36s |  we have the expiry sometime in 6th of March. And then you have container and object level
+1520.36s - 1528.35s |  permissions, read, write, delete, and list. And I'll hit next and hit connect. So it takes
+1528.35s - 1540.25s |  a while. And now that the storage account, I mean, the MVP container has been mounted,
+1540.25s - 1545.85s |  you go level up. So these are the different releases for this version. And then you have
+1545.85s - 1552.38s |  the other releases for Microsoft PC manager and the channels as well. So we had, like,
+1552.38s - 1555.22s |  read, write, delete, and list permissions on the storage account. So that was the gist
+1555.22s - 1559.06s |  of it. And these issues were also reported to Microsoft
+1559.06s - 1565.14s |  via ZDI, which were, like, fixed very quickly. And as a bonus slide, I would like to mention
+1565.70s - 1569.66s |  this, that we also found something that is called Windows Master. And I'm not sure if
+1569.66s - 1574.94s |  you know Windows Master. I did not know that. So when I was looking about what is this application
+1574.94s - 1580.50s |  about, it turns out that it was the previous name of PC manager. So we had a bunch of PowerShell
+1580.50s - 1584.58s |  scripts and some installation packages on which we had, like, read, write permissions
+1584.58s - 1592.08s |  as well. So this could have possibly resulted in, like, a supply chain attack by code tampering.
+1592.08s - 1595.96s |  So the fixes that I observed as an external researcher when I was looking into the GitHub
+1595.96s - 1602.32s |  repositories and monitoring them as well, so we came across a bunch of these PRs that
+1602.32s - 1606.96s |  were merged. And the SAS token were actually removed. So this is the link to which you
+1606.96s - 1610.80s |  can go and take a look. And the current fix that I have seen as of
+1610.80s - 1618.24s |  now is that the PC manager AKMS URL that is mentioned in the subdomain, it uses a read-only
+1618.24s - 1623.88s |  SAS token, so we are good there. So in the gist, the attacker comes across a bunch of
+1623.88s - 1628.16s |  cloud-specific credentials. And, no, this is not just specific to Azure or Microsoft
+1628.16s - 1633.04s |  in general, but in cloud service providers in general, which have some sort of read and
+1633.04s - 1638.72s |  write permissions. It can be any other cloud service or cloud credentials, for that matter.
+1638.72s - 1643.44s |  And this storage account contains a bunch of releases, some tools, software, code, programs
+1643.44s - 1649.76s |  that are distributed across apps.Microsoft.com, PCmanager.Microsoft.com, AKMS URLs, or the
+1649.76s - 1653.60s |  WinGet manifests. We could have read and write permissions on this.
+1653.60s - 1658.60s |  So after we found this and we reported to MSRC, now Gaurav will walk you through the
+1658.60s - 1661.56s |  response side of things. Over to you, Gaurav.
+1661.56s - 1668.28s |  Thank you so much, Nitesh. I guess I'm audible. All right. Awesome. So, yeah, that was wonderful
+1668.28s - 1671.76s |  research. We are really thankful for submitting that report to MSRC.
+1672.08s - 1677.12s |  Nitesh spoke to you about the attack side of things, how he found these SaaS tokens and
+1677.12s - 1681.08s |  how he developed exploits for this. I'm going to talk to you a little bit about the defense
+1681.08s - 1685.88s |  side of things, how we responded to the reports that Nitesh submitted us, and what we are
+1685.88s - 1689.80s |  doing in general to tackle this problem at scale.
+1689.80s - 1694.96s |  So we follow a four-step process. I think it's pretty standard, but it cannot be emphasized
+1694.96s - 1700.92s |  more. Revoke, rotate, remove, and check for abuse. Revoke the credentials as soon as you've
+1700.96s - 1705.44s |  been notified that they've been exposed. Our goal is to revoke credentials within 24 hours
+1705.44s - 1712.52s |  of being reported, at the max 24 hours being reported. And so the reports that Nitesh submitted,
+1712.52s - 1717.00s |  the credentials were revoked within 24 hours.
+1717.00s - 1723.60s |  We also work very closely with the engineering team to understand why this happened and help
+1723.60s - 1728.88s |  them rotate credentials. Some of these SaaS tokens were required for service continuity
+1728.88s - 1734.20s |  because customers had to use those tokens to download PC Manager or tutorial files.
+1734.20s - 1740.32s |  And so it was important that we rotate credentials and restore service availability. And so we
+1740.32s - 1743.64s |  work with the engineering teams really closely to make sure that principle of least privilege
+1743.64s - 1745.52s |  was followed.
+1745.52s - 1749.36s |  Removing credentials from code, hard-coded or plain-text credentials, should never end
+1749.36s - 1754.56s |  up in code. And so even though by revoking and rotating credentials, the risk is pretty
+1754.56s - 1761.52s |  much mitigated, we push engineering teams to remove credentials from code altogether.
+1761.52s - 1766.96s |  In the reports, or specifically around SaaS tokens where shared access is required, often
+1766.96s - 1772.80s |  these tokens need to be put in places where customers can use them. And so the whole principle
+1772.80s - 1777.36s |  of working with the teams to ensure that they have the least privilege principle applied
+1777.36s - 1779.52s |  is really important.
+1779.52s - 1784.64s |  Throughout this process, we continuously check for signs of abuse. We investigated whether
+1784.64s - 1790.52s |  these tokens were actually used in an unauthorized way. And if we detect something like that,
+1790.52s - 1796.76s |  we initiate additional processes to investigate further. In the reports that were submitted,
+1796.76s - 1800.80s |  no signs of abuse were identified. But if they had been, we would have initiated more
+1800.80s - 1802.80s |  processes.
+1802.80s - 1808.36s |  Now what Nitesh's report shared was a few instances of a wider problem that we have
+1808.36s - 1812.72s |  seen across the cloud. It's not new that credentials end up in code. It's not new that
+1812.72s - 1816.76s |  plain-text passwords have been found in public repositories.
+1816.76s - 1820.80s |  So what are we doing as a company to make sure that we tackle this problem at scale
+1820.80s - 1826.24s |  and prevent this from happening in the first place? Detection. So we have tools implemented
+1826.24s - 1833.04s |  on our CI CD pipelines and repositories which do real-time source code scanning. And as
+1833.04s - 1837.92s |  and when developers try to put in plain-text passwords or credentials in code, the tool
+1837.92s - 1841.80s |  helps them to detect those and flag those things.
+1841.80s - 1846.36s |  One step further, we go into prevention, that any time the tools detect that there are credentials
+1846.36s - 1852.12s |  that are being hardcoded or checked into code, there are push protections that are applied,
+1852.12s - 1861.48s |  which blocks developers from entering or propagating hardcoded credentials into production pipelines.
+1861.48s - 1865.68s |  These are ‑‑ there are flavors of these policies. There are hard blocks and soft blocks
+1865.68s - 1870.12s |  because there may be false positives. But any time a developer tries to bypass the policies
+1870.12s - 1875.08s |  or check in code, everything is audited and logged and requires further approval if you
+1875.08s - 1880.44s |  want to check in credentials in code. And then even if after all of this, if credentials
+1880.44s - 1886.96s |  do end up in public repositories or code bases, we have scanners implemented there that continuously
+1886.96s - 1891.96s |  scan for hardcoded credentials. And a liveness checker which checks for credentials if they
+1891.96s - 1897.04s |  are live or not. If they are live credentials, we immediately initiate an escalation process
+1897.04s - 1903.68s |  where we go back and follow the revoke, rotate, and remove steps that we had documented.
+1903.68s - 1909.96s |  So all right. So tokens may still slip through. Because a lot of these tools are rule-based
+1909.96s - 1914.92s |  tools. We are consistently and constantly working on evolving the rules to include more
+1914.92s - 1919.88s |  types of credentials and more code bases. However, tokens may still slip through.
+1919.88s - 1924.84s |  And so it is here where our partnership with security research community becomes extremely
+1924.84s - 1929.48s |  valuable. If you ever identify a token or credentials that are hardcoded or exposed
+1929.48s - 1935.40s |  in repositories, please feel free to report it to MSRC. You can ‑‑ for SAS tokens,
+1935.40s - 1940.88s |  you can always go and check the level of access and expiry in the token itself. But we highly
+1940.88s - 1945.60s |  recommend and ‑‑ I would not say recommend. We request not to use and not to try to use
+1945.60s - 1951.12s |  these tokens. There is no proof of concept required if you want to report hardcoded credentials
+1951.12s - 1955.28s |  or exposed credentials. Just send us the token, just send us the source, and we will do the
+1955.28s - 1961.80s |  investigation on your behalf and will inform you what the impact was.
+1961.80s - 1966.20s |  Severity and impact of these reports are often identified based on the level of data that
+1966.20s - 1973.52s |  was being accessed and whether the credentials were live or not. So, for example, for Natasha's
+1973.52s - 1980.64s |  report, based on everything, the reports were classified as important severity vulnerabilities.
+1980.64s - 1985.48s |  So, yeah, again, I cannot emphasize enough, if you find tokens exposed, please report
+1985.48s - 1989.76s |  it to us. Do not try to use them, and we will work with you on mitigating the risk.
+1989.76s - 1992.56s |  So over to Unitesh to talk about the next steps.
+1992.56s - 1999.42s |  UNITESH RAMAKRISHNAN All right. Thank you, Gaurav, for the response
+1999.42s - 2005.46s |  side of things from MSRC angles. And now we will walk through some takeaways, which also
+2005.58s - 2007.78s |  gives us a lot of hope.
+2007.78s - 2013.72s |  So if you come across a SaaS token which has, like, read-write permissions, it expires sometime
+2013.72s - 2018.10s |  in the future, you should be aware of the context of who is using these SaaS tokens,
+2018.10s - 2024.98s |  if it's internal, if it's external, if it's an application or a user or a malicious actor.
+2024.98s - 2031.14s |  So the context-specific hunting is very important, and we'll take a look into that as well briefly.
+2031.14s - 2035.90s |  So from the detection side of things, you can leverage Azure storage analytics logs,
+2035.90s - 2040.86s |  but with caution. So if your storage account has a lot of activity, that may add up to
+2040.86s - 2046.10s |  a lot of cost. And you can use these storage analytics logs to check whether an overly
+2046.10s - 2050.86s |  permissive SaaS token is being used, but you cannot find which SaaS token is being used,
+2050.86s - 2055.74s |  because the signature field is not visible in the logs that are generated.
+2055.74s - 2061.42s |  Now, when we think of hunting about SaaS tokens or credentials in URL parameters, these are
+2061.42s - 2065.90s |  just URL parameters at the end of the day. There are various sources that you can go
+2065.90s - 2074.02s |  to if you have access, VirusTotal, ThreatEnding Platforms, GitHub, Docs, Google searches,
+2074.02s - 2075.66s |  and there are a lot of other sources as well.
+2075.66s - 2080.18s |  So this is a very simple GitHub code search query that I built that worked for me. It's
+2080.18s - 2085.54s |  not complete. It has a lot of flaws, but it works. So I'm looking for content which is
+2086.34s - 2093.22s |  SP equal to RW, which means the SaaS permissions have read and write, and then you have the
+2093.22s - 2098.26s |  expiry which is set to sometime later on. And then you can use other, like, identifiers
+2098.26s - 2105.06s |  like NOT, S4, organization, repo, user, and all that. And you can obviously expand based
+2105.06s - 2107.26s |  on your experience.
+2107.26s - 2112.54s |  So when we think of the takeaways from the past 30, 35 minutes, for every sort of tokens
+2112.54s - 2118.18s |  and credentials, we need to apply the principle of least privilege. It's very commonly said
+2118.18s - 2123.34s |  across every conference that I've been to, but it still applies. So you need to start
+2123.34s - 2127.54s |  with bare minimum privileges and then work your way up. So there are attackers scanning
+2127.54s - 2132.54s |  for leaked credentials 24-7. That's something that I can vouch for.
+2132.54s - 2137.54s |  And you can use short-lived SaaS tokens and stored access policies to track these SaaS
+2137.54s - 2142.78s |  tokens and invalidate them as well. So the idea here is that it's not just SaaS tokens,
+2142.78s - 2147.54s |  but cloud credentials in general. You can segregate your tokens and credentials based
+2147.54s - 2153.42s |  on the use cases that you have. Just keep the user context in mind. And you can definitely
+2153.42s - 2158.02s |  inspect your network traffic for read, write SaaS tokens, a bunch of other parameters,
+2158.02s - 2161.74s |  and you can scan code, as Gaurav said, for overly permissive SaaS tokens, because that
+2161.74s - 2166.42s |  is something that we implemented internally as well.
+2166.42s - 2172.02s |  So when we think of code, it can be code bases, IAC files, Docker files, Docker Compose
+2172.02s - 2178.66s |  YAMLs, Kubernetes YAMLs, Docker images, other container artifacts, file systems, and everything.
+2178.66s - 2184.66s |  And, folks, it's time to update your TruffleHog, GitLeaks, CICD pipelines, and most importantly,
+2184.66s - 2188.58s |  grep. So I had to put this image because it's very
+2188.58s - 2194.38s |  much relevant. So your modern cloud infrastructure, irrespective of your cloud service provider,
+2194.38s - 2199.54s |  is all dependent on that one single overly permissive cloud service credential.
+2199.54s - 2203.82s |  And we have some more findings in other CSPs as well that we'll be sharing sometime later
+2203.82s - 2210.34s |  on. So stay tuned. And we'll be back to this image now. So this falling domino here is
+2210.34s - 2214.78s |  probably that SaaS token. And now I'd like to acknowledge Zero Day Initiative
+2214.78s - 2220.22s |  and Microsoft for helping these bugs get through and fixed, and much thanks to ZDI to get to
+2220.22s - 2226.62s |  helping these bugs across. A bunch of references that we had used. And I'd like to appreciate
+2226.62s - 2230.78s |  you for staying here throughout, in spite of the technical difficulties.
+2230.78s - 2237.20s |  All right. Let's give them a round of the hand.
+2237.20s - 2242.88s |  So it's been fun working with MSRC team and working on a lot of cases. We fixed a lot
+2242.88s - 2247.12s |  of things. And we are excited about what we'll be finding next.
+2247.12s - 2252.60s |  So Gaurav, I just came across this storage account name. Like, what could go wrong in
+2252.60s - 2253.60s |  this case?
+2253.60s - 2255.44s |  Well, based on your research quite a bit.
+2255.44s - 2258.16s |  Cool. We'll find out. Yeah. Thank you.
+2258.16s - 2266.10s |  All right. Thank you, Nitesh and Gaurav.

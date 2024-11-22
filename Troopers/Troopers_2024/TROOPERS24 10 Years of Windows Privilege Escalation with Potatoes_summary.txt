@@ -1,0 +1,73 @@
+**Introduction**
+- This talk is about **Windows privilege escalations** using the **potato technique**.
+- The speaker, **Andrea Pirini**, and his partner, Antonio, have spent a lot of time researching and finding new vulnerabilities to exploit this technique.
+
+**What is a Privileged Escalation?**
+- From **Microsoft's perspective**, it is **not** a privileged escalation to go from **admin to kernel** or to **bypass User Account Control (UAC)**.
+- It is also **not** a privileged escalation to **abuse a service account** or **bypass Windows service account hardening**; this is considered a **safety boundary** and is **expected behavior**.
+- A **security boundary violation** involves escalating from a **standard user to admin** or bypassing **sandboxes**.
+
+**Where it All Began**
+- The first **potato technique** was the **local NTLM reflection attack**, reported in **2014** and **fixed in 2015**.
+- This technique involved a **malicious COM object** triggering a **privileged COM server service** using a **special DCOM call**.
+- The **auxiliary resolver** is used to locate the **binding information** for the COM server, similar to a **DNS for DCOM**.
+- The **authenticated call** to the COM server can be **intercepted and manipulated**, allowing for **privilege escalation**.
+
+**Service to System: A Safety Boundary Violation**
+- Abusing the **impersonation privileges** of **services**, which typically have at least **impersonation privileges**.
+- **Raw Potato** was the first tool to trigger the **DECOM server**, but it was limited to a **fixed port** and only worked with **Meterpreter**.
+- **Juicy Potato** was a more flexible and standalone tool that allowed specifying a **custom port** and using tokens to launch processes under the **system identity**.
+- Microsoft **fixed** this vulnerability in **Windows Server 2019** and **backported** the fix to **Windows 2016**, breaking Juicy Potato.
+- **Rock Potato** used a **socket redirector** on a **Linux machine** to redirect calls from **port 135** to a **custom port** on the attacker's machine.
+- By creating a **custom fake port mapper endpoint**, Rock Potato could **impersonate the caller** and access **juicy tokens**, such as the **system code tokens**.
+
+**Remote Potato: A Security Boundary Violation**
+- This technique involves **relaying NTLM authentication** to a **remote server**.
+- The idea is to **intercept the authentication** of a **privileged user** on another **session** and **relay it to an external server**.
+- By **downgrading to RPC-level connect**, the signing requirement can be bypassed, enabling the relay attack.
+- Microsoft's response was that **servers must defend themselves against relay attacks**.
+- An **unintended fix** by Microsoft later broke Remote Potato by making signing **always enabled**.
+- However, Remote Potato still works where **SMB signing is not required**, such as on **file servers**.
+
+**Local Potato: Swapping the Context**
+- This technique involves **swapping the context** of a **privileged user's authentication** with that of a **user under the attacker's control**.
+- By triggering the authentication of a privileged client and associating it with **Context A**, while the attacker's client process gets **Context B**, the contexts can be swapped.
+- This allows the attacker to **authenticate as the privileged user** to a **local service**, such as the **SMB server**, enabling **arbitrary file write** with **system privileges**.
+- Microsoft **fixed** this vulnerability with a **CVE**, but it **still works against HTTP** and **custom authentication using the security provider**.
+
+**Fake Potato: A Local Privilege Escalation**
+- This technique was discovered recently and is **still waiting for a fix from Microsoft**.
+- It is **not exactly a potato technique** but is **cool** because it has been around since **Windows 2000**.
+- The speaker demonstrates how Fake Potato can be used to get a **shell as an administrator** on a **remote machine**.
+
+**Remote Local Privilege Escalation**
+- The idea is to **trigger a remote COM server** instead of a local one, enabling a **remote local privilege escalation**.
+- An **external auxiliary server** is required to **intercept the first authentication**.
+- By specifying a **remote server and optional credentials**, the attacker can **trigger the authentication of the remote server** and **relay it**.
+- **Kerberos authentication can also be relayed** if the attacker controls the **Service Principal Name (SPN)**.
+- However, **non-admin users typically cannot instantiate remote objects**, so vulnerable DCOM servers need to be found.
+
+**ADCS Squares Potato: Relaying the Authentication of the Certificate Server**
+- On servers with **ADCS services installed**, the **Certificate DCOM Access Group** contains **Authenticated Users** and **Everyone**, allowing users to **request and enroll certificates via DCOM**.
+- This group is **activable by everyone**, meaning users can **activate these applications from remote**.
+- The **certification service DCOM application** **impersonates the system account**, so triggering its authentication and relaying it can lead to **code execution on the certificate server machine**.
+- The speaker demonstrates how this can be used to **request a certificate for client authentication of the certificate server** and **take over the domain**.
+
+**Remote Silver Potato: Triggering the Authentication of a Domain Admin**
+- The **Distributed COM Users group** and **Performance COM Users group** can **launch and activate DCOM services from local and remote**.
+- The **SPPUI object interactive class**, related to the **Windows license service**, is the perfect candidate for a remote silver potato attack.
+- This service **runs as an interactive user** and can be **activated and launched by everyone**, although with **limits by DCOM**.
+- By triggering the authentication of this service, the attacker can **intercept the authentication of a domain admin** connected to a **domain controller** and **relay it**.
+- The speaker demonstrates how this can be used to **create a user account with DC sync rights** and **take over the domain**.
+
+**Kerberos Relay: Bypassing the SPN Limitations**
+- The original **Kerberos relay tool** only intercepts the **first authentication**, and **relaying Kerberos requires controlling the SPN**.
+- The speaker **modified the tool** to work with **potato techniques** and **bypass the SPN limitations** by **adding a forged DNS name**.
+- The **Kerberos security provider extension** supports a **special format for the SPN** that includes the **target information**.
+- By creating a **DNS record** with this strange name, the attacker can **relay the application request ticket to a target server on behalf of the victim**.
+- The speaker demonstrates how this can be used to **dump the local SAM account database** and **obtain the administrator hash**.
+
+**Conclusion**
+- With potatoes, we can **break safety and security boundaries**, and **most MS fixes were partial or not implemented**.
+- **Future NTLM disablement** will stop some relay attacks, but **Kerberos can still be relayed** if the attacker controls the SPN.
+- The only way to protect against these attacks is to **secure endpoints** properly.

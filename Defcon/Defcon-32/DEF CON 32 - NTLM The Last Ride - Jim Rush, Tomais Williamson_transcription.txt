@@ -1,0 +1,411 @@
+{
+  "webpage_url": "https://www.youtube.com/watch?v=7IrPkH7kK2I",
+  "title": "DEF CON 32 - NTLM The Last Ride - Jim Rush, Tomais Williamson",
+  "description": "Microsoft is planning to kill off NTLM (New Technology Lan Manager) authentication in Windows 11 and above. Let's speedrun coercing hashes out of a few more things before it fades into obscurity over the next twenty five years or so.\n\nThere will be a deep dive on several new bugs we disclosed to Microsoft (including bypassing a fix to an existing CVE), some interesting and useful techniques, combining techniques from multiple bug classes resulting in some unexpected discoveries and some absolutely cooked bugs. We\u2019ll also uncover some defaults that simply shouldn't exist in sensible libraries or applications as well as some glaring gaps in some of the Microsoft NTLM related security controls.",
+  "channel_url": "https://www.youtube.com/channel/UC6Om9kAkl32dWlDSNlDS9Iw",
+  "duration": 1982,
+  "channel": "DEFCONConference",
+  "uploader": "DEFCONConference",
+  "upload_date": "20241016"
+}
+
+0.59s - 2.35s | This text was transcribed using whisper model: large-v2
+
+ Hello everyone
+2.35s - 9.67s |  Hello. Hi. So thanks for coming along today. We are here to talk about everyone's favorite subject from 25 years ago
+11.75s - 15.43s |  So a friend of mine said this to me when I told him what our research was about
+16.75s - 24.11s |  And yeah, it holds true. I mean Windows has got some stuff going on. So let's find out exactly how broken it is
+24.75s - 27.99s |  So real quickly we're from there
+28.99s - 35.39s |  That's a very accurate map we're from the middle of Middle-earth a little place called Wellington in New Zealand and
+36.31s - 40.99s |  Yeah, it was a long flight. It was too long. It was too long an economy
+41.79s - 45.99s |  Anyway a little bit about me. I've worked at a bunch of logos, which is very exciting
+45.99s - 50.83s |  I actually had a life before hacking where I used to tour a lot of bands to New Zealand
+50.83s - 55.65s |  So, please don't ask me about the early 2000s because I have PTSD and a lot of debt
+56.65s - 63.53s |  I'm also a former software developer. I'm a relatively active security researcher a few CVS in various things
+63.53s - 69.05s |  I'm a frequent flyer with search New Zealand, which is the cyber security emergency response team. They love me
+69.33s - 71.33s |  Please don't ask me about council software
+72.01s - 75.13s |  And I'm Thomas. I have also worked at
+75.89s - 81.89s |  Fewer logos than Jim. I'm a little bit younger than Jim. I also do some CTF stuff and
+82.69s - 89.89s |  I'm also a senior security consultant. I also do research. I found a fun thing a few years ago in kite works
+90.41s - 94.49s |  Also did the Kramer thing with Jim a couple of slides ago
+94.49s - 98.17s |  Don't know if you remember and then also the Microsoft stuff in this talk
+99.93s - 105.37s |  So this talk is about NTLM NTLM is supposedly going away
+106.37s - 107.69s |  Every
+107.69s - 111.77s |  NTLM bug we've seen has usually been a gateway bug to something better like
+112.53s - 115.73s |  Usually it leads into something. That's quite nice. Sometimes a bounty
+116.45s - 120.81s |  It has been a absolute ride with the MSRC. They have a very hard job
+120.81s - 124.77s |  We met with them the other day and we did have to change some of our talk because it turns out
+124.77s - 131.57s |  They're actually quite nice. Yeah, when you like meet them and they've got faces and names you kind of feel a little bad. Oops
+132.57s - 141.49s |  Windows has an overwhelming desire to authenticate to everything that it can it just likes sending hashes out like there's no tomorrow and
+142.69s - 145.93s |  The Windows ecosystem is very vast and very fun
+146.45s - 151.71s |  So in TLM, we are not going to give it a stupid name
+152.79s - 153.87s |  someone
+153.87s - 156.19s |  could SQL I squealy and
+157.75s - 159.75s |  It still haunts you
+160.23s - 163.27s |  It stands for new technology land manager
+164.23s - 168.87s |  There's something about calling things new in technology. That means it's going to be around forever
+169.79s - 175.63s |  And it's up there with the simple and SNMP and lightweight and elder
+176.15s - 182.12s |  So NTLM was developed in the 90s like a few of you here
+183.36s - 190.28s |  It's preceded by LM and this is finally completely removed in server 2025. So it hasn't been removed yet
+191.28s - 198.32s |  It was intended to provide authentication integrity and confidentiality so far so good. This is you know, what you expect out of NTLM
+199.04s - 203.40s |  They've recommended not to use it since 2010. Does anyone know what year we're in now?
+204.64s - 210.64s |  There was a 2011 DEF CON talk that I watched called nail the coffin shut NTLM is dead
+211.80s - 213.80s |  It failed to die
+215.36s - 217.84s |  So and there are a crapload of CDs
+218.80s - 220.64s |  associated with this protocol
+220.64s - 223.36s |  So essentially at its core it is a hash of a password
+224.08s - 227.56s |  Also called an NT hash. It's a challenge response mechanism
+227.56s - 232.76s |  So the client establishes a network path and negotiates the server responds with a challenge message
+232.76s - 234.76s |  The client responds with an authenticate message
+234.76s - 239.68s |  And it does this using the NT hash and there's a couple of different flavors that we're going to be talking about which is mostly
+239.68s - 246.22s |  Net in TLM v1 and net in TLM v2. So on a network essentially this lets you browse file shares and websites
+246.22s - 248.22s |  So
+248.86s - 254.54s |  Some quick definitions before we get stuck into the bugs a hash is data produced from one-way function
+254.54s - 258.98s |  So you don't have to pass your plaintext password around. I've been asked to localize my talk
+258.98s - 263.34s |  So this is essentially the equivalent of turning a cow into a hot dog. It's
+263.98s - 266.06s |  Expensive to get the hot dog back into the cow
+267.22s - 270.18s |  So UNC is the universal naming convention
+270.38s - 277.62s |  You know, it's slash slash thing HTTP hypertext transfer protocol and you or I the uniform resource handler
+278.90s - 282.76s |  So what happens if you steal one? There's kind of three things you can
+283.30s - 289.90s |  Brute-force it turn it back into a cletex password talk to the password cracking village about how quickly they can do it these days
+290.38s - 293.14s |  You can also relay it and pretend to be that person
+293.70s - 297.86s |  That's mainly with ntlm and ntlm v1
+298.50s - 304.70s |  Ntlm v2 does it sometimes just for fun and you can also just take a screenshot of it report it to the MSRC
+305.30s - 310.21s |  Have a fun conversation with them. Yeah, so
+311.69s - 317.85s |  We did a few minutes of googling and these are all the bugs that we found in like three minutes about ntlm
+317.85s - 320.73s |  There's also the morphe sector that was yesterday
+321.25s - 324.25s |  They went into some more ntlm stuff there, but
+325.25s - 330.17s |  It's a doozy. There was the Monica link one this year the windows themes file as well
+330.17s - 336.33s |  You could just load a theme and it would send off your hash for fun outlook sound files, which was like a zero-click RCE
+336.33s - 340.01s |  there was a bypass for that and then a bypass with that again, I think and
+341.81s - 344.81s |  Yeah, some other ones everyone's favorite petite baton
+345.41s - 348.29s |  So
+348.29s - 354.57s |  Ntlm is just a host of vulnerabilities. A lot of it is just by design. We won't fix it. I mean
+355.25s - 356.77s |  It's old
+356.77s - 362.05s |  So what they're doing is they're going to deprecate it and then eventually disable it
+362.89s - 365.69s |  Which is kind of fixing it, I guess
+367.69s - 373.85s |  Given that like half of the environments in little old New Zealand still use ntlm v1
+374.25s - 376.25s |  It's gonna take a long time
+377.41s - 383.09s |  So we have it on good authority an anonymous source at Microsoft who actually confirmed this for us
+383.09s - 387.85s |  And he said to us when we met them the runway for this is between 50 and 100 years
+389.65s - 391.41s |  So, yeah
+391.41s - 396.87s |  So it's going to be disabled on a future version of Windows 11. This is great
+396.87s - 401.87s |  And they have told us that they're stopping working on it. So it's feature complete apparently
+402.51s - 407.71s |  So now Windows will attempt to authenticate with Kerberos first, which is really secure and great
+408.71s - 415.27s |  but it still falls back to ntlm if a Kerberos negotiation doesn't happen and so it's going to be disabled in a future release and
+415.75s - 419.83s |  It can always be re-enabled just like ntlm v1
+421.23s - 426.15s |  So one of the tools we've been using is a very very well-known tool. We're not going to go too much into it
+426.31s - 429.07s |  This is responder the rogue authentication server
+429.83s - 433.63s |  Developed by algandex. Please go and flick them some money for this great tool
+434.19s - 436.19s |  the two ports that we
+436.75s - 439.55s |  Concerned with port 80 and port 445 and it provides
+440.63s - 444.55s |  Authentication challenges on these ports and a lot of others. It does some other cool stuff
+444.55s - 449.99s |  It's a very valuable pen testing tool. If you've never heard of it go run it in an internal network and brighten your sock team
+450.75s - 453.15s |  For our purposes. We're just going to use it to collect ashes
+454.47s - 459.43s |  So this current obsession with ntlm hashes started a couple of years ago
+459.43s - 464.99s |  I was testing an ArcGIS application. So for those of you not familiar with ArcGIS
+465.59s - 472.03s |  It's mapping software beloved by local government and I asked my workmate Ahmad if he had any tricks
+472.03s - 474.91s |  He was a very high-ranked bug crowd guy
+474.91s - 481.07s |  So, of course he did he suggested I run responder on one of our servers for a blind ssrf that we had found
+482.15s - 484.15s |  And we got a hash on port 80
+484.55s - 487.45s |  But actually is is running Java on IIS
+488.45s - 496.89s |  So now we wanted to speedrun in case you're wondering what RSS and actually is looks like you can specify an RSS URL for some
+497.21s - 498.77s |  obscure reason
+498.77s - 504.01s |  So yeah, I'm sorry about the ntlm bugs everyone
+504.53s - 510.75s |  So windows does want you to be safe. They do have some built-in protections
+510.95s - 513.87s |  One of them is mark of the web, which you might have seen before
+514.55s - 516.59s |  If you were to download a file from the internet
+516.59s - 521.35s |  it's it's a little flag on the document like a word document or some other things as well and
+522.51s - 526.59s |  Basically, it just says nah, I'm not gonna use all of the features
+526.59s - 532.27s |  I'm just gonna let you like briefly look at it. You can click the little warning to make it go away, but it's safe
+533.67s - 540.67s |  The wordpad issue that I mentioned earlier that just bypassed it. I don't think they even had mark of the web on wordpad files
+540.67s - 542.67s |  Oh, no, no
+542.67s - 549.39s |  And also if you get clone something and there's a document in it it also just doesn't sit the flag it's great
+550.71s - 552.63s |  They also have
+552.63s - 555.67s |  This from what Windows NT days
+556.87s - 560.55s |  They're called safe zones. This is a recent screenshot Thomas
+560.55s - 565.35s |  Yeah, this is from Windows 11 as you can see with the little X's in the top right hand corners
+565.35s - 567.35s |  Yeah
+567.55s - 573.75s |  You can see that because it says scripting of Java outlets, it's very up-to-date and protects you against many things
+574.67s - 579.61s |  The little thing down the bottom with the user authentication it stops some hashes
+580.39s - 582.39s |  Over port 445, but that's about it
+583.23s - 587.95s |  So it's time to query some hashes from some software before NTLM goes away
+588.75s - 591.75s |  So we're going to talk about a few things image magic and graphics magic
+592.39s - 596.41s |  Vlc media player espos.net hi Q PDF
+596.91s - 601.23s |  The Q stands for quality as we find out Java on is and Windows
+601.83s - 609.83s |  calendars new get an eye credential irises feeds and Outlook MS Office URI handlers and Outlook and get full windows
+610.71s - 611.99s |  so
+611.99s - 618.83s |  Graphics magic is generally regarded as the safe one because it's a relatively fuzzed fork of image magic. So
+619.39s - 621.39s |  It's a massive attack surface
+621.99s - 626.75s |  Image magic is generally associated with image tragic, which everyone will remember from a few years ago
+627.91s - 631.15s |  But graph image magic didn't make a hash over port 445
+632.15s - 637.47s |  So it will leak a hash by SVG converting to anything by our UNC path href
+637.47s - 643.63s |  And it's noted in the documentation is SSRF, but there is nothing about hashes or UNC paths
+646.19s - 648.19s |  Vlc player so
+648.55s - 653.57s |  You can just load a playlist file and it's got a UNC path in it and it will go away and fetch the hash
+654.43s - 662.03s |  Our workmate Ahmed he disclosed that and then VLC were like it's a Windows problem. No, it's a VLC problem
+662.03s - 665.31s |  I mean, it's also a Windows problem, but come on guys
+666.27s - 671.55s |  You could also do it in iTunes and Windows Media Player. I'm sorry if you still use those programs
+672.07s - 677.59s |  There's probably maybe six of you in the audience that still use Windows Media Player and iTunes for Windows. I'm sorry
+678.19s - 682.75s |  There's also lots of other formats and protocols that may or may not support NTLM
+682.75s - 686.23s |  I mean, I'd tell you to go and look at them, but VLC don't care
+686.83s - 690.49s |  so I suppose dotnet is a
+691.13s - 697.05s |  Lovely piece of document processing software anyone who's ever spent any time on the red team or doing any kind of pen testing will know
+697.05s - 703.05s |  Just how rich and attack surface document processing is it has a few known documented security issues
+704.05s - 710.13s |  SSRF, server-side request forgery, NTLM hash leakage, file inclusion and it's right there on their web application
+710.77s - 715.67s |  Security when loading resources page so they know about them and they have front-footed it
+717.25s - 722.89s |  So leaking hashes out port 4.5 is relatively abundant and low value within an ecosystem
+723.29s - 729.57s |  So port 4.4.5 any good system administrator will block this port on a firewall because there's no reason that it needs to talk to
+729.57s - 732.85s |  The internet port 80. However is not as blocked
+733.05s - 738.49s |  So when Windows sees a UNC path those little slashes we saw before it only knows how to do one thing
+738.49s - 743.57s |  And it takes a little bit of work to get it out by HTTP. So let's try
+744.69s - 751.57s |  So I just wanted to look at the district plan for our city and not go to the cybersecurity emergency response team
+752.13s - 755.25s |  So there's a piece of software in Aotearoa New Zealand called ISO plan
+755.85s - 757.85s |  Developed by a company called ISOVIST
+758.17s - 761.09s |  So again, I alluded to not talking to me about council software
+761.29s - 766.77s |  It's so niche and weird and the people who develop it know councils and local government
+766.81s - 769.29s |  but they might not necessarily know security and
+769.97s - 773.57s |  Anyone who's able to spend time as a pen tester so much of it is vibes based
+773.57s - 776.13s |  You could tell that this thing had been pen tested before
+776.65s - 778.65s |  And you yeah, you could just tell
+779.45s - 782.85s |  So headless PDF generation is so dumb
+783.25s - 788.53s |  I'm not this is not a talk about headless PDF generation. It's a well-known and well documented attack
+789.09s - 794.13s |  Surface within web applications, but sometimes you need to turn HTML into PDFs
+794.69s - 795.81s |  Which is you know
+795.81s - 797.89s |  There's a few well-known places you can look for bugs
+798.09s - 804.33s |  Because basically HTML gives you a lot of primitives to do some fun and dangerous things such as iframes portals and beads
+804.57s - 808.49s |  So these had all been blocked there had been some hardening done, which is great
+809.49s - 812.33s |  However cat pictures were not blocked
+813.57s - 819.81s |  so I managed to get an image tag to give up an NTLM hash on port 80 and
+820.97s - 824.41s |  So my first question was what even is this?
+826.05s - 828.17s |  So we talked about haiku PDF
+829.01s - 837.09s |  Over a million downloads in nougat for this package nougat is the package repo for dotnet. It has a settings dot XML file and
+837.81s - 841.81s |  The default property for NTLM authentication is true
+842.33s - 848.45s |  so I guess I really just wanted to know how this happened and then I looked into it a bit and
+848.85s - 850.85s |  I figured out how it happened
+851.45s - 857.21s |  You can tell it's really high quality by the 3d rendered box art. This is the very height of technology
+857.69s - 865.73s |  So the other thing we found is because of all the ArcGIS stuff Java on is is a lovely place to look
+866.21s - 870.21s |  The HTTP URL connection function used to pass hashes by default
+870.57s - 875.69s |  We're not entirely sure it does now and I tried a couple of chess projects to see it seems to be safe
+875.85s - 880.09s |  But it is still out there causing issues see geo server and ArcGIS
+880.61s - 886.53s |  So Java calls the underlying win32 API, which is a win HTTP request and blazing for sick
+886.89s - 893.61s |  Have a very good write-up about coaxing things out on port 80 and they even made a stack overflow post proving it
+894.13s - 901.66s |  We had to do a little Lord of the Rings mean, you know, it's compulsory we're from New Zealand we have to
+903.32s - 904.36s |  So
+904.36s - 909.72s |  They also have one other little security thing on Windows and that's this
+910.48s - 916.40s |  Prompt that comes up now and then and it's like please don't quit me. It's unsafe. Do you really want to continue?
+916.60s - 922.48s |  Are you sure you want to get hacked and then I'm sure no one clicks. Yes ever, right, right? It's a security drone
+922.84s - 925.52s |  I mean, it's fair. That's probably what their lawyers want
+925.52s - 931.84s |  Like they want the functionality but their lawyers are like if you don't have this prompt people get angry and we could get sued
+932.60s - 937.84s |  So if you want to have a bug in a Microsoft product, you need to get past this
+938.44s - 945.64s |  You need to have basically no warning that it's gotta be fun and dangerous and you're gonna get people's ashes or run some code
+946.96s - 950.80s |  So with that in mind, let's see what we can find in the Microsoft ecosystem
+953.04s - 957.72s |  Enter I credentials, so it's just an interface
+959.68s - 962.04s |  But it does some stuff
+962.60s - 968.56s |  When we first got some hashes are on 480. We started looking at the code and going what is this?
+969.28s - 970.88s |  Why is this?
+970.88s - 972.44s |  Turns out it's
+972.44s - 975.08s |  Not banana water. It's not gross and
+975.64s - 976.80s |  Made up
+976.80s - 980.20s |  It's just developers making logic errors doing dumb things
+980.40s - 986.28s |  it provides the base authentication interface for retrieving credentials for web client authentication and
+987.72s - 989.88s |  it's used in dotnet a lot and
+990.72s - 996.24s |  Some of the anti patents that it has are weird and they fall back to some dumb things
+996.96s - 998.76s |  like a new gate
+998.76s - 1003.04s |  so you've probably seen you get before if you've ever touched C sharp, it's
+1003.88s - 1007.04s |  Reasonably integral to the dotnet ecosystem and
+1008.28s - 1010.28s |  they have some very
+1010.28s - 1016.40s |  Good advice for storing credentials. Just put them in the new get config file. It will encrypt it. It will be fine
+1016.96s - 1023.76s |  But it also just falls back to NTLM sometimes. Hello. Yes, I would like 500 of my co-workers hashes, please
+1024.28s - 1033.32s |  It does it on new get restore by the way, which it does it when you get clone something and like Visual Studio and
+1034.32s - 1038.72s |  That bypasses all safety checks. There's no little don't click me button
+1039.32s - 1043.24s |  So Jim got a nice new ebike from Microsoft. It's very zippy
+1046.20s - 1049.48s |  Jim had to be very specific with Microsoft
+1050.92s - 1055.56s |  Yeah, I had to make him a video with the breakpoint set and I had to be like it happens here
+1055.56s - 1059.12s |  This is where it happens happens right here Microsoft. Please believe me
+1061.02s - 1062.18s |  so
+1062.18s - 1067.06s |  Just we had a random thought like what if we reframe it as an SSR of problem?
+1067.06s - 1073.30s |  Like what if instead of trying to get NTLM hashes out? We pretended it was a server and not a client anymore and we just
+1074.02s - 1076.38s |  Thought it was just HTTP something
+1076.86s - 1078.86s |  There's a lot of harmless HTTP
+1078.98s - 1082.62s |  Interactions and Microsoft products like RSS don't know why I'm mentioning that
+1083.50s - 1086.54s |  You're writing schemes. Don't know why I'm mentioning that either and
+1087.38s - 1089.66s |  Web service in Excel. I'm just mentioning that one
+1090.26s - 1096.10s |  If you think of these interactions like a flavor of SSR if you can just find some new cool things
+1097.10s - 1100.98s |  Like what if you just suddenly redirect a resource, so
+1101.70s - 1105.90s |  we did that we redirected things to a nice little UNC path and
+1108.34s - 1113.46s |  It just does things it just happily switches protocols and tries to auth
+1114.22s - 1116.22s |  browsers don't do that browsers go like
+1116.90s - 1120.94s |  Where are you trying to go? This is a dangerous redirect? Yeah
+1121.58s - 1126.30s |  But we wrote some quick little code and then started pointing things at it
+1127.98s - 1130.38s |  So this is Microsoft bug number two
+1130.90s - 1133.90s |  So we might have rabbit holed a little bit with the URI handlers
+1133.90s - 1138.78s |  A quick recap every time you install a program on Windows it installs a URI handler
+1138.78s - 1143.86s |  Which is a little scheme that you can embed in a website or something to allow that program to be opened automatically
+1143.86s - 1148.50s |  so I dumped every single URI scheme from my Windows machine and
+1148.50s - 1152.82s |  I wanted to see which one Outlook would warn on and it was nearly all of them
+1153.14s - 1156.66s |  Except for the Microsoft URI schemes, which was very weird
+1156.66s - 1160.62s |  and it just straight-up opens words of Microsoft Word or Excel or
+1161.22s - 1165.82s |  PowerPoint or access if anyone still uses that and fetches the remote resource
+1165.82s - 1170.30s |  So now we have a little bit of an idea what to do when we fetch remote resources
+1171.30s - 1176.26s |  So no warnings one click embedded in the email should be a relatively safe thing
+1176.26s - 1182.58s |  So they've asked us to not spill the beans. So could anyone just like block their eyes and ears. Yeah
+1183.70s - 1186.26s |  There are some security controls in place
+1186.26s - 1188.74s |  All files will open in a preview mode, which is good
+1188.74s - 1193.38s |  Mark of the web is on it and you can't put UNC paths in the URI scheme
+1193.38s - 1196.34s |  So you can't straight-up convince someone to load a file, which is good
+1197.22s - 1201.38s |  So the URI handlers essentially look like this MS Word title of the thing you want to open
+1201.46s - 1205.38s |  So the URI handlers essentially look like this MS Word title of the thing you want to open
+1205.70s - 1212.82s |  OFE open for editing you short for URL and then you just give it an HTTP link and a rush off and fetch that
+1213.38s - 1217.74s |  And you can also force a file extension change, which is quite fun
+1218.34s - 1221.75s |  And here's a little video of this happening
+1223.73s - 1227.17s |  So essentially we are spinning up our little redirector in the top, right?
+1227.17s - 1230.29s |  And then we spin up everyone's favorite hacking tool responder
+1231.17s - 1234.81s |  And then we just go into our email and click a link I
+1235.81s - 1238.13s |  Would click that link. I'll totally click that link
+1239.01s - 1241.01s |  And then we link someone's hash
+1246.68s - 1248.68s |  Thank you everyone
+1248.76s - 1255.76s |  So there are some much better in TLM related bugs than the ones we've been showing half a leaf from checkpoint research
+1256.68s - 1258.68s |  discovered a bug called Monica link and
+1259.36s - 1263.68s |  So this technique allows for a different and usually blocked file extension to be loaded
+1264.72s - 1267.28s |  So a whole new class of bug comes into play in
+1268.72s - 1270.96s |  2024 Monica link came up. So we have
+1271.60s - 1277.84s |  Two things we have test our TF in an exclamation mark and something. So we have the file moniker and the composite moniker
+1278.52s - 1282.08s |  The outlook talk yesterday covered the sort of stuff a little bit as well
+1282.76s - 1287.60s |  So the component object model will look up whatever is after the exclamation mark
+1288.12s - 1291.00s |  Which we now potentially control through a redirect
+1292.12s - 1295.56s |  We have three days left until patch Tuesday. So have fun everyone
+1296.28s - 1302.36s |  So we found some more stuff. We were still bored
+1303.56s - 1308.20s |  You can also bypass existing CVEs with that same one weird trick
+1308.32s - 1314.84s |  So back in 2023 some researchers at Verona's discovered a nice little CVE
+1315.12s - 1318.96s |  There's two email headers that this sort of affected
+1319.64s - 1327.00s |  there's the content class sharing thing like you're sharing a document or a calendar or an RSS feed maybe and
+1327.36s - 1331.32s |  then a X sharing content URL, which in their case they used a
+1332.32s - 1333.96s |  UNC path
+1333.96s - 1335.96s |  We gave it a little HTTP path
+1336.84s - 1343.04s |  Microsoft's fix was to add a nice little warning. They love their warnings, but please don't click me little warning
+1344.36s - 1347.40s |  Guess what happens if you just redirect it to a UNC path?
+1348.40s - 1352.32s |  At Microsoft triage is it that's what happens
+1353.08s - 1358.36s |  And this is essentially what it looks like. It's a Microsoft instruction telling you to click a link with no warnings
+1358.88s - 1362.24s |  Seems kind of bad, right? I would add your calendar though
+1364.32s - 1371.36s |  And then we dropped it to the MSRC and we had a fun little journey
+1372.92s - 1376.80s |  Hi, this is classed as important and you've accepted it for immediate servicing
+1376.80s - 1379.08s |  Can you please let me know if this is eligible for a bounty?
+1380.28s - 1387.88s |  Now outlooks out of scope. No, it says here in the link. You just said that it is in scope
+1389.56s - 1391.56s |  It's a moderate I guess
+1392.52s - 1397.84s |  You just told me that it was important in the same email. Yeah, we've reclassified it. Sorry
+1399.48s - 1404.16s |  Yeah, so it's fixed last patch Tuesday and it was the only moderate
+1405.16s - 1408.94s |  So this is my dog Lupe
+1408.94s - 1416.78s |  She recently had cruciate ligament surgery and the amount of the surgery was the same amount that a bug bounty from Microsoft would have been
+1417.50s - 1423.90s |  So, you know, thanks Microsoft. Sorry again MSRC team. You're very lovely people. It's so nice
+1423.90s - 1427.62s |  Oh, they also said say about the bug before that it's been feature flagged
+1427.62s - 1433.74s |  So it's mostly fixed but sort of not. Yeah, I had to say that because I quite like them now
+1434.26s - 1441.54s |  So RSS for all six of you still using it in Outlook
+1441.66s - 1446.10s |  We discovered something called an OPM L file which allows you to import an RSS feed
+1446.10s - 1450.98s |  Which is obviously critical functionality within Outlook and Microsoft
+1451.78s - 1459.62s |  So interestingly the web request to be made while the warning box was showing so full marks to Microsoft for almost getting there
+1461.10s - 1464.58s |  Outlook would also follow a redirect path to a UNC and like a hash and
+1465.10s - 1470.66s |  We triaged it with Microsoft and they initially said yeah, it's moderate. I said cool did that make sense?
+1471.34s - 1473.38s |  But now we know about these cool outlook hitters
+1474.98s - 1479.46s |  So what happens if we combine URI schemes with these cool new hitters that we have
+1480.18s - 1483.82s |  Outlook has a feed handler which will open RSS feed directly in Outlook
+1484.94s - 1488.26s |  Obviously four slides back. That's how we know about the URI handlers
+1489.02s - 1492.78s |  Under normal circumstances, it will prompt open outlook and give a warning
+1493.78s - 1495.78s |  However, if you embed it in a sharing header
+1496.38s - 1502.90s |  It won't warn it was initially de-prioritized by Microsoft as several clicks were involved one click
+1503.78s - 1505.86s |  It's a bug but moderate
+1506.38s - 1511.06s |  And this is what it looks like again Microsoft wording saying please click this thing
+1511.10s - 1515.58s |  Would you click that time? I would so click to add your RSS feed. Thanks. I love RSS
+1519.62s - 1522.66s |  Enter the visual studio we went back to it again
+1523.66s - 1530.90s |  It can get clone things, I don't know if you're familiar with git, but it's kind of like subversion or
+1531.78s - 1532.98s |  Maven
+1532.98s - 1534.98s |  Now everyone knows good
+1535.78s - 1538.50s |  You can get clone from a bunch of things like SSH
+1538.50s - 1541.82s |  Which is one of the normal things same with like an auth HDP
+1541.82s - 1545.18s |  Which is like a public github repo and you've just copy paste the link
+1545.66s - 1549.94s |  Auth HDP like a private github repo and you've copy paste the link
+1550.42s - 1556.70s |  You can also get clone from a file path or on Windows you can get clone from an SMB share
+1557.02s - 1561.06s |  Apparently, which is weird, but like it's fine. I'm sure people do that
+1561.74s - 1564.62s |  But we're just gonna focus on the auth HDP
+1565.82s - 1570.30s |  So the command line, it's secure by default. It asks for auth kind of
+1571.70s - 1576.14s |  But what if we just you know, don't put in a username or password? Yeah, what if Thomas let's find out
+1576.14s - 1582.18s |  Surely, it just doesn't send a username in any now. They won't send anything. So by default it just sends a hash of
+1582.70s - 1584.70s |  your current account
+1587.18s - 1590.82s |  But like it's fine I can see the use cases for it
+1590.82s - 1597.90s |  Like say you're in an internal environment and you've got like some weird web server you get clone from you probably want it most
+1599.06s - 1602.92s |  But what it is is it's promising like maybe some other things
+1603.78s - 1605.02s |  You know
+1605.02s - 1612.42s |  They want to get you username and password and do stuff like GUI's. How do they get your get credentials? They prompt you for them
+1613.50s - 1618.34s |  Yeah, yep. No, so get credential manager. It will do things for you
+1619.02s - 1621.98s |  It will by default pass a blank username and password
+1624.06s - 1626.26s |  Visual Studio users get credential manager
+1628.02s - 1629.18s |  So
+1629.18s - 1631.94s |  On the right our good old friend responder
+1632.50s - 1635.90s |  That's just gonna nicely listen there and then we'll open some
+1636.94s - 1640.92s |  Visual Studio and then oh
+1641.76s - 1646.24s |  My co-worker sent me this cool link. I'm just gonna go get clone this that's on the internet
+1646.24s - 1652.76s |  I blindly clone things all the time. I'm a security professional Thomas. I do too a bit like seriously and
+1653.72s - 1656.60s |  Whoa, what's that? That's an NTLM hash that it just sent
+1657.96s - 1659.52s |  Yay
+1659.52s - 1665.58s |  So some fun side notes it also works in git submodules
+1665.58s - 1673.42s |  So you can't just trust GitHub because you could have a nice little link to some attackers thing as a git submodule like
+1673.66s - 1679.50s |  Ten folders deep. So do you know what blindly clone submodules by default Thomas? Do you have any idea?
+1680.26s - 1682.94s |  Visual Studio you are correct. Oh, wow
+1683.54s - 1686.22s |  It also works and things like VC package
+1686.22s - 1692.86s |  You can point to a get URL and it will just also download it MPM or so for fun days and
+1694.14s - 1698.94s |  Other IDs like chip brains and then like GitHub desktop. They don't do this
+1699.78s - 1705.06s |  So we told Microsoft and then they came back with this fun response. We'll just give you a moment to digest this
+1705.98s - 1707.98s |  Actually, I'll cut out the like
+1708.62s - 1710.30s |  extra words
+1710.30s - 1715.18s |  Get cloning from an untrusted source is the same as browsing an untrusted SMB share
+1715.78s - 1723.00s |  Oh, is it Microsoft? Yeah, I do that all the time browsing on same. Yeah, so
+1723.98s - 1729.16s |  we tried to find where the security boundary was after they came back and we were like
+1730.40s - 1736.36s |  Okay, so it's not a Visual Studio problem because they said no, so maybe it's a get credential manager problem
+1737.28s - 1740.36s |  But then get credential credential manager uses git
+1740.96s - 1748.04s |  But get users look curl which is compiled with the using TLM flags, but it's actually a Visual Studio problem, but
+1749.76s - 1756.16s |  We don't know where the problem is it's sort of everywhere but nowhere and no one wants to take blame for it really
+1757.68s - 1761.20s |  Microsoft will patch anything that you can prove that it's in their products
+1762.80s - 1764.52s |  Anything else
+1764.52s - 1766.52s |  That's a Windows problem
+1767.40s - 1774.90s |  You can use that on your next red team, I guess if you want to hack some developers
+1775.58s - 1780.48s |  so where we ended up was
+1782.12s - 1784.90s |  We have four bugs reported to MS
+1785.64s - 1790.00s |  Two bounties and one swag. I'm so sorry to my dog from the previous slides
+1790.00s - 1792.88s |  Your surgery came later than expected for some mad reason
+1793.52s - 1795.52s |  One not a bug which which is git
+1796.52s - 1801.92s |  One yes, it's a bug but it's not a priority. I mean, that's fair. It's irises and
+1803.08s - 1806.56s |  You know to get to this point. We have a very very rigorous methodology
+1806.96s - 1809.60s |  Obviously, I mean I have a spreadsheet
+1810.80s - 1812.80s |  It's actually a text file on my desktop
+1813.32s - 1821.88s |  So yeah, this is basically how we found all these bugs anywhere you see an HTTP
+1821.88s - 1827.68s |  Just put a responder URL and see what Windows does and you'll be delighted with the results image tag
+1827.68s - 1831.08s |  Do it sharing tag do it RSS
+1832.60s - 1834.40s |  RSS
+1834.40s - 1837.87s |  So we do next
+1838.55s - 1843.83s |  There are a lot of places. This could be a thing and I mean, it's just HTTP. So like
+1845.15s - 1849.67s |  Build servers they can have links out of every blue. Yeah
+1850.59s - 1857.63s |  Pipelines, they could have links document processing things like I don't know PDF generators. Yeah, they could do it, too
+1858.43s - 1863.99s |  Maybe word has it maybe teams has it. No one uses teams though. So no one uses teams. Yeah
+1864.79s - 1867.55s |  Maybe video games. I don't know maybe drop a link in chat
+1867.95s - 1872.91s |  Yeah, I reckon video games is what something I want to look at because I like playing video games for research
+1872.91s - 1874.91s |  Yeah, I should do that in work time
+1875.15s - 1877.15s |  Our boss is here
+1878.63s - 1882.03s |  Basically anywhere you could put a URL and it's probably a good place to start
+1882.15s - 1887.43s |  But also we want to talk to you folks as well because there's probably a lot of people out there who have some great ideas
+1887.63s - 1889.63s |  Of where to look so we would like to give
+1890.87s - 1896.27s |  Yeah, and just go turn in tell him off if you can it probably will break everything but turn it off
+1896.27s - 1901.87s |  Yeah, turn it off and then turn it back on immediately when someone screams. Yeah use Kerberos because that's more secure
+1903.59s - 1907.79s |  Yeah, this is the end of our talk we have speedrun it much like our NTLM bugs
+1908.47s - 1912.63s |  But finding bugs doesn't happen in isolation. So a big thank you to everyone named
+1913.15s - 1916.91s |  Yeah, and thank you for the MSRC for listening and meeting with us
+1916.91s - 1921.27s |  They are genuinely good folks who they need more of them because there's only 30 of them
+1921.55s - 1925.71s |  Apparently which is not nearly enough and thanks for inviting us to your party as well. That was fun
+1925.71s - 1930.43s |  Yeah, that was good. And thank you for everyone who has published the research. This is something I don't say lightly
+1931.31s - 1938.91s |  Every piece of research published leads to more research. So please keep disclosing. Please keep blogging. It's so good reading it
+1939.43s - 1940.71s |  And
+1940.71s - 1942.71s |  Also, thank you for the DEF CON organizers
+1942.79s - 1948.11s |  You guys are awesome and hacking is a team sport and please come up to us afterwards if you have any ideas where to get
+1948.11s - 1953.71s |  Hashes out of we want to know we want more moderates that we don't get bounties for perfect
+1954.35s - 1964.93s |  There is a microphone there for tall people who can ask questions
+1973.79s - 1978.76s |  Cool. All right. Thanks everyone
+1980.10s - 1982.10s |  Thank you

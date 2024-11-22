@@ -1,0 +1,168 @@
+{
+  "webpage_url": "https://www.youtube.com/watch?v=8oAxv7UBZJA",
+  "title": "DEF CON 32 - Atomic Honeypot-A MySQL Honeypot That Drops Shells - Alexander Rubin, Martin Rakhmanov",
+  "description": "Meet an attacking MySQL honepot which can \u201cAttack the attackers\u201d. In 2023 we have found a CVE (CVE-2023-21980) in MySQL that allows a rogue MySQL \u201cserver\u201d to attack a client connecting to it; attack meaning RCE on the client side. Since then we were thinking on how to use it for good. One obvious application is to create a honeypot which will attack the attackers. In 2024 we have found another RCE in mysqldump utility (CVE-2024-21096), so we have created a rogue MySQL server and weaponized it with a chain of 3 vulnerabilities: 1/ arbitrary file read 2/ RCE from 2023 (CVE-2023- 21980) 3/ the new RCE (CVE-2024-21096). With this atomic honeypot we were able to discover 2 new attacks against MySQL server. Using arbitrary file read vulnerability in MySQL we were able to download and analyze the attackers' code and then execute an \u201cattack against attackers\u201d using a chain of exploits.\n\nCVE-2023-21980 CVE-2024-21096",
+  "channel_url": "https://www.youtube.com/channel/UC6Om9kAkl32dWlDSNlDS9Iw",
+  "duration": 1318,
+  "channel": "DEFCONConference",
+  "uploader": "DEFCONConference",
+  "upload_date": "20241016"
+}
+
+0.00s - 6.88s | This text was transcribed using whisper model: large-v2
+
+ attack. We know that bots are everywhere, they're scanning your servers, they're doing it fast,
+6.88s - 13.51s |  and database servers is obviously a big target. So we have um create uh we have created a high
+17.25s - 22.25s |  interaction MySQL honeypot. So we create a tool that mimics the database, implements
+22.25s - 27.25s |  MySQL protocol, and those bots start connecting to this honeypot. So we need to understand
+35.64s - 40.64s |  the MySQL protocol. And MySQL protocol, unlike other database protocols, actually a
+43.18s - 48.18s |  server initiated. So if we just start a TCP server, then it will not be enough. If you connect
+48.88s - 53.88s |  to your MySQL server using Telnet, on the port 3306, you will see this. And this is what
+59.72s - 65.62s |  MySQL server provides for the client to be able to connect. It specifies the version, it
+65.62s - 70.64s |  specifies salt, it specifies a client plugin. So listening to the port, a TCP server is not
+70.64s - 75.64s |  enough. So what we did to create the high interaction MySQL honeypot is we used the
+81.98s - 86.98s |  Python module. The Python provides, there is a module called MySQL mimic. It implements
+89.66s - 94.66s |  MySQL protocol, it's a really powerful thing. Uh and you can do lots of things with it. So
+95.62s - 100.62s |  from there, we started the honeypot, and we start receiving the connections. So you start
+103.86s - 110.40s |  the honeypot as a fake MySQL server on an open port from the internet. And you start
+110.40s - 115.94s |  receiving the connections. And you can see lots of information about the connection
+115.94s - 120.94s |  actually. Like the HTTP protocol, MySQL protocol also have this client version record,
+121.94s - 126.94s |  and stuff like that. So this is called attributes. MySQL provides a lot of attributes as a
+131.04s - 136.08s |  part of the connection. That's part of protocol. We have client version, OS, and stuff
+136.08s - 142.28s |  like that. So we started the honeypot and we immediately see the fingerprints of the
+142.28s - 148.56s |  connections. And you can see the version of the client library, you can see the operating
+148.58s - 153.58s |  system, you can see all other stuff. This is very useful actually. Now from there, the
+156.46s - 161.46s |  part two is what kind of attacks we have. We have seen from this honeypot, high
+167.06s - 174.04s |  interaction honeypot, we see two major attacks on MySQL. The first is an attempt to own
+174.06s - 179.46s |  MySQL server and create a backdoor. This is actually pretty well known attack, and there's a
+179.46s - 184.46s |  blog post about that. What is interesting about that is we can see right away that it's using a
+187.70s - 192.70s |  very old MySQL client version. It's actually only works for older servers as well. So the second
+196.24s - 201.24s |  is even more interesting attack. It's a ransomware. It tries to download your data, basically
+201.78s - 206.78s |  brute force the password first, then connects, tries to download the data, and then drops the
+211.58s - 218.60s |  databases and asks for ransom. So this is exactly the same thing. We see the fingerprints. We see
+218.60s - 224.60s |  what OS version, we see what the client is using. So now from there, we started an atomic version
+225.08s - 230.08s |  of the honeypot. Honeypot that strikes back. So what we want to do, our goal is actually
+238.42s - 243.42s |  interact with those attacks. And our goal was to see what they're doing, how they do that, and
+246.00s - 251.00s |  potentially download the code, the malicious code that they're using. So our atomic honeypot
+251.34s - 257.34s |  now strikes back. What do we have? So we have been juggling with different CVEs in MySQL client.
+265.22s - 271.22s |  And we have arbitrary file read, which is a super old issue. We have the remote code execution
+272.22s - 278.22s |  where MySQL server attacks you. We actually found that issue a year ago, 2023. We have
+283.80s - 289.80s |  presented it and we can use that to actually execute code on the client. And then finally, this
+290.16s - 296.16s |  year, we have found another issue in MySQL client utility. We reported it to Oracle. This is a
+302.04s - 309.48s |  second remote code execution in MySQL client. All right. So MySQL server attacks MySQL client.
+314.02s - 320.02s |  This is how it works. There are two things here. The first thing is that we have a MySQL server
+321.56s - 327.56s |  client arbitrary file read. And we create a server. And then your client connects to a server. And
+329.34s - 335.34s |  the server will request a file. So we can have an arbitrary file read from the client. The second is
+338.94s - 344.52s |  the one that we found a year ago and we presented it at last year. There are lots of details
+344.52s - 350.96s |  there. And basically, the prerequisite of this attack is that you need to have the shared
+350.98s - 357.46s |  library uploaded to the client first. Then, whatever the connection will be established, you
+357.46s - 363.46s |  can actually take that client connection to execute your shared library. You don't need to
+366.30s - 372.30s |  execute the shared library itself. You just need to have that file on the client. And finally, we
+374.10s - 380.58s |  have found this year, we have found a new issue in MySQL client utility. And then I will
+380.60s - 386.60s |  invite Martin, my colleague Martin, to explain how it works. And this is the first time we're
+387.98s - 396.09s |  releasing the details about this CVE. Martin? Hi. So let's jump into this CVE. As you probably
+399.93s - 405.93s |  know, MySQL dump is a tool which allows you to produce logical backups of a database. Script
+406.39s - 412.39s |  tables and other objects and data to be transferred to another server. So this is an example
+418.27s - 424.27s |  how you can use MySQL dump together with MySQL. You just pipe the output of MySQL dump to
+426.43s - 432.47s |  MySQL to recreate a database on another server. And this is pretty close to what official
+432.49s - 438.49s |  documentation says. Where is the problem? MySQL utility allows you to use so-called meta
+440.93s - 446.93s |  comments. For example, if you do backslash, exclamation mark, and then space and a comment, it's
+448.63s - 455.27s |  going to execute a shell comment on a computer where the MySQL tool is running. So the CVE
+455.27s - 461.27s |  itself is about tricking MySQL dump to emit such a shell comment, for example. So the CVE
+462.47s - 468.47s |  is a tool which allows you to use MySQL dump together with MySQL. So how this works exactly? By
+468.47s - 474.47s |  default, MySQL dump tries to process everything it receives from a server. But it's not a case
+474.47s - 480.49s |  for the version. As you can see, there is a version string coming from a server, and it is emitted
+480.49s - 486.49s |  as a comment in the output of MySQL dump. But this is not processed, this is not sanitized, and
+486.91s - 492.91s |  this is sent back to output as is. We can leverage this by simply creating our own server, the
+495.95s - 501.71s |  patched version of a server. As you can see here, I just replaced a version with a hard-coded
+501.71s - 507.39s |  string, a new line, and then my comment of choice to be executed on the machine. Here, I just
+507.39s - 513.19s |  created a file. And if you could tell that to this patched server, you will see this. In red, you
+513.21s - 519.21s |  will see our comment. And then, this is output of a MySQL dump. We have a comment execution for
+522.01s - 528.01s |  this vulnerability. All we need to do is to provide a fake server. So we have created a honey pot,
+531.55s - 537.55s |  which is a Python code, which allows you to exploit this specific vulnerability, and also the
+537.91s - 543.91s |  plugin-loading vulnerability by passing specific configuration options to this honey pot. The goal
+548.89s - 554.89s |  is simple. We try to run code on the clients who connect to our honey pot by leveraging these
+556.67s - 566.03s |  vulnerabilities. And here's a demo. So let's see. We have a payload script, a VBS script, which
+566.03s - 572.03s |  will be running on Windows, which just pops up a message, you have been pwned. Now, we start our
+575.99s - 581.99s |  honey pot and pass a payload. And also, we start a HTTP server. And once MySQL dump is executed on
+583.67s - 589.67s |  Windows now, the version is 36, which is one version before the latest, we get this pwned message.
+601.69s - 606.69s |  That's it. Back to you, Alex.
+606.69s - 612.69s |  Thank you very much. All right. So now, we successfully pwned the client. We were able to
+614.77s - 620.77s |  do this because we were actually trying to figure out and scratching our heads, how do we actually
+625.81s - 631.81s |  attack those bad guys? So, back to the two attacks that we have been working with. The first attack, this
+636.49s - 642.49s |  is what we have captured, a fingerprint. Right? So, from the fingerprint itself, we can already see
+645.73s - 651.73s |  what we can or cannot do. So, arbitrary file read, we know this is old version. We know that it will work.
+655.11s - 661.11s |  Remote code execution with a plugin, we don't know. We will try it out. And there is no MySQL dump in this
+662.39s - 668.39s |  particular attack, so we will not be able to use the newest version. So, how do we use the arbitrary file
+668.95s - 674.95s |  read? Arbitrary file read is super easy. There is a tool that you can download from the internet, from the
+676.83s - 682.83s |  GitHub. You start this tool and you simply specify the file that you want to download from the client.
+685.19s - 691.19s |  Again, the client will be connecting to the server. This is fake server. And then we will be able to read the file.
+691.75s - 697.75s |  So, this is how the client arbitrary file read works. I will go through this real quick. So, you have this, I
+707.47s - 713.47s |  download this tool. I start this tool on port 3306. And I request a password. And now, I am connecting
+714.47s - 720.47s |  from my machine with the old version of MySQL. And I connect into this fake server. And here I go. I got the
+729.07s - 735.07s |  file. So, I obtained this file. This is an old attack. Now, how can we use that? What we want to do is, we
+735.07s - 743.25s |  want to first understand which version of Windows those attackers, those bots are using. There are a
+750.63s - 756.63s |  number of ways how you can determine the version of Windows by downloading the file. So, we started this
+758.81s - 764.81s |  file list and we determined that this is really old version of Windows. This is Windows Server 2003.
+767.31s - 773.31s |  Alright, so with this attack, we were able to understand and get more details about what the attackers are
+774.95s - 780.95s |  using. Now, let's try the remote code execution. The remote code execution is, actually on Windows you need
+784.49s - 790.49s |  DLL. We need to deliver that DLL to the attacker's machines, to the client, to be able to trigger it. So, we
+791.05s - 797.05s |  started to think, how do we deliver this code? Again, DLL doesn't need to be triggered on the client. We are
+804.03s - 810.03s |  triggering through the remote code execution. What we did is, we collected the fingerprint, the actual
+812.37s - 818.37s |  commands that the server, the client, is running, is trying to run on the server. And what we did is, we
+820.55s - 826.55s |  can see that what they are trying to do is, they are trying to download the malicious code on the server. So,
+830.93s - 836.93s |  they are running an FTP server on their own machine. And we know the password, the username, and the port of
+839.67s - 845.67s |  the server. So, we started creating the simulation. Here's our plan of attack. We will upload the DLL to a
+846.39s - 852.39s |  public location on the client, on the actual server, Windows 2003. And then we will run the honey pot, wait
+860.31s - 865.81s |  for the connection, and through the connection we will trigger that DLL so we will have the remote code
+865.81s - 870.81s |  execution. So, we created this RCE via the simulation. So, this is how it could work. First of all, we
+875.93s - 881.93s |  have, we are connecting to FTP server here, simulating that we are connecting to the actual machine. We do the
+887.07s - 895.12s |  demo, demo, now we will put our evil DLL. And now, after we put the evil DLL in a public location, then we will
+900.30s - 906.30s |  start the server, the honey pot. This is the server that is running on the server. So, this is the server.
+907.74s - 913.74s |  We run the startup script. We specify the plug-in dir, public documents, and then this thing will actually
+917.32s - 923.32s |  trigger the execution of our DLL via the directory traversal. I don't have much time to explain this attack, but
+927.90s - 933.90s |  this has been explained last year. You can actually see the recording from the HIDBI. Basically, there is a
+934.06s - 940.06s |  plug-in dir in MySQL and the file name, and we use the directory traversal to actually trigger DLL open,
+943.40s - 949.40s |  which, or load library on Windows, which is in the server. Now, I'm listening on the port, and now here's my
+951.88s - 956.88s |  DDL. My DDL is displaying the text and actually create the, um, um, the dialogue. So, this is the
+964.16s - 970.16s |  code. Here's how it works. So, we have this MySQL command line utility, and we have the evil DLL, uh,
+975.14s - 981.14s |  uploaded to the client. Now, the client, in this simulation, that's the bad actor. They are connecting to us,
+984.04s - 990.04s |  and here's, here we go. We actually executed the code, remote code execution. Thank you. Alright, so,
+992.37s - 1001.98s |  this is done. We demonstrated arbitrarily file read. We demonstrated remote code execution, uh, with a plug-in.
+1006.82s - 1012.82s |  So, the second attack is even more interesting. Now, from the fingerprint, what do we see? We see this is
+1015.16s - 1021.16s |  later versions of MySQL client. We know that this remote code execution via plug-in will not work, but we
+1026.10s - 1031.12s |  see immediately is that it's using MySQL dump. This is the utility. We actually found a way to, to do the, the
+1034.48s - 1040.86s |  code execution. And then again, we were scratching our heads, and then we decide, well, let's collect
+1040.86s - 1045.86s |  more information. Let's understand how this attack is being, uh, executed. So, this is what we see. The, the
+1046.02s - 1052.02s |  application that connects to, uh, our server, right, it, um, uh, connects to the server, do the show
+1058.46s - 1063.46s |  databases, and then what it will do is it will run, it will execute MySQL dump utility and, uh, pass the
+1064.46s - 1069.46s |  database and the table name. So, basically what it do, the, the goal of this thing is to download the
+1082.34s - 1087.34s |  database so that they can actually claim that they download your data. But, we can see that the only
+1087.50s - 1092.50s |  downloaded 10 records. So, don't pay, obviously, right? Don't pay. Those guys don't have your data.
+1100.98s - 1107.32s |  They claim that they have downloaded, backed it up, backed your database, but they didn't. They only
+1107.32s - 1112.32s |  have 10 records. Right? And then from here, we were started brainstorming. Can we download the code
+1112.78s - 1117.78s |  via arbitrary file read? No. Can we execute code via plugin? Actually, no as well. Right? We know
+1124.76s - 1129.76s |  because this is the newer versions. So, we started looking again how this attack is being handled. So, we
+1132.20s - 1138.16s |  see that's the using MySQL, MyADB connector, right? This is from the fingerprint. This should be
+1138.18s - 1144.86s |  some application there, right? And then suddenly, MySQL dump connects to our server. So, they
+1144.86s - 1149.86s |  probably do some execution of the MySQL dump and then we see back, we see that the application
+1153.36s - 1158.36s |  connects back. So, we also see this. Again, we are providing the server. Whatever client will
+1158.48s - 1163.48s |  execute, we will see immediately. And this is what we see. This is our table that we generated. It's
+1169.42s - 1174.42s |  send it up, up, back to us. So, maybe if this is what they're doing, maybe we can actually do a
+1178.42s - 1183.42s |  command injection. And we started experimenting with this. We created a fake database, a schema
+1184.06s - 1189.06s |  name as a database in MySQL. We created this, a classical command injection. And uh, we were
+1195.64s - 1200.64s |  surprised. It actually worked. So, we used the command injection on this client attack, right? On
+1204.80s - 1210.62s |  this board, just like this, and we receive all the information uh, out of this command back to
+1210.66s - 1215.66s |  us. So, we downloaded the evil code from those attackers. This is how it is looking like. It's a
+1220.10s - 1225.10s |  MySQL dump. We have a command injection here and here's what we see. We got the evil code. So, it's
+1227.44s - 1232.44s |  a Python script. It's a Python script that connects to your database, try to brute force the
+1232.64s - 1237.64s |  password, and then execute the MySQL dump. The multiple injections. We were looking at this
+1242.08s - 1247.08s |  code and we were like, well, there are multiple places where you can execute the command. Alright,
+1249.52s - 1254.52s |  so we successfully, we achieved our goal, but not the way we thought originally. We executed the
+1254.72s - 1259.72s |  command injection. How do you try that at home? Uh, I'm pretty sure this will be fixed shortly, so
+1268.36s - 1275.20s |  you need to try it right now if you want to see what it looks like. Uh, and you don't even need a
+1275.20s - 1280.20s |  tool. You can start a MySQL database server, any version, you will create a root with no
+1280.86s - 1285.86s |  password. This is a born version of MySQL server, right? You don't care if they will be
+1290.84s - 1295.84s |  downloading your data. I'm done almost. And then you open that and this is the injections that you
+1297.48s - 1302.48s |  will do. Create database, put it in a backticks, and that's it. This is how you will be able to
+1302.48s - 1307.70s |  attack, uh, the bad guys. Alright, this is done. All done. So, new CVE details and thank you.

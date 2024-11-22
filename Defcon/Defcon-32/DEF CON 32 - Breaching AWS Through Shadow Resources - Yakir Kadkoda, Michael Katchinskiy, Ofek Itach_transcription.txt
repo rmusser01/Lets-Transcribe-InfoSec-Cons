@@ -1,0 +1,466 @@
+{
+  "webpage_url": "https://www.youtube.com/watch?v=m9QVfYVJ7R8",
+  "title": "DEF CON 32 - Breaching AWS Through Shadow Resources - Yakir Kadkoda, Michael Katchinskiy, Ofek Itach",
+  "description": "The cloud seems complex, but it's what happens behind the scenes that really complicates things. Some services utilize others as resources as part of their logic/operation. Interestingly enough, it turns out that this could lead to catastrophic results if done unsafely.\n\nThis talk will present six critical vulnerabilities that we found in AWS, along with the stories and methodologies behind them. These vulnerabilities, which were all promptly acknowledged and fixed by AWS, could allow external attackers to breach almost any AWS account. The vulnerabilities range from remote code execution, which could lead to full account takeover, to information disclosure, potentially exposing sensitive data, or causing denial of service. The session will share our story of discovery, how we were able to identify commonalities among them, and how we developed a method to uncover more vulnerabilities and enhance the impact by using common techniques leading to privilege escalation. We will then detail our approach for mapping service external resources and release our Open-Source tool to research service internal API calls. We will also present a method to check if accounts have been vulnerable to this vector in the past.\n\nWe will conclude our talk with the lessons learned during this research and our future line of research. We will highlight new areas that cloud researchers need to explore when hunting for cloud vulnerabilities and highlight best practices for developers to use in complex environments.",
+  "channel_url": "https://www.youtube.com/channel/UC6Om9kAkl32dWlDSNlDS9Iw",
+  "duration": 2231,
+  "channel": "DEFCONConference",
+  "uploader": "DEFCONConference",
+  "upload_date": "20241016"
+}
+
+3.95s - 8.95s | This text was transcribed using whisper model: large-v2
+
+ So, hello everybody. We are very excited to be here.
+8.95s - 13.95s |  And welcome to the session, Breaching AWS Accounts Through Shadow Resources.
+13.95s - 18.95s |  And in this session, we will demonstrate several vulnerabilities that we found on AWS.
+18.95s - 23.95s |  The most severe of these vulnerabilities could allow an attacker to add an admin role to another account.
+23.95s - 27.23s |  So, let's start.
+27.23s - 34.23s |  Let's start by discussing the most debatable topic on AWS, which is AWS Account ID.
+34.23s - 40.23s |  So, each AWS account has a unique identifier associated with it.
+40.23s - 44.23s |  This identifier consists of 12 digits.
+44.23s - 51.23s |  And the most important thing about this is that some treat it as a secret and some don't.
+51.23s - 58.23s |  And along the history of AWS, we have many different opinions whether it is a secret or not.
+58.23s - 65.23s |  Although AWS in their documentation states that this account ID should be shared carefully,
+65.23s - 67.23s |  they do not consider this a secret.
+67.23s - 71.23s |  But we as security practitioners, security researchers,
+71.23s - 76.23s |  know that attackers could achieve problematic things only by knowing this account ID.
+76.23s - 79.23s |  So, what is the right answer?
+79.23s - 82.23s |  Are AWS account IDs secret or not?
+82.23s - 88.23s |  We hope that by the end of this session, we will have a more solid opinion about this.
+88.23s - 91.23s |  So, let us introduce ourselves.
+91.23s - 98.23s |  My name is Yakir Kotkoda and here with me are Michael Kaczynski and Ofik Itach.
+98.23s - 101.23s |  We are all security researchers from Aqua Security
+101.23s - 107.23s |  and we are focusing in our daily on cloud vulnerabilities, open source vulnerabilities, and more.
+107.23s - 109.23s |  Let me go over the agenda.
+109.23s - 113.23s |  We will introduce something that's called shadow resources and what they are.
+113.23s - 117.23s |  Then, several vulnerabilities that we found on AWS.
+117.23s - 124.23s |  And an open source tool that we developed during our research that helped us to find more vulnerabilities.
+124.23s - 128.23s |  After this, we will introduce a new technique called Bucket Monopoly
+128.23s - 131.23s |  that helps us emphasize the risk of our findings.
+131.23s - 137.23s |  And we will end our session by suggesting some mitigations and recommendations.
+137.23s - 141.23s |  So, let's first talk how our journey began.
+141.23s - 147.23s |  While we worked with the AWS Management Console, which is the GUI of AWS,
+147.23s - 153.23s |  we noticed that when a user used the CloudFormation service and uploaded a template file,
+153.23s - 158.23s |  AWS, behind the scenes, creates an S3 bucket for the user.
+158.23s - 165.23s |  Although the user did not explicitly ask AWS to do so, this is how the service operates.
+165.23s - 169.23s |  We have decided to name this kind of resources that spawned automatically
+169.23s - 172.23s |  without the user intervention a shadow resource.
+172.23s - 175.23s |  So, let's explain this term.
+175.23s - 179.23s |  When we refer to shadow resources, we are mainly referring to resources
+179.23s - 185.23s |  that are generated automatically or semi-automatically by AWS.
+185.23s - 189.23s |  Most of the time, they spawn without user intervention
+189.23s - 193.23s |  and they might go unnoticed by the account owner.
+193.23s - 197.23s |  And the great example for this is just the S3 bucket that we saw
+197.23s - 201.23s |  that the CloudFormation service creates for the user.
+201.23s - 206.23s |  Now, let's align some common knowledge about S3 bucket,
+206.23s - 210.23s |  which is one of the first services by AWS.
+210.23s - 213.23s |  This service has some special uniqueness.
+213.23s - 219.23s |  First of all, S3 bucket name must be globally unique across all AWS.
+219.23s - 223.23s |  For example, if you create an S3 bucket called CoolBucket1,
+223.23s - 227.23s |  no one else on AWS could claim this name.
+227.23s - 230.23s |  It will be available only under your account.
+230.23s - 235.23s |  So, let's set up a view and talk about our first vulnerability on CloudFormation.
+235.23s - 238.23s |  So, first of all, what is CloudFormation?
+238.23s - 242.23s |  CloudFormation is an infrastructure as code service by AWS
+242.23s - 244.23s |  similar to the Terraform project.
+244.23s - 249.23s |  A user will define a template file that contains AWS resources.
+249.23s - 254.23s |  Then the user stores this template file locally or in S3 bucket.
+254.23s - 259.23s |  And then the user will create a stack based on this template file.
+259.23s - 262.23s |  And when the user will deploy this stack,
+262.23s - 265.23s |  the CloudFormation service deploys the resources
+265.23s - 268.23s |  that exist under this template file.
+268.23s - 271.23s |  Now, I want us to understand what happens behind the scenes
+271.23s - 274.23s |  when the user uploads a template file to this service.
+274.23s - 281.23s |  So, first, the user clicks on the upload template file on the GUI.
+281.23s - 287.23s |  And we need to remember that every operation on AWS is eventually an API request.
+287.23s - 292.23s |  So, the create upload bucket API request will be invoked.
+292.23s - 296.23s |  The CloudFormation service will try to create an S3 bucket.
+296.23s - 299.23s |  Then it will return the bucket name.
+299.23s - 307.23s |  And then the put object API request will upload the template file to the CloudFormation service.
+307.23s - 310.23s |  Then we will have a lot of API requests.
+310.23s - 312.23s |  But in the end, the user will submit the stack,
+312.23s - 317.23s |  which will cause the CloudFormation service to deploy all the AWS resources
+317.23s - 320.23s |  that exist under this template file.
+320.23s - 326.23s |  Now, I want us to focus on the bucket naming pattern of this S3 bucket.
+326.23s - 329.23s |  So, it will consist of three different parts.
+329.23s - 333.23s |  The first one is a prefix, which is a constant string.
+333.23s - 335.23s |  And it will remain the same.
+335.23s - 338.23s |  In this case, it is CF template.
+338.23s - 343.23s |  Then we have the hash, which is a unique identifier per account.
+343.23s - 350.23s |  And then a region, which will be related to where the user initiates the CloudFormation service.
+350.23s - 352.23s |  So, now let's visualize this.
+352.23s - 357.23s |  So, basically, when a user uses the CloudFormation service via the AWS GUI,
+357.23s - 362.23s |  AWS behind the scenes creates an S3 bucket with this pattern.
+362.23s - 368.23s |  And when the user will try to create another CloudFormation service in a new region for the first time,
+368.23s - 372.23s |  the CloudFormation service creates an S3 bucket with the same prefix,
+372.23s - 376.23s |  with the same hash, but with a different region.
+376.23s - 381.23s |  So, we have here a semi-predictable bucket name.
+381.23s - 388.23s |  So, what if an attacker opens or claims this bucket before the user?
+388.23s - 395.23s |  So, if an attacker does so, this technique is called bucket namesquatting or bucket sniping.
+395.23s - 399.23s |  You can read a great blog by Oren McKay about this technique.
+399.23s - 401.23s |  Now, let's explain this.
+401.23s - 405.23s |  So, we have here the user with the CloudFormation service on a specific region.
+405.23s - 409.23s |  And then an attacker on a new region.
+409.23s - 415.23s |  And what attacker did here is that he creates a bucket under his account with the hash of the user.
+415.23s - 418.23s |  We will talk about this later, the prefix and the region.
+418.23s - 425.23s |  So, whenever the user will try to use the CloudFormation service in this region for the first time,
+425.23s - 430.23s |  the CloudFormation service will try to interact with the attacker-claimed bucket.
+430.23s - 433.23s |  But it will receive an error.
+433.23s - 439.23s |  So, basically, we have here a way to prevent the other user from using the CloudFormation service
+439.23s - 446.23s |  on a specific region, which can be considered as a DOS scenario.
+446.23s - 451.23s |  And a DOS scenario is fine, but it isn't enough for a DEF concession.
+451.23s - 454.23s |  So, let's escalate it.
+454.23s - 458.23s |  What if an attacker opened a bucket for public access?
+458.23s - 463.58s |  So, the reason why the CloudFormation service got an error before
+463.58s - 468.58s |  is because the attacker needs still to define some settings on their S3 bucket.
+468.58s - 474.58s |  First of all, the attacker needs to allow public access because it's blocked by default.
+474.58s - 483.58s |  And then, in order to allow cross-account access, the attacker needs to define a resource-based policy.
+483.58s - 489.58s |  In this case, we have a very permissive bucket policy that allows any principal on AWS
+489.58s - 493.58s |  to perform any action on the S3 bucket of the attacker.
+493.58s - 497.58s |  Of course, this is just a POC, and this is very dangerous.
+497.58s - 502.58s |  So, after the attacker does so, now an interesting thing will happen.
+502.58s - 508.58s |  The CloudFormation service of the victim will succeed to interact with the attacker-claimed bucket.
+508.58s - 514.58s |  So, whenever the user uploads a template file, it will be dropped to the attacker S3 bucket.
+514.58s - 521.58s |  So, we have here a way to enumerate different secrets and resources that the user wrote in their template file.
+521.58s - 527.40s |  So, this is an information disclosure scenario.
+527.40s - 535.40s |  But, if an attacker already has access to this template file, what if an attacker modifies it?
+535.40s - 541.40s |  So, if an attacker does so, this is called resource injection in CloudFormation templates,
+541.40s - 549.40s |  and it's a great technique that's published already by RhinoLab and also credited to Matthew Filler about this.
+549.40s - 557.40s |  And all the idea behind this technique is some type of check, type of issue behavior that the CloudFormation service has by default
+557.40s - 565.40s |  that allow an attacker a window of opportunity to modify a template's file before the CloudFormation service tries to deploy them.
+565.40s - 571.40s |  So, it's possible for an attacker to modify this template file and actually do it manually
+571.40s - 575.40s |  or with Lambda that will backdoor this template automatically.
+575.40s - 577.40s |  So, now let's visualize this.
+577.40s - 581.71s |  Here we have the user and the attacker account.
+581.71s - 585.71s |  The attacker is in external account, and the attacker creates an S3 bucket
+585.71s - 588.71s |  that the CloudFormation service of the victim will try to use.
+588.71s - 593.71s |  And a Lambda that will backdoor any file that dropped to this S3 bucket.
+593.71s - 602.71s |  So, whenever the user creates a stack, the CloudFormation service uploads the victim template to the attacker S3 bucket.
+602.71s - 611.71s |  Then the Lambda will be triggered and gets the template file from the attacker claim bucket.
+611.71s - 614.71s |  Then the Lambda will perform a resource injection.
+614.71s - 617.71s |  And here we have a new resource.
+617.71s - 621.71s |  It's an admin role that can be assumed by the attacker.
+621.71s - 628.71s |  Then the Lambda will inject this backdoor template file to the S3 bucket.
+628.71s - 632.71s |  And as I said before, we have here some type of check, type of use issue.
+632.71s - 636.71s |  So, the user needs to deploy the template file.
+636.71s - 638.71s |  So, the user clicks on the submit stack.
+638.71s - 646.71s |  And then the previously vulnerable CloudFormation service will attempt to get the backdoor template file from the attacker S3 bucket.
+646.71s - 650.71s |  And deploy this malicious role under the victim account.
+650.71s - 655.71s |  So, we have here an admin role from external accounts that the attacker can claim.
+655.71s - 659.71s |  So, actually, which means an account takeover.
+659.71s - 666.48s |  Thank you.
+666.48s - 670.48s |  But there are some important points to mention.
+670.48s - 676.48s |  In order to add or inject an admin role to another account, the initiator of the CloudFormation service,
+676.48s - 683.48s |  which is an AWS user or a service role, needs to have some high privilege.
+683.48s - 689.48s |  And we can assume that users that use the CloudFormation service via the GUI have such privilege.
+689.48s - 696.48s |  And even if they do not have high privilege, it's still possible to modify what exists in the template file.
+696.48s - 704.48s |  And, of course, the attacker needs to wait for the victim to use the CloudFormation service in a new region for the first time.
+704.48s - 708.48s |  So, now, let's see a really quick POC of this.
+708.48s - 714.48s |  Here we have the victim account that tried to use the CloudFormation service via the GUI and upload the template file.
+714.48s - 719.48s |  Behind the scenes, the template file already dropped to the attacker claim bucket.
+719.48s - 723.48s |  And the user still needs to define stack name, privilege, and more.
+723.48s - 726.48s |  And this is what caused the time-of-check, time-of-use issue.
+726.48s - 731.48s |  As we can see here, we have the attacker as the bucket with the template file of the user.
+731.48s - 733.48s |  And the attacker can modify it.
+733.48s - 735.48s |  Meanwhile, the attacker deploys the stack.
+735.48s - 743.48s |  And we can see that we have under this deployment an attacker user, which is a really privileged role, an admin role.
+743.48s - 750.48s |  And we can see also that this role can be assumed from an external account, in this case the attacker account.
+750.48s - 757.48s |  So, all attacker needs to do is to assume this role, find the related account ID of the user on the CloudWatch logs,
+757.48s - 765.48s |  and then the attacker has an admin role on the victim account, which is one of the most severe things that we can receive in the cloud, right?
+765.48s - 776.26s |  Thank you, Yakir, for showing us such a cool technique.
+776.26s - 781.26s |  But before we continue, let's not ignore the elephant in the room.
+782.26s - 791.26s |  Yakir showed us previously a way to, sorry.
+791.26s - 798.26s |  Previously, Yakir showed us a way to, he showed us that the bucket name needs to be predictable.
+798.26s - 803.26s |  But when we look at the bucket name, it's definitely not predictable, right?
+803.26s - 805.26s |  It's due to the hash in the middle.
+805.26s - 808.26s |  So, we knew we had to address this problem.
+808.26s - 817.26s |  The first attempt that we did was actually trying to enumerate and calculate every possible hash.
+817.26s - 823.26s |  But we quickly realized it's just not doable to the amount of option that we had.
+823.26s - 828.26s |  Then we thought maybe we can reverse the hash or something like that.
+828.26s - 831.26s |  Yakir said that the hash is unique per account.
+831.26s - 837.26s |  So, maybe it's based on the account ID or other unique identifier in the account.
+837.26s - 844.26s |  But after many unsuccessful attempts, we left that technique.
+844.26s - 848.26s |  Then we decided to turn to open source.
+848.26s - 852.26s |  In open source, we saw this code.
+852.26s - 856.26s |  And in this code, we saw that there is some cases.
+856.26s - 860.26s |  There is a code that shows that the bucket is actually randomized.
+860.26s - 862.26s |  The hash is actually randomized.
+862.26s - 871.41s |  And what that actually means is we can't predict the hash.
+871.41s - 877.41s |  So, our technique is not going to work in the real world.
+877.41s - 885.41s |  But as good researchers, we were sad about this.
+885.41s - 888.41s |  Because we know that our technique is not going to work.
+888.41s - 893.41s |  And we had to rethink about everything that we came so far.
+893.41s - 895.41s |  We have a really nice technique.
+895.41s - 899.41s |  We managed to remote account takeover.
+899.41s - 903.41s |  But we don't have how to use it in the real world.
+903.41s - 908.41s |  But as good researchers, we thought about a solution.
+908.41s - 914.41s |  We used the greatest tool known to us, which is the search tool.
+914.41s - 916.41s |  We used GitHub search.
+916.41s - 919.41s |  And we used source graph search.
+919.41s - 923.41s |  We managed to find over a thousand buckets.
+923.41s - 926.41s |  Some of them with the hash that we mentioned.
+926.41s - 928.41s |  All of them with the hash that we mentioned.
+928.41s - 935.41s |  And it gave us the ability to hack a couple of big organizations.
+935.41s - 937.41s |  But we didn't stop there.
+937.41s - 946.41s |  During our searches, we actually find that there is cases where the bucket name of some services
+946.41s - 950.41s |  is actually created by just using account ID.
+950.41s - 959.41s |  So, we thought to ourselves, maybe instead of trying to find a mysterious hash
+959.41s - 962.41s |  or trying to understand this randomized string,
+962.41s - 969.41s |  maybe we can just use the account ID instead and find new vulnerability
+969.41s - 973.41s |  that the bucket name actually contains the account ID.
+973.41s - 982.82s |  So, we decided to shift our whole research and turn to find more bucket patterns.
+982.82s - 987.82s |  We used the open source and looked for more bucket patterns.
+987.82s - 990.82s |  We used AWS documentation and SDK.
+990.82s - 996.82s |  We even started calling and trying to press nearly every possible button in AWS GUI.
+996.82s - 1004.82s |  And we even created a tool, an open source tool that you can all play with it after this talk.
+1004.82s - 1011.82s |  It lets you debug AWS like you're debugging network buckets.
+1011.82s - 1018.82s |  And it shows the inner API calls made by AWS, which is kind of nice.
+1018.82s - 1020.82s |  So, let's see how it works.
+1020.82s - 1024.82s |  In one screen, we initiate an API call.
+1024.82s - 1032.82s |  This API call in this scenario is the upload template that Kir talked about before.
+1032.82s - 1037.82s |  In the other screen, we use Wireshark with our plugin.
+1037.82s - 1039.82s |  We wrote a plugin for Wireshark.
+1039.82s - 1045.82s |  And we're just starting to capture API calls that we made.
+1045.82s - 1050.82s |  And what is interesting about what we've seen using this tool
+1050.82s - 1055.82s |  is actually when we initiate the API call in the GUI, it's actually one API call.
+1055.82s - 1059.82s |  But this API call is undocumented.
+1059.82s - 1068.82s |  And the equivalent to that API call is actually five different API calls made by the inner services of AWS.
+1068.82s - 1071.82s |  One of them is the create bucket that Kir told you before.
+1071.82s - 1073.82s |  And it also calculates the hash.
+1073.82s - 1077.82s |  So, we have here an undocumented API call used by AWS to create buckets.
+1078.82s - 1085.82s |  So, all of the techniques that I mentioned before gave us around hundreds of buckets.
+1085.82s - 1089.82s |  And we understand that we have tons of work to do.
+1089.82s - 1095.82s |  Because, as a reminder, some of the buckets came from open source projects.
+1095.82s - 1099.82s |  So, we need to understand which bucket is related to what service.
+1099.82s - 1104.82s |  And we also need to understand if any of these services is exploitable.
+1105.82s - 1110.82s |  So, you're probably wondering what is the answer for those questions.
+1110.82s - 1117.82s |  And the answer was, we managed to find five different vulnerabilities within AWS.
+1117.82s - 1120.82s |  Some of them by just using the account ID.
+1120.82s - 1131.51s |  So, let's talk about the common steps that we need to take that is common to all the vulnerabilities that we found.
+1131.51s - 1135.51s |  As Kir said before, we need to create a bucket name before the user.
+1135.51s - 1137.51s |  We also need to open the bucket to the world.
+1137.51s - 1142.51s |  And we need to put lambda or something to monitor the bucket.
+1142.51s - 1145.51s |  And when a file is dropped to the bucket, we can change it.
+1145.51s - 1147.51s |  It's the same technique.
+1147.51s - 1152.95s |  So, let's explore our second vulnerability for today in AWS Glue.
+1152.95s - 1161.95s |  This one is really strong because you only need the account ID to exploit a remote account.
+1162.95s - 1167.95s |  And just a reminder, account ID is not a secret by AWS, right?
+1167.95s - 1171.95s |  So, what is AWS Glue?
+1171.95s - 1175.95s |  AWS Glue is a service for data engineers.
+1175.95s - 1178.95s |  It is basically used for data manipulation.
+1178.95s - 1183.95s |  To trigger the vulnerability, the user needs to create a job in Glue.
+1183.95s - 1188.95s |  When you do so, a bucket is automatically configured with a predictable name.
+1188.95s - 1191.95s |  There, files of Glue will be stored.
+1191.95s - 1197.95s |  So, if a bucket is predictable, we can take it before the user.
+1197.95s - 1200.95s |  And that's exactly what we did.
+1200.95s - 1202.95s |  Our user creates a job.
+1202.95s - 1206.95s |  When he creates a job, a script is dropped to our bucket.
+1206.95s - 1209.95s |  We have our lambda that changes the file.
+1209.95s - 1214.95s |  And when the user runs the job, he gets the modified script.
+1215.95s - 1220.95s |  And voila, we have a remote code execution on the remote account.
+1220.95s - 1231.66s |  So, you are probably wondering, what are the privileges of the AWS Glue service?
+1231.66s - 1238.66s |  So, it's actually configured by the user that triggers the job.
+1238.66s - 1247.66s |  Most of the time, it will be a default service role that you get when you use AWS Glue for the first time.
+1247.66s - 1250.66s |  And that role is pretty interesting.
+1250.66s - 1255.66s |  Because it has a lot of enumeration potential on the account.
+1255.66s - 1258.66s |  And also, it has some write potential in the account.
+1258.66s - 1263.66s |  So, as a red teamer, you could probably escalate from here.
+1263.66s - 1266.66s |  But it's not the topic for our talk.
+1266.66s - 1271.66s |  Another cool anecdote about this vulnerability is actually invisible.
+1271.66s - 1273.66s |  And I will explain.
+1274.66s - 1281.66s |  When the user tries to get the script and look at the script, he actually gets the original script.
+1281.66s - 1284.66s |  Even though it's already modified.
+1284.66s - 1288.66s |  And when he runs it, he actually runs the modified script.
+1288.66s - 1291.66s |  This is just due to a bug in the AWS Glue.
+1291.66s - 1293.66s |  But it's still cool.
+1293.66s - 1296.66s |  So, let's see the full POC.
+1296.66s - 1298.66s |  We recorded that in February.
+1298.66s - 1303.66s |  Here you can see a user creating a Glue job.
+1303.66s - 1310.66s |  When you press the save button, the files are dropped to the attacker bucket.
+1310.66s - 1315.66s |  And that's what also gives us the time to modify the script.
+1315.66s - 1323.66s |  Because if we are automating this, the Lambda takes just a couple of milliseconds to inject the code there.
+1323.66s - 1330.66s |  In this POC, we just put a print for POC purposes.
+1330.66s - 1336.66s |  And as you can see, when the user tries to get the script, he gets the original script.
+1336.66s - 1348.48s |  And when he runs the script, if we look at the logs, you can see that the script is actually modified.
+1348.48s - 1356.60s |  And we got remote code execution.
+1356.60s - 1361.60s |  So, now let's explore the third vulnerability for today.
+1361.60s - 1366.60s |  In EMR, which is another service of AWS.
+1366.60s - 1372.60s |  This one is also kind of cool because, again, it's only the account ID.
+1372.60s - 1374.60s |  That's what we were looking for.
+1374.60s - 1380.60s |  And it has a cool post-exploitation technique.
+1380.60s - 1386.60s |  So, EMR, it's a service for data consumption used by data scientists.
+1386.60s - 1388.60s |  Another data service.
+1388.60s - 1393.60s |  To trigger the vulnerability, the user needs to create a studio.
+1393.60s - 1397.60s |  And when you do so, a bucket is automatically configured.
+1397.60s - 1399.60s |  And that's where we come to the picture.
+1399.60s - 1402.60s |  Again, we open the bucket before the user.
+1402.60s - 1408.60s |  When the user creates a studio, he actually stores Jupyter notebooks to our bucket.
+1408.60s - 1412.60s |  In our bucket, we have our Lambda that changes the code.
+1412.60s - 1417.60s |  And in Jupyter notebook, you can inject JavaScript.
+1417.60s - 1420.60s |  So, we decided to inject JavaScript here.
+1420.60s - 1423.60s |  And it acts like stored XSS.
+1423.60s - 1432.60s |  When the user tries to open his EMR, his service, he gets the modified Jupyter notebook.
+1432.60s - 1439.60s |  And every time he will go to the notebook, he will be redirected to a fake login page created by us.
+1439.60s - 1444.87s |  A quick disclaimer about this vulnerability.
+1444.87s - 1446.87s |  It's not a zero shot.
+1446.87s - 1454.87s |  It means that the vulnerability, when the user configures the page, he actually needs to do some changes.
+1454.87s - 1456.87s |  Because he gets an error.
+1456.87s - 1458.87s |  But the error is really vague.
+1458.87s - 1463.87s |  And when I see an error like this as a user, I do one of two things.
+1463.87s - 1466.87s |  Either I change the role.
+1466.87s - 1470.87s |  Or I use the policy that is recommended by AWS.
+1470.87s - 1474.87s |  In both cases, the vulnerability is going to work.
+1474.87s - 1478.87s |  This is due to inconsistent in AWS.
+1478.87s - 1487.87s |  The policy that they recommend is actually lacking a string condition that is supposed to protect you from such an attack.
+1487.87s - 1489.87s |  But they forgot it.
+1489.87s - 1493.87s |  Now Michael will show you a couple of more vulnerabilities.
+1493.87s - 1498.87s |  And we'll show you how our technique applies on open source projects.
+1498.87s - 1505.95s |  Thank you.
+1505.95s - 1506.95s |  All right.
+1506.95s - 1508.95s |  So, thank you, Ofek.
+1508.95s - 1511.95s |  So nowadays, everyone loves AI and machine learning.
+1511.95s - 1514.95s |  And we could not miss a chance to talk about this on our lecture.
+1514.95s - 1519.95s |  Let's discuss the rest of the vulnerabilities and start from AWS SageMaker.
+1519.95s - 1526.95s |  So SageMaker is a tool in AWS that is designed to build, train, and deploy machine learning models.
+1526.95s - 1530.95s |  Canvas is part of the AWS SageMaker ecosystem.
+1530.95s - 1534.95s |  And it's a very cool no code drag and drop interface.
+1534.95s - 1541.95s |  We discovered that when a user creates a Canvas instance for the first time on a specific region,
+1541.95s - 1546.95s |  then a bucket with the name SageMaker dash region dash account ID is created.
+1547.95s - 1552.95s |  And the S3 bucket will store files that are utilized by the service.
+1552.95s - 1555.95s |  So let's go over the full attack scenario.
+1555.95s - 1558.95s |  So the attacker has claimed the bucket before the user.
+1558.95s - 1561.95s |  And then the user opens Canvas.
+1561.95s - 1564.95s |  And it will create a data set and uploads the files.
+1564.95s - 1569.95s |  On the background, the files will be uploaded to the attacker control S3 bucket.
+1569.95s - 1571.95s |  And then the attacker could get the data set.
+1571.95s - 1573.95s |  And we will have data leakage.
+1573.95s - 1578.95s |  But if that's not enough, the attacker could also manipulate the data set.
+1578.95s - 1581.95s |  And then SageMaker will use the manipulated data set.
+1581.95s - 1583.95s |  And we have data manipulation.
+1583.95s - 1586.95s |  So it may lead to inaccurate models.
+1586.95s - 1591.95s |  And all of this can happen without the user even knowing that something has changed.
+1591.95s - 1595.95s |  And to our next vulnerability on AWS is on CodeStar.
+1595.95s - 1599.95s |  So CodeStar is a tool that provides a unified user interface
+1599.95s - 1602.95s |  to easily manage software development activities.
+1602.95s - 1606.95s |  So the service was deprecated just, I think, two weeks ago.
+1606.95s - 1610.95s |  And in this scenario, the attacker has claimed the bucket again before the user.
+1610.95s - 1615.95s |  And when a user tries to create a CodeStar project on a region,
+1615.95s - 1619.95s |  then CodeStar on the background will try to create a bucket.
+1619.95s - 1623.95s |  And it will fail. And it will return the user an error.
+1623.95s - 1626.95s |  So this is essentially a denial of service attack
+1626.95s - 1632.95s |  since the attacker prevents the user from using CodeStar on a specific region.
+1632.95s - 1635.95s |  And there's one more vulnerability on service catalog.
+1635.95s - 1637.95s |  We won't elaborate about it right now.
+1637.95s - 1642.95s |  But we're going to publish a blog in the next few hours so you could see it there.
+1642.95s - 1649.95s |  Okay. So after we talked about the vulnerabilities in AWS,
+1649.95s - 1652.95s |  on our research we also identified that this attack vector affects
+1652.95s - 1655.95s |  many open source projects as well apparently.
+1655.95s - 1660.95s |  And many open source projects create S3 buckets as part of functionality.
+1660.95s - 1664.95s |  And the consequences change depending on the project.
+1664.95s - 1668.95s |  But some projects are vulnerable and could allow an attacker
+1668.95s - 1671.95s |  to gain full access to all of the files in the bucket.
+1671.95s - 1677.95s |  So here you can see an example of a project that checks if the bucket exists.
+1678.95s - 1682.95s |  And this check is wrong since an attacker could claim the bucket
+1682.95s - 1686.95s |  and the project will print to the screen that the bucket already exists
+1686.95s - 1690.95s |  but it will continue running without any problems.
+1690.95s - 1695.95s |  And there's another example of a project that tries to verify that the bucket exists
+1695.95s - 1699.95s |  and it tries to list the bucket. But this check is also wrong
+1699.95s - 1704.95s |  since an attacker could claim the bucket, open it for public access,
+1704.95s - 1708.95s |  set permissive policy and by doing so it will allow the victim
+1708.95s - 1713.95s |  to list using the AWS S3 LS command to list the bucket
+1713.95s - 1720.39s |  and again the script will continue running without any failure.
+1720.39s - 1723.39s |  And also as part of our investigation we found services
+1723.39s - 1726.39s |  that could be vulnerable in the past.
+1726.39s - 1728.39s |  These services created predictable bucket names.
+1728.39s - 1733.39s |  For instance Athena once created a bucket with the name AWS Athena
+1733.39s - 1737.39s |  query results dash uh account ID dash region.
+1737.39s - 1742.39s |  This bucket is not created anymore and when we when we encountered it
+1742.39s - 1746.39s |  Athena did not seem to be vulnerable and now there's this bucket is created
+1746.39s - 1751.39s |  by the user specification. Alright so we discussed vulnerabilities
+1751.39s - 1754.39s |  in AWS services and open source projects as well.
+1754.39s - 1759.39s |  Now let's explore how we can elevate what we've learned so far to the next level.
+1760.39s - 1764.39s |  So we wanted to increase the chances of a victim to be compromised.
+1764.39s - 1768.39s |  It would be important to us to show that this attack vector is not just theoretical
+1768.39s - 1772.39s |  but it's also practical and effective on real world scenarios.
+1772.39s - 1775.39s |  And we are proud to produce uh to introduce a new technique
+1775.39s - 1779.39s |  we named bucket monopoly. So in previous vulnerabilities
+1779.39s - 1782.39s |  we targeted specific regions of other accounts.
+1782.39s - 1785.39s |  We could check if a bucket already already exists and if not
+1785.39s - 1788.39s |  we could claim it before the victim. However as you all know
+1788.39s - 1792.39s |  AWS has multiple regions so instead of focusing on a single region
+1792.39s - 1797.39s |  we could claim all possible regions that the user has not claimed yet.
+1797.39s - 1800.39s |  This strategy increases the likelihood of an unsuspecting victim
+1800.39s - 1804.39s |  interacting with an attacker on S3 bucket.
+1804.39s - 1807.39s |  But since we have several vulnerable services
+1807.39s - 1811.39s |  let's create all of the buckets in all of the possible services.
+1811.39s - 1815.39s |  This is practically a landmine. The victim is surrounded by malicious
+1815.39s - 1820.39s |  buckets belonging to different services. Whenever the victim will use
+1820.39s - 1825.39s |  a new service from uh the six services we presented on any new region
+1825.39s - 1831.47s |  it will be immediately compromised. Let's explain step by step
+1831.47s - 1836.47s |  how to perform this kind of attack. First of all we must identify
+1836.47s - 1840.47s |  predictable bucket name. After finding these buckets we need to verify
+1840.47s - 1843.47s |  that the associated services that create these kinds of buckets
+1843.47s - 1848.47s |  are indeed vulnerable. Secondly we must recognize what is the unique identifier.
+1848.47s - 1851.47s |  And the last step which is the easy one we need to claim
+1851.47s - 1856.47s |  all the bucket names across all regions. So we showed you several ways
+1856.47s - 1860.47s |  how to find these kinds of buckets. We start reconnaissance by looking for
+1860.47s - 1864.47s |  bucket names that contains a prefix or a postfix alongside
+1864.47s - 1869.47s |  with an identifier like account ID or a hash. And it could be achieved
+1869.47s - 1873.47s |  by using the GitHub regex search. We could read AWS documentation as well.
+1873.47s - 1877.47s |  And we could use, we could crawl AWS services with tools like
+1877.47s - 1882.47s |  TrailShark that Ofek just showed you before. Next the second step is to understand
+1882.47s - 1887.47s |  what is the unique identifier inside the bucket name. It might be a random hash
+1887.47s - 1892.47s |  and it will require further instigation. It could also be account ID or some kind of
+1892.47s - 1898.47s |  other public metadata information. If it's a hash we could search on GitHub
+1898.47s - 1902.47s |  and on SourceGraph to find leaked hashes and then target them. And if it's
+1902.47s - 1906.47s |  an account ID there are multiple ways to find them. So the first method is
+1906.47s - 1911.47s |  to use GitHub. Uh we could search uh the GitHub regex search for specific patterns.
+1911.47s - 1915.47s |  We could also leverage the GrayHat Warfare platform which is a platform
+1915.47s - 1919.47s |  that collects publicly accessible S3 buckets. And then we could extract the account ID
+1919.47s - 1925.47s |  out of the bucket. So Jerome Brown did it and he extracted nearly 197,000
+1925.97s - 1931.47s |  unique account IDs. We could also extract the account ID out of the AWS access key ID.
+1931.47s - 1936.47s |  Nice article by Tal Berry who showed how to do it. And lastly there are valuable
+1936.47s - 1941.47s |  lists out there of known AWS accounts which includes account IDs of numerous large
+1941.47s - 1946.47s |  organizations and vendors. And the last step is to monopolize. So Attacker
+1946.47s - 1951.47s |  utilized the understanding of naming conventions and account IDs to strategically create
+1951.47s - 1957.47s |  S3 buckets with predictable names across all AWS regions where these buckets do not exist yet.
+1957.47s - 1963.47s |  Then the attacker will open the bucket for public access, set permissive policy and by doing
+1963.47s - 1970.47s |  so they position themselves to intercept the victim future interactions with these buckets.
+1970.47s - 1974.97s |  Now let's talk a little bit about disclosure and timeline. So we reported these vulnerabilities
+1974.97s - 1979.97s |  at the middle of February and AWS immediately started fixing them. We got our final
+1979.97s - 1985.47s |  confirmation that the vulnerabilities were fixed at uh the end of June. And the general
+1985.47s - 1991.47s |  approach here was consistent. So AWS will either uh add some kind of a random sequence or a
+1991.47s - 1997.47s |  number to the bucket and then create it. Or they will prompt the user to choose a new bucket
+1997.47s - 2002.97s |  name thereby they will ignore the already claimed bucket. AWS also indicated that they are
+2002.97s - 2006.97s |  confirming the results of each team investigation and they will ca- contact customers
+2006.97s - 2013.47s |  directly in the event that they were affected. So to conclude what we've seen up until now. We
+2013.47s - 2018.27s |  have identified six vulnerabilities in AWS uh that might enable an attacker to exploit
+2018.27s - 2023.57s |  organization. We explained how these vulnerabilities occur and we presented a new attack vector
+2023.57s - 2028.17s |  called Shadow Resources as well as the technique we named Bucket Monopoly. While the
+2028.17s - 2033.47s |  vulnerabilities we mentioned were already mitigated by AWS, this attack vector can still be
+2033.47s - 2039.81s |  applicable to other AWS services and many, many open source projects as you just saw. So to
+2039.81s - 2045.37s |  prevent an entity that assumes a role accessing a bucket you do not trust, you can define a
+2045.37s - 2050.67s |  scoped policy that contains the AWS resource account condition. So this approach will prevent
+2050.67s - 2057.07s |  the user in your account to access and write data to buckets that are located on accounts you
+2057.07s - 2064.27s |  do not trust. We also recommend verifying that the owner of the S3 bucket using the expected
+2064.27s - 2070.11s |  bucket owner header to ensure that the buckets that are used by your services are indeed
+2070.11s - 2075.57s |  under your account. It's very simple. You can just take each one of your buckets, the cloud
+2075.57s - 2080.81s |  formation, the glue, the EMR and the rest of them and for each region check that no one has
+2080.81s - 2085.77s |  claimed your bucket. It's a simple solution and it's great to check if you uh haven't been
+2085.77s - 2093.74s |  exploited. Sorry, this command. And um the expected bucket owner header is also valuable for
+2093.74s - 2102.25s |  open source projects as well to verify that no one has claimed the bucket. And lastly, name
+2102.25s - 2109.03s |  your S3 bucket with some kind of um a random number or a string. Make it the bucket name less
+2109.03s - 2118.41s |  predictable. So after everything we've demonstrated, do you still believe account ID is not a
+2118.41s - 2126.82s |  secret? Thank you. We have short time for questions and you're welcome to follow us on Twitter.
+2126.82s - 2138.86s |  Alright. Questions anyone? Alright. We can. So, so do I, do I policy to uh prevent a lot of these
+2161.17s - 2166.17s |  attacks? So you can use them. Uh as as I showed you before um the, sorry, the the uh the
+2171.48s - 2177.38s |  um. Thank you. So you should, we we showed you several ways. I think the the resource account
+2177.38s - 2183.66s |  condition should be fine to prevent all your roles and users that assuming this role from
+2183.66s - 2188.76s |  accessing buckets you do not trust. I mean for specific roles that need to access some kinds of
+2188.76s - 2193.76s |  buckets, you just, I mean by default I recommend adding these like section to making sure that
+2194.76s - 2199.76s |  the buckets you try to access or your services et cetera will not um access buckets that you do
+2204.00s - 2209.00s |  not own or maybe someone else owns. Right. Cause you might also delete the bucket and then
+2210.96s - 2216.94s |  someone can create it. So it's like a dangling resource as well. Alright. Yeah I think I'm gonna
+2216.94s - 2221.94s |  have to go back through and double check my. Thank you. My uh deny policies. Thanks.
+2221.94s - 2225.60s |  Alright. Thank you very much for attending.

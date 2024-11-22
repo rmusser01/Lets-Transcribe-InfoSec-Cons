@@ -1,0 +1,228 @@
+{
+  "webpage_url": "https://www.youtube.com/watch?v=dDFtkjYx0V8",
+  "title": "DEF CON 32 - Behind the Badge:How we used hardware to make AV badge - Adam Batori, Robert Pafford",
+  "description": "ADS-B aircraft tracking has long been done with Raspberry Pi\u2019s and SDRs. We set out to build our own receiver from the ground up, but without resorting to expensive and power-hungry SDR chips. Join us for a behind-the-scenes look as we walk through how we were able to (ab)use hardware to squeeze an entire Linux system, custom signal processing chain, and map visualizer into a chip that costs less than most microcontrollers.",
+  "channel_url": "https://www.youtube.com/channel/UC6Om9kAkl32dWlDSNlDS9Iw",
+  "duration": 1262,
+  "channel": "DEFCONConference",
+  "uploader": "DEFCONConference",
+  "upload_date": "20241016"
+}
+
+0.00s - 4.24s | This text was transcribed using whisper model: large-v2
+
+ All right. Thank you, everyone, for coming out. And apologies, there's a little delay,
+4.24s - 11.04s |  as happens with these things. But we're going to go pretty fast. We have a lot to go over,
+11.04s - 19.04s |  thanks in no part to our Silicon vendors, our supply chain, or DHL. But yeah, we're excited
+19.04s - 24.08s |  to talk about behind the badge and a little bit on how we use and abuse hardware to create the
+24.08s - 28.08s |  ADS-B receiver on a badge for the aerospace versions here. My name is Adam Latorre. This
+28.08s - 35.36s |  is Robert Bradford. And let's get into it. So we'll start off with some theory and some
+35.36s - 46.94s |  practice. But the theory of the badge is when, yeah, the idea we have for the badge is actually
+46.94s - 51.74s |  one that Aerospace Village has had kind of in the back pocket for a while, which is it wouldn't be
+52.38s - 58.38s |  super cool to do an ADS-B receiver on a badge, fully integrated and able to run without needing
+58.38s - 63.34s |  a network connection from a service like FlightAware or anything that feeds community
+63.34s - 69.90s |  crowdsource ADS-B. So for those of you that might not be aware, ADS-B, or Automatic Dependent
+69.90s - 76.46s |  Surveillance Broadcast, is a protocol. It's a type of signal that's a very important aspect
+76.46s - 81.66s |  of aviation safety. It is transmitted between airplanes, between ground stations, and in some
+81.66s - 89.58s |  cases even with satellites that can transmit a whole host of messages between different stations.
+90.14s - 94.22s |  The most relevant for us are things like call signs, flight numbers, AKO addresses,
+95.58s - 100.78s |  altitude, headings, so information about planes that you can see flying overhead.
+101.82s - 109.42s |  And while it's intended uses for safety and air traffic control, a common hobbyist and enthusiast
+109.58s - 115.82s |  case is it's just cool to be able to see a map of all the planes and aircraft around you overhead
+115.82s - 119.42s |  and be able to see what flight number it is, its heading, where it's going, flight plans.
+120.46s - 125.42s |  And ADS-B itself can exist over multiple types of data links, but when we say ADS-B,
+125.42s - 130.78s |  the most common physical medium that it's sent over is the MODIS downlink at 1090 megahertz.
+131.42s - 136.62s |  And if you want more information on ADS-B, what it's used for, talk to the Aerospace Village.
+137.50s - 142.86s |  But where we come in as like hardware design and badge designers is how do we actually,
+142.86s - 146.30s |  we have this signal, we know what we want to receive, but how do we actually implement and
+147.18s - 153.58s |  make a badge that can receive this signal? So the most common like enthusiast receivers
+153.58s - 159.50s |  utilize SDRs or software-defined radios like the RTL-SDR. And because this was designed a long time
+159.50s - 164.38s |  ago, the protocol and the modulation is actually fairly simple to demodulate and decode. It's
+164.94s - 169.34s |  on-off keyed, which is effectively digital amplitude modulation. It's either on or off.
+169.34s - 174.78s |  You're either getting RF or you are not on the 1090 megahertz. And the data bits themselves
+174.78s - 179.66s |  are Manchester encoded, meaning that the data exists in the transitions between 1 and 0 or 0
+179.66s - 187.82s |  and 1. Now to do this on a badge, if you want to do a so-called real SDR receiver, the chips that
+187.82s - 195.10s |  require for that is expensive. They are like very high-end RF chipsets and it's way too expensive
+195.10s - 201.50s |  to put on a badge. Think of something like a Hyper-RF, for example, as a proper SDR.
+202.46s - 210.30s |  The SDRs like the RTL-SDR uses a DVB-T, which is a digital terrestrial broadcast television.
+211.18s - 215.90s |  And they overdrive those chips to run faster than they're intended to, which lets you get
+215.90s - 221.74s |  into that 1090 megahertz band and then receive it and decode it in software. One of the issues that
+222.30s - 225.74s |  we found when we started looking to using one of these DVB-T tuner chips ourselves, though,
+225.74s - 232.70s |  is that they are very power hungry. They are very power hungry, especially when
+232.70s - 238.94s |  being overdriven to hit the 1090 megahertz band. And in addition to just getting really, really hot,
+238.94s - 244.38s |  the battery life of the badge would be next to zero. So we had to come up with a new way to do it.
+245.18s - 249.90s |  And the third major way of receiving ADS-B is the log amp architecture.
+249.90s - 255.34s |  This uses a very fast RF power level meter, which converts the logarithmic received RF power
+255.34s - 260.94s |  into a linear output voltage. And in this mode, it can act as an envelope detector
+262.30s - 270.06s |  when filtered with some very tight 1090 megahertz saw filters. So the way that the architecture,
+270.06s - 278.22s |  the receive chain works is that you get the entire RF spectrum coming in through your antenna
+278.22s - 283.58s |  that gets amplified and filtered and amplified and filtered again through very tight 1090 megahertz
+283.58s - 289.66s |  bandpass filters. So we can extract only the very specific slice of the spectrum that is centered at
+289.66s - 295.74s |  1090 megahertz. And then because the signal that we are trying to demodulate is just on and off,
+296.22s - 303.10s |  the RF power meter will let us know is it seeing no RF or is it seeing more RF. And that lets us
+303.10s - 313.18s |  turn the 1090 megahertz ADS-B packets in the air into a two megahertz baseband level output.
+314.46s - 321.90s |  And we actually used an amplifier and anti-aliasing filter chip from a composite video signal,
+322.70s - 330.06s |  from a composite video receiver, because it is very cheap. If you want to buy an eighth order
+330.06s - 335.74s |  Butterworth filter with multiple channels and power amplifiers and clamp diodes, well,
+335.74s - 341.58s |  analog devices would love to charge you a lot of money for that. But no one uses composite
+341.58s - 345.90s |  video anymore, right? But if you want this composite video amplifier with an eighth order
+345.90s - 351.98s |  Butterworth filter implemented into it and multiple chains and an amplifier, well,
+352.78s - 360.62s |  please take it. Who uses composite video? But the last step in this process is digitizing the
+360.62s - 366.86s |  signal itself. Again, the common way of doing it is to put it into a fast analog to digital
+366.86s - 374.78s |  converter, an ADC. But again, high performance RF intended ADCs are expensive. And
+375.98s - 379.34s |  when trying to optimize design, the best chip is no chip.
+382.14s - 386.78s |  So the SOC that we're using for the main Linux component of the badge is the Allwinner T113.
+386.78s - 391.26s |  It has dual Cortex-A7s, and we'll get into some more of the specs a little bit later.
+391.82s - 396.86s |  But it doesn't have any fast ADCs on board, at least nothing that's actually fast enough to
+396.86s - 403.34s |  demodulate ADS-B. Well, it is intended actually for automotive video applications.
+403.98s - 409.90s |  So it has multiple video inputs and outputs. And one of the supported video input modes is
+409.90s - 417.26s |  composite video. Well, if you know your composite video trivia, the baseband signal has frequency
+417.26s - 422.78s |  components that require at least a 27 mega sample ADC. And sure enough, if you look at the block
+422.78s - 431.18s |  diagram we have in our data sheet, it says that on the left side next to the PGA is an ADC block,
+431.18s - 440.32s |  because you must have a fast ADC to be able to digitize composite video. And it's a fast ADC,
+440.32s - 447.04s |  but if I actually go back, you can see the ADC is not isolated. It's wrapped inside a bunch of
+447.04s - 453.12s |  filters. You have the PGA, you have all the hardware blocks that are designed to demodulate
+453.12s - 458.72s |  composite video. So you don't get raw samples from the ADC, you get pixels basically. So it
+458.72s - 464.08s |  tries to find a lock, it tries to find H-sync, it tries to find V-sync. It has built-in filters to
+464.08s - 471.28s |  do color correction, which means that as it stands, it could not receive ADS-B, it couldn't actually
+472.16s - 475.68s |  get you samples because it would just always say, oh, I can't find a signal, I can't see a video
+475.68s - 482.32s |  signal, and just do nothing. But the ADC itself is in the silicon. And as we like to say, we paid
+482.32s - 487.44s |  for the whole silicon and we want to use the whole silicon. And well, we had to do some reverse
+487.44s - 493.44s |  engineering on how to be able to disable these filters. And we were able to discover certain
+493.44s - 500.40s |  undocumented registers, some undocumented registers in the all-owner chip itself that let you put it
+500.40s - 506.24s |  into this special manufacturing test mode. See, making fast ADCs, the reason it's expensive
+506.24s - 510.80s |  and isolation is that it's kind of hard to fabricate and then verify the harmonic performance
+510.80s - 517.12s |  of. So the silicon manufacturer will put in these modes that let you basically bypass out
+517.92s - 521.84s |  the actual video, the H-sync and V-sync blocks, because those would probably work,
+521.84s - 527.04s |  but the ADC itself can then be isolated in the special test mode, which can get you the true
+527.04s - 531.68s |  raw samples out. And then when you have the true raw samples, you can verify the performance.
+531.68s - 537.76s |  So that's exactly what we want to be able to abuse this as a standalone, straightforward ADC.
+538.96s - 545.76s |  And that's exactly what we did. We did some reverse engineering, we found the registers,
+545.76s - 551.84s |  and when we put it into this test mode, as you can see from the trace, that is pulled from a
+551.84s - 559.68s |  badge with the RF front end attached, that is the ADS-B preamble and the start of a data packet
+559.68s - 566.88s |  being received as raw samples from the onboard ADC. And actually, I will go back. You see the
+566.88s - 573.60s |  preamble pattern, the 101-101, and that's exactly what we're seeing on the output of our ADC.
+574.56s - 579.20s |  And this was our proof of concept to say that, okay, we can actually do this. We can get away
+579.20s - 585.60s |  with not using any external ADC or SDR chips or really anything intended to be used in this way,
+585.60s - 594.82s |  except like the saw filters, and do it fully integrated on just the core Linux SoC. Now,
+596.18s - 600.82s |  as I said, the specs of the badge itself, outside of just the RF, we are running full
+600.98s - 607.94s |  mainline Linux 6.6. We thought it'd be really cool to bring basically a Linux dev kit on a board.
+607.94s - 614.26s |  And since we have the power of our SoC to do the RF decoding, and we have to write a bunch of
+614.26s - 617.06s |  software to manage the Wi-Fi and everything, we're like, hey, instead of writing all the
+617.06s - 623.70s |  drivers ourselves, mainline Linux is out there, and it's great. Let's use it. Our display is a
+623.70s - 632.10s |  40 by 40 circular display, which we got custom manufactured for us. A lot of people actually
+632.10s - 638.42s |  thought it's like, it's not a smartwatch screen. We actually don't really know where it's from,
+638.42s - 644.58s |  but when our display manufacturer said, hey, guys, we have these cool, we have the circular
+644.58s - 648.90s |  displays you're talking about, and this 2.7-inch form factor, what do you think? We're like,
+648.90s - 653.46s |  this is perfect. It looks like a radarscope. It looks like an oscilloscope. Let's go.
+654.66s - 661.70s |  Outside of the ADC, on the core T113 SoC itself, we have the dual-core A7s running at 1.2 gigahertz
+661.70s - 668.82s |  each, and that's the application processor cluster that is running Linux. And then another bonus
+668.82s - 674.66s |  that we got on our silicon is the HiFi4 DSP, which we'll talk about a little bit more in a few
+674.66s - 681.78s |  slides, but that's a DSP core that's designed to be an audio coprocessor that we are, again,
+682.02s - 686.50s |  reprogramming outside the manufacturer's use case to actually do the demodulation,
+686.50s - 695.22s |  Manchester decode, and ADS-B bit slicing. In the package, we have embedded 128 megs of DDR3
+695.22s - 702.58s |  SD-RAM, 8 gigabytes of eMMC onboard storage, and some other RF implementations. We have GPS
+702.58s - 708.18s |  and Wi-Fi, because why not? We're already going all out. We're already doing full custom RF and
+709.06s - 713.46s |  printed PCB antennas. Let's go for broke. Let's add GPS. Let's add Wi-Fi.
+715.46s - 717.54s |  So, that's all in theory.
+718.98s - 722.50s |  Before that, I think there's a badge giveaway that's going to...
+722.50s - 724.90s |  No, it's okay. I'll keep going.
+724.90s - 725.70s |  Okay, okay.
+727.78s - 732.66s |  So, now this is all what we had in theory. This is what came up with the designs,
+732.66s - 736.98s |  and then we get it manufactured by our manufacturer, and then they come back,
+736.98s - 740.34s |  and now we actually get to implement it, and go through all the crazy
+741.46s - 745.30s |  systems, and actually do the reverse engineering, and make sure that we can actually get this ADS-B
+745.30s - 750.90s |  receiver running inside of this badge. So, you'd think the most challenging part of this whole
+750.90s - 757.06s |  design process would be the fully custom ADS-B receiver running with an ADC in an undocumented
+757.06s - 761.70s |  test mode, and then piping it into an audio DSP, which was never designed with the goal of actually
+761.70s - 769.14s |  doing ADS-B decoding. But that was actually the easiest part. The RF, Adam being a mad lad,
+769.14s - 775.22s |  made a full zero to tri-band microwave RF in just four months. This is his first RF project.
+778.74s - 783.14s |  And then the TV decoder code, we got it working after a night of debugging, and we actually had
+783.14s - 788.66s |  a cool oscilloscope mode that we could actually read directly from the ADC in, and get it plotted
+788.66s - 794.26s |  on our screen. And then we got the DSP code execution in a week, and then after that we did
+794.26s - 798.74s |  a week for Linux kernel dev, and then a week for algorithms, and we got ADS-B. That was the easy
+798.74s - 804.10s |  part. It was everything else that should have just worked that didn't, mainly which, if any of you
+804.10s - 809.06s |  guys have ever worked with USB-C before, can probably understand why it's USB-C. And then,
+809.06s - 814.66s |  of course, the AXP2585 battery management chip, which we will go into more detail later about the
+814.66s - 821.46s |  whole experience with that. So, before we get into the more challenging parts, here's a quick
+821.46s - 830.50s |  guide on running code on your HiFi4 DSP. So, the Allwinner T113, it has a HiFi4 DSP, and they
+830.50s - 834.34s |  advertise it as, oh, you have a third core. But what they don't tell you is that they only give
+834.34s - 838.98s |  you the firmware as like a blob that gets loaded in, and it's only for audio processing, because
+838.98s - 843.86s |  it has an audio out, and it does all the codecs with that. And the mainline kernel doesn't even
+844.82s - 851.78s |  touch the DSP. But it is its own CPU core. It can be programmed, and if you find the right resources,
+851.78s - 857.22s |  you can actually program it. Because we're doing all of these ADS-B processing, we want to try and
+857.22s - 861.22s |  get the maximum performance to get as high speed out as possible, so we can increase the sample
+861.22s - 866.58s |  rate and have better performance. So, we wanted to do the full SIMD vectorization, and actually
+866.58s - 872.34s |  use the real HiFi4 toolchain from the vendor, rather than using a lot of the open source ones
+872.34s - 879.14s |  you might find with ESP32 running with GCC. So, if you find the Extensa toolchain, which needs to,
+879.70s - 883.46s |  then you need to, you get the Extensa toolchain and compiler with the vendor tools,
+883.46s - 888.90s |  but you also need to actually get the custom vendor IP block, which was used to generate that
+888.90s - 894.34s |  exact silicon. The great part about HiFi4 is it can be exactly customized to the exact chip you
+894.34s - 899.46s |  want to build. So, if you want to have all of these advanced vector units, you can add them in. If not,
+899.46s - 903.30s |  you can remove them. You can have however many registers you want, and it's all configurable to
+903.30s - 907.46s |  the silicon vendor, but that means that the compiler needs to know what it has available,
+907.46s - 912.18s |  and the way they do that is a full blob, which has full Verilog for the chip that actually gets
+912.18s - 917.14s |  produced, as just a giant zip file, and you load it all into the toolchain, and it figures out how
+917.14s - 921.94s |  to program for your chip. So, once you find that, then you have to compare that with the exact
+921.94s - 927.62s |  version of the Extensa toolchain that it was built with, and then you have to locate all the drivers
+927.62s - 931.78s |  from Allwinner, and source them, and gather them up to actually do the interrupt controller, timers,
+931.78s - 936.26s |  and mailbox, and then you just download the FreeRTOS port from GitHub, and you combine them
+936.26s - 940.26s |  all together, and you can actually get one of the most stable development environments we've had on
+940.26s - 945.30s |  this entire badge, where you just run Extensa Explorer, and it just works. So, that's kind of
+945.30s - 953.94s |  the process for getting DSP. And now, actually, for Linux on the badge, we are, again, we mentioned
+953.94s - 958.58s |  we're using mainline Linux, and that actually drastically sped up the dev time, where you don't
+958.58s - 963.86s |  have to do, a lot of the drivers came pre-baked, you just have to configure them correctly. It just
+963.86s - 969.06s |  works, but you have to figure out how to configure it, so a lot of the time, it's finding magical
+969.06s - 973.86s |  incantations and device trees that you forget to set, that cause it to panic, all of that, and then
+973.86s - 977.54s |  if you put all the things together, and you figure out that it should be working, but it's not,
+977.54s - 981.22s |  then it's a bug, and then you spend three weeks doing advanced kernel debugging, figuring out why
+981.22s - 987.70s |  your display is not working. Speaking of which, display trivia. Take a guess, which of these four
+987.70s - 991.86s |  options caused the artifacting of the clock being messed up, you have too large of a back porch,
+992.74s - 996.82s |  there's an unknown silicon bug that only happens when the Linux driver sets an undocumented bit,
+996.82s - 1001.46s |  which just happens to exist in a sister chip, but is not on our system on chip,
+1001.46s - 1004.82s |  or the display controller registers were initialized in the wrong order,
+1004.82s - 1010.98s |  but they never tell you the right order. The answer is E, you didn't seat the cable properly
+1010.98s - 1015.22s |  when you're trying to solve all the other previous ones, and you're trying to debug the issue above.
+1016.10s - 1022.90s |  This is the silicon bug. So this was just a fun thing, and we spent three weeks trying to solve
+1022.90s - 1027.46s |  this silicon bug right here, where actually the display would turn green, and it was because
+1027.46s - 1032.98s |  they were setting some, the driver for the sister chip had a bit which they were setting, but it
+1032.98s - 1038.66s |  caused this chip to glitch in a weird way, causing the MSB of that green channel to be set high,
+1039.22s - 1044.02s |  but it only occurred on this one, and you have to go through all 10,000 lines of the display driver
+1044.02s - 1048.58s |  and find the exact line you have to comment out which caused the display not to turn green.
+1048.58s - 1051.06s |  But if you do that, then you have a working screen.
+1053.94s - 1061.22s |  So here's a continuation of the meme. The AXV2585 has been the thing that has been battling us and
+1061.22s - 1069.06s |  fighting us for the entire badge. So this chip, it's just a USB-C negotiator, battery charger,
+1069.06s - 1072.82s |  BME, all-in-one. It's actually a very unique chip, because there's not that many that do
+1072.82s - 1076.10s |  all of these. A lot of the time, you have to get several chips and stitch them together.
+1076.66s - 1083.94s |  So there's no firmware. It's not like some embedded 8051 core or all that. It's just
+1083.94s - 1089.70s |  basic I2C registers you need to configure. How difficult could it be to program? It's just flip
+1089.70s - 1097.54s |  flops, right? There were several bugs that we found in the AXV2585, and all of them battled
+1097.54s - 1101.78s |  us throughout development. From the first bring up, we've had battery detection, which says it
+1101.78s - 1106.74s |  should try and detect if there's a battery and not try and charge it if it doesn't see one. But they
+1106.74s - 1110.74s |  say it should always try and do that by default, but all of the chips we get actually are cleared,
+1110.74s - 1115.14s |  and they assume a battery is present, causing weird instability until you program it in the
+1115.14s - 1119.94s |  bootloader and in Linux. There's also fun things where if you get power or any sort of hardware
+1119.94s - 1125.62s |  glitches, it causes very undefined results in the silicon, where certain registers stop working or
+1125.62s - 1131.22s |  things stop writing. There's also the joys of USB Type-C, where we learned that if you plug it into
+1131.22s - 1135.78s |  certain model MacBooks, instead of the MacBook charging the badge, the badge will try to charge
+1135.78s - 1142.58s |  the MacBook, which does not work. There's also the biggest thing that actually delayed us a lot
+1142.58s - 1146.90s |  right at DEF CON when we were trying to solve this, and we spent a big part of the time when
+1146.90s - 1152.02s |  we were trying to get things ready, trying to debug why the actual IRQ pin to interrupt the
+1152.02s - 1158.02s |  Linux kernel and say data is available, actually not being going low. And this was all due to a
+1158.02s - 1162.74s |  certain manufacturing issue. It was not actually a bug in the chip or a configuration issue,
+1162.74s - 1168.42s |  but one of the pins was not soldered correctly by the board manufacturer. It passed all visual
+1168.42s - 1173.22s |  inspection, but one of the ground pins was not soldered well enough, and it got just enough of
+1173.22s - 1179.06s |  a ground pin connection through the other ground pad that it worked enough, but not enough to have
+1179.06s - 1184.82s |  a bunch of weird glitches and voltage dropping out and weird chip instability. So we have probably
+1184.82s - 1191.78s |  this AXP2585. It's a great chip for the cost and everything, but the true cost for this chip is
+1191.78s - 1197.86s |  really in the development hours of all these bugs trying to solve the USB-C issues and bring up and
+1197.86s - 1202.58s |  try and figure out why the chip isn't booting. But if we wrangled it enough to actually get the
+1202.58s - 1207.30s |  badge running and we have a stable system, just make sure you have a battery in when booting up
+1207.30s - 1214.50s |  because BMU gremlins will come up without it because of instabilities. So yeah, that's it.
+1216.02s - 1218.02s |  So yeah. All right.
+1223.94s - 1226.90s |  All right. So yeah, thank you so much for joining us for this overview. I know it's
+1227.86s - 1232.98s |  as you could see, we've been battling gremlins for untold amount of time. So everything is a
+1232.98s - 1239.14s |  little bit rushed, but we have zero minutes. So if you have any questions, we will be more than
+1239.14s - 1244.66s |  happy to chat after either here at the village. Basically, you can come find us. We'd love to chat
+1244.66s - 1252.98s |  some more. And yeah, if you have a badge out there, tag us on the Aerospace Village Twitter.
+1252.98s - 1261.46s |  We'd love to see where they travel to and what planes are picking up. And with that, thank you.

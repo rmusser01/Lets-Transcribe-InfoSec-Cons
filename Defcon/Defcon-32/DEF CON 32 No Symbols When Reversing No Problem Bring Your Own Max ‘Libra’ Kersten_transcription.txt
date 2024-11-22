@@ -1,0 +1,265 @@
+{
+  "webpage_url": "https://www.youtube.com/watch?v=-re_QOQoILY",
+  "title": "DEF CON 32   No Symbols When Reversing No Problem Bring Your Own   Max \u2018Libra\u2019 Kersten",
+  "description": "We all know it all too well: that ominous feeling when opening an unknown file in your favorite analysis tool, only to be greeted with hundreds or thousands of unknown functions, none of which are matched by your existing function signatures, nor any of your helper scripts. This makes the analysis a painfully slow and tedious process. Additionally, it sometimes means that the required analysis time exceeds the available time, and another file is chosen to be reversed instead. Especially when dealing with malware, this is an undesired scenario, as it would create a blind spot from a blue team\u2019s perspective.\n\nThe goal of this talk is to share a tried and tested method on how to deal with thousands of unknown functions in a given file, significantly decreasing the time spent on the analysis. The example throughout the talk is the Golang based qBit family, but is applicable to any kind of binary. While this talk focuses on using Ghidra, given its free and open-source nature, it is equally possible with other industry standard tools. The focus will be on scripts, as well as the creation and usage of FunctionID and BSim databases. By combining these, you will be able to create your own symbols, and bring them anywhere you go, for any language of choice.\n\nWhile the symbols are portable, an aggregation of them scales very well over any number of analysts. As such, this methodology works well for individual researchers, but when scaling it for a team of researchers, the outcome will be greater than the sum of its parts.\n\nThis talk will use (malicious) Golang binaries as examples and provide a large dataset of symbols for this language. The scripts, as well as FunctionID and BSim databases, mentioned in this talk will all be made publicly available at the time of this talk.",
+  "channel_url": "https://www.youtube.com/channel/UC6Om9kAkl32dWlDSNlDS9Iw",
+  "duration": 1312,
+  "channel": "DEFCONConference",
+  "uploader": "DEFCONConference",
+  "upload_date": "20241016"
+}
+
+0.27s - 9.27s | This text was transcribed using whisper model: large-v2
+
+ So it's 20 minutes, there's a lot of information, there's links in the slides at the end for, well, the whole version.
+9.27s - 11.27s |  Thank you all for coming.
+11.27s - 19.27s |  Table of contents for today, we'll be looking at Ghidra and some related info to that, mostly.
+19.27s - 24.27s |  So first I'll introduce myself, and then I'll give you some background information.
+24.27s - 29.27s |  We'll go a bit more into the nitty-gritty details, and I want to end a bit with the methodology.
+29.27s - 32.27s |  And then, in the end, there might be time for Q&A.
+32.27s - 38.27s |  If not, find me afterwards, or run to a microphone if there is time.
+38.27s - 41.27s |  So my name is Max Gersta, I go by the nickname of Libra.
+41.27s - 44.27s |  I work for Trellix within the advanced research team.
+44.27s - 48.27s |  We do research into all kinds of malware-related things.
+48.27s - 53.27s |  That can be something new, can be a trend, can be anything that piques interest.
+53.27s - 60.27s |  And one of the things we do is outreach and share that with the community, such as, well, here.
+60.27s - 68.27s |  Now, the talk itself is about symbols, or rather the lack thereof in binaries, and how to recover them.
+68.27s - 72.27s |  But before diving into that, I want to share a bit what is a symbol.
+72.27s - 76.27s |  And this slide should show you exactly what it's not.
+76.27s - 81.27s |  So a symbol is normally the function name from a reversing perspective.
+81.27s - 88.27s |  And normally, when you have symbols, they should be recognizable, they should be self-explanatory, and they should be unambiguous.
+88.27s - 95.27s |  Unlike the symbols I used here, this would be more useful for you to recognize something with.
+95.27s - 101.35s |  So binaries consist of multiple types of code.
+101.35s - 108.35s |  Now, this is no official definition, but it's more to what I adhere to, and it will make more sense down the road.
+108.35s - 117.35s |  So in terms of types of code, I'm going to be making a difference between the runtime, libraries, and user code.
+117.35s - 120.35s |  Now, there are some gray areas in between.
+120.35s - 123.35s |  It obviously has room for discussion.
+123.35s - 130.35s |  But in this case, the purpose is mainly to focus on the big aspects that they each have.
+130.35s - 135.35s |  So for runtime, I'm going to use Golang as an example.
+135.35s - 140.35s |  The runtime is statically compiled within your binary, or at least the part that you use.
+140.35s - 149.35s |  Meaning that if you have 10 different Golang binaries of the same Golang version, you will have a lot of overlap of code.
+149.35s - 156.35s |  Now, that's not to say that those 10 binaries are related to each other, other than the fact that they share the same Golang runtime.
+156.35s - 164.35s |  But if you have zero functions or function names within your binary, it's kind of hard to find out what the function does.
+164.35s - 167.35s |  Even though your tools might say there's overlap.
+167.35s - 172.35s |  Now, the same kind of goes for the libraries, but libraries might give you more of an indication.
+172.35s - 180.35s |  If you're searching for a specific version of a library, or if you're tracking a piece of malware based on the library that they use,
+180.35s - 188.35s |  you might be very interested in the library, but to do so, you would need to know where to find it and what libraries include it.
+188.35s - 191.35s |  And then as a last part, we have the user code.
+191.35s - 194.35s |  And the user code would be anything that the user writes.
+194.35s - 202.35s |  So the user code generally calls functions within the runtime and the library, or consists of purely user code itself.
+202.35s - 213.35s |  So you make a minimalistic C binary and you use no external software, then your binary will be very small and you'll just have your user code.
+213.35s - 219.35s |  Now, the user code is obviously of interest from my perspective as a malware researcher,
+219.35s - 227.35s |  because if I can find that in other binaries, it will tell me that this is likely a shared piece of code.
+227.35s - 234.35s |  And the user code is generally relatively unique to the extent that we can say these binaries overlap.
+234.35s - 242.35s |  So to recover symbols, we have multiple ways and three of them are what I'm going to be focusing on.
+242.35s - 247.35s |  So you have metadata in your binaries that you might be able to use.
+247.35s - 254.35s |  Golang is another great example of this, where you have the PCLN tab and the information within, so you can recover the function names.
+254.35s - 257.35s |  Obviously, using this is of great benefit.
+257.35s - 259.35s |  However, not all binaries have this.
+259.35s - 264.35s |  Say you have a stripped C++ binary, you're going to have a hard time, right?
+264.35s - 269.35s |  Now, Ghidra has two features that you can use to recover symbols.
+270.35s - 273.35s |  One is specifically made for this, which is function ID.
+273.35s - 278.35s |  For those using IDA, that would be flirt signatures, but then Ghidra is equivalent.
+278.35s - 282.35s |  And it has a hash of a function and a function name.
+282.35s - 288.35s |  So it hashes your function, cutting some corners here, but the gist of it is that you have a hash,
+288.35s - 295.35s |  and if the hash is found in another place, you can compare the hash and take the name from the mapping that you already have.
+295.35s - 299.35s |  Now, and then there's bsim, which stands for behavioral similarity.
+299.35s - 305.35s |  This was recently released by the NSA, recently being the day before last Christmas.
+305.35s - 312.35s |  And what you can do is you have the decompiler, produces intermediate language called p-code,
+312.35s - 317.35s |  and based on the high p-code vectors and some other things are calculated,
+317.35s - 321.35s |  based on which you can find functions that overlap code.
+321.35s - 331.35s |  Within Ghidra, you have the advantage that you have the decompiler of your match and of your original function side by side.
+331.35s - 336.35s |  So say you're patch diffing a file, you can very nicely see the differences.
+338.35s - 343.35s |  In order to do that, you do need to retain access to the Ghidra project and the files therein,
+343.35s - 349.35s |  which you're using, or where the match is found, as well as your program that you're analyzing.
+350.35s - 356.35s |  The script I have is kind of shoehorning that, where we do not use the last part,
+356.35s - 362.35s |  meaning we have less data required, and we can also automate the process,
+362.35s - 365.35s |  because in the end it's code that you can use for this.
+366.35s - 373.35s |  So, for the function ID databases, I wrote a script that you can automate.
+373.35s - 378.35s |  First the ingestion, you can run Ghidra headless to just import your files,
+378.35s - 385.35s |  and then this script will make for each unique architecture and what Ghidra calls a language ID,
+385.35s - 389.35s |  it will make a different function ID database that you can use later on.
+389.35s - 397.35s |  Now a language ID, very briefly put, is a PE file, 32 bits, for Windows for a specific compiler,
+397.35s - 399.35s |  and then we do that for each.
+399.35s - 405.35s |  This allows you to have the files that you can share with colleagues, either internally or externally.
+406.35s - 409.35s |  And this is the quickest way of recovering the symbols.
+410.35s - 416.95s |  So as a case study, I have a Qubit Stealer sample, which is Golang-based,
+416.95s - 422.95s |  and it has a lot of functions, but it has no real names, and we'll get more statistics on this in a bit.
+422.95s - 430.95s |  But just to showcase function ID, the first top screenshot is a screenshot that is post-default analysis from Ghidra.
+431.95s - 437.95s |  So it just has fun underscore, which is the equivalent in IDA of saying sub underscore.
+437.95s - 440.95s |  So these are just functions that have no names.
+440.95s - 445.95s |  Now in the bottom screenshot, we can see that the P256 subinternal function has been recognized
+445.95s - 449.95s |  and subsequently been renamed, which saves you time as the analyst.
+449.95s - 456.95s |  This is part of your default analysis, because the function ID is an analyzer which runs within.
+456.95s - 464.95s |  For the sake here, I first ran it without the function ID library, which contains these functions, and then the one after.
+464.95s - 471.87s |  So for bsim, I already mentioned it's a bit shoehorned, because we're not going to be using the GUI to do this,
+471.87s - 476.87s |  and we're also not relying on the fact that you need access to the Ghidra projects,
+476.87s - 480.87s |  meaning that if I make a bsim database and I give it to you,
+480.87s - 483.87s |  then you can still use those databases with this script,
+483.87s - 490.87s |  even though you do not have access to the Ghidra project and the files therein, which I used to create it.
+490.87s - 499.87s |  So these are, along with function ID databases and some more information, all available on GitHub afterwards.
+499.87s - 508.87s |  So it's not necessarily using bsim as intended, but since the screenshot on top is relatively readable, I think, on screen,
+508.87s - 516.87s |  you can see that it has a function name, which is within the fdesc function description XML object,
+516.87s - 521.87s |  and within there you can see that there are some vectors and calls being made to other functions,
+521.87s - 525.87s |  which is what bsim uses to identify this.
+525.87s - 531.87s |  The fact that you can automate this doesn't mean it's fully magically working for you.
+531.87s - 536.87s |  You still need to specify what your threshold is for the similarity,
+536.87s - 541.87s |  which is a value between zero, meaning no overlap, and one being an exact match.
+541.87s - 552.87s |  You also need to specify how many results do you want from the bsim database to match or to be collected for use.
+552.87s - 557.87s |  So you can do one, meaning if you have the first match it finds, it will say, oh, it's this.
+557.87s - 565.87s |  But especially if you're not relying on an exact match, but rather say 75% or more of overlap,
+565.87s - 569.87s |  you might be interested in what other functions might be matching as well.
+569.87s - 576.87s |  Now, obviously, if all those functions have the exact same name, it's pretty clear that based on the database that you use,
+576.87s - 578.87s |  there's only one match.
+578.87s - 584.87s |  But you can also have the case that you have multiple functions, different names that match,
+584.87s - 587.87s |  which requires you to do a bit more research.
+587.87s - 594.18s |  To automate this in the script, you have identical matches.
+594.18s - 596.18s |  So these are renamed as is, right?
+596.18s - 602.18s |  Identical meaning there's only one name matched, even if you have multiple functions.
+602.18s - 609.18s |  The information, the metadata that's still available in the signatures is added to that function within Kedra,
+609.18s - 616.18s |  and it will show you the original file, the similarity for the match based on the function you're looking at,
+616.18s - 623.18s |  the significance, which tends to be based on your function size, and the architecture, right?
+623.18s - 628.18s |  It should only match the architecture that you have, though bsim has specifics.
+628.18s - 637.18s |  So since it's based on a decompiler, you can make databases that are known specifically for the bitness of your architecture.
+637.18s - 643.18s |  So say you have a Intel-based binary, one 32-bit version and one 64-bit version,
+643.18s - 646.18s |  the size of an integer, for example, is different, right?
+646.18s - 648.18s |  It's four versus eight bytes.
+648.18s - 654.18s |  What you can tell bsim to do when making or importing the signatures in a database
+654.18s - 659.18s |  is you can give it a no-size database, meaning that it will ignore certain values
+660.18s - 667.18s |  and allow you to find matches of code from a 64-bit binary in a 32-bit binary or vice versa.
+667.18s - 674.71s |  So the information here will allow you to more accurately decide if this matches,
+674.71s - 681.71s |  and given the original file name, right, this says empty project go 1.9, for example,
+681.71s - 683.71s |  and you can see 1.14, 1.13.
+683.71s - 688.71s |  So these are the Go versions where this function was also found in when making signatures.
+688.71s - 692.71s |  So this gives you an indication as to which Golang version it might be,
+692.71s - 697.71s |  and it will also tell you it's a Golang function on its own.
+697.71s - 703.71s |  Now, obviously, the original file name is based on what you use as a file name in GDRA when making the signatures.
+703.71s - 706.71s |  So if you give it useful names, that's great.
+706.71s - 712.15s |  If not, then it might not be as great.
+712.15s - 716.15s |  Having said that, there's also a generic match, right, because we want to automate this.
+716.15s - 722.15s |  You can have functions with thousands of, well, unknown functions within your binary.
+722.15s - 728.15s |  So there's also what I call a generic match, meaning there is more than one unique name
+728.15s - 731.15s |  that has been returned from the database.
+731.15s - 736.15s |  Now, not renaming these at all will not help you, right,
+736.15s - 740.15s |  because you can make these databases for very specific purposes.
+740.15s - 744.15s |  Say, right, this is my database for the Golang runtime.
+744.15s - 750.15s |  Then any match that I have based on my similarity threshold
+750.15s - 756.15s |  will be Golang runtime related, or at least be very likely to be related to it.
+756.15s - 763.15s |  So in this case, we have two functions, and we can see that the package name within Golang
+763.15s - 768.15s |  has changed over time, yet the function name itself is the same.
+768.15s - 772.15s |  Now, obviously, we could add a lot more logic as to how do we identify this between strings,
+772.15s - 778.15s |  but that is a future work, but also kind of depends on what you're using, right?
+778.15s - 782.15s |  If it's multiple versions of the same runtime, that works, but maybe you have a database
+782.15s - 785.15s |  where you put in not only Golang, but a lot more.
+785.15s - 788.15s |  It gets a lot harder to do the differentiation.
+788.15s - 795.15s |  So instead, I opted to rename all those functions that match generically with a prefix,
+795.15s - 801.15s |  and you can provide this prefix when running the script headless so that any match is then renamed.
+801.15s - 806.15s |  And if you run it over multiple databases, so the script, unless you change it,
+806.15s - 813.15s |  uses only one database at a time, what you can do is simply provide the prefix,
+813.15s - 817.15s |  and any function that has the non-default function naming scheme
+817.15s - 820.15s |  is not included in subsequent runs.
+820.15s - 825.15s |  So if a function starts with fun underscore or thunk underscore fun underscore,
+825.15s - 827.15s |  it's included in the search.
+827.15s - 833.15s |  However, if you have this function right now, it's Golang underscore whatever.
+833.15s - 839.15s |  If I now run it on another database I have for bsim,
+839.15s - 842.15s |  then this function is not going to be included anymore.
+842.15s - 848.15s |  So your subsequent runs will A, be faster, but also likely more accurate
+848.15s - 853.15s |  depending on the order you run it in and how you structure your databases.
+853.15s - 859.15s |  So to continue with our case study, we have the top screenshot, which is after function ID.
+859.15s - 863.15s |  And I would recommend you first run function ID because it's faster
+863.15s - 867.15s |  and it is designed literally for this purpose.
+867.15s - 872.15s |  And bsim is a bit misused for this purpose, yet it works.
+872.15s - 876.15s |  And then we see in the bottom one, we see that the different functions
+876.15s - 879.15s |  are now renamed to Golang underscore.
+879.15s - 882.15s |  So these are all generic matches.
+882.15s - 886.15s |  Now looking at this function, and it's a bit of a spoiler alert,
+886.15s - 890.15s |  it is just a function within the Golang runtime that I used as an example.
+890.15s - 899.15s |  But you would also guess that it is given that there's only calls to the Golang runtime within.
+899.15s - 902.15s |  So aside from making these scripts,
+902.15s - 907.15s |  I decided that making this invoke would A, be a good test case,
+907.15s - 911.15s |  but it would also save CPU cycles for others as soon as we share this.
+911.15s - 916.15s |  So I downloaded hundreds of gigabytes of benign binaries,
+916.15s - 921.15s |  mostly runtimes and libraries, compiled them if need be.
+921.15s - 928.15s |  And I ended up with 117 gigabytes of signatures for bsim.
+928.15s - 933.15s |  And the data doesn't necessarily say much,
+933.15s - 937.15s |  but there's not a lot of exact details I have for the bsim part.
+937.15s - 942.15s |  I do, however, for function ID, because you get a lot of detailed information in return.
+942.15s - 947.15s |  So 60% is Golang based as to what I created.
+947.15s - 951.15s |  And then we have 35 related to Boost, right, the C++ library,
+951.15s - 954.15s |  which contains a lot and it's used a lot.
+954.15s - 957.15s |  And then there's other. Now, what is other?
+957.15s - 959.15s |  You might ask the 5%.
+959.15s - 964.15s |  So here I have the signature generation with the unique number of signatures within each.
+965.15s - 969.15s |  So for Golang, that was any runtime available that I had at the time.
+969.15s - 973.15s |  For Boost, it's roughly the last 10 years of Boost.
+973.15s - 978.15s |  And then we have say libXML, openSSL, libgcrypt and other libraries that are used.
+978.15s - 982.15s |  Now, depending on how big they are, you have more or less functions.
+982.15s - 986.15s |  But overall, this is, well, I would say a decent amount of functions
+986.15s - 991.15s |  that now you don't have to reverse or make signatures for anymore.
+991.15s - 994.15s |  So to put that in a broader perspective for the qubit stealer,
+994.15s - 999.15s |  when you do the default KEDA analysis, it will find 2016 functions
+999.15s - 1003.15s |  out of which one has a name, right, the entry function.
+1003.15s - 1006.15s |  If we then run function ID, one function is merged, right?
+1006.15s - 1012.15s |  So we go, the total goes down one, but we recover about 40% of the function names.
+1012.15s - 1020.15s |  If we then use bsim with a 75%, right, 0.75 threshold for similarity,
+1020.15s - 1025.15s |  we recover another 16%, leaving us at 58.
+1025.15s - 1029.15s |  Now, that doesn't necessarily sound too much. So why is that?
+1029.15s - 1036.15s |  Now, we had access to the qubit stealer source code and it imports a library
+1036.15s - 1040.15s |  and there's no signatures for Golang libraries in this corpus.
+1040.15s - 1046.15s |  So if you make this, you will have even more matches.
+1046.15s - 1054.15s |  So as a methodology, I would suggest you use, feedback is obviously welcome,
+1054.15s - 1057.15s |  that you identify metadata within the binary if you can.
+1057.15s - 1061.15s |  You can utilize that if you find it.
+1061.15s - 1065.15s |  You want to identify the runtimes and libraries used within your binary.
+1065.15s - 1069.15s |  You might need to make signatures for them if you don't have them yet, right?
+1069.15s - 1072.15s |  Maybe you identified something, so you first make the signatures,
+1072.15s - 1075.15s |  you apply them, and you do that process both for function ID
+1075.15s - 1077.15s |  and for the behavior signatures.
+1077.15s - 1081.15s |  Once that's done, you can have any other further logic that you can use, right?
+1081.15s - 1084.15s |  A lot of people are using LLMs to help rename functions
+1084.15s - 1088.15s |  without looking at them necessarily, so you can apply more scripts.
+1088.15s - 1093.15s |  And you can all do this from importing a binary, running function ID, bsim,
+1093.15s - 1098.15s |  and your other logic within the headless execution.
+1098.15s - 1100.15s |  So essentially, you can do that at night.
+1100.15s - 1103.15s |  When you wake up, everything is ready for you to analyze.
+1103.15s - 1107.82s |  That leaves room for questions.
+1107.82s - 1109.82s |  There's two minutes left.
+1109.82s - 1113.82s |  Either ask them now or find me offstage.
+1113.82s - 1117.82s |  The GitHub link here, I will activate them after the talk,
+1117.82s - 1121.82s |  has the Github scripts for this talk that I created.
+1121.82s - 1125.82s |  It has function ID databases, and it has the bsim databases.
+1125.82s - 1130.82s |  Additionally, there is about 66 gigabytes of Golang binaries.
+1130.82s - 1134.82s |  It's an empty main function and contains the entire runtime of that version.
+1134.82s - 1137.82s |  And if you want to make signatures, play around with them,
+1137.82s - 1140.82s |  then feel very much free to as well.
+1140.82s - 1143.82s |  So the URL is at the top,
+1143.82s - 1146.82s |  and then you have the slash for each of the suboptions,
+1146.82s - 1149.82s |  or just go there and find the repositories.
+1149.82s - 1173.83s |  Thank you very much.
+1173.83s - 1175.83s |  You have a microphone in the front.
+1175.83s - 1187.25s |  All right, if you just shout, I'll repeat the question.
+1187.25s - 1200.40s |  So the question is, how good is bsim when matching functions compiled with different compilers?
+1200.40s - 1202.40s |  I haven't tested this myself.
+1202.40s - 1207.40s |  It's a relatively new feature within Kedra.
+1207.40s - 1212.40s |  I think it does relatively well because it uses the decompiler,
+1212.40s - 1215.40s |  so some of the abstractions are moved away.
+1215.40s - 1225.75s |  And I think it also depends if Kedra knows the used calling conventions and such.
+1225.75s - 1230.75s |  So in a similar vein, how do you deal with different compiler options?
+1230.75s - 1235.75s |  Things like F function sections, all the moving symbols around.
+1235.75s - 1239.75s |  What of those kind of break this process?
+1239.75s - 1242.75s |  Yes and no.
+1242.75s - 1246.75s |  It's the standard engineering answer, right?
+1246.75s - 1247.75s |  It depends.
+1247.75s - 1253.75s |  So if you say use an unoptimized compiler run versus a very optimized,
+1253.75s - 1258.75s |  you will have differences in code, meaning there's differences within the signatures as well.
+1258.75s - 1262.75s |  For bsim, it might break it because it does match certain things,
+1262.75s - 1268.75s |  but if the match isn't matching well enough, it will not find a hit.
+1268.75s - 1272.75s |  For bsim, you can tweak how much it should look alike.
+1272.75s - 1279.75s |  So if you are aware that something specific is used and you have a database for this, it might help.
+1279.75s - 1283.75s |  But if it changed too much, then you need to lower your threshold too much
+1283.75s - 1287.75s |  and you will probably get too many hits to make sense of it.
+1287.75s - 1294.75s |  So I think the best option is to compile the target libraries in all options
+1294.75s - 1298.75s |  and then make signatures for all, which is obviously a lot more work.
+1298.75s - 1303.75s |  But I think that is the most accurate option that you have.
+1303.75s - 1308.27s |  Thank you.
+1308.27s - 1310.27s |  All right. Thank you very much.

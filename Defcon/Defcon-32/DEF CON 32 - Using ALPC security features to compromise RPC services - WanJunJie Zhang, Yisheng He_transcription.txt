@@ -1,0 +1,655 @@
+{
+  "webpage_url": "https://www.youtube.com/watch?v=Eyl_0YxfnpQ",
+  "title": "DEF CON 32 - Using ALPC security features to compromise RPC services - WanJunJie Zhang, Yisheng He",
+  "description": "Advanced Local Procedure Call (ALPC) is an Inter Process Communication method in the Windows kernel. In the past few years, Windows ALPC and RPC vulnerabilities have emerged in an endless stream. These vulnerabilities are mainly based on TOCTOU file operations, memory corruption vulnerabilities in RPC services and ALPC syscalls in ntoskrnl.\n\nWindows kernel provides a variety of security measures to ensure that the data and context accepted by the ALPC and RPC servers are safe. We noticed the attack surface in the security mechanism of the ALPC kernel, and we found a security flaw in this mechanism (magic) and successfully obtained the system privilege from unauthorized users (defeating magic by magic).\n\nIn this talk, we will first overview the communication mechanism of ALPC and RPC services. We will discuss the details of ALPC and RPC in the marshal/unmarshal process that has not been disclosed before. We'll also talk about the kernel security mechanism in ALPC syscalls. Then we will analyze some historical bugs in ALPC and RPC, and disclose the details of the vulnerability we found, discussing how we bypassed the security mechanism through a small security flaw in security mechanisms. Later we'll discuss the exploitation, you will learn about the multiple ways. Finally, We'll make conclusions and share our opinions on this attack surface, including some tips and opinions on how to find these kinds of bugs.\n\nA view into ALPC-RPC by Clement Rouault and Thomas Imbert Hack.lu 2017\nExploiting Errors in Windows Error Reporting - Gal De Leon\nWindows Internals, Part 2, 7th Edition",
+  "channel_url": "https://www.youtube.com/channel/UC6Om9kAkl32dWlDSNlDS9Iw",
+  "duration": 2637,
+  "channel": "DEFCONConference",
+  "uploader": "DEFCONConference",
+  "upload_date": "20241016"
+}
+
+1.07s - 4.75s | This text was transcribed using whisper model: large-v2
+
+ I can start?
+4.75s - 8.66s |  Okay.
+8.66s - 9.66s |  Yeah.
+9.66s - 10.66s |  Yeah.
+10.66s - 11.66s |  Yeah.
+11.66s - 14.07s |  Yeah.
+14.07s - 15.07s |  Thank you.
+15.07s - 16.07s |  It's good to be here.
+16.07s - 17.07s |  Yeah.
+17.07s - 18.07s |  I'm Wang Junjie Zhang.
+18.07s - 19.07s |  Yeah.
+19.07s - 28.19s |  I'm a security researcher from the Hailstone Networks.
+28.19s - 34.59s |  My research direction is Windows vulnerability research, including the user mode and the
+34.59s - 36.83s |  kernel mode.
+36.83s - 44.91s |  And also, I've been listed as the most valuable researcher of the Microsoft 2020, 2022, and
+44.91s - 46.91s |  2023, 2024.
+46.91s - 47.91s |  Yeah.
+47.91s - 48.91s |  Okay.
+48.91s - 55.63s |  So, let's just start my talk.
+55.63s - 56.63s |  And this is...
+56.63s - 62.43s |  I already introduced myself and our colleague here.
+62.43s - 67.51s |  Firstly, let's see our agenda today.
+67.51s - 70.71s |  It mainly consists of four parts.
+70.71s - 74.51s |  We'll introduce architecture of the LPC and RPC.
+74.51s - 81.15s |  So we will have a deeper understanding of it, and then look at some common vulnerabilities
+81.15s - 84.83s |  inside LPC and RPC.
+84.83s - 89.35s |  And we will study some root cause of the vulnerabilities.
+89.35s - 94.59s |  And then I will share some details of the vulnerabilities I found by myself and my team,
+94.59s - 99.63s |  and which can bypass the LPC, RPC security mechanism.
+99.63s - 106.99s |  I will show you step-by-step to use this small security flaw to bypass the security mitigations
+106.99s - 111.99s |  like ACR, DEP, XFG, and finally, get system shell.
+111.99s - 114.43s |  You won't get it from anywhere else.
+114.43s - 115.43s |  So...
+115.43s - 119.71s |  And that's the way I make a conclusion.
+119.71s - 120.71s |  Yeah.
+120.71s - 124.23s |  So it's architecture, yeah.
+124.23s - 131.99s |  We already know LPC was introduced to replace the ARPC.
+131.99s - 140.95s |  It's called Lightweight Procedure Core, mainly used in Windows system, inside the Windows
+140.95s - 143.47s |  system services.
+143.47s - 152.40s |  And it's concerned by many researchers for its huge attack service.
+152.40s - 158.20s |  And this is a LPC and RPC architecture.
+158.20s - 168.76s |  And why we combine the ARPC and RPC together?
+168.76s - 171.02s |  Why we combine it together?
+171.02s - 177.10s |  For reason listed below, most RPC services is based on the ARPC or NAND pipe.
+177.10s - 181.50s |  So it's almost based on the same security mechanism.
+181.50s - 189.62s |  And the security flaw inside the ARPC can affect the security of RPC services.
+189.62s - 194.70s |  And this is also the architecture of the ARPC, RPC from Windows internal.
+194.70s - 199.46s |  You can see the communication module inside it.
+199.46s - 204.46s |  And it also supports some message queries and some share section.
+204.46s - 210.77s |  Also supports share section to pass the message.
+210.77s - 214.95s |  Why we use section here?
+214.95s - 220.45s |  Because it's a more effective data passing mechanism on Windows section object.
+220.45s - 222.17s |  More efficient and fast.
+222.17s - 223.17s |  And what about the region?
+223.17s - 224.17s |  Why region?
+224.17s - 229.29s |  It's a representative range of the shared memory that can be opened within the context
+229.29s - 231.17s |  of a given port.
+231.17s - 237.41s |  The section can be shared access by one process, which only have right access.
+237.41s - 242.49s |  And meanwhile, the client only have the right access.
+242.49s - 245.89s |  This picture describe the relationship between the section.
+245.89s - 246.89s |  Yeah.
+246.89s - 251.45s |  We can split up the whole section into different region.
+251.45s - 255.81s |  One piece is represented by one region object.
+255.81s - 261.09s |  We have a set size, which is representing the map of the set and the size of the set
+261.09s - 262.09s |  section.
+262.09s - 263.09s |  Yeah.
+263.09s - 271.61s |  I see some historical vulnerabilities, yeah.
+271.61s - 279.49s |  First kind of bug is kind of logical bug in ARPC when, you know, there's too much research
+279.49s - 289.61s |  on the internet related to doing when the service doing some file operations, is a need
+289.61s - 295.05s |  to impersonate the colors or token and doing some operations on file.
+295.05s - 300.73s |  However, you know, sometimes the fellows will probably handle the file operation with a
+300.73s - 303.33s |  file like a symbol link.
+303.33s - 310.65s |  It may be resulting the service being able to modify, or write, or delete, and even create
+310.65s - 315.45s |  some files when client should not have the permission on these operations.
+315.45s - 325.05s |  So this vulnerability, CVE-2020 and 0911 is an example of the using users device map
+325.05s - 333.81s |  and impersonating users and the service will operate on malicious MSAI files in the user's
+333.81s - 338.37s |  device map installer directory, and it was directed to another path.
+338.37s - 344.01s |  So when the service revert to the system privilege, it also trust the content to read from the
+344.01s - 348.21s |  client installer directory and source.
+348.21s - 355.01s |  The privilege exhalation happen, yeah.
+355.05s - 361.25s |  So this kind of bug exhalation have much articles and research on the internet by using tricks
+361.25s - 370.25s |  of firstly, I think it's discovered by Google research by using tricks like NTFS junctions,
+370.25s - 374.85s |  higher link or object symbol links, and opportunities locks.
+374.85s - 381.53s |  You can easily write exhortations on this kind of bugs.
+381.53s - 388.85s |  The second example is malicious memory corruption bug inside the LPC RPC kernel in recent years.
+388.85s - 395.57s |  We have seen a lot of memory corruption issues inside the LPC RPC kernel.
+395.57s - 400.45s |  So the following code snippet is a part of the vulnerability and is associated with the
+400.45s - 407.81s |  LPC section blob object where we create a LPC section in the map legacy port view function.
+407.81s - 412.97s |  And there's a race window before the function with the view port, view object.
+412.97s - 421.85s |  During this race window, attacker can destroy the LPC port object causing it LPC section
+421.85s - 426.13s |  view function access 3D pointer.
+426.13s - 432.05s |  The picture describe the race window in the connect port function.
+432.05s - 440.33s |  The kernel creates the first LPC port and we can try to close the handle table in the second thread.
+440.33s - 445.77s |  If this moment, close moment, between the create section and the create view port function,
+445.77s - 447.73s |  you can get a blue screen.
+447.73s - 453.13s |  But however, this kind of issue is, I think it's a little bit hard to exploit because you need to
+453.13s - 456.33s |  win the race first.
+456.37s - 462.93s |  What we observe is that most of these memory corruption bug inside LPC kernel or RPC services,
+462.93s - 468.93s |  and most of them are traditionally memory corruption bugs due to the server side lack of check
+468.93s - 474.13s |  when RPC services handle data from the client side.
+474.13s - 479.97s |  And last example is, I think it's very interesting, logical fallback in LPC RPC discovered in
+480.81s - 482.09s |  2017.
+482.09s - 487.01s |  Research found that the kernel doesn't protect the share memory privilege when using it to pass
+487.01s - 489.49s |  the message data.
+489.49s - 495.65s |  In theory, the kernel changed the share section protection in client-side to read-only,
+495.65s - 500.85s |  preventing the client-side changing the memory while server-side calling stop code that may be
+500.85s - 504.17s |  causing double fetch flaws in server-side.
+504.21s - 511.09s |  You can use the virtual protect function to change the share memory from read-only to read-write
+511.09s - 513.97s |  and causing data race condition in server-side.
+513.97s - 517.57s |  It's pretty doable, right?
+517.57s - 524.77s |  Imagine we already have a RPC function, accepts a string parameter and print it twice with a
+524.77s - 527.49s |  sleep between these two options.
+527.49s - 532.53s |  We write a POC and send a string and try to call the virtual protect and change the content of
+532.53s - 533.57s |  the string.
+533.61s - 538.65s |  We can see the server-side printed two different strings.
+538.65s - 545.49s |  It means that we can change a parameter while the server-side perform any other operation.
+545.49s - 553.29s |  Although this vulnerability has been fixed, I decided to learn more from it.
+553.29s - 557.85s |  Maybe we can find more interesting stuff.
+557.85s - 565.11s |  So, first question is, is it really secure after a patch?
+565.15s - 576.07s |  Yeah, from all of the research results I know, share memory is available for almost any RPC
+576.07s - 577.91s |  over ARPC services.
+577.91s - 585.35s |  So, I decided to write a custom RPC services and try to change the memory protection again,
+585.35s - 588.95s |  but finally get virtual protect EX error.
+588.95s - 593.07s |  So, what happened after the patch?
+593.07s - 597.35s |  So, I decided to learn more from the reverse engineering.
+597.35s - 601.39s |  First, N2S kernel try to secure the view of the section.
+601.39s - 604.99s |  It doesn't allow to change the memory attribute from the user space.
+604.99s - 613.03s |  And secondly, both N2S and RPC RT4 module DLL enable secure mode in mode check.
+613.03s - 617.47s |  It means that the server will not manipulate the share memory when it detected the share
+617.47s - 621.59s |  memory is unsafe.
+622.55s - 624.63s |  This is the technique details.
+624.63s - 629.67s |  The security mechanism will handle share memory from client-side.
+629.67s - 634.79s |  Kernel use map view, secure view of section function to create a security view.
+634.79s - 768.27s |  So, you secure virtual memory and you can't change attribute.
+768.27s - 773.51s |  And when sending the attribute, sending message to the server, it's check the RPC section
+773.51s - 777.87s |  and the region we use to send the message to see if it's safe.
+777.87s - 782.15s |  And the region can't bind with more than two view objects.
+782.15s - 787.91s |  It's trying to change the attributes of the share memory address to read only.
+787.91s - 794.67s |  If this step falls, then the server-side will be marked with unsafe and the RPC RT4.DLL
+794.67s - 800.47s |  will use the share memory to unmarshal the server-side.
+800.47s - 805.19s |  And this is the code pieces from the user mode in RPC RT4.
+805.19s - 812.55s |  It will acquire the RPC message attributes, including the security flag of the RPC region.
+812.55s - 816.95s |  If the region is unsecure, you can see it will lock its heap buffer.
+816.95s - 821.31s |  It's managed by pcache object and copying the share memory to the heap buffer.
+821.31s - 824.83s |  So it will not cause double fish vulnerability.
+824.83s - 829.19s |  So when the server detect the region is unsafe.
+830.19s - 837.63s |  I also take a look at the virtual protect ES function to see how the kernel patch protects
+837.63s - 838.63s |  the share memory.
+838.63s - 848.83s |  As you know, I found a special bad event object to secure the bad object is a security view
+848.83s - 849.83s |  or not.
+849.83s - 857.07s |  So we know that Windows kernel use MMBad object to describe one virtual address in user space.
+857.07s - 862.03s |  It is describe the start and the ending of the virtual page.
+862.03s - 867.71s |  When changing the memory of a production, it will check if the bad event object is in
+867.71s - 874.67s |  the virtual address, uh, distribute the object, check if it had a bad event object in the
+874.67s - 875.67s |  event list.
+875.67s - 881.59s |  Unfortunately, the bad event structure symbol was deleted from Windows 11, so I can only
+881.59s - 885.27s |  use the old symbol from Windows 10.
+885.27s - 890.59s |  And digging into it, there's two key function for address protection.
+890.59s - 897.87s |  One is MSSLE protection and revert valid PTE function.
+897.87s - 906.39s |  This is the output from the debug in the right picture, and you can see before and after
+906.39s - 913.59s |  the MSSLE protection, it's changed a bit of the MSSLE protection from 4 to 1.
+913.59s - 919.63s |  I guess it's mean to read-write when the value is 4 and no access value is 1.
+919.63s - 925.99s |  Left picture describe the PTE content about Intel, which also, you know, is the page table
+925.99s - 926.99s |  structure.
+926.99s - 933.07s |  After the function of the MI revert valid PTE, the R and the right bit were set to 0,
+933.07s - 940.03s |  so the whole page in the kernel side will change to the read-only.
+940.03s - 944.59s |  And the server side will use another page table.
+944.59s - 947.35s |  So what about the WLC protection?
+947.35s - 955.55s |  I think this bit from 60 to 62 is reversed according to Intel's documentation, so I guess
+955.55s - 960.23s |  Microsoft used it for some special purpose, yeah.
+960.23s - 965.47s |  And when changing the address protection, it's called MMCheckSecuritySecureVal to check
+965.47s - 970.75s |  if there's a special value event, as we talked before.
+970.75s - 977.15s |  And when we call the comparePTEProtection, it will compare the page table.
+977.15s - 984.27s |  Finally, compare the page table protection with the desired protection mask.
+984.27s - 996.35s |  We process the – we pass to the virtualprotect.ex to see a return change attribute if two value
+996.35s - 997.35s |  is the same.
+997.35s - 1001.99s |  If it's not equal to the virtualprotect.ex, it will return error.
+1001.99s - 1007.15s |  Unfortunately, WLC protection now is 1, so it's not the same as before.
+1007.15s - 1013.47s |  It really has some weird details you see when changing the protection from the address.
+1013.47s - 1019.23s |  It's really not the same as we thought.
+1019.23s - 1024.71s |  I should actually try to bypass this function.
+1024.71s - 1047.81s |  So it's changing the – so it's changing – oh, now it's okay, yeah.
+1047.81s - 1053.97s |  So I tried to bypass this function, and it changed the protection one page.
+1053.97s - 1058.73s |  So if you are lucky to share memory for more than two page, and you only write data to
+1058.73s - 1065.85s |  the first page without doing any other operations, so the operation will fail.
+1066.09s - 1072.65s |  The security function, you know, because the rest of the page doesn't even have the page
+1072.65s - 1076.17s |  table, so you can't change the attributes.
+1076.17s - 1084.84s |  Okay, let's see the vulnerability details we found in the region.
+1084.84s - 1091.40s |  You can always try to align the allocation size to one page.
+1091.40s - 1093.52s |  You can split the session object.
+1093.52s - 1101.80s |  The starting offset section actually is auto-increased based on the last region and the offset.
+1101.80s - 1104.24s |  However, the allocation size is unchecked.
+1104.24s - 1111.00s |  So what about this small security flaw?
+1111.00s - 1116.40s |  What is small undiscovered issue can cause afterwards?
+1116.40s - 1118.80s |  But you still remember the previous picture.
+1119.80s - 1127.64s |  Assuming we already allocated four regions, the size of the first region is 0x1000.
+1127.64s - 1135.72s |  So the starting offset of the second region essentially will be 0x1000.
+1135.72s - 1141.28s |  Based on the info in the picture, we can know the starting offset of the region three is
+1141.28s - 1147.56s |  0x4000, which is pretty easy to understand and calculate.
+1147.56s - 1155.48s |  So based on this info we know, we can see how unchecked section size we can do in the
+1155.48s - 1158.16s |  following.
+1158.16s - 1169.40s |  If we allocate the region with extremely big size, 0x002 is actually minus 0xFFFFE.
+1169.40s - 1175.56s |  Based on the region and the view granularity, the final offset of region two is actually
+1175.56s - 1177.16s |  will be zero.
+1177.16s - 1180.44s |  So the allocation size will be still zero.
+1180.44s - 1184.00s |  So what does this mean?
+1184.00s - 1188.88s |  This means that the region two will overlap with the region one, and they will be mapping
+1188.88s - 1192.88s |  to the same physical address.
+1192.88s - 1198.64s |  We can use the view one to send and receive the LLPC message, and this view will be protected
+1198.64s - 1203.64s |  by the LLPC kernel by using secure view against the write function.
+1203.64s - 1207.72s |  The second view will be left, and the kernel will do nothing on it.
+1207.72s - 1214.32s |  So because we don't even use it, so we can use the address of the second region to actually
+1214.32s - 1217.60s |  change the content.
+1217.60s - 1221.16s |  It's writable, so the double fish will happen again.
+1221.16s - 1227.32s |  The secure view write against the write function can't protect you anymore.
+1227.32s - 1232.72s |  So there will be still many questions for you.
+1232.72s - 1237.04s |  As you see in the previous page, the region allocation size is zero.
+1237.04s - 1243.36s |  So while you still can change the content of the shared memory, because the map view
+1243.36s - 1249.96s |  function support mapping size of zero, you allocate a page with size one page by default,
+1249.96s - 1252.44s |  so we don't need to worry about it.
+1252.44s - 1260.68s |  And the second, if you set the map view function, it can accept zero size?
+1260.68s - 1262.96s |  Why don't you pass zero size?
+1262.96s - 1263.96s |  Because it's unacceptable.
+1263.96s - 1273.00s |  There's a check before the allocation, allocate the view, create section view function.
+1273.00s - 1280.24s |  It's also the region object can use it in more than two views, but the situation I never
+1280.24s - 1283.92s |  encountered until now.
+1283.92s - 1288.04s |  So let's rest again on the Windows 11 again.
+1288.04s - 1295.16s |  Based on the custom LLPC service, we created two views with the same section offset.
+1295.16s - 1300.08s |  So the overlap happened, and the kernel only secured the first view, leaving the second
+1300.08s - 1301.40s |  view address writable.
+1301.40s - 1306.88s |  So you can see we successfully changed the content of the service parameter without changing
+1306.88s - 1310.56s |  the protection of the first view.
+1310.56s - 1313.60s |  The LLPC services will be vulnerable again.
+1313.60s - 1316.96s |  So we have already won the race.
+1316.96s - 1323.92s |  So from the page table entry, from the win debug, I can see two address pointed to same
+1323.92s - 1326.36s |  pages from a page frame number.
+1326.36s - 1330.96s |  It means that it pointed to the same physical memory.
+1330.96s - 1335.68s |  And we can see from the protection, we built into the debug when server trying to print
+1335.68s - 1336.72s |  the stream from client.
+1336.72s - 1344.76s |  So the first page is read only, and it's writable, but the second page is writable on the same
+1344.76s - 1352.29s |  physical memory, which resulted from our ideas, and the result is the result from the terminal.
+1352.29s - 1358.95s |  So from the exploitation analyze.
+1358.95s - 1362.43s |  So let's discuss some possible exploitation.
+1362.43s - 1367.75s |  From the assessment before, there's two ways to export.
+1367.75s - 1374.91s |  One is you can use Windows services or third-party services using file operations and for exploitation
+1374.91s - 1384.79s |  techniques created by James Fosho, a change to write system DLL and get any system privilege,
+1384.79s - 1391.87s |  or bypass some security check and access some functions which admin user can access, or
+1391.87s - 1398.43s |  bypass UAC on the Windows 11.
+1398.43s - 1404.95s |  On the other side, we can also use memory corruption exploitation techniques.
+1404.95s - 1413.51s |  Firstly, I can almost crush any RPG services or ARPC services, and even can get system shell.
+1413.51s - 1420.71s |  So I must admit that I'm lazy sometimes, just want to make the exploitation as easy as possible.
+1420.75s - 1425.39s |  So unfortunately, Microsoft is not stupid.
+1425.39s - 1432.75s |  They were deleted the services code, which several years ago that Thomas used to exploit them,
+1432.75s - 1435.11s |  to exploit this type of issue.
+1435.11s - 1438.23s |  We need to find another possible way.
+1438.23s - 1443.31s |  But however, it's actually possible to find the RPC services meet these conditions.
+1443.31s - 1445.31s |  It's impossible, I think.
+1445.31s - 1450.31s |  First, the service need to use the shell memory without copying it to another address.
+1450.31s - 1454.55s |  And also need to have some sensitive operations on the file.
+1454.55s - 1459.91s |  So consider this situation, it's almost impossible to find this kind of service.
+1459.91s - 1462.75s |  At least, I didn't find one.
+1462.75s - 1464.19s |  You can try it.
+1464.19s - 1472.13s |  But I think it's possible on some third-party services.
+1472.13s - 1476.61s |  Next, we should know what kind of argument we use to double fish.
+1476.65s - 1481.97s |  A simple structure, or a pointer, like an integer, a pointer, a string, or a double string,
+1481.97s - 1483.97s |  use shell memory.
+1483.97s - 1490.73s |  The context structure, which also you may know is called the longest structure,
+1490.73s - 1493.09s |  when copying to heap buffer.
+1493.09s - 1498.21s |  You may be confused about what is the complex or simple structure.
+1498.21s - 1502.69s |  To put it simple, you just remember, if a structure contains a pointer,
+1506.86s - 1510.86s |  this is an example of the simple complex structure we've seen.
+1510.86s - 1514.86s |  And they are treated differently when RPC unmatches them.
+1514.86s - 1521.86s |  And above is the bombi structure, which was never used in the shell memory,
+1521.86s - 1525.86s |  which below is an example of the simple structure.
+1525.86s - 1532.30s |  We need to understand RPC format and the type format first.
+1532.30s - 1536.30s |  And the proc format is one server function in force,
+1536.30s - 1542.30s |  parameter type, and it's stored offset inside the parameter.
+1542.30s - 1547.30s |  For example, if we have an output one function in server side,
+1547.30s - 1553.30s |  the proc format will generate an IDL compiler from the compiler,
+1553.30s - 1556.30s |  storing the parameter into the parameter type offset,
+1556.30s - 1559.30s |  and the location info of the parameter.
+1559.30s - 1562.30s |  And the IDL compiler also generates the comment for every...
+1677.71s - 1681.31s |  Oh, it's okay now?
+1681.31s - 1685.31s |  And we can see the difference between the simple and the complex structure
+1685.31s - 1689.97s |  in the type format.
+1689.97s - 1693.97s |  Okay, the proc mark gives us where the parameter type definition
+1693.97s - 1695.97s |  located in the type format string,
+1695.97s - 1700.97s |  so we can see difference between the simple and the complex structure.
+1700.97s - 1703.97s |  In the header flag, you can see them in the comment.
+1706.97s - 1710.97s |  There's three situation buffer flow I can cause.
+1710.97s - 1714.97s |  I tried to find the exportation services by code auditing
+1714.97s - 1716.97s |  or faster contents,
+1716.97s - 1722.97s |  but one condition is inside the RPC string Marshall function.
+1722.97s - 1724.97s |  The pre-memory content we can control,
+1724.97s - 1728.97s |  so one service has multiple output string result sending to the client,
+1728.97s - 1732.97s |  so it also will use the shell memory to send to the client
+1732.97s - 1734.97s |  so we can fill the whole shell memory
+1734.97s - 1736.97s |  and the argument gap.
+1736.97s - 1740.97s |  Assuming the first string is 0x50 lens,
+1740.97s - 1743.97s |  and the second is 0x500 lens,
+1743.97s - 1747.97s |  so we can fill the argument gap in the memory
+1747.97s - 1749.97s |  after the server finishes the subcode
+1749.97s - 1752.97s |  and returns to the RPC-84,
+1752.97s - 1756.97s |  and the client size will be over 0x1000,
+1756.97s - 1759.97s |  so it's the maximum size in shell memory
+1759.97s - 1764.31s |  will cause the crash of the service.
+1764.31s - 1768.31s |  And also another heap operation,
+1768.31s - 1773.31s |  which means the size of the string store inside a pointer,
+1773.31s - 1776.31s |  so it's not easy to find this part of the server,
+1776.31s - 1778.31s |  so we can change the size of the string
+1778.31s - 1779.31s |  when the server on Marshall,
+1779.31s - 1784.31s |  the server resulting the string sending to the client.
+1784.31s - 1788.31s |  However, it's still possible, not possible to exploit.
+1788.31s - 1792.31s |  You can only cause the shell memory output out on the read,
+1792.31s - 1794.31s |  so when calling the P memory function,
+1794.31s - 1796.31s |  so it's a pity.
+1796.31s - 1802.31s |  And the third exploitation is spool service,
+1802.31s - 1803.31s |  spool server service.
+1803.31s - 1805.31s |  When it open a printer,
+1805.31s - 1808.31s |  it will double-check access the name of the printer,
+1808.31s - 1812.31s |  and the first time the server will cause WCs,
+1812.31s - 1816.31s |  a string result offset can be a large offset,
+1816.31s - 1819.31s |  and then allocate a string again,
+1819.31s - 1821.31s |  and recalculate the string length,
+1821.31s - 1824.31s |  so this time the string can be small size,
+1824.31s - 1826.31s |  so you will cause out of a bound write,
+1826.31s - 1829.31s |  a null pointer, a null byte,
+1829.31s - 1831.31s |  but this issue is hard to exploit,
+1831.31s - 1834.31s |  so we also need to win the race,
+1834.31s - 1839.31s |  and doing heap function to construct some useful target,
+1839.31s - 1840.31s |  so it's really a huge challenge,
+1840.31s - 1843.31s |  so what should I do?
+1843.31s - 1847.31s |  So I decide to try to do some easy stuff first.
+1847.31s - 1850.31s |  Let's see.
+1850.31s - 1852.31s |  Bypassing UIC.
+1852.31s - 1854.31s |  How this works,
+1854.31s - 1858.31s |  the key function inside application information service,
+1858.31s - 1862.31s |  in UIC service,
+1862.31s - 1864.31s |  luckily the service access the command line argument
+1864.31s - 1866.31s |  from the shell memory,
+1866.31s - 1868.31s |  without copying it to the heap buffer,
+1868.31s - 1873.31s |  so we can have a chance to use this,
+1873.31s - 1877.31s |  and also the program name and the cmd line argument
+1877.31s - 1880.31s |  are also stored in the shell memory.
+1880.31s - 1882.31s |  The UIC has a special feature,
+1882.31s - 1885.31s |  when the client executes some special program,
+1885.31s - 1887.31s |  it will not launch the save confirm window,
+1887.31s - 1891.31s |  so we can use the feature to launch the arbitrary program,
+1891.31s - 1893.31s |  without any launch any confirm window,
+1893.31s - 1895.31s |  from app info service,
+1895.31s - 1898.31s |  so we can bypass it.
+1898.31s - 1901.31s |  It's also not that easy as we analyzed,
+1902.31s - 1905.31s |  there's a whitelist inside the service,
+1905.31s - 1908.31s |  you should know that there's also argument whitelist,
+1908.31s - 1911.31s |  for some special program,
+1911.31s - 1918.31s |  which not need to launch the confirm window,
+1918.31s - 1920.31s |  so also the new process,
+1920.31s - 1922.31s |  launched by app info service,
+1922.31s - 1924.31s |  will suspend first,
+1924.31s - 1927.31s |  that means we still cannot execute our payload,
+1927.31s - 1929.31s |  so server will check the process image section,
+1929.31s - 1931.31s |  with the program file section,
+1931.31s - 1934.31s |  means although we have a launch malicious program,
+1934.31s - 1935.31s |  without confirm window,
+1935.31s - 1937.31s |  the app info service,
+1937.31s - 1941.31s |  will also launch the confirm window,
+1941.31s - 1944.31s |  because the two image are not the same,
+1944.31s - 1947.31s |  so Microsoft is not stupid,
+1947.31s - 1949.31s |  really a good solution to prevent,
+1949.31s - 1952.31s |  a launching from any malicious program,
+1952.31s - 1953.31s |  but unfortunately,
+1953.31s - 1956.31s |  they doesn't check the argument program,
+1957.31s - 1959.31s |  after the launching the program,
+1959.31s - 1962.31s |  it doesn't check the argument,
+1962.31s - 1965.31s |  so we still have to change,
+1965.31s - 1967.31s |  the good thing is,
+1967.31s - 1970.31s |  we can create a malicious mscc file,
+1970.31s - 1972.31s |  and there's a research on mscc file,
+1972.31s - 1976.31s |  when mscc open and auto-launch the CMD shell,
+1976.31s - 1978.31s |  with a malicious strip,
+1978.31s - 1981.31s |  you know service.msc is in there,
+1981.31s - 1985.31s |  whitelist of the USC services,
+1985.31s - 1988.31s |  so we can see,
+1988.31s - 1991.31s |  we can launch a high integrated command line shell,
+1991.31s - 1993.31s |  without any other problem,
+1993.31s - 1997.31s |  but I'm not satisfied in doing this,
+1997.31s - 1999.31s |  it's even not a vulnerability to Microsoft,
+1999.31s - 2003.31s |  so you should be an administrator first,
+2003.31s - 2005.31s |  and I mean system to the system,
+2005.31s - 2006.31s |  it's not a security boundary,
+2006.31s - 2009.31s |  as we seen from the Microsoft,
+2009.31s - 2014.30s |  so last is get system privilege,
+2014.30s - 2016.30s |  another good thing is,
+2016.30s - 2019.30s |  it's truly exploitable,
+2019.30s - 2022.30s |  I found a service in DCOM launch,
+2022.30s - 2025.30s |  the key is a key service in Windows system,
+2025.30s - 2026.30s |  interface,
+2026.30s - 2028.30s |  normal user can access,
+2028.30s - 2030.30s |  I have a list,
+2030.30s - 2031.30s |  the service dual ID,
+2031.30s - 2033.30s |  service pass,
+2033.30s - 2036.30s |  so and the service function,
+2036.30s - 2038.30s |  I used to exploit,
+2038.30s - 2039.30s |  it's a game,
+2039.30s - 2041.30s |  get game name config,
+2041.30s - 2042.30s |  yeah,
+2042.30s - 2043.30s |  it's truly,
+2043.30s - 2044.30s |  and it's true,
+2044.30s - 2046.30s |  three parameter with simple structure,
+2046.30s - 2048.30s |  means the service can use the shell memory,
+2048.30s - 2052.30s |  you will obviously get the execution from the start point,
+2052.30s - 2057.22s |  and the first parameter is a dual ID stream,
+2057.22s - 2059.22s |  it's come from the registry,
+2059.22s - 2062.22s |  representing a game as you know,
+2062.22s - 2064.22s |  dual ID in the picture,
+2064.22s - 2066.22s |  this dual ID represent the battlefield,
+2066.22s - 2070.22s |  I think some of you might played it before,
+2070.22s - 2072.22s |  but most importantly,
+2072.22s - 2074.22s |  the key is fully controlled by the current user,
+2075.22s - 2077.22s |  because every user in the system,
+2077.22s - 2081.22s |  have the independent game store configuration,
+2081.22s - 2082.22s |  in the user hive,
+2082.22s - 2084.22s |  so you can just traverse the key,
+2084.22s - 2087.22s |  current key and the final one,
+2087.22s - 2088.22s |  next we may thought,
+2088.22s - 2090.22s |  what can we do in the service,
+2090.22s - 2094.22s |  because we can now pass in the parameters,
+2094.22s - 2095.22s |  through the shell memory,
+2095.22s - 2097.22s |  so we can pretty lucky,
+2097.22s - 2099.22s |  we can do memory leak,
+2099.22s - 2102.22s |  and array overflow in this function,
+2102.22s - 2105.22s |  so first the function directly write the stream,
+2105.22s - 2106.22s |  pointer to the shell memory,
+2106.22s - 2108.22s |  which means we can leak the shell memory address,
+2108.22s - 2110.22s |  mapped in the server side,
+2110.22s - 2112.22s |  although the memory is unmapped,
+2112.22s - 2114.22s |  after the request,
+2114.22s - 2116.22s |  but the address will never change,
+2116.22s - 2118.22s |  so we can use the shell memory,
+2118.22s - 2121.22s |  to construct our fake object,
+2121.22s - 2122.22s |  and the V tables,
+2122.22s - 2125.22s |  and plus this stack array buffer floor,
+2125.22s - 2126.22s |  upon access,
+2126.22s - 2128.22s |  and after the information leak,
+2128.22s - 2129.22s |  on the shell memory,
+2129.22s - 2131.22s |  you can see the function directly,
+2131.22s - 2133.22s |  use the index from the shell memory,
+2133.22s - 2135.22s |  and write a shell memory address,
+2135.22s - 2137.22s |  a pointer out of a bound on the stack,
+2137.22s - 2139.22s |  this means that we can do info leak,
+2139.22s - 2141.22s |  and stack buffer overflow,
+2141.22s - 2143.22s |  just in one function,
+2143.22s - 2145.22s |  and it's a good and really,
+2145.22s - 2149.69s |  and a good primitive,
+2149.69s - 2152.69s |  this is a strategy I use,
+2152.69s - 2155.69s |  first I need to leak the shell memory address,
+2155.69s - 2159.69s |  and we just call the server function,
+2160.69s - 2163.69s |  to repeatedly read the shell memory,
+2163.69s - 2165.69s |  so we can get the pointer,
+2165.69s - 2167.69s |  and when we get the shell memory,
+2167.69s - 2168.69s |  we can create a fake object,
+2168.69s - 2169.69s |  the V table,
+2169.69s - 2171.69s |  based on the leaked information,
+2171.69s - 2172.69s |  in step one,
+2172.69s - 2173.69s |  and finally,
+2173.69s - 2175.69s |  we can try to change index of the shell memory,
+2175.69s - 2177.69s |  to trick the stack array,
+2177.69s - 2179.69s |  buffer overflow,
+2179.69s - 2181.69s |  to load our evil DLL to the service,
+2181.69s - 2184.69s |  and get system shell,
+2184.69s - 2186.69s |  I'll show you one step by step,
+2186.69s - 2190.69s |  and this is output from the win debug window,
+2190.69s - 2192.69s |  we can see server write the shell memory pointer,
+2192.69s - 2193.69s |  on the shell memory,
+2193.69s - 2195.69s |  we just read it repeatedly from the kind,
+2195.69s - 2199.69s |  until we read the pointer,
+2199.69s - 2201.69s |  shell pointer,
+2201.69s - 2202.69s |  and next the real problem came,
+2202.69s - 2204.69s |  so we can get a stack array,
+2204.69s - 2205.69s |  buffer overflow,
+2205.69s - 2208.69s |  but how and where to write,
+2208.69s - 2210.69s |  and what to write,
+2210.69s - 2212.69s |  I choose to write the RPC message object,
+2212.69s - 2214.69s |  on the stack,
+2214.69s - 2215.69s |  so first,
+2215.69s - 2217.69s |  RPC message is a member in MID,
+2217.69s - 2218.69s |  or stack message,
+2218.69s - 2220.69s |  and the object is allocated on the stack,
+2220.69s - 2222.69s |  so before RPC call the server,
+2222.69s - 2224.69s |  it's easy to override it,
+2224.69s - 2227.69s |  and the shell memory is not executable,
+2227.69s - 2229.69s |  so we can just override,
+2229.69s - 2233.69s |  and if we choose to override the return address,
+2233.69s - 2238.69s |  we cannot directly do the ROP,
+2238.69s - 2239.69s |  let's see what we write,
+2239.69s - 2241.69s |  from the view of the win debug,
+2241.69s - 2243.69s |  RCX is the array index,
+2243.69s - 2244.69s |  we can fully control it,
+2244.69s - 2247.69s |  RCX is shell memory address,
+2247.69s - 2249.69s |  and we also can fully control it,
+2249.69s - 2251.69s |  so you can see,
+2251.69s - 2253.69s |  we easily override RPC message pointer,
+2253.69s - 2254.69s |  on the stack,
+2254.69s - 2256.69s |  so when the server return to RPC core engine,
+2256.69s - 2260.69s |  it will be operated on the fake object,
+2260.69s - 2263.69s |  so we can see from the engine call,
+2263.69s - 2264.69s |  NDR get buffer,
+2264.69s - 2267.69s |  RCX already been the shell memory address,
+2267.69s - 2270.69s |  and this is a layout of the shell memory,
+2270.69s - 2272.69s |  there's also some type check,
+2272.69s - 2274.69s |  because we can fully control it,
+2274.69s - 2275.69s |  so it's not a problem,
+2275.69s - 2279.69s |  I choose to construct the fake RPC binding handle,
+2279.69s - 2282.69s |  in the shell memory,
+2282.69s - 2284.69s |  real problem came,
+2284.69s - 2286.69s |  you can see finally,
+2286.69s - 2288.69s |  you arrive to the virtual function calling,
+2288.69s - 2290.69s |  so it is XFG check,
+2290.69s - 2295.69s |  the first available,
+2295.69s - 2298.69s |  and I want to actually,
+2298.69s - 2300.69s |  directly call to the load library,
+2301.69s - 2303.69s |  but you can see the V table,
+2303.69s - 2305.69s |  and the first parameter is overlapped,
+2305.69s - 2310.69s |  so we cannot directly call the load library,
+2310.69s - 2315.69s |  so we can always find a way,
+2315.69s - 2317.69s |  if I can directly call load library,
+2317.69s - 2319.69s |  I can find a legal callable function,
+2319.69s - 2321.69s |  to reduce the pivoting,
+2321.69s - 2324.69s |  so we know there's a technique,
+2324.69s - 2326.69s |  called stack pivoting,
+2326.69s - 2328.69s |  in CTF exportation techniques,
+2328.69s - 2331.69s |  where you can directly RP on the current stack,
+2331.69s - 2333.69s |  so for the register pivoting,
+2333.69s - 2334.69s |  I just need to find a function,
+2334.69s - 2338.69s |  which can exchange the content of the register RCX,
+2338.69s - 2342.69s |  and then the register will point you to the DLL path,
+2342.69s - 2345.69s |  and luckily I found this kind of a function,
+2345.69s - 2349.69s |  which can exchange the register,
+2349.69s - 2351.69s |  it's inside the com-based DLL,
+2351.69s - 2354.69s |  I can directly call bypass the XFG check,
+2354.69s - 2356.69s |  it's a callback function,
+2356.69s - 2359.69s |  and this is a layout,
+2359.69s - 2362.69s |  RCX is before we call into the callback,
+2362.69s - 2364.69s |  it's pointing to bind handle object,
+2364.69s - 2366.69s |  and the value in the purple color,
+2366.69s - 2368.69s |  is the type of information,
+2368.69s - 2370.69s |  and the callback function,
+2370.69s - 2373.69s |  we can call load libraries with login function,
+2373.69s - 2376.69s |  to with the DLL path in the second parameter,
+2376.69s - 2378.69s |  so luckily before the control flow check,
+2378.69s - 2380.69s |  the validity of the callback function,
+2380.69s - 2382.69s |  the function is not first member of the V table,
+2382.69s - 2384.69s |  it's at the 0x70,
+2384.69s - 2386.69s |  so the start location of the V table,
+2386.69s - 2388.69s |  we can use to put our DLL paths,
+2388.69s - 2391.69s |  so without worrying about the function validity,
+2391.69s - 2394.69s |  because it was never used,
+2394.69s - 2396.69s |  so then we can load our custom DLL,
+2396.69s - 2399.69s |  without any resistance,
+2399.69s - 2402.69s |  and I will show you the demo,
+2402.69s - 2411.14s |  I use a normal user,
+2411.14s - 2413.14s |  it's in user group,
+2413.14s - 2419.31s |  and I write it in all the POC in the person,
+2419.31s - 2424.01s |  and you can see it's a normal user,
+2424.01s - 2426.01s |  with medium privilege,
+2426.01s - 2428.01s |  it's not in administrator group,
+2428.01s - 2433.34s |  and then we check the d.com service,
+2433.34s - 2437.34s |  to see if we can load our malicious DLL,
+2437.34s - 2443.29s |  okay we can see the shared memory,
+2443.29s - 2445.29s |  and the compass,
+2445.29s - 2448.29s |  and we see we already loaded our evil DLL,
+2448.29s - 2451.29s |  and there's the shell coming,
+2451.29s - 2453.29s |  and we type who am I,
+2453.29s - 2455.29s |  and we get a system privilege,
+2455.29s - 2457.29s |  with all the privilege,
+2457.29s - 2462.93s |  thank you,
+2462.93s - 2463.93s |  thank you,
+2463.93s - 2472.26s |  thank you,
+2472.26s - 2479.15s |  and a conclusion,
+2479.15s - 2482.15s |  so to be continue,
+2482.15s - 2488.46s |  I think there's still some research,
+2488.46s - 2490.46s |  I need to do in the future,
+2490.46s - 2492.46s |  I like the automation,
+2492.46s - 2496.46s |  info extract from the RPC interface,
+2496.46s - 2499.46s |  I need to find this exportation service,
+2499.46s - 2502.46s |  and the argument which made the exportation bar,
+2503.46s - 2505.46s |  if you have any good ideas,
+2505.46s - 2507.46s |  and you can please share it to me,
+2507.46s - 2509.46s |  I also want to know some good ideas,
+2509.46s - 2512.46s |  for the tool developing,
+2512.46s - 2514.46s |  and there's a much special more,
+2514.46s - 2516.46s |  special features in RPC,
+2516.46s - 2519.46s |  and the need to be examined,
+2519.46s - 2522.46s |  and the more effective exportation techniques,
+2522.46s - 2524.46s |  if you have any other any good ideas,
+2524.46s - 2526.46s |  feel free to contact me,
+2526.46s - 2529.32s |  yeah,
+2529.32s - 2530.32s |  and the right Bob,
+2530.32s - 2532.32s |  this is our bank hunting experience,
+2532.32s - 2534.32s |  I want to share with you,
+2534.32s - 2535.32s |  and the first don't trust,
+2535.32s - 2537.32s |  any patches from the render,
+2537.32s - 2538.32s |  it may still not patch,
+2538.32s - 2540.32s |  the vulnerability effectively,
+2540.32s - 2542.32s |  and also the patch analyze,
+2542.32s - 2545.32s |  is still more effect in bug hunting,
+2545.32s - 2547.32s |  you should be more creative,
+2547.32s - 2550.32s |  and the criticism when bug hunting,
+2550.32s - 2551.32s |  yeah,
+2551.32s - 2553.32s |  you should dare to do it,
+2553.32s - 2555.32s |  and we should be patient,
+2555.32s - 2559.32s |  but bug hunting is a long way marathon,
+2559.32s - 2560.32s |  and at last,
+2560.32s - 2562.32s |  don't meet any miss,
+2562.32s - 2564.32s |  any other,
+2564.32s - 2565.32s |  any side effect,
+2565.32s - 2568.32s |  this effect may cause security flaw,
+2568.32s - 2571.60s |  afterwards,
+2571.60s - 2572.60s |  yeah,
+2572.60s - 2575.60s |  and for this type of service,
+2575.60s - 2577.60s |  we mentioned in the talk,
+2577.60s - 2580.60s |  there's still much special feature in the RPC,
+2580.60s - 2582.60s |  we need to examine,
+2582.60s - 2584.60s |  and the security of RPC,
+2584.60s - 2587.60s |  is actually affect the security of the RPC,
+2587.60s - 2589.60s |  for Microsoft we can see,
+2589.60s - 2592.60s |  it's really done a great tireless work,
+2592.60s - 2594.60s |  on the security of the RPC services,
+2594.60s - 2596.60s |  although we cause the double fish,
+2596.60s - 2597.60s |  in the RPC services,
+2597.60s - 2599.60s |  we need to still find,
+2599.60s - 2601.60s |  export both service,
+2601.60s - 2603.60s |  and the parameters still meet,
+2603.60s - 2607.60s |  very strict bars,
+2607.60s - 2610.60s |  and this is a reference of our talk,
+2610.60s - 2612.60s |  and thank you,
+2612.60s - 2613.60s |  is there another questions,
+2613.60s - 2614.60s |  because there is a microphone,
+2614.60s - 2615.60s |  has any problems,
+2615.60s - 2616.60s |  and sorry for that,
+2616.60s - 2617.60s |  yeah,
+2617.60s - 2631.53s |  thank you.

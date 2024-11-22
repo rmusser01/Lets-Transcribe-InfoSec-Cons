@@ -1,0 +1,237 @@
+{
+  "webpage_url": "https://www.youtube.com/watch?v=zqGB07UaI6A",
+  "title": "DEF CON 32 - Breaking Boundaries: Popping Shells in the Airgap w $10 & Arduino Magic - Daniel Beard",
+  "description": "Many medical devices are \u201cnot connected to a network\u201d, so let\u2019s bring our own! This talk will teach you how to create a BadUSB device that can wirelessly execute payloads on \u201cairgapped\u201d systems like medical devices that aren\u2019t connected to the internet. With only $10 of off-the-shelf hardware and some basic Arduino code you too can start popping shells in the device lab.",
+  "channel_url": "https://www.youtube.com/channel/UC6Om9kAkl32dWlDSNlDS9Iw",
+  "duration": 1458,
+  "channel": "DEFCONConference",
+  "uploader": "DEFCONConference",
+  "upload_date": "20241016"
+}
+
+0.00s - 4.80s | This text was transcribed using whisper model: large-v2
+
+ All right. Welcome, everyone, to Popping Shells with $10 and a Bit of Arduino Magic,
+4.80s - 13.20s |  or aka Let's Redefine Physical Access. First off, who am I? I'm Dan Beard. I'm a software
+13.20s - 18.40s |  engineer at MedCrypt, used to direct MedISO, previously CTO of Promenade Software, where we
+18.96s - 22.32s |  worked on medical devices as a contractor, so worked with a lot of different companies.
+23.12s - 26.80s |  I personally coded on at least 10 different medical devices and collaborated on
+26.80s - 31.84s |  so many more, mostly in vitro diagnostic instruments, so that's like lab equipment,
+32.72s - 37.92s |  some implantables, some therapeutic devices, infusion pumps, you name it. The IVD and
+37.92s - 41.04s |  therapeutic are bolded because that's mainly what this attack is going to be against,
+41.92s - 47.76s |  not so much implantables. All views expressed are my own. My company is making me say this.
+47.76s - 51.28s |  It does not reflect the opinions of current or past employers. I did this all in my own time.
+51.28s - 58.00s |  It's all open source. Don't get mad at them. Okay. So medical device design 101,
+58.00s - 62.08s |  especially on those bolded ones, IVD or therapeutic devices in a hospital setting
+62.08s - 69.52s |  or lab environment, typically you're going to have the embedded board that is going to be doing the
+69.52s - 74.00s |  medical thing, whatever it is with the actual medicine. That's going to be running on something
+74.00s - 78.56s |  very important, like an RTOS. It's going to be bare metal. You're going to have a custom FPGA
+78.56s - 82.24s |  because it needs to be time critical. You're not going to be running an operating system on that.
+82.24s - 86.80s |  However, for anything that has a user interface more complicated than maybe a couple buttons,
+86.80s - 90.96s |  you're going to have a main board or user interface board that's typically running
+90.96s - 95.92s |  Windows or Linux. Good old-fashioned Windows or unless you're doing something with Yocto,
+95.92s - 102.16s |  even good old-fashioned Linux, right? These are PCs that are connected via CAN bus, CAT6, RS232
+102.16s - 106.24s |  to the thing that's actually doing the medical thing. If you can own them, you can pretty much
+106.24s - 112.48s |  own the device. That's what we're going to be attacking through this vector. Some more definitions
+112.48s - 116.72s |  just to make sure we're all on the same page. What is bad USB? A lot of you probably know what that
+116.72s - 122.64s |  is, but let's catch some people up. It's, what, two decades old at this point? It's when a USB dongle
+122.64s - 128.32s |  announces itself as a human interface device. It says, I'm a mouse. I'm a keyboard. I'm a USB
+128.32s - 133.04s |  Ethernet controller. I'm a USB COM port, right? Operating system, there's no signature checks on
+133.04s - 137.60s |  that. There's no validation that you are what you say you are. It just believes you and goes,
+137.60s - 141.52s |  okay, cool, you're a keyboard. Give me some keys. Oh, you're a mouse? All right, give me some mouse
+141.52s - 148.40s |  events. COM port? Sure, why not? Here's input and output, right? Some examples of this are from our
+148.40s - 154.32s |  friends at Hack5 and OMG. You got the rubber ducky. You got the OMG elite cable. These are things you
+154.32s - 163.92s |  can buy right now. So bad USB in my med device? It's not that bad. You know, to, to exploit it,
+163.92s - 169.52s |  you'd need physical access for an extended period of time. You'd probably need an internet connection
+169.52s - 173.28s |  for persistence and, you know, we're air gapped or we do, we have a network connection, but it
+173.28s - 177.12s |  can't reach out to the internet. So you can't download payloads and you'd have to do it to a
+177.12s - 181.52s |  logged in session. And we make people log in and out all the time. So it, it's really not, not that
+181.52s - 186.08s |  big a deal. And you may be looking at this and rolling your eyes, but having been in the industry
+186.08s - 190.96s |  for 10 years, I saw this on threat models. I heard it at the biohacking village when I was able to
+190.96s - 194.64s |  like pop a shell by hooking up a keyboard and typing on it. These are things that people say,
+194.64s - 201.04s |  and it's kind of been industry standard for a while now. So last year, after I got told it again,
+201.04s - 204.80s |  and I got tired of hearing it, I'm like, no, I'm going to prove you guys wrong. These, these
+204.80s - 209.52s |  assumptions, they don't hold. To exploit it does not require physical access for an extended period
+209.52s - 214.00s |  of time, only for a very short amount of time. It does not require an internet connection for
+214.00s - 218.48s |  persistence, but we can bring our own internet connection and we can wait and deploy payloads
+218.48s - 222.08s |  whenever we want. We don't have to do it right, right when we plug it in, right? We can wait until
+222.08s - 226.24s |  it's nighttime and we can wait until we see someone log in or, or something, or using the device.
+227.84s - 231.68s |  Um, so to prove that wrong, to build a device that would do that, we kind of want three things.
+231.68s - 237.60s |  We want something that's wireless, so it has a wifi radio. We want something that's cheap,
+237.60s - 241.28s |  so we can leave it in there and walk away and don't care that we never get it back.
+241.28s - 246.16s |  And we need something that can actually emulate a USB hit device. So these, these are kind of the
+246.16s - 252.32s |  three requirements. Our friends at LilyGo have us covered on all three of those fronts. This is the
+252.32s - 259.84s |  T-Dongle S3. It's a $10, $10 and 50 cents, thanks inflation, out of China, uh, $15 out of their US
+259.84s - 263.92s |  warehouse. So if you want to get it just that little bit faster, uh, it's only $5 more. It
+263.92s - 269.44s |  looks like a USB device. It's got a fancy color screen. It has wifi and Bluetooth if you want to
+269.44s - 274.48s |  use Bluetooth and you can program it in insert language here, C++, MicroPython, Arduino, anything
+274.48s - 281.92s |  the ESP32 can do that you can program it with. Um, so introducing, drum roll please, the software
+281.92s - 292.48s |  to do it, RadioJack, hence the red, the red shirt. Yeah. All right. Um, so on the T-Dongle S3, I have
+292.48s - 298.72s |  a whole bag here flashed, uh, with this open source software. It's open source at RadioJack.io.
+298.72s - 304.16s |  It emulates a keyboard and mouse. It hosts its own wifi server. You can telnet to it. You can drop
+304.16s - 308.72s |  payloads. Right now there's pre-programmed a Windows payload for having a PowerShell, a prompt,
+308.72s - 312.80s |  and I'll go over how that exactly how that works, but nothing says it couldn't work on Linux. I was
+312.80s - 316.48s |  just too lazy to put it together. Okay. I didn't have enough time. You can do it too. I await your
+316.48s - 321.52s |  pull requests. Please issue pull requests. Uh, it's reflashable so you can change it over and
+321.52s - 325.36s |  over. And of course it has a laughing skull animation. What hacker tool would be complete
+325.36s - 344.03s |  without a laughing skull animation? Um, anyone want this one? All right. All right. So, uh,
+344.03s - 349.31s |  it's programmed in Arduino. Why Arduino? First and foremost, most importantly, the drivers just
+349.31s - 353.71s |  kind of worked and I didn't have to mess around with them the first try. Um, and again, I'm lazy.
+353.71s - 357.95s |  So I just went with it. Uh, both the hit and wifi libraries worked out of the box. There was,
+357.95s - 362.99s |  there was no mucking around. It's real easy, but secondarily to prove how, how easy I'm not doing
+362.99s - 367.07s |  some complicated thing up here. I'm not releasing an O day that took a PhD six months of like
+367.07s - 372.83s |  intense genius work. High schoolers learn this crap, right? I am dumb. If I can do this, anyone
+372.83s - 380.11s |  can do this. This is not, this is not, you know, some out there like government level attack. Um,
+380.11s - 385.15s |  so how to use that one that you just got, you plug it into the target, you connect to the SSID
+385.15s - 390.19s |  that's displayed on the screen. Each one is using the, um, the serial number of the device. So it
+390.19s - 394.51s |  has a different SSID. So if you want to go over to the biohacking village right now and connect
+394.51s - 399.31s |  it up to a medical device, each user should have a different SSID so that you're not connecting to
+399.31s - 402.91s |  the wrong one. You don't know which one you're connecting to. The passwords are all the same
+402.91s - 407.87s |  in the base firmware. The password is the password, all lowercase, real easy to remember.
+408.43s - 413.55s |  You tell net to the IP that's shown on the screen and you follow the good command line interface.
+413.55s - 418.19s |  Um, some of the features that has out of the box are drop the payload, open a remote PowerShell
+418.19s - 421.47s |  prompt, uh, type as a keyboard, you can type whatever you want. It'll emulate the keyboard
+421.47s - 424.51s |  and just type it out. So if you need to do like a password prompt or something before you drop
+424.51s - 428.75s |  the payload and you know the password, you can do it that way. Um, and as a comport, that's how
+428.75s - 435.76s |  the payload communicates with you. Uh, when you get a shell is through a virtual comport. Uh,
+435.76s - 440.80s |  here's, you know, kind of to visualize what's going on here. Step zero not shown is actually
+440.80s - 447.12s |  plug it into the device. So walk by and just knock it in. Step one is connect to the wifi,
+447.12s - 451.84s |  drop the payload. The payload opens up a PowerShell prompt very quickly types up a whole
+451.84s - 457.12s |  bunch of PowerShell code, minimizes itself. And what that PowerShell code does is it waits for
+457.12s - 462.96s |  a connection on the comport, the virtual USB comport and just pipes text back and forth.
+462.96s - 466.56s |  So anything you type goes to PowerShell. Anything it types goes back to you over telnet.
+467.52s - 472.00s |  Remember this is wifi. So you can be the one room over, right? You can, you don't have to be at the
+472.00s - 476.80s |  device. You can look like you're really innocent over there with your, your phone on your SSH.
+476.80s - 483.92s |  You're just texting, but really you're typing on a, a shell. Um, let's see if my internet access
+483.92s - 493.02s |  is going to break this. So proof of concept, I know everyone POC or GTFO. Let's see if this launches.
+493.50s - 506.83s |  There we go. So here's an example plugged into my windows, a gaming PC, say drop the payload.
+506.83s - 521.41s |  It just dropped it. I entered into serial mode and now the PowerShell prompt, I can do whatever
+521.41s - 531.23s |  I want on that computer as the current user. Uh, and if anyone's thinking windows on my medical,
+531.23s - 547.73s |  yes, windows is everywhere in medical trust me. So I did this about October. I was, I was high
+547.73s - 550.69s |  off Defcon. I was like, I'm going to code this thing and approve these people wrong. I'm going
+550.85s - 557.01s |  to be so cool. Maybe I'll get a talk out of it at biohacking village. Like, yeah, all right. I'm
+557.01s - 564.37s |  stoked. And, uh, not even a week after my first to get hub commit for the, for the POC, um, OMG
+564.37s - 572.85s |  cable released this into their firmware wasted. Oh, they did it better than me. Oh no. The stealth
+572.85s - 578.77s |  link cable overhead X, I hit X still think. So it looks like a USB cable. It's the OMG cable.
+578.77s - 583.57s |  It looks amazing. It uses the same kind of backdoor thing where it drops a payload and you
+583.57s - 589.57s |  can do a backdoor. Um, it, it does it over the hit packets instead of a comport, which is more
+589.57s - 594.61s |  elegant. Honestly, it's a great way of doing it. It's got sexy marketing. It's ready to buy today.
+594.61s - 598.69s |  And, uh, it's just kind of way better than my hobby project. I, I still stand by though,
+598.69s - 603.25s |  that radio jack is a better name than hit X stealth link. So hack five, if you want to like
+603.25s - 609.82s |  buy the URL off me, call me, you know? Uh, so I'm like, I'm going to one up them. What can I do on
+609.82s - 613.42s |  my hobby project? It's going to be better than this like sexy polished thing that costs a lot
+613.42s - 619.34s |  of money and they put a lot of work into, right? Enter LoRa. So LilyGo, same company, makes an
+619.34s - 625.10s |  almost as cheap, right? $15 to $20, depending on which warehouse you buy it from. The LoRa S3. So
+625.10s - 629.10s |  it, it's still cheap. It kind of has a screen. It's not color, but it's still a cool screen.
+629.90s - 635.18s |  Still has wifi and Bluetooth, still programming Arduino, but it's got LoRa, which means we can do
+635.18s - 641.82s |  things a lot longer range. If you don't know what LoRa is, it's a long distance radio. You don't
+641.82s - 644.46s |  need to have a license. You can go out and use it right now. It's on the consumer bands.
+645.18s - 649.26s |  Theoretical range of three plus miles. Uh, realistically, I, I could only test it to a
+649.26s - 653.90s |  mile and a half before I run into line of sight issues. So I don't know. Um, but theoretically
+653.90s - 658.78s |  more than pretty much my three plus miles. Um, and it does kind of sort of require line of sight.
+658.78s - 663.50s |  Like if it's, if it's on a device and you have like close to a window, you can, you can still
+663.50s - 667.50s |  kind of get in. It'll reflect off the walls and it works. You don't need to be in the window,
+667.50s - 672.62s |  but if you were in, let's say a, you know, an MRI lab or radiology lab without any windows in the
+672.62s - 680.75s |  basement, you're not going to get out. So how to use it on literally this, this device, exactly
+680.75s - 686.03s |  the same, same SSID, same password, follow the same prompts. Uh, you drop it, you drop the
+686.03s - 692.83s |  payload and it's just over LoRa instead of wifi. Got the same visualization here. Only difference
+692.91s - 698.91s |  is that, uh, if you, if you look, you have to have a LoRa board on the other side talking miles
+698.91s - 705.55s |  away and then it does the same, it's the same interface. Um, I live in Chicago. I'm lucky
+705.55s - 708.91s |  enough to live in the loop right here. I'm not going to tell you which building, but one of
+708.91s - 715.71s |  those. Um, and with a directional antenna, I was able to use a shell from 1.2 miles away.
+715.71s - 722.62s |  Yeah. How's that for physical access? So I kind of open it up to you again, open source,
+722.70s - 727.98s |  welcome all pull requests. Can we take it further? Can we do a multi-hop, uh, mesh-tastic network,
+727.98s - 732.86s |  right? Like in, in SoCal, they have a mesh-tastic network that goes from LA all the way down to
+732.86s - 739.02s |  Tijuana. Like, could you be in another country and execute shell commands over just this, like
+739.02s - 743.82s |  hopping over a mesh-tastic network, right? Can we do a wifi bridge where it hops on, you know,
+743.82s - 747.50s |  a Starbucks wifi and now you could be anywhere in the world. You just got to know the IP address.
+747.74s - 753.42s |  What ideas do you have to make this attack better? Um, the, the takeaway for anyone who's
+753.42s - 757.74s |  building a device that's running on like a consumer Linux or windows is you only need a
+757.74s - 762.30s |  few minutes and a few dollars and you can exploit bad USB. You don't need an internet connection.
+762.30s - 769.66s |  You don't need extended physical access. Mitigations for anyone building a device.
+769.66s - 774.46s |  One, cover your USB ports. Like if you're not using them, cover them. If I need to take a
+774.46s - 779.34s |  Dremel to your device, then maybe I'll buy, you'd need extended physical access. Someone's
+779.34s - 785.82s |  going to notice that you were there, right? Okay. Someone might notice that if you, if you do need
+785.82s - 791.26s |  them for maybe service or something like that, then disable the USB stack until the user does
+791.26s - 796.94s |  something explicit until they want to export a report until they say, Hey, I need a flash new
+796.94s - 800.46s |  firmware on the device, or Hey, I'm a service tech and I've logged in with my special service
+800.46s - 806.62s |  tech password, right? Don't just have it open all the time. Only have it open when you need it.
+806.62s - 810.94s |  And that's, um, that's a much smaller attack surface than just someone able to plug it in
+810.94s - 818.08s |  whenever they want. So that's it. Thank you. Anyone have any questions? And, uh, to encourage
+818.08s - 827.30s |  questions, I will be throwing out more of these to anyone who asks one. And I talked really fast.
+827.30s - 831.46s |  So I'm a little bit, a little bit, uh, soon. So I have lots of time for questions.
+839.97s - 846.29s |  The question was, what have I tested it on so far? So, so far, um, a couple of different
+846.29s - 852.05s |  windows devices, um, mostly PCs. Um, there is one currently plugged into a medical device
+852.05s - 856.29s |  in the biohacking village that happens to be running a windows front end. So go ahead and
+856.29s - 874.29s |  check it out. It's already there. See if I can hit you with it. Ready? So the question was,
+874.37s - 879.33s |  can I access the machine or the boards to do something that do I need to access the machine?
+879.33s - 893.54s |  Ah, yeah. So here, let me throw you one. So typically, and this is typically, there are
+893.54s - 899.14s |  exceptions on most medical devices. They kind of assume that the physical connection is secure by
+899.14s - 905.54s |  itself. So if you, if you have like control of that main user interface board running windows,
+905.54s - 909.94s |  you can issue whatever commands it could issue to the RTOS. So there may be,
+910.82s - 915.46s |  there may be safety, uh, bounds. Like if you try and do something that's obviously not safe,
+915.46s - 919.38s |  it'll say no, but you got a lot of control that you really shouldn't have. You could
+919.38s - 923.54s |  dispense more medication than you should. You could raise temperatures higher than you should.
+929.01s - 931.89s |  Yeah. They assume that we're physically controlled. The only thing that can
+931.89s - 935.49s |  talk to us is our windows front end. And, and, and let's just secure that.
+946.56s - 951.20s |  So I didn't measure latency specifically. Uh, the wifi one is near imperceptible.
+951.20s - 958.24s |  The Laura one, um, the latency wasn't, wasn't bad, but the throughput was like a 28.8 K modem.
+958.24s - 961.52s |  So like you're, you're going back to the eighties, but Hey, for a shell,
+961.52s - 978.19s |  that's kind of all you need, right? You can still issue commands. Oh, it's like kind of,
+978.19s - 982.99s |  so the question was, have I set up the ESP 32 to like be a repeater almost and repeat
+983.71s - 992.30s |  the messages or so that w that was one of the things I wanted to do. Like that said, Hey, what,
+992.30s - 996.30s |  what else can we do with this right now? It's just point to point, but there's no reason you
+996.30s - 1004.54s |  couldn't do that. Right. All right. Let's see if I can hit you. Did I get you that? Sorry. Okay.
+1009.22s - 1022.30s |  Sorry. Can you ask a little louder? Can I, Oh, can Laura go through windows? Absolutely can.
+1022.30s - 1028.46s |  It does affect the, um, the signal strength, but it absolutely can go through windows. And
+1028.46s - 1034.46s |  when I was testing it on my PC, I was just within visual range of a window and I was still able to
+1034.46s - 1050.46s |  access it. Have I tried doing it with the Mac? I haven't, but it would absolutely work. Uh,
+1050.46s - 1055.74s |  it would, the USB stack would be, it's a hid device. You would just need to change the, um,
+1055.74s - 1059.34s |  the payload. So instead of dropping into a PowerShell, you're dropping into a, whatever
+1059.34s - 1073.95s |  Mac is using these Z shell or whatever. Yeah. The question is, let's go to this side. I haven't just
+1073.95s - 1077.79s |  cause I have a medical background, but I mean, if they're running windows, Linux, or Mac,
+1077.79s - 1104.26s |  it's some sort of consumer operating system. It's going to work. So the question is if the,
+1104.26s - 1111.70s |  if the windows machine requires authentication, is there a bypass? So, so no, there's no bypass,
+1111.70s - 1115.54s |  but because you can wait, you can wait until someone logs in to drop the payload. It's not
+1115.54s - 1119.30s |  just plug it in. And then like, it starts doing the payload automatically. You can wait until you
+1119.30s - 1122.34s |  from across the room, see them log in and then go, ah, I'm going to, I dropped it.
+1127.04s - 1131.84s |  Okay. Let's see, let's get someone real far away. Let's that's where they're with the blue
+1131.84s - 1142.96s |  blinky badge. Yeah. What's the oldest OS I found in the wild windows XP. Okay. I'm going to,
+1142.96s - 1152.66s |  I'm going to check this. No, no guarantees it gets to you. Nice. All right. Uh, you there in
+1152.66s - 1168.42s |  the white shirt. So right now it's, it's manual, but once you're connected, you could script,
+1168.42s - 1171.70s |  I mean, it's over telnet. So like you could make a Python script to wait until something happens.
+1174.90s - 1221.57s |  All right. So the question was once, once you're connected to it, you can use it as a point to get
+1221.57s - 1226.85s |  into the rest, excuse me, of the network because you're right. You do have access as whoever the
+1226.85s - 1233.33s |  current user is. Um, I, I haven't done that, but that's, that's the beyond just hacking into a
+1233.33s - 1238.29s |  medical device. That's one of the reasons you want to protect against this is that now you have a
+1238.29s - 1244.05s |  point where you're, you're in the air gapped network. Right. And you are somewhat trusted
+1244.05s - 1254.35s |  probably. So yeah, you have, you could use that absolutely as a jumping off point. All right. Uh,
+1254.35s - 1264.35s |  in the orange shirt, I can't hear you from this far away. Sorry.
+1274.06s - 1277.42s |  So the, the question was, wouldn't someone notice you going up to a medical device and
+1277.42s - 1288.13s |  sticking the USB stick in? You have a lot of confidence. Sorry. So the question was,
+1288.13s - 1291.81s |  wouldn't someone notice the, uh, the USB stick sticking out of the medical device?
+1292.85s - 1297.89s |  I mean, from my opinion, no, you'd, you'd have to have a lot of confidence in, in, you know,
+1297.89s - 1302.69s |  nurses and doctors noticing things to, to notice this little teeny thing sticking out. There's a
+1302.69s - 1306.29s |  lot of things that do plug in, you know, in and out of devices. I don't think they're going to
+1306.29s - 1310.85s |  notice something small. That being said, this specific device with the firmware that's flashed
+1310.85s - 1317.33s |  on it has a big skull on it. And the reason is, you know, I don't want people using this for evil,
+1317.33s - 1322.05s |  right? Like use this where, you know, when you have permission and if anyone sees it and has
+1322.05s - 1326.21s |  a skull on it, yeah, then they might ask some questions, but you know, you could change that
+1326.21s - 1336.45s |  in the firmware to not display a literal skull on a screen. Right. Let's do it. Someone over here.
+1341.36s - 1347.76s |  I think this is USB 3.0. Oh, USB-C version. They don't have a USB-C version. No,
+1347.76s - 1352.16s |  but honestly email Lily go and say, Hey, I want a USB-C version. They might make it.
+1357.57s - 1359.89s |  Nope. That was a bad one. Sorry. All right. All the way over here.
+1364.83s - 1369.79s |  What got me interested? So the question was, what got me interested in developing this? It was
+1369.79s - 1374.03s |  one that I heard that, that quote that I was saying, right? Well, it's not that big a deal.
+1374.03s - 1378.27s |  Someone would notice and you were air gap. So it doesn't really matter, or we are connected
+1378.27s - 1381.79s |  to a network, but you know, it's, it's the network's protected. You don't actually have
+1381.79s - 1386.75s |  internet access. Right. Hearing that over and over and over again, and kind of scratching my head
+1386.75s - 1390.75s |  and going, that doesn't, that doesn't seem right. It seems like someone could bring their own wifi
+1390.75s - 1397.23s |  network. Right. And then searching around and before the OMG cable released a HIDAC stealth
+1397.23s - 1402.43s |  link, there was, there was nothing that I could find that had that. So, okay, I'll build it. And,
+1402.43s - 1413.78s |  and now you can't say that to me anymore. Right. How are we doing on time? Okay. I got one more
+1413.78s - 1425.30s |  minute. So I can answer one more question. You there. Are there any limitations on the device?
+1429.63s - 1437.44s |  I can't hear you over the person talking behind me. Ah, the only limitation is the memory on
+1437.44s - 1450.38s |  the device itself. Oh, 128 Meg. So yeah, you can have a pretty big payload. All right. Thanks,
+1450.38s - 1454.54s |  everyone. I'll be, I'll be dropping these off to other people later. So I still have about like 10
+1454.54s - 1458.14s |  and then I can, I can give out.

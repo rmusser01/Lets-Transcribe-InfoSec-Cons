@@ -1,0 +1,2516 @@
+{
+  "metadata": {
+    "webpage_url": "https://www.youtube.com/watch?v=KsTsQV3fyeM",
+    "title": "TROOPERS24: So I became a node: Kubernetes bootstrap tokens and AKS",
+    "description": "Talk by Paul Barb\u00e9 and K\u00e9vin Schouteeten - June 27th, 2024 at TROOPERS24 IT security conference in Heidelberg, Germany hosted by @ERNW_ITSec\n\n#TROOPERS24 #ITsecurity \nhttps://troopers.de/troopers24/talks/cu79qu/\n\nMore impressions:\n  / wearetroopers  \n  / ernw_itsec  \nhttps://infosec.exchange/@WEareTROOPERS\nhttps://infosec.exchange/@ERNW https://ernw.de",
+    "channel_url": "https://www.youtube.com/channel/UCPY5aUREHmbDO4PtR6AYLfQ",
+    "duration": 2977,
+    "channel": "TROOPERS IT Security Conference",
+    "uploader": "TROOPERS IT Security Conference",
+    "upload_date": "20240909"
+  },
+  "segments": {
+    "metadata": {
+      "webpage_url": "https://www.youtube.com/watch?v=KsTsQV3fyeM",
+      "title": "TROOPERS24: So I became a node: Kubernetes bootstrap tokens and AKS",
+      "description": "Talk by Paul Barb\u00e9 and K\u00e9vin Schouteeten - June 27th, 2024 at TROOPERS24 IT security conference in Heidelberg, Germany hosted by @ERNW_ITSec\n\n#TROOPERS24 #ITsecurity \nhttps://troopers.de/troopers24/talks/cu79qu/\n\nMore impressions:\n  / wearetroopers  \n  / ernw_itsec  \nhttps://infosec.exchange/@WEareTROOPERS\nhttps://infosec.exchange/@ERNW https://ernw.de",
+      "channel_url": "https://www.youtube.com/channel/UCPY5aUREHmbDO4PtR6AYLfQ",
+      "duration": 2977,
+      "channel": "TROOPERS IT Security Conference",
+      "uploader": "TROOPERS IT Security Conference",
+      "upload_date": "20240909"
+    },
+    "segments": [
+      {
+        "Time_Start": 0.0,
+        "Time_End": 15.16,
+        "Text": "This text was transcribed using whisper model: large-v2\n\n So, welcome everyone, welcome to our presentation, So I Became a Node."
+      },
+      {
+        "Time_Start": 15.16,
+        "Time_End": 19.68,
+        "Text": " During this presentation, we are going to talk about vulnerabilities that we described"
+      },
+      {
+        "Time_Start": 19.68,
+        "Time_End": 23.44,
+        "Text": " during an assessment for one of our clients."
+      },
+      {
+        "Time_Start": 23.44,
+        "Time_End": 28.96,
+        "Text": " These vulnerabilities rely on Azure Kubernetes Service and more specifically on a TLS bootstrap"
+      },
+      {
+        "Time_Start": 28.96,
+        "Time_End": 32.52,
+        "Text": " token."
+      },
+      {
+        "Time_Start": 32.52,
+        "Time_End": 40.44,
+        "Text": " So a bit about us, this is Paul Barbet and I am Kevin Skuteten."
+      },
+      {
+        "Time_Start": 40.44,
+        "Time_End": 45.52,
+        "Text": " We are both pen testers and red teamers at Synactive."
+      },
+      {
+        "Time_Start": 45.52,
+        "Time_End": 48.1,
+        "Text": " Synactive is a French security company."
+      },
+      {
+        "Time_Start": 48.1,
+        "Time_End": 53.5,
+        "Text": " We are four departments with pen test, reverse engineering, vulnerability research, development"
+      },
+      {
+        "Time_Start": 53.5,
+        "Time_End": 54.5,
+        "Text": " and the response."
+      },
+      {
+        "Time_Start": 54.5,
+        "Time_End": 59.900000000000006,
+        "Text": " Here is an overview of what we are talking about today."
+      },
+      {
+        "Time_Start": 59.900000000000006,
+        "Time_End": 66.74000000000001,
+        "Text": " First I will give you some basic presentation about Kubernetes and give you some definition."
+      },
+      {
+        "Time_Start": 66.74000000000001,
+        "Time_End": 72.3,
+        "Text": " Then we will talk about Kubernetes authentication, TLS and node joining process."
+      },
+      {
+        "Time_Start": 72.3,
+        "Time_End": 78.66,
+        "Text": " Then we will expose how you can exploit this enrollment process in Azure Kubernetes cluster"
+      },
+      {
+        "Time_Start": 78.66,
+        "Time_End": 83.86,
+        "Text": " and why it is not a really good idea to share the host network namespace when you create"
+      },
+      {
+        "Time_Start": 83.86,
+        "Time_End": 86.94,
+        "Text": " a port inside a Kubernetes cluster."
+      },
+      {
+        "Time_Start": 86.94,
+        "Time_End": 94.22,
+        "Text": " Then we will proceed with a demo and give you some insight about mitigation."
+      },
+      {
+        "Time_Start": 94.22,
+        "Time_End": 99.42,
+        "Text": " So exploiting TLS bootstrap token is not really a new technique."
+      },
+      {
+        "Time_Start": 99.54,
+        "Time_End": 107.3,
+        "Text": " There is a lot of blog posts and documentation on the internet, but especially in Google"
+      },
+      {
+        "Time_Start": 107.3,
+        "Time_End": 111.78,
+        "Text": " Kubernetes engine or Elastic Kubernetes Service."
+      },
+      {
+        "Time_Start": 111.78,
+        "Time_End": 115.84,
+        "Text": " But when it comes to Azure Kubernetes Service, there is nothing."
+      },
+      {
+        "Time_Start": 115.84,
+        "Time_End": 123.3,
+        "Text": " So that's why with Paul we decided to present this topic here."
+      },
+      {
+        "Time_Start": 123.3,
+        "Time_End": 126.06,
+        "Text": " So what is Kubernetes?"
+      },
+      {
+        "Time_Start": 126.06,
+        "Time_End": 134.42000000000002,
+        "Text": " Kubernetes is an open source service for automating the deployment, the scaling and"
+      },
+      {
+        "Time_Start": 134.42000000000002,
+        "Time_End": 138.14000000000001,
+        "Text": " the management of containerized applications."
+      },
+      {
+        "Time_Start": 138.14000000000001,
+        "Time_End": 143.3,
+        "Text": " So if you look at the screen, this is a basic Kubernetes cluster."
+      },
+      {
+        "Time_Start": 143.3,
+        "Time_End": 152.22,
+        "Text": " At the top you have the control plane with some components like scheduler, etcd, Kubernetes"
+      },
+      {
+        "Time_Start": 152.22,
+        "Time_End": 154.74,
+        "Text": " cluster manager and the IPI server."
+      },
+      {
+        "Time_Start": 154.74,
+        "Time_End": 160.1,
+        "Text": " All these components are here to handle the overall state of the cluster."
+      },
+      {
+        "Time_Start": 160.1,
+        "Time_End": 163.38,
+        "Text": " If you look at the bottom, you have nodes."
+      },
+      {
+        "Time_Start": 163.38,
+        "Time_End": 165.57999999999998,
+        "Text": " It's where your applications are running."
+      },
+      {
+        "Time_Start": 165.57999999999998,
+        "Time_End": 172.42,
+        "Text": " Each node runs a container runtime like Docker, for instance."
+      },
+      {
+        "Time_Start": 172.42,
+        "Time_End": 175.3,
+        "Text": " And nodes run also pods."
+      },
+      {
+        "Time_Start": 175.3,
+        "Time_End": 181.7,
+        "Text": " Pods is the smallest unit in a Kubernetes environment."
+      },
+      {
+        "Time_Start": 181.70000000000002,
+        "Time_End": 187.78000000000003,
+        "Text": " And if we look inside the pod, there is one or multiple containers."
+      },
+      {
+        "Time_Start": 187.78000000000003,
+        "Time_End": 194.02,
+        "Text": " And it's inside this container that your application is running."
+      },
+      {
+        "Time_Start": 194.02,
+        "Time_End": 198.3,
+        "Text": " In the node, there is also a component called kubelet."
+      },
+      {
+        "Time_Start": 198.3,
+        "Time_End": 202.66000000000003,
+        "Text": " So this component talks with the control plane."
+      },
+      {
+        "Time_Start": 202.66000000000003,
+        "Time_End": 208.94000000000003,
+        "Text": " And the kubelet receives from the control plane some information, some specification."
+      },
+      {
+        "Time_Start": 208.94,
+        "Time_End": 214.42,
+        "Text": " And its goal is to apply this specification to the node."
+      },
+      {
+        "Time_Start": 214.42,
+        "Time_End": 220.78,
+        "Text": " Then if we look at the control plane, I will not describe the scheduler and etcd."
+      },
+      {
+        "Time_Start": 220.78,
+        "Time_End": 225.94,
+        "Text": " However, I will give you some details about the kubectl manager."
+      },
+      {
+        "Time_Start": 225.94,
+        "Time_End": 229.06,
+        "Text": " The kubectl manager runs several controllers."
+      },
+      {
+        "Time_Start": 229.06,
+        "Time_End": 238.86,
+        "Text": " And each controller has a specific goal, like deploy a pod or generate a new certificate"
+      },
+      {
+        "Time_Start": 238.86,
+        "Time_End": 242.10000000000002,
+        "Text": " or sign a certificate."
+      },
+      {
+        "Time_Start": 242.10000000000002,
+        "Time_End": 247.74,
+        "Text": " As you will see later, certificates are a huge part of authentication and authorization"
+      },
+      {
+        "Time_Start": 247.74,
+        "Time_End": 250.66000000000003,
+        "Text": " in Kubernetes."
+      },
+      {
+        "Time_Start": 250.66000000000003,
+        "Time_End": 260.66,
+        "Text": " And then I will present you the kubepi server, which is a really important component in the"
+      },
+      {
+        "Time_Start": 260.66,
+        "Time_End": 265.74,
+        "Text": " control plane, because this component exposes the Kubernetes API."
+      },
+      {
+        "Time_Start": 265.74,
+        "Time_End": 271.66,
+        "Text": " Now I will let Paul talk about authentication and authorization in Kubernetes."
+      },
+      {
+        "Time_Start": 271.66,
+        "Time_End": 272.66,
+        "Text": " Thank you, Kevin."
+      },
+      {
+        "Time_Start": 272.66,
+        "Time_End": 278.26,
+        "Text": " So before delving into the exploit itself, we will need to understand some mechanisms"
+      },
+      {
+        "Time_Start": 278.26,
+        "Time_End": 283.14,
+        "Text": " inside Kubernetes, starting by authentication and authorization."
+      },
+      {
+        "Time_Start": 283.14,
+        "Time_End": 288.1,
+        "Text": " So authentication and authorization are two distinct steps."
+      },
+      {
+        "Time_Start": 288.1,
+        "Time_End": 293.18,
+        "Text": " When you want to perform an action, you will send an HTTP request to the API server."
+      },
+      {
+        "Time_Start": 293.18,
+        "Time_End": 300.3,
+        "Text": " Then the caller identity will be extracted, thanks to the authentication part, inside"
+      },
+      {
+        "Time_Start": 300.3,
+        "Time_End": 306.74,
+        "Text": " either HTTP headers or through mutual TLS authentication."
+      },
+      {
+        "Time_Start": 306.74,
+        "Time_End": 311.62,
+        "Text": " This identity will be extracted as a username and a list of groups that will be used by"
+      },
+      {
+        "Time_Start": 311.62,
+        "Time_End": 320.42,
+        "Text": " the authorization part to resolve whether or not you can perform the action."
+      },
+      {
+        "Time_Start": 320.42,
+        "Time_End": 324.06,
+        "Text": " So you can implement these two mechanisms in different ways."
+      },
+      {
+        "Time_Start": 324.06,
+        "Time_End": 330.90000000000003,
+        "Text": " Regarding authentication, you have mainly three kinds of identities."
+      },
+      {
+        "Time_Start": 330.90000000000003,
+        "Time_End": 335.06,
+        "Text": " First of all, you will have a normal user, your administrator, for example."
+      },
+      {
+        "Time_Start": 335.06,
+        "Time_End": 340.86,
+        "Text": " You will have service accounts and also infrastructure components."
+      },
+      {
+        "Time_Start": 340.86,
+        "Time_End": 346.58000000000004,
+        "Text": " For regular users, they are not stored inside the cluster as a resource."
+      },
+      {
+        "Time_Start": 346.58000000000004,
+        "Time_End": 349.94,
+        "Text": " You can't list them, you can't create them directly inside the cluster."
+      },
+      {
+        "Time_Start": 349.94,
+        "Time_End": 356.98,
+        "Text": " So all of their identifying information needs to be contained inside their credential."
+      },
+      {
+        "Time_Start": 356.98,
+        "Time_End": 363.7,
+        "Text": " And that's why you will find ways like X.509 certificates, OpenID Connect with ID token,"
+      },
+      {
+        "Time_Start": 363.7,
+        "Time_End": 369.88,
+        "Text": " or an authenticating proxy in front of the API server."
+      },
+      {
+        "Time_Start": 369.88,
+        "Time_End": 376.1,
+        "Text": " So then you will have service accounts that are used inside pods."
+      },
+      {
+        "Time_Start": 376.1,
+        "Time_End": 382.78000000000003,
+        "Text": " And for your workflow to be able to speak with the API server, they will use JWT mainly."
+      },
+      {
+        "Time_Start": 382.78000000000003,
+        "Time_End": 389.14000000000004,
+        "Text": " And for infrastructure components, they are mainly treated as a regular user and will"
+      },
+      {
+        "Time_Start": 389.14000000000004,
+        "Time_End": 393.18,
+        "Text": " be using X.509 certificates."
+      },
+      {
+        "Time_Start": 393.18,
+        "Time_End": 398.90000000000003,
+        "Text": " For the authorization part, you can use mainly three different methods."
+      },
+      {
+        "Time_Start": 398.90000000000003,
+        "Time_End": 406.02000000000004,
+        "Text": " There is attribute-based access control, where for each identity you will list all the privileges."
+      },
+      {
+        "Time_Start": 406.02,
+        "Time_End": 412.09999999999997,
+        "Text": " Then you have the most used, the airbox method, where you will group your privileges inside"
+      },
+      {
+        "Time_Start": 412.09999999999997,
+        "Time_End": 416.94,
+        "Text": " roles that you will be able to bind to your identities."
+      },
+      {
+        "Time_Start": 416.94,
+        "Time_End": 422.58,
+        "Text": " And then in CloudProvider, you will find a lot of webhook authorization methods, where"
+      },
+      {
+        "Time_Start": 422.58,
+        "Time_End": 431.21999999999997,
+        "Text": " an external API will be called to respond whether or not your identity can perform the action."
+      },
+      {
+        "Time_Start": 431.22,
+        "Time_End": 437.66,
+        "Text": " And then you will also have ad-hoc special authorization plugin, like the notarization"
+      },
+      {
+        "Time_Start": 437.66,
+        "Time_End": 441.22,
+        "Text": " mode that we'll be speaking in this talk."
+      },
+      {
+        "Time_Start": 441.22,
+        "Time_End": 447.82000000000005,
+        "Text": " And we'll also focus on X.509 and airbox."
+      },
+      {
+        "Time_Start": 447.82000000000005,
+        "Time_End": 452.42,
+        "Text": " So how do you authenticate with X.509 certificates?"
+      },
+      {
+        "Time_Start": 452.42,
+        "Time_End": 458.26000000000005,
+        "Text": " Firstly, you will have a client certificate that will be signed by a cluster certificate"
+      },
+      {
+        "Time_Start": 458.26,
+        "Time_End": 464.98,
+        "Text": " authority, by the cluster certificate authority, and you will present it to the API server."
+      },
+      {
+        "Time_Start": 464.98,
+        "Time_End": 471.86,
+        "Text": " The API server will also have a serving certificate, which is also signed by this certificate authority."
+      },
+      {
+        "Time_Start": 471.86,
+        "Time_End": 479.5,
+        "Text": " And so each end of the communication will verify the other end's certificate."
+      },
+      {
+        "Time_Start": 479.5,
+        "Time_End": 486.02,
+        "Text": " As I said earlier, normal users are not stored inside the cluster, so all of their identifying"
+      },
+      {
+        "Time_Start": 486.02,
+        "Time_End": 490.46,
+        "Text": " information are in the certificate, in this case."
+      },
+      {
+        "Time_Start": 490.46,
+        "Time_End": 496.62,
+        "Text": " And it is as simple as the common name will be used for the username, and the different"
+      },
+      {
+        "Time_Start": 496.62,
+        "Time_End": 500.58,
+        "Text": " organization attributes will be used for the group."
+      },
+      {
+        "Time_Start": 500.58,
+        "Time_End": 508.06,
+        "Text": " So in this example, I will be logging as Paul in the group admin and troopers."
+      },
+      {
+        "Time_Start": 508.06,
+        "Time_End": 514.5,
+        "Text": " For infrastructure components, this is almost the same, but you have to respect some conditions."
+      },
+      {
+        "Time_Start": 514.5,
+        "Time_End": 521.54,
+        "Text": " And in particular for kubelets, as we will speak about it a bit later, you need to be"
+      },
+      {
+        "Time_Start": 521.54,
+        "Time_End": 528.06,
+        "Text": " inside the system-clone-nodes group, and with a username starting with system-clone-node-colon"
+      },
+      {
+        "Time_Start": 528.06,
+        "Time_End": 532.82,
+        "Text": " and the node name, which is really important."
+      },
+      {
+        "Time_Start": 532.82,
+        "Time_End": 538.08,
+        "Text": " So now we know how we can authenticate with a certificate, how can we grant some privileges"
+      },
+      {
+        "Time_Start": 538.08,
+        "Time_End": 541.14,
+        "Text": " to our identity using airbox?"
+      },
+      {
+        "Time_Start": 541.18,
+        "Time_End": 547.26,
+        "Text": " So first of all, you will have roles that are typically just a list of rules granting"
+      },
+      {
+        "Time_Start": 547.26,
+        "Time_End": 554.18,
+        "Text": " privileges over their own namespace, they live inside a namespace, a Kubernetes namespace."
+      },
+      {
+        "Time_Start": 554.18,
+        "Time_End": 562.06,
+        "Text": " It is just a way to logically isolate and group resources together inside a cluster."
+      },
+      {
+        "Time_Start": 562.06,
+        "Time_End": 567.9,
+        "Text": " And you will bind this role to different identities that will, in fact, just grant this privilege"
+      },
+      {
+        "Time_Start": 567.9,
+        "Time_End": 573.14,
+        "Text": " to these identities, so service account, external user."
+      },
+      {
+        "Time_Start": 573.14,
+        "Time_End": 583.02,
+        "Text": " You will also have other namespaces with their own role and role binding, and you will also"
+      },
+      {
+        "Time_Start": 583.02,
+        "Time_End": 589.38,
+        "Text": " find cluster role and cluster role binding, which function as namespace counterparts,"
+      },
+      {
+        "Time_Start": 589.38,
+        "Time_End": 594.26,
+        "Text": " but at the cluster level, granting privileges everywhere."
+      },
+      {
+        "Time_Start": 594.3,
+        "Time_End": 599.18,
+        "Text": " So by putting the two mechanisms together, if I log in with my certificate and I want"
+      },
+      {
+        "Time_Start": 599.18,
+        "Time_End": 605.62,
+        "Text": " to get a pod, so listing the pod, the API server will extract my identity from my certificate"
+      },
+      {
+        "Time_Start": 605.62,
+        "Time_End": 611.38,
+        "Text": " and resolve each role that is bind to me to see if I have the needed privileges."
+      },
+      {
+        "Time_Start": 611.38,
+        "Time_End": 618.62,
+        "Text": " In this case, here, this role gives all privileges on all resources, so I will be able to perform"
+      },
+      {
+        "Time_Start": 618.62,
+        "Time_End": 620.22,
+        "Text": " this action."
+      },
+      {
+        "Time_Start": 621.22,
+        "Time_End": 627.26,
+        "Text": " Okay, so TLS is quite important inside a cluster."
+      },
+      {
+        "Time_Start": 627.26,
+        "Time_End": 632.86,
+        "Text": " Let's have another look of all the different communications that are opening and the needed"
+      },
+      {
+        "Time_Start": 632.86,
+        "Time_End": 634.98,
+        "Text": " certificates."
+      },
+      {
+        "Time_Start": 634.98,
+        "Time_End": 639.4200000000001,
+        "Text": " First of all, you will find the certificate authority that will be used to sign every"
+      },
+      {
+        "Time_Start": 639.4200000000001,
+        "Time_End": 644.98,
+        "Text": " certificate, almost every certificate inside the cluster, and the API server will have"
+      },
+      {
+        "Time_Start": 644.98,
+        "Time_End": 649.1800000000001,
+        "Text": " its serving certificate to expose the API."
+      },
+      {
+        "Time_Start": 649.1800000000001,
+        "Time_End": 655.9000000000001,
+        "Text": " Then, all different elements will have its own client certificate to authenticate to"
+      },
+      {
+        "Time_Start": 655.9000000000001,
+        "Time_End": 661.5000000000001,
+        "Text": " the API server, and also they will need the certificate authority to be able to verify"
+      },
+      {
+        "Time_Start": 661.5000000000001,
+        "Time_End": 665.9000000000001,
+        "Text": " the serving certificate of the API server."
+      },
+      {
+        "Time_Start": 665.9000000000001,
+        "Time_End": 672.22,
+        "Text": " For the etcd database, it is almost the same, but with a different certificate authority"
+      },
+      {
+        "Time_Start": 672.26,
+        "Time_End": 677.58,
+        "Text": " and the etcd database will have a serving certificate and the API server will be the"
+      },
+      {
+        "Time_Start": 677.58,
+        "Time_End": 679.4200000000001,
+        "Text": " client."
+      },
+      {
+        "Time_Start": 679.4200000000001,
+        "Time_End": 684.58,
+        "Text": " And it's not all, we'll add some more certificates, so you will have your normal user authenticating"
+      },
+      {
+        "Time_Start": 684.58,
+        "Time_End": 691.02,
+        "Text": " with their client certificate, and each kubelet will also expose an API, and so they will"
+      },
+      {
+        "Time_Start": 691.02,
+        "Time_End": 698.14,
+        "Text": " need a serving certificate that will be also signed by the cluster authority and the API"
+      },
+      {
+        "Time_Start": 698.14,
+        "Time_End": 703.66,
+        "Text": " server will need a client certificate for these APIs, the kubelet APIs."
+      },
+      {
+        "Time_Start": 703.66,
+        "Time_End": 711.58,
+        "Text": " Moreover, the different kubelets need to have a very specific certificate for the node authorization"
+      },
+      {
+        "Time_Start": 711.58,
+        "Time_End": 714.8199999999999,
+        "Text": " mode to be working."
+      },
+      {
+        "Time_Start": 714.8199999999999,
+        "Time_End": 720.62,
+        "Text": " So the purpose of the node authorization mode is to restrict the privileges of the kubelets"
+      },
+      {
+        "Time_Start": 720.62,
+        "Time_End": 729.0600000000001,
+        "Text": " inside a cluster, because if you have a node which is compromised, the client certificate"
+      },
+      {
+        "Time_Start": 729.0600000000001,
+        "Time_End": 737.82,
+        "Text": " will also be compromised, and so if you only add RBAC, you will not be able to restrict"
+      },
+      {
+        "Time_Start": 737.82,
+        "Time_End": 744.78,
+        "Text": " a kubelet to access information for resources that are deployed elsewhere inside the cluster."
+      },
+      {
+        "Time_Start": 744.78,
+        "Time_End": 749.42,
+        "Text": " So that's a problem, it will lead to lateral movement."
+      },
+      {
+        "Time_Start": 749.42,
+        "Time_End": 754.4599999999999,
+        "Text": " And so the role of the node authorization mode is to restrict what a kubelet can do"
+      },
+      {
+        "Time_Start": 754.4599999999999,
+        "Time_End": 762.4599999999999,
+        "Text": " to just access resources that are deployed on the related node."
+      },
+      {
+        "Time_Start": 762.4599999999999,
+        "Time_End": 769.26,
+        "Text": " So this is a special authorization mode, it will only work on kubelet identities, so inside"
+      },
+      {
+        "Time_Start": 769.26,
+        "Time_End": 774.2199999999999,
+        "Text": " the system-colon-nodes group and with the system-colon-node-colon-node-name, and it"
+      },
+      {
+        "Time_Start": 774.22,
+        "Time_End": 781.62,
+        "Text": " will prevent mostly action regarding secrets, configuration, and volumes."
+      },
+      {
+        "Time_Start": 781.62,
+        "Time_End": 788.1800000000001,
+        "Text": " With the diagram, you will have here a node where there are some resources deployed inside"
+      },
+      {
+        "Time_Start": 788.1800000000001,
+        "Time_End": 794.6600000000001,
+        "Text": " the pod, your kubelet with its certificate, and you will find the name of the node inside"
+      },
+      {
+        "Time_Start": 794.6600000000001,
+        "Time_End": 796.14,
+        "Text": " the certificate."
+      },
+      {
+        "Time_Start": 796.14,
+        "Time_End": 803.02,
+        "Text": " And so if you want to perform an action on a resource, the API server will check whether"
+      },
+      {
+        "Time_Start": 803.02,
+        "Time_End": 808.98,
+        "Text": " or not the resource is deployed inside a pod that is also deployed on the node by"
+      },
+      {
+        "Time_Start": 808.98,
+        "Time_End": 813.54,
+        "Text": " checking the node-name attributes of the pod."
+      },
+      {
+        "Time_Start": 813.54,
+        "Time_End": 820.54,
+        "Text": " If they match, the action will be granted, else it will be rejected."
+      },
+      {
+        "Time_Start": 820.54,
+        "Time_End": 827.3,
+        "Text": " So there is a lot of complexity with all these TLS certificates, you have to provide them"
+      },
+      {
+        "Time_Start": 827.3,
+        "Time_End": 832.22,
+        "Text": " on sometimes different servers, you have a lot of them, you have different kinds of certificates,"
+      },
+      {
+        "Time_Start": 832.22,
+        "Time_End": 837.4200000000001,
+        "Text": " client certificates, serving certificates, certificate authority to provide, you need"
+      },
+      {
+        "Time_Start": 837.4200000000001,
+        "Time_End": 846.0600000000001,
+        "Text": " to have strict conditions on your kubelet certificates for the node authorization mode,"
+      },
+      {
+        "Time_Start": 846.0600000000001,
+        "Time_End": 853.4200000000001,
+        "Text": " and what about auto-scaling clusters, where nodes come and go, how do you provide certificates"
+      },
+      {
+        "Time_Start": 853.4200000000001,
+        "Time_End": 856.58,
+        "Text": " on the fly for them?"
+      },
+      {
+        "Time_Start": 856.58,
+        "Time_End": 862.14,
+        "Text": " That's why we have certificate signing requests, this is a built-in way to sign certificates"
+      },
+      {
+        "Time_Start": 862.14,
+        "Time_End": 864.78,
+        "Text": " inside a cluster."
+      },
+      {
+        "Time_Start": 864.78,
+        "Time_End": 869.58,
+        "Text": " You will send a certificate signing request that can be automatically approved or manually"
+      },
+      {
+        "Time_Start": 869.58,
+        "Time_End": 879.86,
+        "Text": " by an administrator, we will see a little bit later, and it will use special controllers"
+      },
+      {
+        "Time_Start": 879.86,
+        "Time_End": 890.06,
+        "Text": " which are called signers, and in our case, we will be interested by the kube-api-server-client-kubelets."
+      },
+      {
+        "Time_Start": 890.06,
+        "Time_End": 891.5,
+        "Text": " So how does it work?"
+      },
+      {
+        "Time_Start": 891.5,
+        "Time_End": 897.14,
+        "Text": " I want to authenticate to the API server, but I don't have my certificate yet, I will"
+      },
+      {
+        "Time_Start": 897.14,
+        "Time_End": 905.74,
+        "Text": " create a private key and a signing request that I will send to the API server, there"
+      },
+      {
+        "Time_Start": 905.74,
+        "Time_End": 910.3,
+        "Text": " it will be approved by an administrator or automatically, if I check some conditions"
+      },
+      {
+        "Time_Start": 910.3,
+        "Time_End": 916.38,
+        "Text": " that we'll be speaking a little bit later, it will be signed by a signer, and I will"
+      },
+      {
+        "Time_Start": 916.38,
+        "Time_End": 921.82,
+        "Text": " be able to retrieve it and use it to authenticate."
+      },
+      {
+        "Time_Start": 921.82,
+        "Time_End": 927.34,
+        "Text": " But what is missing in this example is that you need some privileges to do that."
+      },
+      {
+        "Time_Start": 927.34,
+        "Time_End": 934.9399999999999,
+        "Text": " You need the create-get-list-watch on the certificate-signing-request object, and for"
+      },
+      {
+        "Time_Start": 934.9399999999999,
+        "Time_End": 940.74,
+        "Text": " the kubelet-client-certificate, it's better if they are auto-approved because you want"
+      },
+      {
+        "Time_Start": 940.74,
+        "Time_End": 945.74,
+        "Text": " an easy deployment process, and so you need a specific permission for that."
+      },
+      {
+        "Time_Start": 945.74,
+        "Time_End": 952.54,
+        "Text": " You need the create permission on this resource that will be only calling node-client."
+      },
+      {
+        "Time_Start": 952.54,
+        "Time_End": 957.86,
+        "Text": " So you can grant all of these privileges to anonymous users, but as we will see later,"
+      },
+      {
+        "Time_Start": 957.86,
+        "Time_End": 962.02,
+        "Text": " it's bad and it will lead to trigger compromise."
+      },
+      {
+        "Time_Start": 962.02,
+        "Time_End": 967.7,
+        "Text": " So bootstrap tokens were introduced."
+      },
+      {
+        "Time_Start": 967.7,
+        "Time_End": 973.66,
+        "Text": " Bootstrap tokens are credentials that are stored inside the cluster as a secret."
+      },
+      {
+        "Time_Start": 973.66,
+        "Time_End": 978.3,
+        "Text": " They give all the different needed permissions for you to be able to create and retrieve"
+      },
+      {
+        "Time_Start": 978.3,
+        "Time_End": 987.5,
+        "Text": " your CSR, and they will also give the special permission for node-client-kubelet-certificate."
+      },
+      {
+        "Time_Start": 987.5,
+        "Time_End": 995.4599999999999,
+        "Text": " And also, as we will see, you will be able to verify the certificate authority of the"
+      },
+      {
+        "Time_Start": 995.4599999999999,
+        "Time_End": 1000.66,
+        "Text": " cluster before any further exchange, thanks to this bootstrap token to prevent man-in-the-middle"
+      },
+      {
+        "Time_Start": 1000.66,
+        "Time_End": 1003.02,
+        "Text": " attack."
+      },
+      {
+        "Time_Start": 1003.02,
+        "Time_End": 1004.74,
+        "Text": " So this is what it looks like."
+      },
+      {
+        "Time_Start": 1004.74,
+        "Time_End": 1009.02,
+        "Text": " It's an example from the Kubernetes documentation."
+      },
+      {
+        "Time_Start": 1009.02,
+        "Time_End": 1013.3,
+        "Text": " So it's a secret, so you will find the kind of secrets that live inside the kubesystem"
+      },
+      {
+        "Time_Start": 1013.3,
+        "Time_End": 1015.86,
+        "Text": " namespace with their name."
+      },
+      {
+        "Time_Start": 1015.86,
+        "Time_End": 1019.98,
+        "Text": " You will have two different parts, the token ID and the token secret."
+      },
+      {
+        "Time_Start": 1019.98,
+        "Time_End": 1025.98,
+        "Text": " Both are needed if you want to use it, and only the token secret is secret as the name"
+      },
+      {
+        "Time_Start": 1025.98,
+        "Time_End": 1027.58,
+        "Text": " in place."
+      },
+      {
+        "Time_Start": 1027.58,
+        "Time_End": 1032.82,
+        "Text": " And you can also have an expiration date for them, meaning that after this date, it will"
+      },
+      {
+        "Time_Start": 1032.82,
+        "Time_End": 1034.7,
+        "Text": " no longer work."
+      },
+      {
+        "Time_Start": 1034.7,
+        "Time_End": 1041.3799999999999,
+        "Text": " And as we will speak a little bit later, this is not the case in AKS."
+      },
+      {
+        "Time_Start": 1041.3799999999999,
+        "Time_End": 1043.54,
+        "Text": " So what's the overall flow?"
+      },
+      {
+        "Time_Start": 1043.54,
+        "Time_End": 1049.3,
+        "Text": " You want to enroll a new kubelet, so you provide it with the bootstrap token."
+      },
+      {
+        "Time_Start": 1049.3,
+        "Time_End": 1056.26,
+        "Text": " It will retrieve a publicly available config map containing the cluster authority, and"
+      },
+      {
+        "Time_Start": 1056.26,
+        "Time_End": 1061.5,
+        "Text": " this config map will be signed by the secret part of the bootstrap token."
+      },
+      {
+        "Time_Start": 1061.5,
+        "Time_End": 1069.3,
+        "Text": " So it will verify the signature, and if it's matched, it will use it for further exchanges."
+      },
+      {
+        "Time_Start": 1069.3,
+        "Time_End": 1074.86,
+        "Text": " It will create a private key, a CSR, send the CSR to the API server."
+      },
+      {
+        "Time_Start": 1074.86,
+        "Time_End": 1080.9,
+        "Text": " There the control manager will verify that it is a valid kubelet certificate and that"
+      },
+      {
+        "Time_Start": 1080.9,
+        "Time_End": 1084.9,
+        "Text": " you have the special permission for it to be auto-approved."
+      },
+      {
+        "Time_Start": 1084.9,
+        "Time_End": 1087.18,
+        "Text": " If so, it will approve the CSR."
+      },
+      {
+        "Time_Start": 1087.18,
+        "Time_End": 1097.14,
+        "Text": " It will be signed by the signer, the kube-api-server-client-kubelet-signer, and the kubelet will be able to retrieve"
+      },
+      {
+        "Time_Start": 1097.14,
+        "Time_End": 1102.0600000000002,
+        "Text": " this certificate and use it, and start to be working."
+      },
+      {
+        "Time_Start": 1102.0600000000002,
+        "Time_End": 1107.5800000000002,
+        "Text": " So now that we know all of these different mechanisms, I will let Kevin present the attack"
+      },
+      {
+        "Time_Start": 1107.5800000000002,
+        "Time_End": 1108.5800000000002,
+        "Text": " on Azure."
+      },
+      {
+        "Time_Start": 1108.5800000000002,
+        "Time_End": 1111.5800000000002,
+        "Text": " Thank you, Paul."
+      },
+      {
+        "Time_Start": 1111.58,
+        "Time_End": 1119.22,
+        "Text": " So to perform a proof of concept, we set up a cluster in Azure Kubernetes service."
+      },
+      {
+        "Time_Start": 1119.22,
+        "Time_End": 1126.5,
+        "Text": " So sorry for the size, I will try to zoom a little."
+      },
+      {
+        "Time_Start": 1126.5,
+        "Time_End": 1130.74,
+        "Text": " So our cluster runs one node pool."
+      },
+      {
+        "Time_Start": 1130.74,
+        "Time_End": 1134.3,
+        "Text": " In this node pool, there is two nodes."
+      },
+      {
+        "Time_Start": 1134.3,
+        "Time_End": 1141.18,
+        "Text": " Regarding the version of Kubernetes, we use the version 1.28.5."
+      },
+      {
+        "Time_Start": 1141.18,
+        "Time_End": 1144.46,
+        "Text": " It's not really the last version of Kubernetes cluster."
+      },
+      {
+        "Time_Start": 1144.46,
+        "Time_End": 1152.86,
+        "Text": " However, we performed some tests and the last version of Kubernetes cluster is still vulnerable."
+      },
+      {
+        "Time_Start": 1152.86,
+        "Time_End": 1158.3,
+        "Text": " For the authentication and the authorization, we use Airback."
+      },
+      {
+        "Time_Start": 1158.3,
+        "Time_End": 1163.26,
+        "Text": " And for the networking, we are using a Calico network policy."
+      },
+      {
+        "Time_Start": 1163.26,
+        "Time_End": 1170.22,
+        "Text": " We will see why it's important just after."
+      },
+      {
+        "Time_Start": 1170.22,
+        "Time_End": 1178.18,
+        "Text": " During this demo, we will often show the kubectl command line."
+      },
+      {
+        "Time_Start": 1178.18,
+        "Time_End": 1182.62,
+        "Text": " So kubectl is the official CLI to communicate with the Kubernetes API."
+      },
+      {
+        "Time_Start": 1182.62,
+        "Time_End": 1188.62,
+        "Text": " This tool allows us to, for instance, list nodes inside our cluster or list ports inside"
+      },
+      {
+        "Time_Start": 1188.62,
+        "Time_End": 1192.06,
+        "Text": " our cluster."
+      },
+      {
+        "Time_Start": 1192.06,
+        "Time_End": 1201.98,
+        "Text": " In our lab and in our cluster, there is two nodes and we will deploy a pod, the pod host"
+      },
+      {
+        "Time_Start": 1201.98,
+        "Time_End": 1203.74,
+        "Text": " network in our case."
+      },
+      {
+        "Time_Start": 1203.74,
+        "Time_End": 1208.58,
+        "Text": " This pod will run on the node on the left."
+      },
+      {
+        "Time_Start": 1208.58,
+        "Time_End": 1215.7,
+        "Text": " And one important thing, this pod has the host network namespace properties set to true."
+      },
+      {
+        "Time_Start": 1215.7,
+        "Time_End": 1222.74,
+        "Text": " When you set true to these properties in your pod definition, this means that this"
+      },
+      {
+        "Time_Start": 1222.74,
+        "Time_End": 1228.82,
+        "Text": " pod will share the host network namespace of the host."
+      },
+      {
+        "Time_Start": 1228.82,
+        "Time_End": 1234.98,
+        "Text": " In other words, the pod and the host will have the same network stack."
+      },
+      {
+        "Time_Start": 1234.98,
+        "Time_End": 1239.54,
+        "Text": " And you will see later why it's important."
+      },
+      {
+        "Time_Start": 1239.54,
+        "Time_End": 1244.82,
+        "Text": " In other side, we will create another pod named pod target."
+      },
+      {
+        "Time_Start": 1244.82,
+        "Time_End": 1250.6599999999999,
+        "Text": " This pod will run in another node and this pod will have a secret."
+      },
+      {
+        "Time_Start": 1250.6599999999999,
+        "Time_End": 1263.6599999999999,
+        "Text": " During our demo, our goals will be to add access to this secret from the other pod."
+      },
+      {
+        "Time_Start": 1263.6599999999999,
+        "Time_End": 1269.8999999999999,
+        "Text": " One more important thing, when you deploy an infrastructure in Azure, there is two specific"
+      },
+      {
+        "Time_Start": 1269.9,
+        "Time_End": 1275.3400000000001,
+        "Text": " components named wire server and WAA agent."
+      },
+      {
+        "Time_Start": 1275.3400000000001,
+        "Time_End": 1283.5400000000002,
+        "Text": " These agents are deployed to share configuration and data when you set a new virtual machine."
+      },
+      {
+        "Time_Start": 1283.5400000000002,
+        "Time_End": 1291.94,
+        "Text": " And one important thing to say about the wire server, when you want to access protected"
+      },
+      {
+        "Time_Start": 1291.94,
+        "Time_End": 1303.5,
+        "Text": " settings, you can go to the URL slash VM settings and the wire server will respond"
+      },
+      {
+        "Time_Start": 1303.5,
+        "Time_End": 1305.7,
+        "Text": " with this response."
+      },
+      {
+        "Time_Start": 1305.7,
+        "Time_End": 1311.18,
+        "Text": " And inside this response, there is a property named protected settings."
+      },
+      {
+        "Time_Start": 1311.18,
+        "Time_End": 1321.18,
+        "Text": " And inside this protected settings are encrypted with a key that will call the wire server"
+      },
+      {
+        "Time_Start": 1321.18,
+        "Time_End": 1323.02,
+        "Text": " key."
+      },
+      {
+        "Time_Start": 1323.02,
+        "Time_End": 1334.8200000000002,
+        "Text": " So if the WAA agent wants to access the protected settings, it will have to decrypt these settings."
+      },
+      {
+        "Time_Start": 1334.8200000000002,
+        "Time_End": 1341.98,
+        "Text": " So I will describe how the WAA agent will describe the protected settings."
+      },
+      {
+        "Time_Start": 1341.98,
+        "Time_End": 1347.02,
+        "Text": " Everything starts with the goal state endpoint."
+      },
+      {
+        "Time_Start": 1347.02,
+        "Time_End": 1350.62,
+        "Text": " So I made a schema."
+      },
+      {
+        "Time_Start": 1350.62,
+        "Time_End": 1358.18,
+        "Text": " I don't know if everyone saw or if I will zoom a little."
+      },
+      {
+        "Time_Start": 1358.18,
+        "Time_End": 1368.54,
+        "Text": " So first, the WAA agent will contact the goal state endpoint, as we said just before."
+      },
+      {
+        "Time_Start": 1368.54,
+        "Time_End": 1375.9,
+        "Text": " The wire server will give to the WAA agent the URL for the certificate endpoint."
+      },
+      {
+        "Time_Start": 1376.7800000000002,
+        "Time_End": 1383.94,
+        "Text": " Then the WAA agent will generate a self-sign-in certificate."
+      },
+      {
+        "Time_Start": 1383.94,
+        "Time_End": 1390.94,
+        "Text": " With this self-sign-in certificate, it will contact the certificate endpoint and provide"
+      },
+      {
+        "Time_Start": 1390.94,
+        "Time_End": 1394.8600000000001,
+        "Text": " its self-sign-in certificate."
+      },
+      {
+        "Time_Start": 1394.8600000000001,
+        "Time_End": 1402.6200000000001,
+        "Text": " Then the wire server will put the wire server key inside an envelope."
+      },
+      {
+        "Time_Start": 1402.6200000000001,
+        "Time_End": 1408.98,
+        "Text": " This envelope is a .p7m file."
+      },
+      {
+        "Time_Start": 1408.98,
+        "Time_End": 1413.8600000000001,
+        "Text": " And after that, the WAA agent will decrypt this envelope to retrieve the wire server"
+      },
+      {
+        "Time_Start": 1413.8600000000001,
+        "Time_End": 1414.8600000000001,
+        "Text": " key."
+      },
+      {
+        "Time_Start": 1414.8600000000001,
+        "Time_End": 1427.8600000000001,
+        "Text": " And with this wire server key, the WAA agent can decrypt the protected settings that we"
+      },
+      {
+        "Time_Start": 1427.8600000000001,
+        "Time_End": 1431.94,
+        "Text": " saw in the VM settings endpoint."
+      },
+      {
+        "Time_Start": 1432.38,
+        "Time_End": 1436.66,
+        "Text": " In our case, why is it important?"
+      },
+      {
+        "Time_Start": 1436.66,
+        "Time_End": 1442.42,
+        "Text": " Because for instance, if a node cluster wants to join a cluster, as Paul said before, it"
+      },
+      {
+        "Time_Start": 1442.42,
+        "Time_End": 1445.1000000000001,
+        "Text": " needs the TLS bootstrap token."
+      },
+      {
+        "Time_Start": 1445.1000000000001,
+        "Time_End": 1455.02,
+        "Text": " And the TLS bootstrap token is in the VM settings, in the protected settings that are encrypted."
+      },
+      {
+        "Time_Start": 1455.02,
+        "Time_End": 1464.46,
+        "Text": " So if we want to elevate our privilege from a compromised pod, we have to retrieve this"
+      },
+      {
+        "Time_Start": 1464.46,
+        "Time_End": 1467.26,
+        "Text": " TLS bootstrap token."
+      },
+      {
+        "Time_Start": 1467.26,
+        "Time_End": 1477.74,
+        "Text": " So we have to mimic the comportment of the WAA agent to retrieve the bootstrap token."
+      },
+      {
+        "Time_Start": 1477.74,
+        "Time_End": 1484.16,
+        "Text": " So there is one limitation that we saw during our research."
+      },
+      {
+        "Time_Start": 1484.16,
+        "Time_End": 1489.16,
+        "Text": " If you try to access the goal state endpoint from a pod that doesn't share the host network"
+      },
+      {
+        "Time_Start": 1489.16,
+        "Time_End": 1494.6000000000001,
+        "Text": " namespace, you will have a timeout error."
+      },
+      {
+        "Time_Start": 1494.6000000000001,
+        "Time_End": 1503.52,
+        "Text": " And our feeling about that with Paul is that Microsoft thinks it will be a bad thing to"
+      },
+      {
+        "Time_Start": 1503.52,
+        "Time_End": 1509.2,
+        "Text": " allow an unprivileged pod to access the wire server key."
+      },
+      {
+        "Time_Start": 1509.24,
+        "Time_End": 1521.48,
+        "Text": " And if we look on the host, there is an IP table rule that drops every packet forward"
+      },
+      {
+        "Time_Start": 1521.48,
+        "Time_End": 1523.1200000000001,
+        "Text": " to the wire server."
+      },
+      {
+        "Time_Start": 1523.1200000000001,
+        "Time_End": 1530.72,
+        "Text": " So if a pod wants to talk to the wire server, the packet from the pod will be forwarded,"
+      },
+      {
+        "Time_Start": 1530.72,
+        "Time_End": 1537.52,
+        "Text": " so the IP table rules will deny the connection."
+      },
+      {
+        "Time_Start": 1537.52,
+        "Time_End": 1544.16,
+        "Text": " But if a pod shares the host network namespace, in this case the packets are not forwarded"
+      },
+      {
+        "Time_Start": 1544.16,
+        "Time_End": 1552.84,
+        "Text": " at all, because when you share the host network namespace, you access directly the host interfaces."
+      },
+      {
+        "Time_Start": 1552.84,
+        "Time_End": 1562.24,
+        "Text": " So these rules don't apply and you can access the wire server."
+      },
+      {
+        "Time_Start": 1562.24,
+        "Time_End": 1568.88,
+        "Text": " So during this demo, I will describe all steps we will perform during this demo."
+      },
+      {
+        "Time_Start": 1568.88,
+        "Time_End": 1579.88,
+        "Text": " First, we will leak the TLS bootstrap token from our pod host network and we will decrypt it."
+      },
+      {
+        "Time_Start": 1579.88,
+        "Time_End": 1586.92,
+        "Text": " Then we'll use this bootstrap token to create a new pod inside the cluster."
+      },
+      {
+        "Time_Start": 1586.92,
+        "Time_End": 1593.1200000000001,
+        "Text": " Using this certificate, we will be able to list other nodes and other pods."
+      },
+      {
+        "Time_Start": 1593.1200000000001,
+        "Time_End": 1598.72,
+        "Text": " And then we will sign a certificate for nodes where the pod with the secret is deployed."
+      },
+      {
+        "Time_Start": 1598.72,
+        "Time_End": 1604.52,
+        "Text": " And then we can retrieve the secret inside the pod."
+      },
+      {
+        "Time_Start": 1604.52,
+        "Time_End": 1618.6,
+        "Text": " So it's time to open our shell."
+      },
+      {
+        "Time_Start": 1618.6,
+        "Time_End": 1623.48,
+        "Text": " So first, we will deploy our lab."
+      },
+      {
+        "Time_Start": 1623.48,
+        "Time_End": 1631.56,
+        "Text": " So here I just authenticate to the cluster."
+      },
+      {
+        "Time_Start": 1631.56,
+        "Time_End": 1637.3999999999999,
+        "Text": " So as you can see on this cluster, there is two nodes, the node 1 and the node 3."
+      },
+      {
+        "Time_Start": 1637.3999999999999,
+        "Time_End": 1639.12,
+        "Text": " Then I will deploy a new pod."
+      },
+      {
+        "Time_Start": 1639.12,
+        "Time_End": 1646.6799999999998,
+        "Text": " This pod is named pod host network and it shares the host network namespace."
+      },
+      {
+        "Time_Start": 1646.6799999999998,
+        "Time_End": 1652.6,
+        "Text": " So I will create this pod."
+      },
+      {
+        "Time_Start": 1652.6,
+        "Time_End": 1655.1599999999999,
+        "Text": " Then I will create another pod."
+      },
+      {
+        "Time_Start": 1655.16,
+        "Time_End": 1670.52,
+        "Text": " This pod runs on the node 3 and its name is pod target and this pod has a secret."
+      },
+      {
+        "Time_Start": 1670.52,
+        "Time_End": 1677.96,
+        "Text": " So if we list pods inside our cluster, we see the both pods, host network and target."
+      },
+      {
+        "Time_Start": 1677.96,
+        "Time_End": 1682.64,
+        "Text": " And we can have more information, the pod host network is running on the node 1 and"
+      },
+      {
+        "Time_Start": 1682.64,
+        "Time_End": 1688.16,
+        "Text": " the pod target is running on the node 3."
+      },
+      {
+        "Time_Start": 1688.16,
+        "Time_End": 1693.5200000000002,
+        "Text": " Then to simulate the compromise, the compromise, sorry, of the first pod, we will open a shell"
+      },
+      {
+        "Time_Start": 1693.5200000000002,
+        "Time_End": 1699.88,
+        "Text": " inside this pod with this command line."
+      },
+      {
+        "Time_Start": 1699.88,
+        "Time_End": 1706.0,
+        "Text": " Here normally, when you open a shell inside a pod, the host name of the pod is always"
+      },
+      {
+        "Time_Start": 1706.0,
+        "Time_End": 1707.88,
+        "Text": " the name of the pod."
+      },
+      {
+        "Time_Start": 1707.88,
+        "Time_End": 1713.4,
+        "Text": " But when you share the host network namespace, the host name of the pod is the host name"
+      },
+      {
+        "Time_Start": 1713.4,
+        "Time_End": 1714.4,
+        "Text": " of the node."
+      },
+      {
+        "Time_Start": 1714.4,
+        "Time_End": 1721.16,
+        "Text": " So it's a first sign that this pod shares the host network namespace."
+      },
+      {
+        "Time_Start": 1721.16,
+        "Time_End": 1727.3200000000002,
+        "Text": " We can confirm this information by listing all interfaces of the pod."
+      },
+      {
+        "Time_Start": 1727.8799999999999,
+        "Time_End": 1738.8799999999999,
+        "Text": " As you can see here, all interfaces starting with AZV are all bridged to other pods inside"
+      },
+      {
+        "Time_Start": 1738.8799999999999,
+        "Time_End": 1743.76,
+        "Text": " the cluster."
+      },
+      {
+        "Time_Start": 1743.76,
+        "Time_End": 1752.72,
+        "Text": " So here we will try to contact the goal state endpoint."
+      },
+      {
+        "Time_Start": 1752.72,
+        "Time_End": 1757.76,
+        "Text": " So we can contact the goal state endpoint, so this is fine."
+      },
+      {
+        "Time_Start": 1757.76,
+        "Time_End": 1764.72,
+        "Text": " If we try to do the same thing on the other pod that don't share the host network namespace,"
+      },
+      {
+        "Time_Start": 1764.72,
+        "Time_End": 1771.8,
+        "Text": " the command will hang and we can't exploit, we can't access this information."
+      },
+      {
+        "Time_Start": 1771.8,
+        "Time_End": 1779.4,
+        "Text": " So we return to the first pod and our goal here is to retrieve the TLS bootstrap token"
+      },
+      {
+        "Time_Start": 1779.4,
+        "Time_End": 1782.76,
+        "Text": " from the protected setting we saw just before."
+      },
+      {
+        "Time_Start": 1782.76,
+        "Time_End": 1789.68,
+        "Text": " To do that, we will use a certificate that has been shared on the CyberCX blog post."
+      },
+      {
+        "Time_Start": 1789.68,
+        "Time_End": 1799.8000000000002,
+        "Text": " So this script will mimic the WAA agent to retrieve the TLS bootstrap token first."
+      },
+      {
+        "Time_Start": 1799.8000000000002,
+        "Time_End": 1807.4,
+        "Text": " It will generate a self-signing certificate, then it will retrieve the certificate endpoint"
+      },
+      {
+        "Time_Start": 1807.4,
+        "Time_End": 1810.52,
+        "Text": " from the goal state endpoint."
+      },
+      {
+        "Time_Start": 1810.52,
+        "Time_End": 1814.48,
+        "Text": " Then it will send its own self-certificate to this endpoint."
+      },
+      {
+        "Time_Start": 1814.48,
+        "Time_End": 1821.0800000000002,
+        "Text": " After that, this endpoint will return an envelope."
+      },
+      {
+        "Time_Start": 1821.0800000000002,
+        "Time_End": 1826.68,
+        "Text": " Then this script will decrypt this envelope, it will unpack the archive inside this envelope"
+      },
+      {
+        "Time_Start": 1826.68,
+        "Time_End": 1830.3200000000002,
+        "Text": " and inside this archive there is a wire server key."
+      },
+      {
+        "Time_Start": 1830.3200000000002,
+        "Time_End": 1836.92,
+        "Text": " After that, the script will call the VM setting endpoint and decrypt all settings that are"
+      },
+      {
+        "Time_Start": 1836.92,
+        "Time_End": 1840.2,
+        "Text": " encrypted inside the protected settings."
+      },
+      {
+        "Time_Start": 1840.2,
+        "Time_End": 1847.88,
+        "Text": " So we will run this script and there it is."
+      },
+      {
+        "Time_Start": 1847.88,
+        "Time_End": 1852.5600000000002,
+        "Text": " We have the TLS bootstrap token and now we will use this token to elevate our privileges"
+      },
+      {
+        "Time_Start": 1852.56,
+        "Time_End": 1869.36,
+        "Text": " inside the Kubernetes cluster."
+      },
+      {
+        "Time_Start": 1869.36,
+        "Time_End": 1878.6399999999999,
+        "Text": " So first we will use this token, we will create an alias with kubectl using this token."
+      },
+      {
+        "Time_Start": 1878.64,
+        "Time_End": 1888.3600000000001,
+        "Text": " You may notice the server parameters, this parameter is the URL of the Kubernetes API."
+      },
+      {
+        "Time_Start": 1888.3600000000001,
+        "Time_End": 1893.8400000000001,
+        "Text": " If you are completely blind and you just arrived inside a pod, you can find this value inside"
+      },
+      {
+        "Time_Start": 1893.8400000000001,
+        "Time_End": 1897.2,
+        "Text": " the environment variable of the pod."
+      },
+      {
+        "Time_Start": 1897.2,
+        "Time_End": 1903.18,
+        "Text": " So we'll use the new bootstrap token to authenticate to the Kubernetes API."
+      },
+      {
+        "Time_Start": 1903.18,
+        "Time_End": 1910.0600000000002,
+        "Text": " If we list, we are part of the group bootstrapper, which is nice."
+      },
+      {
+        "Time_Start": 1910.0600000000002,
+        "Time_End": 1917.5,
+        "Text": " Then if we list our privileges, there is two important things, Paul already described this"
+      },
+      {
+        "Time_Start": 1917.5,
+        "Time_End": 1923.5800000000002,
+        "Text": " before, this resource before, the certificate signing request, we can create get-list-watch"
+      },
+      {
+        "Time_Start": 1923.5800000000002,
+        "Time_End": 1929.1000000000001,
+        "Text": " and the create-certificate-signing-request, not client."
+      },
+      {
+        "Time_Start": 1929.1000000000001,
+        "Time_End": 1936.38,
+        "Text": " With the combination of these two resources, we will be able to become every kubelet on"
+      },
+      {
+        "Time_Start": 1936.38,
+        "Time_End": 1940.14,
+        "Text": " the cluster, so it's really nice."
+      },
+      {
+        "Time_Start": 1940.14,
+        "Time_End": 1948.3400000000001,
+        "Text": " So to remember, our goal here is to extract secrets from other pods."
+      },
+      {
+        "Time_Start": 1948.3400000000001,
+        "Time_End": 1954.0400000000002,
+        "Text": " To do that, we have to list other pods because we don't have the information."
+      },
+      {
+        "Time_Start": 1954.0400000000002,
+        "Time_End": 1957.7,
+        "Text": " So we will create a new certificate-signing-request."
+      },
+      {
+        "Time_Start": 1957.7,
+        "Time_End": 1960.78,
+        "Text": " There is some important things to respect."
+      },
+      {
+        "Time_Start": 1960.78,
+        "Time_End": 1968.02,
+        "Text": " First, the certificate name, it has to start with the string system-column-node, and then"
+      },
+      {
+        "Time_Start": 1968.02,
+        "Time_End": 1972.76,
+        "Text": " the name, and the group has to be system-column-nodes."
+      },
+      {
+        "Time_Start": 1972.76,
+        "Time_End": 1981.3,
+        "Text": " So to generate the certificate, we use a tool named CFSSL, and after executing the tool,"
+      },
+      {
+        "Time_Start": 1981.3,
+        "Time_End": 1988.54,
+        "Text": " we have the CSR file, just here, and the associate private key."
+      },
+      {
+        "Time_Start": 1988.54,
+        "Time_End": 2000.3,
+        "Text": " Then we will contact the Kubernetes API, we will tell him we want to perform a certificate-signing-request,"
+      },
+      {
+        "Time_Start": 2000.3,
+        "Time_End": 2008.74,
+        "Text": " we'll give a name to the certificate-signing-request, we'll use a signer, kube-ipiserver-client-kubelet,"
+      },
+      {
+        "Time_Start": 2008.74,
+        "Time_End": 2014.34,
+        "Text": " and inside the request, we will provide the CSR file."
+      },
+      {
+        "Time_Start": 2014.34,
+        "Time_End": 2018.56,
+        "Text": " So here, our certificate-signing-request is well-created."
+      },
+      {
+        "Time_Start": 2018.56,
+        "Time_End": 2024.78,
+        "Text": " We can list all certificate-signing-requests inside the cluster, and as you can see, there"
+      },
+      {
+        "Time_Start": 2024.78,
+        "Time_End": 2028.26,
+        "Text": " is our certificate-signing-request."
+      },
+      {
+        "Time_Start": 2028.26,
+        "Time_End": 2036.02,
+        "Text": " And more important thing, this certificate-signing-request is approved and issued."
+      },
+      {
+        "Time_Start": 2036.02,
+        "Time_End": 2046.78,
+        "Text": " From there, we can print the details of this certificate-signing-request, and inside this,"
+      },
+      {
+        "Time_Start": 2046.78,
+        "Time_End": 2051.74,
+        "Text": " we have the property certificate, and this property is the sign-in certificate."
+      },
+      {
+        "Time_Start": 2051.74,
+        "Time_End": 2061.86,
+        "Text": " And we will use this certificate to authenticate as a new node to the API server."
+      },
+      {
+        "Time_Start": 2061.86,
+        "Time_End": 2069.98,
+        "Text": " So here I save the certificate, you can see the content of the certificate, and I create"
+      },
+      {
+        "Time_Start": 2069.98,
+        "Time_End": 2076.5,
+        "Text": " a new alias, canyounode, and this time, instead of using the bootstrap token, we use the certificate"
+      },
+      {
+        "Time_Start": 2076.5,
+        "Time_End": 2078.5,
+        "Text": " and the private key."
+      },
+      {
+        "Time_Start": 2078.5,
+        "Time_End": 2087.58,
+        "Text": " And if we list our new privileges, we are now a node, and we are part of the nodes group,"
+      },
+      {
+        "Time_Start": 2087.58,
+        "Time_End": 2095.18,
+        "Text": " which is really nice."
+      },
+      {
+        "Time_Start": 2095.18,
+        "Time_End": 2109.2599999999998,
+        "Text": " Then I will list the privileges, and as you can see here, there are new resource nodes,"
+      },
+      {
+        "Time_Start": 2109.2599999999998,
+        "Time_End": 2116.1,
+        "Text": " and we can get, list, and watch, which means we can list other nodes of the cluster."
+      },
+      {
+        "Time_Start": 2116.1,
+        "Time_End": 2119.66,
+        "Text": " And what would we do?"
+      },
+      {
+        "Time_Start": 2119.66,
+        "Time_End": 2126.4,
+        "Text": " So here, if I use my old privileges, and I ask to the Kubernetes API, can you give me"
+      },
+      {
+        "Time_Start": 2126.4,
+        "Time_End": 2129.8199999999997,
+        "Text": " all the nodes, I have a forbidden error message."
+      },
+      {
+        "Time_Start": 2129.8199999999997,
+        "Time_End": 2138.8199999999997,
+        "Text": " But if I use my new privileges, it prints all nodes that are running inside my cluster."
+      },
+      {
+        "Time_Start": 2138.82,
+        "Time_End": 2146.9,
+        "Text": " We can do exactly the same with pod, so we can list pod host network and pod target."
+      },
+      {
+        "Time_Start": 2146.9,
+        "Time_End": 2154.44,
+        "Text": " And now we want to extract secrets from pod, but we don't know where are the secrets."
+      },
+      {
+        "Time_Start": 2154.44,
+        "Time_End": 2159.5,
+        "Text": " So what we can do is print all details for all pods inside the cluster, and grep for"
+      },
+      {
+        "Time_Start": 2159.5,
+        "Time_End": 2163.86,
+        "Text": " the string secret."
+      },
+      {
+        "Time_Start": 2163.9,
+        "Time_End": 2170.3,
+        "Text": " So here, what we can see, inside the pod target, there is a secret named my secret, and our"
+      },
+      {
+        "Time_Start": 2170.3,
+        "Time_End": 2174.1800000000003,
+        "Text": " goal is to retrieve this secret."
+      },
+      {
+        "Time_Start": 2174.1800000000003,
+        "Time_End": 2181.9,
+        "Text": " So naively, I can try to access the secret directly, but I have a forbidden error message,"
+      },
+      {
+        "Time_Start": 2181.9,
+        "Time_End": 2189.06,
+        "Text": " because as you can see on the error message, there is no relationship between the new node"
+      },
+      {
+        "Time_Start": 2189.06,
+        "Time_End": 2192.2000000000003,
+        "Text": " node and the my secret secret."
+      },
+      {
+        "Time_Start": 2192.2000000000003,
+        "Time_End": 2200.36,
+        "Text": " So to extract the secret, we have to become the node that is running the pod that holds"
+      },
+      {
+        "Time_Start": 2200.36,
+        "Time_End": 2201.36,
+        "Text": " the secret."
+      },
+      {
+        "Time_Start": 2201.36,
+        "Time_End": 2206.38,
+        "Text": " Here is a pod, pod free."
+      },
+      {
+        "Time_Start": 2206.38,
+        "Time_End": 2214.86,
+        "Text": " So I will do the same, I will create a certificate sending request for the pod free."
+      },
+      {
+        "Time_Start": 2214.86,
+        "Time_End": 2222.6200000000003,
+        "Text": " Then I will send my command to the Kubernetes API."
+      },
+      {
+        "Time_Start": 2222.6200000000003,
+        "Time_End": 2233.2000000000003,
+        "Text": " So as you can see here, just here, the certificate sending API is approved and issued."
+      },
+      {
+        "Time_Start": 2233.2000000000003,
+        "Time_End": 2237.5,
+        "Text": " So I can retrieve the certificate and save it."
+      },
+      {
+        "Time_Start": 2237.5,
+        "Time_End": 2246.34,
+        "Text": " And then I will use my new certificate, my private key, and I ask the Kubernetes API"
+      },
+      {
+        "Time_Start": 2246.34,
+        "Time_End": 2250.14,
+        "Text": " to give me the content of my secret."
+      },
+      {
+        "Time_Start": 2250.14,
+        "Time_End": 2259.9,
+        "Text": " And here, everything works, we have the content of the secret."
+      },
+      {
+        "Time_Start": 2259.9,
+        "Time_End": 2270.3,
+        "Text": " Now I will let Paul lead us to Cluster Admin."
+      },
+      {
+        "Time_Start": 2270.3,
+        "Time_End": 2276.5,
+        "Text": " Hello, do you hear me?"
+      },
+      {
+        "Time_Start": 2276.5,
+        "Time_End": 2285.1800000000003,
+        "Text": " So yeah, we saw that we can sign a certificate for any kubelet, and so we'll be able to access"
+      },
+      {
+        "Time_Start": 2285.7,
+        "Time_End": 2290.8199999999997,
+        "Text": " any secrets or config maps used inside any pod inside the cluster."
+      },
+      {
+        "Time_Start": 2290.8199999999997,
+        "Time_End": 2298.18,
+        "Text": " In a real-life scenario, this is often enough because we'll be able to retrieve database"
+      },
+      {
+        "Time_Start": 2298.18,
+        "Time_End": 2306.74,
+        "Text": " credentials, server credentials, user credentials, and yeah, it will be often enough."
+      },
+      {
+        "Time_Start": 2306.74,
+        "Time_End": 2312.66,
+        "Text": " As we will see, you can also access any service accounts which are used inside a pod because"
+      },
+      {
+        "Time_Start": 2312.66,
+        "Time_End": 2319.1,
+        "Text": " you will be able to create a new JWT and in a real cluster, you will find some of them"
+      },
+      {
+        "Time_Start": 2319.1,
+        "Time_End": 2321.22,
+        "Text": " which are quite privileged."
+      },
+      {
+        "Time_Start": 2321.22,
+        "Time_End": 2327.7799999999997,
+        "Text": " So it will be a fine way to escalate to Cluster Admin."
+      },
+      {
+        "Time_Start": 2327.7799999999997,
+        "Time_End": 2335.8599999999997,
+        "Text": " But we are not in a real cluster and we wanted to find an out-of-the-box privileged escalation."
+      },
+      {
+        "Time_Start": 2335.86,
+        "Time_End": 2345.3,
+        "Text": " So if I can, yeah."
+      },
+      {
+        "Time_Start": 2345.3,
+        "Time_End": 2350.38,
+        "Text": " So that's why when we create a cluster, we use the Calico network policies inside the"
+      },
+      {
+        "Time_Start": 2350.38,
+        "Time_End": 2356.1400000000003,
+        "Text": " cluster because, as we'll see, it will come with a lot of pre-deployed resources that"
+      },
+      {
+        "Time_Start": 2356.1400000000003,
+        "Time_End": 2363.7400000000002,
+        "Text": " we will be able to exploit."
+      },
+      {
+        "Time_Start": 2363.7400000000002,
+        "Time_End": 2368.5000000000005,
+        "Text": " So for our privileged escalation, we will be starting by enumerating all the different"
+      },
+      {
+        "Time_Start": 2368.5000000000005,
+        "Time_End": 2373.6600000000003,
+        "Text": " resources that are present by default in this cluster."
+      },
+      {
+        "Time_Start": 2373.6600000000003,
+        "Time_End": 2380.38,
+        "Text": " And in particular, we will be focusing on the Tigera Operator pod and service account."
+      },
+      {
+        "Time_Start": 2380.38,
+        "Time_End": 2386.26,
+        "Text": " Then we'll be exploiting the previous exploit to retrieve the certificate for the nodes"
+      },
+      {
+        "Time_Start": 2386.26,
+        "Time_End": 2389.78,
+        "Text": " where the Tigera Operator pod is running."
+      },
+      {
+        "Time_Start": 2389.78,
+        "Time_End": 2392.94,
+        "Text": " And we will retrieve a JWT for this service account."
+      },
+      {
+        "Time_Start": 2393.14,
+        "Time_End": 2398.82,
+        "Text": " So we'll see that with that, we'll be able to become Cluster Admin."
+      },
+      {
+        "Time_Start": 2410.82,
+        "Time_End": 2418.34,
+        "Text": " OK, so this is the same cluster, but there is a lot of things that we didn't find earlier"
+      },
+      {
+        "Time_Start": 2418.7000000000003,
+        "Time_End": 2424.38,
+        "Text": " because now we are listing the resources inside all the different namespaces."
+      },
+      {
+        "Time_Start": 2424.38,
+        "Time_End": 2433.1800000000003,
+        "Text": " You can find our two pods that we deployed for the first one here in the default namespace."
+      },
+      {
+        "Time_Start": 2433.1800000000003,
+        "Time_End": 2438.6600000000003,
+        "Text": " There is a lot of things regarding Calico, which is normal because we are using Calico."
+      },
+      {
+        "Time_Start": 2438.6600000000003,
+        "Time_End": 2444.6600000000003,
+        "Text": " A lot of different pods that are here for Azure environment."
+      },
+      {
+        "Time_Start": 2444.66,
+        "Time_End": 2454.8199999999997,
+        "Text": " Then you will see here the Tigera Operator pod, and inside this pod, we can check by"
+      },
+      {
+        "Time_Start": 2454.8199999999997,
+        "Time_End": 2462.5,
+        "Text": " getting the details of this pod, there is a service account which is named Tigera Operator."
+      },
+      {
+        "Time_Start": 2462.5,
+        "Time_End": 2466.98,
+        "Text": " Then by listing the different cluster role binding, we can find that for this Tigera"
+      },
+      {
+        "Time_Start": 2466.98,
+        "Time_End": 2474.18,
+        "Text": " service account, there is a cluster role which is bind to it, which is a Tigera Operator"
+      },
+      {
+        "Time_Start": 2474.18,
+        "Time_End": 2476.2999999999997,
+        "Text": " cluster role."
+      },
+      {
+        "Time_Start": 2476.2999999999997,
+        "Time_End": 2481.54,
+        "Text": " And if we check all the different permissions for this service account, for this cluster"
+      },
+      {
+        "Time_Start": 2481.54,
+        "Time_End": 2485.1,
+        "Text": " role, this is quite a lot."
+      },
+      {
+        "Time_Start": 2485.1,
+        "Time_End": 2488.4199999999996,
+        "Text": " It is a lot of permissions."
+      },
+      {
+        "Time_Start": 2488.4199999999996,
+        "Time_End": 2495.14,
+        "Text": " So again, inside a real-life cluster, it will often be enough because, for example, here"
+      },
+      {
+        "Time_Start": 2495.14,
+        "Time_End": 2501.18,
+        "Text": " if we list just some permissions for this, regarding pods, we will be able to create"
+      },
+      {
+        "Time_Start": 2501.18,
+        "Time_End": 2502.4199999999996,
+        "Text": " any new pods."
+      },
+      {
+        "Time_Start": 2502.42,
+        "Time_End": 2508.02,
+        "Text": " So by creating a new privileged pod on every node, we will be able to escape on every node"
+      },
+      {
+        "Time_Start": 2508.02,
+        "Time_End": 2510.34,
+        "Text": " and compromise any server."
+      },
+      {
+        "Time_Start": 2510.34,
+        "Time_End": 2515.26,
+        "Text": " But we want to be cluster-aligned, so we will check on other resources, the cluster role"
+      },
+      {
+        "Time_Start": 2515.26,
+        "Time_End": 2519.46,
+        "Text": " and cluster role bindings, and you can see here that we will be able to create a new"
+      },
+      {
+        "Time_Start": 2519.46,
+        "Time_End": 2523.62,
+        "Text": " one and bind cluster role binding."
+      },
+      {
+        "Time_Start": 2523.62,
+        "Time_End": 2526.58,
+        "Text": " This is a special security feature in Kubernetes."
+      },
+      {
+        "Time_Start": 2526.58,
+        "Time_End": 2532.1,
+        "Text": " By default, you can't bind roles that are granting more privileges that you already"
+      },
+      {
+        "Time_Start": 2532.1,
+        "Time_End": 2535.42,
+        "Text": " have to prevent privilege escalation."
+      },
+      {
+        "Time_Start": 2535.42,
+        "Time_End": 2540.18,
+        "Text": " But if you have the bind permission, you can do what you want."
+      },
+      {
+        "Time_Start": 2540.18,
+        "Time_End": 2542.22,
+        "Text": " So we will exploit that."
+      },
+      {
+        "Time_Start": 2542.22,
+        "Time_End": 2548.9,
+        "Text": " We'll reuse our new node certificate that we made earlier."
+      },
+      {
+        "Time_Start": 2548.9,
+        "Time_End": 2553.86,
+        "Text": " We will check where the Tigera Operator pod is running."
+      },
+      {
+        "Time_Start": 2553.86,
+        "Time_End": 2560.06,
+        "Text": " So here it is on the node number one."
+      },
+      {
+        "Time_Start": 2560.06,
+        "Time_End": 2563.06,
+        "Text": " As we hear, we will get the pod UID."
+      },
+      {
+        "Time_Start": 2563.06,
+        "Time_End": 2566.06,
+        "Text": " We'll see why it's relevant later, but we will need that."
+      },
+      {
+        "Time_Start": 2566.06,
+        "Time_End": 2569.7799999999997,
+        "Text": " So we grab it."
+      },
+      {
+        "Time_Start": 2569.7799999999997,
+        "Time_End": 2576.34,
+        "Text": " And so we will create, as before, a certificate for our node number one."
+      },
+      {
+        "Time_Start": 2576.34,
+        "Time_End": 2583.22,
+        "Text": " We'll send our certificate signing request and retrieve our certificate."
+      },
+      {
+        "Time_Start": 2583.2200000000003,
+        "Time_End": 2590.6200000000003,
+        "Text": " We will make another new aliases for this node with our certificate that we just signed."
+      },
+      {
+        "Time_Start": 2590.6200000000003,
+        "Time_End": 2597.0200000000004,
+        "Text": " And we can ask for a JWT token for any service accounts that run on this node."
+      },
+      {
+        "Time_Start": 2597.0200000000004,
+        "Time_End": 2605.5800000000004,
+        "Text": " So here we want the Tigera Operator, and we used the pod name here and the object UID,"
+      },
+      {
+        "Time_Start": 2605.5800000000004,
+        "Time_End": 2607.34,
+        "Text": " so the pod UID here."
+      },
+      {
+        "Time_Start": 2607.34,
+        "Time_End": 2610.5000000000005,
+        "Text": " This is for another security mechanism that we didn't speak about."
+      },
+      {
+        "Time_Start": 2610.5,
+        "Time_End": 2619.02,
+        "Text": " This is to validate the node admission plugin, which will restrict some other thing."
+      },
+      {
+        "Time_Start": 2619.02,
+        "Time_End": 2624.1,
+        "Text": " And so we need to bound this JWT to a running pod."
+      },
+      {
+        "Time_Start": 2624.1,
+        "Time_End": 2625.1,
+        "Text": " So we have a JWT."
+      },
+      {
+        "Time_Start": 2625.1,
+        "Time_End": 2626.1,
+        "Text": " It's fine."
+      },
+      {
+        "Time_Start": 2626.1,
+        "Time_End": 2634.62,
+        "Text": " We'll put it inside a variable, and we'll be using it to authenticate to the API server."
+      },
+      {
+        "Time_Start": 2634.62,
+        "Time_End": 2646.02,
+        "Text": " And we can see that, yeah, in fact, we are well authenticated as Tigera Operator service account."
+      },
+      {
+        "Time_Start": 2646.02,
+        "Time_End": 2653.62,
+        "Text": " And we can check also that we have all the privileges that we are expecting, so quite a lot."
+      },
+      {
+        "Time_Start": 2653.62,
+        "Time_End": 2665.22,
+        "Text": " Yeah, but we're not cluster admin yet, and we want to do that."
+      },
+      {
+        "Time_Start": 2665.22,
+        "Time_End": 2670.2999999999997,
+        "Text": " So we will create a new cluster role binding, just binding the cluster admin cluster role"
+      },
+      {
+        "Time_Start": 2670.2999999999997,
+        "Time_End": 2675.58,
+        "Text": " to the Tigera service account."
+      },
+      {
+        "Time_Start": 2675.58,
+        "Time_End": 2688.38,
+        "Text": " So we just apply this cluster role binding, and here we have all right on every resources."
+      },
+      {
+        "Time_Start": 2688.38,
+        "Time_End": 2689.8199999999997,
+        "Text": " That's what does a start mean."
+      },
+      {
+        "Time_Start": 2689.8199999999997,
+        "Time_End": 2693.58,
+        "Text": " We can do anything inside the cluster, and so we are cluster admin."
+      },
+      {
+        "Time_Start": 2694.58,
+        "Time_End": 2702.58,
+        "Text": " OK, that's all for our demo."
+      },
+      {
+        "Time_Start": 2702.58,
+        "Time_End": 2718.7799999999997,
+        "Text": " Now let's talk a little bit about what Microsoft has to say about it, and what can you do yourself."
+      },
+      {
+        "Time_Start": 2718.7799999999997,
+        "Time_End": 2722.14,
+        "Text": " So this is a quick timeline of our disclosing."
+      },
+      {
+        "Time_Start": 2722.14,
+        "Time_End": 2726.14,
+        "Text": " We'll just pause it because it's not really important."
+      },
+      {
+        "Time_Start": 2726.14,
+        "Time_End": 2732.94,
+        "Text": " Microsoft states that, yeah, it is a security boundary bypass, but we will not act immediately"
+      },
+      {
+        "Time_Start": 2732.94,
+        "Time_End": 2734.98,
+        "Text": " on it because it's just at the cluster level."
+      },
+      {
+        "Time_Start": 2734.98,
+        "Time_End": 2741.18,
+        "Text": " You can't bounce between multiple clusters, so yeah, maybe one day."
+      },
+      {
+        "Time_Start": 2741.18,
+        "Time_End": 2747.8199999999997,
+        "Text": " So they start to work on something after our disclosing, but for the moment, we didn't"
+      },
+      {
+        "Time_Start": 2747.82,
+        "Time_End": 2755.02,
+        "Text": " show anywhere where you can activate it or use it, so maybe one day."
+      },
+      {
+        "Time_Start": 2755.02,
+        "Time_End": 2759.42,
+        "Text": " So what can you do yourself to protect your cluster?"
+      },
+      {
+        "Time_Start": 2759.42,
+        "Time_End": 2760.46,
+        "Text": " Not so much."
+      },
+      {
+        "Time_Start": 2760.46,
+        "Time_End": 2763.9,
+        "Text": " Just don't choose pod sharing as a host network namespace."
+      },
+      {
+        "Time_Start": 2763.9,
+        "Time_End": 2770.1800000000003,
+        "Text": " There is really, really few use cases where this is useful, and if you do that, maybe"
+      },
+      {
+        "Time_Start": 2770.1800000000003,
+        "Time_End": 2773.6200000000003,
+        "Text": " you can do it in a better way."
+      },
+      {
+        "Time_Start": 2773.62,
+        "Time_End": 2777.58,
+        "Text": " And if you think that you were compromised in the past, Bootstrap tokens are a really"
+      },
+      {
+        "Time_Start": 2777.58,
+        "Time_End": 2784.22,
+        "Text": " good way to have persistence inside an AKS cluster."
+      },
+      {
+        "Time_Start": 2784.22,
+        "Time_End": 2790.54,
+        "Text": " As I said, you can have an expiration date, but during our test, we didn't find any."
+      },
+      {
+        "Time_Start": 2790.54,
+        "Time_End": 2799.9,
+        "Text": " So your Bootstrap tokens don't have this in the manifest, and they can be used at least"
+      },
+      {
+        "Time_Start": 2799.9,
+        "Time_End": 2803.24,
+        "Text": " for some weeks during our test."
+      },
+      {
+        "Time_Start": 2803.2400000000002,
+        "Time_End": 2812.0400000000004,
+        "Text": " So it can be a good way to come back in a cluster that you compromised."
+      },
+      {
+        "Time_Start": 2812.0400000000004,
+        "Time_End": 2816.84,
+        "Text": " If you try to delete a Bootstrap token, it will be ineffective because it will be automatically"
+      },
+      {
+        "Time_Start": 2816.84,
+        "Time_End": 2823.2000000000003,
+        "Text": " recreated by a control plane element that we don't see and we don't have any control"
+      },
+      {
+        "Time_Start": 2823.2000000000003,
+        "Time_End": 2827.2000000000003,
+        "Text": " over, and it seems to be bound to the node pool."
+      },
+      {
+        "Time_Start": 2827.2000000000003,
+        "Time_End": 2833.5600000000004,
+        "Text": " So if you want to rotate your Bootstrap token, just delete your node pool and recreate a"
+      },
+      {
+        "Time_Start": 2833.5600000000004,
+        "Time_End": 2835.36,
+        "Text": " new one."
+      },
+      {
+        "Time_Start": 2835.36,
+        "Time_End": 2841.84,
+        "Text": " And so to prevent that, maybe monitor your CSR if you see some strange stuff, some strange"
+      },
+      {
+        "Time_Start": 2841.84,
+        "Time_End": 2846.4800000000005,
+        "Text": " certificates or nodes that are signing new certificates."
+      },
+      {
+        "Time_Start": 2846.4800000000005,
+        "Time_End": 2852.4800000000005,
+        "Text": " But maybe you should look a little bit deeper."
+      },
+      {
+        "Time_Start": 2852.48,
+        "Time_End": 2859.0,
+        "Text": " So to conclude, AKS is not less secure than other cloud providers."
+      },
+      {
+        "Time_Start": 2859.0,
+        "Time_End": 2864.08,
+        "Text": " There are some attacks for GCP, AWS, DigitalOcean."
+      },
+      {
+        "Time_Start": 2864.08,
+        "Time_End": 2869.96,
+        "Text": " Just learn how your cloud provider works so that you will be able to understand the risk"
+      },
+      {
+        "Time_Start": 2869.96,
+        "Time_End": 2871.72,
+        "Text": " and defend yourself."
+      },
+      {
+        "Time_Start": 2871.72,
+        "Time_End": 2875.88,
+        "Text": " We'll be adding this method to the Kubelet-Main tool."
+      },
+      {
+        "Time_Start": 2876.36,
+        "Time_End": 2886.88,
+        "Text": " This is a tool made by Mark Wickeden, which is used to automate all of these node attacks."
+      },
+      {
+        "Time_Start": 2886.88,
+        "Time_End": 2892.12,
+        "Text": " And if you want to know more, or if our French accent was a little bit too complicated to"
+      },
+      {
+        "Time_Start": 2892.12,
+        "Time_End": 2897.6800000000003,
+        "Text": " understand, you can find our blog post describing all of our research."
+      },
+      {
+        "Time_Start": 2897.6800000000003,
+        "Time_End": 2898.6800000000003,
+        "Text": " Thank you very much."
+      },
+      {
+        "Time_Start": 2898.6800000000003,
+        "Time_End": 2899.6800000000003,
+        "Text": " Thank you to the staff."
+      },
+      {
+        "Time_Start": 2899.6800000000003,
+        "Time_End": 2901.84,
+        "Text": " And yeah, if you have any questions."
+      },
+      {
+        "Time_Start": 2906.88,
+        "Time_End": 2909.88,
+        "Text": " I have a question."
+      },
+      {
+        "Time_Start": 2914.88,
+        "Time_End": 2923.44,
+        "Text": " I'm not fully familiar with Kubernetes, but we saw that whenever you are not in the host"
+      },
+      {
+        "Time_Start": 2923.44,
+        "Time_End": 2929.12,
+        "Text": " namespace, there is a firewall rule blocking you from contacting the wire server."
+      },
+      {
+        "Time_Start": 2929.12,
+        "Time_End": 2935.52,
+        "Text": " Would it be possible as a mitigation to implement a firewall rule directly on the wire server"
+      },
+      {
+        "Time_Start": 2935.56,
+        "Time_End": 2942.52,
+        "Text": " in order to block the request from a node?"
+      },
+      {
+        "Time_Start": 2945.52,
+        "Time_End": 2951.52,
+        "Text": " The node has to be able to speak with the wire server."
+      },
+      {
+        "Time_Start": 2951.52,
+        "Time_End": 2953.52,
+        "Text": " No, you can't."
+      },
+      {
+        "Time_Start": 2959.52,
+        "Time_End": 2960.52,
+        "Text": " No other questions?"
+      },
+      {
+        "Time_Start": 2961.52,
+        "Time_End": 2962.52,
+        "Text": " Thank you everyone."
+      },
+      {
+        "Time_Start": 2965.52,
+        "Time_End": 2966.52,
+        "Text": " Thank you."
+      }
+    ]
+  }
+}

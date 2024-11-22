@@ -1,0 +1,112 @@
+## Introduction
+- **Speakers**: Dennis Giese and Braelynn Hacker
+- **Topic**: Reverse engineering and hacking Ecovacs robots
+
+## Speaker Backgrounds
+- **Dennis**: Security researcher and hardware hacker with a focus on wireless and embedded security and privacy.
+- **Braelynn**: Application security and API specialist who started robot hacking during the COVID pandemic.
+
+## Talk Goals
+- Provide an understanding of the security and privacy risks associated with IoT devices.
+- Offer an overview of their process for hacking vacuum robots.
+- Demonstrate vulnerabilities and explain how to identify them.
+- Achieve root access without disassembling the device.
+
+## Disclaimer
+- The speakers do not claim that vendors are using sensors to spy on users, but acknowledge the technical possibility.
+- Their research primarily covers physical and proximity attacks rather than remote cloud-based attacks.
+- They emphasize that security vulnerabilities are prevalent across vendors, regardless of origin, size, or market share.
+- This talk specifically focuses on Ecovacs and its sub-brand, Yidi.
+- Their research is part of private projects without any company sponsorship or organizational influence.
+
+## Devices Covered
+- Ecovacs robots up to the X2 model, including vacuum robots, lawn mowing robots, and air purifiers.
+- Only devices running Linux are included in the scope.
+
+## Research Journey
+- **2017**: Initial research on Xiaomi and Roborock vacuum robots, exploiting over-the-air update system vulnerabilities.
+- **2021**: Released a method for rooting newer Roborock and Dreamy devices, bypassing secure boot and security features.
+- **2023**: Identified a secure boot bypass for Roborock, Navel, and Shark devices, requiring months of work.
+- **Recent Focus**: Ecovacs due to their powerful and affordable devices, recycling hardware across generations.
+
+## Ecovacs Ecosystem
+### Company Overview
+- Founded in 1998 in China, initially producing OEM vacuum cleaners.
+- Introduced their own brand of vacuum robots in 2007 with the D-Bot.
+- Held a 17% market share in 2020, likely among the top 2-3 manufacturers globally today.
+- Product portfolio includes vacuum robots, window cleaners, mobile air purifiers, lawn mowing robots, and more.
+
+### Hardware
+- **SoC**: Runs Linux and handles navigation, mapping, and connectivity. Connected to storage, sensors (LiDAR, camera, microphones), and Wi-Fi/Bluetooth/Ultra Wideband.
+- **MCU**: Microcontroller responsible for real-time operations like controlling wheels, infrared sensors, fans, and drop sensors.
+- **D-Bot 900 Series**: Featured a weak hardware configuration with limited RAM and storage.
+- **X1 and X2**: Based on the Horizon X3 SoC (quad-core ARM Cortex-A with AI acceleration), 2GB RAM, and 512MB SPI flash (upgraded to EMMC flash in X2).
+- **AirBot Z1 ("SpyBot")**: Similar to X1 but with additional camera and microphones, used as a Bluetooth speaker and air purifier with home patrol mode.
+- **Lawn Mowing Robots**: Octa-core Rockchip SoC with AI accelerator, 4GB RAM, 16GB eMMC flash, multiple MCUs, and various sensors.
+
+### Software
+- Runs Linux OS with ROS Melodic Morenia and custom software suite called Medusa.
+- Uses TensorFlow and OpenCV for AI object detection (furniture, cables, pets, etc.).
+- Employs Python 2.7, AWS Kinesis SDK for remote camera access outside China, and Alibaba Alien SDK for China.
+- Offers little to no protections against rooting.
+
+## Security and Privacy Concerns
+### Bug Bounty Program
+- Ecovacs has a security page claiming a public bulletin board for bug reports via email.
+- They do not respond to reports or emails, and some bugs are silently patched.
+- Their privacy policy does not guarantee data locality, and regional AWS services are used for EU, US, and China.
+- Photos and videos may be sent to Ali Cloud Video for AI analysis, with an opt-in claim that may not be honored.
+
+### Data Harvesting
+- Mobile apps and robots communicate frequently with Ecovacs servers.
+- Key data collection endpoints are named "Big Data" and "Data Upload."
+- Telemetry data includes live robot coordinates, Wi-Fi access points, network data, debug information when robots get stuck, and potentially AI pictures.
+
+### Data Retention
+- Maps and pictures are stored in a NoSQL database, accessible to anyone with the object ID.
+- Maps remain on servers even after factory reset or account repair/deletion.
+- JWTs for authentication remain valid after account deletion, allowing continued access to the robot.
+
+### Data Storage on Devices
+- User data partition is unencrypted, containing logs, configs, maps, pictures, Wi-Fi credentials, and HelloYiku traffic logs.
+- Live video PIN is stored as an MD5 hash, and lawnmower robot PIN is in plain text.
+- Sound files for camera access warnings can be deleted and replaced, disabling the warning.
+
+### TLS Misconfiguration
+- Mobile app correctly checks certificates, but robot-specific plugins sometimes accept self-signed certificates.
+- This allows man-in-the-middle attacks and OTA update injections using tools like CertMidim.
+- Robots also misconfigure TLS, accepting self-signed certificates and exposing MQTT and TLS connections.
+
+### Pin Verification Bypass
+- Mobile app asks for a pin to access live video and audio, with owner and shared users granted access.
+- The pin verification and WebRTC session are not tied together, allowing an attacker to convince the app that the pin is correct and establish a session.
+- This issue was reported and unsuccessfully patched in 2023, but the speakers were able to break it again.
+- A demonstration is provided, showing how to intercept and modify the pin verification response to bypass protection.
+
+### Free Lawnmowers
+- Ecovax G1 has an anti-theft mechanism with a pin to unlock the robot if picked up without triggering the alarm.
+- The pin is stored in plain text on the robot, a common issue with lawnmowers from other vendors as well.
+- It is recommended to keep lawnmowers indoors or in a secure location to prevent theft.
+
+### Bluetooth Remote Code Execution
+- Newer vacuum robots and all lawnmowing robots use BLE for provisioning and controlling.
+- Communication between the app and robots is done via the GAT protocol, with payload encryption using a static AS key.
+- Input validation is inadequate, allowing command injection and remote code execution.
+- A demonstration is provided, showing how to send an encrypted payload to execute commands as root on a lawnmowing robot.
+
+## Takeaway Lessons
+- Certifications cannot be relied upon for security and privacy.
+- Vulnerable devices, like the lawnmower, should be turned off until a fix is available.
+- For devices without BLE, avoid updating to retain root access.
+- Be cautious when connecting to unsecured Wi-Fi networks with vulnerable apps.
+- Used devices may come with compromised firmware, and factory reset may not always ensure security.
+
+## Summary
+- The speakers achieved root access on most released Ecovacs robots, exploiting UART interface and authentication vulnerabilities.
+- They demonstrated BLE remote code execution to gain initial access, with potential for device-to-device infection.
+- Persistence is possible through autostart and immutable file attributes.
+- The vendors' security and privacy claims were unverified, and issues were found across apps, robots, clouds, and certifications.
+
+## Acknowledgments and Contact
+- Special thanks to Daniel, Chris, Suen, Timster, and Apple for their contributions.
+- For questions or further discussion, reach out via email: <EMAIL>

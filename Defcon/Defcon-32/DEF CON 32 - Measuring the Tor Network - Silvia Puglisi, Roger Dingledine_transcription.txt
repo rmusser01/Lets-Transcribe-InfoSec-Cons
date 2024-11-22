@@ -1,0 +1,907 @@
+{
+  "webpage_url": "https://www.youtube.com/watch?v=n8w85LpRplY",
+  "title": "DEF CON 32 - Measuring the Tor Network - Silvia Puglisi, Roger Dingledine",
+  "description": "Millions of people around the world use Tor every day to protect themselves from surveillance and censorship. While the Tor Browser and its protocol are widely known, the backbone of the Tor ecosystem, its extensive network of volunteer relays, is often subject to speculation and misinformation. The Tor Project is dedicated to supporting this network and fostering a vibrant, diverse community of relay operators.\n\nThis talk will focus on our efforts to maintain a healthy network and community, and detect and mitigate attacks -- all with the help of metrics and analysis of usage patterns. By illustrating how we collect safe-enough metrics for an anonymity network, we will offer insights into how we identify unusual activity and other noteworthy events on the network. We will also discuss our ongoing strategies for addressing current and future network health challenges.\n\nIf you are interested in understanding the inner workings of the Tor network and its relay community and how we keep this vital ecosystem running, this talk is for you.",
+  "channel_url": "https://www.youtube.com/channel/UC6Om9kAkl32dWlDSNlDS9Iw",
+  "duration": 2495,
+  "channel": "DEFCONConference",
+  "uploader": "DEFCONConference",
+  "upload_date": "20241016"
+}
+
+0.88s - 10.22s | This text was transcribed using whisper model: large-v2
+
+ Okay, wow, this microphone is really loud.
+10.22s - 11.06s |  Awesome.
+11.06s - 13.66s |  Welcome everybody to another Tor Talk.
+13.66s - 16.10s |  I'm Roger, this is Sylvia,
+16.10s - 19.14s |  and we're gonna tell you about the Tor metrics,
+19.14s - 21.24s |  how to understand what's going on in the network,
+21.24s - 24.92s |  and in general, how to grow the community that we're going.
+24.92s - 27.58s |  So part of what I'm trying to do here,
+27.58s - 30.74s |  many of you have seen only me as a Tor speaker.
+30.74s - 32.82s |  I'd like to show you that there are other Tor people
+32.82s - 34.74s |  in the world who actually do things,
+34.74s - 37.46s |  and eventually there will be more voices of Tor
+37.46s - 43.23s |  than just me, and maybe eventually, not even me.
+43.23s - 47.19s |  Okay, so some motivation, some things to think about.
+47.19s - 51.57s |  Here is a fellow who was elected in Iran back in 2009,
+51.57s - 53.23s |  but he ended up not in charge,
+53.23s - 56.97s |  and many of you might remember the Green Party movement.
+56.97s - 59.07s |  So long ago, I was talking to a friend
+59.07s - 62.83s |  who was doing trainings of how to be safe in Iran,
+62.83s - 64.23s |  how to get around censorship,
+64.23s - 67.51s |  and he was teaching people open proxies, VPNs,
+67.51s - 72.35s |  Tor, Syphon, other tools, and then he realized,
+72.35s - 75.43s |  everybody that I've taught anything other than Tor to
+75.43s - 79.35s |  is now dead or in jail, so I'm only gonna teach Tor,
+79.35s - 82.11s |  and that was an eye-opening story when I heard it,
+82.11s - 84.31s |  and there are two lessons there that we take here.
+84.31s - 87.27s |  One of them is we really need to understand
+87.27s - 88.79s |  what's going on in the Tor network,
+88.79s - 91.55s |  so when a lot of users show up from certain countries,
+91.55s - 93.07s |  we know that it's happening,
+93.07s - 95.19s |  but also we need to do it safely.
+95.19s - 98.19s |  We need to be aware of how we can measure things
+98.19s - 103.37s |  and understand things without putting users at risk.
+103.37s - 105.25s |  So we've got four main topics
+105.25s - 106.27s |  we're gonna talk about today.
+106.27s - 108.45s |  The first one is introduction to Tor
+108.45s - 110.73s |  for the people who need a refresher,
+110.73s - 113.83s |  and then we're gonna talk more about the relay community
+113.83s - 117.37s |  and who runs the relays and how we grow that as a community,
+117.37s - 119.17s |  and then we're gonna talk about
+119.17s - 121.37s |  understanding what's going on with metrics
+121.37s - 123.29s |  and measurements and datasets,
+123.29s - 126.79s |  and at the end, we'll ask you to help us save the world.
+128.65s - 130.17s |  Okay, did I?
+130.17s - 131.05s |  Yes.
+131.05s - 133.85s |  Okay, so Tor is a lot of different things.
+133.85s - 135.61s |  Tor is a nonprofit.
+135.61s - 137.37s |  It's a free software project.
+137.37s - 139.09s |  It's a network of volunteers.
+139.09s - 142.49s |  So raise your hand if any of the following apply to you.
+143.39s - 147.37s |  Anybody here run a Tor relay or a bridge or a snowflake?
+147.37s - 149.25s |  Anybody here help with research
+149.25s - 152.69s |  or helping in writing research papers?
+152.69s - 155.89s |  Anybody here use Tor, use Tor browser?
+155.89s - 158.65s |  Anybody here find themselves explaining to their relatives
+158.65s - 162.45s |  why I have nothing to hide makes no sense?
+162.45s - 164.37s |  Excellent, you're all part of Tor.
+164.37s - 167.73s |  Tor is an ecosystem of people trying to fix the fact
+167.73s - 172.97s |  that people need privacy and not enough of them have it.
+172.97s - 174.93s |  Okay, so I use the word anonymity
+174.93s - 176.21s |  when I'm talking to researchers,
+176.21s - 179.73s |  but really it comes down to communications metadata,
+179.73s - 183.25s |  and here's creepy NSA guy that we learned a lot more about
+183.25s - 184.53s |  from this note in documents,
+184.53s - 187.85s |  and he actually said we kill people based on metadata.
+187.85s - 190.21s |  So that's where we're starting from,
+190.21s - 194.17s |  and the goal of Tor is to protect that metadata
+194.17s - 198.53s |  so that it's hard for people to tell who's doing what.
+198.53s - 201.77s |  So I only use the word anonymity talking to researchers.
+201.77s - 204.13s |  When I'm talking to my parents and grandparents,
+204.13s - 205.95s |  I work on privacy systems,
+205.95s - 208.81s |  because anonymity, I don't know, that's kind of scary,
+208.81s - 210.85s |  but privacy is an important value.
+210.85s - 212.61s |  Everybody should have privacy.
+212.61s - 216.21s |  And then when I'm talking to corporations,
+216.21s - 217.89s |  Google, Walmart, and so on,
+217.89s - 220.45s |  I work on communication security,
+220.45s - 222.61s |  because privacy is dead, anonymity,
+222.61s - 223.75s |  why would they want that?
+223.75s - 225.97s |  But of course they want security.
+225.97s - 227.73s |  And then when I'm talking to governments,
+227.73s - 229.21s |  I work on traffic analysis
+229.21s - 231.41s |  resistant communication networks.
+231.41s - 233.01s |  And again, it's the same system,
+233.01s - 234.49s |  the same security properties.
+234.49s - 236.59s |  The goal is to get all these users together
+236.59s - 238.97s |  so you have your cancer survivors
+238.97s - 241.27s |  and your Egyptian activists and other groups
+241.27s - 243.43s |  all inside the same network.
+243.43s - 245.47s |  And then there's the fourth category
+245.47s - 247.57s |  that we've been thinking a lot about recently,
+247.57s - 249.67s |  which is the reachability side,
+249.67s - 252.61s |  the people in Vietnam who can't get to BBC,
+252.61s - 255.31s |  or people trying to reach the Tor network
+255.31s - 257.35s |  even though censors are trying to block it.
+257.35s - 260.39s |  So the goal here is to get all of these different groups
+260.39s - 262.19s |  into the same anonymity system
+262.19s - 263.67s |  so that they can blend together.
+263.67s - 266.73s |  Otherwise, if you just had an anonymity system
+266.73s - 268.63s |  for cancer survivors,
+268.63s - 271.39s |  then people would know why you installed it,
+271.39s - 274.64s |  why you're using it.
+274.64s - 276.40s |  Okay, so how do you actually build one of these?
+276.40s - 279.00s |  How do you build a metadata,
+279.00s - 281.80s |  communications metadata privacy system?
+281.80s - 284.80s |  The easy answer is you have some centralized system
+284.80s - 287.60s |  like a VPN, and all the users connect to it
+287.60s - 290.12s |  and request some webpage or something.
+290.12s - 292.14s |  And a bunch of things can go wrong here.
+292.14s - 294.20s |  The first thing that can go wrong is
+295.20s - 298.66s |  what if that central point of failure fails?
+298.66s - 300.42s |  So we hear this all the time.
+300.42s - 302.46s |  There's some new VPN company that says,
+302.46s - 305.98s |  we promise we won't look at any of your traffic.
+305.98s - 308.18s |  Okay, actually, we do look at all of your traffic.
+308.18s - 310.50s |  We promise we won't log anything.
+310.50s - 312.36s |  Okay, actually, we do write all of it down.
+312.36s - 314.26s |  We promise we won't tell anybody.
+314.26s - 316.46s |  Oh, well, of course we answer subpoenas.
+316.46s - 319.66s |  And so the problem there is you don't know.
+319.66s - 321.14s |  It's a centralized system.
+321.14s - 323.90s |  They promise they won't screw you, but they have the data.
+323.90s - 326.34s |  They know you, they know what you do.
+326.34s - 327.94s |  It's privacy by promise.
+328.92s - 330.18s |  And it's worse than that.
+331.78s - 334.10s |  Even if that centralized provider
+334.10s - 336.78s |  is somehow magically honest in all ways,
+336.78s - 338.50s |  it's still one point.
+338.50s - 340.94s |  And the cable goes in, the same cable comes out.
+340.94s - 342.54s |  And if you can get access to that,
+342.54s - 345.08s |  then you can start doing timing and volume analysis
+345.08s - 348.42s |  to say that user wanted to get that webpage.
+348.42s - 351.46s |  So even if the central point is totally honest,
+351.46s - 352.64s |  it's still bad news.
+353.86s - 356.62s |  So the goal of Tor is to distribute the trust
+356.62s - 359.60s |  over multiple relays so there's no single point
+359.60s - 362.06s |  that knows both you and what you're doing.
+362.06s - 365.34s |  So it's privacy by design, privacy by architecture,
+365.34s - 367.42s |  rather than privacy by promise.
+367.42s - 370.66s |  And part of the goal is we've got these,
+370.66s - 372.34s |  you're able to see the slides, right,
+372.34s - 373.28s |  even though they're not here?
+373.28s - 374.46s |  Okay, good.
+374.46s - 377.30s |  So part of the goal is that we've got these three relays
+377.30s - 380.00s |  and you build your path through the three relays
+380.00s - 382.52s |  and no single point in the network
+382.52s - 384.40s |  is able to learn both who you are
+384.40s - 386.34s |  and what destinations you're going to.
+387.84s - 389.40s |  And another key point here,
+389.40s - 391.52s |  transparency for Tor is really important.
+391.52s - 393.80s |  Yes, it's open source, it's free software.
+393.80s - 395.60s |  Yes, we give you the design documents
+395.60s - 398.04s |  and the specifications and the research papers.
+398.04s - 401.96s |  And yes, we say, hi, I'm Roger, she's Sylvia.
+401.96s - 403.76s |  We're people, we're actually developers
+403.76s - 407.02s |  who are happy to publicly identify ourselves.
+407.02s - 410.64s |  And the key to that is transparency is really important.
+410.64s - 412.96s |  Every time I talk to somebody, they say,
+412.96s - 414.64s |  oh, ha ha, the privacy people
+414.64s - 415.96s |  are talking about transparency.
+415.96s - 417.38s |  That doesn't make any sense.
+417.38s - 421.16s |  And the reason why it makes sense is privacy is about choice.
+421.16s - 423.04s |  Transparency is about choice.
+423.04s - 426.52s |  Our goal here is we choose to be transparent
+426.52s - 428.56s |  in order to build a stronger community,
+428.56s - 431.80s |  in order for people to be able to trust what we're doing
+431.80s - 436.60s |  and to become part of our community.
+436.60s - 438.36s |  Okay, so here's our first graph.
+438.36s - 440.82s |  This is a graph of the capacity and the load
+440.82s - 442.96s |  on the Tor network over the past 10 years.
+443.00s - 446.28s |  The green line is what sort of capacity we have,
+446.28s - 448.68s |  and the purple line is the load on the network.
+448.68s - 451.80s |  And we're up at 250 gigabits per second
+451.80s - 454.28s |  of actual load on the network,
+454.28s - 457.52s |  which is a pretty big global network at this point.
+457.52s - 460.40s |  On the other hand, the capacity has still been growing,
+460.40s - 462.60s |  and the purple line, the load line,
+462.60s - 465.08s |  has sort of flattened out over the past couple of years.
+465.08s - 468.42s |  So we can definitely talk about how to scale
+468.42s - 477.38s |  and how the performance should work.
+477.38s - 479.58s |  No, keep going.
+480.42s - 481.26s |  That's fine.
+482.50s - 483.78s |  Now it works?
+483.78s - 484.62s |  Oh, it doesn't.
+485.58s - 487.10s |  Hello, that's fine.
+487.10s - 492.10s |  Okay, so this is the number of relays per flags that we have.
+492.50s - 496.58s |  Flags are like roles that relay can have on the network.
+496.58s - 499.42s |  And for example, if we have a stable relay,
+499.42s - 501.82s |  that usually is gonna be a guard as well,
+501.82s - 504.70s |  meaning that that's the relay that the Tor browser picks
+504.70s - 506.66s |  when entering the network.
+506.66s - 508.62s |  And some of you might notice
+508.62s - 510.70s |  there is an interesting curve here.
+510.70s - 514.66s |  It's the HSDR graph here.
+514.66s - 516.88s |  In the middle, we have 4,000 relays,
+516.88s - 519.26s |  and then sometimes around June, something happens,
+519.26s - 522.06s |  and we lose 2,000 of those relays.
+522.06s - 524.30s |  And why does that happen?
+524.30s - 527.30s |  So there was a Debian update.
+527.30s - 529.46s |  There was a library that had a few dependencies
+529.46s - 530.74s |  in common with Tor.
+530.74s - 534.02s |  So that updated, and the Tor daemon restarted,
+534.02s - 536.42s |  and the relays lose the flag.
+536.42s - 538.70s |  And this introduced us to a topic
+538.70s - 542.02s |  that is important for the Tor network, which is diversity.
+542.02s - 544.94s |  And actually shows that we have a little bit
+544.94s - 548.62s |  of a monoculture issue when it comes to Tor relays.
+548.62s - 551.70s |  A lot of them don't run Debian.
+551.70s - 554.46s |  And that is because the easiest way to run a Tor relay
+554.46s - 558.18s |  is you spin up a Debian machine,
+558.18s - 560.90s |  you install the package, and then you have the relay.
+562.02s - 566.02s |  And so it shows these monoculture issues,
+566.66s - 568.30s |  but I think we're not the only one
+568.30s - 569.58s |  to have monoculture issues.
+569.58s - 574.14s |  I think Microsoft said that they had 8.5 million devices
+574.14s - 578.86s |  affected by the CrowdStrike incident, so anyway.
+580.30s - 582.74s |  And this is why we talk about diversity a lot
+582.74s - 585.70s |  when we talk about the Tor network.
+585.70s - 588.46s |  The Tor network is driven by a diverse community
+588.46s - 593.46s |  of relay operators, and we have developers,
+593.62s - 597.06s |  we have privacy researchers, we have security professional,
+597.06s - 598.46s |  we have academics.
+599.58s - 602.54s |  And diversity is not just a desirable attribute,
+602.54s - 603.98s |  but it's a critical component
+603.98s - 605.94s |  when we talk about the network.
+605.94s - 610.10s |  And you might wonder, what do we mean by diversity?
+610.10s - 612.38s |  Why we place so much emphasis on it?
+613.70s - 618.18s |  And what mechanism, and we do have to foster
+618.18s - 619.46s |  this diverse community.
+619.46s - 623.34s |  So the first thing is when we talk about the network,
+624.22s - 625.86s |  we mean diversity of hardware,
+625.86s - 629.18s |  software configuration, location, but also of users.
+630.26s - 631.98s |  Hardware and software configuration,
+631.98s - 634.38s |  we saw a little bit when a lot of relays
+634.38s - 636.02s |  run the same operating system,
+636.02s - 637.82s |  they are affected maybe by a bug.
+637.82s - 639.78s |  That means a big part of the network
+639.78s - 641.90s |  is affected by the same bug.
+641.90s - 645.70s |  So we strive, our objective is to have
+645.70s - 648.94s |  a uniform distribution of operating systems.
+648.94s - 651.70s |  Of course, we're not there, but that's what we aim for.
+652.66s - 655.74s |  We place a lot of emphasis on location as well
+655.74s - 657.34s |  for a variety of reasons.
+657.34s - 660.38s |  We want third circuit to spread
+660.38s - 662.02s |  different geographical location
+662.02s - 665.58s |  because it would make harder for an observer
+665.58s - 670.58s |  to place the origin and the destination of a communication.
+671.22s - 674.58s |  We want also to our relays to be spread globally
+674.58s - 676.46s |  to avoid single point of failure.
+677.78s - 679.98s |  Because if there is an issues locally
+680.02s - 682.78s |  that is affecting a number of relays,
+682.78s - 684.74s |  we know that the rest of the network,
+684.74s - 686.86s |  we maintain the stability.
+686.86s - 690.26s |  And we also think that by having relay operators
+690.26s - 691.46s |  spread around the world,
+691.46s - 694.98s |  we have a more diverse community, diverse location,
+694.98s - 699.10s |  which in the end will help maintain the network growth
+699.10s - 701.90s |  and sustainability in the long run.
+701.90s - 705.34s |  And we also want diversity of users.
+705.34s - 708.94s |  So people use Tor for a variety of reasons.
+708.94s - 712.58s |  We estimate that we have 400,000 users
+712.58s - 714.82s |  daily in the United States.
+714.82s - 718.74s |  It means that we have diversity of usage patterns,
+718.74s - 720.86s |  profiles, interest.
+720.86s - 725.02s |  We have minority groups using Tor, social right activists.
+725.02s - 728.26s |  We have privacy enthusiasts who would want to be followed
+728.26s - 731.58s |  by surveillance company, why they surf the web.
+731.58s - 736.10s |  And for many people like activists,
+737.10s - 740.70s |  people belonging to different kind,
+740.70s - 742.50s |  for example, people researching,
+746.07s - 747.11s |  people researching,
+748.99s - 751.79s |  people researching like information
+751.79s - 753.51s |  on reproductive rights online.
+753.51s - 757.19s |  People needed looking for information
+757.19s - 758.23s |  on domestic violence.
+758.23s - 762.47s |  For example, Tor provides a platform to access information
+762.47s - 764.83s |  and to express themselves in environments
+764.87s - 767.55s |  where they could otherwise face persecution,
+767.55s - 769.99s |  discrimination, and retaliation.
+771.63s - 776.63s |  So how do we actually foster this diverse community
+777.15s - 777.99s |  in a healthy way?
+777.99s - 781.55s |  So we place a lot of emphasis on direct communication.
+781.55s - 785.55s |  We use IRC, we use mailing lists, we use forum.
+785.55s - 788.27s |  We organize online and in-person meetups,
+788.27s - 791.67s |  online meetups for our community up and every month.
+791.67s - 794.99s |  We get feedback from relay operators, for example,
+794.99s - 799.47s |  and we tell them how development is going,
+799.47s - 801.27s |  if there is any update,
+801.27s - 804.23s |  and we get this communication going on.
+804.23s - 808.15s |  We have in-person meetups, we are here at DEF CON.
+808.15s - 810.15s |  In Europe, we know that there are other events
+810.15s - 812.27s |  where people in our community like to gather.
+812.27s - 815.91s |  So for example, we have FOSDEM, we have CCC.
+815.91s - 818.67s |  And we do develop transparent policies.
+819.67s - 823.43s |  We have open process to create and maintain policies
+823.43s - 824.67s |  for our community,
+824.67s - 827.11s |  which are central to how we run the community.
+828.31s - 832.19s |  This discussion of how to propose and maintain this policy
+832.19s - 835.39s |  happen on our backtracker on GitLab.
+835.39s - 839.15s |  And everybody's welcome to give feedback.
+839.15s - 842.39s |  And it's a way for us to give new tools
+842.39s - 843.51s |  to the relay community,
+843.51s - 844.55s |  because in the past,
+844.55s - 847.67s |  we noticed that they were organizing informally.
+847.67s - 849.67s |  And this is a tool to help them
+849.67s - 854.67s |  with managing expectation and with governance.
+860.56s - 862.00s |  Testing, testing, great.
+862.00s - 864.40s |  So where do these relays come from?
+864.40s - 867.24s |  And originally, it was people that I had met
+867.24s - 869.16s |  at hacker conferences like this.
+869.16s - 871.00s |  And I said, tour is really important.
+871.00s - 872.72s |  And you said, how can I help?
+872.72s - 874.64s |  And I convinced you to run a relay.
+874.64s - 877.76s |  And that worked great for the first 50 relays
+877.76s - 879.00s |  or 100 relays.
+879.04s - 880.92s |  But if we need to scale the network
+880.92s - 882.48s |  up to thousands of relays,
+882.48s - 885.28s |  and they need to be in diverse locations around the world,
+885.28s - 887.40s |  I can't go meet all of the people.
+887.40s - 890.44s |  In order to have an actually global safe network,
+890.44s - 892.76s |  we need to have them everywhere
+892.76s - 895.12s |  and run by people that we don't know as well.
+895.12s - 896.28s |  And the challenge there,
+896.28s - 898.32s |  especially in the past few years,
+898.32s - 901.40s |  the set of reasons why bad people
+901.40s - 903.64s |  might want to set up relays has grown.
+903.64s - 907.04s |  We've ended up with people in Russia setting up relays
+907.04s - 911.40s |  in order to do a man-in-the-middle attacks on exit traffic.
+911.40s - 914.60s |  We've ended up, we've seen people running relays,
+914.60s - 916.00s |  a lot of them for reasons
+916.00s - 918.40s |  that we still don't quite understand what's going on.
+918.40s - 921.96s |  So this is an ongoing and growing challenge.
+921.96s - 923.76s |  How do we make sure that the tour network
+923.76s - 926.68s |  has the relays that are doing it for the right reasons?
+926.68s - 928.52s |  And part of that, so how do we do that?
+928.52s - 930.32s |  How do we actually accomplish that?
+930.32s - 932.64s |  The first answer is we need to get rid
+932.64s - 936.08s |  of application-level vulnerabilities.
+936.08s - 939.04s |  For example, the reason why those Russian people
+939.04s - 941.48s |  could run man-in-the-middle attacks
+941.48s - 946.48s |  is because some tour users were doing HTTP, not HTTPS.
+946.64s - 949.08s |  So we managed to fix the browser
+949.08s - 952.32s |  to do HTTPS by default always,
+952.32s - 956.96s |  and that is a structural way to resolve that sort of attack.
+956.96s - 959.64s |  Another angle to look at this,
+959.64s - 962.88s |  one of the few tools that we have in this community,
+962.88s - 965.28s |  in this social group of relays,
+965.28s - 966.96s |  is the social graph.
+966.96s - 968.44s |  It's who knows who.
+968.44s - 971.76s |  So if we, as a community of relay operators,
+971.76s - 973.72s |  get together and know each other,
+973.72s - 977.58s |  then we can be stronger against outsider or FBI people
+977.58s - 979.52s |  or whatever trying to come in and join.
+980.64s - 984.12s |  And speaking of that, one of the really successful models
+984.12s - 986.32s |  over the past 10 years or so
+986.32s - 988.76s |  is relay operator associations.
+988.76s - 991.16s |  These are non-profits around the world who,
+991.16s - 994.88s |  these are individuals who banded together in their country.
+994.88s - 998.92s |  One of them exists in France, in Switzerland, in Germany.
+998.92s - 1000.16s |  There's one in Sweden.
+1000.16s - 1001.36s |  There was one in Luxembourg.
+1001.36s - 1002.40s |  There was one in Iceland.
+1002.40s - 1003.64s |  There are two in Canada.
+1003.64s - 1008.28s |  It's a global phenomenon where non-profit hacker spaces
+1008.28s - 1010.72s |  get together to run tour exit relays.
+1010.72s - 1012.52s |  And one of the great things about this
+1012.52s - 1014.14s |  is it's sustainable.
+1014.14s - 1016.00s |  You can run really big relays.
+1016.00s - 1018.92s |  Another one is they can establish relationships
+1018.92s - 1022.32s |  with the local cops so they know how tour works.
+1022.32s - 1023.80s |  And also, we know who they are.
+1023.80s - 1025.92s |  We meet them at conferences like DEF CON
+1025.92s - 1027.32s |  and grow that community.
+1027.32s - 1029.44s |  So having them be part of our community
+1029.44s - 1032.48s |  is one of the ways we can handle that asymmetry
+1032.48s - 1035.40s |  where we need to have a lot of relays around the world,
+1035.40s - 1037.76s |  but also we need to know who they are
+1037.76s - 1040.08s |  and have them work together.
+1040.08s - 1044.20s |  And speaking of that, EFF a year ago launched a campaign
+1044.20s - 1047.12s |  to get universities in particular running relays.
+1047.12s - 1049.52s |  And part of the reason for that is universities,
+1049.52s - 1051.96s |  that's where freedom of speech,
+1051.96s - 1054.20s |  freedom of thought is supposed to be.
+1054.20s - 1058.32s |  But it's not just the freedom side.
+1058.32s - 1060.36s |  Universities are about education.
+1060.36s - 1062.44s |  You can run a relay at your university
+1062.44s - 1066.40s |  and learn how to put a computer on the actual internet,
+1066.40s - 1069.76s |  which is a thing that we all used to do.
+1069.76s - 1072.44s |  And now the cloud exists, so not as many people do that.
+1072.44s - 1074.12s |  So there's an education side.
+1074.12s - 1075.24s |  There's a community side.
+1075.24s - 1076.52s |  There's a research side.
+1076.52s - 1078.04s |  If you want to help do that,
+1078.04s - 1080.40s |  they have these amazing coins
+1080.40s - 1082.12s |  that they created a little while ago
+1082.12s - 1084.08s |  that I'll show you afterwards,
+1084.08s - 1086.42s |  that if you run a relay at your university,
+1086.42s - 1088.72s |  they will send you one of these amazing coins.
+1089.72s - 1093.46s |  And relay incentives in general is a broad topic
+1093.46s - 1095.32s |  that we really need to work harder on.
+1095.32s - 1100.32s |  So gamification, like Reddit style, Stack Exchange style.
+1100.96s - 1104.24s |  I got a gold badge for my five-year anniversary.
+1104.24s - 1106.84s |  I got a silver badge because I was an exit relay.
+1106.84s - 1110.24s |  I got a silver badge because I'm in an ISP
+1111.08s - 1112.32s |  that there aren't very many other relays in.
+1112.32s - 1116.60s |  So coming up with ways to highlight what we need most
+1116.60s - 1119.00s |  and make people feel happy and part of a community
+1119.00s - 1120.48s |  and check out my gold badge.
+1120.48s - 1122.08s |  I can put this on Twitter.
+1122.08s - 1124.76s |  Leaderboards, I'm running the 17th fastest
+1124.76s - 1126.56s |  tour relay in the world right now.
+1126.56s - 1127.80s |  So that's one piece.
+1127.80s - 1130.56s |  Another piece is just giving people more attention.
+1130.56s - 1134.60s |  Meetups, having a time to answer their questions
+1134.60s - 1137.00s |  and walk people through how to run relays.
+1137.00s - 1139.28s |  And then there are the structural incentives.
+1139.64s - 1143.28s |  Imagine we had a tour design where if you run a relay,
+1143.28s - 1145.62s |  you get better performance on tour.
+1145.62s - 1149.02s |  So there are a bunch of exciting security problems
+1149.02s - 1150.84s |  that come with a lot of these designs,
+1150.84s - 1153.14s |  but maybe there's a version of this design
+1153.14s - 1156.08s |  where we can get rid of the security flaws
+1156.08s - 1158.02s |  while still keeping the incentives.
+1158.02s - 1161.68s |  And then the last topic is a lot of cryptocurrency people
+1161.68s - 1164.32s |  these days keep saying, you know what you need to do?
+1164.32s - 1167.04s |  You need an incentive coin thing
+1167.04s - 1169.00s |  so that people will want to run relays
+1169.72s - 1170.56s |  because they'll make money.
+1170.56s - 1173.08s |  They'll make Bitcoins, dollars, and so on.
+1173.08s - 1176.88s |  And part of the challenge there is the cryptocurrency world,
+1176.88s - 1179.80s |  their fundamental building block is capitalism,
+1179.80s - 1181.42s |  is maximizing profit.
+1181.42s - 1182.60s |  And the tour world,
+1182.60s - 1185.24s |  our fundamental building block is altruism.
+1185.24s - 1187.36s |  It's I want to make the world a better place.
+1187.36s - 1188.96s |  I have extra resources.
+1188.96s - 1190.32s |  I can provide them.
+1190.32s - 1195.32s |  So these are very different worlds in terms of organic.
+1196.32s - 1199.08s |  Do you build an organic community of people
+1199.08s - 1200.48s |  who want to help each other?
+1200.48s - 1203.24s |  Or are you just trying to everybody for themselves
+1203.24s - 1204.56s |  maximize your profit?
+1204.56s - 1207.12s |  And in that case, if you want to do it for profit,
+1207.12s - 1209.68s |  maybe you'll all go to the cheapest hosting provider
+1209.68s - 1212.06s |  so you can spend as little money as possible.
+1212.06s - 1214.00s |  Or maybe you'll sell your data on the side
+1214.00s - 1215.24s |  to make a little bit more money
+1215.24s - 1218.28s |  because capitalism means maximizing profit.
+1218.28s - 1223.28s |  So these are fundamentally incompatible approaches
+1223.68s - 1227.48s |  to how to build a community of volunteers around the world
+1227.48s - 1232.16s |  who are trying to keep people safe.
+1232.16s - 1236.00s |  Okay, so I want to tell you a bit about network health
+1236.00s - 1238.12s |  and metrics and what we do.
+1238.12s - 1240.00s |  But first I want to tell you about a story
+1240.00s - 1243.56s |  because I want to put what we do in context.
+1243.56s - 1246.44s |  So between May and June in 2020,
+1246.44s - 1250.48s |  we removed a group of Torexit relays
+1250.48s - 1253.16s |  that were doing an SSL strip attack.
+1253.16s - 1254.84s |  And we didn't spot this at first
+1254.84s - 1258.32s |  because they were leaving all the exit traffic alone,
+1258.32s - 1260.68s |  but they were intercepting just a little bit of the traffic
+1260.68s - 1265.08s |  that was going to some cryptocurrency exchange websites.
+1265.08s - 1267.92s |  So what this were doing was that
+1269.18s - 1272.56s |  if the user was visiting the HTTP website,
+1272.56s - 1275.96s |  not the ghttps one, they wouldn't redirect the user.
+1275.96s - 1278.84s |  And if they wouldn't notice that there was not a lock,
+1278.84s - 1281.64s |  for example, in the browser, in the tab,
+1281.64s - 1285.44s |  they would just continue to send their login information,
+1285.44s - 1288.76s |  for example, and this information would be intercepted.
+1288.76s - 1292.28s |  So we noticed this, we kicked the relays out.
+1292.28s - 1294.20s |  And then a few weeks later in June,
+1294.20s - 1297.28s |  another group of relays does the same attack.
+1297.28s - 1300.88s |  And we noticed again, and we kicked them out.
+1300.88s - 1303.24s |  And then we realized that network health
+1303.24s - 1305.86s |  is not just about kicking relays out,
+1305.86s - 1306.96s |  although that's important
+1306.96s - 1310.04s |  because you don't want malicious relay on the network.
+1310.28s - 1312.36s |  It's a little bit more.
+1312.36s - 1314.80s |  So we got together with the browser team
+1314.80s - 1319.12s |  and because of projects like HTTPS Everywhere
+1319.12s - 1321.32s |  and a newer version of Firefox
+1321.32s - 1325.80s |  that allowed the browser to default to HTTPS
+1325.80s - 1330.52s |  and then fall back to HTTP just when needed,
+1330.52s - 1334.20s |  we were able to enable HTTPS by default into our browser
+1334.20s - 1337.08s |  and protect our user, not just the network level,
+1337.08s - 1339.60s |  but also the application level.
+1339.60s - 1343.48s |  And so out of incident like this,
+1343.48s - 1347.52s |  that we understood the value of having a network health team
+1347.52s - 1350.56s |  which is basically joining together a group of people
+1350.56s - 1352.94s |  that keep track of the network.
+1352.94s - 1357.08s |  And part of what we do is kicking relays out of the network.
+1357.08s - 1362.00s |  So, but also part of what we do is community engagement,
+1362.00s - 1363.68s |  is working with the relay community,
+1363.68s - 1367.84s |  working with activists sometimes in the ground.
+1367.84s - 1371.20s |  And the foundation of what we do also
+1371.20s - 1373.68s |  is collecting the metrics about the Tor network
+1373.68s - 1377.04s |  that gives us an idea of how the network is performing,
+1377.04s - 1378.36s |  how the network is doing
+1378.36s - 1381.50s |  and to understand if something is not right.
+1382.60s - 1387.24s |  And so when there is a geopolitical event, for example,
+1387.24s - 1388.70s |  we are able to spot it
+1388.70s - 1392.56s |  because we are able to notice some patterns on the network.
+1392.56s - 1397.32s |  And in this case, this is a picture of,
+1397.32s - 1400.12s |  it's a graph of directly connecting user from Russia
+1400.12s - 1404.06s |  in between 2021 and 2022.
+1404.06s - 1406.68s |  And we start noticing that there was censorship
+1406.68s - 1411.04s |  being applied in Russia between November and December,
+1411.04s - 1413.64s |  which a few months before the Ukraine invasion.
+1414.56s - 1417.72s |  And we saw directly connect user decline.
+1417.72s - 1421.40s |  And as we saw this happening,
+1421.40s - 1425.48s |  we also were able to work with the anti-censorship team,
+1425.48s - 1426.84s |  with activists on the ground
+1427.36s - 1430.16s |  and we were able to tell the user to use bridges.
+1430.16s - 1433.72s |  And so we saw a spike in bridge users in Russia.
+1433.72s - 1435.84s |  And that meant that we are able to help these people
+1435.84s - 1437.84s |  reach the news and know what is happening
+1437.84s - 1439.08s |  outside the country.
+1440.74s - 1443.22s |  Yeah, so let me jump in and explain what a bridge is
+1443.22s - 1444.76s |  for those who don't know.
+1444.76s - 1446.76s |  We've been talking about relays so far.
+1446.76s - 1449.82s |  These are public Tor relays that are in the list.
+1449.82s - 1451.92s |  And that means that the censors can get that list
+1451.92s - 1453.12s |  and block all of them.
+1453.12s - 1456.68s |  So bridges are relays that aren't in the list.
+1457.50s - 1459.52s |  And so the goal is to transform the traffic in some way
+1459.52s - 1460.82s |  so that it's doing a protocol
+1460.82s - 1462.40s |  the censors don't want to block
+1462.40s - 1464.32s |  and it's talking to an IP address
+1464.32s - 1466.14s |  that the censors don't think is Tor.
+1466.14s - 1469.08s |  So that's the arms race that we're in there.
+1469.08s - 1471.12s |  And there are a bunch of different approaches
+1471.12s - 1472.48s |  we have for bridges.
+1472.48s - 1476.18s |  One of which is?
+1476.18s - 1481.18s |  Yeah, and similar situation in Iran in 2022,
+1481.40s - 1483.42s |  the Massimini protests.
+1483.42s - 1488.42s |  So people, we started noticing that there was aggressive
+1488.84s - 1490.64s |  censorship happening in the country.
+1490.64s - 1492.56s |  People were in the streets protesting.
+1492.56s - 1494.80s |  They couldn't access the internet.
+1494.80s - 1496.24s |  They couldn't access the news.
+1496.24s - 1500.20s |  They couldn't use communication messaging systems.
+1500.20s - 1503.90s |  So by working again with people on the ground,
+1503.90s - 1505.90s |  the activists, the local people
+1505.90s - 1507.28s |  and the anti-censorship team,
+1507.28s - 1511.70s |  we were able to teach these users how to use Snowflake.
+1511.70s - 1516.70s |  And we saw how the users from Iran spiked
+1516.90s - 1518.66s |  during the protest.
+1519.42s - 1520.26s |  And for these people,
+1520.26s - 1522.14s |  reaching Tor was a lifeline in a way
+1522.14s - 1524.14s |  because they were able to communicate
+1524.14s - 1527.34s |  between one another in ways that it was not possible
+1527.34s - 1529.70s |  at the moment with any other tool.
+1529.70s - 1531.62s |  And if you're wondering what Snowflake is,
+1531.62s - 1533.50s |  so in the Tor ecosystem,
+1533.50s - 1536.70s |  Snowflake is what we call a pluggable transport.
+1536.70s - 1539.74s |  And you can think of it like as a tool
+1539.74s - 1541.84s |  that Tor used to disguise the traffic.
+1541.84s - 1543.84s |  And in the case of Snowflake,
+1543.84s - 1546.94s |  it used temporary run volunteer proxies.
+1546.94s - 1550.38s |  So it's by using the proxies,
+1550.38s - 1553.82s |  more difficult for the sensors to actually block them.
+1553.82s - 1557.90s |  And it helps people in very difficult situation
+1557.90s - 1559.20s |  to reach the internet.
+1560.94s - 1562.74s |  Yeah, so two things to point out
+1562.74s - 1564.10s |  for this graph in particular.
+1564.10s - 1566.24s |  One of them is that y-axis,
+1566.24s - 1568.10s |  we're talking a hundred thousand
+1568.10s - 1570.06s |  or maybe hundreds of thousands
+1570.06s - 1573.10s |  of people using Snowflake in Iran during that event.
+1573.10s - 1576.06s |  So as we're showing more recent graphs,
+1576.06s - 1578.22s |  we end up with larger and larger numbers.
+1578.22s - 1580.86s |  We're talking about many tens of thousands
+1580.86s - 1582.42s |  or hundreds of thousands of people.
+1582.42s - 1585.84s |  And the other answer is snowflake.torproject.org.
+1585.84s - 1588.06s |  You too can volunteer as a Snowflake.
+1588.06s - 1590.26s |  You can either install it as a browser extension
+1590.26s - 1591.50s |  or there's a headless version
+1591.50s - 1593.74s |  for your Linux system based on Go.
+1593.74s - 1596.92s |  Please help.
+1596.92s - 1599.32s |  And so more recent case,
+1599.32s - 1603.68s |  we saw just a few months ago between May and June,
+1603.68s - 1607.64s |  we started to see user spikes in Myanmar.
+1607.64s - 1610.52s |  And then we got news that the military junta
+1610.52s - 1613.48s |  and started to apply internet shutdown.
+1613.48s - 1616.80s |  So again, what we did was get together with the browser,
+1616.80s - 1618.38s |  the anti-censorship team,
+1618.38s - 1622.04s |  and help users connecting to Tor
+1622.04s - 1625.50s |  by distributing bridges directly for them in the country.
+1625.50s - 1629.04s |  And we saw how from not having
+1629.04s - 1631.14s |  almost zero bridge users in the country,
+1631.14s - 1638.96s |  we got a spike in a few days to just half a thousand.
+1639.16s - 1641.24s |  So one of the fascinating things
+1641.24s - 1642.90s |  about the graph like this,
+1642.90s - 1645.92s |  periodically we see spikes in our user graphs.
+1645.92s - 1648.16s |  And here we're like, wow, a whole lot of people
+1648.16s - 1651.68s |  from Myanmar just started using Tor over bridges.
+1651.68s - 1652.60s |  This is great.
+1652.60s - 1654.08s |  But sometimes we see the spikes
+1654.08s - 1656.44s |  and we don't know if it actually happened that way.
+1656.44s - 1658.44s |  We don't know what happened in the country.
+1658.44s - 1660.08s |  So every time we see a spike like this,
+1660.08s - 1662.04s |  we're wondering, is there a bug?
+1662.04s - 1664.72s |  Is there like a GOIP database mess up
+1664.72s - 1666.90s |  where actually these are people in Germany
+1666.90s - 1670.34s |  who got misclassified as being in Myanmar for that week?
+1670.34s - 1671.74s |  So part of the challenge we have
+1671.74s - 1674.06s |  is understanding what actually happened.
+1674.06s - 1676.58s |  And one of the principles that we have for that situation
+1676.58s - 1679.46s |  is trying to learn the same data points
+1679.46s - 1681.14s |  from a bunch of different dimensions,
+1681.14s - 1682.86s |  from a bunch of different angles,
+1682.86s - 1685.36s |  so that we can confirm that what we're seeing
+1685.36s - 1686.86s |  actually really did happen.
+1686.86s - 1688.42s |  And part of that is angles,
+1688.42s - 1691.10s |  including talking to people on the ground and saying,
+1691.10s - 1692.94s |  what just happened in your country?
+1692.94s - 1695.34s |  Why is it that we're seeing these graphs,
+1695.34s - 1699.78s |  these changes in our graphs?
+1699.78s - 1703.70s |  Yeah, so we've been talking about user data
+1703.70s - 1710.06s |  and you might have wonder...
+1710.06s - 1710.90s |  That's loud.
+1711.94s - 1712.78s |  Okay.
+1714.66s - 1715.50s |  All right, go on.
+1715.50s - 1716.32s |  Okay.
+1716.32s - 1717.70s |  I think they can hear us better than we can.
+1717.70s - 1718.54s |  Okay.
+1718.54s - 1722.54s |  So you might wonder, Tor is the anonymity network.
+1722.54s - 1724.38s |  How come you have user data?
+1724.38s - 1727.18s |  And so the simple answer to that
+1727.18s - 1729.82s |  is that we live by a principle
+1729.82s - 1731.42s |  that is we do not collect data
+1731.94s - 1733.18s |  that cannot be public.
+1733.18s - 1736.90s |  So all our data that we have in metrics
+1736.90s - 1739.14s |  is actually public data that we publish.
+1740.58s - 1743.34s |  So we do not collect in-client data.
+1743.34s - 1745.38s |  Our user data that we've been talking about
+1745.38s - 1746.58s |  are actual estimations.
+1746.58s - 1748.90s |  And I'm going to say how we do this.
+1748.90s - 1751.34s |  But other products like VPN products,
+1751.34s - 1755.06s |  they actually count the users and we don't.
+1755.06s - 1758.62s |  So what we have is aggregated data from relays.
+1758.62s - 1762.50s |  So the Tor browser or Tor clients in general,
+1762.50s - 1763.74s |  when they connect to the network,
+1763.74s - 1766.38s |  they request a list of relays information
+1766.38s - 1768.50s |  and they need this to build the circuits.
+1768.50s - 1772.14s |  So we estimate that if...
+1773.30s - 1775.82s |  First of all, we count all these requests globally,
+1775.82s - 1777.90s |  how they are collected from relays.
+1777.90s - 1780.06s |  And then we estimate that if a Tor client
+1780.06s - 1784.70s |  was connected 24 hours, it will make 10 requests.
+1784.70s - 1788.10s |  So we count all the requests that we get from the relays
+1789.10s - 1791.74s |  when they upload their statistics.
+1791.74s - 1796.30s |  And we divide them by 10 and we have the user estimation.
+1796.30s - 1799.54s |  So in reality, we might be underestimating our user count
+1799.54s - 1801.66s |  by an order of magnitude.
+1801.66s - 1803.38s |  But that's fine for us.
+1803.38s - 1805.02s |  It's the trade-off that we want to make
+1805.02s - 1808.42s |  in order not to put our user at risk.
+1808.42s - 1812.98s |  So we do have, though, historical data.
+1812.98s - 1816.86s |  And we actually serve this data
+1816.86s - 1818.74s |  on collector.torproject.org.
+1818.74s - 1821.18s |  You find all the documents that have ever, I think,
+1821.18s - 1823.30s |  been created on the network.
+1823.30s - 1827.62s |  And out of this data, we have network-wide statistics.
+1827.62s - 1830.82s |  And we have also the status of individual nodes
+1830.82s - 1834.74s |  that will give us an idea of how the network is doing.
+1834.74s - 1836.26s |  And then something that we do
+1836.26s - 1839.74s |  is making the data accessible to the public,
+1839.74s - 1842.42s |  but also presenting the documentation
+1842.42s - 1845.34s |  of how we estimate the metrics that we have.
+1845.34s - 1848.86s |  And we believe in algorithm transparency
+1848.86s - 1850.90s |  so that if you download these tarballs
+1850.90s - 1852.54s |  and you process this data,
+1852.54s - 1854.90s |  you can come up with the same results as we do.
+1854.90s - 1856.66s |  And if you don't, you explain to us
+1856.66s - 1858.14s |  why you don't have the same results
+1858.14s - 1862.22s |  and maybe we have to change something on our side.
+1862.22s - 1865.70s |  So this is an overview of how this process works.
+1865.70s - 1868.74s |  So the relays have this little piece of information
+1868.74s - 1871.02s |  that they upload to directory authorities,
+1871.02s - 1874.34s |  which are special nodes in the network.
+1874.34s - 1876.42s |  And there is a service that's called collector
+1877.38s - 1882.30s |  which downloads these documents and archives them.
+1882.30s - 1886.30s |  And then we have a service that takes all these documents,
+1886.30s - 1888.02s |  parses them, puts them in a database
+1888.02s - 1891.62s |  and extracts time series and network statistics.
+1891.62s - 1894.66s |  And I said that all the data is public
+1894.66s - 1897.54s |  and this is true, but there are a few exceptions.
+1897.54s - 1902.14s |  The first exception is that we are in a race with sensors.
+1902.14s - 1904.46s |  And these sensors have a lot of resources
+1904.46s - 1907.54s |  and sometimes we need to protect some of the data
+1907.54s - 1909.74s |  in order to keep up with this race.
+1910.82s - 1913.46s |  And the other exception that we do
+1913.46s - 1915.66s |  is that sometimes we don't publish data
+1915.66s - 1918.14s |  when it can put user at risk.
+1918.14s - 1920.26s |  For example, if we have a specific country
+1920.26s - 1922.90s |  which has very few Tor users,
+1922.90s - 1925.46s |  and we believe that publishing those numbers
+1925.46s - 1928.30s |  can help somebody else that has other data
+1928.30s - 1929.58s |  to anonymize those users,
+1929.58s - 1931.66s |  so we don't publish that numbers.
+1931.66s - 1937.28s |  And I think the threshold is about 100 users.
+1937.28s - 1941.28s |  So we've been talking about metrics
+1941.28s - 1943.32s |  for understanding the status of the network,
+1943.32s - 1945.04s |  but also we have other metrics
+1945.04s - 1948.80s |  that helps us understand if a node is misbehaving
+1948.80s - 1952.72s |  and also give us an idea of how the network is performing
+1952.72s - 1955.08s |  from a point of view of performances
+1955.08s - 1958.28s |  and bandwidth and so on.
+1958.28s - 1961.12s |  So we look at traffic users patterns,
+1961.12s - 1963.96s |  we have actual bandwidth measurements
+1964.64s - 1966.44s |  and we have performance measurements.
+1967.72s - 1970.96s |  So one thing that we do is bandwidth probing
+1970.96s - 1972.72s |  and we have a service,
+1972.72s - 1974.08s |  we actually have a bunch of service
+1974.08s - 1976.08s |  that are called bandwidth authorities.
+1976.08s - 1979.60s |  And what they do is that they create a two hop circuit
+1979.60s - 1981.12s |  with the measured relay,
+1981.12s - 1983.76s |  connect to a web server, download the files
+1983.76s - 1986.40s |  and gives us an idea of the time it takes
+1986.40s - 1988.44s |  to download that file.
+1988.44s - 1991.80s |  And we can compare this with the bandwidth
+1991.80s - 1993.96s |  that actually the relays declares
+1993.96s - 1997.32s |  and when they send their descriptors file
+1997.32s - 1998.64s |  to the directory authorities.
+1998.64s - 2000.64s |  And in certain case we can find out
+2000.64s - 2001.84s |  if some relays, for example,
+2001.84s - 2004.52s |  is trying to game the system and tells us
+2004.52s - 2009.19s |  that they have more bandwidth than they actually do.
+2009.19s - 2012.39s |  And another thing that we do is performance measurements
+2012.39s - 2014.79s |  and we do them for two reasons.
+2014.79s - 2017.63s |  One of them is we want to know how the network performs
+2017.63s - 2019.59s |  from different points in the world.
+2019.59s - 2023.47s |  For example, we want to know how the location
+2024.35s - 2026.91s |  of a user compared to the location of relays distribution
+2026.91s - 2031.31s |  globally affects the bandwidth,
+2031.31s - 2034.03s |  affect other measurements.
+2034.03s - 2035.99s |  And the other thing is that we want to know
+2035.99s - 2040.39s |  for censored regions how the network performs
+2040.39s - 2043.71s |  for those users in those extreme situation.
+2043.71s - 2047.55s |  So the way this works is that we have a Tor client
+2047.55s - 2049.99s |  and a web server and then we build a server,
+2049.99s - 2052.03s |  a circuit directly to the web server,
+2052.03s - 2054.99s |  download again a file and we measure the bandwidth,
+2054.99s - 2057.23s |  we measure the time it takes to build the circuit
+2057.23s - 2063.46s |  and if there are errors, for example.
+2063.46s - 2068.14s |  And so with all this data, we know it's open,
+2068.14s - 2069.22s |  we know it's accessible,
+2069.22s - 2072.70s |  we know everyone can start learning about Tor
+2072.70s - 2077.66s |  and basically it's documented, it's data,
+2077.66s - 2079.94s |  but we also know there is a learning curve.
+2079.94s - 2083.02s |  We also know that you need resources sometimes
+2083.02s - 2086.62s |  to store this data, you need time to parse it.
+2086.62s - 2091.62s |  And so we decided to open a little bit more
+2092.38s - 2095.06s |  the way people can access metrics data.
+2095.06s - 2098.02s |  We are working on an API which is already embedded,
+2098.02s - 2099.78s |  it's already accessible.
+2099.78s - 2103.50s |  And we hope that this API can lower the barrier
+2103.50s - 2107.02s |  for researchers to start working with metrics data.
+2107.02s - 2108.90s |  We have few endpoints available,
+2108.90s - 2111.86s |  more coming up soon as we are developing.
+2111.86s - 2115.34s |  So you can access metrics-api.torproject.org,
+2115.34s - 2117.54s |  the two endpoints that are available are details
+2117.54s - 2121.74s |  and summary and give you some information of relays.
+2121.74s - 2123.78s |  I forgot to mention the API is called
+2123.78s - 2127.54s |  the Network Status API or NSA for short.
+2127.54s - 2132.54s |  So one nice thing is that besides that you're querying
+2135.14s - 2138.02s |  the NSA to get the information,
+2138.02s - 2141.10s |  is that it has a little bit more flexibility
+2141.10s - 2142.54s |  compared to parsing the data
+2142.54s - 2144.78s |  or what we are offering right now.
+2144.78s - 2148.86s |  And is that you can do, for example, historical queries.
+2148.86s - 2151.26s |  So there is a published variable
+2151.26s - 2153.78s |  that you can parse in the URL.
+2153.78s - 2158.78s |  And you parse, you send a date, just year, month, day,
+2158.94s - 2161.50s |  and then you get all the relays and bridges
+2161.50s - 2164.38s |  that were in the network within a week of the parcel date.
+2164.38s - 2168.94s |  So this is something new and that I believe
+2168.94s - 2172.18s |  can give a lot of flexibility to researchers
+2172.18s - 2173.86s |  to start experimenting.
+2173.86s - 2175.82s |  I hope it helps relay operators
+2175.82s - 2178.22s |  checking the status of their nodes.
+2178.22s - 2180.06s |  And you can check out the documentation.
+2180.06s - 2184.30s |  We welcome feedback and bugs reports, of course,
+2184.30s - 2186.72s |  because expect it to be broken.
+2189.34s - 2193.22s |  And yeah, I think it's part of the Tor Project mission
+2193.22s - 2196.32s |  to create and develop anonymity and privacy technology,
+2196.36s - 2199.28s |  but also to further its understanding,
+2199.28s - 2202.16s |  scientific understanding, popular understanding.
+2202.16s - 2208.43s |  And this is one step forward in that direction.
+2208.43s - 2211.87s |  Okay, so we've learned a bit about the relay community side
+2211.87s - 2214.35s |  and we've learned a bit about the metrics
+2214.35s - 2216.31s |  and network measurement side.
+2216.31s - 2218.23s |  What can you do to help us?
+2218.23s - 2222.15s |  So one big piece is get involved in the relay community
+2222.15s - 2224.99s |  and run a relay around the world at your university,
+2224.99s - 2229.75s |  at your work, at your VPS, wherever you happen to be.
+2229.75s - 2231.83s |  Maybe there are sysadmins in here right now
+2231.83s - 2234.07s |  who would love to add an extra relay
+2234.07s - 2236.59s |  on their volunteer rack.
+2236.59s - 2239.35s |  And so part of that is the more relays we have,
+2239.35s - 2241.03s |  the more performance we can handle,
+2241.03s - 2243.99s |  the more users we can give good performance to.
+2243.99s - 2246.77s |  And the other piece of it is the more relays we have
+2246.77s - 2250.35s |  run by good people, the smaller the impact is
+2250.35s - 2253.35s |  when some bad person shows up to try to run a relay.
+2253.39s - 2256.75s |  So the way that we dilute the people trying
+2256.75s - 2260.51s |  to do the attacks is we get more and more hacker spaces
+2260.51s - 2263.87s |  and individuals and hackers and volunteers
+2263.87s - 2266.03s |  to be participating in this community.
+2266.03s - 2267.87s |  And yes, location matters.
+2267.87s - 2270.39s |  If you can run a relay that's not in Germany
+2270.39s - 2273.55s |  or the Netherlands, then you'll be showing up
+2273.55s - 2275.11s |  in a part of the Tor network
+2275.11s - 2277.67s |  that doesn't have as many relays right now.
+2277.67s - 2280.97s |  So for example, the U.S. is nowhere near the top
+2280.97s - 2283.01s |  in terms of countries that are contributing
+2283.67s - 2284.51s |  to the Tor network.
+2284.51s - 2285.77s |  I hear the U.S. has lots of hackers
+2285.77s - 2289.47s |  and lots of internet connections and lots of computers.
+2289.47s - 2292.55s |  So there's certainly an opportunity for you
+2292.55s - 2295.63s |  to help us make the U.S. more impactful,
+2295.63s - 2297.83s |  which in turn makes performance better
+2297.83s - 2299.83s |  for users in this hemisphere.
+2299.83s - 2302.61s |  So think about diversity of location,
+2302.61s - 2304.67s |  but wherever you can run it is great.
+2304.67s - 2306.19s |  Please add more relays.
+2306.19s - 2307.87s |  And also I'm happy to chat with you more
+2307.87s - 2312.15s |  about exit policies and whether you'll end up
+2312.17s - 2315.37s |  in IP block lists and so on after this.
+2316.41s - 2319.97s |  And the other side of that is community.torproject.org
+2319.97s - 2323.63s |  has a lot of how-tos and guides on,
+2323.63s - 2325.97s |  I want to set up a bridge on Debian.
+2325.97s - 2327.01s |  How do I do it?
+2327.01s - 2328.13s |  Here are the steps.
+2328.13s - 2329.57s |  I want to do a snowflake.
+2329.57s - 2330.65s |  Here's the steps.
+2330.65s - 2333.19s |  I want to go to a relay operator meetup
+2333.19s - 2335.65s |  or learn about the relay associations.
+2335.65s - 2338.03s |  Here are the lists and documentation.
+2338.03s - 2339.39s |  So there's a lot there.
+2339.39s - 2341.09s |  And join the community in general.
+2341.09s - 2342.83s |  Come to the relay operator meetups.
+2342.83s - 2346.43s |  We don't have a formal official relay operator meetup
+2346.43s - 2347.99s |  here at DEF CON this year
+2347.99s - 2351.13s |  because this is one enormous room
+2351.13s - 2353.43s |  and we didn't figure out how to do the spaces.
+2353.43s - 2356.59s |  Maybe next year we'll join Privacy Village or something.
+2356.59s - 2359.15s |  But you can come talk to us afterwards
+2359.15s - 2361.79s |  and we'd love to chat with you more about relays.
+2361.79s - 2363.35s |  And if you can't run a relay,
+2363.35s - 2370.55s |  run a bridge or a snowflake or contribute in other ways.
+2370.57s - 2372.21s |  Yeah, so you can also get involved
+2372.21s - 2374.37s |  with the network health team.
+2374.37s - 2376.65s |  If you're interested in network data analysis,
+2376.65s - 2379.57s |  hunting for bad relays, there's certainly space for that.
+2379.57s - 2382.31s |  We hope the API can help you.
+2382.31s - 2384.21s |  There is also one thing that we do
+2384.21s - 2387.33s |  which is creating tools for relay operators.
+2387.33s - 2388.89s |  For example, Tor Weather,
+2388.89s - 2391.09s |  which gives a notification to operators
+2391.09s - 2393.61s |  when something is not right with the relay.
+2393.61s - 2395.81s |  But also you can get involved with
+2395.81s - 2400.59s |  for different projects, the network status API,
+2400.59s - 2405.59s |  the parser that we use to parse the network documents in Java
+2405.59s - 2408.07s |  and also we are trying to work on
+2408.07s - 2412.91s |  a better way to visualize network data.
+2412.91s - 2417.31s |  We are trying to move the parser from Java to Rust.
+2417.31s - 2420.69s |  There is a link to our wiki, please get involved.
+2420.69s - 2423.35s |  And if you're thinking to contribute to Tor
+2423.35s - 2425.19s |  in any possible way,
+2425.19s - 2427.05s |  you're helping me, you're helping Roger,
+2427.05s - 2429.35s |  you're helping our colleagues,
+2429.35s - 2431.49s |  you're helping us fighting the good fight
+2431.49s - 2445.07s |  for privacy, anonymity and internet freedom.
+2445.07s - 2445.95s |  Yeah, excellent.
+2445.95s - 2449.05s |  So we've told you a bit about how you can help us,
+2449.05s - 2450.97s |  but it is about helping us
+2450.97s - 2453.73s |  and it's also about helping all of the activists
+2453.73s - 2455.07s |  and people around the world,
+2455.07s - 2457.73s |  especially the people who don't have the power
+2457.73s - 2460.93s |  to have a military or bodyguards or whatever,
+2460.93s - 2463.05s |  yet they want to change their society.
+2463.05s - 2466.79s |  So we will be doing an Ask Us Anything You Like
+2466.79s - 2470.27s |  at the Tor booth in the vendor area right after this.
+2470.27s - 2473.03s |  We've got these cool badges and other things available
+2473.03s - 2475.83s |  or you can just ask us every possible Tor question.
+2475.83s - 2477.77s |  We will be there until you have run out
+2477.77s - 2479.27s |  of all of your Tor questions
+2479.27s - 2481.25s |  and Argoon has kindly volunteered
+2481.25s - 2483.79s |  to escort all of us over there
+2483.79s - 2486.03s |  and we'll hang out as long as you would like
+2486.03s - 2487.55s |  to answer all your questions.
+2487.55s - 2488.39s |  Thank you.

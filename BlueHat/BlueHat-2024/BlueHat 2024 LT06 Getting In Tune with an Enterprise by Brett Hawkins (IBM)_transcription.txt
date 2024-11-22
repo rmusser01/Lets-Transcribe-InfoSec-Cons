@@ -1,0 +1,280 @@
+{
+  "webpage_url": "https://www.youtube.com/watch?v=JKgMJMHO34Q",
+  "title": "BlueHat 2024: LT06: Getting \"In Tune\" with an Enterprise by Brett Hawkins (IBM)",
+  "description": "BlueHat 2024: LT06: Getting \"In Tune\" with an Enterprise: Detecting Microsoft Intune Lateral Movement Presented by Brett Hawkins from IBM\n\nAbstract: \"Organizations continue to implement cloud-based services, a shift which has led to the wider adoption of hybrid identity environments that connect on-premises Active Directory with Microsoft Entra ID (formerly Azure AD). To manage devices in these hybrid identity environments, Microsoft Intune has emerged as one of the most popular device management solutions. Since this trusted enterprise platform can easily be integrated with on-premises Active Directory devices and services, it is a prime target for attackers to abuse for conducting lateral movement and code execution.\n\nThis research will give a background on Microsoft Intune (Intune) and how it is being used within organizations. It will then show how to use this cloud-based platform to deploy custom Windows applications to achieve code execution on user devices. Additionally, this research includes the public release of new Microsoft Sentinel rules to help defenders detect the usage of Intune for lateral movement and defensive hardening guidance for the Intune platform.",
+  "channel_url": "https://www.youtube.com/channel/UCKmzq2lAhDxLy36KtvVWpaQ",
+  "duration": 847,
+  "channel": "Microsoft Security Response Center (MSRC)",
+  "uploader": "Microsoft Security Response Center (MSRC)",
+  "upload_date": "20241112"
+}
+
+0.00s - 2.40s | This text was transcribed using whisper model: large-v2
+
+ Yeah, so welcome to my talk today.
+2.40s - 5.20s |  I'm gonna be talking about abusing Microsoft Intune for
+5.20s - 8.52s |  lateral movement, both from an offensive and defensive perspective.
+8.52s - 11.60s |  I'm gonna be moving through these slides pretty quick, so
+11.60s - 13.68s |  if there's something that you're not able to capture,
+13.68s - 15.44s |  I'm gonna take a picture of the slide.
+15.44s - 17.60s |  I'm gonna be sharing the slides this week,
+17.60s - 19.68s |  probably tomorrow, whenever I fly back home.
+21.44s - 24.40s |  So just a little agenda, gonna cover an introduction,
+24.40s - 25.88s |  some background things.
+25.88s - 28.80s |  Gonna cover some offensive use cases where I'm gonna show a demo
+28.96s - 32.16s |  of getting a cobalt strike beacon by abusing Intune.
+32.16s - 34.68s |  Then we're gonna cover, from a defensive perspective,
+34.68s - 37.40s |  detecting and preventing lateral movements, followed by conclusion.
+39.48s - 43.00s |  So I released a blog post on this research last month.
+43.00s - 44.76s |  So definitely check out the blog post.
+44.76s - 50.36s |  I got full details on everything I'm about to talk about today.
+50.36s - 52.00s |  Introduction, so who am I?
+52.00s - 53.56s |  I'm Brett Hawkins.
+53.56s - 56.12s |  I'm the capability lead on the adversary services team at IBM
+56.12s - 59.88s |  X-Force Red, where we conduct red team engagements for clients.
+60.16s - 62.80s |  I've done a number of different conference speeches.
+62.80s - 64.92s |  I've got some open source tools out there.
+64.92s - 67.08s |  So if you're interested in any of my public security research,
+67.08s - 68.44s |  I've got that detailed at the link above.
+70.40s - 72.52s |  What were some drivers on this research?
+72.52s - 78.04s |  So Microsoft released a threat intel report last year about OctoTempest and
+78.04s - 81.60s |  their abuse of device management platforms to conduct code execution,
+81.60s - 82.68s |  lateral movement.
+82.68s - 85.36s |  Along with that, we're seeing more and
+85.36s - 89.72s |  more of our clients adopting these hybrid identity architectures.
+89.72s - 94.84s |  And because of that, our team is going after these, as well as our attackers.
+94.84s - 95.96s |  Specifically with Intune,
+95.96s - 99.60s |  there was a lack of research on the deployment of Win32 apps.
+99.60s - 102.16s |  So I researched that aspect that you're gonna see.
+102.16s - 104.56s |  And there also was a lack of detection rules for
+104.56s - 108.68s |  the abuse of Intune for lateral movement.
+108.68s - 110.00s |  What's new in this?
+110.00s - 114.92s |  You're gonna see in this research how to deploy C2 payloads via Win32 apps in
+114.92s - 115.80s |  Intune.
+115.80s - 119.52s |  I made some new observations or ways to trigger different scripts or
+119.56s - 122.80s |  Windows apps to run within Intune-managed devices.
+122.80s - 126.64s |  And then lastly, I released some new Microsoft Sentinel detection rules for
+126.64s - 130.21s |  the abuse of this activity.
+130.21s - 132.09s |  There's some really great prior work by Andy Robbins and
+132.09s - 136.45s |  Chris Thompson at Specter Ops in regards to abusing Intune.
+136.45s - 139.85s |  Definitely check out their work, and I've got links to their previous work
+139.85s - 142.41s |  in the blog post and the appendix slides in this presentation.
+144.21s - 146.25s |  Let's get over some background here.
+146.25s - 150.09s |  So in terms of what is the typical workflow in a Windows environment for
+150.09s - 151.09s |  lateral movement?
+151.97s - 154.49s |  Typically, there's two steps, if you really boil it down.
+154.49s - 158.05s |  You've got some sort of elevated access to a target host that you wanna
+158.05s - 159.09s |  compromise.
+159.09s - 161.37s |  First step, you need to transfer that payload.
+161.37s - 164.73s |  Typically, it's gonna be something like a file copy via SMB.
+164.73s - 166.97s |  Second step is you need to execute the payload.
+166.97s - 170.13s |  Typically, execution is gonna be done with something like WMI,
+170.13s - 173.81s |  scheduled tasks, something that you can communicate to on that target host.
+175.45s - 176.57s |  If you look at it from a different way,
+176.57s - 180.29s |  what about using device management platforms to do lateral movement?
+180.29s - 183.01s |  This is something that our team does on engagements a lot.
+183.01s - 185.61s |  I've got a few different platforms kind of listed there.
+185.61s - 188.61s |  This research specifically focused on Microsoft Intune.
+188.61s - 191.93s |  But for this type of lateral movement, you're gonna compromise some sort of
+191.93s - 194.93s |  privileged user within one of these device management platforms.
+194.93s - 198.33s |  You're gonna use that platform to transfer and then execute payloads
+198.33s - 204.33s |  on target hosts that are being managed by that device management platform.
+204.33s - 208.17s |  And with Intune, there's a few different things you can do for
+208.17s - 210.93s |  doing that code execution for Windows specifically.
+210.97s - 213.65s |  Now, it also supports Mac OS and Linux.
+213.65s - 215.97s |  This research was specifically for Windows.
+215.97s - 217.25s |  So you have PowerShell scripts,
+217.25s - 219.81s |  pretty self-explanatory deploying PowerShell scripts.
+219.81s - 224.29s |  You got these line of business apps or LOB apps, things like MSI files and such.
+224.29s - 225.89s |  And then where I really focused on,
+225.89s - 229.61s |  there's a lack of research on these Windows apps or Win32 apps.
+229.61s - 233.17s |  And what these are is basically it's like a compressed format for
+233.17s - 235.61s |  Microsoft with a .IntuneWin extension.
+236.61s - 240.73s |  Now, in order to deploy these type of things, in order to create a Windows app
+240.73s - 244.41s |  or a PowerShell script, you do need to have Intune administrator or
+244.41s - 246.33s |  global administrator permissions.
+248.13s - 249.93s |  Now we're gonna get into some offensive use cases.
+251.97s - 254.77s |  So in terms of user and host targeting, how does that work, right?
+254.77s - 258.49s |  So I have compromised a privileged user, like an Intune administrator.
+258.49s - 261.89s |  I create a script or an app deployment within Intune.
+261.89s - 263.65s |  And then the way assignments works,
+263.65s - 265.93s |  in terms of assigning where that application or
+265.93s - 268.93s |  script would be run, is via the use of Enter ID groups.
+268.93s - 273.65s |  So you can either use an existing group or you can create a new group, right?
+273.65s - 278.25s |  So that's kind of how that is controlled.
+278.25s - 282.89s |  And then after you've kind of targeted who do you want these scripts or
+282.89s - 286.85s |  applications to run on, you need a way to kind of force these scripts or
+286.85s - 288.33s |  applications to run on devices.
+288.33s - 291.21s |  So if you wanna force that type of activity,
+291.21s - 293.49s |  there's three different ways to trigger these things.
+293.49s - 299.61s |  So either forcing a device reboot, you could force a device sync via Intune.
+299.61s - 302.97s |  Or if you have connectivity to your target host,
+302.97s - 307.17s |  you could also restart the Intune management extension Windows service.
+307.17s - 309.17s |  Now alternatively, you could just wait for the next time for
+309.17s - 311.49s |  your target devices to check in with Intune,
+311.49s - 313.81s |  which I believe is every eight hours by default.
+313.81s - 317.37s |  Or you could wait until those devices reboot on their own.
+317.37s - 319.61s |  But if you have deployed a malicious Win32 app,
+319.61s - 322.01s |  you wanna get code execution right now.
+322.05s - 327.38s |  Those are the three different options to kind of make that happen right now.
+327.38s - 331.14s |  Now we're going to get into a demo on getting a Cobalt Strike beacon
+331.14s - 334.84s |  via an Intune Win32 app.
+334.84s - 339.24s |  So first step here is we need to create an Intune package.
+339.24s - 342.68s |  So we're gonna use a utility from Microsoft called the Intune WinAppUtil
+342.68s - 343.72s |  to do this.
+343.72s - 345.88s |  I've got a couple payload files here, an executable and
+345.88s - 349.48s |  a C-sharp project file that has Cobalt Strike shellcode in it.
+349.48s - 352.56s |  I'm gonna use this Intune WinAppUtil, and what this is gonna do,
+352.56s - 354.44s |  it's gonna take those payload files and
+354.44s - 358.44s |  it's gonna put it into a .IntuneWin file, so that kind of compressed format.
+359.60s - 365.08s |  So I've got this Intune Win file, now I need to upload it to Intune.
+365.08s - 366.16s |  So again, as part of this scenario,
+366.16s - 369.00s |  I've compromised an Intune administrator account.
+369.00s - 372.12s |  So I'm gonna use those privileges to deploy
+372.12s - 376.96s |  this malicious Win32 application to a target host.
+376.96s - 381.16s |  I'm a huge Harry Potter nerd, so yes, my test tenant is Hogwarts.
+381.16s - 382.12s |  You'll see that here.
+382.72s - 387.32s |  I'm gonna go ahead and I'm gonna go to Windows Apps, Add, and
+387.32s - 388.36s |  you select an app type.
+388.36s - 391.56s |  So in this instance, again, I focused on Win32 apps, so
+391.56s - 393.76s |  I'm gonna choose this Win32 app down here.
+395.12s - 397.08s |  Go ahead and create this application.
+397.08s - 400.12s |  Next step, you're gonna choose that application package file that we just
+400.12s - 402.92s |  created with the WinAppUtility.
+402.92s - 406.80s |  So again, that package file I created is gonna have that executable and
+406.80s - 409.68s |  that C-sharp project file that has the Cobalt Strike shellcode in it.
+410.68s - 415.08s |  So I'm gonna go ahead, I'm going to upload that package file.
+415.08s - 416.40s |  And then the next steps,
+416.40s - 418.80s |  you're gonna fill out some different information about your application.
+418.80s - 420.24s |  What is the name of it?
+420.24s - 424.60s |  Description, you could even add like a logo to make it look even more legit,
+424.60s - 425.68s |  right?
+425.68s - 428.40s |  So you're gonna fill out some information about your application here.
+428.40s - 433.36s |  I'm just gonna fill out some test info here, and then I'm gonna click Next.
+435.00s - 438.24s |  This next screen, what do you want your application to do, right?
+438.24s - 443.56s |  So after it drops these files, I want it to run my C-sharp project file.
+443.56s - 445.04s |  Uninstall command doesn't really matter,
+445.04s - 448.64s |  cuz all I care about is my application installing.
+448.64s - 450.36s |  And I'm gonna have it run as a system account, so
+450.36s - 454.76s |  the NT Authority system account, so I can get as much privileges as possible.
+454.76s - 458.56s |  So I'm gonna click Next, basically you can set your operating system
+458.56s - 461.12s |  architecture, minimum OS, things like that.
+462.36s - 463.84s |  Next step is our detection rules.
+463.84s - 467.68s |  So basically a detection rule is to detect whether your application is already
+467.68s - 470.12s |  installed or not, so you don't reinstall it.
+470.12s - 475.40s |  In my instance, I want my application to run on that system no matter what.
+475.40s - 479.44s |  So I'm just gonna put some dummy PowerShell script that's gonna fail
+479.44s - 482.68s |  out basically, which means my application is not installed, so
+482.68s - 483.60s |  please install it for me.
+485.24s - 486.68s |  Gonna click Next, dependencies,
+486.68s - 489.68s |  supersedence doesn't really matter here in this instance.
+489.68s - 492.60s |  And then the last step here, I mentioned assignments.
+492.60s - 497.00s |  So the way that we assign where this application is going to get deployed
+497.00s - 498.60s |  is via the use of Entra ID group.
+498.60s - 503.20s |  So in this instance, I have this kind of testing devices group.
+503.20s - 508.16s |  I'm gonna deploy this Win32 app to, so I'm gonna hit Next.
+509.24s - 514.56s |  And at this point, we have created this application within Intune.
+514.56s - 517.72s |  We've assigned it to the devices in the test devices group.
+517.72s - 522.56s |  Now we need to have a way to trigger those devices to
+522.56s - 525.76s |  kinda check in with Intune and grab that application.
+525.76s - 528.48s |  So in this instance, I gave those three different options.
+528.48s - 531.96s |  I'm just gonna do a device restart here in this instance.
+531.96s - 535.36s |  So again, I'm gonna restart this target device.
+536.36s - 538.20s |  And so what the victim user would see,
+538.20s - 541.16s |  they'd just see a typical kind of message here.
+541.16s - 544.16s |  Hey, your administrator's trying to schedule a reboot.
+544.16s - 549.04s |  Now whenever that device will reboot, it's going to check in with Intune,
+549.04s - 552.20s |  grab that Win32 app, it's gonna get extracted, run.
+552.20s - 554.92s |  And you can see here we've got our Cobalt Strike beacon
+554.92s - 556.72s |  as the NT Authority system account.
+556.72s - 560.76s |  Again, using that compromised Intune administrator access to
+560.76s - 565.76s |  upload a malicious Win32 app and get code execution on this device.
+565.76s - 569.12s |  This is one device, obviously, if this group had multiple devices,
+569.12s - 574.45s |  we've just gotten code execution on who knows how many devices.
+574.45s - 575.81s |  Now let's cover the defensive side.
+577.85s - 581.77s |  So in terms of logging within Intune, if there's an auditable event, so
+581.77s - 584.69s |  things like creating an application, creating a PowerShell script,
+584.69s - 586.25s |  forcing a device reboot,
+586.25s - 589.69s |  that auditable event will get logged within the Intune audit log schema.
+589.69s - 592.57s |  Then from there, you can stream those logs to something like
+592.57s - 598.11s |  Microsoft Sentinel to create detection rules, threat hunting rules, right?
+598.11s - 601.99s |  So currently I'm a red teamer, I used to do the blue team stuff.
+601.99s - 608.11s |  I like both sides, so I put on my blue hat here, my blue team hat here.
+608.11s - 611.15s |  And so the different lateral movement activity, I'm like, okay,
+611.15s - 613.95s |  what are some different operations of interest that get logged in terms of
+613.95s - 615.99s |  these activities for lateral movement?
+615.99s - 618.87s |  Things like creating PowerShell scripts, Windows apps,
+618.87s - 620.47s |  forcing device reboots.
+620.47s - 623.91s |  And so I took a look at those operations, kind of jotted them down.
+623.91s - 625.39s |  And then from there, I was like, okay,
+625.39s - 629.19s |  what are some potential malicious combinations of these operations?
+629.19s - 631.87s |  Things like creating a Windows app and then deleting it,
+631.87s - 634.39s |  cuz an attacker's trying to cover their tracks after they just deployed it.
+634.39s - 637.03s |  Or what you just saw there, creating a Windows app,
+637.03s - 638.23s |  forcing a device reboot.
+638.23s - 640.63s |  So I started building these different combinations,
+640.63s - 644.43s |  potential malicious combinations of these operations.
+644.43s - 648.07s |  And then from there, I created five new Microsoft Sentinel rules that I
+648.07s - 653.03s |  published last month, specifically for these type of abuse cases.
+653.03s - 656.15s |  So things like a user creating and deleting a Windows app.
+656.15s - 659.75s |  Obviously, definitely tune these in your environment, but
+659.75s - 661.91s |  this was just kind of a good way, maybe you can use this for
+661.91s - 666.03s |  threat hunting to be able to threat hunt this type of potential misuse.
+667.79s - 670.11s |  And I've got them published on my personal GitHub here.
+670.11s - 672.23s |  So I've got a KQL queries.
+672.23s - 676.11s |  I've got some for this Intune research as well as some Azure DevOps research
+676.11s - 678.67s |  that I published at Black Hat Europe last year.
+678.67s - 680.35s |  So if you're interested in the KQL queries,
+680.35s - 684.64s |  definitely check it out at that repo there.
+684.64s - 689.68s |  Another thing to consider are these multi-admin approval access policies
+689.68s - 690.64s |  within Intune.
+690.64s - 694.16s |  And what these allow you to do is essentially require some sort of
+694.16s - 697.80s |  approval before these Win32 apps or scripts get deployed.
+697.80s - 700.32s |  So you have another set of eyes reviewing these things so
+700.32s - 701.80s |  they don't just go out, right?
+701.80s - 705.16s |  So if an Intune admin gets compromised, and
+705.16s - 708.60s |  then they deploy a malicious app, at least it could get caught in
+708.60s - 710.14s |  the review process.
+710.14s - 712.12s |  So to do that, they have these access policies.
+712.12s - 714.24s |  You choose what type, like for a script or an app.
+715.56s - 718.28s |  And then what that would look like on the screenshot on the right,
+718.28s - 720.80s |  I'm trying to deploy an application this time.
+720.80s - 722.28s |  And you can see I have to submit it for approval.
+722.28s - 727.25s |  So this is another way to kind of catch it in the act.
+727.25s - 728.85s |  So in terms of best practices,
+728.85s - 731.97s |  Microsoft has a really great Enter ID Best Practices Guide.
+731.97s - 736.17s |  Specifically related to Intune privileged access, you all rolled out
+736.17s - 739.33s |  the required multi-factor authentication for Azure Portal,
+739.33s - 741.17s |  Intune Admin Center and such this month.
+741.17s - 744.61s |  So that was really good, making sure that organizations review their
+744.61s - 747.41s |  privileged access in Azure on a regular basis,
+747.41s - 750.61s |  as well as using cloud-only accounts for privileged Azure roles.
+750.61s - 753.53s |  Because if you don't, me as a red teamer,
+753.53s - 757.33s |  if I compromise a privileged on-premise user that also has
+757.33s - 760.97s |  administrative privileges in the cloud, I can then pivot from that
+760.97s - 766.31s |  on-prem access to the cloud access.
+766.31s - 771.19s |  So in conclusion, from an offensive standpoint, if you're on offense,
+771.19s - 773.11s |  take a look at these device management systems,
+773.11s - 776.43s |  cuz they can provide a really nice stealthy lateral movement method.
+777.67s - 779.79s |  Definitely take a look at them, research them.
+779.79s - 783.67s |  On the defensive side, securing these device management systems and
+783.67s - 786.39s |  also the administrators is gonna be more and more critical.
+786.39s - 789.03s |  As more and more organizations are adopting these hybrid identity
+789.03s - 791.55s |  architectures, it's gonna be very important.
+791.71s - 794.75s |  And lastly, research, both on the offensive and
+794.75s - 798.43s |  defensive side really, research when you're doing these attacks.
+798.43s - 799.71s |  Hey, what's getting logged?
+799.71s - 802.55s |  How can I develop detection rules, kind of how I did in this research, for
+802.55s - 805.63s |  potential misuse if a privileged user has been compromised?
+807.67s - 810.59s |  I wanna acknowledge these people here at X-Force Red.
+810.59s - 814.63s |  They gave me really great feedback on this research and support, so
+814.63s - 815.79s |  I just wanted to call them out here.
+817.51s - 820.55s |  And then if you have any questions, chat with me afterwards,
+820.55s - 822.11s |  hit me up on Twitter.
+822.11s - 825.15s |  I've got my personal website with a bunch of my security research.
+825.15s - 826.55s |  I've got the blog post listed there.
+826.55s - 830.15s |  Again, this is a lightning talk, so I was moving fast.
+830.15s - 836.39s |  So I am going to post the slides this week, probably tomorrow as well.
+836.39s - 838.91s |  So with that, I wanna thank Microsoft for having me.
+838.91s - 841.95s |  This is my first blue hat, so I really appreciate you letting me come out and
+841.95s - 842.51s |  talk, thanks.

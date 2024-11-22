@@ -1,0 +1,561 @@
+{
+  "webpage_url": "https://www.youtube.com/watch?v=J1QMbdgnY8M",
+  "title": "BlueHat 2024: S18: Minting Silver Bullets is Challenging",
+  "description": "BlueHat 2024: Session 18: Minting Silver Bullets is Challenging Presented by Josh Brown-White from Microsoft\n\nAbstract: With the advent of AI coding assistance such as GitHub Copilot there has been the obvious interested in using AI as a silver bullet to automatically correct source code to fix security vulnerabilities.  Unfortunately minting this silver bullet is far more complex than simply calling the Azure AI APIs, and the organizations who have been rushing AI generated automatic remediations have seen results ranging from poor to disastrous. Modifying existing code behavior automatically is a very different exercise than a developer guiding Copilot to generate net new code, but the failures to understand those differences have resulted in quite poor outcomes. Many AI fix suggestions today catastrophically alter code, while only a minority of suggestions even technically correct the issues.  Only a tiny percentage can be safely merged unmodified in a Pull Request. Most of the current attempts are causing more harm than utility.\n\nThis talk will explain the challenges that need to be accounted for when using generative AI to modify existing source code to correct security vulnerabilities, and detail how combining generative AI with existing deterministic analysis techniques can yield far better results. The future where the system not only automatically detects security vulnerabilities in source, but automatically remediates many (though not all) of them is attainable. It turns out that the reason why silver bullets aren\u2019t common is because they take a fair bit of work to make, but they can be made if you are willing to put in the work.",
+  "channel_url": "https://www.youtube.com/channel/UCKmzq2lAhDxLy36KtvVWpaQ",
+  "duration": 1908,
+  "channel": "Microsoft Security Response Center (MSRC)",
+  "uploader": "Microsoft Security Response Center (MSRC)",
+  "upload_date": "20241108"
+}
+
+0.00s - 3.00s | This text was transcribed using whisper model: large-v2
+
+ Excellent. My presentation's here, so we're off to a good start.
+3.00s - 9.00s |  So this is much more than 30 minutes of content that I am cramming into 30 minutes.
+9.00s - 12.00s |  So apologies up front. I'll be talking relatively quickly.
+12.00s - 17.00s |  But no worries. You can listen to me half-speed on YouTube so I sound human again.
+17.00s - 20.00s |  And I've also had to truncate a lot of this content.
+20.00s - 28.00s |  So consider this kind of the opening salvo in a thesis about how to tackle this rather than a blueprint to do so.
+28.00s - 33.00s |  And I am mindful that I am between you and beer, so I will delve into this.
+33.00s - 42.00s |  So in a lot of European literature and mythology, there's various monsters that can only be slain with the purity of silver.
+42.00s - 47.00s |  And so over and over in the stories, they're like, if we just have a silver bullet, monster is solved.
+47.00s - 57.00s |  And in our own world, the kind of large backlog of security debt that has accrued in our software over the decades and decades of authoring it
+57.00s - 59.00s |  are the monsters we're trying to slay.
+59.00s - 64.00s |  And everyone is looking for the silver bullets that will just get rid of that problem.
+64.00s - 70.00s |  And with the rise of large language models, they're the most current candidate for that silver bullet.
+70.00s - 78.00s |  So we're going to talk about kind of what we really mean when we're going to use large language models to automatically fix vulnerabilities
+78.00s - 82.00s |  and just a bit of a reality check for the current state of that.
+82.00s - 87.00s |  Then we're going to delve into the elements that make creating these silver bullets here particularly challenging,
+87.00s - 90.00s |  but also talk about what we can do about those things.
+90.00s - 95.00s |  And then I'll wrap that up in kind of the overall thesis statement for our path forward.
+95.00s - 99.00s |  So starting out, what are we trying to do?
+99.00s - 107.00s |  Simplistically, we're trying to primarily fix static analysis findings through the application of large language models.
+107.00s - 115.00s |  Static analysis findings because they are our most voluminous producer of security findings and they associate them with the source code.
+115.00s - 119.00s |  So that makes it relatively easy to apply large language models to.
+119.00s - 127.00s |  But kind of more philosophically, all of the software in use today was authored with less security understanding than we have today.
+127.00s - 132.00s |  The code we're writing today has less security understanding going into it than what we'll have tomorrow.
+132.00s - 141.00s |  So we have as an industry a perpetual problem of how do we keep all of the world's source code at our current highest level of security understanding.
+141.00s - 144.00s |  Each year, we have more code in production than any year previous.
+144.00s - 147.00s |  So this is a problem that is growing with time.
+147.00s - 154.00s |  And so because of that, we're looking for various efficiency improvements that can let us kind of tackle this issue
+154.00s - 162.00s |  and have a better hand at kind of keeping all of our software at the maximum state of assurance that we can.
+162.00s - 166.00s |  And this is an advantage that we actually have over our physical engineering partners.
+166.00s - 174.00s |  Everyone building cars and bridges don't have the advantage of being able to kind of keep their stuff at the modern state of engineering.
+174.00s - 178.00s |  Once it's produced, it's really hard to go back after the fact and improve it.
+178.00s - 186.00s |  We have a lot of advantages here that we can lend into so that we can actually become one of the most trustworthy forms of engineering.
+186.00s - 188.00s |  Fortunately, we have a ways to go.
+188.00s - 197.00s |  So this is a sample that I've pulled out of kind of our database of static analysis detections that have been fixed.
+197.00s - 201.00s |  For security engineers in the room, don't bother looking for the sample in our products.
+201.00s - 204.00s |  It's not there anymore.
+204.00s - 213.00s |  And here you see that they are using binary formatter, which is a serializer that predates our kind of understanding of the pitfalls of serialization.
+213.00s - 217.00s |  So this is exactly the sort of candidate for something we would want to update going forward.
+217.00s - 220.00s |  And that is why this was a static analysis result for us.
+220.00s - 223.00s |  We were driving the team to kind of modernize that code.
+223.00s - 228.00s |  And let's send this over to one of the various autofix solutions that are available.
+228.00s - 232.00s |  Not here to name or shame, so I won't call them out by name.
+232.00s - 235.00s |  And we see on the surface it seems reasonable.
+235.00s - 243.00s |  They're changing the code to use JSON serializer, which is a much more modern serializer that kind of benefits from us understanding those pitfalls.
+243.00s - 249.00s |  You know, there's a little quibble that they probably should have changed the name of the method.
+249.00s - 252.00s |  But, you know, that's something an engineer can easily change.
+252.00s - 256.00s |  But more than that, weirdly it removed an error check.
+256.00s - 259.00s |  But that's not the biggest problem here.
+259.00s - 263.00s |  It also changed the return value in a way that will still compile.
+263.00s - 268.00s |  So all of the consuming code of this method is going to now blow up with a type mismatch exception.
+268.00s - 276.00s |  Except no, it won't, because it will blow up here first as we try to deserialize what's a binary payload.
+276.00s - 281.00s |  This proposed edit didn't change any of the serializer calls, just the deserializer calls.
+281.00s - 286.00s |  It didn't add any code to migrate all of the existing files into the new format.
+286.00s - 289.00s |  So this is just the start of a change.
+289.00s - 290.00s |  It's not the real change.
+290.00s - 301.00s |  The real work here is kind of designing a migration strategy to go from one serializer to another and to move all of the existing serialized data to that new format.
+301.00s - 305.00s |  And that's design work that the engineering team needs to tackle.
+305.00s - 309.00s |  The code fixes are kind of the most trivial part of that effort.
+309.00s - 323.00s |  And that kind of gets into some of our initial issues here, where often what we're finding with static analysis is an indicator in code that there's much more work available, and that work exceeds simply editing the code.
+323.00s - 325.00s |  That wasn't a cherry-pick finding.
+325.00s - 329.00s |  It was literally just kind of the first result that I looked at and fed into the system.
+329.00s - 335.00s |  It just happened to be a useful indicator of the behavior here.
+335.00s - 338.00s |  This is kind of a broadly observed phenomenon.
+338.00s - 341.00s |  There are several studies out now that are going into this.
+341.00s - 350.00s |  And I'm going to point to this one from Mob Security because they go into detail about two of the techniques that they're using to kind of address some of the accuracy problems.
+350.00s - 353.00s |  And that's a good complement for this talk.
+353.00s - 355.00s |  They're going into depth on specific mechanisms.
+355.00s - 358.00s |  I'm going broadly on a number of issues.
+358.00s - 365.00s |  However, they are making a solution in this space, so you shouldn't consider them, like, not having skin in the game.
+365.00s - 370.00s |  They definitely have some motives for wanting to paint competitors in a particular light.
+370.00s - 373.00s |  This was also a study done six, seven months ago.
+373.00s - 376.00s |  And this space is seeing, like, rapid development.
+376.00s - 382.00s |  So I wouldn't imagine that they would get precisely the same results if they kind of surveyed things today.
+382.00s - 395.00s |  But when they did survey this a couple months ago, what they found is about 30% of findings or automatic fixes that were being produced by the various vendors, LLMs, generally did a good job correcting the issue.
+395.00s - 403.00s |  You may still have needed to make some corrective code changes, may not have used the conventions of the code base, but it at least was going the right direction.
+403.00s - 406.00s |  20% did nothing or made it worse.
+406.00s - 411.00s |  And 50%, like that previous example, would break the code if you merged it.
+411.00s - 414.00s |  Sometimes in ways in which the compiler is not going to complain.
+414.00s - 422.00s |  The code I just showed you, the compiler would happily compile it, and then you would hit runtime exceptions the moment that functionality was invoked.
+422.00s - 427.00s |  So 70% failure rate is not great for technology.
+427.00s - 431.00s |  And this is improving, but it is not improving revolutionarily.
+431.00s - 435.00s |  We're not all of a sudden seeing 90% success rate from these things.
+436.00s - 442.00s |  A lot of the arguments for going forward anyway has been that, hey, an engineer still needs to merge this code.
+442.00s - 443.00s |  It's just a suggestion.
+443.00s - 444.00s |  What's the harm?
+444.00s - 451.00s |  Well, one, if engineers were perfect at reviewing code to catch mistakes, we wouldn't need this technology.
+451.00s - 453.00s |  We'd be fine.
+453.00s - 455.00s |  But also, engineering is a zero-sum game.
+455.00s - 460.00s |  Every minute they spend reviewing a finding, trying to reverse engineer, what is this code doing?
+460.00s - 462.00s |  Why am I reviewing it?
+462.00s - 466.00s |  Is time that they're not spent doing actually valuable security work?
+466.00s - 471.00s |  So there's a very real cost to the failure rate being this high.
+471.00s - 473.00s |  But why is it this high?
+473.00s - 480.00s |  We have hundreds of thousands, maybe millions of folks using Copilot and their contemporaries to author net new code.
+480.00s - 486.00s |  Google's claiming that 25% of all their code written recently was written by LLMs.
+486.00s - 489.00s |  So why are we seeing such a high failure rate here?
+489.00s - 496.00s |  It comes down to the fact that it is fundamentally different to have a human craft a prompt to generate net new code
+496.00s - 499.00s |  versus using automation to change existing code.
+499.00s - 503.00s |  Those are different scenarios, and it has been a mistake to consider them the same.
+503.00s - 508.00s |  We're going to get into five reasons that these are different scenarios and what we can do about them.
+508.00s - 513.00s |  The first is it's not clear we should do anything at all when we have a static analysis result.
+513.00s - 522.00s |  As a technology, it has several challenges at ensuring that there's kind of absolute precision with a detection.
+522.00s - 527.00s |  Even with the very best technologies out there, it is incredibly hard to write a generic detection
+527.00s - 532.00s |  that performs universally well across all of the diversity of code that's out there.
+532.00s - 534.00s |  It's just a tremendously hard problem.
+534.00s - 539.00s |  So hitting 100% accuracy is really, really hard to get.
+539.00s - 545.00s |  But we've made this much worse for ourselves by being very undisciplined about how we've applied static analysis,
+545.00s - 549.00s |  where we've often been using the wrong tool for a particular job.
+549.00s - 554.00s |  We've been looking out of problems that are just not static analysis problems,
+554.00s - 557.00s |  and this has made the result set even noisier.
+557.00s - 558.00s |  So what to do about this?
+558.00s - 563.00s |  Well, the first is, and we could talk for an entire symposium about what this entails,
+563.00s - 568.00s |  we need to get a lot better about how we're applying static analysis as a technology.
+568.00s - 571.00s |  We need to understand what its limitations are and engineer to them,
+571.00s - 577.00s |  and we need to not use it as a means of detecting things that it's just not the right detection tool for.
+577.00s - 584.00s |  You cannot solve OWASP top ten number four insecure design with a code detection.
+584.00s - 587.00s |  And all you're going to do is generate noise when you do so.
+587.00s - 595.00s |  But given that today we aren't at perfect results, we shouldn't design the system assuming that we are.
+595.00s - 600.00s |  So a lot of the models today, almost all of them, have taken the model of like we consume the results
+600.00s - 603.00s |  and we just flood the engineers with pull requests.
+603.00s - 609.00s |  And I would argue that right off the bat, that is kind of the wrong model to view this in.
+609.00s - 615.00s |  First, we are going to be putting these in as interrupts into the developer workflow,
+615.00s - 621.00s |  and that is kind of never a good thing unless you have a really strong justification for it.
+621.00s - 625.00s |  A much better model is to move our SAS results into the IDE.
+625.00s - 628.00s |  That is a better environment for them to interact with them anyway.
+628.00s - 632.00s |  That's where they can browse the code, see more context around the results,
+632.00s - 635.00s |  and if they're going to fix them themselves, that's where they're going to fix them.
+635.00s - 641.00s |  And while they're in the IDE, we expose the autofix solution there, so they invoke it.
+641.00s - 645.00s |  The benefits of that are they're already going to be in the mindset to have determined
+645.00s - 649.00s |  that this is something that they should invoke, that they should fix it in the first place.
+649.00s - 653.00s |  It's less work to look at a SAS finding than to look at a block of code,
+653.00s - 657.00s |  reverse engineer what it did, and reverse engineer why they're seeing it.
+657.00s - 663.00s |  So if we're going to use some of their attention, it's better used looking directly at the SAS result
+663.00s - 667.00s |  and then determining if they want to do anything about it.
+667.00s - 673.00s |  But then after they've done that, we know that the LLM results aren't going to be perfect when they come back.
+673.00s - 675.00s |  They're going to need to make little changes.
+675.00s - 678.00s |  In that previous example, they should have changed the method name.
+678.00s - 681.00s |  If the method now did something different, it should have a different name.
+681.00s - 688.00s |  If you put that in the IDE, they're already in an environment in which they can easily edit the fixes,
+688.00s - 692.00s |  as opposed to if it's in the PR, then they have to check out the code and make the changes.
+692.00s - 695.00s |  So it's a much more natural environment to engage in these things.
+695.00s - 699.00s |  It has the benefit of applying their judgment as a filter,
+699.00s - 703.00s |  so that we're not just flooding them with things that maybe we shouldn't even invoke.
+703.00s - 709.00s |  And all of this also has the benefit of we're providing a generally better experience for SAST for them as well.
+709.00s - 715.00s |  And if we actually focus on getting the most value out of SAST and the most accuracy,
+715.00s - 721.00s |  that just has traditional security value as well, even if we're not talking about autofixes.
+721.00s - 724.00s |  But OK, developer said fix this.
+724.00s - 726.00s |  Should we use LLMs to fix it?
+726.00s - 733.00s |  And on the low end, we have kind of trivial problems that a large language model is way more than we need to address it.
+733.00s - 741.00s |  So, for example, right now the Windows SDK is asking people to move from set zero memory to set zero memory two.
+741.00s - 743.00s |  The function parameters are identical.
+743.00s - 746.00s |  The only thing that's different is the number two.
+746.00s - 748.00s |  That's a regular expression problem.
+748.00s - 753.00s |  Run that on a CPU and get consistent transformations every single time,
+753.00s - 757.00s |  as opposed to run it on a GPU and get inconsistent findings.
+757.00s - 764.00s |  So, we have on the kind of low end stuff that is too trivial to apply large language models to.
+764.00s - 767.00s |  And we don't need to do a lot of reasoning to rule these out.
+767.00s - 772.00s |  We can look through our detections and just ourselves apply kind of categorization to it.
+772.00s - 778.00s |  So, any detection where we're saying don't use this API, use this API instead,
+778.00s - 787.00s |  especially if their function prototypes are very similar, are just classic candidates for a traditional regular expression transformation.
+787.00s - 791.00s |  That's going to be kind of a lot more consistent and a lot cheaper for us to do.
+791.00s - 797.00s |  Then there's going to be instances where we need to move to a method that requires an additional parameter.
+797.00s - 802.00s |  So, go from strcpy to strlcpy or strcpy underscore s.
+802.00s - 806.00s |  You're going to need to apply the destination buffer length.
+806.00s - 808.00s |  That's not in the initial method.
+808.00s - 812.00s |  Otherwise, we wouldn't be flagging strcpy to begin with.
+812.00s - 818.00s |  The best way to tackle that is to, instead of using a large language model to try to figure out what that is,
+818.00s - 827.00s |  every time we find an API like that, run a second detection that looks for what the destination buffer length has been allocated to
+827.00s - 830.00s |  and provides that as a parameter to this transformation.
+830.00s - 831.00s |  That does two things.
+831.00s - 837.00s |  First, if we're successful at finding it, it allows us to just use a cheap and consistent method to transform it.
+837.00s - 843.00s |  And if we can't find the destination buffer length via static analysis, we definitely can't with a large language model,
+843.00s - 846.00s |  so we shouldn't try to apply a large language model to that problem.
+846.00s - 850.00s |  Very likely, you can't know the destination buffer length.
+850.00s - 853.00s |  The design of the application is such that it's just unknown.
+853.00s - 859.00s |  And the real work is re-architecting that code so that you can know what the destination buffer is.
+859.00s - 867.00s |  So, it both lets us go to a trivial solution, if it's something that we can solve, and rule it out if we can't.
+867.00s - 871.00s |  Then the next category of things is like that example I started with,
+871.00s - 876.00s |  where the real work is coming up with the strategy to migrate from one thing to another,
+876.00s - 882.00s |  where we have to figure out how to move all of our existing data that might be in a particular format to a new format,
+882.00s - 887.00s |  or coordinate changes between server and client, or between peers that are communicating.
+888.00s - 893.00s |  The work is on the collaboration, the strategy, the design of how you're going to do that.
+893.00s - 896.00s |  The code changes are fairly inconsequential to it all.
+896.00s - 899.00s |  And these we can also pre-determine.
+899.00s - 901.00s |  They're going to be cryptography, serialization,
+901.00s - 908.00s |  basically anything that touches a data format at rest or as an interchange between components.
+908.00s - 913.00s |  So, we can just easily categorize those and attach those as metadata to the detections
+913.00s - 916.00s |  so that we aren't applying large language models for them.
+917.00s - 920.00s |  And kind of ruling out things that they aren't a good tool for.
+920.00s - 927.00s |  Then the last category are when we can't reason about the detection itself, but we have to look at findings.
+927.00s - 932.00s |  So, a lot of memory corruption detections can simultaneously find memory corruption
+932.00s - 935.00s |  that is entirely contained within a single function,
+935.00s - 939.00s |  where kind of all the elements you need to fix it are within just that function scope.
+939.00s - 941.00s |  It's a pretty good fit for a large language model.
+941.00s - 945.00s |  But at the same time, it can flag instances where multiple areas throughout the code
+945.00s - 950.00s |  all have ownership of the same piece of memory, control that memory's lifespan.
+950.00s - 954.00s |  And kind of correcting that is a large refactor,
+954.00s - 956.00s |  where really the developer has to come up with a strategy
+956.00s - 960.00s |  so that only one piece of code is controlling that lifespan.
+960.00s - 961.00s |  That's a poor fit for this.
+961.00s - 964.00s |  And that can come from the same detection.
+964.00s - 968.00s |  And so, for that, we can't make a kind of categorization at the detection level,
+968.00s - 973.00s |  but rather we have to capture that information in the findings and reason on the findings.
+973.00s - 980.00s |  Are all the elements that lead for this being memory corruption contained within kind of a small scope?
+980.00s - 982.00s |  Are they few in numbers? It's a good fit.
+982.00s - 985.00s |  Are they scattered throughout the code base or large in numbers?
+985.00s - 987.00s |  That's probably a less good fit.
+987.00s - 991.00s |  We're much less likely to get kind of a high reliability fix out of that.
+991.00s - 996.00s |  And by doing all of this, we're also providing more information to developers
+996.00s - 999.00s |  for the things that large language models aren't good at fixing.
+999.00s - 1002.00s |  So, if we come at it with kind of this mindset of like,
+1002.00s - 1005.00s |  let's capture enough information in the detection
+1005.00s - 1008.00s |  that we can tell if we should use a large language model or not,
+1008.00s - 1013.00s |  we're also providing more information to developers so that they can more efficiently fix it
+1013.00s - 1015.00s |  when generative AI is not the solution.
+1015.00s - 1018.00s |  But more importantly, what we're also doing in categorizing all of this
+1018.00s - 1020.00s |  is really the effort of fixing this.
+1020.00s - 1023.00s |  You know, we've said like basically trivial code changes
+1023.00s - 1025.00s |  we shouldn't use large language models for
+1025.00s - 1030.00s |  and really involves code changes we shouldn't use large language models for.
+1030.00s - 1034.00s |  Putting that information in the kind of bug details to engineering teams
+1034.00s - 1038.00s |  also allows them to kind of figure out the amount of effort they need to put on it.
+1038.00s - 1042.00s |  It makes setting security SLAs around the fixes kind of more realistic
+1042.00s - 1047.00s |  as opposed to just applying a blanket SLA regardless of how much effort goes into it.
+1047.00s - 1050.00s |  So, even if we weren't talking about large language models,
+1050.00s - 1053.00s |  doing this sort of categorization of effort that goes into these things
+1053.00s - 1056.00s |  helps us provide like much more actionable information
+1056.00s - 1059.00s |  in our static analysis results to engineers.
+1059.00s - 1061.00s |  So, by itself that makes sense.
+1061.00s - 1063.00s |  And that's going to be a theme on a lot of these,
+1063.00s - 1067.00s |  that the work we do to make large language models autofixes a little more reasonable
+1067.00s - 1070.00s |  also empowers our developers in other ways.
+1070.00s - 1074.00s |  But okay, so we should use a large language model to fix this thing
+1074.00s - 1076.00s |  and it's a real like issue.
+1076.00s - 1079.00s |  How do we craft a prompt so we're maximizing the chance
+1079.00s - 1082.00s |  that it's going to produce useful output?
+1083.00s - 1087.00s |  One of the trends kind of just in software development in general
+1087.00s - 1092.00s |  has been that vulnerabilities are becoming less and less localized.
+1092.00s - 1095.00s |  We're having to examine large amounts of source code
+1095.00s - 1097.00s |  and connect together a lot of different context
+1097.00s - 1100.00s |  in order to accurately tell if it's a vulnerability or not.
+1100.00s - 1102.00s |  If you look at frameworks like MVC frameworks,
+1102.00s - 1105.00s |  they intentionally are separating apart context
+1105.00s - 1108.00s |  that we have to kind of chain together for this.
+1108.00s - 1112.00s |  With it, static analysis tools are evolving and becoming more complex.
+1112.00s - 1114.00s |  We see a lot of the lightweight tool companies
+1114.00s - 1117.00s |  like going into global interprocedural analysis.
+1117.00s - 1120.00s |  A lot of the players that were already in global analysis
+1120.00s - 1123.00s |  looking at now doing cross-repository analysis.
+1123.00s - 1126.00s |  So, we're looking at getting more and more sophisticated with the tooling.
+1126.00s - 1130.00s |  But in doing that, we're identifying many more areas of code
+1130.00s - 1133.00s |  that contribute to calling something a vulnerability or not.
+1133.00s - 1137.00s |  And that poses a couple of challenges for large language models.
+1137.00s - 1141.00s |  First, if you just have a lot of code that are going into a vulnerability,
+1141.00s - 1143.00s |  that's going to stress the prompt limit.
+1143.00s - 1145.00s |  And even if it fits into the prompt limit,
+1145.00s - 1148.00s |  it's going to drive up the cost of running that prompt.
+1148.00s - 1152.00s |  And when we're talking across thousands, millions of findings
+1152.00s - 1156.00s |  when we are going industry-wide, that is a really serious cost.
+1156.00s - 1160.00s |  But separately, the more code that we put into the prompt,
+1160.00s - 1165.00s |  the more chance that the LLM is going to fixate on the wrong aspects of the code
+1165.00s - 1167.00s |  and make kind of irrelevant changes to it.
+1167.00s - 1172.00s |  So, by being precise about the specific areas of code that should be changed,
+1172.00s - 1177.00s |  we're increasing the chance that the LLM will change the correct code.
+1177.00s - 1180.00s |  This is one of the areas that I've had to kind of truncate
+1180.00s - 1184.00s |  because there's a whole discussion on how we do this well.
+1184.00s - 1188.00s |  But effectively, we need to restructure how we are reporting
+1188.00s - 1190.00s |  the information coming out of static analysis
+1190.00s - 1193.00s |  so that we're both identifying all of the elements
+1193.00s - 1195.00s |  that go into something being a problem,
+1195.00s - 1197.00s |  so developers can understand why it is a problem,
+1197.00s - 1202.00s |  but also precisely identifying the elements that should be changed
+1202.00s - 1205.00s |  so that we can fix the problem.
+1205.00s - 1208.00s |  So, in the spirit of time, instead of going into detail about that,
+1208.00s - 1211.00s |  I will point you at github.com slash CodeQL.
+1211.00s - 1214.00s |  You can look through the open source CodeQL detections.
+1214.00s - 1218.00s |  They have refactored a number of them over the past couple of months
+1218.00s - 1222.00s |  so that they have this kind of exact model in mind
+1222.00s - 1224.00s |  where they both identify all of the elements,
+1224.00s - 1226.00s |  but then specifically call out,
+1226.00s - 1230.00s |  but change this specific part of the element that went into it.
+1230.00s - 1235.00s |  But as an example, any vulnerability where the vulnerability manifests
+1235.00s - 1238.00s |  because a particular value is flowing into a parameter,
+1238.00s - 1242.00s |  you almost always want to change the assignment of that value.
+1242.00s - 1244.00s |  So, if it's being dynamically assigned,
+1244.00s - 1246.00s |  you want to put validation around that assignment
+1246.00s - 1248.00s |  to control what flows into it.
+1248.00s - 1251.00s |  If it's being statically assigned, you want to change the value
+1251.00s - 1253.00s |  that's being statically assigned.
+1253.00s - 1256.00s |  So, even if there are many other elements that go into it,
+1256.00s - 1259.00s |  that's the thing you want the LLM to change.
+1259.00s - 1262.00s |  But then separately, we have the problem that many vulnerability classes
+1262.00s - 1266.00s |  have several potential types of changes to make.
+1266.00s - 1268.00s |  So, for example, cross-site scripting.
+1268.00s - 1271.00s |  You can validate and reject invalid input.
+1271.00s - 1275.00s |  You can use HTML encoding or JavaScript encoding
+1275.00s - 1277.00s |  or whatever context it's flowing into
+1277.00s - 1280.00s |  so that you've removed all of the control characters.
+1280.00s - 1282.00s |  Or you can do selective sanitization.
+1282.00s - 1286.00s |  So, if you need to allow some HTML formatting in,
+1286.00s - 1289.00s |  you know, italics and bold and that sort of thing,
+1289.00s - 1291.00s |  you allow in certain tags,
+1291.00s - 1293.00s |  but you strip them of their attributes
+1293.00s - 1295.00s |  and you strip out all of the other tags.
+1295.00s - 1297.00s |  Each one of these strategies influences
+1297.00s - 1300.00s |  kind of the user experience of that application.
+1300.00s - 1303.00s |  And code bases tend to be deliberate about which ones they're choosing.
+1303.00s - 1305.00s |  So, if we choose the wrong one,
+1305.00s - 1307.00s |  we're actually changing kind of the expected user experience
+1307.00s - 1309.00s |  of that application.
+1309.00s - 1310.00s |  Even if we choose the right one,
+1310.00s - 1312.00s |  we then need to choose the correct library
+1312.00s - 1314.00s |  to use to do that functionality.
+1314.00s - 1317.00s |  So, we don't want to mix and match various libraries
+1317.00s - 1319.00s |  within a code base because that makes it harder
+1319.00s - 1321.00s |  to reason over the conventions of that code base.
+1321.00s - 1323.00s |  It makes it less consistent.
+1323.00s - 1325.00s |  And if we do that a whole lot,
+1325.00s - 1327.00s |  the code base becomes a lot less maintainable
+1327.00s - 1328.00s |  and a lot less error prone.
+1328.00s - 1330.00s |  Instead of being more secure,
+1330.00s - 1332.00s |  we're actually introducing the chance that, like,
+1332.00s - 1334.00s |  vulnerabilities will become more common
+1334.00s - 1336.00s |  if we're kind of confusing the conventions
+1336.00s - 1338.00s |  that the code base typically uses.
+1338.00s - 1340.00s |  But we already have a solution for this.
+1340.00s - 1342.00s |  The detections that find these problems
+1342.00s - 1345.00s |  also look for the things that invalidate those problems
+1345.00s - 1347.00s |  so that they don't report them.
+1347.00s - 1349.00s |  So, if we just invert those detections
+1349.00s - 1351.00s |  to report the things that would otherwise
+1351.00s - 1353.00s |  render the issue moot,
+1353.00s - 1355.00s |  we're making a list of all of the kind of
+1355.00s - 1358.00s |  protective mechanisms that the code base uses.
+1358.00s - 1361.00s |  And we can use that to precisely see the prompt
+1361.00s - 1363.00s |  so that rather than making a generic prompt
+1363.00s - 1365.00s |  of please fix this cross-site scripting,
+1365.00s - 1369.00s |  we can say please apply html2html.encode to this
+1369.00s - 1372.00s |  and use that specific library to fix it.
+1372.00s - 1373.00s |  But the benefit is,
+1373.00s - 1377.00s |  even if we don't do this for large language models,
+1377.00s - 1380.00s |  collecting the list of protective mechanisms,
+1380.00s - 1382.00s |  the right place to apply them and so forth,
+1382.00s - 1384.00s |  makes developers much more efficient
+1384.00s - 1385.00s |  at correcting the code.
+1385.00s - 1387.00s |  So, you know, even for folks that aren't, you know,
+1387.00s - 1389.00s |  kind of ready to go down the autofix route
+1389.00s - 1392.00s |  or for problems that it doesn't lend itself to,
+1392.00s - 1394.00s |  having this mindset makes folks more efficient
+1394.00s - 1396.00s |  at actually correcting the issues.
+1396.00s - 1398.00s |  It also makes our other kind of members
+1398.00s - 1400.00s |  that are helping secure the software,
+1400.00s - 1402.00s |  you know, security engineers, red teams,
+1402.00s - 1404.00s |  the audit and compliance folks, more efficient
+1404.00s - 1406.00s |  because it is telling them the conventions
+1406.00s - 1408.00s |  that a code base already uses.
+1408.00s - 1409.00s |  So, red team can go,
+1409.00s - 1411.00s |  hey, I want to go after everyone
+1411.00s - 1414.00s |  that's trying to do selective html sanitization
+1414.00s - 1415.00s |  because, you know,
+1415.00s - 1417.00s |  they're often imperfect about doing that.
+1417.00s - 1420.00s |  And we now have a mechanism, if we take this approach,
+1420.00s - 1422.00s |  where we can tell them every code base
+1422.00s - 1424.00s |  in the enterprise that's doing that
+1424.00s - 1428.00s |  so that they can go after them specifically.
+1428.00s - 1430.00s |  So, okay, now we've crafted a prompt.
+1430.00s - 1433.00s |  We said use this specific thing, fix this specific place.
+1433.00s - 1436.00s |  We've maximized the chance that the prompt is correct.
+1436.00s - 1438.00s |  But we still need to worry about whether or not
+1438.00s - 1441.00s |  the output is going to fix the issue.
+1441.00s - 1444.00s |  So, the more variance there is in a vulnerability class
+1444.00s - 1447.00s |  or the more variance there is in a language,
+1447.00s - 1449.00s |  the less likely we're going to get
+1449.00s - 1451.00s |  a successful fix out of this.
+1451.00s - 1453.00s |  So, C Sharp, for example,
+1453.00s - 1456.00s |  tends to look very similar enterprise to enterprise.
+1456.00s - 1458.00s |  So, you get much more kind of accuracy
+1458.00s - 1460.00s |  out of large language models for it
+1460.00s - 1464.00s |  because one code base kind of looks a lot like another code base.
+1464.00s - 1467.00s |  Two C++ code bases at the same company
+1467.00s - 1469.00s |  can look at vastly different languages.
+1469.00s - 1473.00s |  And so, you get much less success rate for C and C++.
+1473.00s - 1474.00s |  And because of that,
+1474.00s - 1476.00s |  we would expect that we would get less of a success rate
+1476.00s - 1478.00s |  for autofixes applied to that.
+1478.00s - 1480.00s |  And we don't want to send a bunch of noise to developers,
+1480.00s - 1484.00s |  let's try to validate whether or not the fix worked.
+1484.00s - 1488.00s |  And there are two approaches that we can do for this.
+1488.00s - 1494.00s |  The cheapest approach is to diff the abstract syntax tree
+1494.00s - 1496.00s |  before the change and after the change
+1496.00s - 1500.00s |  to see if there are kind of radical alterations to it
+1500.00s - 1504.00s |  that would indicate that the problem is gone.
+1504.00s - 1506.00s |  This is very inferential.
+1506.00s - 1508.00s |  It is not directly measuring if the issue is gone,
+1508.00s - 1510.00s |  but it is very performant.
+1510.00s - 1513.00s |  So, it's something that you can do quite cheaply at scale.
+1513.00s - 1516.00s |  And it appears to be the route that many of the kind of
+1516.00s - 1520.00s |  more advanced autofix vendors are going down.
+1520.00s - 1524.00s |  But a better approach is to just try to rerun the static analysis
+1524.00s - 1527.00s |  on that change code to see if you have the finding again.
+1527.00s - 1529.00s |  The problem is, as I mentioned,
+1529.00s - 1532.00s |  we are going to more and more sophisticated static analysis
+1532.00s - 1534.00s |  so that we can find these patterns.
+1534.00s - 1536.00s |  That comes at the expense of performance.
+1536.00s - 1539.00s |  And today, it's very hard to run those heavyweight analyzers
+1539.00s - 1542.00s |  on a very reoccurring basis.
+1542.00s - 1545.00s |  So, we really need those analyzers to kind of evolve
+1545.00s - 1548.00s |  so that they can do just a differential analysis
+1548.00s - 1550.00s |  on the code path that has changed
+1550.00s - 1553.00s |  to determine if there is an alteration or not.
+1553.00s - 1555.00s |  The benefit to both of these approaches
+1555.00s - 1557.00s |  is we're making mechanisms that allow us
+1557.00s - 1560.00s |  to rapidly reason over any code change,
+1560.00s - 1562.00s |  not just an autofix.
+1563.00s - 1564.00s |  So, we're also making, you know,
+1564.00s - 1567.00s |  by investing in enabling autofixes here,
+1567.00s - 1569.00s |  we're also enabling much more rapid,
+1569.00s - 1574.00s |  very sophisticated analysis in the IDE or in the pull request
+1574.00s - 1577.00s |  so that we can give quicker feedback to engineers.
+1577.00s - 1581.00s |  So, these investments enable kind of security analysis in general
+1581.00s - 1585.00s |  at a much more iterative rate than we have today.
+1585.00s - 1587.00s |  But finally, the biggest challenge.
+1587.00s - 1590.00s |  Anytime you alter code, you have the concern
+1590.00s - 1593.00s |  that you're impacting the semantics of code around you.
+1593.00s - 1597.00s |  You know, if I change the return value in that previous example,
+1597.00s - 1601.00s |  any of the calling code now explodes.
+1601.00s - 1603.00s |  If I change the function prototype, the function name,
+1603.00s - 1606.00s |  if I delete the function,
+1606.00s - 1608.00s |  all of this is going to cause code to explode.
+1608.00s - 1610.00s |  I can increase the cyclic complexity
+1610.00s - 1614.00s |  of performance-sensitive areas and cause all sorts of issues.
+1614.00s - 1617.00s |  There's a variety of things that we can pre-reason about
+1617.00s - 1619.00s |  that we know cause problems.
+1619.00s - 1623.00s |  But separately, I think we all have code
+1623.00s - 1626.00s |  that developers themselves are afraid to touch.
+1626.00s - 1629.00s |  And they're afraid to touch it because it's very hard for them
+1629.00s - 1632.00s |  to reason about the implications of those changes.
+1632.00s - 1635.00s |  And the reason for that is usually going to be of one of two reasons.
+1635.00s - 1638.00s |  The first is that that code is highly intersectional.
+1638.00s - 1641.00s |  A lot of different code paths flow through that one spot.
+1641.00s - 1643.00s |  And so, it's very hard for an engineer
+1643.00s - 1645.00s |  to create a mental model of the implications
+1645.00s - 1647.00s |  for all of those code paths.
+1647.00s - 1650.00s |  If we're altering code that only has like one or two callers,
+1650.00s - 1652.00s |  that's fairly easy to reason over.
+1652.00s - 1656.00s |  But if there are 50 callers of that code, it's very hard.
+1656.00s - 1658.00s |  Separately, if the code we're altering
+1658.00s - 1661.00s |  is ultimately on kind of an external interface,
+1661.00s - 1664.00s |  we can't reason about the downstream implications at all
+1664.00s - 1667.00s |  because the code that we'll be calling it is external to us.
+1667.00s - 1669.00s |  Both of those things make developers
+1669.00s - 1672.00s |  very sketchy about changing that code themselves.
+1672.00s - 1674.00s |  And so, if we do that with large language models,
+1674.00s - 1676.00s |  we're touching places that we know have risk.
+1676.00s - 1679.00s |  So, at the very least, we can decorate any of those changes
+1679.00s - 1681.00s |  with instructions like,
+1681.00s - 1684.00s |  hey, I'm altering highly intersectional code.
+1684.00s - 1687.00s |  Please set aside a pretty significant period of time
+1687.00s - 1690.00s |  to review this pull request or review this change
+1690.00s - 1693.00s |  that you pulled into your IDE because of that.
+1693.00s - 1697.00s |  It's going to be inherently riskier than other changes.
+1697.00s - 1699.00s |  And even though that's making them do more work,
+1699.00s - 1701.00s |  by providing them that insight,
+1701.00s - 1703.00s |  they'll have more trust in the system overall
+1703.00s - 1705.00s |  and kind of rightly so.
+1706.00s - 1710.00s |  Another approach is to kind of just diff the ASTs.
+1710.00s - 1712.00s |  Like I proposed in that previous example,
+1712.00s - 1714.00s |  that is a really great way of catching
+1714.00s - 1716.00s |  when things like the return values have changed
+1716.00s - 1718.00s |  or the function prototypes changed
+1718.00s - 1721.00s |  or you now have dead code paths because of the change.
+1721.00s - 1723.00s |  That's a very cheap and fast thing to do
+1723.00s - 1725.00s |  that kind of can quantify the implications
+1725.00s - 1728.00s |  of whether you're breaking the code or not.
+1728.00s - 1731.00s |  And I would argue that investing here
+1731.00s - 1734.00s |  in can I detect the implications of this code change
+1734.00s - 1736.00s |  on other code might be of more value
+1736.00s - 1738.00s |  than enabling autofixes
+1738.00s - 1742.00s |  because we are making changes to code all the time constantly
+1742.00s - 1745.00s |  that we don't have kind of a full mental model of.
+1745.00s - 1746.00s |  Developers are doing it.
+1746.00s - 1749.00s |  When we ingest new versions of a dependency
+1749.00s - 1750.00s |  that has had a lot of changes,
+1750.00s - 1751.00s |  we don't have a lot of insight
+1751.00s - 1753.00s |  into how that will impact our code.
+1753.00s - 1756.00s |  It's kind of why dependency updating has such a low rate.
+1756.00s - 1758.00s |  So by investing in the ability
+1758.00s - 1760.00s |  to measure the side effects of code,
+1760.00s - 1762.00s |  we're also enabling all of that.
+1762.00s - 1765.00s |  And that might overall be a larger legacy
+1765.00s - 1767.00s |  of this kind of technology.
+1767.00s - 1770.00s |  So those are kind of the big things
+1770.00s - 1772.00s |  that have made this a challenge.
+1772.00s - 1775.00s |  And so for the teams that are right now focused on just,
+1775.00s - 1778.00s |  I'm going to send a bunch of serif from my static analysis tool
+1778.00s - 1780.00s |  to generative AI and get magic back,
+1780.00s - 1783.00s |  they're going to have a really hard time.
+1783.00s - 1786.00s |  Using that in isolation is going to be a problem
+1786.00s - 1789.00s |  because fundamentally when we're changing code,
+1789.00s - 1792.00s |  the real work is reasoning through the implications
+1792.00s - 1794.00s |  of those changes on other code.
+1794.00s - 1798.00s |  And large language models do not reason.
+1798.00s - 1803.00s |  What they do is they transform vectorized text into new text.
+1803.00s - 1805.00s |  It's a very sophisticated transformation,
+1805.00s - 1807.00s |  but it is just a transformation.
+1807.00s - 1808.00s |  That's why when you ask them
+1808.00s - 1810.00s |  how many R's are in the word strawberry,
+1810.00s - 1811.00s |  they fail like crazy
+1811.00s - 1813.00s |  because they don't know what a word is,
+1813.00s - 1814.00s |  they don't know what strawberry is,
+1814.00s - 1815.00s |  they don't know what a letter is,
+1815.00s - 1817.00s |  and they don't know how to count.
+1817.00s - 1818.00s |  They aren't reasoning.
+1818.00s - 1821.00s |  They're just transforming that string you gave them
+1821.00s - 1822.00s |  into another string,
+1822.00s - 1825.00s |  and that string will have a number in it.
+1825.00s - 1828.00s |  So by itself, generative AI is not useful for that,
+1828.00s - 1830.00s |  but it is great at generating stuff.
+1830.00s - 1832.00s |  But we don't need to rely only on that.
+1832.00s - 1837.00s |  We have a really strong semantic reasoning system already
+1837.00s - 1839.00s |  that's produced these results.
+1839.00s - 1840.00s |  So my thesis for all of you
+1840.00s - 1842.00s |  is that we should not be thinking of generative AI
+1842.00s - 1844.00s |  as a solution.
+1844.00s - 1847.00s |  We should be thinking of it as one tool in a toolbox
+1847.00s - 1849.00s |  that we combine with the rest of our tools
+1849.00s - 1851.00s |  to build the solution.
+1851.00s - 1852.00s |  So by combining kind of the strengths
+1852.00s - 1856.00s |  of our existing sophisticated SAS tools
+1856.00s - 1860.00s |  with the generative ability of large language models,
+1860.00s - 1863.00s |  we'll get much better results.
+1863.00s - 1865.00s |  So we will simultaneously be improving
+1865.00s - 1868.00s |  the state of the large language model autofixes,
+1868.00s - 1871.00s |  and this is the direction kind of the most sophisticated
+1871.00s - 1873.00s |  vendors in the space are going.
+1873.00s - 1874.00s |  But we're also going to be solving
+1874.00s - 1876.00s |  a whole lot of other problems for ourselves
+1876.00s - 1879.00s |  that we already have in kind of our deployment of SAS
+1879.00s - 1881.00s |  and kind of the user experiences around it.
+1881.00s - 1884.00s |  So my thesis and plea to everyone in this space
+1884.00s - 1887.00s |  is please stop looking for an individual silver bullet
+1887.00s - 1889.00s |  and start thinking about how you can use
+1889.00s - 1893.00s |  a collection of tools to build a much more robust solution.
+1893.00s - 1896.00s |  So that is a little over my 30 minutes,
+1896.00s - 1898.00s |  and I appreciate you all hanging out,
+1898.00s - 1900.00s |  listening to me rather than going and getting refreshments.
+1900.00s - 1902.00s |  So cheers, everybody.

@@ -1,0 +1,669 @@
+{
+  "webpage_url": "https://www.youtube.com/watch?v=G7GwXu684JY",
+  "title": "DEF CON 32 - Sshamble  Unexpected Exposures in the Secure Shell - HD Moore, Rob King",
+  "description": "The Secure Shell (SSH) has evolved from a remote shell service to a standardized secure transport that is second only to Transport Layer Security (TLS) in terms of exposure and popularity. SSH is no longer just for POSIX operating systems; SSH services can be found in everything from network devices, to source code forges, to Windows-based file transfer tools. While OpenSSH is still the most prominent implementation, it's now just one of dozens, and these include a handful of libraries that drive a wide range of applications. This presentation digs deep into SSH, the lesser-known implementations, many of the surprising security issues found along the way, and how to exploit them. As part of this talk, we will release an open source tool, dubbed \"sshamble\", that assists with research and security testing of SSH services.",
+  "channel_url": "https://www.youtube.com/channel/UC6Om9kAkl32dWlDSNlDS9Iw",
+  "duration": 2723,
+  "channel": "DEFCONConference",
+  "uploader": "DEFCONConference",
+  "upload_date": "20241016"
+}
+
+0.05s - 5.75s | This text was transcribed using whisper model: large-v2
+
+ Hey guys, uh, so we're gonna talk about SSH. And this has been probably the most exciting year in
+5.75s - 12.59s |  SSH since X2.cd got lea- X2.cd got leaked by Teso. So, um, uh, props to anyone who used that.
+12.59s - 17.59s |  Uh, so, uh, SSH for folks who aren't aware, um, you probably, probably should be or if you
+17.59s - 21.57s |  don't know what SSH is, but, um, SSH, secure shell, port 22, the thing we've been using to
+21.57s - 26.53s |  admin the internet for many years, like almost 30 years. Um, there's really two flavors of
+26.53s - 31.09s |  SSH that we use the most. There's OpenSH, which is like 80 something percent of all SSH
+31.09s - 35.09s |  installations. And then there's DropBear, which is like another like 5 to 8 percent. And then
+35.09s - 39.71s |  there's a long tail of random weird stuff out there. So we decided to do some research into
+39.71s - 44.81s |  first looking into the XC backdoor. And then part of that, we just accidentally found a couple
+44.81s - 47.67s |  tens of thousands of shells. And we're like, well, let's go figure out what all these random
+47.67s - 51.69s |  things, all these free shells were. Uh, and that led to this giant pile of work and this open
+51.69s - 55.09s |  source tool. Um, so if you want to play with the toolkit, you can get it right now. It's this,
+55.11s - 60.09s |  the shamble.com SSH and BLE. And that goes to GitHub and you can go grab the stuff and play
+60.09s - 63.79s |  with it. And it's a big hot mess, but we're making it better. And it should be a lot of fun as
+63.79s - 67.89s |  we start cranking on, make the polishing up, making it cool. Um, so with that, we'll go ahead
+67.89s - 73.99s |  and get started. Um, fortunately we're only doing 67 slides in 45 minutes, not 100. So we
+73.99s - 78.93s |  had a little breathing room this time. Um, so I'm sure we're all very much aware of the XC
+78.93s - 82.77s |  utils backdoor. Well, step back a little bit. So there's, you know, four major events this
+82.79s - 86.89s |  year in SSH that were really important. Obviously XC utils backdoor targeted SSH using the
+86.89s - 92.89s |  system D patches and Debian and, uh, Red Hat builds of OpenSH. We also had the really cool
+92.89s - 96.13s |  Terrapin vulnerability, which affected pretty much everything because of the truncation
+96.13s - 100.81s |  attack. Um, we also had, uh, the regression vulnerabilities, the really fantastic work by the
+100.81s - 105.51s |  Qualys Threat Research Unit. Um, and then the other regression bug found by Solar Designer
+105.51s - 109.51s |  that only affected Red Hat. And regression was amazing. It's a signal re-entrance bug that
+109.55s - 114.33s |  gets you remote route in OpenSH by default. It just takes six hours on a 32-bit machine or
+114.33s - 119.03s |  weeks or months on a 64-bit to compromise. So, but it's been a really cool year. Um, one of my
+119.03s - 123.67s |  favorite SSH bugs this year kind of flew under the radar. Um, the guys at Watchtower Labs did a
+123.67s - 128.43s |  really cool analysis of the move-it vulnerability that uses the SFTP server. And so they found a
+128.43s - 132.41s |  vulnerability where any public key being sent to the service, um, would be treated like a file
+132.41s - 136.41s |  path, like the binary blog is treated like a file path. And it just opened random UNC URLs and
+136.41s - 139.65s |  all kinds of fun stuff. They threaded like a million little needles to be able to get a shell
+139.65s - 142.89s |  remotely and move it. But the really cool thing about that bug is it affected every other
+142.89s - 147.79s |  vendor also using IPWorks as the underlying library. So, they actually uncovered like a supply
+147.79s - 152.57s |  chain bug, if you will, which is really neat. So, going kind of back on topic again, um, the
+152.57s - 158.77s |  XE Utils vulnerability or backdoor was amazing. It was like it's own little Netflix docuseries,
+158.77s - 163.57s |  right? We're going to see like the true crime of XE Utils for years. But like who is Gia Tan?
+163.57s - 167.41s |  Like it's going to, it's the most dramatic thing to happen to InfoSec in a very long time. Um,
+167.41s - 171.11s |  so the, this is a multi-year campaign where this person, um, contributed to open source for a
+171.11s - 175.55s |  long time, then eventually kind of twisted the knife and tried to backdoor the world. And I got
+175.55s - 180.15s |  caught the very last minute by, uh, Andrews Frond who says, hey, my SSH is taking slightly too
+180.15s - 183.89s |  much longer than it should. And then unraveled the whole thing right before it got put into the
+183.89s - 188.19s |  stable distributions. So, we got really close to the whole internet being backdoored. Uh, but
+188.19s - 191.67s |  what was really important about that backdoor that it was a nobody but us backdoor, which is
+191.67s - 194.97s |  normally, you know, normally the US government's famous for those. But in this case, who
+194.97s - 199.51s |  knows who it was. Um, in fact, it was a encryption key controlled by the attacker that only
+199.51s - 202.91s |  people with a private key had access could abuse the backdoor. That was really a neat thing
+202.91s - 207.65s |  about it. So, we thought it'd be fun to go figure out who this Gia Tan person was. And we're
+207.65s - 211.89s |  like, hey, you know, everyone's looking for Gia Tan, we're going to go find some Gia Tan. Uh,
+211.89s - 215.15s |  and we're very happy, Alfredo, if you're out here, thank you so much for designing your
+215.15s - 220.87s |  graphics. They're amazing. Um, so we decided to go hunting. And, you know, before we go
+220.89s - 225.67s |  hunting for Gia specifically, we want to talk a little bit about SSH protocol. So, uh, Gia Tan
+225.67s - 230.71s |  targeted SSH, uh, with ex- with ex-utils backdoor. So, we're going to target Gia Tan using
+230.71s - 236.19s |  SSH. But before we go there, we need to talk about how SSH public key authentication
+236.19s - 240.15s |  works. So, SSH public key authentication is two stage. The first thing you do is say, hey
+240.15s - 244.19s |  server, would you accept this public key for this username on your machine? And it says, yeah,
+244.19s - 247.89s |  sure. And then you have to sign this big blob of data that proves that you have the private
+247.89s - 251.29s |  key. But you can do that first part without the private key at all. And it's really cool.
+251.31s - 255.01s |  There's been a module in Metasploit for it since 2012, lets you take someone else's public key
+255.01s - 258.15s |  that you got however you got, and then check a bunch of servers to see whether that public key
+258.15s - 261.19s |  has access to, uh, those servers for that username. And you can, so you can kind of see
+261.19s - 264.75s |  where this is going. Um, it's, there's this great common or open SSH saying, is this a
+264.75s - 267.63s |  problem? I don't know. But it's been there forever. It's just kind of the protocol spec at
+267.63s - 271.33s |  this point. It is what it is. Maybe it's not a big security deal. So, we decided to create
+271.33s - 275.03s |  this thing called Shamble, which started off being a half-off scanner for SSH. So, what we
+275.03s - 278.67s |  do is you take a bunch of public keys, and then you'd like put them in Shamble and scan the
+278.69s - 283.19s |  whole internet saying, what on the internet can you access using these public keys? And the
+283.19s - 287.53s |  idea is like, well, if we have, let's say, Geotan's public key, we can find all the servers
+287.53s - 290.23s |  that they use, and then from there we figure out who they are. So, that was, that was the
+290.23s - 294.31s |  idea. But it ended up evolving into this massive tool to find all kinds of other crap
+294.31s - 297.61s |  because of all the things that we found. So, you know, first thing you do say is, hey, my
+297.61s - 300.95s |  name's Geotan, we're gonna go download your GitHub keys. So, we grabbed their two GitHub
+300.95s - 305.51s |  keys, which are still present today, um, and basically took those two public keys, ran them
+305.53s - 309.69s |  to Shamble, and then, um, you know, threw that at the whole internet, all the, all the SSH
+309.69s - 314.07s |  daemons we could find, let it grind out for a couple days. And what's, what's exciting about
+314.07s - 316.77s |  it is like, we spent the whole weekend on this, we hadn't slept or anything like that, Rob and
+316.77s - 320.41s |  I were like working at four in the morning, we're like, we got one, we got a hit for GEA. It's
+320.41s - 324.35s |  really exciting. Um, in the meantime, we're melting all of our DigitalOcean nodes, so this
+324.35s - 328.09s |  is this poor little DO droplet just like falling apart as we're like destroying it. It's, I
+328.09s - 332.79s |  think it sent like a terabyte of traffic at this point, like we're, yeah, we made DO VMs
+332.81s - 338.41s |  very unhappy. Um, so, just heads up for law enforcement, um, we sent the public key for
+338.41s - 343.05s |  GEATAN to every server on the internet from our IPs. We are not GEATAN, we do not backdoor
+343.05s - 346.79s |  exe-utils, even though it very much looks like we did. So we sort of accidentally framed
+346.79s - 351.39s |  ourselves, uh, we realized that after the fact that we probably might, I'm sure the long-arm
+351.39s - 354.37s |  law will catch up at some point, like, you guys, you're GEATAN, like 10 years from now, and
+354.37s - 360.33s |  like, yeah, we are not, sorry. So, um, unfortunately, like every single result we found
+360.35s - 363.41s |  that we thought was GEATAN was a false positive. It was like a buggy server with like the
+363.41s - 367.09s |  memory was corrupted or the service would accept every fifth public key or every third
+367.09s - 370.99s |  public key. So we had to say, okay, let's try a bunch of random public keys and if you reject
+370.99s - 375.93s |  all those, now try the GEAT key. And let's try like an RSA key, an RSA 1024, 2048. We've
+375.93s - 379.49s |  still found devices that are just randomly accept or randomly not accept keys and it just
+379.49s - 383.43s |  drove us crazy. So we finally fixed all these bugs, re-scanned, re-scanned, re-scanned, uh,
+383.43s - 387.31s |  you know, clicked all those DigitalOcean abuse notices, says, yeah, we're good, our server's
+387.31s - 391.85s |  not compromised, we're cool. Um, and we still found no GEATAN. So whoever this, you know,
+391.85s - 395.59s |  actor was, they had really good OPSEC, we found nothing, so good job them. Um, but we did
+395.59s - 399.23s |  find like thousands of free shells. So we're like, how come we're getting all these random
+399.23s - 403.53s |  shells on all these random machines? And that's really what this talk is, is about. Uh, so
+403.53s - 408.47s |  with that, um, a little bit of a detour. So an SH, um, public keys used to not be something
+408.47s - 411.37s |  that you actually made public. They used to be something you kind of kept privately in your
+411.37s - 415.11s |  .SH directly and you copied to a server here and there. But, um, in the last five or six
+415.11s - 420.55s |  years, we've seen people using, uh, SH keys like identities. So just like people used PGP back
+420.55s - 424.05s |  in the day, you can now use SH keys as your identity when you're installing a Ubuntu server.
+424.05s - 426.89s |  You can tell it to grab your key from GitHub or from Launchpad and automatically give you
+426.89s - 432.79s |  access to your server during installation by username. Um, you can also, uh, um, use these
+432.79s - 436.69s |  keys for things like, uh, OJ encryption. So if you use the OJ tool or H tool, you can use it
+436.69s - 439.83s |  almost like a PGP key now these days as well. So there's all kinds of cool stuff you can do
+439.83s - 443.57s |  with, uh, SH keys you didn't before. But the key thing here is like, keys are effectively
+443.57s - 447.37s |  public if you use any of these major platforms. And literally public. So there's this great
+447.37s - 451.25s |  little, uh, daemon by Filippo where you SSH into it, it'll say who you are. It'll use the
+451.25s - 454.67s |  public key you send to the server, dock to you based on the GitHub database and say, oh,
+454.67s - 458.65s |  you're so and so, welcome. So it's kind of a fun little trick. And effectively we're doing
+458.65s - 462.39s |  that, but at scale for the whole internet. So if you want to link a user to a particular key
+462.39s - 465.89s |  on a particular server, you need, um, one, a list of all the SH servers out there. So
+465.89s - 469.45s |  ZMAP, Mascan, dump it from Shodan, whatever you want to do to get the list. You want a list of
+469.45s - 472.77s |  all the public keys, so you go grind all those out of GitHub through their BigQuery API,
+472.79s - 476.67s |  about 117 million users as of about a month ago. Uh, Launchpad's got a bunch of users too.
+476.67s - 480.13s |  You get all their keys too, why, why not? And then Bad Keys is a great project by, uh,
+480.13s - 483.91s |  Hanno Bach, um, that allows you to, that keeps track of all the compromised keys out there.
+483.91s - 487.31s |  So you can look for keys that give you access to the system. And then lastly, you need a list
+487.31s - 491.25s |  of common usernames the user might have, like root, ec2 user for cloud, Ubuntu, et cetera,
+491.25s - 494.99s |  or whatever the comment is in the key. So one of the nice things about GitHub is that when
+494.99s - 498.25s |  you upload your public key to there, they actually preserve the comment field, which is
+498.25s - 501.39s |  typically your, your username when you uploaded the key. So you know what their default
+501.41s - 504.09s |  username is. So if you're trying to find like their server someplace, you can pull it out of
+504.09s - 507.85s |  the comment, use that to talk to the user and so on. So you, you take this nice little recipe
+507.85s - 512.89s |  and you throw it in the oven and, um, it gives you a nice little primitive to take one key and
+512.89s - 515.89s |  check lots of servers really fast. Like you can grind through all the servers on the internet
+515.89s - 519.83s |  in like an hour or something like that on a single box. It's pretty quickly just for one key.
+519.83s - 522.73s |  Um, but if you want to test, um, so that works great if you're looking for like a geotan
+522.73s - 526.87s |  everywhere. But what if you want to say for this server on the internet that's acting fishy,
+526.87s - 531.11s |  which GitHub user has access to it? And do the other way, check all 117 million keys on
+531.13s - 534.67s |  one server. Well, that's a very different attack. This is like, you know, a duck-sized horse or
+534.67s - 538.43s |  horse-sized ducks, you know, kind of approach. So if we want to test a million keys against,
+538.43s - 542.87s |  uh, a single server, it's a little bit tougher because, uh, SH will slow you down. Uh, they
+542.87s - 546.31s |  have, uh, this thing called max auth limit, which is how many tries you can authenticate
+546.31s - 549.25s |  before it kicks you off of that connection. And there's a max connection limit, so you can
+549.25s - 552.89s |  only do so many of those at once, right? So the idea is that with OpenSH, if you try to
+552.89s - 556.49s |  brute force keys, you get four into it and it knocks you out and you can't auth anymore. So
+556.49s - 559.69s |  if you've ever had more than four keys in your SH, uh, agent and you try to shell out a
+559.71s - 562.81s |  machine and it just immediately says, you know, too many tries, that's why. It's because you're
+562.81s - 568.05s |  hitting the max auth limit of OpenSH. However, um, OpenSH is the only one that does that.
+568.05s - 572.35s |  Everything else lets you just bang keys all day long. So DropBear lets you just grind keys as
+572.35s - 576.19s |  fast as that little device can, can test them. Um, also a lot of commercial products like
+576.19s - 579.83s |  BitVise, GlobalScape, Maverick, LanCom, all this stuff, all their SH daemons do not care.
+579.83s - 583.43s |  They'll let you just try every possible key in the world until, until you're done. It's great.
+583.43s - 586.03s |  Uh, we emailed the DropBear folks, they didn't care, they didn't even bother replying, so
+586.05s - 590.91s |  like, it's not really a bug, it's a feature. So we like that feature. So, uh, with the
+590.91s - 594.95s |  shamble code you mentioned before, we tested the GitHub, like 4.6 million key database at the
+594.95s - 599.19s |  time, and you can do about 10,000 keys per second on a DropBear box on an embedded node
+599.19s - 602.25s |  without it spiking the CPU on the target device at all. It just doesn't even care. It's like
+602.25s - 605.99s |  super fast. So it doesn't even murder the machine. And this is 10,000 keys per second per
+605.99s - 610.53s |  connection, and DropBear is typically configured with 15 connections. So you can do 150,000
+610.53s - 614.83s |  keys per second on a machine for pub key testing to dock someone's server. So if you see
+614.83s - 618.27s |  someone like hitting you on a random box and SH is open, just go take all the keys and give
+618.27s - 622.15s |  it, like yeah, you jerk, stop that. And just email them, like quit it. Like, it's really,
+622.15s - 625.85s |  really easy to dock to your hackers. And if you're running an SH honeypot, and your SH
+625.85s - 629.29s |  honeypot collects the public key being sent to you, you can turn around and flip that on
+629.29s - 632.79s |  them again and immediately figure out who they are. Like, people forget all the time that
+632.79s - 635.39s |  their SH agent's configured, and they're sending their public key to every server they
+635.39s - 638.53s |  connect to. Even if their agent is not authenticating to it, they're still automatically
+638.53s - 642.53s |  sending that public key as a test whenever you touch anything. So if you're a, a lead hacker
+642.53s - 645.31s |  and you've been just SHing to random machines on the internet, you're also sending your
+645.31s - 650.87s |  public key identity to all those machines, and if they're logging in, you're a host. So, um,
+650.87s - 654.91s |  by contrast, if you try the same attack against OpenSH, you can do 132 keys per second. So
+654.91s - 659.49s |  it'll take you 10 hours to do the same 4.8 million keys with a single connection. So, um,
+659.49s - 663.69s |  obviously the OpenSH approach is much nicer, um, but it's great if you're trying to, um,
+663.69s - 667.09s |  ad- ad- docks people. So, uh, with that, I'll hand it to Rob to talk about shaking out
+667.09s - 672.09s |  shells. Testing, testing. Testing. Testing, testing. Hey, alright. So, shaking out shells.
+676.87s - 681.87s |  Say that five times fast. Um, what we did with Shamble is it resulted in, uh, around 27
+684.45s - 690.15s |  million devices on the public internet that are listening on port 22. We got another, you
+690.15s - 694.55s |  know, 14 million or so that actually negotiated, uh, SSH off, and we ended up with about
+694.55s - 699.55s |  110,000 sessions. Um, what's really interesting about SSH, so SSH, uh, especially OpenSSH
+701.55s - 708.24s |  has done an immense amount of work in- do what? Oh, sorry, front mics are hot. Uh, so-
+712.26s - 717.26s |  sorry. So, uh, we ended up with, um, about 110,000, uh, that are actually listening and we
+719.12s - 723.50s |  were able to get sessions. What's fascinating about OpenSSH is- or SSH, is that there's a
+723.52s - 729.36s |  fairly large post-authentication attack surface. So, SSH does lots of things. You can create
+729.36s - 733.70s |  tunnels, you, uh, can create pseudo terminals, there's subsystems, there's all sorts of things
+733.70s - 738.88s |  that are running on, uh, SSH once you're inside. Uh, it kind of assumes that once you've
+738.88s - 742.94s |  authenticated you're okay, but there's an immense, uh, an immense amount of systems out
+742.94s - 747.94s |  there that actually will do this interesting post-auth-auth. So, you authenticate, uh, non-authentication
+748.20s - 753.20s |  with LeftBeef and you get in and then it actually gives you a secondary authentication mechanism.
+756.24s - 760.48s |  It'll prompt you for a username and then a password, but you're inside the session at that
+760.48s - 763.54s |  point. So, you can start doing some interesting things. This is one of the- the interesting
+763.54s - 769.12s |  cool things that- that Shamble will do. Um, you can say, oh, okay, uh, I can send signals, I
+769.12s - 775.22s |  can send, uh, SIGWINCH, I can, uh, forward X11, things like that. And you can see there's a
+775.24s - 781.72s |  fair amount of large, uh, devices, uh, popular devices out there that do this post-auth-auth.
+781.72s - 787.22s |  So, you can see you've got, uh, SonicWall firewalls, um, Juniper network devices. You can
+787.22s - 791.16s |  SSH in with AuthNone and then it'll give you the secondary one. That, uh, that smaller one,
+791.16s - 794.70s |  the PleaseLogin, that's, uh, a ruckus one that HG's gonna talk about here in a minute.
+794.70s - 799.70s |  That's super, uh, super fascinating. But it's worth noting that there is this post-auth attack
+800.46s - 805.46s |  service that is kind of not considered, but is exposed. So, and with that, with sort of the
+807.70s - 812.60s |  first one that you can talk about is signal injection. I'm gonna pass it back to HG for that.
+812.60s - 814.60s |  Did we get the second mic working?
+814.60s - 816.94s |  Cool, thank you. Sorry, I just wanted to stay away from the front mic so we don't get
+816.94s - 821.54s |  feedback here. Um, so, uh, Rob mentioned that one of the things you can do to a post-auth
+821.54s - 826.52s |  session is, uh, inject signals into the process before you've fully authenticated. So,
+826.54s - 830.44s |  effectively, you can connect to a machine, it'll pass through the authentication from
+830.44s - 834.44s |  SSH, Auth equal None, and then drop you to a real login shell and it'll say, PleaseLogin.
+834.44s - 838.76s |  And you can just say, Signal Sec V, and it goes, ah, and dies. Which is a lot of fun. So,
+838.76s - 841.62s |  effectively, you can just, you know, we talk about regression being signal re-entrance.
+841.62s - 844.62s |  This is just signal entrance. You just bang signals all day long into whatever process you
+844.62s - 848.56s |  want and see what terrible things fall back out of it. So, uh, we didn't get too far into
+848.56s - 850.80s |  this testing, but we've put, there's all kinds of fun things that come out of it. You can
+850.80s - 853.90s |  send a SIGINT request, you can pass Python scripts that are part of the login shell to
+853.92s - 858.52s |  crash. Uh, you can do SIG alarms, SIG childs, SIG ills, SIG aborts, you can pass core dumps,
+858.52s - 862.62s |  uh, all kinds of crazy stuff you can just do with signals. And OpenSH tries to protect you a
+862.62s - 866.80s |  little bit by limiting things like SIG Sec V, SIG abort, and so on. Uh, but DropBear does
+866.80s - 869.60s |  not. DropBear is like, anything that you can possibly send me, I'll treat as a signal and
+869.60s - 872.76s |  deliver to the process. Thank you. Um, so there's a lot of really cool attacks that we think
+872.76s - 876.44s |  you can do there and we're gonna start working on expanding the shamble code to then basically
+876.44s - 880.44s |  just mash symbols into random processes so you get a shell. And, yeah. Um, with that, hand
+880.48s - 885.82s |  it back to Rob, talk about TSP forwarding. I, I do always love that, uh, DropBear is like,
+885.82s - 889.16s |  I, you know, it's like, if it were dying, it wouldn't be dictating, right? It wouldn't be
+889.16s - 895.16s |  writing it out, it would just say IE, but no. Um, but another part of this post-auth, uh, uh,
+895.16s - 901.90s |  attack surface is forwarding, right? So SSH allows you to generate or create tunnels, uh, you
+901.90s - 905.60s |  know, through channels and create encrypted tunnels. It's almost like a little miniature VPN
+905.60s - 909.84s |  thing. And this is a pretty popular and common, uh, feature. But once you've po- once you're
+909.84s - 913.02s |  in this post-auth situation, you can start doing that. You can start creating these things
+913.02s - 917.92s |  on a lot of these systems. Um, many of them will administratively restrict you from doing it
+917.92s - 923.46s |  or they'll only let you go to certain things, but for example, uh, uh, you can say, OK, well
+923.46s - 927.70s |  I'm gonna try to forward to this particular host or I'm gonna try to forward to a local host
+927.70s - 932.64s |  and do a loopback. Um, and we actually found, uh, this is an ION, yeah, OK, good, the chip's
+932.64s - 939.30s |  blank. Uh, this is a, an ION network's access point and you can see that it's trying to, uh,
+939.34s - 946.04s |  forward to Google.com and it, it gets rejected. And then it's gonna try, oh, and by the way,
+946.04s - 950.68s |  this is the shambles shell, uh, which I love. Um, and it'd say, oh, I'm gonna try to get
+950.68s - 955.86s |  88888, but then you can actually forward back to local host. You can actually use that to
+955.86s - 961.12s |  get around restrictions and things like that once you're in this sort of, uh, uh, mystery,
+961.12s - 967.46s |  uh, uh, post-auth shell. But the big, the big one is shell injection. I'm gonna let
+967.46s - 971.84s |  Jason take this one cause this is super cool. One thing that was kind of fun about this is
+971.84s - 975.40s |  that we found bugs that like we shouldn't have found. Like because of this post-auth
+975.40s - 979.38s |  sequence, effectively you SH to the machine and instead of asking for a password, you just,
+979.38s - 982.34s |  it drops you straight in, but it drops you straight into a secondary shell. And that
+982.34s - 985.48s |  secondary shell has its own bugs. So we kept finding these vulnerabilities in these
+985.48s - 989.06s |  secondary shells that no one had found before, even though they were like stupid. Like we
+989.06s - 993.02s |  found so many dumb bugs just because no one really tested that level of the protocol. So
+993.02s - 998.60s |  in this case, um, we're ran across these like ruckus access points and you SH them. There's
+998.60s - 1002.00s |  about 36,000 of these suckers exposed on the internet. About 900 are vulnerable to this
+1002.00s - 1006.90s |  particular attack still right now today. And it asks you for a username, you type in root, you
+1006.90s - 1009.44s |  type in, you start entering your password and for your password, you just type in like
+1009.44s - 1012.40s |  dollar parenthesis, whatever command you want to run, right? And it's redirected back out to
+1012.40s - 1015.38s |  standard error so you can see the result. And it just runs this route for your life. It's
+1015.38s - 1019.74s |  great. Um, so we'll, we reached out to ruckus of course, like, Hey, what's up? Like you guys,
+1019.74s - 1023.28s |  is this a new bug? Is this a fixed bug? We can't really tell what's patched. Like, Oh yeah, we
+1023.28s - 1026.58s |  patched that already. I'm like, did you tell anyone? Nope. They didn't tell anyone. There's no
+1026.58s - 1029.92s |  CV, you know, security note whatsoever. So of course no one's applying patches because they
+1029.92s - 1033.68s |  didn't know they had to apply the patch. Um, so they've got two different tracks, the 521 and
+1033.68s - 1037.28s |  the 61. Those both fix it. But there's, you know, still about, you know, almost a thousand
+1037.28s - 1041.02s |  folks out there still running unpatched up. But the question was like, why did this bug live so
+1041.02s - 1044.60s |  long? How did we end up with this? Like a stupid login prompts, like password character
+1044.60s - 1048.20s |  injection. And it's because there's behind this SSH off layer that no one really bothered to
+1048.20s - 1051.76s |  test it. Like all your folks who normally hit a telnet prompts, something like that, just
+1051.76s - 1056.24s |  hadn't tried this SSH post off attack. So we uncovered this whole like layer of bugs that
+1056.24s - 1059.88s |  really should have been found 20 years ago, but they were just hiding behind this extra SSH
+1059.88s - 1063.38s |  layer. Uh, and that's one of the interesting kind of side effects of this work. So here's an
+1063.38s - 1068.14s |  example of us, uh, rooting one of these random ruckus boxes. SSH in with all the, I don't care
+1068.14s - 1073.22s |  about my cipher stuff. Please log in or OOT. And then for the password, we're just typing in
+1073.24s - 1078.78s |  $PSAUX-W and getting a big process listing. And the funny thing about it is you can actually see
+1078.78s - 1083.02s |  the echo command in the PS listing showing that it's going to shop 256 sum. That's how they
+1083.02s - 1086.46s |  check your password. So they fixed it just by putting in proper quotes, but whole thing is
+1086.46s - 1090.10s |  ridiculous. So it's amazing like how many dumb bugs are out there. If you just go a little bit
+1090.10s - 1093.40s |  further into the protocol stack and back to Rob for the permit.
+1095.46s - 1100.30s |  So SSH, you know, is the secure shell. It's designed to talk as your shell. It replaces
+1100.30s - 1105.42s |  Telnet and RSH and all that. And it lets you set environment variables. Um, environment
+1105.42s - 1109.60s |  variables are used to control the execution of things and, you know, keep track of environment
+1109.60s - 1115.00s |  and all that. And a lot of, uh, SSH implementations will limit what you can send, but a lot
+1115.00s - 1119.74s |  won't. Um, there's been a, uh, and it's configurable. Of course, some will, you can say,
+1119.74s - 1124.84s |  I accept these environment variables, don't accept these. So there's been this renaissance in,
+1124.84s - 1129.78s |  uh, Gitforges lately. There's a ton. There's, there's GITI, there's GOGS, there's a, I always
+1129.80s - 1134.46s |  pronounce this wrong, FORGEHO. Tell me if I'm saying that right. Garrett, things like that.
+1134.46s - 1139.04s |  And they are using these embedded SSH libraries that speak the SSH protocol. And these
+1139.04s - 1143.28s |  libraries, because they're, you know, designed for general use, they will accept, you know,
+1143.28s - 1147.88s |  any environment variable you send. And they rely on the client, the user of the library, to,
+1147.88s - 1154.56s |  uh, limit what is going on. Um, and so that's generally okay. Like a lot of them do it
+1154.56s - 1159.84s |  correctly. Uh, for example, GitLab, GITI, FORGEHO, they will only accept Git protocol as,
+1159.84s - 1163.88s |  uh, an environment variable. And that's a, something that's looked at by Git to negotiate
+1163.88s - 1167.18s |  protocol versions. So you can say, oh, I want to use Git protocol version two or whatever.
+1167.18s - 1170.82s |  But for example, there's still some vulnerabilities there. If you were using a version of one
+1170.82s - 1174.52s |  of these, these are all written in Go, and it was compiled using a version of Go prior to
+1174.52s - 1180.56s |  1.19.3, which is a year or two old, um, on Windows systems, they don't properly sanitize
+1180.56s - 1183.86s |  the, uh, the value of the environment variable. So if you put a null in there, you can
+1183.90s - 1188.94s |  actually just inject arbitrary environment variables, which is, uh, super fun. But, um,
+1188.94s - 1193.94s |  there was another one that was really interesting in, uh, GOGS, where whenever it gets an
+1193.94s - 1198.44s |  environment variable, it actually runs the env command. And so the point of the env command
+1198.44s - 1202.88s |  is to start a new process, um, with a, a new environment with, you know, setting certain
+1202.88s - 1207.68s |  environment variables or whatever. And it starts a new process. It doesn't affect the
+1207.68s - 1213.72s |  environment that you're in, right? It, it, that's not how POSIX works. So you could
+1213.72s - 1218.36s |  just say, okay, well, I want to set an environment variable with, you know, daset, dash
+1218.36s - 1224.76s |  S A equals B, and then, you know, bash or, you know, touch temp foo or whatever, and you
+1224.76s - 1228.46s |  are just executing arbitrary commands. And we, we did reach out, there's, there's no
+1228.46s - 1234.44s |  patch for this, uh, it's, seems moribund, so maybe don't use it. Um.
+1235.00s - 1238.94s |  this one too. Um, this is a great example of like parallel discovery. So not, not in the
+1238.94s - 1243.68s |  court sense, but in the, uh, we reported this vulnerability on like April 24th and Sonar
+1243.68s - 1247.28s |  Research had reported the same bug to the same maintainer on the 22nd and they scooped us on
+1247.28s - 1250.68s |  the advisory. We both had our own separate GitHub advisories, but it's just hilarious. So
+1250.68s - 1254.06s |  we both managed to look at the same bug at the same time. So it's funny like how often that
+1254.06s - 1257.32s |  happens. And this is a great example. So props to the Sonar source folks for beating us by
+1257.32s - 1261.16s |  two days. Uh, and they did a really great blog post about how the bug works, but it, it
+1261.16s - 1263.80s |  almost looks like a backdoor cause this doesn't actually influence the environment of the
+1263.80s - 1269.30s |  subprocess. It's just a straight command exec pre-auth. So it's a, it's a funky bug. Yeah.
+1269.30s - 1274.34s |  Yeah, exactly. Thank you, HG. Um, so going back to these, uh, these libraries. So for
+1274.34s - 1279.18s |  example, uh, Apache Mino, which is a Java, uh, implementation of SSH will accept any
+1279.18s - 1285.24s |  variable you want. Um, and most of the time, uh, it doesn't really run into anything, but
+1285.24s - 1288.58s |  this is, this is maybe my whole, this is maybe my favorite thing that we found, uh,
+1288.58s - 1292.98s |  personally. Uh, so there's this piece of software called SoftServe and it's designed to
+1292.98s - 1299.32s |  build, um, get repos and it gives you this beautiful, uh, SSH or, you know, CLI, you SSH
+1299.32s - 1304.26s |  and you control it, you can do whatever. And it uses, um, the charm bracelet SSH, uh,
+1304.26s - 1309.36s |  library, which is built on top of goes SSH. Um, and it will accept any environment
+1309.36s - 1313.76s |  variable or it did. We reported it, they fixed it. This is our CVE, go us. Um, but what's
+1313.78s - 1320.56s |  fun is you can, first off, watch how slow I am when I'm typing in a, in GIF form, but, um,
+1320.56s - 1325.82s |  you can, uh, we just basically created some shellcode and we checked it into LFS and you
+1325.82s - 1329.50s |  can actually do this in lots of different ways. LFS just, uh, get LFS as large file
+1329.50s - 1332.96s |  storage. It, it just makes it to where it's not compressed and, uh, the file name is
+1332.96s - 1336.18s |  predictable so we don't have to worry about it too much. Uh, makes it easier to exploit.
+1336.18s - 1341.18s |  We push it up to, uh, to SoftServe and then, uh, doing the SHA 256 sum of our shellcode
+1343.78s - 1347.12s |  because that gives us the, uh, the file name that we can, you know, guess. And then we
+1347.12s - 1352.12s |  just set LD preload to our shellcode and we now have, you know, shell on that system. So
+1353.66s - 1357.26s |  that was super fun. Uh, I, I always love when I get a shell and I'm just like, oh, this is
+1357.26s - 1360.70s |  great, you know? Uh, so that made me really happy. And these, uh, these folks were really
+1360.70s - 1365.24s |  super cool to work with. Um, we, uh, we disclosed that and they were very, very nice.
+1365.24s - 1372.24s |  Uh, but now moving on to, uh, broken states, which is the SSH state machine to HD.
+1372.26s - 1376.30s |  Thanks. Um, another fun thing about the SoftServe side. So that particular exploit, um,
+1376.30s - 1380.14s |  because it's using Git LFS, you can reference a raw file on disk and you don't have to know
+1380.14s - 1383.40s |  your file location. You can use relative paths and stuff. But this works just fine for
+1383.40s - 1387.04s |  unauthenticated Git access too. So if you're running SoftServe for read-only access, you can
+1387.04s - 1390.08s |  still exploit it. It just requires jumping through more hoops because you can specify LD
+1390.08s - 1394.18s |  preload, LD load library. You can set LD library debug output paths. There's a million ways
+1394.18s - 1397.98s |  you can, like, eventually get a file onto disk to then load or to trigger a shell script.
+1397.98s - 1401.62s |  Just LFS was the quickest way to be like, yes, we're loading arbitrary code. So it, right
+1401.64s - 1405.04s |  access to the repo is not a requirement to exploit SoftServe. And there's still about 10
+1405.04s - 1407.88s |  of those suckers hanging out on the internet right now that are exploitable. So if you're
+1407.88s - 1412.52s |  quick, they're yours. Um, kidding. But, um, so I'll talk a little bit about the SH state
+1412.52s - 1416.72s |  engine. So SSH is like incredibly complicated in terms of how it makes you go through these
+1416.72s - 1419.92s |  different states to get to each phase of the protocol. The stuff you're mostly familiar
+1419.92s - 1424.36s |  with is like when you first connect to the port 22, you'll see like SH-2.0, uh, server
+1424.36s - 1427.70s |  banner, things like that. If you happen to send the same manner back to it or you connect
+1427.70s - 1431.04s |  a dropper, then you'll get this big blob of stuff with no delimited strings, which have
+1431.06s - 1434.66s |  like ciphers and Macs and algorithms, things like that inside of it. So all that's kind of
+1434.66s - 1439.46s |  during the, uh, server version exchange and the key exchange. Um, the SH daemons are very
+1439.46s - 1443.74s |  clear that they will only accept a certain range of message values for each state. So before
+1443.74s - 1447.34s |  you've done the, uh, version exchange, you can't do the key exchange. Before you do the key
+1447.34s - 1451.48s |  exchange, you can't do authentication exchange. And this is enforced two ways. The protocol
+1451.48s - 1455.84s |  itself has a range of values allowed for each state. So values 1 through 49 are allowed in
+1455.84s - 1460.12s |  state 1, 0 to 79 in state 2 and so on. So if you're trying to like just open a channel or
+1460.16s - 1463.14s |  open a shell, technically there's no even message handler for it because it hasn't even
+1463.14s - 1466.54s |  configured the state handler to even accept that type of message yet. But that depends very
+1466.54s - 1470.14s |  much on the implementation. Uh, DropBear and OpenSH are really good at keeping a big
+1470.14s - 1473.98s |  command table. And when they go to another state, they just remove that command table
+1473.98s - 1476.82s |  handler for the previous state. So there's really no way to like accidentally call the
+1476.82s - 1481.08s |  wrong function pointer. Um, and that mostly works the way you expect. What's also
+1481.08s - 1484.86s |  interesting here is everything after the key exchange, of course, is encrypted. So SH is
+1484.86s - 1487.92s |  kind of like TLS in a lot of ways in that you have your normally version exchange, key
+1487.96s - 1491.10s |  exchange, algorithm, Tiffy Hellman type thing, and then you have like your encrypted
+1491.10s - 1494.90s |  transport. And that's where all the fun stuff happens, like authentication, your banner, if
+1494.90s - 1497.64s |  you will. Like if you ever see a pre-auth banner in SH, it's actually being sent over the
+1497.64s - 1500.98s |  encrypted connection, not over the on-auth connection. So typically when you're talking
+1500.98s - 1503.34s |  about an SH banner, you're not talking about the version string, you're talking about the
+1503.34s - 1507.14s |  pre-auth big blob of data that it sends you when you try to authenticate. Um, so lots of
+1507.14s - 1510.62s |  cool stuff happening there, but you can see the state engine is pretty complicated. Um,
+1510.62s - 1513.72s |  what's also worth pointing out here is there's something called a larval session. So that
+1513.72s - 1518.16s |  means you've successfully authenticated, or maybe not, and it's the state of your shell
+1518.16s - 1521.60s |  before there's a shell. So effectively, if you haven't created a sub-process yet, you're in
+1521.60s - 1524.84s |  this kind of like larval state, and that's how the code generally references it. And that's
+1524.84s - 1529.00s |  important when we start getting into some of these other exploits. So a historic example
+1529.00s - 1533.58s |  where this has gone wrong is libsh. In 2018, someone reported vulnerability where this
+1533.58s - 1536.98s |  library is used for both client and server side. Same with opensh, same with dropper. They
+1536.98s - 1540.62s |  kind of share the same code base for both halves of the protocol. Um, and if you sent the
+1540.62s - 1543.92s |  user-authenticated succeeded message from the client to the server, the server's like, oh,
+1543.92s - 1547.32s |  okay, cool, you're in, and that's fine. Um, and there's still a bunch of these libsh
+1547.32s - 1550.36s |  implementations out there that'll just drop you to a shell if you send user-auth success, and
+1550.36s - 1554.64s |  of course, you know, Sham will test for that and makes it easy for you to use it. Um, so we
+1554.64s - 1558.54s |  decided to take this up another level. Instead of just saying, let's just send a fake success
+1558.54s - 1562.30s |  message, let's just try to get a shell everywhere. Let's take every single part of the
+1562.30s - 1566.14s |  protocol transition and say, let's do half-auth, let's do full-auth, let's do a fake pubkey,
+1566.14s - 1570.32s |  let's do a password, let's do a password none, let's do even before sh user-auth command at
+1570.32s - 1573.62s |  all. And between every one of those attempts, we're gonna ask you for a shell. We're just
+1573.62s - 1575.76s |  gonna be like, how about a shell now? How about a shell now? How about a shell now? How
+1575.76s - 1579.60s |  about now? Um, and it worked. Like, we got crap loads of shells from random devices because
+1579.60s - 1583.30s |  we asked them in weird states to give us a shell. So there's some out there where you don't
+1583.30s - 1586.16s |  even bother even starting the authentication process and it gives you a shell. There's some
+1586.16s - 1588.86s |  out there where you start the authentication process but don't finish, it gives you a shell.
+1588.86s - 1592.80s |  Like, it's all over the map. So, um, there's three good examples we talk about here. First
+1592.80s - 1597.34s |  one is the Digi transport, uh, gateways. They're mostly using, like, ICS environments. They're
+1597.34s - 1600.70s |  kind of, like, out in the field, hard and stuff. They act as, like, kind of the VPN router, if
+1600.70s - 1605.68s |  you will, for all the, all the juicy OT stuff you want to hack behind it. Um, so having a
+1605.68s - 1608.78s |  remote admin to these means you basically have serial port access to all the stuff behind it,
+1608.78s - 1611.44s |  which is great. So if you want to, like, blow up pipelines, things like that, that's how you
+1611.44s - 1615.62s |  do it. Um, so the Digi team was really cool. They were great to work with. Um, this device
+1615.62s - 1618.72s |  had already been, like, basically effectively legacy and retired, but it's still up for
+1618.72s - 1621.92s |  maintenance on screen patches. Like, they had to go find, like, the one developer who hadn't
+1621.92s - 1624.80s |  looked at this thing in five years and dust off their compiler and try to figure out how to
+1624.86s - 1627.66s |  build the damn thing and all that. And the funny thing about this is it ended up being an
+1627.66s - 1633.10s |  un, uh, an uninitialized variable in the SH engine. So it took us forever to repro, because
+1633.10s - 1636.14s |  we'd say, hey, we can get shells on, like, all these machines on the internet. Like, here's a
+1636.14s - 1639.64s |  bunch of them, here's the serial numbers, like, it's bad, go fix it. Like, we can't repro. I'm
+1639.64s - 1642.78s |  like, you gotta be kidding me. Like, just run the command. Like, what are you doing wrong?
+1642.78s - 1646.74s |  Like, it's run command, what's doing, it was not their fault, of course. It's that when they
+1646.74s - 1650.02s |  were setting up the machine to test, they were logging in for the rest of the age first and
+1650.02s - 1653.02s |  setting up their monitoring on it, and then they'd run our exploit and it wouldn't work.
+1653.04s - 1656.28s |  Because the uninitialized variable had been set. So just one of those things was, like,
+1656.28s - 1659.38s |  freaking Heisenbug repro, it took forever to fix. Anyways, so we finally got to the end of
+1659.38s - 1661.96s |  it, but the team was really cool, they're great to work with, they got a patch out, even for
+1661.96s - 1665.92s |  this legacy hardware, so awesome to see them actually supporting older systems. Uh, then we
+1665.92s - 1669.90s |  found these Realtek devices that are, like, branded to all kinds of things. Netterbit, um,
+1669.90s - 1673.44s |  Netist, there's probably like a dozen vendors out there, and they all have, like, different
+1673.44s - 1677.34s |  flavors of firmware from 2018 to 2023, and there's just, like, free shells everywhere. We
+1677.34s - 1680.70s |  didn't even know who to report it to, so that's, there's a bunch out there. Um, yeah, have fun
+1680.72s - 1685.26s |  with that. Uh, we also ran across a bunch of Panasonic switches, but also a really weird set,
+1685.26s - 1688.26s |  and we had no idea who to report that one to either, like, the normal Panasonic thing
+1688.26s - 1691.46s |  wasn't the right fit, and so, all the docs were in Japanese, we kind of gave up on that
+1691.46s - 1694.50s |  too, so we'll eventually figure out how to disclose that one, but there's a bunch of
+1694.50s - 1697.10s |  random Panasonic switches that'll just give you a shell pre-auth as well through the same
+1697.10s - 1700.64s |  mechanism. Um, and this is just kind of the tip of the iceberg. We found another, like, 70
+1700.64s - 1704.18s |  odd devices, we just haven't figured out where they are yet. Um, so, you know, basically
+1704.18s - 1706.52s |  take Shamble, throw it in your home network, throw it in your work network, and you might
+1706.52s - 1710.12s |  just get random free shells out of crap through this stage transition. The only trick of it
+1710.14s - 1713.34s |  here is you may have to specify a username that's not the default username. So, if the
+1713.34s - 1716.88s |  device typically has, like, an admin or manager username, specify all the default admin
+1716.88s - 1722.56s |  usernames for the products, and you'll be more likely to shake out some shells. So, here's
+1722.56s - 1727.06s |  an example of the Netterbit NSL-224s. These are really popular in Iran, so a huge portion
+1727.06s - 1731.70s |  of Iran uses these things, and you just basically log in as, you know, whatever you like. Um,
+1731.70s - 1736.10s |  so, in this case, we're using the Shamble shell for it, we're just saying, like, brute
+1736.10s - 1739.68s |  force all the different session states, and it logs us directly into it, and it shows
+1740.20s - 1743.74s |  the firmware, all the info, things like that. So, it's super straightforward. And here's an
+1743.74s - 1748.20s |  example of the Digi transport ICS gateways. Same thing, what I love about this is when you
+1748.20s - 1753.22s |  log in, it says, welcome, your access is super! So, I also have the, you know, the South Park
+1753.22s - 1757.58s |  voice in my head when I see that, so it's amazing. Um, with that, I would like to talk a
+1757.58s - 1762.66s |  little bit about the OpenSH landscape. So, you know, typically we think about, like, SSH
+1762.66s - 1767.80s |  being OpenSH, and sure, it's like 90% of us, it's 87% of all SSH in the world, but OpenSH
+1767.82s - 1772.12s |  isn't just OpenSH either. There's a lot of different flavors of OpenSH. So, for folks who
+1772.12s - 1777.76s |  aren't super familiar, OpenSH was forked from OSSH, which was forked from the original V1,
+1777.76s - 1784.40s |  um, you know, tattoo, um, version of SSH back in the day. Um, but OpenSH wasn't designed
+1784.40s - 1789.48s |  for Linux. OpenSH was hard-coded for OpenBSD. Like, they didn't want our dirty Linux paws all
+1789.48s - 1793.18s |  over their beautiful SH daemon, so eventually they conceded and said, you know what, you
+1793.18s - 1796.62s |  guys can, all you plebs can actually touch our beautiful SH code, but we're gonna create a
+1796.64s - 1800.44s |  version of OpenSH just for you called OpenSH Portable. So, when you talk about OpenSH, you're
+1800.44s - 1803.64s |  really talking about the portable version of OpenSH, which has a compatibility layer that
+1803.64s - 1808.36s |  makes, um, all of us heathens be able to use the nice functions of BSD, basically, uh, without
+1808.36s - 1812.12s |  all the pledge and cool things like that. But if you look at OpenSH Portable, there's actually a
+1812.12s - 1816.60s |  bunch of variants of that too. So, if you look at, like, who has molested OpenSH the most,
+1816.60s - 1820.20s |  we're gonna start off with Apple. Apple was just light touch. They just gave a little hug.
+1820.20s - 1824.10s |  They didn't really do much to it. Uh, they did not do terrible things to OpenSH. They, um,
+1824.12s - 1829.96s |  added some changes for, um, let's see, the key login, the endpoint event logging, uh, PKCS
+1829.96s - 1833.32s |  helper and keychain, things like that. Really straight forward, not terrible at all. Very
+1833.32s - 1838.44s |  happy that they did not destroy OpenSH. Um, if you start looking at Debian and Ubuntu, they've
+1838.44s - 1843.40s |  got about 36 different patches on top of the core OpenSH code. Uh, and those patches make it
+1843.40s - 1847.94s |  libxutils backdoor compatible, um, among other things, right? But there's a lot of changes, and
+1847.94s - 1850.74s |  those changes aren't getting the same scrutiny that, let's say, the rest of OpenSH code is
+1850.74s - 1853.82s |  getting. It's, it's basically linking it to all kinds of other libraries. It's the reason why it
+1853.84s - 1857.44s |  linked to system D. Um, there's a lot more attack service because of all those changes they
+1857.44s - 1862.28s |  put into the, those system patches. Now, moving up to Red Hat, now you're like 60 plus
+1862.28s - 1865.82s |  different patches. So even, even bigger attack service. And, you know, hopefully they're
+1865.82s - 1868.82s |  auditing this stuff and everyone's looking at it, cause it's important, cause if you're hacking
+1868.82s - 1872.12s |  a Linux server, it's probably gonna be either Debian, Ubuntu, or Red Hat based these days,
+1872.12s - 1875.36s |  right? Unless you're like, I use ARC. You know, you know, there's only a few of those out
+1875.36s - 1881.46s |  there. Um, so, um, if you're using, uh, you know, Debian, Ubuntu, Red Hat, Linux, etc., um,
+1881.46s - 1885.48s |  you probably have a ton of different patches on top of OpenSH that are not pure OpenSH, if
+1885.48s - 1889.52s |  you will. Uh, you've mangled pretty well. And then there's a thing called PKI-SSH, which I
+1889.52s - 1893.82s |  think probably a lot of folks haven't heard about. It was forked from OpenSH back in 2002
+1893.82s - 1898.50s |  to support X.509 certificates and then FIPS code. So because it supports X.509 and FIPS, a lot
+1898.50s - 1902.62s |  of the networking vendors decided to use that instead of regular SSH, uh, to build out their
+1902.62s - 1905.22s |  products because they want to sell to the federal government and they want to use
+1905.22s - 1909.70s |  Crestiel crypto protocols. Um, so there's a thing called PKI-SSH. It forked in 2002. It
+1909.74s - 1913.92s |  mostly, it's almost like they hate each other. If you do, like, so, put it this way, we diffed
+1913.92s - 1917.76s |  all of it. We looked at, like, OpenSH mainline to every one of these forks and just read every
+1917.76s - 1921.82s |  single line of code for days and weeks. Well, that was my vacation. I just did that for hours
+1921.82s - 1926.60s |  a day. Um, but the PKI-X one is really funny because you'll see a change in OpenSH and then a
+1926.60s - 1932.30s |  change is written slightly differently in PKI-SSH and they oftentimes disagree. Like, once
+1932.30s - 1935.60s |  in a while they mostly match, like, if one equal this, if that equal that, but occasionally it's
+1935.64s - 1939.82s |  like, if not, when equal this. And it's like, so, there's probably some weird compatibility
+1939.82s - 1943.18s |  bugs because the changes weren't followed entirely. They obviously don't want to look like
+1943.18s - 1946.82s |  they're copying OpenSH, but they also can't not copy it and stay compatible. So you can just,
+1946.82s - 1950.76s |  you can feel the rage between the two teams there. It's great. Um, I've never felt so much
+1950.76s - 1955.66s |  like animosity in a code diff before. Um, but finally, uh, the, the really fun one here is
+1955.66s - 1960.30s |  Windows. So Microsoft Windows, um, shipped OpenSH on Windows 10. Everyone's like, oh my
+1960.30s - 1963.74s |  God, I can actually type SSH and curl. I don't have to do all these stupid commands anymore to
+1963.74s - 1967.32s |  back to my Windows box. I can use the built-in nice native Linux commands to back to my
+1967.32s - 1970.98s |  Linux boxes. And that was great. So we love the fact that SH clients on Windows, we can use
+1970.98s - 1975.52s |  them for all kinds of stuff. Um, there's also SH server for Windows. And so there's a fork for,
+1975.52s - 1981.06s |  uh, of OpenSH portable called OpenSH, um, under the PowerShell GitHub repo. And they just
+1981.06s - 1985.26s |  massacred it. There's like 350 files are changed. They ripped out everything. All those secure
+1985.26s - 1989.48s |  parts of SH kind of just got put into the corner over there, uh, and, and deleted. And then
+1989.48s - 1993.24s |  it's like, if Windows do something totally different. So they ripped out support. They ripped
+1993.24s - 1996.78s |  out, um, the PrivSep stuff works totally different through a sub process versus the fork
+1996.78s - 2001.28s |  because there's no forks on Windows. Um, they, uh, logged to Windows Event Viewer. They
+2001.28s - 2005.68s |  logged, uh, they sent telemetry back to Microsoft for everything you do. Um, they still
+2005.68s - 2009.06s |  haven't bothered fixing Terrapin. Like, it just, it's a very different fork. So if you're
+2009.06s - 2012.82s |  using Windows and SH, either a client or a server, you probably want to pay attention to this
+2012.82s - 2017.16s |  next slide, which is, uh, let's see, this is what it looks like. Not super exciting. But if you
+2017.16s - 2019.90s |  start looking through the OpenSH for Windows code, you can start looking at the telemetry
+2019.90s - 2023.94s |  callback. You can't disable this crap. Unless you disable telemetry, telemetry total on your
+2023.94s - 2028.64s |  machine. Every single connection going to your Windows, your SH server on Windows is sending
+2028.64s - 2032.20s |  your client version and server version back to Microsoft in the telemetry. So every time you
+2032.20s - 2035.48s |  port scan your system, every time you run a Nessa scan against your Windows server, it's
+2035.48s - 2038.88s |  sending that info back. Every time you SH directly from your Mac OS client or whatever it is
+2038.88s - 2042.56s |  to a Windows server, it's sending your version string back to them. So Microsoft knows who you
+2042.56s - 2046.82s |  talk to and knows who you shell into. It collects all those craps for default telemetry. It
+2046.82s - 2050.04s |  even collects telemetry for things that are part of encrypted session. Like things like
+2050.04s - 2053.98s |  authentication methods that are negotiated over the secure channel. That's also shipped off
+2053.98s - 2057.76s |  to telemetry. So, uh, you know, I know we're all good, you know, cool kids here and we
+2057.76s - 2062.56s |  disable telemetry in VS code, but like, have you done so in OpenSH? Probably not, right? Um,
+2062.56s - 2065.76s |  so it's worth digging out the diagnostics viewer where you can look at the telemetry data on
+2065.76s - 2070.84s |  Windows and seeing like all your SH stuff being shipped off to the cloud. Um, so, yeah. But
+2070.84s - 2075.54s |  the next thing we'll talk about is even worse. Uh, so there's this really key function. We
+2075.56s - 2081.74s |  talked about OpenSH portal being a compatibility layer to make it, um, work not on OpenBSD. So
+2081.74s - 2086.10s |  the pure OpenBSD people, you know, can give us their code. Um, one of the functions that
+2086.10s - 2090.08s |  they implemented was timing safe B comp, which is like you expect. It compares two binary
+2090.08s - 2094.18s |  blobs as are these identical in a way that doesn't change based on how long the strings are,
+2094.18s - 2097.92s |  what contents they have. It can be consistent either way. This is to prevent side channel
+2097.92s - 2101.46s |  attacks. It's really clean, really code. It's only like four lines of code. Maybe take out
+2101.48s - 2105.92s |  the return and the int and the variable. It's only three lines of code. It's really hard to
+2105.92s - 2110.52s |  break this, right? This is a super nice great piece of code by, uh, you know, Damian Miller.
+2110.52s - 2114.32s |  It's great. It's perfect. It's beautiful. And then OpenSH for Windows comes along. And they
+2114.32s - 2121.20s |  made it Windows compatible. So, uh, Windows compatible means, uh, first they look for a
+2121.20s - 2125.90s |  back R and a back N and they scrub out the back R. And so they just, they allied the fact
+2125.90s - 2129.68s |  that there's a back R back N. They treated it as if it was equal to a back N. But you can
+2129.70s - 2133.80s |  probably see there's some problems here. Um, we'll kind of highlight those real quick. First
+2133.80s - 2137.48s |  off, there's only two lines of code they added and they introduced a ton of bugs. It's no
+2137.48s - 2142.32s |  longer timing safe because they look one byte ahead. It's no longer, uh, secure because they
+2142.32s - 2146.28s |  read one byte out of, out of memory. They're actually reading the, the pointer plus one, not
+2146.28s - 2149.82s |  the pointer, which could be beyond the end of that particular variable. So for every back R
+2149.82s - 2153.36s |  back N sequence you have in the source buffer called by this function, you're actually going
+2153.36s - 2157.60s |  one byte out of the memory buffer and moving forward. And that, and then that value's being
+2157.62s - 2161.22s |  compared for your byte comparison. So if you know there's a blob of data at the end of your
+2161.22s - 2164.50s |  buffer, you can now just tell SH to not compare the bytes you thought you were comparing and
+2164.50s - 2167.06s |  now compare the bytes at the end of the buffer, which are typically a bunch of nulls or
+2167.06s - 2170.40s |  something more predictable. So there's a bunch of like really gnarly bugs that happen just
+2170.40s - 2173.34s |  because somebody decided their config parser didn't work with this function that wasn't
+2173.34s - 2178.14s |  designed to parse configs in the first place. Um, so it's about as bad as it gets. So this
+2178.14s - 2182.34s |  function is used in every single packet that gets processed by SH. So every crypto buffer
+2182.36s - 2187.86s |  coming into it gets the SH comp or comp buff check on it. And, and basically it gets buggy
+2187.86s - 2191.46s |  really quick. Um, it's used for RSA signature validation, all this stuff. But the question
+2191.46s - 2194.90s |  was like, can we actually exploit it? And that's where it gets tricky. It's like the buffer
+2194.90s - 2198.64s |  that you can, that triggers the bug is the first buffer, first parameter, and the attacker
+2198.64s - 2202.28s |  doesn't control it directly. But if you do enough signing operations, you're not packets.
+2202.28s - 2205.18s |  Eventually you get a buffer that has at least one back R back N in it. If you get to two, you
+2205.18s - 2207.84s |  get a little more interesting, but it's been really tough to actually get an exploit out of
+2207.84s - 2212.08s |  it. So of course, when we report to Microsoft, uh, their take is, you know, even though we've
+2212.08s - 2216.50s |  got $1 billion annual security budget, we've got 3,500 security professionals and we backdoor
+2216.50s - 2221.36s |  your timing, save B comp code, you do not get a banana. So we got nothing. They said, no, no,
+2221.36s - 2224.10s |  you guys don't get anything. We're not going to fix it. Have fun. Like, all right, well, we're
+2224.10s - 2229.48s |  going to talk about it at DEF CON. See you guys. Uh, so we did. Cool. Um, so that's the end of
+2229.48s - 2232.68s |  the, most of the content about SH. We're getting a little close to time. I want to make sure
+2232.68s - 2235.68s |  we have time for a little bit of questions here. Uh, we're going to talk a little about the
+2235.68s - 2239.98s |  shamble tool. So, uh, this tool is a research tool for SH simplifications. It's a
+2239.98s - 2243.26s |  combination of like, I think you can use today to scan your network, but I think you can extend to
+2243.26s - 2247.42s |  find even more horrible bugs in SH and then share them with the world. So, uh, we, we'd like
+2247.42s - 2253.00s |  you to, uh, play with it, make it better and, and rain hell upon vendors that do it wrong. Um,
+2253.00s - 2256.00s |  there's a lot of really cool interesting attacks against authentication, auth bypass, null
+2256.00s - 2261.18s |  bytes, uh, ends up when you send a, uh, uh, SH password authentication, there's a, if you send a
+2261.18s - 2264.82s |  second parameter in addition to your password, that tells SH server that you want to change
+2264.82s - 2268.14s |  your password to that new value. So you can imagine that when we're developing this tool, we
+2268.18s - 2273.38s |  might have actually changed a lot of passwords. Uh, so be careful about that part. Uh, other than
+2273.38s - 2276.38s |  that, and it's kind of funny, it's like, oh, I got into all these machines and then you scan
+2276.38s - 2278.98s |  them again. Like now I can't get into all those machines. What happened? Well, we
+2278.98s - 2282.36s |  accidentally sent all the passwords to a null byte. Uh, there's also a lot of systems out
+2282.36s - 2285.92s |  there that will, uh, accept a null byte as a password. And there's specifically a lot of
+2285.92s - 2289.54s |  honeypots. So we doxed like 5,000 honeypots by accident because they accept null byte
+2289.54s - 2292.04s |  passwords where nothing else does. It's like, oh, here's all the honeypots. That makes our
+2292.04s - 2295.50s |  lives a lot easier. Uh, a lot of the pre-auth state transition stuff, so you can extend
+2295.50s - 2298.34s |  those, make your own. It's kind of modular. It's not as cool as Metasploit, but it does a lot of
+2298.34s - 2301.50s |  stuff like that. You can kind of add your own checks to register them. Uh, and then all the
+2301.50s - 2304.68s |  post-session stuff too. If you get a session, but you don't get a shell, you can use
+2304.68s - 2308.68s |  Shamble to like bang on that session, try signals, jam keystrokes into it, generally do all
+2308.68s - 2311.62s |  the crap you don't want to do by hand that's really annoying. And eventually, um, do that.
+2311.62s - 2314.48s |  Plus we added some timing analysis stuff too. So if you think there's like timing leak in
+2314.48s - 2317.62s |  the username, we've got some built-in functions that'll tell you like what's the, what's the
+2317.62s - 2321.10s |  statistical probability of this username being different than this other one based on a timing
+2321.10s - 2326.10s |  attack with really tight, uh, timing. So Shamble.com gets you all that stuff. And there's a
+2326.10s - 2329.24s |  whole bunch of stuff it does. So I think first off, I want to hand it to Rob to talk about all
+2329.24s - 2334.14s |  the vulnerability checks we do. So, uh, Shamble will actually check for all the vulnerabilities
+2334.14s - 2338.42s |  we talked about, uh, over this. And they will not only check for you, it will give you proof.
+2338.42s - 2342.62s |  So you can run through, uh, it'll check for TCP forwarding, see if it can forward anywhere.
+2342.62s - 2346.46s |  It'll try different, uh, destinations, see what it can find. See if it's, uh, administratively
+2346.46s - 2350.76s |  prohibited for some. Uh, it will do generic environment injection. So it'll take, uh,
+2350.76s - 2354.26s |  environment variables that will control execution of processes and we'll check to see if the
+2354.26s - 2358.46s |  output changes and things like that. Uh, LD preload, stuff like that. Super useful. We'll say,
+2358.46s - 2361.20s |  oh, this is actually how it's vulnerable. This is what it can do. It'll tell you what to do
+2361.20s - 2365.34s |  next. Um, the software vulnerability that we talked about, it will, uh, it will give you the
+2365.34s - 2370.68s |  exact, uh, version and exactly the repo that it used and everything to get into there. Um, it
+2370.68s - 2375.32s |  will check the GOGS thing. That's the, uh, that's the, uh, ENV thing that looks vaguely like a
+2375.34s - 2379.42s |  backdoor, um, where it's executing ENV and it'll try to give you commands, uh, command
+2379.42s - 2383.48s |  execution there. And, uh, it will check the ruckus password escape. That's the one where you
+2383.48s - 2389.36s |  can, uh, you can put bat ticks or a dollar parents in the password and, uh, it'll just give
+2389.36s - 2392.92s |  that to you and it'll say, and the report you can actually see, uh, in the report, it'll say,
+2392.92s - 2395.90s |  okay, here's what I found. Here's the references and here's the proof. It'll actually give you
+2395.90s - 2399.90s |  the output that it found. Um, and you can just run that. They're automatically, it will
+2399.90s - 2403.70s |  automatically detect it and it will continue. We're continually adding more vulnerabilities
+2403.76s - 2407.36s |  to make it easier. So, uh, stay tuned and run that on all your systems and tell us what you
+2407.36s - 2411.76s |  find. Well, thanks Rob. And even the last 24 hours since the code's gone live, we've got a lot
+2411.76s - 2414.70s |  of great feedback, feature requests, things like that. So we're really excited to keep
+2414.70s - 2418.00s |  expanding it. Adding things like the, you know, a keystroke masher where it just like hits
+2418.00s - 2420.74s |  every possible keystroke trying to break out of the shell. Like the things you usually put
+2420.74s - 2423.54s |  your toddler in front of to make them give you shells. Like we'll just do that for you here.
+2423.54s - 2428.48s |  So, uh, who needs AI, right? Um, but in that sense, um, lots of cool stuff's already built in
+2428.48s - 2435.20s |  today. Uh, to get started you just run shamblescan-o. It generates a gigantic JSON file. Um, if
+2435.20s - 2438.74s |  you run this across the whole internet, you get about 60 gigs of data. I don't know why I know
+2438.74s - 2442.34s |  that, but it's a lot of fun and you have millions of shells to go play with. Uh, and then you can
+2442.34s - 2445.28s |  run the analyze command. It'll try to like bucket your results based on what cool things you
+2445.28s - 2449.42s |  found. So if it, if it's like a known backdoor or a known, uh, bug, we'll hopefully stick into
+2449.42s - 2452.72s |  its own little file and you keep track of them that way. We also report like vulnerabilities in
+2452.72s - 2456.32s |  the JSON. You can scrape out and import. Uh, of course all this stuff's been, a lot of this has
+2456.32s - 2459.84s |  been linked into the run zero tool that we work on at, at our day job. And so it does a lot of
+2459.84s - 2462.96s |  these checks for you automatically, including grabbing all your keys, stuff like that. We're
+2462.96s - 2467.00s |  also looking at integrating it with, uh, HanoBox, uh, uh, bad keys project to automatically
+2467.00s - 2470.54s |  identify host keys that have been compromised. And shambles is unique in that it's one of the
+2470.54s - 2474.28s |  very few tools that test all of your host keys, not just your first host key. So if your
+2474.28s - 2478.78s |  machine has an RSA key, an ECDSA, an ED25519, et cetera, we'll actually grab all the
+2478.78s - 2482.38s |  different host keys by grabbing them all and then test all of those keys for weak keys and, uh,
+2482.38s - 2485.52s |  things like that. So it's still a little bit early for the bad key stuff, but we're, we're
+2485.52s - 2489.26s |  making progress. Uh, so an example, one of the neat things about shamble is that you can tell
+2489.26s - 2493.30s |  it to get into that larval session state without actually opening the process, which is a
+2493.30s - 2497.54s |  pain in the butt to do otherwise with an SH client. So essentially you say, um, you know,
+2497.54s - 2501.64s |  shamble scan dash dash interact equal first. So interact with the first session you get and
+2501.64s - 2505.18s |  then interact auto equal nothing. Do not do any, do not do anything at all and just drop you
+2505.18s - 2508.62s |  straight to the interpreter shell instead. And then from that interpreter shell, you can like
+2508.62s - 2512.58s |  set any environment variables you want. LD debug equal all, LD preload, whatever you like.
+2512.58s - 2516.92s |  Uh, you can start sending signals to it even pre shell. And then when you want to drop a shell,
+2516.92s - 2520.46s |  either type exec to run a command or you can do shell to get interactive shell. And at that
+2520.46s - 2523.42s |  point you can then mess with the shell itself. So it gives you kind of all the tools you need to
+2523.42s - 2527.00s |  manually mess with it. And control E is how you open the shamble shell, uh, from the prompt
+2527.00s - 2530.36s |  there. Just so we don't conflict with the SSH escape codes. And there's a million other things
+2530.36s - 2533.00s |  we can talk about, but we're going to keep kind of hammering on the code a little bit. And of
+2533.00s - 2537.68s |  course, happy scanning. And, uh, here's us just throwing out a slash 24 real quick, but it is
+2537.68s - 2541.38s |  pretty fast too. It'll just, it'll eat all your CPU and RAM, just grinding away all your
+2541.38s - 2547.62s |  things. Um, and yeah, here's a bunch of bones we found. Thanks. We've got a couple minutes, I
+2547.62s - 2550.98s |  think, for questions. It looks like, uh, if you have a question, please come up to the middle
+2550.98s - 2570.98s |  standy thing and the mic so that everyone else can hear you. The mic may not be on. I'm not
+2570.98s - 2579.96s |  sure. You want to grab this one instead? Yeah. I'm sorry. You're still on mic. All right. So
+2579.96s - 2585.40s |  out of all the implementations that you have, uh, that you've scanned, what is in your
+2585.46s - 2592.16s |  opinion, the most secure? Uh, the most seeker or the most insecure? The most secure. Okay.
+2592.16s - 2597.74s |  Yeah. The, yeah. Two, you know, the, the TLDR of this entire talk is just use openSH98P1
+2597.74s - 2601.14s |  and don't do anything else. Just don't roll your own. That's basically all you found. Just
+2601.14s - 2606.38s |  like any other crypto, anytime you try to mess with it, you break it. Oh, thank you. Uh, any
+2606.38s - 2615.30s |  other questions? Does anybody recognize my shirt? It's, it's particularly nerdy. I'll be your
+2615.32s - 2623.76s |  friend if you know. Anybody? Anybody? One more question? Uh, yes. Did you guys try anything
+2623.76s - 2628.78s |  with PuTTY? PuTTY, P-U-T-T-Y, client. I'm sorry. Yeah. It's, it's, uh, uh, TTY client for
+2634.08s - 2638.88s |  Windows called PuTTY. Oh, PuTTY. Do SSH. Yeah. We didn't look at the code for it because it's
+2638.88s - 2642.48s |  mostly client side. We really focused on all the, just the server side implementations. Uh, I
+2642.48s - 2645.22s |  know PuTTY does a bunch of weird things with the keys. Like it has a weird preferences in
+2645.24s - 2649.64s |  which EDSA keys uses, but we didn't get the chance to test PuTTY itself. There, there was an
+2649.64s - 2653.14s |  interesting, uh, not volume per se, but there was an interesting, uh, key generation issue
+2653.14s - 2656.18s |  with PuTTY this year. I need to go back and look at that. Yeah. Sorry. Another question? Does
+2656.18s - 2662.62s |  Shamble detects honeypots? Like how do you guys are detecting honeypots? And like, um, how
+2662.62s - 2671.28s |  Shamble detects honeypots? Sorry? Oh, okay. Yeah. So the short version is you, it just makes
+2671.28s - 2674.70s |  the TCP connection to whatever port and range you tell it to. And then it looks for SSH
+2674.72s - 2678.32s |  version, does the handshake, all that. So, um, that's about it. Unless I missed your
+2678.32s - 2684.02s |  question. How is it detecting honeypots? Oh, honeypots. Yeah. Um, so the funny thing is
+2684.02s - 2688.36s |  most honeypots, uh, have a bug where they accept a nullbyte password and they just drop and
+2688.36s - 2692.60s |  they accept that where a real machine will never accept the nullbyte password. So in a, in a, in
+2692.60s - 2695.70s |  an open stage implementation, by default, if you put a null into the password field, it'll
+2695.70s - 2699.74s |  kick you back out. But most honeypots will accept you with a nullbyte password. And that's
+2699.74s - 2703.44s |  an easy way to find like 5,000 of them. Um, we found a bunch of other ones through, uh, some
+2703.48s - 2706.98s |  of them accept any public key, no matter what key you give it. Other ones will take, uh,
+2706.98s - 2711.28s |  passwords that are, uh, outside the spec otherwise or m-mangled password requests. So you
+2711.28s - 2717.13s |  just throw garbage at it and it accepts it, you know it's not open stage. Cool. Alright, and
+2717.13s - 2720.57s |  that's it. Thank you very much. Thanks everybody. Look for us if you have any questions. We're
+2720.57s - 2721.27s |  happy to talk to y'all.

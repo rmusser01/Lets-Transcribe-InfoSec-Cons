@@ -1,0 +1,1027 @@
+{
+  "webpage_url": "local:1731784418:d9be8d6f:DEF CON 32 - Bug Bounty Village - Top War Stories from a TryHard Bug Bounty Hunter - Justin Rhynorater Gardner.mp4",
+  "title": "DEF CON 32 - Bug Bounty Village - Top War Stories from a TryHard Bug Bounty Hunter - Justin Rhynorater Gardner.mp4",
+  "description": "Local file",
+  "channel_url": null,
+  "duration": null,
+  "channel": null,
+  "uploader": null,
+  "upload_date": null
+}
+
+0.00s - 5.00s | This text was transcribed using whisper model: large-v2
+
+ Alrighty y'all, I think we're going to go ahead
+5.00s - 10.00s |  and get started a little bit early.
+10.00s - 15.00s |  Sorry for any of the people that are coming in at the last minute,
+15.00s - 20.00s |  but we'll go ahead and get rolling.
+20.00s - 25.00s |  Also, I realize that I got super lucky because this is the last slot of the day,
+25.00s - 30.00s |  I'm Justin Gardner, a.k.a. Rhino Raider.
+30.00s - 35.00s |  I'm a professional live hacking event participant,
+35.00s - 40.00s |  a.k.a. full-time Bug Bounty, a.k.a. no job.
+40.00s - 45.00s |  And I hack web applications mostly and IoT devices occasionally
+45.00s - 50.00s |  and sometimes mobile devices when Joel is here to help me out.
+50.00s - 55.00s |  So check those out if you're interested.
+55.00s - 60.00s |  All right, let's go ahead and talk about the roadmap for today's talk.
+60.00s - 65.00s |  We're going to hit 11 bugs, and I don't have to rush, which is great.
+65.00s - 70.00s |  I was going to give you a disclaimer that we're going to move pretty quickly.
+70.00s - 75.00s |  The whole concept behind this talk was to bring to you all the experience
+75.00s - 80.00s |  of the show-and-tell portion, which is at the end of the event when we all sit down
+80.00s - 85.00s |  and we compare notes, some of the people go up on stage and present the bugs that they've found.
+85.00s - 90.00s |  So what I've done is I've compiled 11 vulnerabilities for you
+90.00s - 95.00s |  over the past two or three years of Bug Bounty hunting, all criticals,
+95.00s - 100.00s |  and I'm going to walk you through each one.
+100.00s - 105.00s |  We're going to have two mediums, four hards, and two very hards.
+105.00s - 110.00s |  So we're going to start off easy, and then we're going to go a little bit deeper after that.
+110.00s - 115.00s |  All right, so let's jump into it.
+115.00s - 120.00s |  First one is an NGINX 403 bypass to PII leak.
+120.00s - 125.00s |  So this is on a semi-private program.
+126.00s - 131.00s |  Which is essentially a private program that everyone knows exists
+131.00s - 136.00s |  and you can easily get added to that program and paid for a bug if you have a bug.
+136.00s - 141.00s |  So when finding this bug, the first indicator that there might be a bug here
+141.00s - 146.00s |  was that the company was taking a piece of software that was meant for internal use
+146.00s - 151.00s |  and then they've modified it to be publicly used.
+152.00s - 157.00s |  So when they do that, of course, the threat model changes for the application.
+157.00s - 162.00s |  So I thought that was really sketchy, so I decided to look into it a little bit deeper.
+162.00s - 167.00s |  So what I was thinking is, okay, well, when this app was intended for private use only within an organization,
+167.00s - 172.00s |  then there was probably a lot of implicit trust between the users and the organization.
+172.00s - 177.00s |  If I am in an organization with Joel, it's probably not a huge problem if I can go and look
+178.00s - 183.00s |  However, in a public application, that information may be more sensitive, so I decided to look for those endpoints
+183.00s - 188.00s |  excluding implicit trust and leak user data.
+188.00s - 193.00s |  So I identified a couple of those endpoints in the internal use version of the software.
+193.00s - 198.00s |  And when I hit them on the API, I noticed that I got an NGINX 403.
+198.00s - 203.00s |  Instead of the application level 403. You can see the differences over there.
+203.00s - 208.00s |  The NGINX 403 seems to imply that there is this sort of structure.
+210.00s - 215.00s |  On the network, we send a request over the internet to the NGINX reverse proxy
+215.00s - 220.00s |  that's standing in front of the backend server.
+220.00s - 223.00s |  And then the backend server processes that request, gives the response back to NGINX,
+223.00s - 228.00s |  which gives the response back to the user.
+228.00s - 233.00s |  And then it requests the API endpoint, slash API, slash internal, slash get all users.
+233.00s - 238.00s |  That's not the API endpoint. That's obfuscated.
+238.00s - 243.00s |  It hits the reverse proxy, and then the reverse proxy says, not allowed.
+243.00s - 248.00s |  So I noticed the difference between those two 403 pages, and I thought we should try to fuzz that a little bit.
+248.00s - 253.00s |  So what do we do? We try get all users. We hit the 403.
+253.00s - 258.00s |  We try get all users with a Z.
+258.00s - 263.00s |  Just to see if they had blocked off that specific endpoint at the NGINX level,
+263.00s - 268.00s |  or whether they are blocking out the path before that.
+268.00s - 273.00s |  We get a 404 there, so not that whole path is slash API, slash internal is not all blocked.
+273.00s - 278.00s |  Just get all users.
+279.00s - 284.00s |  And found out that a double URL encoded S would pass through the reverse proxy
+284.00s - 289.00s |  and not be perceived as a match for the block on get all users route.
+289.00s - 294.00s |  And it would be parsed on the backend as an S.
+294.00s - 299.00s |  So it would match that get all users route and dump back a ton of data.
+299.00s - 304.00s |  So the impact of that one was 4.5 million users PII leaked.
+305.00s - 310.00s |  I'm going to give you ranges because some of the actual numbers can disclose the programs.
+310.00s - 315.00s |  The severity was critical, critical, critical.
+315.00s - 320.00s |  Which is what we say from the critical thinking podcast. Shout out to YT Cracker.
+320.00s - 325.00s |  And this program was semi-private as mentioned before.
+325.00s - 330.00s |  The takeaways for this one were obviously that change to threat model like we mentioned.
+330.00s - 335.00s |  Implied to you when a route is getting essentially blocked off by a reverse proxy
+335.00s - 340.00s |  and might be bypassable via some of these normalization tricks.
+340.00s - 345.00s |  There was an amazing talk by one of the guys at Portswager earlier today on some of the amazing
+345.00s - 350.00s |  path reversal and path normalization stuff you can do.
+350.00s - 355.00s |  So I bet that would also be really helpful here.
+355.00s - 360.00s |  All right, let's move to the next one.
+360.00s - 365.00s |  This one's really easy. It's an arbitrary count takeover via docs essentially.
+365.00s - 370.00s |  So I open the docs. I look at these endpoints.
+370.00s - 375.00s |  And I notice that there is an API endpoint for slash OAuth slash token.
+375.00s - 380.00s |  And there's an authorization header required for that.
+381.00s - 386.00s |  And then user equals username, password equals password.
+386.00s - 391.00s |  That's exactly what you would expect. And it dumps back the access token. Very reasonable.
+391.00s - 396.00s |  But wait a second. A password? This application is a OTP login application.
+396.00s - 401.00s |  There's no password. You just put in your email. They send you a link to your email.
+401.00s - 406.00s |  You click on it and you're logged in. So how does that work?
+406.00s - 411.00s |  401 unauthorized, of course. We need to authorize with the
+411.00s - 416.00s |  credentials mentioned in the doc for the authorization header.
+416.00s - 421.00s |  So I went and I needed that. So I was like, what do I do?
+421.00s - 426.00s |  Of course, to the JS files. So I search in the JS files.
+426.00s - 431.00s |  I'm looking for the part of the UI that uses this request.
+431.00s - 436.00s |  And I find sitting in the JS files these authorization credentials.
+436.00s - 441.00s |  And they're obviously Base64 encoded. And the values were kind of odd.
+441.00s - 446.00s |  I can't show them to you, but they weren't random. They were just a string.
+446.00s - 451.00s |  So it was a little bit of an odd setup. And so then using those authorization
+451.00s - 456.00s |  basic credentials, we could literally just submit any password for any user.
+456.00s - 461.00s |  And it would accept it and dump back the authorization token, giving us access
+461.00s - 466.00s |  to arbitrary account takeover on this target. This is a public program.
+466.00s - 471.00s |  This is a very high-paying public program. And this sort of stuff is out there.
+471.00s - 476.00s |  Thank you. Thank you. This was an arbitrary ATO on double-digit million accounts.
+476.00s - 481.00s |  40 to 60K bounty. Of course, critical. And like I mentioned, public.
+481.00s - 486.00s |  So takeaways for this will be read the docs, think about the docs,
+486.00s - 491.00s |  and then check the JS because there's a lot of good stuff in there.
+491.00s - 495.00s |  All right. Next, bug number three. This one's very similar to the last one.
+495.00s - 499.00s |  Essentially, you take the AuthBearer and you log into that API,
+499.00s - 505.00s |  that godforsaken API. And there's simply a numeric IDOR in that API
+505.00s - 511.00s |  that literally leaks password hashes and password reset tokens.
+511.00s - 514.00s |  And I see someone in the audience that is laughing because I think they know
+514.00s - 518.00s |  the target that I'm talking about. So that's interesting.
+518.00s - 522.00s |  But yeah, the password reset token is there. You can just password reset the account,
+522.00s - 526.00s |  hit the IDOR, and then you'll be able to log into the person's account.
+526.00s - 531.00s |  This was also 40 to 60K. And the takeaway from this one that's different
+531.00s - 535.00s |  from the other one is just get really deep into these apps.
+535.00s - 539.00s |  It probably took 40 hours of configuring stuff and getting to know the various
+539.00s - 542.00s |  parts of the application before I got to this point where I was needing
+542.00s - 547.00s |  to authenticate into this asset. So that's the behind the scenes.
+547.00s - 550.00s |  I don't want to make sure, I want to make sure that it's not perceived
+550.00s - 554.00s |  as looking too easy because there is some work that goes into it.
+554.00s - 558.00s |  Okay. Bug number four. We're moving into the medium difficulty section now.
+558.00s - 563.00s |  This was a blind XSS via SMS to arbitrary account takeover.
+563.00s - 568.00s |  So this was on an app that was a place where you could buy a car.
+568.00s - 574.00s |  And there was a sister app that would allow the dealers to deal with the,
+574.00s - 577.00s |  it's kind of like a CRM for the dealers, right?
+577.00s - 582.00s |  So you go ahead and find a car. I was interested in this DeLorean for 42 million.
+582.00s - 586.00s |  And so I went ahead and filled it out. And somebody named Christina
+586.00s - 588.00s |  from my local car place reached out to me and said,
+588.00s - 592.00s |  hey Justin, I saw that you filled out the request for this.
+592.00s - 595.00s |  When can we meet to see the car? I was like, okay, wow.
+595.00s - 598.00s |  How did they do that? Because I had access to the dealer panel as a part
+598.00s - 601.00s |  of this scope and I didn't see where they did that.
+601.00s - 605.00s |  So I said, okay, let me go ahead and log into the dealer software
+605.00s - 607.00s |  and get that perspective. So this is what I see.
+607.00s - 611.00s |  You can select the users that you want to view the details for
+611.00s - 614.00s |  on the left hand side. And there's like an info and a financing tab
+614.00s - 619.00s |  and you can kind of inspect that lead that had come through the website.
+619.00s - 622.00s |  And so I started reading the code on that page and there's like some
+622.00s - 625.00s |  super long window object that's kind of difficult to read.
+625.00s - 628.00s |  But if you scroll through it and do your due diligence,
+628.00s - 630.00s |  there's a section called feature flags.
+630.00s - 633.00s |  Which is something that I just talked about at my talk earlier
+633.00s - 637.00s |  in Bug Bounty Village. And there was a messages feature flag.
+637.00s - 640.00s |  So we turned that from false to true.
+640.00s - 644.00s |  And you can see from false to true with this easy
+644.00s - 648.00s |  Kaido match and replace rule. And voila, the messages tab
+648.00s - 652.00s |  appears in the application and we have the ability to use it.
+652.00s - 656.00s |  So as we go into that application, we can send messages
+656.00s - 659.00s |  to the various leads. It'll go to the phone number that they submitted
+659.00s - 663.00s |  and then you can interact with them. Great.
+663.00s - 666.00s |  So I sent myself a message, I submitted a lead, sent myself a message
+666.00s - 669.00s |  and I thought, okay, wow, wouldn't it be cool if I could
+669.00s - 672.00s |  SMS myself an XSS payload.
+672.00s - 675.00s |  So I went ahead and first typoed my XSS payload to something
+675.00s - 680.00s |  that would never work. Proceeded to reaction down it instinctually
+680.00s - 684.00s |  and then submitted the actual XSS payload.
+684.00s - 687.00s |  When the dealer came back to the screen, they would see that
+687.00s - 691.00s |  the XSS would pop and we were able to get a blind XSS
+691.00s - 695.00s |  of sorts in this environment.
+695.00s - 699.00s |  So we've got blind XSS, but what can we do with it to get more impact?
+699.00s - 702.00s |  Well, the authorization flow for this application happened
+702.00s - 706.00s |  in an invisible iframe right near this interface.
+706.00s - 709.00s |  And what it would do is it would go through the OAuth flow
+709.00s - 713.00s |  on a different domain and then it would call back with just a token.
+713.00s - 718.00s |  And so what I did using the XSS is I cookie bombed that callback location
+718.00s - 721.00s |  and then so that the code wouldn't get consumed
+721.00s - 725.00s |  and then I stole the code out of the iframe and exfiltrated that
+725.00s - 728.00s |  to the attacker server. So whenever the dealer comes,
+728.00s - 731.00s |  their session token would be exfiltrated.
+731.00s - 736.00s |  The victim's token would be exfiltrated and the attacker can simply
+736.00s - 740.00s |  click the link and they're logged into the victim's dealer account.
+740.00s - 743.00s |  And you don't have to bypass MFA or anything like that
+743.00s - 746.00s |  because the session token is there.
+746.00s - 749.00s |  Great. So now we've got, we can log in as the dealer.
+750.00s - 752.00s |  How can we get even more impact?
+752.00s - 757.00s |  Well, that same request had three vulnerabilities in it.
+757.00s - 762.00s |  The send SMS message API endpoint had a dealer ID that was vulnerable to IDOR,
+762.00s - 764.00s |  a client ID that was vulnerable to IDOR,
+764.00s - 767.00s |  and the message was vulnerable to XSS.
+767.00s - 771.00s |  So essentially what this means is that we can worm this XSS
+771.00s - 773.00s |  across all of the dealers.
+773.00s - 776.00s |  We can send a message to every client from every dealer
+776.00s - 779.00s |  with an XSS payload and then proceed to hijack their accounts.
+779.00s - 781.00s |  And when we get access to their accounts,
+781.00s - 784.00s |  then we get access to all of the PII of all of the customers
+784.00s - 787.00s |  that have ever used this application.
+787.00s - 793.18s |  So that was bad.
+793.18s - 799.18s |  And that was an arbitrary ATO of double-digit million users,
+799.18s - 802.18s |  PII leak, 20 to 40K.
+802.18s - 804.18s |  This was on a private program.
+804.18s - 807.18s |  However, this program will be going public soon, I'm aware.
+807.18s - 812.18s |  And the takeaway for this is look at the application from all perspectives.
+812.18s - 815.18s |  We wouldn't have seen this if we just looked at it from the dealer perspective
+815.18s - 817.18s |  or just looked at it from the client perspective.
+817.18s - 820.18s |  Make sure you're turning on all the feature flags with match and replace.
+820.18s - 824.18s |  That can enable features that are essential.
+824.18s - 828.18s |  And look for alternative data input paths like SMS.
+828.18s - 833.18s |  And then lastly, of course, chain, chain, chain to get maximum impact.
+833.18s - 836.18s |  Bug number five, snoop on other people's meetings.
+836.18s - 837.18s |  This was a really interesting one.
+837.18s - 839.18s |  It's going to be a little brief,
+839.18s - 844.18s |  but there was a target that I came across in a video chat and team collaboration app.
+844.18s - 851.18s |  And for this specific period, I decided to focus on a specific goal,
+851.18s - 856.18s |  which was I wanted to be able to do creepy shit in people's meetings.
+856.18s - 859.18s |  So I started investigating how exactly that worked.
+859.18s - 864.18s |  I read the developer's docs, the JavaScript code, the GitHub issues, everything.
+864.18s - 869.18s |  And when I was investigating the GitHub issues, this GitHub issue popped up.
+869.18s - 874.18s |  It says the participant list is wrong when XYZ audio device is used.
+874.18s - 876.18s |  And I was like, huh, that's weird.
+876.18s - 881.18s |  So the participant list didn't get updated when the user has a broken audio device.
+881.18s - 882.18s |  Why would that be happening?
+882.18s - 885.18s |  So I thought maybe I can make that happen,
+885.18s - 890.18s |  and I would be able to enter meetings without people knowing I was there.
+890.18s - 894.18s |  So how does this joining meeting work?
+894.18s - 897.18s |  The user connects first over WebRTC.
+897.18s - 902.18s |  Then they get all of the information like the call, comms channels, et cetera.
+902.18s - 907.18s |  And then the JS code identifies an audio device that the user can use,
+907.18s - 909.18s |  or it creates a fake audio device,
+909.18s - 916.18s |  and then the client-side JS sends the audio connect signal to join.
+916.18s - 917.18s |  Wait, what?
+917.18s - 919.18s |  It sends an audio connect signal to join.
+919.18s - 922.18s |  That little bloop that you hear when you join a meeting
+922.18s - 926.18s |  was the thing actually triggering the participant list update,
+926.18s - 928.18s |  which I really could not believe.
+928.18s - 931.18s |  And so since this was happening on the client-side,
+931.18s - 934.18s |  we could just not send the signal.
+934.18s - 938.18s |  And that's exactly what we did with this match and replace rule.
+938.18s - 942.18s |  We just simply did a true-false switch
+942.18s - 944.18s |  on whether the audio signal had already been sent or not,
+944.18s - 947.18s |  and it didn't send the signal.
+947.18s - 950.18s |  And we became Snoop Dogg in that environment.
+950.18s - 951.18s |  Okay, so let's see how it worked.
+951.18s - 953.18s |  There's my Snoop Dogg POC right here.
+953.18s - 954.18s |  That's what I named it.
+954.18s - 956.18s |  The triagers loved it.
+956.18s - 960.18s |  And essentially what you would do is paste in the meeting information,
+960.18s - 962.18s |  and then you would click Snoop,
+962.18s - 967.18s |  and it would actually exfiltrate the user's transcripts,
+967.18s - 973.18s |  and you would not see anything in the meeting participant list.
+973.18s - 976.18s |  So that one was a 20 to 25K bounty.
+976.18s - 979.18s |  It was technically high, but it was paid as a critical,
+979.18s - 982.18s |  given the various bonuses that were occurring.
+982.18s - 984.18s |  This was on a public program as well.
+984.18s - 985.18s |  So takeaways from this one.
+985.18s - 987.18s |  Reading the GitHub issues can have massive dividends,
+987.18s - 992.18s |  especially anything related to security or privacy.
+992.18s - 995.18s |  Set goals for your target, like being able to Snoop on meetings,
+995.18s - 999.18s |  and then verify in the code base how this works,
+999.18s - 1001.18s |  especially on the client-side.
+1001.18s - 1003.18s |  Okay, we are 15 minutes in.
+1003.18s - 1005.18s |  Dude, we are doing good.
+1005.18s - 1007.18s |  I may not keep you here long.
+1007.18s - 1010.18s |  We'll see, though, because now things are getting a little bit trickier.
+1010.18s - 1012.18s |  So this one is going to be a long one.
+1012.18s - 1018.18s |  This one was a Perforce server to client RCE,
+1018.18s - 1020.18s |  and I'll explain what that is in just a second.
+1020.18s - 1025.18s |  The target for this was a desktop application used for game development.
+1025.18s - 1028.18s |  The problem is I suck at hacking desktop applications.
+1028.18s - 1031.18s |  Note that I did not add that in the list of things that I often hack
+1031.18s - 1033.18s |  in the intro slide.
+1033.18s - 1036.18s |  So I was thinking, all right, how can I attack this?
+1036.18s - 1039.18s |  This is kind of a little bit outside of my comfort zone.
+1039.18s - 1041.18s |  I can't really do privilege escalation stuff
+1041.18s - 1043.18s |  because this doesn't really run in a privileged environment.
+1043.18s - 1046.18s |  So I was thinking, okay, but local attacks are kind of dumb anyway.
+1046.18s - 1048.18s |  Let me try to focus on remote attacks.
+1048.18s - 1050.18s |  And these are some of the ideas that I came up with.
+1050.18s - 1052.18s |  I just want to walk you through the process
+1052.18s - 1054.18s |  so all of this doesn't seem too easy,
+1054.18s - 1058.18s |  and you see how often we fail when attacking targets like this.
+1058.18s - 1060.18s |  So here are some of the attack factors I came up with.
+1060.18s - 1063.18s |  We could open a malicious file in the development thing
+1063.18s - 1065.18s |  and something bad would happen.
+1065.18s - 1068.18s |  We could connect to a malicious server with the development environment
+1068.18s - 1070.18s |  and then something bad would happen.
+1070.18s - 1074.18s |  We could attack the software development lifecycle,
+1074.18s - 1077.18s |  a la Lupin, a la Ronnie Carta right here,
+1077.18s - 1082.18s |  and try to inject something into the build of this application itself.
+1082.18s - 1088.18s |  We could take advantage of some sort of misconfiguration
+1088.18s - 1090.18s |  in the actual code itself,
+1090.18s - 1092.18s |  like maybe it's reaching out to an unclaimed domain
+1092.18s - 1095.18s |  or an unclaimed S3 bucket and inject sort of there.
+1095.18s - 1098.18s |  Or we could kind of take these reusable game component pieces
+1098.18s - 1101.18s |  that were being processed and try to do something with those.
+1101.18s - 1103.18s |  So I started going down these paths,
+1103.18s - 1107.18s |  and I checked out open a malicious file.
+1107.18s - 1112.18s |  So I broke apart some of the file extensions associated with this
+1112.18s - 1114.18s |  and looked at the structure.
+1114.18s - 1116.18s |  I was replacing paths with UNC paths
+1116.18s - 1120.18s |  to see if I could force it to reach out to a remote server.
+1120.18s - 1123.18s |  I found that you could include settings for a project in a file.
+1123.18s - 1124.18s |  That was kind of interesting,
+1124.18s - 1128.18s |  but couldn't really do anything malicious with it at the time.
+1128.18s - 1130.18s |  I noticed that there was lots of XML,
+1130.18s - 1133.18s |  so I started spraying around various XXE payloads in there
+1133.18s - 1135.18s |  and seeing if they would trigger.
+1135.18s - 1136.18s |  No luck.
+1136.18s - 1140.18s |  Symbolic links, I was kind of playing around with those.
+1140.18s - 1142.18s |  And nothing's really working.
+1142.18s - 1144.18s |  Kind of meh, feeling kind of insufficient at this point
+1144.18s - 1146.18s |  to look at this target.
+1146.18s - 1149.18s |  So I move along to the next attack factor.
+1149.18s - 1151.18s |  So that was connect to a malicious server.
+1151.18s - 1153.18s |  So what do I mean by that?
+1153.18s - 1158.18s |  This software had the ability to connect to remote version control servers
+1158.18s - 1160.18s |  so that you could store your code
+1160.18s - 1164.18s |  that you were developing in a remote version control.
+1164.18s - 1166.18s |  And there were multiple types,
+1166.18s - 1169.18s |  and Perforce was one of those types.
+1169.18s - 1172.18s |  And that was something that I hadn't really heard of before,
+1172.18s - 1177.18s |  and I know from a lot of the work of Alex Chapman
+1177.18s - 1181.18s |  and some of the other great Git version control hackers out there
+1181.18s - 1185.18s |  that version control can be hella sketchy.
+1185.18s - 1188.18s |  And so I kind of went down this route.
+1188.18s - 1192.18s |  So I started looking up the Perforce protocol spec,
+1192.18s - 1196.18s |  and I found this awesome article that told me about that.
+1196.18s - 1198.18s |  Funny side note that I don't have in the slides,
+1198.18s - 1200.18s |  the guy I just mentioned, Alex Chapman,
+1200.18s - 1203.18s |  was also working on this target at the same time,
+1203.18s - 1206.18s |  and he actually had a public blog
+1206.18s - 1209.18s |  on how to exploit this specific protocol
+1209.18s - 1213.18s |  that I didn't find a little bit until a little bit later,
+1213.18s - 1216.18s |  and then I realized, oh shit, he's going to find that same bug.
+1216.18s - 1220.18s |  And we did have a bug collision, but it still worked out great.
+1220.18s - 1222.18s |  So anyway, I clicked on this article,
+1222.18s - 1227.18s |  and it was a really great article describing how this protocol works.
+1227.18s - 1229.18s |  It broke down the RPC structure.
+1229.18s - 1230.18s |  It's a binary protocol,
+1230.18s - 1233.18s |  which I was a little bit uncomfortable with as a web guy,
+1233.18s - 1235.18s |  but I decided to try to continue working on it.
+1235.18s - 1237.18s |  And as I was reading through the article,
+1237.18s - 1241.18s |  I see this very convenient file synchronization flow
+1241.18s - 1242.18s |  on the right-hand side there.
+1242.18s - 1243.18s |  Now if you read that for a second,
+1243.18s - 1246.18s |  you'll see something a little bit odd, right?
+1246.18s - 1251.18s |  The server says, client open file, client write file.
+1251.18s - 1255.18s |  And I was like, hmm, that seems odd,
+1255.18s - 1257.18s |  that the server can just say write files,
+1257.18s - 1258.18s |  but it is a version control system.
+1258.18s - 1260.18s |  I wonder if there's any path traversals
+1260.18s - 1263.18s |  or something nasty that I can do with that.
+1263.18s - 1268.18s |  So on a hunch, I started developing this malicious Perforce server.
+1268.18s - 1270.18s |  And I'm not going to lie to you guys,
+1270.18s - 1271.18s |  this was really intimidating to me,
+1271.18s - 1273.18s |  because I'm a web guy, like I said,
+1273.18s - 1275.18s |  and I don't really deal a lot with binary protocols.
+1275.18s - 1278.18s |  But I thought, now is probably the best chance I'll ever get,
+1278.18s - 1281.18s |  because this article literally breaks everything out
+1281.18s - 1283.18s |  as clean as can possibly be.
+1283.18s - 1285.18s |  So I decided to go down that path.
+1285.18s - 1288.18s |  And in the end, the code was actually really simple.
+1288.18s - 1292.18s |  I just created a function that would pass in a JSON blob,
+1292.18s - 1294.18s |  and those names and values would then be encoded
+1294.18s - 1297.18s |  into the binary format that was described in the article,
+1297.18s - 1300.18s |  which was essentially the parameter name, a null byte,
+1300.18s - 1305.18s |  the value length, and then the actual value itself,
+1305.18s - 1306.18s |  and then a null byte,
+1306.18s - 1311.18s |  and then that would be packed into a bigger call
+1311.18s - 1314.18s |  that would pass through the socket.
+1314.18s - 1321.18s |  So, man, working with struct.pack was really scary to me.
+1321.18s - 1323.18s |  Whenever I saw those exploits where it's like,
+1323.18s - 1327.18s |  all right, less than, and B, and I, and H,
+1327.18s - 1330.18s |  I was thinking, like, wow, this is really complicated.
+1330.18s - 1334.18s |  But one, ChatGPT is really helpful for that nowadays.
+1334.18s - 1338.18s |  And two, you just kind of put your head down
+1338.18s - 1339.18s |  and keep working at it.
+1339.18s - 1341.18s |  I think it comes pretty quickly.
+1341.18s - 1343.18s |  So I was able to build the whole exploit,
+1343.18s - 1345.18s |  and essentially, this is a funny part
+1345.18s - 1347.18s |  that I wanted to highlight for you guys.
+1347.18s - 1348.18s |  When the client connects, of course,
+1348.18s - 1350.18s |  it's going to try to auth, right?
+1350.18s - 1352.18s |  And my server was just like, yes, yes,
+1352.18s - 1354.18s |  you've authed correctly, let's go,
+1354.18s - 1356.18s |  and just ignored the whole auth part,
+1356.18s - 1359.18s |  which was really funny, and then just said write a file.
+1359.18s - 1361.18s |  And essentially what it would do is write a file
+1361.18s - 1364.18s |  to anywhere on the file system via path traversal.
+1364.18s - 1368.18s |  And so how do we convert that to RCE?
+1368.18s - 1369.18s |  Well, it was really easy.
+1369.18s - 1372.18s |  There was an EXE file that was getting run every two seconds,
+1372.18s - 1377.18s |  so you just take your malicious EXE file,
+1377.18s - 1378.18s |  overwrite that file,
+1378.18s - 1380.18s |  and then it gets run two seconds later,
+1380.18s - 1382.18s |  and you pop a shell.
+1382.18s - 1387.18s |  And, yeah, how do we actually make this a plausible attack?
+1387.18s - 1389.18s |  Well, as I mentioned earlier,
+1389.18s - 1392.18s |  there was the ability to include malicious settings
+1392.18s - 1393.18s |  for the project.
+1393.18s - 1394.18s |  And one of those settings,
+1394.18s - 1398.18s |  which was not super present in the documentation,
+1398.18s - 1402.18s |  was the ability to provide a version control server
+1402.18s - 1403.18s |  to connect to.
+1403.18s - 1404.18s |  And when it opened the file,
+1404.18s - 1406.18s |  it would automatically connect to that server.
+1406.18s - 1408.18s |  So I could provide a victim with a file,
+1408.18s - 1410.18s |  they'd open it, connect to my server,
+1410.18s - 1414.18s |  my server would push a file down and shell the device.
+1414.18s - 1417.18s |  So that was an RCE via malicious file,
+1417.18s - 1420.18s |  and the bounty for that was $15,000 to $30,000.
+1420.18s - 1422.18s |  Critical, critical, critical, of course.
+1422.18s - 1425.18s |  And that was, again, on a public program.
+1425.18s - 1427.18s |  Takeaways from this, read the freaking docs.
+1427.18s - 1429.18s |  It really helps, and articles.
+1429.18s - 1431.18s |  Don't shy away from targets you're scared of,
+1431.18s - 1435.18s |  and use your super amazing hacker brain
+1435.18s - 1438.18s |  for any struct pack calls or chat GPT,
+1438.18s - 1440.18s |  whichever you're more comfortable with.
+1440.18s - 1443.18s |  Okay, Joel, I've got some Easter eggs for you in this one, man.
+1443.18s - 1445.18s |  You're going to like this, okay?
+1445.18s - 1447.18s |  So the next bug that I wanted to talk about
+1447.18s - 1450.18s |  was shelling a public program router.
+1450.18s - 1454.18s |  Once again, I wasn't super familiar with IoT devices before this,
+1454.18s - 1459.18s |  and so I leaned heavily on my boy Joel Margolis,
+1459.18s - 1461.18s |  my podcast co-host here,
+1461.18s - 1464.18s |  and as cute as we are together there in that picture,
+1464.18s - 1466.18s |  we are both independently married,
+1466.18s - 1471.18s |  although that would be great.
+1471.18s - 1476.18s |  So let's get to the details, okay, guys?
+1476.18s - 1478.18s |  Essentially what we did is we took this router
+1478.18s - 1481.18s |  that was in a public program, we broke it apart,
+1481.18s - 1484.18s |  used the FCC website and Google in our brain
+1484.18s - 1487.18s |  to identify that this chip was in,
+1487.18s - 1489.18s |  this is what it sounded like to me the first time,
+1489.18s - 1494.18s |  a BGA EMMC ABC1234G74XYZ.
+1494.18s - 1495.18s |  This is coming out of Joel's mouth.
+1495.18s - 1497.18s |  And I was like, oh my gosh, what the heck is that?
+1497.18s - 1499.18s |  Well, it's a lot easier than you would think.
+1499.18s - 1500.18s |  It's a ball grid array.
+1500.18s - 1504.18s |  Those are those little pieces of silver pieces there,
+1504.18s - 1506.18s |  the little pieces of solder, the connections.
+1506.18s - 1510.18s |  And then this is an EMMC, which is essentially a SD card,
+1510.18s - 1513.18s |  which is just attached to the firmware device
+1513.18s - 1515.18s |  or attached to the board.
+1515.18s - 1516.18s |  So that was really cool.
+1516.18s - 1519.18s |  So we wanted to get that chip off.
+1519.18s - 1522.18s |  And for some reason, Joel let me do it.
+1522.18s - 1525.18s |  So what we did was we get a hot air,
+1525.18s - 1527.18s |  I ordered a bunch of stuff on Amazon.
+1527.18s - 1530.18s |  I got the hot air rework station and lots of flux.
+1530.18s - 1532.18s |  And I sat down on the device and started
+1532.18s - 1536.18s |  blasting it with 500 degrees Fahrenheit air.
+1536.18s - 1538.18s |  And Joel was like, don't do that, bro.
+1538.18s - 1542.18s |  And then I proceeded to pull the EMMC chip off
+1542.18s - 1545.18s |  before the solder was completely liquid.
+1545.18s - 1546.18s |  And Joel was like, don't do that,
+1546.18s - 1548.18s |  and just give it some time.
+1548.18s - 1551.18s |  And then finally, after bricking three of them,
+1551.18s - 1554.18s |  we were actually able to get a clean read
+1554.18s - 1556.18s |  of the EMMC chip in our BGA reader
+1556.18s - 1560.18s |  and pull off the firmware for that device.
+1560.18s - 1562.18s |  Here's Joel's super awesome hardware hacking setup,
+1562.18s - 1565.18s |  by the way, which I'm jealous of.
+1565.18s - 1566.18s |  Yeah, bricked three of them.
+1566.18s - 1567.18s |  Not a great feeling.
+1567.18s - 1570.18s |  But the company paid for it, so that was great.
+1570.18s - 1571.18s |  So now we've got the firmware
+1571.18s - 1573.18s |  so we can start hunting reliably.
+1573.18s - 1575.18s |  And it's time to shell that.
+1575.18s - 1577.18s |  So what we did then, we were hoping
+1577.18s - 1579.18s |  it was going to be a lot easier than it was,
+1579.18s - 1581.18s |  but it was several days of weeding through
+1581.18s - 1584.18s |  Python code to find the actual attack vector
+1584.18s - 1588.18s |  that we ended up getting RCU with.
+1588.18s - 1590.18s |  And so the attack chain started,
+1590.18s - 1591.18s |  that we ended up going with,
+1591.18s - 1593.18s |  started with us using an HTTP request
+1593.18s - 1596.18s |  to the cloud provider for this specific device
+1596.18s - 1599.18s |  that sent a certificate up,
+1599.18s - 1601.18s |  and that certificate was then pushed to the device
+1601.18s - 1605.18s |  and controlled access, certificate-based access
+1605.18s - 1607.18s |  to the Google RPC service
+1607.18s - 1610.18s |  listening on a port on the device.
+1610.18s - 1612.18s |  So once we pushed up that certificate,
+1612.18s - 1614.18s |  we were able to communicate with gRPC,
+1614.18s - 1617.18s |  which we thought was going to be super helpful,
+1617.18s - 1620.18s |  but there was still not a lot of vulnerable code in there.
+1620.18s - 1622.18s |  So we spent a couple days continuing to look.
+1622.18s - 1624.18s |  Then finally we came across
+1624.18s - 1627.18s |  this specific piece of functionality,
+1627.18s - 1629.18s |  which is write reservations.
+1629.18s - 1630.18s |  And as you can see in there,
+1630.18s - 1634.18s |  there's a Jinja 2 template being referenced, right?
+1634.18s - 1637.18s |  So everyone's probably thinking template injection,
+1637.18s - 1638.18s |  but it's not.
+1638.18s - 1639.18s |  They're using it correctly.
+1639.18s - 1643.18s |  What it is, however, is configuration file injection,
+1643.18s - 1645.18s |  which is a much rarer
+1645.18s - 1649.18s |  and I think totally underrated vulnerability class.
+1649.18s - 1651.18s |  And it kind of looks like this.
+1651.18s - 1653.18s |  This functionality would,
+1653.18s - 1655.18s |  what was this functionality doing?
+1655.18s - 1658.18s |  Yeah, it was writing static IP reservations
+1658.18s - 1659.18s |  for the router, right?
+1659.18s - 1661.18s |  And so what it would do is dynamically generate
+1661.18s - 1663.18s |  this DHCPD file, config file,
+1663.18s - 1666.18s |  and it would put the IP address that we wanted to static
+1666.18s - 1668.18s |  into the fixed address attribute.
+1668.18s - 1670.18s |  However, it wasn't escaping the characters
+1670.18s - 1673.18s |  that would allow us to write other DHCPD commands,
+1673.18s - 1675.18s |  so we were able to identify a command
+1675.18s - 1679.18s |  that would run a shell command
+1679.18s - 1682.18s |  when a new DHCP lease was issued.
+1682.18s - 1684.18s |  And we were able to code golf it
+1684.18s - 1686.18s |  so that it keeps the correct syntax
+1686.18s - 1688.18s |  and doesn't break anything.
+1688.18s - 1690.18s |  And so then after we got that in place
+1690.18s - 1692.18s |  and the exploit went off successfully,
+1692.18s - 1694.18s |  we grabbed our phones, connected to the device,
+1694.18s - 1697.18s |  and we saw that beautiful shell connection come back,
+1697.18s - 1700.18s |  which is one of my favorite moments I've ever had hacking.
+1700.18s - 1703.18s |  Joel knows that I jumped up and screamed,
+1703.18s - 1704.18s |  and it was amazing.
+1704.18s - 1706.18s |  So that one was 20 to 32K,
+1706.18s - 1708.18s |  once again, on a public program.
+1708.18s - 1710.18s |  And I'm pretty proud of this fact.
+1710.18s - 1712.18s |  It took us, like, from zero,
+1712.18s - 1714.18s |  from knowing nothing about this target,
+1714.18s - 1716.18s |  about 10 days to get that shell.
+1716.18s - 1718.18s |  And so I think,
+1718.18s - 1720.18s |  and I thought it was going to be a lot harder than that.
+1720.18s - 1722.18s |  So don't shy away from these sort of things
+1722.18s - 1724.18s |  if you're intimidated by it like I was.
+1724.18s - 1727.18s |  Takeaways from this one is hack with a collaborator
+1727.18s - 1729.18s |  or Joel Margolis, one of those two.
+1729.18s - 1733.18s |  Don't be afraid of hacking different types of scope.
+1733.18s - 1737.18s |  Get your hands on source code as much as you possibly can.
+1737.18s - 1740.18s |  And obviously, configuration file injection
+1740.18s - 1742.18s |  is a pretty underrated vuln class, I think,
+1742.18s - 1744.18s |  especially in the IoT world.
+1744.18s - 1747.18s |  Okay, we're just going to do it again, real quick.
+1747.18s - 1749.18s |  And then we'll move on to the next one.
+1749.18s - 1750.18s |  This one was really interesting, though,
+1750.18s - 1751.18s |  so I wanted to include it.
+1751.18s - 1754.18s |  Another vulnerable endpoint on that same target
+1754.18s - 1756.18s |  was doing the same thing for DNSmasq.
+1756.18s - 1757.18s |  So we're like, okay,
+1757.18s - 1759.18s |  let's see if we can do the same thing there.
+1759.18s - 1760.18s |  So, of course, we Google,
+1760.18s - 1763.18s |  how to execute code with DNSmasq config,
+1763.18s - 1765.18s |  and nothing comes up.
+1765.18s - 1767.18s |  Unfortunately, there's not a great way to do that.
+1767.18s - 1771.18s |  However, what every good DNS caching software needs
+1771.18s - 1774.18s |  is a built-in TFTP server.
+1774.18s - 1775.18s |  Yeah.
+1775.18s - 1777.18s |  So, essentially, that can be turned on
+1777.18s - 1780.18s |  via a DHCPD configuration.
+1780.18s - 1782.18s |  And you are able,
+1782.18s - 1784.18s |  then you will just be able to have FTP
+1784.18s - 1785.18s |  on the whole file system,
+1785.18s - 1786.18s |  and we're able to grab another file
+1786.18s - 1788.18s |  that can have a lot of impact.
+1788.18s - 1791.18s |  The problem was is that we had double injection points
+1791.18s - 1793.18s |  this time around in the template, okay?
+1793.18s - 1796.18s |  And we really got stuck here for a long time
+1796.18s - 1799.18s |  because the user root directive,
+1799.18s - 1803.18s |  which is required to open up this TFTP server,
+1803.18s - 1806.18s |  cannot be duplicated twice.
+1806.18s - 1807.18s |  Just that one directive.
+1807.18s - 1808.18s |  Everything else can be duplicated,
+1808.18s - 1811.18s |  but the user root cannot.
+1811.18s - 1814.18s |  And so because of the double injection points,
+1814.18s - 1817.18s |  we were having a really hard time with that.
+1817.18s - 1819.18s |  So the solution, of course,
+1819.18s - 1822.18s |  is to reach out to Sam Erb, a Googler,
+1822.18s - 1825.18s |  and double-time black badge guy,
+1825.18s - 1828.18s |  and say, hey, we've got this problem.
+1828.18s - 1829.18s |  And what does Sam do?
+1829.18s - 1832.18s |  Of course, he just opens up the C code for DNS Mask
+1832.18s - 1835.18s |  and starts reviewing how lines are getting parsed,
+1835.18s - 1839.18s |  which is very Sam Erb of him to do.
+1839.18s - 1841.18s |  And he comes back and he says,
+1841.18s - 1843.18s |  hey, there's a maximum character length
+1843.18s - 1846.18s |  on a config line for DNS Mask,
+1846.18s - 1849.18s |  and that's 1,025.
+1849.18s - 1853.18s |  So you might be able to essentially align the directive
+1853.18s - 1858.18s |  that you need and essentially utilize that maximum length
+1858.18s - 1863.18s |  to create a discrepancy between your two injection points.
+1863.18s - 1865.18s |  That's the code that's vulnerable.
+1865.18s - 1866.18s |  It's not really vulnerable.
+1866.18s - 1868.18s |  It's just useful in this scenario.
+1868.18s - 1872.18s |  And so what we did is one of those two double injection points
+1872.18s - 1875.18s |  was the line was much longer than the other one.
+1875.18s - 1880.18s |  So on the shorter line, we created an injection
+1880.18s - 1885.18s |  that would not exceed the 1,025 byte limit,
+1885.18s - 1889.18s |  and our user root directive would be placed
+1889.18s - 1892.18s |  inside of a comment towards the end of that line,
+1892.18s - 1894.18s |  but not at the end.
+1894.18s - 1896.18s |  And then on the longer injection,
+1896.18s - 1897.18s |  let me see if I can show you.
+1897.18s - 1901.18s |  Yeah, at the longer injection, the line would overflow,
+1901.18s - 1902.18s |  the comments would be longer,
+1902.18s - 1906.18s |  and line up user root just on the new line
+1906.18s - 1909.18s |  that would be read when parsing the config file.
+1909.18s - 1913.18s |  So that was able to get one of our user root directives
+1913.18s - 1914.18s |  in a commented out state,
+1914.18s - 1917.18s |  and the other one would get bumped to the next line
+1917.18s - 1919.18s |  of the DNS Mask config file.
+1919.18s - 1921.18s |  So this is what the exploit looked like at the end.
+1921.18s - 1928.18s |  You can see the top comment has user colon root at the end
+1928.18s - 1929.18s |  and then all the other directives,
+1929.18s - 1930.18s |  which are fine to repeat.
+1930.18s - 1933.18s |  And then the IP set line has a bunch of A's,
+1933.18s - 1938.18s |  and then the A's are right up to that 1,025 byte limit,
+1938.18s - 1941.18s |  and then user root gets dropped down into the next line
+1941.18s - 1944.18s |  and gets parsed and executed.
+1944.18s - 1947.18s |  So using that, we were able to open up a TFTP server
+1947.18s - 1951.18s |  on port 69 and connect and exfiltrate data
+1951.18s - 1955.18s |  that we needed to get our C on the target again.
+1955.18s - 1956.18s |  That was another one.
+1956.18s - 1957.18s |  Same program.
+1957.18s - 1960.18s |  I think maybe this was a little bit after the 10 days.
+1960.18s - 1962.18s |  It might have been 11 days or 12 days,
+1962.18s - 1965.18s |  but we found it pretty quickly afterwards.
+1965.18s - 1968.18s |  Takeaway for this one is if it works, do it again.
+1968.18s - 1970.18s |  That's one of the big principles of bug bounty
+1970.18s - 1973.18s |  is if you find a bug in one particular area,
+1973.18s - 1977.18s |  there's very likely to be bugs that are similar to it
+1977.18s - 1979.18s |  in a similar location.
+1979.18s - 1981.18s |  So definitely do your due diligence
+1981.18s - 1983.18s |  and go down that route.
+1983.18s - 1985.18s |  Okay, we're going to do another one really quick,
+1985.18s - 1991.21s |  but I'm going to get a drink of water first.
+1991.21s - 1992.21s |  Okay, bug number nine.
+1992.21s - 1993.21s |  We're doing really good.
+1993.21s - 1995.21s |  Actually, I'm moving a little fast.
+1995.21s - 2000.21s |  I may not use my full time block.
+2000.21s - 2004.21s |  Okay, so this time we've got a version control binary SQL injection,
+2004.21s - 2006.21s |  and I'm going to make this one a little bit shorter
+2006.21s - 2008.21s |  because it's kind of complicated.
+2008.21s - 2010.21s |  So we get this version control binary,
+2010.21s - 2011.21s |  and I'm like, all right,
+2011.21s - 2014.21s |  let me see if I can do something out of my comfort zone
+2014.21s - 2016.21s |  and load it up into Ghidra,
+2016.21s - 2017.21s |  and then I get a bunch of errors
+2017.21s - 2020.21s |  relating to Microsoft and CLR and .NET.
+2020.21s - 2022.21s |  So I load it up into .peek,
+2022.21s - 2024.21s |  and we were able to get the source code out,
+2024.21s - 2029.21s |  which is great because apparently you can decompile those binaries
+2029.21s - 2031.21s |  and you get some really clean source code.
+2031.21s - 2032.21s |  So we were looking at the source code,
+2032.21s - 2035.21s |  and essentially what was happening is
+2035.21s - 2037.21s |  we would be able to upload a file
+2037.21s - 2040.21s |  to a web version control interface,
+2040.21s - 2042.21s |  and that file could have a malicious name,
+2042.21s - 2044.21s |  and then it would be stored in the version control environment,
+2044.21s - 2046.21s |  and the next time the user opened up
+2046.21s - 2048.21s |  and used that version control binary,
+2048.21s - 2051.21s |  it would pull the malicious file down
+2051.21s - 2055.21s |  and insert it into a SQLite database.
+2055.21s - 2059.21s |  So if you name a file an SQL injection payload,
+2059.21s - 2065.21s |  it would fire that and escape the string in the SQLite query
+2065.21s - 2069.21s |  and run arbitrary SQL on the victim's machine.
+2069.21s - 2072.21s |  This was found in collaboration with an amazing hacker named Udyotuk,
+2072.21s - 2075.21s |  and he reads C-sharp code to fall asleep at night,
+2075.21s - 2079.21s |  so he was the original one who found this sync.
+2079.21s - 2083.21s |  So how we exploited this was we were able to upload the file,
+2083.21s - 2086.21s |  sync it down, and then in the end,
+2086.21s - 2088.21s |  we weren't able to get code execution,
+2088.21s - 2091.21s |  but what we were able to do was actually run code
+2091.21s - 2095.21s |  which would attach the user's Chrome cookies,
+2095.21s - 2098.21s |  which are stored in a SQLite database,
+2098.21s - 2101.21s |  and vacuum it into a B.db file,
+2101.21s - 2104.21s |  and then recheck that file back into version control,
+2104.21s - 2106.21s |  which would push it back up to the web app,
+2106.21s - 2108.21s |  and then we could download and get ATO
+2108.21s - 2111.21s |  on that victim's web version control account.
+2111.21s - 2113.21s |  And so that one, that was the end of the vuln,
+2113.21s - 2116.21s |  that was where we chained it to, that one was 3040k,
+2116.21s - 2118.21s |  and once again, wanted to reiterate,
+2118.21s - 2120.21s |  definitely hack with other hackers,
+2120.21s - 2122.21s |  it really expands your knowledge,
+2122.21s - 2126.21s |  especially in areas where you're uncomfortable.
+2126.21s - 2129.21s |  I have to admit, I kind of underestimated SQLite.
+2129.21s - 2131.21s |  I kind of thought SQLite was a thing of the past,
+2131.21s - 2133.21s |  but they're out there, and we see them pretty often
+2133.21s - 2135.21s |  in the live hacking events.
+2135.21s - 2136.21s |  They're just a little bit deeper.
+2136.21s - 2138.21s |  And sometimes they're not even just a little bit deeper,
+2138.21s - 2140.21s |  they're out there.
+2140.21s - 2143.21s |  .peek is super helpful for those sort of decompilation scenarios
+2143.21s - 2147.21s |  when the base language is, I think like .net or C sharp,
+2147.21s - 2149.21s |  so definitely check that out.
+2149.21s - 2152.21s |  And yeah, I really liked the exploitation scenario
+2152.21s - 2153.21s |  that we came up with there,
+2153.21s - 2156.21s |  where we were able to vacuum the user's cookies
+2156.21s - 2157.21s |  into the version control
+2157.21s - 2161.21s |  and use that to exfiltrate the file as well.
+2161.21s - 2163.21s |  Yeah, and maybe don't roll your own version control.
+2163.21s - 2165.21s |  That's a nice takeaway as well.
+2165.21s - 2167.21s |  That never seems to end well.
+2167.21s - 2172.21s |  Okay, now we are on to the very hard exploits.
+2172.21s - 2174.21s |  So buckle up.
+2174.21s - 2176.21s |  This one's going to take a hot second.
+2176.21s - 2183.90s |  I'm going to get water again.
+2183.90s - 2186.90s |  Okay, target for this one was an in-home tabletop IoT device
+2186.90s - 2188.90s |  with camera and microphone.
+2188.90s - 2189.90s |  There's a couple out there.
+2189.90s - 2191.90s |  It's probably not the one you're thinking of,
+2191.90s - 2197.90s |  but it is one of the top four or five you would be thinking of.
+2197.90s - 2200.90s |  The end goal of this was, once again,
+2200.90s - 2202.90s |  I wanted to do creepy shit that people always say,
+2202.90s - 2205.90s |  okay, it's possible, but I haven't seen before,
+2205.90s - 2207.90s |  and now I have.
+2207.90s - 2210.90s |  So I wanted to do no user interaction spying
+2210.90s - 2213.90s |  in somebody's house
+2213.90s - 2216.90s |  and essentially just teleport myself into their house.
+2216.90s - 2218.90s |  And so I started going after that path
+2218.90s - 2221.90s |  and I started ideating on what the possibilities for this were.
+2221.90s - 2222.90s |  Here are a couple.
+2222.90s - 2224.90s |  We could get a no interaction shell on the device.
+2224.90s - 2225.90s |  That would be really challenging.
+2225.90s - 2229.90s |  We could gain some sort of, enter company name here,
+2229.90s - 2231.90s |  admin functionality on the device,
+2231.90s - 2233.90s |  and maybe that would allow us to do it.
+2233.90s - 2235.90s |  We could bypass auth specifically for the cam
+2235.90s - 2237.90s |  and mic-related endpoints.
+2237.90s - 2240.90s |  We could compromise storage for video and audio feeds
+2240.90s - 2242.90s |  and maybe get access that way.
+2242.90s - 2244.90s |  Or we could access the built-in functionality
+2244.90s - 2248.90s |  to access the cam and mic stuff
+2248.90s - 2252.90s |  via a full authentication bypass on that person's account.
+2252.90s - 2253.90s |  So which one are we feeling, guys?
+2253.90s - 2255.90s |  Raise your hands, put them up.
+2255.90s - 2257.90s |  I'm going to give a critical thinking T-shirt
+2257.90s - 2262.90s |  to anybody who gets it right.
+2262.90s - 2263.90s |  It was number three,
+2263.90s - 2265.90s |  and the first person I see with number three
+2265.90s - 2266.90s |  is this guy right here.
+2266.90s - 2267.90s |  So I'll get you a T-shirt right after.
+2267.90s - 2268.90s |  Come up and get it.
+2268.90s - 2270.90s |  So it was bypass auth specifically
+2270.90s - 2272.90s |  for the cam and mic-related endpoints.
+2272.90s - 2273.90s |  That's how we got it.
+2273.90s - 2276.90s |  So let's go ahead and go down that path.
+2276.90s - 2279.90s |  Okay, this IoT device has a Android app,
+2279.90s - 2281.90s |  and you can use that Android app
+2281.90s - 2285.90s |  to video chat with this tabletop device, okay?
+2285.90s - 2288.90s |  And when you call yourself from the mobile app,
+2288.90s - 2291.90s |  there's an automatic answer on the IoT device
+2291.90s - 2293.90s |  just allowing you to sort of pop into your house
+2293.90s - 2295.90s |  and say, like, hey, cat, how's it going?
+2295.90s - 2296.90s |  Right?
+2296.90s - 2298.90s |  So I thought that was really sus
+2298.90s - 2301.90s |  and was a prime feature for accomplishing the goal
+2301.90s - 2303.90s |  that I mentioned before.
+2303.90s - 2305.90s |  So I started, I took the mobile app,
+2305.90s - 2307.90s |  and I threw it into JADx and decompiled it
+2307.90s - 2309.90s |  and got the source code,
+2309.90s - 2312.90s |  and then the never-ending story began, okay?
+2312.90s - 2315.90s |  So this app was kind of locked down.
+2315.90s - 2318.90s |  So the first thing was it had root detection,
+2318.90s - 2321.90s |  and there was some weird stuff with Google Play,
+2321.90s - 2322.90s |  so essentially what I had to do
+2322.90s - 2326.90s |  was patch the APK to run Frida,
+2326.90s - 2327.90s |  and I did that with Objection,
+2327.90s - 2329.90s |  and then I would overwrite
+2329.90s - 2331.90s |  all of the root detection on the app
+2331.90s - 2333.90s |  so that it would think that I'm not,
+2333.90s - 2335.90s |  I wasn't in an environment.
+2335.90s - 2338.90s |  And then, and there was some emulator detection
+2338.90s - 2340.90s |  as well in there.
+2340.90s - 2344.90s |  And so then the next one was bypassing TLS,
+2344.90s - 2345.90s |  pinning for HTTP.
+2345.90s - 2347.90s |  Of course, they had that in place.
+2347.90s - 2348.90s |  Most apps do nowadays.
+2348.90s - 2352.90s |  And so I had to come up,
+2352.90s - 2353.90s |  and they had, unfortunately,
+2353.90s - 2355.90s |  a custom CERT pinning solution.
+2355.90s - 2357.90s |  Most of the time, Joel, my boy here,
+2357.90s - 2362.90s |  has a public TLS CERT pinning script
+2362.90s - 2364.90s |  that will just unpin most of the apps,
+2364.90s - 2365.90s |  which is super helpful.
+2365.90s - 2366.90s |  But this one was not so easy,
+2366.90s - 2368.90s |  so I had to go into the code
+2368.90s - 2372.90s |  and find exactly where the CERT pinning was occurring
+2372.90s - 2373.90s |  and overwrite those functions
+2373.90s - 2377.90s |  with the JavaScript in the Frida code.
+2377.90s - 2379.90s |  I'm going to check my time really quickly.
+2379.90s - 2382.90s |  Oh, my phone died, so I'm not.
+2382.90s - 2383.90s |  What you got?
+2383.90s - 2384.90s |  536.
+2384.90s - 2385.90s |  536. All right, thanks, guys.
+2385.90s - 2388.90s |  I was running my hotspot off of it for the last workshop,
+2388.90s - 2390.90s |  and then I looked down, and it was dead.
+2390.90s - 2392.90s |  Okay, so at that point, cool,
+2392.90s - 2394.90s |  we bypassed CERT pinning,
+2394.90s - 2397.90s |  and we've got HTTP introspection.
+2397.90s - 2398.90s |  Great.
+2398.90s - 2400.90s |  Now let's see how this whole calling thing works, right?
+2400.90s - 2403.90s |  Nope, because the calling thing is behind SIP,
+2403.90s - 2406.90s |  and more specifically SIPs,
+2406.90s - 2409.90s |  which is the secure version of the SIP protocol.
+2409.90s - 2410.90s |  Okay, what is SIP?
+2410.90s - 2411.90s |  Well, let me tell you.
+2411.90s - 2413.90s |  The Session Initiation Protocol, SIP,
+2414.90s - 2416.90s |  is a signaling protocol to initiate, maintain,
+2416.90s - 2418.90s |  and terminate real-time sessions
+2418.90s - 2420.90s |  that involve video, voice, messaging,
+2420.90s - 2423.90s |  and other communication applications and services.
+2423.90s - 2426.90s |  SIP is widely used for voice and video calls.
+2426.90s - 2427.90s |  Great.
+2427.90s - 2429.90s |  Now I've got to deal with another protocol,
+2429.90s - 2431.90s |  and it is also TLS-wrapped,
+2431.90s - 2434.90s |  so a bunch of stuff going on there.
+2434.90s - 2435.90s |  So I start working on that
+2435.90s - 2438.90s |  and find a custom CERT pinning solution for SIPs
+2438.90s - 2442.90s |  and kind of am able to disable that,
+2442.90s - 2445.90s |  but BURP, while it is SIPs-friendly,
+2445.90s - 2448.90s |  is not SIPs-compatible
+2448.90s - 2451.90s |  and will break the application if you try to proxy it.
+2451.90s - 2454.90s |  So what I realized I needed is,
+2454.90s - 2455.90s |  and this is kind of how it looks right there,
+2455.90s - 2459.90s |  it'll issue the register request with the SIP HTTP verb
+2459.90s - 2463.90s |  or the register HTTP verb that's associated with SIP protocol,
+2463.90s - 2466.90s |  but then it'll just break the response.
+2466.90s - 2469.90s |  So I had to find a transparent proxy,
+2469.90s - 2471.90s |  and for this I used PolarProxy.
+2471.90s - 2476.90s |  It's a transparent TLS and SSL inspection proxy.
+2476.90s - 2478.90s |  So I took that, and I took the CERT for that,
+2478.90s - 2480.90s |  and I inserted it into the Trust Store
+2480.90s - 2482.90s |  for that specific mobile app,
+2482.90s - 2486.90s |  and then I proxied all the stuff through PolarProxy,
+2486.90s - 2488.90s |  and that would output a PCAP file,
+2488.90s - 2493.90s |  and then finally we had access to reading what was going on,
+2493.90s - 2495.90s |  and I was able to get introspection on SIPs
+2495.90s - 2497.90s |  without breaking the whole app.
+2497.90s - 2500.90s |  We are probably a week or two
+2500.90s - 2502.90s |  into looking at this target at this point
+2502.90s - 2507.90s |  with no leads, no potential loans, no gadgets, nothing.
+2507.90s - 2509.90s |  Just setup at this point,
+2509.90s - 2511.90s |  which is amazing to me as a bug hunter
+2511.90s - 2513.90s |  because normally I spend a lot of time
+2513.90s - 2514.90s |  looking to find gadgets,
+2514.90s - 2516.90s |  and I feel sort of accomplished going along the way,
+2516.90s - 2518.90s |  but this was a big upfront investment,
+2518.90s - 2521.90s |  and I think people that do this sort of thing,
+2521.90s - 2524.90s |  mobile hacking or IoT device hacking,
+2524.90s - 2526.90s |  have a lot more upfront, which is really tricky.
+2526.90s - 2528.90s |  That's something from a bug bounty perspective
+2528.90s - 2530.90s |  that the programs really need to help
+2530.90s - 2532.90s |  and minimize as much as possible
+2532.90s - 2535.90s |  if you want your mobile apps and your IoT devices
+2535.90s - 2536.90s |  and your desktop applications
+2536.90s - 2542.90s |  to get as much interest as your web applications do.
+2542.90s - 2544.90s |  Okay, so now we finally get to see how all this works,
+2544.90s - 2546.90s |  so let's talk through that flow a little bit.
+2546.90s - 2549.90s |  So step one is let's talk about getting a call,
+2549.90s - 2550.90s |  receiving a call.
+2550.90s - 2552.90s |  So you open up the app,
+2552.90s - 2554.90s |  and it right away does a call
+2554.90s - 2557.90s |  to slash API slash get SIP auth token,
+2557.90s - 2560.90s |  with your auth token associated with your account,
+2560.90s - 2562.90s |  and then it will return a token
+2562.90s - 2563.90s |  that sort of looks like this.
+2563.90s - 2565.90s |  It's sort of like a JWT,
+2565.90s - 2569.90s |  but it's not actually Base64 encoded,
+2569.90s - 2572.90s |  and it has these various delimiters in them.
+2572.90s - 2573.90s |  The ones that's most interesting to us
+2573.90s - 2575.90s |  is the payload delimiter.
+2575.90s - 2577.90s |  And in that payload delimiter,
+2577.90s - 2582.90s |  there is a from field and a to field
+2582.90s - 2583.90s |  and a bunch of other fields,
+2583.90s - 2584.90s |  but the ones that are most interesting
+2584.90s - 2587.90s |  are the from and to fields, okay?
+2587.90s - 2588.90s |  So then what would happen then
+2588.90s - 2590.90s |  is they would take that auth token
+2590.90s - 2591.90s |  that they got from the API request,
+2591.90s - 2593.90s |  they would put that as a header in SIP protocol,
+2593.90s - 2595.90s |  which is very similar to HTTP in a lot of ways.
+2595.90s - 2597.90s |  The concepts are very similar.
+2597.90s - 2599.90s |  There's headers and stuff like that,
+2599.90s - 2600.90s |  and they look similar.
+2600.90s - 2602.90s |  And then it would put that auth token into the request
+2602.90s - 2606.90s |  with its own SIP level from to and contact headers,
+2606.90s - 2608.90s |  and that would essentially allow you
+2608.90s - 2613.90s |  to register the address of record
+2613.90s - 2615.90s |  that is in the to header, okay?
+2615.90s - 2618.90s |  And when it does this registration,
+2618.90s - 2621.90s |  it validates that the from and to fields
+2621.90s - 2623.90s |  from the auth token match the from and to fields
+2623.90s - 2625.90s |  in the SIP request.
+2625.90s - 2627.90s |  And then somehow through black magic,
+2627.90s - 2630.90s |  when somebody calls, your phone will ring.
+2630.90s - 2631.90s |  It's kind of nut.
+2631.90s - 2633.90s |  I don't know how all that transport stuff
+2633.90s - 2635.90s |  happens in the background.
+2636.90s - 2637.90s |  But I thought that was interesting,
+2637.90s - 2639.90s |  so I went ahead and moved along.
+2639.90s - 2642.90s |  And so now let's look at making a call, okay?
+2642.90s - 2643.90s |  So say we want to call somebody else.
+2643.90s - 2646.90s |  So we go ahead and send a request
+2646.90s - 2648.90s |  to slash API slash init call auth,
+2648.90s - 2654.90s |  and we provide as a post parameter to that a target, okay?
+2654.90s - 2660.90s |  And this target will be reflected in the payload,
+2660.90s - 2662.90s |  in the from field, or I'm sorry, the to field,
+2662.90s - 2664.90s |  because we're making a call.
+2665.90s - 2666.90s |  And that was great.
+2666.90s - 2670.90s |  And then you use that in an invite SIP request
+2670.90s - 2674.90s |  with the from and the to headers
+2674.90s - 2676.90s |  matching the values in the auth token.
+2676.90s - 2679.90s |  And then somehow through black magic,
+2679.90s - 2681.90s |  the other person's device starts ringing,
+2681.90s - 2683.90s |  and you go through all these networks,
+2683.90s - 2685.90s |  and you send the TCP data through
+2685.90s - 2688.90s |  or the UDP data depending on the flow.
+2688.90s - 2690.90s |  Okay, and once again, I'm going to reiterate,
+2690.90s - 2693.90s |  for that to happen, the from and to headers
+2693.90s - 2698.90s |  in the SIP request have to match the auth token, right?
+2698.90s - 2703.90s |  So let's talk a little bit about how we could fake a call.
+2703.90s - 2708.90s |  So in the API slash init call request or call auth request,
+2708.90s - 2710.90s |  the target that we would specify
+2710.90s - 2713.90s |  was actually accepted arbitrary data.
+2713.90s - 2714.90s |  And so what that would allow us to do
+2714.90s - 2717.90s |  is then inject arbitrary data into that auth token
+2717.90s - 2719.90s |  that is used at the SIP level.
+2719.90s - 2721.90s |  And so then what we proceeded to do
+2721.90s - 2725.90s |  was close the little delimiter there
+2725.90s - 2729.90s |  or put the person in for the to header so it doesn't fail,
+2729.90s - 2732.90s |  semi-colon out, and then provide another header.
+2732.90s - 2735.90s |  Five minutes? Oh, wow. Okay, I got to move.
+2735.90s - 2741.90s |  Then provide another from header as person two.
+2741.90s - 2746.90s |  So this would look like the call was coming from person two,
+2746.90s - 2749.90s |  the person receiving the call, and to person two, which, right,
+2749.90s - 2753.90s |  we discussed earlier, was how you automatically auth
+2753.90s - 2755.90s |  into the device and check on your cat or whatever
+2755.90s - 2757.90s |  if you're calling from the mobile device.
+2757.90s - 2760.90s |  So we were able to smuggle in that from field
+2760.90s - 2764.90s |  and we would generate the token with request number one,
+2764.90s - 2768.90s |  put it into the invite SIP request,
+2768.90s - 2772.90s |  and since the from and to fields matched
+2772.90s - 2776.90s |  and the auth token validated those two things,
+2776.90s - 2779.90s |  the call would happen and it would auto answer.
+2779.90s - 2782.90s |  However, there was no contact field in the auth token,
+2782.90s - 2784.90s |  so that wasn't validated.
+2784.90s - 2787.90s |  And the contact thing is actually where the contact header
+2787.90s - 2789.90s |  is where the call gets actually routed to.
+2789.90s - 2791.90s |  So then you could see it on your device
+2791.90s - 2795.90s |  and you would be looking through that person's IoT device,
+2795.90s - 2799.90s |  which was nuts, and I cannot believe it worked.
+2799.90s - 2804.90s |  But wait, you might ask, what is up with the fram header there?
+2804.90s - 2808.90s |  Well, the fram header was an interesting situation
+2808.90s - 2811.90s |  because as much as we thought we had source code,
+2811.90s - 2815.90s |  there was one more challenge that awaited for us at that point,
+2815.90s - 2817.90s |  which was, we're using PolarProxy,
+2817.90s - 2821.90s |  so how do we do repeater or intercept on these things
+2821.90s - 2823.90s |  to modify the requests as they were going through?
+2823.90s - 2828.90s |  Well, the answer to that is a shit ton of Frida calls
+2828.90s - 2831.90s |  to overwrite and actually use the mobile client
+2831.90s - 2835.90s |  as our own proxy to send stuff through,
+2835.90s - 2837.90s |  which was really painful.
+2837.90s - 2840.90s |  And unfortunately, the section that set that fram header
+2840.90s - 2843.90s |  was automatically done inside of a .so file,
+2843.90s - 2847.90s |  a binary file within the app.
+2847.90s - 2849.90s |  So it couldn't be hooked very easily with Frida
+2849.90s - 2850.90s |  because of the situation.
+2850.90s - 2852.90s |  So I was kind of lost at this point.
+2852.90s - 2854.90s |  What do I do?
+2854.90s - 2857.90s |  And I was talking to another awesome hacker named Space Raccoon
+2857.90s - 2863.90s |  and he advised, hey man, why don't you just patch the binary?
+2863.90s - 2865.90s |  And I was like, that's scary as hell.
+2865.90s - 2866.90s |  I don't know how to do that.
+2866.90s - 2870.90s |  And then he realized, or he told me that it's just a string.
+2870.90s - 2872.90s |  So just search the binary for that string
+2872.90s - 2874.90s |  and replace the O with an A
+2874.90s - 2876.90s |  and it will automatically put in a different header.
+2876.90s - 2879.90s |  So I did that in a hex editor and it worked.
+2879.90s - 2881.90s |  And then I was able to add another fram header
+2881.90s - 2885.90s |  via the Java bindings, which matched the auth token
+2885.90s - 2887.90s |  and allowed me to bypass auth
+2887.90s - 2892.90s |  and peer through anybody's desktop IoT device.
+2892.90s - 2893.90s |  Okay.
+2893.90s - 2896.90s |  And that was a $20K to $50K bug.
+2896.90s - 2900.90s |  And takeaways for that were set a goal and go after it really hard
+2900.90s - 2903.90s |  because some of this crazy stuff that they talk about
+2903.90s - 2906.90s |  in the horror stories is really possible.
+2906.90s - 2910.90s |  And I've become a believer in that since this happened.
+2910.90s - 2912.90s |  Last bug was really quick.
+2912.90s - 2915.90s |  And I should be able to go through pretty quickly
+2915.90s - 2918.90s |  because it's in the same stack.
+2918.90s - 2923.90s |  This was a bug where you could hijack calls going to other people.
+2923.90s - 2927.90s |  And the way that you did that was using that token,
+2927.90s - 2930.90s |  the call auth token.
+2930.90s - 2932.90s |  So let me, yeah.
+2932.90s - 2936.90s |  So you can see here that the register token, as a reminder,
+2936.90s - 2938.90s |  the register token where you register your name
+2938.90s - 2940.90s |  has a to and from field that match.
+2940.90s - 2943.90s |  The call token has a from and to field
+2943.90s - 2945.90s |  that are different from each other
+2945.90s - 2947.90s |  because you're calling somebody else, right?
+2947.90s - 2950.90s |  When we look at the register SIP request that occurs,
+2950.90s - 2953.90s |  there's this caveat in the from section,
+2953.90s - 2955.90s |  which essentially allows for this feature
+2955.90s - 2957.90s |  called third-party registration
+2957.90s - 2959.90s |  where you are registering for somebody else.
+2959.90s - 2964.90s |  Now, when we use the init call HTTP request
+2964.90s - 2966.90s |  to generate the token,
+2966.90s - 2971.90s |  we can specify a different to header in that auth token
+2971.90s - 2974.90s |  because that's the person we're calling to.
+2974.90s - 2977.90s |  So then we could take that token, which has the same signature,
+2977.90s - 2980.90s |  and apply it to the register header.
+2980.90s - 2981.90s |  And it will have a from header
+2981.90s - 2983.90s |  that is different from the to header.
+2983.90s - 2986.90s |  And the to header can be any one that we specify.
+2986.90s - 2988.90s |  So then we could register,
+2988.90s - 2991.90s |  essentially do a third-party register for any other user
+2991.90s - 2994.90s |  and map their address of record,
+2994.90s - 2996.90s |  the thing that routes the call to them,
+2996.90s - 2999.90s |  to our contact location.
+2999.90s - 3002.90s |  And then when somebody calls that user,
+3002.90s - 3004.90s |  our device would start ringing.
+3004.90s - 3007.90s |  And that one was another 20 to 50K,
+3007.90s - 3010.90s |  critical, critical, critical on a public program.
+3010.90s - 3013.90s |  And takeaways are pretty much the same.
+3013.90s - 3015.90s |  But don't be afraid of new protocols.
+3015.90s - 3017.90s |  And that is one of the biggest takeaways I've found
+3017.90s - 3020.90s |  in my many, many years of bug bounty.
+3020.90s - 3021.90s |  All right, that was the recap.
+3021.90s - 3023.90s |  11 bugs, all paid as critical.
+3023.90s - 3027.90s |  The grand total for this was somewhere between 225 and 400K
+3027.90s - 3029.90s |  for all those bugs.
+3029.90s - 3031.90s |  And that's it. Thank you, guys.

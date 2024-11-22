@@ -1,0 +1,495 @@
+{
+  "webpage_url": "https://www.youtube.com/watch?v=GwwxeY11xMI",
+  "title": "DEF CON 32 - Outlook Unleashing RCE Chaos  CVE 2024 30103 - Michael Gorelik, Arnold Osipov",
+  "description": "Did you ever receive an empty email and immediately think it might be a reconnaissance attack? What if opening such an email in your Outlook client could trigger remote code execution through an invisible form? Yes, all forms are COM objects, and CVE-2024-21378 has flung open the gates to Outlook RCE chaos.\n\nIn our session, \"Outlook Unleashing RCE Chaos: CVE-2024-30103\" we'll dive into how this seemingly innocuous vulnerability can lead to mayhem. This vulnerability paved the way for us to discover a series of new remote code execution vulnerabilities in Outlook, including CVE-2024-30103. But we\u2019re not stopping there.\n\nAdditionally, we'll uncover other vulnerabilities that can cause NTLM leaks from your domain-joined devices.\n\nSo, how did we get here? Join us as we construct an evolution timeline of this attack surface. From the origins of these exploits to their current incarnations, we'll cover it all. And because we believe in building a safer digital world, we'll conclude with specific, actionable recommendations on how to minimize these threats.",
+  "channel_url": "https://www.youtube.com/channel/UC6Om9kAkl32dWlDSNlDS9Iw",
+  "duration": 2470,
+  "channel": "DEFCONConference",
+  "uploader": "DEFCONConference",
+  "upload_date": "20241016"
+}
+
+1.74s - 3.74s | This text was transcribed using whisper model: large-v2
+
+ Hey, good evening to everyone
+4.98s - 6.98s |  Okay
+10.61s - 12.61s |  Thank you, thank you, thank you
+13.25s - 15.25s |  okay, so
+15.65s - 17.65s |  What do you expect from patches?
+17.99s - 19.55s |  security updates
+19.55s - 26.13s |  You expect them to be a fort knox security update right that solves fully the vulnerability all the control flows
+26.81s - 31.98s |  Is it really in reality? This is what we usually get
+33.96s - 36.40s |  Yep, so we all been there
+37.08s - 42.16s |  Expecting that one patch solves it all right, but essentially it's kind of a bullet
+43.16s - 46.18s |  Patch to a bullet or there's a better phrase to that
+46.82s - 48.44s |  we will be
+48.44s - 53.72s |  sharing insights about what happens when the patch not quite do the trick and
+55.32s - 57.32s |  Sometimes you also find new vulnerabilities
+57.56s - 64.60s |  So this talk will be sharing new details about vulnerabilities that we discovered and we're patched during June and July
+65.48s - 67.48s |  those are two out of
+68.24s - 70.24s |  bigger number of vulnerabilities
+70.28s - 73.24s |  Let's not be too harsh with the vendors
+73.64s - 80.88s |  There's a reason why this happens many time just couple of weeks ago. We all saw the mega crush from a CrowdStrike update
+81.40s - 86.56s |  It's not exactly security update nevertheless the impact is obvious right blue screens all over
+86.72s - 91.88s |  And this is exactly the reason why many vendors are kind of trying to solve only the specific problem
+92.72s - 94.72s |  while the doing so also
+95.24s - 96.96s |  kind of
+96.96s - 103.02s |  Share with us the investigative researchers on additional vulnerabilities that are within the code
+104.16s - 106.32s |  So just very shortly about
+107.04s - 112.00s |  Ourself my name is Michael Grelick. I'm the chief technology officer and founder of Morphi sec
+112.00s - 115.36s |  I have around 20 years of experience in cyber security
+116.00s - 121.72s |  Was the one to discover one of the largest supply chain attacks the C cleaner in history
+122.88s - 127.52s |  have a lot of experience in the reverse engineering red teaming and blue teaming and
+128.28s - 130.28s |  Go ahead Arnold
+130.40s - 136.72s |  Hey guys. My name is Arnold. I'm leading the malware research efforts at Morphi sec and
+137.24s - 142.72s |  For some time now. I am poking with some patch analysis for fan and profit and
+143.52s - 145.52s |  Product of course
+146.28s - 149.98s |  Thanks, I don't know okay
+150.94s - 152.94s |  So just starting with a disclaimer
+153.58s - 155.58s |  With great power comes greater responsibility
+156.34s - 158.34s |  Use your powers for the good
+158.78s - 164.20s |  So now about the talk itself a bit about the motivation
+165.04s - 171.76s |  Some of our work that we're doing in Morphi sec. We are going and reviewing the most critical vulnerabilities
+172.36s - 175.68s |  That exist especially those that lead to remote code executions
+176.48s - 184.32s |  The latest vulnerabilities that we were reviewing were ones that discovered by the net spy group done an amazing work
+185.28s - 192.24s |  On the form injection category basically a category of vulnerabilities that lead to remote code execution
+193.20s - 196.16s |  But do require authentication prior authentication
+196.84s - 203.76s |  Additional category that Arnold will be sharing is about compound monikers also lead to remote code execution
+204.52s - 210.40s |  Checkpoint done a great research and a great work discovering some vulnerabilities during the year
+210.40s - 217.56s |  We will also show how the patch doesn't really do the trick and how we discover the additional vulnerabilities by purely looking at the patch
+220.35s - 223.35s |  Okay, so let's start talking about the forms
+223.35s - 230.11s |  I mean every of those categories can go a full lecture, so we'll be kind of covering very quickly
+230.87s - 235.15s |  On the introduction, but you are welcome to see additional details and documentation
+236.59s - 243.03s |  In the world again on the internet so forms exactly as you would see you get the message
+244.39s - 247.75s |  You're sending a message. It's eventually based on forms
+248.35s - 252.07s |  Now message email message is not the only thing that is based on force
+252.47s - 256.15s |  essentially there is a quite a significant mechanism that works behind and
+256.63s - 260.59s |  Imagine you are sending a recall message on the message that you sent to your boss
+260.99s - 266.75s |  What happens behind what happens when the recall being sent so essentially it's something there
+267.11s - 271.63s |  Activates and starts to delete the email from the inboxes of your manager
+272.15s - 277.39s |  It's a rendering mechanism that is based on again the synchronization of forms
+277.83s - 284.03s |  And we'll be covering that and we'll share basically how we utilize that to inject malicious forms
+284.99s - 290.47s |  We'll get back to recall on the coming slides, but let's first talk a bit a bit about
+291.03s - 292.95s |  forms and custom forms
+292.95s - 298.11s |  so forms overall can be of two different types now if you
+298.83s - 304.51s |  Integrate the developer mode in outlook you can see that you can modify existing forms
+305.35s - 307.35s |  into your own kind of
+307.59s - 310.47s |  Purpose so if you get a nice message
+310.47s - 317.15s |  maybe you want to add some button there or some sound you can definitely do that and even change the
+317.47s - 319.47s |  structure of the forms by
+319.47s - 320.59s |  basically
+320.59s - 325.59s |  Opening the built-in Microsoft form and starting moving stuff now
+325.59s - 329.51s |  We will not be talking about that because we are looking into inject a full form
+329.51s - 332.23s |  But this is one of the ways to create the form
+332.83s - 336.47s |  We'll talk about the creation of the form in the next slide
+336.91s - 339.99s |  What is outside of the scope of this presentation is
+340.67s - 346.47s |  Talking about visual basic execution within the form. It was well well covered by Etienne Stevens
+346.63s - 351.79s |  You've done a lot of research in 2017 a lot of presentations. You are welcome to
+352.35s - 354.15s |  Check them out
+354.15s - 356.07s |  Microsoft introduced a lot of
+356.07s - 363.19s |  Hardening to avoid the default execution of visual basic inside forms, so this is outside of the scope
+365.16s - 373.04s |  Okay, so I already mentioned that we have one way to create a custom form this one way is by modifying existing built-in forms
+373.28s - 380.44s |  But what is interesting for us in this category of form injection is the way you can programmatically create new forms?
+380.64s - 386.00s |  And if you look at the documentation of Microsoft, this is actually a snapshot from Microsoft documentation
+386.36s - 392.32s |  There is a way to create your own form by basically generating a configuration file called CFG
+392.84s - 400.84s |  Within this configuration file you basically define the different properties of the same form that you see like a message or appointment or calendar
+400.84s - 402.24s |  It's all forms
+402.24s - 409.36s |  And you can also specify a form server in this case you see the example is helpdesk.exe
+409.60s - 416.60s |  That is responsible to render the form so upon receiving that message in your outlook you want to do something about that
+416.72s - 419.72s |  this is the executable that eventually spawned and
+420.36s - 427.24s |  Does something about that and we will share a couple of examples now. It doesn't have to be executable you can use a different
+428.04s - 431.60s |  DLL or any other ways we'll share that as well
+432.28s - 434.60s |  but again, there is a very nice way to
+435.72s - 444.52s |  Run that form now. It's we'll not get into too much details about the whole mechanism of forms because we don't have enough time
+445.52s - 452.60s |  Nevertheless, it's important to understand one of the most interesting things in forms is the synchronization mechanism
+452.80s - 459.84s |  So exactly like you would open a draft email and it's suddenly existing all your clients behind them
+459.84s - 465.88s |  There is a mechanism that basically synchronizes all those forms across the different clients through the exchange server
+466.04s - 468.64s |  This is not the only thing that obviously synchronized
+468.96s - 470.08s |  But in this case
+470.08s - 478.20s |  We will leverage that mechanism to inject and execute the forms on any of the clients that there are victim basically using
+478.72s - 480.72s |  Now the mechanism involves
+481.00s - 486.28s |  Form libraries that represent properties. It will represent also include form service, etc
+487.00s - 488.44s |  and
+488.44s - 494.48s |  There's also important to understand that not all forms are synchronized if you put your form
+494.76s - 500.44s |  Into a personal library, it will not be synchronized across the different clients. But if you for example
+501.56s - 504.96s |  Install it in the inbox. It will definitely be synced by the
+505.60s - 509.20s |  Microsoft protocol
+509.20s - 513.24s |  So shortly how forms are loading and and registered
+513.32s - 519.44s |  So if you take in this example a simple built-in modified form, this is not a programmatically created form
+519.92s - 521.92s |  Nevertheless, this is the same mechanism
+522.48s - 527.04s |  So if you look at the your registry hive under the class ID you will find
+527.36s - 532.24s |  Again based on whether you have outlook 32-bit or 64-bit you have the wow there
+532.64s - 539.36s |  But you will find a lot of those class IDs and each class ID many of those class IDs basically represent the different forms
+539.88s - 540.96s |  now
+540.96s - 543.96s |  As soon as you find the class ID you will find also
+544.20s - 549.28s |  What is the name of the form and you will find what is the location of that form on your disk?
+549.92s - 554.88s |  Those forms when they are synchronized they are saved in a special folder many times
+555.32s - 557.40s |  in the app data local that
+558.16s - 564.92s |  Under the forms folder and the built-in forms are saved within the program files office also special
+565.44s - 567.20s |  folder there
+567.20s - 570.40s |  essentially those form libraries are a com objects and
+571.64s - 574.04s |  those are can be rendered and
+575.52s - 577.52s |  instantiated like any other comb
+578.00s - 580.00s |  As we said the
+580.16s - 582.08s |  original kind of oily
+582.08s - 587.24s |  form library is a bit outside of the scope of this lecture nevertheless, I
+588.84s - 589.96s |  strongly
+589.96s - 594.72s |  recommend people here to try and play with it because you can modify the streams and
+594.96s - 599.92s |  Also lead to malicious behavior by basically modifying the properties of the oily itself
+600.84s - 604.08s |  But we will be talking about programmatically created forms
+605.08s - 606.56s |  Through the
+606.56s - 607.76s |  configuration files
+607.76s - 610.72s |  This is a great example of a built-in
+611.08s - 619.16s |  Recall message form that is basically exist on any of the computers that are installed with outlook whether it's 32-bit or 64-bit
+619.48s - 624.40s |  We can go to this specified directory and find those CFG files
+624.80s - 629.44s |  Now you identify that there is a special file called a rack CFG
+629.68s - 637.80s |  This is an example of the recall message form you see also that the CFG itself also include the rendering file the recall
+638.48s - 643.20s |  DLL basically instantiated automatically through the in proc server 32
+644.16s - 649.76s |  Now if you are not using your recall your cloud recall which is kind of the latest thing in through Azure
+650.16s - 654.00s |  This is kind of the default built-in if you are sending a special message
+655.00s - 661.24s |  You basically identify the class message and the recall DLL is loaded within the context of the outlook and
+661.52s - 663.76s |  basically starts to delete from your inbox the
+665.56s - 667.56s |  Message that you want to remove
+667.72s - 673.72s |  So we want to achieve the same thing we want to exploit the same behavior and define our own CFG
+673.72s - 680.40s |  Right with our own DLL that will be put automatically into the victim environment, but can we do that?
+681.16s - 682.64s |  So
+682.64s - 689.16s |  And here is an example again from this recall call, which is which is a column object, but can we do that?
+689.80s - 692.44s |  Well, not exactly. There is a special
+693.32s - 695.20s |  mechanism basically
+695.20s - 698.52s |  Allow form let's say what's called the bypass
+699.20s - 706.32s |  Outlook and by default it's disabled now if it would be enabled you can definitely define such a CFG
+706.48s - 713.88s |  You can load it and then you have a form automatically synchronized to your victim environment and you can send a special message that will
+714.48s - 717.04s |  Trigger the initiation initiation of the form
+717.60s - 724.36s |  But if this flag is basically disabled, which is by default your form goes through a special
+724.88s - 730.32s |  Matching algorithm which validates that you are not using special keywords like in proc server
+730.80s - 736.92s |  Local handler, which basically automatically instantiate those comb objects or those malicious
+737.44s - 740.56s |  DLLs that or executables that are put in this folder
+741.20s - 746.60s |  Now one of the problems with this matching algorithm is well, it's noise noisy
+747.60s - 754.24s |  So one of the problems with this matching algorithm is that it it is an exact matching it checks for an exact words
+754.44s - 760.36s |  Not less not more but an exact words within the keys that are specified in the configuration file
+761.88s - 763.88s |  So somehow
+764.20s - 770.52s |  We lead basically to the first vulnerability that was discovered by net spy which done amazing work
+771.36s - 776.48s |  They introduced into this registry file an additional relative path
+824.60s - 826.60s |  Okay, so it's kind of a temporary solution
+827.48s - 831.72s |  So, I hope we will finish the presentation till then but again
+831.92s - 837.84s |  it's a great finding basically the net spy group added a relative class ID and
+838.28s - 840.92s |  It's also documented in Microsoft documentation
+841.44s - 844.76s |  That they are clearly say that you can provide a relative path
+845.60s - 849.92s |  for your form server rendering and they added that and
+850.76s - 854.68s |  Surprisingly because the algorithm of the the checks for the forbidden words
+854.96s - 861.44s |  Does an exact matching the algorithm fails and you have automatically instantiated form malicious form?
+862.20s - 865.08s |  With a fully controlled class ID of your own
+866.12s - 867.96s |  beside that
+867.96s - 869.96s |  Vulnerability, they also discovered
+870.36s - 872.36s |  kind of a directory traversal
+872.92s - 877.80s |  Vulnerability in which basically allows to install that form anywhere on the file disk
+878.64s - 885.20s |  Because you can play with this one of the properties, but this property is less interesting for us. It was a nicely patched by
+885.72s - 890.84s |  Microsoft, but I will be talking specifically about the bypass algorithm
+891.48s - 898.44s |  So now is the interesting part how Microsoft patched that vulnerability and what led us basically to discover new vulnerabilities
+898.76s - 904.72s |  Following that patch. So as we see in the patch that was introduced by Microsoft
+905.56s - 912.32s |  Microsoft said, okay, you have a problem with the relative path. Let's remove relative path. They didn't update the documentation yet
+913.00s - 919.56s |  But they basically removed that functionality. You cannot put a backslash anymore in the property of the form
+919.88s - 926.56s |  So great. Okay, it solved the problem, but they didn't change the matching algorithm. The algorithm is still the same
+927.12s - 929.12s |  So as you would expect
+929.16s - 934.84s |  We were looking for additional control flows that allow us to still instantiate the same forms
+935.04s - 938.44s |  By abusing the failure in the matching algorithm
+940.26s - 948.10s |  So I have to commend to Microsoft because they have done it quite quickly. We reported on them in April. They patched in June
+948.82s - 950.82s |  So nice work
+952.27s - 958.39s |  but again before we are diving in to how we created additional control flow we need to
+958.95s - 966.91s |  Understand how a Windows core API function works now when you basically register a form
+968.51s - 971.99s |  It goes through a process in which they use recreate
+972.91s - 980.39s |  XA function. It's also utilized in most of the applications today. It's one of the most popular functions that exist today
+980.83s - 984.03s |  One of the properties of this function, which is interesting
+984.03s - 991.27s |  You can supply to this function a parameter that composed of multiple keys by separating them through backslashes
+991.83s - 998.51s |  Now I think it's limited to 32 keys. So if you are basically using that function with
+999.39s - 1003.29s |  31 backslashes as they will create a nested directory structure
+1004.55s - 1011.75s |  Automatically and one of the additional properties is that if you provide a registry key with the backslash trailing backslash
+1011.83s - 1017.95s |  It will be removed to maintain consistency. It's correct to any reg X a and
+1018.47s - 1020.47s |  This will be probably
+1020.75s - 1022.75s |  interesting to investigate other applications
+1023.59s - 1026.35s |  That may be vulnerable to do the same reason
+1027.07s - 1029.07s |  so as you would probably
+1029.79s - 1035.87s |  Guess we just added this backslash at the end. So as soon as you add the backslash at the end
+1036.87s - 1041.63s |  Obviously it goes through the matching algorithm which does the exact matching
+1042.19s - 1049.15s |  It goes through because again, we have the backslash and when the red create reg X create
+1049.99s - 1056.67s |  Creates the registry it removes the trailing backslash. And while I you have a fully executing form
+1058.15s - 1065.63s |  Written automatically synchronized by Microsoft to any of the victim environments. And what do we need to basically execute?
+1066.11s - 1070.47s |  Just to send the message a simple email with the message class of that form
+1070.99s - 1074.39s |  so very quickly
+1074.39s - 1076.39s |  Just a demonstration
+1077.19s - 1091.30s |  Let's see. Okay. I hope you see the video so in this video we will know
+1092.98s - 1104.43s |  Okay, it's a problem maybe we can push it here, okay
+1106.11s - 1108.63s |  Solution so we'll try to do a play like that
+1110.19s - 1112.19s |  Maybe this work
+1112.23s - 1113.55s |  Okay
+1113.55s - 1114.67s |  remotely
+1114.67s - 1115.87s |  Nice
+1115.87s - 1123.03s |  Okay. So essentially we are working here on updated outlook. This was recorded in June just before the
+1124.07s - 1126.07s |  Patch was introduced by Microsoft
+1126.79s - 1134.47s |  We are using a tool by Etienne Stevens called the ruler which basically allows us to utilize the MAPI
+1135.47s - 1137.47s |  MAPI API to
+1137.59s - 1140.95s |  Synchronize and then create a new form. We didn't have to use that
+1140.95s - 1145.35s |  we just could open a client in our environment use the credentials and
+1146.11s - 1151.43s |  Create the same form here. We are utilizing and creating the property with the backslash
+1152.27s - 1153.75s |  and
+1153.75s - 1158.15s |  With the next step. We will be sending right now and authenticated
+1159.15s - 1161.73s |  Token that allows us basically to
+1162.51s - 1167.35s |  Upload the form and to synchronize it across the different victims
+1168.71s - 1171.63s |  So in the next step as soon as it would be sent
+1171.63s - 1177.71s |  We will see that the form suddenly appeared on the victim environment. It takes a bit
+1178.67s - 1180.67s |  a couple of seconds
+1181.27s - 1183.74s |  Okay
+1183.74s - 1187.28s |  Good
+1187.28s - 1191.24s |  Okay. So here we receive the message. We're still not opening that message
+1191.60s - 1198.12s |  The opening of the message will instantiate the execution of the form, but the form was already written
+1199.24s - 1204.60s |  Synchronized into the folder. So this is a way in which you can also use the advanced button
+1204.60s - 1209.76s |  You can check out the forms or you can simply go to the folder of the forms and identify it
+1209.76s - 1214.12s |  So was written as soon as I open that the form
+1214.76s - 1220.08s |  Form server is executed as you see it's executed within the context of the outlook process
+1220.80s - 1227.84s |  Now the same if you would use not in proc server 32, but let's say local handler it would execute an external application
+1228.68s - 1230.68s |  executable the same way
+1231.40s - 1233.72s |  Now we need to pull it back somehow
+1236.52s - 1240.03s |  No, maybe I just close it
+1240.79s - 1242.79s |  Okay
+1243.15s - 1245.89s |  Okay
+1245.89s - 1251.01s |  Okay, good. So this was a very nice demonstration for a form
+1251.05s - 1253.05s |  But again, it's assumed that we have
+1253.85s - 1261.81s |  Authentication beforehand. We will show later on how easy it can we can get the authentication the tokens from the environment and have a full RC
+1262.69s - 1267.71s |  Non-authenticated again in this case. We do require the credentials of the victim
+1269.49s - 1271.49s |  Let's continue
+1272.09s - 1277.49s |  Okay, so what do we have here we have a patch to this vulnerability now
+1277.49s - 1284.77s |  It's interesting because we just bypassed one patch and this patch was introduced to solve the vulnerability that we discovered
+1285.01s - 1289.69s |  Now if you look at the patch again for those that are reversing here
+1290.81s - 1298.37s |  They it's probably more clear. But essentially they didn't change the function that checks for the exact strings. They
+1298.89s - 1301.81s |  Just decided to remove the trailing backslashes
+1302.09s - 1310.13s |  So basically they introduced additional loop that goes over the key and removes all the trailing backslashes and then continue with the same
+1310.37s - 1314.69s |  exact matching algorithm instead of looking for a contain etc
+1314.77s - 1321.01s |  So I definitely welcome you guys to check out what additional control flows you can find out
+1321.65s - 1325.06s |  And maybe you will
+1325.06s - 1328.02s |  But it's not all when they introduced that patch
+1328.66s - 1333.14s |  They also introduced additional extension for the blocking list
+1333.58s - 1337.14s |  Now, it's also interesting those that you identify
+1338.54s - 1343.18s |  those special key attributes those key allows hijacking and
+1344.62s - 1347.10s |  execution of additional comments or
+1348.50s - 1354.46s |  Com hijacking etc. So definitely an interesting additional path to investigate
+1354.66s - 1360.70s |  This just shows that there were additional vulnerability in place that could be utilized by an adversary
+1362.81s - 1364.81s |  okay, so just
+1364.85s - 1366.85s |  to put things
+1366.89s - 1370.61s |  In the right order there are more vulnerabilities that were discovered
+1371.69s - 1374.13s |  next week there will be patch and
+1375.29s - 1377.29s |  for additional vulnerabilities and
+1378.09s - 1385.01s |  Well, I suppose we will share the details somewhere month or two months after but we do recommend you to patch your outlook lines
+1385.01s - 1388.17s |  Because it's not very difficult. The exploit is very trivial
+1390.16s - 1395.22s |  Now again form injection. It's nice for remote code execution
+1395.34s - 1398.78s |  But it's not the only way to utilize that type of vulnerabilities
+1399.02s - 1403.86s |  Now we can obviously do a persistency with that. We can also escalate privileges
+1405.06s - 1408.74s |  If you for example hijack the credentials of an exchange admin
+1408.82s - 1415.70s |  We can propagate the same forms across the all the inboxes and do much more damage than just a simple
+1416.78s - 1417.78s |  victim
+1417.78s - 1425.01s |  So let's talk about for a second about the other part which is missing the authentication
+1425.29s - 1428.09s |  Now I'm talking about until the
+1429.29s - 1432.61s |  Authentication sorry only in two slides, but there is a nice presentation
+1433.49s - 1437.45s |  Tomorrow by someone else that is only talking about NTLM
+1438.53s - 1445.53s |  And I trust that it will be great presentation, but NTLM is essentially as a or anti-hash if you would say
+1446.21s - 1448.21s |  if you would for example
+1448.65s - 1450.57s |  send an email and
+1450.57s - 1455.61s |  Send a link to a file and the victim will double-click on those link
+1456.45s - 1461.69s |  behind that there will be SMB protocol that will requires basically and
+1462.21s - 1469.57s |  response challenge response algorithm that will require authentication and if you are by default not doing a Kerberos authentication a
+1469.81s - 1472.01s |  Rock server will take your anti-hash
+1472.77s - 1477.09s |  Automatically and the file doesn't have to exist there just you pressing the link
+1477.61s - 1479.61s |  but aside of that
+1479.89s - 1486.29s |  There were a lot of vulnerabilities that were discovered in 2023 in 2024 it was I think one of the
+1487.37s - 1490.37s |  significant years for NTLM leaks all across
+1491.01s - 1498.29s |  With zero clicks, so you didn't need to press or get in the warning that there is a SMB file. You just needed to
+1498.97s - 1500.61s |  Have an appointment
+1500.61s - 1508.57s |  reminder that is sent with a nice kind of link to a sound that it will be sound when the appointment is being sent or
+1509.61s - 1515.25s |  Some kind of Windows performance analyzer that is being directed and all kind of additional
+1515.97s - 1518.85s |  Exploits that lead to the same NTLM leak, so it's not very
+1519.57s - 1523.97s |  Difficult to get NTLM leaks will get into recommendation how it can be blocked
+1524.57s - 1529.73s |  Going forward, but one of them is interesting the last one especially
+1530.93s - 1535.97s |  NTLM leaks that are led through execution of monikers or compiled monikers
+1535.97s - 1539.21s |  And this is a great time to move to Arnold
+1539.61s - 1545.45s |  Which will be talking about compound a compound monikers that lead to remote coding code executions and NTLM
+1547.76s - 1549.76s |  Okay, then. Thank you Michael
+1552.50s - 1555.38s |  So before we diving into the next
+1555.90s - 1558.74s |  Marcy vulnerability we discovered in outlook
+1558.90s - 1566.70s |  We first need to get at least some high-level understanding of what monikers are and I highly encourage you to dig deeper into the subject
+1567.02s - 1567.94s |  as
+1567.94s - 1575.06s |  Multiple vulnerabilities in outlook involve moniker on in office applications involve monikers in some way or another
+1575.82s - 1576.98s |  now
+1576.98s - 1578.82s |  Actually, we are all using
+1578.82s - 1585.46s |  monikers will with our daily work with office applications one example is when you try to send an email and
+1585.98s - 1588.06s |  in the body of that email you
+1588.78s - 1591.54s |  Attach an Excel chart as a link
+1592.14s - 1597.90s |  Well a moniker is used to point to that specific Excel chart using a string understood by the
+1598.86s - 1602.14s |  moniker mechanism and the monikers involved now
+1602.90s - 1606.30s |  the general idea of a moniker is to provide you with some way to
+1607.02s - 1611.98s |  locate and identify this specific com object using strings or
+1613.66s - 1620.58s |  Instead of writing a custom mechanism to do that and in order to achieve it all monikers must implement
+1621.06s - 1623.06s |  the I moniker interface
+1623.22s - 1625.22s |  well
+1625.42s - 1630.02s |  Microsoft actually provides several implementations of monikers
+1630.34s - 1635.70s |  Some of them related to the OLE objects and most notably used in office applications
+1636.46s - 1638.46s |  some of these monikers include the
+1639.42s - 1641.42s |  file moniker item moniker
+1641.94s - 1643.94s |  URL moniker and few more
+1645.63s - 1653.27s |  One additional example is using the get object method within the visual basic programming language or its
+1653.39s - 1660.75s |  Windows API equivalent the call get object. This is basically a helper function that simplifies the way of
+1661.31s - 1662.51s |  converting
+1662.51s - 1669.15s |  The moniker string the display name into a moniker and then binding to that named object now
+1669.15s - 1674.31s |  It does that by encapsulating calls to the com library functions the create bind
+1674.83s - 1677.59s |  MK parts display name and bind to object
+1679.39s - 1680.91s |  Okay, so
+1680.91s - 1682.91s |  moving back to Outlook
+1682.91s - 1690.31s |  Imagine receiving an email with an hyperlink points to a file located on an SMB share if you would click on that file
+1690.59s - 1692.59s |  or on that link
+1692.91s - 1694.91s |  You won't get a pop-up notification
+1694.91s - 1701.83s |  Asks you whether you are sure you want to click on that link clicking on links from untrusted source can do this and that
+1702.95s - 1707.59s |  Instead a warning message is displayed in the Windows notification center
+1708.11s - 1715.95s |  Stating that something unexpected went wrong with the URL and the file on that SMB share would never be accessed
+1716.55s - 1718.51s |  We would expect it to be good, right?
+1718.51s - 1724.67s |  so if the file would have been accessed at least the local NTLM credentials would have been leaked as
+1725.07s - 1732.79s |  Accessing the file would go through the SMB protocol which relies on the local NTLM credentials to authenticate
+1735.02s - 1736.30s |  well
+1736.30s - 1740.02s |  earlier this year checkpoint researcher found a vulnerability in
+1740.42s - 1747.06s |  Outlook that bypasses that warning message by simply adding an exclamation mark at the end of that of that link
+1748.06s - 1750.54s |  Apparently this turns the hyperlink from
+1751.54s - 1753.02s |  simple
+1753.02s - 1755.46s |  hyperlink that points to a file moniker
+1756.18s - 1761.74s |  Into a generic composite moniker that is composed from a file moniker and an item moniker
+1762.30s - 1764.38s |  clicking on such a link results in
+1764.90s - 1771.14s |  Accessing the file leaking the local NTLM credentials and potentially allow for remote code execution
+1772.86s - 1775.46s |  So let's dive in and understand how this is happening
+1776.42s - 1780.70s |  Most Microsoft Office applications load the MSO DLL
+1780.70s - 1787.34s |  Which is a core component used by multiple office applications and the DLL contains essential
+1787.70s - 1789.70s |  functionalities that is splitted between
+1790.54s - 1795.70s |  Multiple DLL some of them are presented the one we are interested with the
+1796.34s - 1800.50s |  Vulnerability discovered by checkpoint is the MSO 30 DLL
+1800.82s - 1805.50s |  Which handles things related to links and links parsing and to be more specific
+1806.34s - 1812.94s |  The MSO HR link rate from string function. That is a wrapper for H link rate from string
+1813.46s - 1819.62s |  That basically creates hyperlink object from strings that represents the hyperlink target
+1820.26s - 1822.26s |  if you would look at the
+1822.66s - 1828.86s |  Documentation for H link rate from string we see that it starts with the security warning that states
+1829.70s - 1835.38s |  Never pass strings from a non-trusted source when creating hyperlinks with H link rate from string
+1835.50s - 1839.14s |  The target parameter is passed to MK parse display name
+1839.66s - 1843.62s |  Now you might be wondering what is wrong with MK parse display name
+1843.62s - 1844.94s |  We'll get it in a second
+1844.94s - 1847.34s |  But before that take a look at the second paragraph
+1847.86s - 1855.50s |  You can see that it is mentioned that if a string of the form suggested in the checkpoints vulnerability a composite moniker
+1856.14s - 1862.30s |  Is passed it will instantiate the object registered with the specific prog ID and
+1863.06s - 1865.54s |  If it implements the I moniker interface
+1866.50s - 1869.06s |  It can in turn run unexpected code
+1870.34s - 1876.54s |  And it doesn't stop just there looking at the documentation for MK parse display name
+1877.30s - 1882.98s |  We see that it states that calling MK parse display name with a display name parameter
+1883.58s - 1888.22s |  From an untrusted source is unsafe and it can lead to some moniker
+1888.62s - 1892.26s |  Implementations to act on the string during the parsing of it
+1894.25s - 1898.61s |  Well, if you take a closer look at how it happens in the code
+1898.81s - 1904.93s |  We see that when there is a character indicated that the string is a composite moniker
+1905.81s - 1912.17s |  And by the way, not only by the exclamation mark, but also the opening square bracket and colon
+1912.53s - 1915.37s |  The parsing of that composite moniker
+1915.81s - 1920.49s |  Would go through the MK parse display name for handling with of course
+1921.17s - 1924.37s |  Composite monikers instead of creating a file moniker
+1924.89s - 1929.81s |  now when MK parse display name is called it will call the
+1930.45s - 1932.45s |  bind to object method which
+1933.33s - 1940.77s |  eventually involves the relevant com object responsible for handling with the specific file type pointed to by the
+1942.17s - 1947.85s |  File moniker. For instance, if the file pointed to by the file moniker is an RTF
+1948.41s - 1951.73s |  WinWord will be spawned in the background without displaying the UI
+1952.09s - 1956.37s |  it will access the file pointed to by the file moniker and
+1956.77s - 1964.17s |  If that and sorry and will try to access the object low and pointed to by the item moniker
+1965.53s - 1967.53s |  Let's move on
+1967.81s - 1971.77s |  Now this behavior leads to two significant issues first
+1972.33s - 1977.61s |  The file is being accessed. So we have an NTLM credential leak and
+1978.21s - 1980.01s |  Second the file is being parsed
+1980.01s - 1987.81s |  So any RC involved in the parsing will never be in the parsing routine can be chained to gain full RC
+1988.53s - 1990.57s |  Now one important note
+1990.57s - 1998.17s |  I want to point is that characters other than the exclamation mark can trigger this vulnerability and it's important
+1999.01s - 2003.57s |  From a detection and prevention standpoint as it wasn't mentioned anywhere else
+2005.79s - 2009.75s |  Now before we diving into the patch analysis and how we bypassed it
+2010.11s - 2015.67s |  We first need to understand how Microsoft patches some vulnerabilities in office applications
+2016.47s - 2023.11s |  Surprisingly or not they use hooks which are installed from the in editors function within the MSO DLL
+2024.07s - 2026.07s |  apparently each office application
+2026.23s - 2033.99s |  As its own application ID and before the hook is installed the in editors function checks that
+2034.51s - 2042.03s |  The current process has a valid application ID and well this techniques kind of reminds us hot patching, right?
+2043.03s - 2045.83s |  pinpointing a specific API in a specific location
+2046.99s - 2050.15s |  only by a specific processes and
+2050.79s - 2054.39s |  As well, these API's are being used system wide
+2055.03s - 2057.03s |  Across many other applications
+2059.24s - 2063.40s |  Now moving on to the patch itself as you can see Microsoft
+2063.60s - 2069.12s |  Updated the in editors function to add hooks for the MK parse display name API's
+2071.64s - 2078.64s |  the hook simply checks if a flag named block MK parse display name on current thread is set to true and
+2079.16s - 2086.64s |  If that's the case as the name suggests MK parse display name would not be invoked and it will return an error instead
+2089.31s - 2094.31s |  now you might be wondering where that flag is being set if you recall the
+2095.03s - 2097.39s |  MSO HR link create from string that
+2098.07s - 2100.95s |  responsible for creating hyperlink objects from strings
+2101.55s - 2109.43s |  Sets the flag to true at the beginning of the function and it only does that if the application ID equals outlook
+2111.77s - 2114.85s |  looking at the patch analysis and a
+2115.77s - 2121.83s |  Few questions comes in mind. Well, I'm sure that some of you already asking yourselves these questions
+2121.89s - 2130.01s |  Well, the whole hyperlinks creation goes through the MSO HR link create from string where that flag was being set to true
+2130.97s - 2137.89s |  What about other code flows that may reach the unsafe API the MK parse display name?
+2139.81s - 2141.81s |  What about the
+2142.01s - 2147.25s |  Application ID we've seen comparison to outlook only what about other apps
+2147.89s - 2152.50s |  To answer these questions. I want to do a quick recap
+2153.06s - 2154.74s |  the following diagram
+2154.74s - 2160.54s |  Demonstrates the interesting API calls when clicking on a composite moniker hyperlink within
+2161.06s - 2163.68s |  an email before the patch was
+2164.34s - 2166.34s |  employed and
+2166.82s - 2169.02s |  This is how it looks after the patch
+2169.78s - 2173.82s |  We have the addition of the block MK parse display name flag
+2174.66s - 2178.06s |  that is being set to true at the beginning as we said and
+2179.10s - 2183.02s |  The deterred functions checks that flag and acts accordingly
+2184.06s - 2192.04s |  We were looking for ways to get to the unsafe API the MK parse display name
+2192.64s - 2194.64s |  without going through the
+2195.04s - 2200.20s |  AP the function that sets that flag to true and we found a candidate
+2200.88s - 2203.20s |  the HR payment from URL
+2204.28s - 2206.28s |  we found that doing some
+2206.52s - 2214.12s |  cross referencing through the relevant API calls and we've seen that this one may reach the unsafe API and
+2215.16s - 2220.92s |  As a matter of fact, this is how we got to discover the RC vulnerability and outlook
+2222.85s - 2229.93s |  when you pass a composite moniker within an image tag the parsing of that composite moniker won't go through the
+2230.13s - 2236.57s |  MSO HR link rate from string that was patched instead. It will invoke the HR payment from URL that
+2238.21s - 2242.61s |  Handles things and those the parsing of the URLs from image tags
+2242.61s - 2247.77s |  and it will directly call the H link parse display name that
+2248.41s - 2255.61s |  Will eventually got the same code flow that reaches to the unsafe API MK parse display name
+2256.61s - 2263.09s |  And now that we are familiar with how Microsoft patches some vulnerabilities in office applications
+2263.73s - 2265.73s |  The patch is quite obvious, right?
+2266.45s - 2269.69s |  setting the infamous flag to true, but this time from
+2270.89s - 2277.07s |  HR payment from URL and again only if the application ID equals outlook
+2278.05s - 2284.45s |  Now to sum up these two patches we saw that Microsoft only addresses specific code flows
+2285.21s - 2287.69s |  And specific scenarios that leads to the
+2288.77s - 2295.73s |  unsafe API the MK parse display name and we left some questions open for you to investigate and
+2296.25s - 2298.25s |  We are certain that there are
+2298.77s - 2303.37s |  More applications and more code flows that leads to that unsafe API
+2306.87s - 2308.71s |  okay, just
+2308.71s - 2310.47s |  some additional note
+2310.47s - 2317.67s |  As Arnold shared and thank you Arnold Microsoft patch the remote the code execution by introducing this additional
+2318.71s - 2325.27s |  Hook and turning on the flag through this control flow. It didn't solve the NTLM leak
+2325.95s - 2332.03s |  now we obviously didn't want to publish it, but we got a response from Microsoft that there is a
+2333.39s - 2337.23s |  medium risk and for Microsoft it's not in the urgency and
+2337.27s - 2338.51s |  And
+2338.51s - 2342.75s |  The fact that the image cannot be automatically downloaded
+2343.83s - 2347.51s |  Because you have a kind of a preview mode if the sender is not trusted
+2348.15s - 2352.19s |  And they are right if it's lender is not trusted the image will not be automatically
+2352.47s - 2356.39s |  Downloaded and the compound moniker will not be automatically executed
+2356.71s - 2358.99s |  But if the sender is trusted
+2359.59s - 2361.03s |  again someone in the
+2361.07s - 2367.47s |  Organization let's say it was compromised and you utilizing his credential to send to the other victim within the same
+2367.71s - 2372.79s |  Organization the same link the image will be automatically downloaded or previewed
+2373.31s - 2377.43s |  And the NTLM will happen and this is unfortunately wasn't patched
+2378.71s - 2384.95s |  So let's let's just finalize. We have a couple of minutes left some recommendations
+2386.47s - 2388.31s |  Some of them are obvious
+2388.35s - 2395.99s |  Microsoft basically writes a lot about some of the recommendations obviously in forest care boroughs Windows 11 introduces
+2396.39s - 2402.99s |  I think an update already introduced update in which by default NTLM authentication will
+2403.35s - 2409.15s |  Will not be possible. I suppose it will not hold for a long due to backward compatibilities, etc
+2410.63s - 2412.63s |  Definitely enable SMB signing
+2413.23s - 2420.71s |  And manage your outbound SMB you don't want that kind of let's say network communication going outside of your organization
+2421.35s - 2425.19s |  And there are definitely additional recommendations that can follow
+2426.15s - 2427.71s |  now just
+2427.71s - 2432.75s |  Before we kind of end that presentation some credit references again as we mentioned
+2433.23s - 2436.47s |  Net spy is doing great work discovering new stuff
+2437.47s - 2440.03s |  Check point also as well and so as
+2440.55s - 2443.63s |  Etienne Stevens, I'm sure I'm missing a lot of other folks
+2444.27s - 2449.03s |  Because a lot of work is being invested you guys are welcome to ask our questions
+2449.95s - 2454.11s |  We will be waiting here behind at the entry door for like 10 minutes
+2454.75s - 2460.55s |  But overall we are done. We it's an honor to present them at the DEF CON
+2460.63s - 2465.27s |  We are thanking you to come here to see our presentation
+2465.27s - 2467.51s |  Thank you

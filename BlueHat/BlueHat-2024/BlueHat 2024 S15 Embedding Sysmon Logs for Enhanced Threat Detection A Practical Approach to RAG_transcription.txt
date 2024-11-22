@@ -1,0 +1,828 @@
+{
+  "webpage_url": "https://www.youtube.com/watch?v=fFcyn6E98H8",
+  "title": "BlueHat 2024: S15: Embedding Sysmon Logs for Enhanced Threat Detection: A Practical Approach to RAG",
+  "description": "BlueHat 2024: Session 15: Embedding Sysmon Logs for Enhanced Threat Detection: A Practical Approach to Using RAG in Cybersecurity Presented by Jose Rodriguez from George Mason University\n\nAbstract: As cybersecurity threats become more complex, AI-powered tools like language models (LM) can significantly improve the efficiency and accuracy of security investigations. One such tool, Retrieval Augmented Generation (RAG), enhances the relevance of analysis by retrieving and integrating key security information during the generation process. While RAG has been widely used to process unstructured data like threat intelligence reports, can it also be applied to structured and semi-structured data, such as security event logs?\n\nIn this presentation, I will introduce both traditional and LM-driven approaches to create embeddings from Sysmon logs that make it possible to implement RAG techniques on a case study on the APT29 adversary group, guided by the MITRE ATT&CK framework. This case study will demonstrate how these methods can enhance the detection and analysis of advanced cyber threats.\n\nAttendees will learn how to preprocess event logs, fine-tune a pre-trained language model, and apply RAG techniques for log analysis. A Jupyter Notebook with all the steps will be provided, allowing participants to replicate the process in their own environments.",
+  "channel_url": "https://www.youtube.com/channel/UCKmzq2lAhDxLy36KtvVWpaQ",
+  "duration": 2639,
+  "channel": "Microsoft Security Response Center (MSRC)",
+  "uploader": "Microsoft Security Response Center (MSRC)",
+  "upload_date": "20241108"
+}
+
+0.08s - 5.20s | This text was transcribed using whisper model: large-v2
+
+ Thank you for joining me today in this presentation.
+5.44s - 8.08s |  Over time, we have been developing
+8.08s - 10.24s |  different strategies when it comes to
+10.24s - 14.56s |  developing a defensive strategy in our organizations.
+14.72s - 20.44s |  Recently, one that has got our attention is generative AI.
+20.44s - 23.32s |  Now, you might be asking yourself,
+24.32s - 27.16s |  is there any opportunity for us as
+27.16s - 28.76s |  defenders to implement this type of
+28.76s - 30.80s |  techniques in our environments?
+30.80s - 33.48s |  How does these generative AI techniques
+33.48s - 37.68s |  impact our role as defenders in our organizations?
+37.68s - 44.36s |  I will share with you my initial journey
+44.36s - 48.64s |  in getting into this world of generative AI.
+48.64s - 51.28s |  The technique that I will present to you today is called
+51.28s - 55.40s |  retrieval of meta-generation on Sysmon Event Logs.
+56.00s - 61.04s |  In a normal day as a defensive professional,
+61.04s - 63.56s |  you might be monitoring your environment,
+63.56s - 65.36s |  you're collecting different sources,
+65.36s - 67.12s |  you define your metrics so you
+67.12s - 71.32s |  can stay aware of the status of your network.
+71.32s - 73.68s |  But at some point in your day,
+73.68s - 76.12s |  you might need to start going deep on
+76.12s - 79.36s |  your analysis on a specific piece of forensic data.
+79.36s - 81.28s |  You might need to start
+81.28s - 84.36s |  correlating that information with other sources of data.
+84.88s - 88.68s |  You might need to correlate these multiple sources,
+88.68s - 91.52s |  you might need to identify or validate if there is
+91.52s - 95.88s |  any type of anomaly happening in your environment.
+95.88s - 97.60s |  Who knows, maybe that might be
+97.60s - 99.48s |  potentially malicious or maybe not.
+99.48s - 101.56s |  But that's some of
+101.56s - 104.60s |  the challenges that we are facing as defenders.
+104.60s - 106.60s |  Now, in this presentation,
+106.60s - 114.32s |  I would like to share with you another tool
+114.32s - 118.60s |  that you can have in your arsenal to start dealing with this,
+118.60s - 122.16s |  especially with these two tasks,
+122.16s - 124.92s |  anomaly detection and correlation.
+124.92s - 127.56s |  What I'm going to present to you is we are
+127.56s - 130.20s |  going to use large language models.
+130.20s - 133.12s |  So start supporting all this process.
+133.12s - 136.12s |  How can you start getting more context about Sysmon logs?
+136.12s - 139.04s |  How can you start validating if
+139.04s - 142.00s |  this log is actually
+142.04s - 144.88s |  something anomalous in your environment?
+144.88s - 148.52s |  The technique again is called retrieval of metageneration.
+148.52s - 152.20s |  One of the main concepts that is important with this technique is,
+152.20s - 156.08s |  how can you start representing all the context,
+156.08s - 159.24s |  all the knowledge provided by a Sysmon log?
+159.48s - 161.80s |  My name is Jose Rodriguez,
+161.80s - 163.88s |  cybersecurity AI researcher.
+163.88s - 167.00s |  I'm passionate about putting all this world together,
+167.00s - 169.32s |  cybersecurity and AI.
+169.32s - 173.52s |  I will go through all these points during the presentation.
+173.52s - 176.44s |  I would like to start by scoping,
+176.44s - 178.24s |  what is the opportunity?
+178.24s - 180.80s |  What is the goal of this presentation?
+180.80s - 183.68s |  What a better way to start that by
+183.68s - 186.28s |  taking a look at the incident response cycle.
+186.28s - 188.88s |  This is the new version, if you're not aware of it.
+188.88s - 190.80s |  It was released on April this year,
+190.80s - 195.36s |  where basically the two most important changes is the idea of
+195.36s - 198.08s |  having a preparation plan
+198.08s - 199.84s |  before responding to an incident,
+199.84s - 202.80s |  and also how can you start updating or
+202.80s - 206.16s |  learning through every step, every iteration,
+206.16s - 208.80s |  and you don't need to wait until the end to improve.
+208.80s - 211.60s |  In this presentation, we are going to focus on
+211.60s - 215.36s |  the detection aspect of this cycle.
+215.36s - 219.76s |  We are interested on identifying indicators of compromise.
+219.76s - 225.92s |  Now, an organization prepares or develops
+225.92s - 229.68s |  a strategy to face this type of situation.
+229.68s - 232.28s |  How can we start collecting
+232.28s - 234.00s |  different sources of data to
+234.00s - 236.68s |  identify these indicators of compromise?
+236.68s - 239.12s |  In this presentation, we are going to focus
+239.12s - 243.90s |  on host data, especially Sysmon logs.
+243.90s - 245.54s |  Now, with this data, what can we
+245.54s - 247.18s |  do with Sysmon logs, for example?
+247.18s - 249.98s |  These are examples of different tasks that you might
+249.98s - 253.94s |  be completing or performing as a defender,
+253.94s - 256.50s |  and we are going to focus on some of them.
+256.50s - 258.46s |  Basically, analysis of data,
+258.46s - 260.90s |  and how can we start identifying anomalies,
+260.90s - 263.94s |  and trying to put all these contexts together.
+263.94s - 269.06s |  Now, that's from a role perspective,
+269.06s - 270.90s |  you as a defender, but what
+270.90s - 273.06s |  about from a personal perspective?
+273.06s - 275.42s |  You need to develop different skills,
+275.42s - 277.50s |  and we will focus on these two today,
+277.50s - 279.46s |  about how can we start analyzing
+279.46s - 281.54s |  this information in a logical way,
+281.54s - 283.98s |  and how can we start getting insights from
+283.98s - 288.90s |  this data relying on LLMs to process all the information.
+288.90s - 295.78s |  Now, we are trying to support this process,
+295.78s - 299.46s |  and the idea of implementing AI is not something new.
+299.46s - 303.22s |  Over time, there has been different approaches to implement
+303.22s - 307.58s |  AI in our defensive strategy.
+307.58s - 313.50s |  We started with developing
+313.50s - 317.30s |  predefined rules based on expert knowledge.
+317.78s - 321.22s |  Then we jump into this idea of training
+321.22s - 324.78s |  different models to accomplish different goals.
+324.78s - 326.90s |  One model for anomaly detection,
+326.90s - 330.22s |  one goal for correlating data, etc.
+330.22s - 332.94s |  But now, sometimes working with
+332.94s - 335.70s |  different models is difficult to maintain.
+335.70s - 340.50s |  So we are trying to pre-train what we call a foundational model.
+340.50s - 346.54s |  This powerful model called a large language model.
+346.54s - 348.46s |  Now, what is the difference between
+348.46s - 350.30s |  this model and the previous ones?
+350.30s - 352.74s |  Is that now this model is able to
+352.74s - 358.10s |  understand human-like reasoning.
+358.10s - 359.78s |  So we can communicate with
+359.78s - 362.94s |  this model using just natural language.
+362.94s - 365.22s |  What is happening in the, I would say,
+365.22s - 369.42s |  the past year or past two years is we are
+369.42s - 374.70s |  working with LLMs to provide autonomy to our systems.
+374.70s - 379.94s |  How can we start letting the LLM to receive a task,
+379.94s - 386.54s |  plan, and then start executing task trying to accomplish a goal?
+386.54s - 389.38s |  For this presentation, we are going to focus on
+389.38s - 391.86s |  the third level which is prone-based AI,
+391.86s - 397.82s |  and then I will show you how can we adapt
+397.82s - 399.42s |  the process a little bit so we can
+399.42s - 403.02s |  use the technique retrieval augmented generation.
+403.02s - 407.42s |  Now, even though you see different strategies over time,
+407.42s - 411.42s |  this doesn't mean that we are trying to find the best one.
+411.42s - 413.58s |  There is not a unique solution for
+413.58s - 416.58s |  all our challenges as defenders.
+416.58s - 421.02s |  So the idea is to diversify our strategy.
+421.94s - 425.30s |  I would say AI models are easy to implement,
+425.30s - 428.78s |  and they are really good at solving some of the issues.
+428.78s - 434.26s |  But then sometimes we need some models that can help us
+434.26s - 441.37s |  to cover a broad scope in the landscape of TTPs.
+441.37s - 444.65s |  Now, the community has been using LLMs,
+444.65s - 451.45s |  and we have identified different opportunities to use LLMs.
+451.61s - 454.93s |  In this presentation, we are going to focus on
+454.93s - 459.41s |  log analysis, specifically SysmonLogs.
+459.41s - 462.41s |  So that's the scope for this presentation.
+462.41s - 466.85s |  Now, I already talked about prone-based AI,
+466.85s - 469.17s |  and I would like to start with an example.
+469.17s - 474.17s |  Let's say you are exposed to a specific piece of data,
+474.17s - 475.93s |  in this case a SysmonLog,
+475.93s - 479.93s |  and you're trying to validate if it is malicious or not.
+480.17s - 482.73s |  Now, the example that I'm going to share with you
+482.73s - 485.73s |  comes from a data set that we recorded back in 2020,
+485.73s - 488.01s |  following the steps from this emulation plan
+488.01s - 491.13s |  from the MITRE Corporation, okay?
+491.13s - 495.45s |  So let's say you are exposed to a SysmonLog, right?
+495.45s - 499.57s |  And you, as a defender, you have your own knowledge, okay,
+499.57s - 501.77s |  about this specific technology.
+501.77s - 508.09s |  But then how can you start using this new technology, okay?
+508.09s - 510.81s |  You have an LLM.
+510.81s - 513.53s |  And then you can start interacting
+513.53s - 515.93s |  with this large language model, right?
+515.93s - 519.13s |  So what you're basically doing is providing a prompt, okay,
+519.13s - 523.61s |  which is like instruction, right?
+523.61s - 526.45s |  It's a paragraph that you can type,
+526.45s - 531.97s |  asking a question, requesting some type of analysis,
+531.97s - 535.01s |  just basically asking something to the model, right?
+535.01s - 537.61s |  And what you are getting is a response.
+537.61s - 541.21s |  It could be maybe an analysis, you know,
+541.21s - 544.53s |  telling you if, okay, this event is potentially suspicious,
+544.53s - 548.49s |  why it is suspicious or why it is not suspicious, right?
+548.49s - 553.21s |  So you are relying on the capability of the LLM.
+553.21s - 554.61s |  This is an example of the prompt
+554.61s - 557.09s |  that you can share with the LLM, okay?
+557.09s - 558.77s |  And the most important part here
+558.77s - 562.37s |  is that the SysmonLog is part of the prompt, okay?
+562.37s - 564.65s |  So you are sharing the entire schema
+564.65s - 567.41s |  of the SysmonLog in the prompt, okay?
+567.41s - 573.41s |  Now, as you can see in this example,
+573.41s - 575.21s |  as you can see in the name of the image
+575.21s - 577.21s |  and also in the command line,
+577.21s - 582.29s |  we have this right to left override unicode character,
+582.29s - 584.21s |  okay, that will change the order
+584.21s - 588.37s |  and will masquerade on a screensaver executable
+588.37s - 590.13s |  as a Word document.
+590.13s - 593.13s |  So this is the context of the technique, okay?
+593.13s - 595.93s |  Maybe you got an alert, you are exposed to this log,
+595.93s - 597.21s |  and you just want to validate
+597.21s - 602.98s |  if this is potentially suspicious or not.
+602.98s - 604.98s |  Besides this context, okay,
+604.98s - 606.62s |  this is just one of the techniques
+606.62s - 608.18s |  that we can use to improve
+610.06s - 611.98s |  the way we communicate with the LLM.
+611.98s - 613.34s |  There are other techniques
+614.30s - 617.34s |  that are known as prompt engineering techniques.
+617.34s - 619.50s |  So you can make the prompt more powerful
+619.50s - 622.90s |  so the LLM understands exactly what is your goal,
+622.90s - 626.38s |  what do you want from the LLM?
+626.38s - 628.38s |  This is the response from,
+628.38s - 631.02s |  I'm using a local model, LAMA 3.2,
+631.02s - 633.34s |  the three billion parameters model.
+633.34s - 636.26s |  And after providing this prompt
+636.26s - 637.78s |  and the context of the LLM,
+639.46s - 641.14s |  LAMA tells me, you know,
+641.14s - 644.26s |  this is potentially suspicious, you know?
+644.26s - 647.62s |  And it's pointing me to take a look
+647.62s - 651.94s |  at the command line executed by this process, okay?
+651.94s - 654.86s |  Now, this is good, this is nice.
+654.86s - 657.10s |  We have the tool, it's ready, right?
+657.10s - 658.78s |  But then you need to start thinking about
+658.78s - 661.82s |  what is happening behind the scenes, you know?
+661.82s - 664.98s |  The LLM was pre-trained, it has knowledge,
+664.98s - 666.74s |  but what is exactly the LLM doing
+666.74s - 668.86s |  after it received your prompt?
+668.86s - 672.90s |  So I will take you through all the processes,
+672.90s - 674.98s |  and they are basically four.
+674.98s - 676.98s |  Whenever you get a prompt,
+676.98s - 680.46s |  the LLM will tokenize, then embed the information.
+680.46s - 682.98s |  These two initial steps is where the LLM
+683.02s - 684.54s |  captures all the knowledge,
+684.54s - 687.06s |  all the context from your prompt, okay?
+687.06s - 690.06s |  And then the analysis is when all this information,
+690.06s - 692.22s |  once the LLM represents the knowledge
+692.22s - 696.58s |  and the content of your prompt and the Sysmon log,
+696.58s - 699.38s |  it will start analyzing all the information
+699.38s - 702.06s |  with all the pre-trained knowledge,
+702.06s - 704.70s |  all the parameters that the LLM learned
+704.70s - 705.70s |  when it was trained.
+707.54s - 709.50s |  And at the end, you have the response from the LLM.
+709.50s - 713.38s |  So the LLM is able to process the information
+713.38s - 716.82s |  and it starts generating a response for you.
+716.82s - 721.54s |  Now, the two main steps that are related
+721.54s - 723.86s |  to this presentation is the idea of tokenizing
+723.86s - 726.46s |  and embedding a Sysmon log, okay?
+726.46s - 729.42s |  But in the context of an LLM,
+729.42s - 731.22s |  when you talk about embeddings,
+731.22s - 733.50s |  you're trying, okay, how can we represent
+733.50s - 735.42s |  natural language, right?
+735.42s - 737.34s |  So we're talking about, let's say, for example,
+737.34s - 739.42s |  a paragraph of information, okay?
+740.34s - 741.90s |  So whenever you start looking,
+741.90s - 744.58s |  whenever you start learning more about LLMs,
+744.58s - 747.74s |  you will see that they are always analyzing paragraphs,
+747.74s - 749.62s |  right, intelligent reports maybe.
+750.70s - 754.86s |  But how can we, how is the,
+754.86s - 758.86s |  how can the LLM understand actually a Sysmon log, right?
+758.86s - 761.22s |  So the process might be a little bit different.
+762.82s - 767.14s |  Now, is this idea of embedding a Sysmon log something new?
+767.14s - 767.98s |  Actually not.
+770.21s - 771.73s |  Whenever we have a Sysmon log,
+771.73s - 774.97s |  this is an example from a blog post from Bobby Filar.
+776.49s - 777.69s |  As you can see on the left side,
+777.69s - 780.21s |  you can see the schema of the Sysmon log, right?
+780.21s - 784.77s |  And the idea of embedding is how can we start
+784.77s - 788.09s |  representing this knowledge or the content using numbers,
+788.09s - 793.09s |  right, so the AI model can understand the content
+793.25s - 794.81s |  and try to come up with a rule
+794.81s - 796.77s |  to accomplish a specific goal.
+796.77s - 800.05s |  It could be classification, it could be prediction, right?
+800.05s - 805.05s |  So this idea of embedding or representing the content
+805.37s - 810.09s |  in numerical format is not new, okay?
+810.09s - 812.45s |  Now, there are different techniques,
+812.45s - 814.81s |  and one that we usually use,
+814.81s - 817.09s |  I remember my days when I was in college
+817.09s - 819.89s |  trying to come up with more context for my AI model,
+819.89s - 821.69s |  for my machine learning model.
+821.69s - 823.57s |  One technique that we use a lot, for example,
+823.57s - 825.81s |  is one-hot encoding, right?
+825.81s - 827.73s |  This binary representation of,
+828.65s - 831.93s |  do I have this specific path in my command line?
+831.93s - 833.53s |  Yes or no, right?
+833.53s - 838.53s |  Is this file created under this specific path?
+840.65s - 841.89s |  Yes or no?
+841.89s - 844.33s |  So that's good because we are collecting information,
+844.33s - 847.17s |  right, knowledge from the Sysmon log.
+847.17s - 850.77s |  But when we start, if we start getting too many,
+851.77s - 856.37s |  if we start applying this technique multiple times,
+856.37s - 859.33s |  we might get to the point that we have too many columns,
+859.33s - 864.01s |  right, and the other issue is that these columns
+864.01s - 867.33s |  may or may not be related, okay?
+867.33s - 871.89s |  So that's when the idea of trying to represent
+871.89s - 876.89s |  this information in a different way, okay,
+877.21s - 878.85s |  comes into place.
+878.85s - 882.25s |  So the idea is how can we start representing
+882.25s - 884.37s |  the content of a Sysmon log
+884.37s - 888.61s |  in a more semantically aware representation, okay?
+888.61s - 892.77s |  That's the main point here when we talk about embeddings.
+892.77s - 896.01s |  How can we make the LLM understand the content
+896.01s - 901.01s |  of a Sysmon log not only based on specific features
+901.05s - 904.69s |  but also how can we correlate all of them, okay?
+904.69s - 908.25s |  And as you can see, this idea of representing this
+908.25s - 912.41s |  with vectors, right, give us an idea that, for example,
+912.41s - 915.05s |  we can compare logs that could be similar,
+915.05s - 917.73s |  not just because they share specific patterns,
+917.73s - 924.71s |  specific values, but also the meaning of those values, okay?
+924.71s - 928.55s |  So basically what is happening is this is the process,
+928.55s - 932.43s |  right, you send the prompt containing the Sysmon log
+932.43s - 935.47s |  and then the LLM will complete all these different steps
+935.47s - 937.43s |  so you can get a response.
+937.47s - 942.47s |  But how is the model creating this embedding
+943.75s - 948.75s |  or how is the LLM processing this information?
+949.31s - 951.11s |  It's something that the LLM learns
+951.11s - 953.91s |  when you train the model.
+954.95s - 959.95s |  So in other words, the way the LLM understands
+960.43s - 965.23s |  your Sysmon log depends on how the model was trained, okay?
+965.23s - 968.75s |  Now, this takes us to the point where we need
+968.75s - 972.95s |  to differentiate between LLMs that are general
+972.95s - 976.47s |  and LLMs that are domain-specific, okay?
+976.47s - 977.63s |  So what does this mean?
+978.79s - 980.59s |  Here are two examples.
+980.59s - 982.99s |  I already told you that I used LLMA, right,
+982.99s - 984.51s |  for my first example.
+984.51s - 988.03s |  So LLMA is a large language model
+988.03s - 990.87s |  or it's a model in general that was pre-trained
+990.87s - 993.15s |  using different sources of data.
+993.15s - 996.51s |  Maybe some of them were from the cybersecurity field
+996.51s - 998.11s |  but not all of them.
+998.11s - 1000.99s |  But on the right side, you have SecureBERT, okay?
+1000.99s - 1004.07s |  This model was training only with cybersecurity data.
+1004.07s - 1007.15s |  So the understanding or the way SecureBERT represents
+1008.79s - 1012.75s |  the content of a Sysmon log may be different, okay?
+1012.75s - 1015.67s |  Because it used a different source of data.
+1015.67s - 1018.95s |  All the information that they used to train SecureBERT
+1018.95s - 1020.71s |  was cybersecurity-related.
+1020.71s - 1023.67s |  We are talking about 30 intelligence reports,
+1023.67s - 1025.51s |  news related to cybersecurity,
+1025.51s - 1029.51s |  or any other content about the field.
+1030.55s - 1036.86s |  Now, I sampled some of the logs from this dataset
+1038.34s - 1040.70s |  that we recorded back in 2020.
+1040.70s - 1044.22s |  And I used LLMA to create the embeddings, okay?
+1044.22s - 1046.14s |  The embedding representation.
+1046.14s - 1049.10s |  This embedding representation has like more than 3,000,
+1049.10s - 1053.50s |  like the default value is like 3,072 elements per embedding.
+1053.50s - 1055.30s |  It's like a vector, right?
+1055.30s - 1057.58s |  So I just reduced the size of that to two
+1057.58s - 1062.54s |  so I can show you a two-dimensional plot of these points.
+1062.54s - 1064.62s |  So you can see the distribution of values.
+1064.62s - 1066.06s |  Whenever the points are together,
+1066.06s - 1069.14s |  that means that there might be some type of relationship,
+1069.14s - 1072.70s |  okay, semantic relationship between these two different logs.
+1072.70s - 1074.42s |  The blue ones are process creation,
+1074.42s - 1076.22s |  the red ones are network connections,
+1076.22s - 1079.78s |  and the green ones are image-loaded processes.
+1079.78s - 1082.18s |  I'm sorry, logs.
+1082.18s - 1085.10s |  Look at the representation from SecureBERT.
+1085.10s - 1087.74s |  On the left side, you can see that all of them are kind of,
+1087.74s - 1089.66s |  you know, overlapping.
+1089.66s - 1094.58s |  But on the right side, you can see that most of the image-loaded
+1094.58s - 1098.70s |  Sysmon logs are kind of clustered to the left side, right?
+1098.70s - 1101.78s |  So this is an example of how the representation
+1101.78s - 1104.90s |  or what the LLM understands from the logs
+1104.90s - 1107.30s |  may differ if you use a different model, okay?
+1107.30s - 1109.58s |  On the left side, a general model.
+1109.58s - 1112.62s |  On the right side, a more specific one.
+1112.62s - 1115.70s |  Now, this is the log.
+1115.70s - 1118.02s |  It's just a, you know, I'm just showing some of the fields,
+1118.02s - 1119.58s |  but this is the log that we use,
+1119.58s - 1122.94s |  that we provided in our first example, right?
+1122.94s - 1127.94s |  So this log is located here in these two blue dots, okay?
+1128.70s - 1133.34s |  Now, let's take two other process creation events, okay?
+1133.46s - 1135.86s |  Yellow one and purple one.
+1135.86s - 1137.78s |  So here you can see that depending on the model
+1137.78s - 1140.54s |  you are using, the distribution is different, right?
+1140.54s - 1145.54s |  On the left side, LLM finds the purple one closer
+1146.78s - 1150.06s |  in meaning to the process creation event,
+1150.06s - 1152.66s |  and in SecureBERT is the opposite, right?
+1152.66s - 1154.74s |  Now, this is from a graphical perspective,
+1154.74s - 1158.26s |  but let me show you if we start comparing these,
+1158.26s - 1162.14s |  like, if we start comparing the schemas of these logs, right?
+1162.14s - 1166.70s |  So on the left side, you have the suspicious event,
+1166.70s - 1167.90s |  what we are trying to validate.
+1167.90s - 1169.70s |  On the left side, you have the yellow one
+1169.70s - 1173.94s |  and the purple process creation events.
+1173.94s - 1176.90s |  When you start using a more general model,
+1176.90s - 1181.06s |  like LLAMA 3.2, LLAMA may have a sense
+1181.06s - 1185.06s |  of general information about computer systems, right?
+1185.06s - 1187.34s |  Like a specific path, like for example,
+1187.34s - 1188.86s |  in this case, it's going to focus more
+1188.86s - 1192.42s |  about the C Windows directory, okay?
+1192.42s - 1193.46s |  Because that's something common
+1193.46s - 1195.70s |  that you will find in general documentation
+1195.70s - 1199.02s |  about Windows systems, right?
+1199.02s - 1202.50s |  But if you start analyzing these with SecureBERT,
+1202.50s - 1205.54s |  you will see that since SecureBERT was trained
+1205.54s - 1209.14s |  using a specific cybersecurity context, right?
+1209.14s - 1211.70s |  Maybe it will start focusing more
+1211.70s - 1213.66s |  on the specific application names
+1213.66s - 1216.42s |  or the application executables, right?
+1216.42s - 1218.78s |  And for example, it could start thinking
+1219.70s - 1222.74s |  about this application and this application
+1222.74s - 1226.58s |  may be or could be started by the user, right?
+1226.58s - 1227.94s |  By double-clicking or something
+1227.94s - 1230.14s |  or accessing a specific application.
+1231.18s - 1233.18s |  So it can add that context, right?
+1233.18s - 1238.18s |  Now, we are not saying that if SecureBERT was trained
+1238.50s - 1243.10s |  with information where the user started these processes,
+1243.10s - 1248.10s |  that doesn't mean that the data that you have collected
+1248.86s - 1251.18s |  indicates that, it's just that the model
+1251.18s - 1255.70s |  was trained with that documentation.
+1255.70s - 1260.62s |  But the idea here is that the focus of SecureBERT
+1260.62s - 1263.98s |  is gonna be different than LLAMA 3.2.
+1263.98s - 1265.58s |  Does that make sense?
+1265.58s - 1267.58s |  Yep, okay.
+1268.58s - 1270.58s |  So now, there are some limitations.
+1270.58s - 1274.46s |  Unfortunately, SecureBERT by definition
+1274.46s - 1277.86s |  is a Roberta-based model, okay?
+1277.86s - 1279.62s |  It's based on BERT.
+1279.62s - 1283.70s |  It has a limitation on the number of tokens, okay?
+1283.70s - 1287.62s |  That you're trying to create when you represent knowledge.
+1287.62s - 1292.22s |  LLAMA 3.2 has a longer number of elements
+1292.22s - 1294.78s |  when embedding information.
+1294.78s - 1297.22s |  Now, there is no issue with that
+1297.22s - 1300.46s |  because if you need to use SecureBERT
+1300.46s - 1304.90s |  to pre-process a longer document, you can do that.
+1304.90s - 1306.46s |  You just need to split the document, right?
+1306.46s - 1308.58s |  And apply BERT multiple times.
+1308.58s - 1312.50s |  But again, we're talking about SysmonLogs, okay?
+1312.50s - 1316.34s |  And when you're trying to analyze or compare SysmonLogs,
+1316.34s - 1318.90s |  it's gonna be difficult to split them, right?
+1318.90s - 1320.82s |  You need to understand, you want to analyze
+1320.82s - 1323.10s |  the entire context of the SysmonLog.
+1323.10s - 1327.14s |  So that's one of the limitations of SecureBERT.
+1327.14s - 1329.74s |  And for my research, what I did is,
+1329.74s - 1332.82s |  okay, I know that SecureBERT may give me
+1332.82s - 1337.22s |  more specific knowledge of my SysmonLogs,
+1337.22s - 1340.90s |  but I decided to go with LLAMA 3.2
+1340.90s - 1345.90s |  to finish my research, basically for two reasons.
+1346.18s - 1350.06s |  Even though LLAMA was not trained specifically
+1350.06s - 1353.78s |  with cybersecurity data, I can reduce that gap
+1353.78s - 1357.26s |  by providing that information as part of the prompt, okay?
+1357.26s - 1360.26s |  So I can, that's what we call in-context learning.
+1360.26s - 1362.22s |  So whenever you want the LLM to consider
+1362.22s - 1365.26s |  a specific context about your question,
+1365.26s - 1368.02s |  you can add that context as part of the prompt.
+1368.02s - 1370.06s |  And then the other one is that,
+1370.06s - 1372.62s |  the other reason why I decided to keep working with LLAMA
+1372.62s - 1377.62s |  is because I can use this model also to provide a response.
+1377.82s - 1379.10s |  Okay, so I can interact,
+1379.10s - 1381.78s |  I can create a chatbot application with LLAMA.
+1381.78s - 1384.54s |  With SecureBERT, I can only use SecureBERT
+1384.54s - 1386.74s |  to represent knowledge, right?
+1386.74s - 1388.42s |  To pre-process information,
+1388.42s - 1395.04s |  but I cannot use it in a chatbot application.
+1395.04s - 1396.28s |  Oh, I'm sorry.
+1396.28s - 1400.52s |  So now, if you look at this representation
+1400.52s - 1402.28s |  of different event logs, right?
+1403.72s - 1408.16s |  From a prompt-based AI perspective,
+1408.16s - 1410.44s |  what you can do is, okay,
+1410.44s - 1413.52s |  I know that the LLM, in this case LLAMA,
+1413.52s - 1415.24s |  can represent knowledge,
+1415.24s - 1417.28s |  can understand what I'm providing to it,
+1417.28s - 1420.28s |  I can make an analysis and respond to me.
+1421.08s - 1422.60s |  But also, when you start thinking
+1422.60s - 1424.44s |  about these type of diagrams,
+1424.44s - 1426.08s |  I mentioned it before,
+1426.08s - 1428.68s |  if two points are close to each other,
+1428.68s - 1430.40s |  that means that the semantic meaning
+1430.40s - 1433.32s |  of these two events might be similar, right?
+1433.32s - 1435.32s |  So that's when we start thinking about,
+1435.32s - 1438.56s |  how can I use this concept of embeddings
+1438.56s - 1440.60s |  to start correlating my event logs?
+1441.96s - 1444.28s |  So at the beginning, the question was,
+1444.28s - 1447.28s |  okay, I'm exposed to this small log,
+1447.28s - 1450.56s |  how can I validate if this is suspicious or not?
+1450.56s - 1452.52s |  Now, the question is different.
+1452.52s - 1454.56s |  You are exposed to a Sysmon log,
+1454.56s - 1457.76s |  and then you're trying to find other Sysmon logs,
+1457.76s - 1460.20s |  not necessarily the same event ID,
+1460.20s - 1462.04s |  it could be different IDs,
+1462.04s - 1465.20s |  but how can I find or identify
+1467.36s - 1470.36s |  event logs that are similar semantically
+1470.36s - 1472.96s |  to the one that I am exposed to, okay?
+1472.96s - 1474.24s |  Now, the first question is,
+1474.24s - 1477.28s |  can I still use prompt-based AI to do this?
+1477.28s - 1479.04s |  Yes, you can do that,
+1479.04s - 1483.96s |  but you will need to retrain or fine tune your model, okay?
+1483.96s - 1487.60s |  So you need to expose the LLM to the new data, okay?
+1487.60s - 1489.12s |  So the LLM can understand
+1489.12s - 1491.96s |  or get the context from those new logs, right?
+1491.96s - 1493.80s |  But the other approach is,
+1493.80s - 1496.80s |  what if we start embedding all these new logs,
+1496.80s - 1500.56s |  and we store that in a vector database, okay?
+1500.56s - 1502.76s |  So there is no need to retrain the LLM,
+1502.76s - 1506.60s |  you are just embedding everything
+1506.64s - 1511.64s |  and putting all this information in a database, okay?
+1511.80s - 1515.12s |  So this process of embedding the Sysmon log
+1515.12s - 1517.92s |  is called indexing, okay?
+1517.92s - 1521.60s |  So how is this indexing process happening?
+1523.24s - 1524.76s |  Here's the database, okay?
+1524.76s - 1529.76s |  So basically, in the naive process for indexing your logs,
+1531.08s - 1533.84s |  or any type of document in general,
+1533.84s - 1536.48s |  it's going to be, you have your document,
+1537.36s - 1540.76s |  then you need to chunk that document in multiple pieces,
+1540.76s - 1542.44s |  and then you will start tokenizing
+1542.44s - 1545.40s |  and embedding each piece, right?
+1545.40s - 1546.80s |  This is probably the flow,
+1546.80s - 1550.08s |  and then you store that in the vector database, right?
+1550.08s - 1552.96s |  So if you are part of the third Intel community,
+1552.96s - 1554.20s |  this is probably what you are doing.
+1554.20s - 1558.60s |  You have a third intelligence report, right?
+1558.60s - 1559.76s |  And you're trying to identify
+1559.76s - 1562.60s |  which pieces of this report is more relevant for you.
+1562.60s - 1565.00s |  So you can start chunking, right?
+1565.00s - 1566.40s |  You can create multiple pieces,
+1567.20s - 1568.72s |  every piece, and then you put everything
+1568.72s - 1570.48s |  on the vector database.
+1570.48s - 1572.88s |  But in this presentation, we are talking about Sysmon logs.
+1572.88s - 1575.68s |  We are not talking about third intelligence reports, right?
+1575.68s - 1577.12s |  So what we are going to do is,
+1577.12s - 1580.12s |  if we're trying to apply this concept to Sysmon logs,
+1581.28s - 1583.80s |  we don't need to chunk anything.
+1583.80s - 1588.60s |  Now, every Sysmon log will be a chunk, okay?
+1588.60s - 1592.64s |  So we need to tokenize and embed every Sysmon log,
+1592.64s - 1595.92s |  and that's what we are going to put on the vector database.
+1595.96s - 1599.76s |  Once we have that into the vector database,
+1599.76s - 1603.96s |  now we can start retrieving or identifying those logs
+1603.96s - 1606.36s |  that are semantically similar
+1606.36s - 1610.48s |  to the log that we are analyzing.
+1610.48s - 1612.68s |  So what we are going to do is,
+1612.68s - 1616.20s |  we are constantly updating the database.
+1616.20s - 1618.60s |  Now, I'm not saying that you need to start
+1618.60s - 1620.92s |  embedding all your Sysmon logs, okay?
+1620.92s - 1624.36s |  You might have a specific scope of logs,
+1629.60s - 1631.68s |  depending on the use case that you are analyzing.
+1631.68s - 1634.56s |  And now, you are exposed to this suspicious log
+1634.56s - 1636.72s |  or any type of forensic data,
+1636.72s - 1640.40s |  and then you can start asking the LLM,
+1640.40s - 1642.24s |  I have this log, what?
+1643.52s - 1646.00s |  And you can start asking any type of questions.
+1646.00s - 1649.44s |  Now, the LLM, before responding to you,
+1649.44s - 1652.44s |  it will go and look for what are the logs
+1652.44s - 1656.32s |  that are more similar, okay?
+1656.32s - 1658.28s |  From a semantic perspective,
+1658.44s - 1661.96s |  it will use those logs as part of additional context
+1661.96s - 1666.71s |  to provide you a response, okay?
+1666.71s - 1668.31s |  And this is an example.
+1668.31s - 1671.99s |  This is a log from the dataset.
+1672.83s - 1675.91s |  And this is the log where we created
+1675.91s - 1678.99s |  Sysmon Event ID 11.
+1681.03s - 1686.03s |  The APT29 just uploaded this executable, okay?
+1686.71s - 1691.71s |  To install all the different tools in the victim, okay?
+1695.07s - 1697.19s |  So, that's the use case for this one,
+1697.19s - 1700.11s |  creation of a new file, okay?
+1701.71s - 1702.91s |  So, what I did is,
+1704.83s - 1706.63s |  there is a function that you can use
+1706.63s - 1709.75s |  to embed all this information, just like that,
+1709.75s - 1711.71s |  the whole schema of the Sysmon log.
+1712.71s - 1716.95s |  And then, I prepare my query, okay?
+1716.95s - 1721.95s |  And I start looking for similar logs to this one, okay?
+1725.31s - 1727.03s |  And this is the output that I got.
+1728.51s - 1733.07s |  I sent Sysmon 11, sorry, Sysmon Event ID 11,
+1733.07s - 1737.23s |  creation of a file, and the LLM retrieve.
+1739.35s - 1741.11s |  These are the top four, you know?
+1741.79s - 1744.91s |  Based on the distance, you can rank all the output,
+1744.91s - 1747.03s |  all the different event logs.
+1747.03s - 1749.03s |  And these are the top four.
+1749.03s - 1751.43s |  And something interesting about these four logs
+1751.43s - 1756.23s |  is that all of them are Sysmon 11 events, okay?
+1756.23s - 1757.91s |  So, and then, as you can see,
+1757.91s - 1760.03s |  I'm not getting any interesting context
+1760.03s - 1761.55s |  to continue my investigation.
+1762.87s - 1765.51s |  So, I said, you know, what if we,
+1765.51s - 1768.87s |  instead of sharing the entire schema,
+1769.79s - 1773.79s |  I just share to the LLM the specific context
+1773.79s - 1776.15s |  that is relevant to me, right?
+1776.15s - 1778.15s |  So, here is the entire log.
+1778.15s - 1782.71s |  And then, I send to the LLM just a specific information.
+1782.71s - 1786.03s |  New file with path, that.
+1786.03s - 1788.35s |  It was created by this process.
+1788.35s - 1791.03s |  So, instead of sending the entire log,
+1791.03s - 1792.03s |  I just send in that.
+1793.19s - 1795.79s |  And this is the output that I got from the LLM.
+1795.79s - 1800.55s |  Now, it's showing me three process creation events
+1800.55s - 1803.63s |  and one file creation event at the bottom.
+1804.67s - 1807.27s |  But again, the first one is just the first event
+1807.27s - 1808.83s |  when we started the simulation.
+1809.83s - 1812.15s |  But if you review the other three,
+1812.15s - 1815.31s |  there is nothing, I would say, weird about these ones, right?
+1816.71s - 1818.51s |  So, I start thinking about, you know,
+1818.51s - 1820.35s |  what is going on here?
+1820.35s - 1824.19s |  Why, when I provide the entire event log to the LLM,
+1824.19s - 1826.43s |  I don't get anything interesting?
+1826.43s - 1829.51s |  Then I send a specific information, right?
+1829.51s - 1832.71s |  So, I reduce the length of the prompt.
+1832.71s - 1835.27s |  I just send a specific path,
+1835.27s - 1838.71s |  directories, and executable names, right?
+1838.71s - 1840.39s |  Why is the LLM not getting,
+1840.39s - 1844.91s |  or why is the LLM not retrieving anything interesting to me?
+1846.59s - 1848.31s |  So, in the first use case,
+1848.31s - 1852.59s |  what I did is I compare, right?
+1852.59s - 1855.31s |  The whole schema on the left side
+1855.31s - 1858.59s |  with the entire schema on the right side, okay?
+1858.59s - 1860.59s |  And why did I get similar events?
+1860.59s - 1864.59s |  Why did I get only Sysmon Event ID 11?
+1864.59s - 1867.27s |  Why did I get more creation events?
+1867.27s - 1869.27s |  It's because in the schema, as you can see,
+1869.27s - 1872.71s |  there is a lot of information that is similar,
+1872.71s - 1874.27s |  like the name of the, I don't know,
+1874.27s - 1876.91s |  maybe it could be the name of the application,
+1876.91s - 1878.59s |  the name of the event ID.
+1878.59s - 1881.03s |  So, there is extra context
+1881.03s - 1885.39s |  that is making these two events too similar, okay?
+1885.39s - 1889.87s |  And when we compare the small paragraph
+1889.87s - 1894.87s |  with the entire JSON string of the file,
+1895.23s - 1897.39s |  I'm sorry, of the Sysmon log,
+1897.39s - 1899.63s |  you can see that there is no,
+1899.63s - 1902.43s |  I mean, only specific events,
+1902.43s - 1906.39s |  I'm sorry, specific patterns, right?
+1907.51s - 1908.99s |  On the left side,
+1909.03s - 1915.43s |  could be or could not be on the vector database, right?
+1915.43s - 1920.43s |  So, I start to thinking about this is, okay,
+1920.59s - 1921.91s |  if we are trying to use,
+1921.91s - 1925.59s |  or if we are trying to find similar event logs, okay,
+1925.59s - 1929.59s |  using this technique,
+1929.59s - 1933.15s |  what is the, how does the LLM know
+1933.15s - 1937.55s |  that these two events are potentially similar or maybe not?
+1937.55s - 1940.35s |  It's because it uses, we didn't talk about this before,
+1940.35s - 1943.27s |  but it's using a distance,
+1943.27s - 1948.27s |  a type of distance called cosine similarity, okay?
+1948.31s - 1955.85s |  And when we talk about cosine distance, okay,
+1955.85s - 1958.01s |  which is based on cosine similarity,
+1958.01s - 1959.45s |  there's two different things,
+1960.97s - 1963.57s |  we start thinking about, okay,
+1963.57s - 1968.57s |  basically, each Sysmon log is represented as a vector, right?
+1968.93s - 1972.97s |  So, we have, let's say, one on there,
+1972.97s - 1976.65s |  let's take a look at the right side of that image,
+1976.65s - 1979.77s |  you can see the vector, the red vector could be,
+1979.77s - 1981.77s |  let's say, a process creation event,
+1981.77s - 1983.81s |  and the blue vector can be, I don't know,
+1983.81s - 1985.89s |  a file creation event, right?
+1985.89s - 1989.65s |  So, we start calculating the distance
+1989.65s - 1992.77s |  based on the angle of these two vectors, right?
+1993.65s - 1996.05s |  But the problem is that this type of,
+1996.05s - 1998.09s |  when you calculate this type of distance
+1999.09s - 2004.09s |  to identify or analyze the similarity between event logs,
+2004.85s - 2008.13s |  there is a concept called a sparse vector, okay?
+2008.13s - 2009.97s |  And what is a sparse vector?
+2009.97s - 2012.65s |  Whenever you take a Sysmon log
+2012.65s - 2016.49s |  and you generate the embedding, you generate the vector,
+2018.05s - 2022.49s |  if that vector contains a lot of zeros, okay,
+2022.49s - 2024.05s |  as part of the values,
+2025.05s - 2028.41s |  that's what we know as sparse vector.
+2028.41s - 2033.21s |  Now, if we try to calculate the cosine similarity
+2033.21s - 2035.33s |  using this type of vectors,
+2035.33s - 2037.77s |  the result that you get for the distance
+2037.77s - 2040.57s |  may not be reliable, okay?
+2040.57s - 2044.13s |  Now, let me explain to you what does this mean.
+2044.13s - 2048.89s |  These zeros that you see here may be lack of context.
+2048.89s - 2051.93s |  So, when you are trying to generate the embedding,
+2051.93s - 2054.41s |  you are not providing enough context
+2054.41s - 2057.89s |  to populate these specific elements of the embedding vector,
+2057.89s - 2059.49s |  okay?
+2059.49s - 2061.81s |  And that's actually what is happening here.
+2061.81s - 2065.09s |  When you compare the entire schema of the Sysmon log
+2065.09s - 2068.69s |  on the left side, and you have the embedding vector,
+2068.69s - 2072.17s |  you're probably getting values on all of them, right?
+2072.17s - 2076.13s |  But when you embed this small representation,
+2076.13s - 2078.93s |  these just two sentences with a path
+2078.93s - 2080.81s |  of the file and the process,
+2081.81s - 2085.61s |  you are not populating some of the elements of the vector.
+2085.61s - 2089.73s |  So, that's one of the issues that I identified
+2089.73s - 2093.01s |  when I was trying to compare different Sysmon event logs.
+2094.37s - 2098.01s |  And that takes me to the point of,
+2098.01s - 2100.65s |  okay, so whenever we are trying to query our database,
+2100.65s - 2103.77s |  trying to identify similarity between Sysmon logs,
+2105.13s - 2106.61s |  there are some capabilities,
+2106.61s - 2109.13s |  and I needed to enable this field
+2109.13s - 2112.33s |  who's called hybrid search, okay?
+2112.33s - 2114.93s |  And this hybrid search parameter,
+2114.93s - 2116.61s |  when you set it to true,
+2116.61s - 2119.09s |  you can define different query modes.
+2119.09s - 2121.09s |  How can you tell the LLM, you know,
+2122.29s - 2126.29s |  compare these two Sysmon logs
+2126.29s - 2129.69s |  based on cosine similarity,
+2129.69s - 2132.41s |  or you can also use the sparse option
+2132.41s - 2135.37s |  where the LLM will understand
+2135.37s - 2138.21s |  that the vector that you are providing
+2138.21s - 2140.21s |  doesn't have all the context, right,
+2141.29s - 2146.47s |  to populate all the elements of the vector.
+2146.47s - 2147.99s |  And when I use this option,
+2148.91s - 2153.47s |  so now when I compare Sysmon logs using the sparse option,
+2153.47s - 2155.55s |  you can see that the output that I'm getting
+2155.55s - 2157.67s |  is more interesting now.
+2157.67s - 2159.95s |  We got four process creation events.
+2161.87s - 2165.07s |  It's able to identify the Python executable.
+2165.07s - 2170.07s |  It's able to execute the C Windows temp directory,
+2170.27s - 2173.79s |  and also the process creation and file deletion events
+2173.79s - 2177.15s |  related to the zip file
+2177.15s - 2182.15s |  that we downloaded to install other tools on the victim.
+2187.38s - 2189.02s |  So this was very interesting
+2189.02s - 2191.70s |  because the JSON file,
+2191.70s - 2194.82s |  I'm sorry, the JSON string representation of the log,
+2194.82s - 2196.62s |  right, on the left side,
+2196.62s - 2199.82s |  even though it provides a lot of information,
+2199.82s - 2202.98s |  whenever you compare Sysmon logs using the entire schema,
+2202.98s - 2205.62s |  sometimes you don't get the right output.
+2205.62s - 2209.26s |  But when you use something more specific,
+2209.26s - 2211.94s |  like it looks more like a summary, you know,
+2211.94s - 2214.46s |  of what you have on the left side,
+2214.46s - 2216.06s |  it looks like it's better
+2217.54s - 2220.18s |  because it works more on specific patterns.
+2221.10s - 2223.86s |  But this type of technology,
+2223.86s - 2226.94s |  when you are doing search, you can enable both.
+2226.94s - 2229.02s |  You can enable cosine similarity
+2229.02s - 2233.64s |  and sparse metrics to compare the logs.
+2233.64s - 2237.20s |  But this idea, as you can see on the right side,
+2237.20s - 2239.92s |  I ended up kind of summarizing the information
+2239.92s - 2242.60s |  on my Sysmon event log, right?
+2242.60s - 2245.68s |  So that took me to this process of, you know,
+2245.68s - 2248.92s |  how can I, is there a way that I,
+2248.92s - 2250.56s |  I'm sorry, which one is better?
+2250.56s - 2253.88s |  Should I use the entire representation of the Sysmon log
+2253.88s - 2255.64s |  or something more specific,
+2255.64s - 2258.64s |  like a summary containing relevant information?
+2259.72s - 2261.08s |  And this took me to this idea
+2261.08s - 2266.08s |  of how can we start pre-processing Sysmon logs?
+2266.08s - 2269.16s |  In this paper, this is not about RAC,
+2269.16s - 2273.64s |  but it's about how can you start processing, okay,
+2273.64s - 2278.04s |  how can you start processing tabular data, okay?
+2278.04s - 2282.00s |  So you have information about, you know, columns and rows.
+2282.00s - 2283.32s |  It's kind of similar to what you have
+2283.32s - 2285.00s |  in a dictionary of an event.
+2285.00s - 2287.44s |  You have keys and values, right?
+2287.44s - 2290.00s |  And according to this paper,
+2290.00s - 2292.04s |  whenever you are interacting with an LLM,
+2292.04s - 2296.88s |  it's better if you start using natural language string
+2296.88s - 2299.56s |  from that specific event, okay?
+2299.56s - 2300.72s |  There are three different ways
+2300.72s - 2303.72s |  you can create a natural language string
+2303.72s - 2306.28s |  based on the columns that you have.
+2306.28s - 2310.88s |  And what I did is, you know, this is my Sysmon log.
+2310.88s - 2312.52s |  Let's create a manual template.
+2313.16s - 2316.52s |  And then I use an LLM to improve the template
+2316.52s - 2317.60s |  using a chatbot.
+2318.56s - 2323.56s |  And instead of comparing, you know,
+2325.12s - 2330.12s |  Sysmon, the JSON schema and the representation of the log,
+2331.20s - 2335.88s |  I started to compare all these summaries of the log, okay?
+2337.20s - 2340.12s |  So this is the prompt that I created for Sysmon 1.
+2340.12s - 2344.60s |  And these are the templates that I created
+2344.60s - 2348.72s |  for other events like Sysmon 3, 7, 11, and 23.
+2350.76s - 2355.32s |  Now, this idea of creating templates per event
+2355.32s - 2358.96s |  takes me to the idea of how can we start improving
+2358.96s - 2362.36s |  the documentation process of your Sysmon event logs.
+2363.92s - 2368.28s |  Back in 2018, as part of the OTR community,
+2368.28s - 2371.80s |  when we start creating documentation
+2371.80s - 2374.32s |  about a specific Sysmon event logs,
+2374.32s - 2376.84s |  we care about the specific name of the fields,
+2376.84s - 2379.36s |  what is the meaning, what is the type of value.
+2379.36s - 2382.96s |  We were interested on identifying different entities
+2382.96s - 2384.92s |  and the relationship between these logs.
+2384.92s - 2386.92s |  But now we can add another component,
+2386.92s - 2390.76s |  which is how can you have a template
+2390.76s - 2393.72s |  that you can use to pre-process your Sysmon logs,
+2393.72s - 2396.72s |  and the result will be more useful
+2396.72s - 2398.44s |  when you are dealing with LLMs,
+2398.44s - 2400.84s |  or when you're trying to implement LLMs.
+2400.84s - 2405.84s |  And this is the output of the retrieval process
+2406.24s - 2409.28s |  using the summary for the specific event
+2409.28s - 2411.16s |  that we were reviewing before.
+2411.16s - 2413.68s |  In this case, it's not retrieving
+2413.68s - 2415.60s |  any process creation or file creation,
+2415.60s - 2420.52s |  it's actually retrieving Sysmon event 7 image loaded,
+2421.60s - 2424.20s |  related to the same processes Python
+2424.20s - 2429.20s |  and the WMI BRSC executable.
+2433.10s - 2436.78s |  So now, this process,
+2438.10s - 2442.18s |  from comparing the log, right,
+2442.18s - 2445.66s |  with all the different logs that you have in your database,
+2445.66s - 2449.66s |  you're expecting to get something that is potentially,
+2449.66s - 2451.14s |  if this event is suspicious,
+2451.14s - 2454.46s |  you're trying to correlate this with other events, okay,
+2454.46s - 2456.90s |  to identify other suspicious events, right?
+2456.90s - 2459.90s |  So you can keep working on your investigation.
+2461.34s - 2463.82s |  But how can we use this same process
+2463.82s - 2468.22s |  of retrieving logs, semantically similar logs,
+2468.22s - 2471.38s |  to now start exploring the idea of anomaly detection?
+2473.02s - 2479.26s |  Here is a paper, RatLog, okay?
+2479.26s - 2482.70s |  The authors of this paper said,
+2482.94s - 2487.30s |  you know, you are usually storing events,
+2487.30s - 2490.62s |  and we don't have an idea if these events
+2490.62s - 2494.30s |  are malicious or suspicious or not,
+2494.30s - 2499.30s |  but what if we start storing in our vector database,
+2500.06s - 2504.18s |  instead of just storing whatever log you can collect,
+2504.18s - 2507.38s |  what if you only store logs
+2507.38s - 2510.62s |  that you have validated are not suspicious?
+2510.62s - 2513.62s |  So you can start comparing whatever log you have,
+2513.62s - 2516.10s |  or whatever log you are exposed to,
+2516.10s - 2520.66s |  and compare that log with these not malicious
+2520.66s - 2521.94s |  or not suspicious events,
+2521.94s - 2524.54s |  that could be a representation of a baseline,
+2525.78s - 2530.02s |  and that's how you can start identifying anomalies
+2532.06s - 2534.18s |  using Retrieval Augmented Generation.
+2535.18s - 2536.38s |  Some final thoughts.
+2540.90s - 2543.26s |  It is very important to understand the process
+2543.86s - 2546.94s |  of embedding a Sysmon log, okay?
+2546.94s - 2550.14s |  So you can represent and understand the content
+2550.14s - 2555.78s |  of a Sysmon log using LLMs.
+2555.78s - 2559.14s |  Applying the Naive Retrieval process to Sysmon log
+2559.14s - 2561.58s |  is very important because you can identify logs
+2561.58s - 2564.94s |  that are semantically similar
+2564.94s - 2568.26s |  to whatever log you are exposed to, okay?
+2568.26s - 2569.74s |  You might be asking yourself,
+2569.74s - 2573.02s |  Jose, why would I use LLMs if I have this,
+2573.02s - 2574.74s |  if I can create queries,
+2574.74s - 2576.82s |  I have this rule on my environment
+2578.18s - 2581.30s |  that also identify anomalies,
+2581.30s - 2584.66s |  also is able to identify or correlate my data
+2584.66s - 2586.58s |  with other type of sources.
+2586.58s - 2588.38s |  Well, just give it a try,
+2588.38s - 2592.54s |  and the power of the LLM may validate what you already have,
+2592.54s - 2597.06s |  or may help you identify specific relationships
+2597.06s - 2600.30s |  that you didn't cover in your other type of models.
+2601.22s - 2606.22s |  By adding LLMs, when you analyze Sysmon logs,
+2606.22s - 2609.22s |  you can diversify your arsenal of tools, okay?
+2611.18s - 2614.50s |  And the community is already exploring these concepts.
+2614.50s - 2616.30s |  There are papers that are constantly
+2616.30s - 2619.02s |  showing different applications of this idea
+2619.02s - 2621.62s |  of Retrieval Augmented Generation.
+2621.62s - 2624.34s |  And I will share all the notebooks that I use
+2624.34s - 2625.90s |  to come up with these visualizations
+2625.90s - 2627.74s |  and this process by the end of the weekend.
+2627.74s - 2629.82s |  So you can take a look at them
+2629.86s - 2631.30s |  and let me know if you have any questions,
+2631.30s - 2633.14s |  I can help you with that.
+2633.14s - 2634.14s |  Thank you very much.

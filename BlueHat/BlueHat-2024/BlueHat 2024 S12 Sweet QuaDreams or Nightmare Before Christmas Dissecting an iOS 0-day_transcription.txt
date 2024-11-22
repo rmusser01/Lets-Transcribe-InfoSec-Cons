@@ -1,0 +1,283 @@
+{
+  "webpage_url": "https://www.youtube.com/watch?v=Uij5AGtIKCI",
+  "title": "BlueHat 2024: S12: Sweet QuaDreams or Nightmare Before Christmas? Dissecting an iOS 0-day",
+  "description": "BlueHat 2024: Session 12: Sweet QuaDreams or Nightmare Before Christmas? Dissecting an iOS 0-day Presented by Christine Fossaceca from Microsoft.\n\nBill Marczak from Citizen Lab co-authored this presentation and had planned to present but was unable to attend the conference.\n\nAbstract: Not quite nation states but not quite independent corporations, \u201cprivate sector offensive actors\u201d (PSOAs) have become one of the latest sophisticated threats. These companies develop and sell surveillance and intrusion capabilities to governments around the world. While some governments responsibly use the tools to track criminals and terrorists, others instead opt to abuse the tools by spying on journalists, dissidents, or members of their political opposition.\n\nThe conversation about PSOAs often centers around NSO Group, and their infamous zero-click \"\"Pegasus\"\" spyware. However, an industry of competitors abounds. While the final payload of Pegasus has proved elusive for some time, Microsoft and Citizen Lab successfully obtained and analyzed the final payload associated with a separate zero-click mobile threat fielded by an NSO competitor, \u201cQuaDream\u201d.  QuaDream\u2019s spyware was used against targets around the world, including journalists, political opposition figures, and an NGO worker. This sample was deemed \u201cKingsPawn\u201d by Microsoft and the exploit named \u201cENDOFDAYS\u201d by CitizenLab. \n\nSo what does it take to develop such a zero-click, zero-day attack? What does a modern, top-tier, iOS spyware implant look like? What is the state-of-the-art in mobile threats? And what is the likelihood of you or your employees being targeted by such an attack? In this talk, Bill Marczak and Christine Fossaceca discuss the discovery of QuaDream\u2019s spyware, outline the zero-click exploit likely used to deliver it, and share their experience reversing engineering the attack surface from the ground up.",
+  "channel_url": "https://www.youtube.com/channel/UCKmzq2lAhDxLy36KtvVWpaQ",
+  "duration": 1827,
+  "channel": "Microsoft Security Response Center (MSRC)",
+  "uploader": "Microsoft Security Response Center (MSRC)",
+  "upload_date": "20241108"
+}
+
+0.00s - 6.72s | This text was transcribed using whisper model: large-v2
+
+ Congratulations. You made it to the end of the day. This is the last talk that is under dispute,
+6.72s - 14.82s |  but I believe I'm supposed to be here right now. So thank you. Not to be boring, but we did
+14.82s - 21.30s |  responsibly disclose the vulnerability that I'm going to talk about today. This is an attack that
+21.30s - 28.02s |  was originally discovered in 2021. So not dropping any CDs on stage, and we've shared all the
+28.02s - 36.98s |  technical details with Apple, and they have mitigated this problem. So a little bit about me
+36.98s - 42.66s |  before we get started. I am a senior security researcher on the Defender for Endpoint team.
+42.66s - 48.34s |  We now fall under MTP, or Microsoft Threat Protection, under the protect your device
+48.34s - 54.10s |  umbrella. So I've contributed to developing new features for the Defender for Mobile app,
+54.74s - 61.38s |  as well as features for security co-pilot. Maybe you've heard of Vile Analyzer. And my favorite
+61.38s - 66.02s |  part of my job is when I get to collaborate with Microsoft Threat Intelligence on reverse
+66.02s - 72.10s |  engineering nation state malware. I also have a podcast, so I'd love for you to take a listen
+72.10s - 77.38s |  everywhere you get your podcasts. It's called Her Hacks Podcast. It's a podcast by women in
+77.38s - 83.06s |  cybersecurity for everyone. So we'll cover pop culture topics, the latest cyber attacks, and
+83.06s - 90.90s |  things like that. So unfortunately, my co-presenter couldn't be here, but his name is Bill Marzak.
+90.90s - 97.62s |  Bill is a decorated veteran of nation state cyber reverse engineering. He's been working for the
+97.62s - 103.78s |  Citizen Lab for a few years. The Citizen Lab is an organization that is a non-profit out of the
+103.78s - 110.58s |  University of Toronto, and they dedicate their time to uncovering digital espionage that's goal
+110.58s - 115.46s |  is to disrupt civil society. So they're looking for all of those threat actors that are targeting
+116.42s - 122.98s |  journalists, political dissidents, and social activists. Bill has done tons of research
+122.98s - 130.90s |  uncovering NSO Pegasus. He's also done research on Canduru, Predator, basically all of the major
+130.90s - 135.78s |  nation state and PSOA malwares that you've heard of. Bill has probably been part of the people
+135.78s - 144.38s |  doing the research discovering it. So now I want to talk about iPhone initial access. So everyone
+144.38s - 153.10s |  take out your phone, fully unlock it, and pass it to somebody else. Now everyone's looking at me
+153.10s - 158.62s |  because they're like, I'm not doing that. And so when we talk about initial access and the way
+158.62s - 163.02s |  that these threat actors hack into other people's devices, that's what they're doing. They want to
+163.02s - 169.98s |  get into somebody's device and basically get everything about them. And so I do want you to
+169.98s - 176.22s |  kind of listen to this with a little bit of fear because that's how we're approaching our
+176.22s - 185.58s |  victims. We want to help them feel safe. So with that, remote access 10 years ago primarily relied
+185.58s - 191.82s |  on SMS, and there was always some type of user interaction. So users had to click on a link,
+192.46s - 200.30s |  and there was usually a WebKit or Safari exploit that was leveraged for the payload to be delivered.
+201.18s - 208.30s |  So about 10 years ago, we would always see some type of Safari or WebKit exploit, and this was
+208.30s - 212.46s |  because that was the only way that you could deliver a payload to a device. You'd have to send
+212.46s - 218.70s |  a malicious text to a victim, wait for them to click on the link, and then hopefully your payload
+218.70s - 225.34s |  would deploy. This is actually an example of a real text message received by Ahmed Mansour, who
+225.34s - 232.14s |  was a UAE human rights activist, and luckily he did not click the link. He worked with Citizen Lab
+232.14s - 240.62s |  for them to safely detonate the payload and figure out who was targeting him. So threat actors got
+240.62s - 246.22s |  wise to the fact that their victims were working with Citizen Lab and working with other civil
+246.22s - 252.38s |  rights protection societies to recover their malware. So they realized that they needed to
+252.38s - 258.62s |  get initial access with zero clicks. This means that they want to deliver and detonate the payload
+258.62s - 265.58s |  without the end user knowing that there is anything going on on their device. So famously, an
+266.22s - 275.18s |  example of this was the forced entry exploit delivered by Pegasus in 2021. So the way that
+275.18s - 281.66s |  this was delivered was via iMessage. The user, however, was not required to click on anything for
+281.66s - 288.70s |  the payload to detonate on the device. So a maliciously encoded PDF that was sent as a GIF
+288.70s - 295.10s |  was sent over iMessage to the victim, and then an integer overflow in the core graphics library
+295.10s - 301.98s |  was triggered, and that's how the malicious payload was delivered. NSO continued in this same thread
+302.06s - 308.54s |  focusing on iMessage with a buffer overflow in image IO with their blast pass exploit.
+308.54s - 316.22s |  This, again, was another zero click exploit because when the user received an iMessage with
+316.22s - 322.70s |  a malicious encode, a maliciously encoded image, that image contained the exploit that detonated
+322.70s - 329.82s |  on the device and then delivered the exploit chain. The final initial access vector that didn't require
+329.82s - 336.62s |  any kinds of attachments was the triangulation exploit. And so this was actually focused on an
+336.62s - 344.70s |  issue in the font parser. This was not an NSO exploit. However, this was delivered, again,
+344.70s - 349.18s |  based on a parsing mechanism. So that's kind of a pattern that we've seen in zero clicks.
+349.82s - 354.78s |  Instead of relying on the user to have any interaction, they're going to look for a
+354.78s - 359.26s |  library that's automatically parsing a payload or automatically parsing a message, whether that's
+359.26s - 367.50s |  delivered via SMS, iMessage, etc. So I'm just going to level set because I'm saying zero day
+367.50s - 372.62s |  and now I'm saying zero click. So just to let everybody know what I'm talking about, because
+372.62s - 378.38s |  I'm using them interchangeably, but they are a little different. So a zero day exploit is an
+378.38s - 384.14s |  exploited vulnerability for which there's no patch available at the time of exploitation. So when we
+384.14s - 390.46s |  uncover these in the wild, it's being actively exploited, but there's no patch. A zero click,
+390.46s - 395.74s |  on the other hand, is a remote vulnerability that doesn't require any user interaction.
+396.38s - 402.30s |  And so the previous three exploits that I discussed and the fourth exploit that I'm going
+402.30s - 411.39s |  to talk about today is both a zero day and a zero click. So iMessage has become a prime target for
+411.39s - 418.51s |  threat actors and this is because it gives a huge attack surface for any malicious actor to deliver a
+418.51s - 423.79s |  payload, whether that's via an attachment or through some type of message parsing. So Apple
+423.79s - 431.39s |  got wise to this and they decided to build better protections. They sandboxed iMTranscoderAgent
+431.39s - 436.11s |  and they created something called BlastStore and the BlastStore sandbox was supposed to keep
+436.11s - 443.07s |  threat actors out. Now obviously, there's always going to be threat actors trying to get in.
+444.91s - 450.43s |  So NSO Group has been able to successfully attack and circumvent BlastStore, but it's
+450.43s - 458.35s |  gotten a lot harder. So most exploits now are not targeting iMessage. Instead, threat actors are
+458.35s - 462.91s |  looking for a different attack surface specifically on mobile and that's the attack that I'm talking
+462.91s - 471.33s |  about today. It was not targeted against iMessage. It targeted a different vector. So now I'm going
+471.33s - 478.13s |  to get into the story of how Microsoft and Citizen Lab discovered this attack. We had
+478.69s - 485.41s |  samples as well as victim devices, how we attributed it, and how we reversed the sample
+485.41s - 491.01s |  and figured out all of the different capabilities on that end user's device. And then we have a
+491.01s - 497.89s |  theory of the exploit and how we think that the initial payload was delivered, not through iMessage.
+501.98s - 506.78s |  So there's two ways that analysis is performed when you're doing mobile security research.
+506.78s - 512.46s |  You're either going to start with a top-down analysis or bottom-up. As a malware reverse
+512.46s - 518.94s |  engineer, I normally start with the sample itself and so I will look for forensic traces left
+518.94s - 525.02s |  behind on the device when I detonate it myself on a test device. I'll also look through the binary and
+525.02s - 531.66s |  see are there any directories that are written to, what other binaries is it trying to interact with,
+531.66s - 538.54s |  and I use that methodology to understand how the sample's working and what it's doing on the device.
+540.14s - 545.18s |  Bill and Citizen Lab's approach is bottom-up. So rather than starting with the sample because you
+545.18s - 552.06s |  normally can't get samples, they'll start with a victim device. So they take the victim device, they
+552.06s - 558.22s |  get a forensic log of a device that they believe has been impacted, and then they look for what
+558.22s - 565.58s |  they call implausible artifacts on that device. They use this methodology to detect unknown spyware.
+567.58s - 571.74s |  So what is an example of an implausible artifact and how would you find that?
+572.54s - 577.74s |  So some are pretty well known and some are used by various threat actors. So it's something that's
+577.74s - 584.54s |  looked for by Citizen Lab and Microsoft. So one of the things that we look for, both Microsoft
+584.54s - 590.38s |  and Citizen Lab, is evidence that a non-iOS update binary ran from this particular directory.
+591.02s - 598.86s |  So private-vair-db-xpc-role-account-destaging is a legitimate directory that you will find on
+598.86s - 604.86s |  every Apple device, and this is the directory that iOS update binaries are run out of. However,
+604.86s - 611.26s |  if you see any binaries in that directory that have executed in that directory that is not an
+611.26s - 616.22s |  iOS update binary, that's a clear sign that something malicious happened on that device.
+617.02s - 622.22s |  This directory is commonly used by Pegasus, so it's commonly checked by Citizen Lab.
+623.10s - 627.98s |  Additionally, anytime you see evidence that something ran from the slash temp directory,
+627.98s - 634.54s |  you should be suspicious. This is because temp is an ephemeral directory, which means that everything
+634.54s - 639.26s |  in that directory will disappear upon reboot of the device. This is kind of the perfect target
+639.26s - 643.66s |  for threat actors because they can clean up their tracks very easily by operating within that
+643.66s - 651.26s |  directory and then forcing a reboot of the device. Finally, some of the techniques are
+652.22s - 659.02s |  based on heuristics that are just developed over time and kind of your knowledge that you've built
+659.02s - 663.82s |  of how the binaries on the device or the directories on the device are supposed to work.
+664.94s - 670.54s |  So an example of a heuristic that was developed and discovered was the discovery of the
+670.54s - 676.70s |  triangulation attack. So in this example, they were doing NetFlow analysis, and they noticed
+676.70s - 682.46s |  that this supposedly legitimate binary backup agent that does not consume mobile data was
+682.46s - 687.98s |  suddenly consuming a ton of mobile data. And that's how they were able to determine that this
+687.98s - 693.34s |  was actually not the true backup agent binary. It was a malicious backup agent binary, and it was
+693.34s - 703.62s |  being leveraged for C2 of an exploited device. So Citizen Lab is constantly supporting people
+703.62s - 710.50s |  that are victims or potential victims that could be targeted by these nation-state actors.
+710.50s - 717.14s |  So Citizen Lab will, for free, check their devices and look for any evidence of potential IOCs.
+718.50s - 722.98s |  So something that was interesting was that Citizen Lab was checking devices, and they saw
+722.98s - 730.58s |  that in the role account destaging directory, there was this binary called SubBridgeD that ran,
+730.58s - 736.98s |  and that was not normal because that's not an iOS update binary. However, the phones tested
+736.98s - 743.14s |  negative for other IOCs that would have linked it to Pegasus. So this was suspicious for them,
+743.14s - 748.26s |  but they did not know what threat actor had potentially infected the devices.
+749.78s - 753.70s |  So Citizen Lab collaborates with Microsoft Threat Intelligence, where we're constantly
+753.70s - 759.06s |  tracking in the wild threats and sorting them under the taxonomy that we've assigned
+759.06s - 766.02s |  based on who we think the threat actor is. As it turned out, we already had an IOC that was
+766.02s - 774.10s |  attributed with that same exact hard-coded path. So we had a sample that was writing and deleting
+774.10s - 783.62s |  from com apple xpc role account destaging SubBridgeD. So because we collaborate and we
+783.62s - 789.70s |  try to share IOCs back and forth, we now had a sample and we had a potential victim device
+789.70s - 795.38s |  from that specific sample. So we decided to do some research to try to recreate the exploit
+795.38s - 801.22s |  and figure out exactly how the device was impacted and how that SubBridgeD binary got on the device.
+804.18s - 811.14s |  So first, a little bit about attribution. I'm not a member of Mystic, so I do not do attribution,
+811.14s - 818.98s |  but they attributed this threat actor as Carmine Tsunami. So a tsunami is a PSOA,
+818.98s - 824.58s |  or private sector offensive actor. These are companies that sell hacking tools or hacking
+824.58s - 832.26s |  as a service. They primarily sell their tools to governments. However, it has been found by
+832.26s - 838.34s |  Citizen Lab that these are sometimes sold to people that shouldn't have them and then leveraged
+838.34s - 846.24s |  to disrupt civil society. So in this case, Carmine Tsunami was a company known as Quadream.
+848.96s - 855.12s |  Citizen Lab calls this the mercenary spyware industry and so Quadream was a competitor of NSO
+855.12s - 858.72s |  and it falls into the category of some of these other well-known threat actors.
+861.87s - 867.31s |  So Citizen Lab did research because they were also tracking Quadream and once we were able to
+867.31s - 873.71s |  attribute this particular threat to Quadream, they were able to uncover the various operator
+873.71s - 879.87s |  locations. So you can see that the RAIN malware was actually sold to over 10 different countries
+880.91s - 885.95s |  and there is victim locations across the world. So in order to protect victim privacy,
+885.95s - 890.91s |  we haven't disclosed specific countries and we just listed it as overarching regions.
+893.94s - 898.98s |  So now I'm going to talk about some of the sample capabilities. And so through both static reverse
+898.98s - 904.42s |  engineering of the sample and also attempting to detonate the sample on a victim device,
+904.42s - 907.54s |  we were able to figure out what the malware itself was doing.
+909.38s - 915.78s |  So the baseline of all iOS malware is that it has to bypass all of Apple's protection mechanisms.
+915.78s - 920.02s |  So first it's going to bypass ASLR, sandboxing, entitlements, code signing,
+920.74s - 924.98s |  page authentication or pointer authentication codes, and the page protection layer. So that
+924.98s - 930.66s |  is like the bare minimum and that's what you'll see in all iOS malware. So we saw this in the
+930.66s - 936.74s |  code and there's really nothing special about this malware in terms of the bypasses that it
+936.74s - 944.42s |  was doing to get through these mitigations. However, I just wanted to say that the most
+944.42s - 949.22s |  advanced threat actors in the world are doing this, so it is really important that we continue
+949.22s - 955.70s |  to build up these mitigations. So this was still kind of a run-of-the-mill spyware because it was
+955.70s - 963.06s |  doing something that we see with all nation-state or PSOA malware. It tries to grab the device info.
+963.06s - 967.86s |  And so normally this is because they need to gather the lay of the land before they detonate
+967.86s - 974.34s |  on device. So it's going to try to understand what is the network connectivity and what environment
+974.34s - 981.22s |  am I in? What's the iOS version? What carrier does this device use? Is it in airplane mode?
+981.78s - 987.30s |  Is it connected to Wi-Fi or not? Is there a debugger on this device, etc.
+989.30s - 996.74s |  It also was doing spying, which is typical of malware like this. So it's recording audio,
+996.74s - 1001.94s |  taking pictures, and tracking location. Something else that we've seen that was not present in this
+1001.94s - 1007.38s |  particular sample is that it will take screenshots as well of the device, but this particular sample
+1007.38s - 1015.18s |  did not have that capability. So something that was a little different about this malware was
+1015.18s - 1019.82s |  we saw that it was exfiltrating and deleting keychain items. It's not completely unheard of,
+1019.82s - 1025.50s |  but it's just something that was new, at least for me, to see. We also saw exfiltrating and
+1025.50s - 1031.18s |  deleting other files on disk. There is no persistence mechanism, and that's actually
+1031.18s - 1036.22s |  normal. Most mobile malware does not have a persistence mechanism, and that's because
+1036.22s - 1042.14s |  the desires of the code runs only in memory and then disappears upon reboot so that you can't
+1042.14s - 1049.76s |  recover artifacts. Something else that we saw this malware doing was subverting iCloud two-factor
+1049.76s - 1054.64s |  authentication. So we thought that this was interesting because maybe they were trying
+1054.64s - 1060.48s |  to establish persistence in the cloud. And so the way that it did this was by hooking a binary
+1060.48s - 1068.40s |  called addid. So addid is the binary that's used to generate time-based one-time
+1068.40s - 1076.32s |  passcodes or TOTP codes for your iCloud account. These are generated by wall clock time and secret
+1076.32s - 1082.96s |  key material that's on your device. So by hooking the get time of day functionality in the addid
+1082.96s - 1089.20s |  binary, they were actually able to generate future two-factor authentication codes for arbitrary
+1089.20s - 1096.96s |  future times. So again, this was a hint to us that they were establishing some kind of cloud-based
+1096.96s - 1105.39s |  persistence to this account. But this didn't really give us an idea of how they initially
+1105.39s - 1111.15s |  got on the device because all of these things that it was doing meant that they already had access,
+1111.15s - 1115.87s |  and it seemed like the initial access vector came from the device itself rather than the cloud.
+1116.75s - 1124.83s |  Then we saw this code. So there was some weird cleanup command where we thought opening calendar
+1124.83s - 1132.03s |  dot SQLite DB and then running queries where an arbitrary format string was supplied.
+1133.71s - 1141.47s |  And then we saw that it was actually deleting items in calendar DB. And so that format string
+1141.47s - 1147.31s |  was tied to a particular email address. So basically this code was saying, I will delete
+1147.31s - 1154.83s |  any calendar item related to this arbitrary email address. So essentially, they were deleting items
+1154.83s - 1163.01s |  in the person's calendar. So this was weird because we hadn't seen anything like this before,
+1163.01s - 1172.37s |  and we were like, why is this sample randomly deleting calendar items? And so we realized
+1172.37s - 1179.33s |  what if the initial access vector actually came through iCalendar? So when you think about
+1179.33s - 1186.53s |  iMessage exploitation, they have to know your iCloud account ID to send you a malicious message.
+1187.73s - 1193.49s |  With calendar invites, it's kind of a useful feature. I can send any one of you a calendar
+1193.49s - 1198.85s |  invite if you have an iPhone as long as I know your Apple ID, and it's supposed to automatically
+1198.85s - 1205.25s |  populate that calendar invite to your calendar. So Citizen Lab went back to the victim device,
+1205.25s - 1210.53s |  and they said, hey, can we dump the calendar DB and really take a look at some of these
+1210.53s - 1217.73s |  calendar invites and see if there's anything weird going on? And this was how we found what
+1217.73s - 1223.25s |  we think was an initial payload artifact, and we developed a theory of this exploit.
+1225.90s - 1230.22s |  So this was an actual artifact that we were able to pull from a victim device.
+1230.22s - 1238.46s |  It has all the private information redacted. However, we think that this was the calendar
+1238.46s - 1245.34s |  invite that was used to get initial access and deliver a payload on the device. So iCalendar
+1246.06s - 1254.70s |  artifacts, when on device, look like a text file. So if you get it on your email, on your phone,
+1254.70s - 1260.30s |  or on your laptop, and you open a .ics file, you'll see just like a random text file, and
+1260.30s - 1268.06s |  you'll see that there's these different key value pairs. So focus in on the DT stamp key value and
+1268.06s - 1274.06s |  the DT start key value. So this was weird because this actually indicated that it was a backdated
+1274.06s - 1281.18s |  event. The event time itself was for September 2020, but the calendar invite wasn't created
+1281.18s - 1289.34s |  until 2021. This means that the threat actor sent a calendar invite that would populate on
+1289.34s - 1295.42s |  the end user's calendar, but the user wouldn't get a notification because it was an event that
+1295.42s - 1302.38s |  occurred in the past. So we did test this out, and that's exactly what would happen, and then
+1302.38s - 1307.34s |  Apple fixed it where I could send anybody a calendar invite in the past, and it would just
+1307.34s - 1313.18s |  automatically populate your calendar and save that invite to your device. So that's how we think that
+1313.18s - 1318.54s |  they were able to deliver this payload in a zero-click capacity without the end user knowing.
+1320.38s - 1328.14s |  Additionally, we saw some weird artifacts of C data closing and opening tags, and so this was
+1328.14s - 1335.02s |  also weird to us, and we decided to dig into it a little further. So what we realized in doing
+1335.02s - 1342.14s |  research is that C data is actually a very common tag used with XML, and so even though on the end
+1342.14s - 1348.70s |  device you'll see a text file that represents your calendar invite, when one user is sending
+1348.70s - 1355.42s |  a calendar invite to another user, it's actually parsed by the CalDAV server as XML, and so these
+1355.42s - 1364.78s |  XML files are essentially wrapping that text file. So as you can see here, there's an opening XML
+1364.78s - 1372.22s |  bracket, and then in yellow there will be an opening C data bracket, and then that key value text file
+1372.22s - 1377.90s |  is then appended in between, and then you'll see a closing yellow C data, and then they will close
+1377.90s - 1387.58s |  out the XML. So that means that the CalDAV server is supposed to be parsing everything inside an XML
+1387.58s - 1394.30s |  file. Realizing that this was not just a text file but actually XML, that means that theoretically
+1394.30s - 1400.62s |  somebody could also put XML data inside a calendar invite, and then that would be automatically parsed
+1400.62s - 1409.89s |  by the server. So this was just theoretically. We had to try and prove it. So what we saw in running
+1411.41s - 1417.81s |  just a regular calendar invite, just any calendar invite, was that NSXML parser was
+1417.81s - 1424.69s |  hooked by Frida, and anytime they find an XML element there will be a callback. So we had an
+1424.69s - 1433.25s |  idea, okay, XML data is definitely going to be parsed by an iCalendar invite, but can we
+1433.25s - 1438.45s |  actually get this to send through the server? Because if I just airdrop an iCalendar file to a
+1438.45s - 1444.05s |  device, obviously it's going to parse that, but people don't usually airdrop iCalendar invites.
+1444.05s - 1452.11s |  They're leveraging this mechanism where they're delivering it remotely. So when they receive
+1452.75s - 1459.95s |  a calendar invite, all of this potentially malicious code here is going to be ignored by
+1459.95s - 1466.91s |  the iCalendar server, and that's because the C data tags is saying, oh, just ignore all of this.
+1467.63s - 1475.31s |  So it shouldn't see any of that. So what we did was we tried to test against a server, because
+1475.31s - 1483.55s |  in sending the exploit over the existing CalDAV server that backs iCalendar, we were not able
+1483.55s - 1490.11s |  to deliver what we thought would be the exploit. So we actually spun up our own version of the
+1490.11s - 1496.67s |  Apple Calendar server so that we could see what the calendar invite looks like on the wire once
+1496.67s - 1506.11s |  it's sent from the attacker to the victim. And so what we discovered was that the server was
+1506.11s - 1516.35s |  rejecting the open and close C data brackets whenever they were to the left of the key value
+1516.35s - 1524.11s |  colon, but not to the right of the colon. So if you put, or sorry, I said the wrong thing. So it
+1524.11s - 1534.48s |  was accepting the brackets for C data to the right in the value area, but it was accepting them to
+1534.48s - 1539.36s |  the left of the colon, but not to the right of the colon. So I'm just actually going to go back
+1539.36s - 1545.76s |  and explain this here. So you can see in description to the left of the colon, there's
+1545.76s - 1554.80s |  that close C data bracket, and then to the left of the notes colon, there's an open. And so similar
+1554.88s - 1565.20s |  to any type of SQL injection where you're adding a close and then open to have multiple SQL queries,
+1565.92s - 1572.96s |  they added a close and open to have multiple XML queries. So they were able to close the
+1574.08s - 1580.88s |  original C data that was wrapped by the server, insert this malicious XML, and then reopen it
+1581.84s - 1591.36s |  with another C data bracket. And so in testing against the server, playing around with it,
+1591.36s - 1596.48s |  we were able to figure out that, yes, that specific exploit can be sent over the wire.
+1598.40s - 1604.16s |  But we still kind of had a hole in our theory. So we're like, okay, we can send XML data.
+1605.12s - 1613.12s |  Yeah, we can insert these C data tags to the left of the semicolon. And yes, potentially
+1614.00s - 1621.04s |  an XML breakout happened here. However, in that file, there was no XML. So even though our
+1621.84s - 1628.40s |  exploit had XML that was detonated, this one didn't. And why couldn't we find that artifact?
+1630.77s - 1638.29s |  The last piece of the puzzle was the sequence value was updated to one. And so in researching
+1638.29s - 1643.81s |  how the Caldev protocol works, when you have a brand new calendar invite, it's going to say
+1643.81s - 1649.33s |  sequence zero. And if the organizer updates that calendar invite, it's going to say one. And then
+1649.33s - 1653.33s |  the next time they update it, it will say two. And so the fact that this calendar invite was
+1653.33s - 1660.77s |  incremented means that they probably deleted that code. So even though they tried to clean
+1660.77s - 1665.81s |  everything up and fully delete the calendar invite, they also made sure to try and delete
+1665.81s - 1676.30s |  their XML breakout, the important part of the exploit. So instead of using iMessage as an
+1676.30s - 1684.54s |  exploit vector, Quadream decided to use iCalendar. And this was a brand new threat vector that hadn't
+1684.54s - 1690.14s |  been seen before. So it was really interesting for us to reverse engineer this. But I keep
+1690.14s - 1696.30s |  referring to Quadream in the past tense. And that's because partially as a result of the research done
+1696.30s - 1702.70s |  by Microsoft and Citizen Lab and the subsequent blog posts that we published exposing this exploit
+1702.70s - 1710.30s |  vector and also our collaboration with Apple in mitigating this exploit vector, Quadream actually
+1710.30s - 1716.38s |  filed for bankruptcy. So they're a threat actor that we no longer have to worry about because we
+1716.38s - 1725.81s |  were able to shut them down for good. So in conclusion, collaboration is really important.
+1726.45s - 1732.61s |  We would not have been able to do this research in a silo just having the sample and not having
+1733.17s - 1739.57s |  the victim devices that Citizen Lab has and them just having the victim devices and not having my
+1739.57s - 1743.65s |  experience as an exploit developer. We really wouldn't have been able to figure out how this
+1743.65s - 1749.81s |  worked. So it's really important for us to continue to collaborate with Citizen Lab, Amnesty International,
+1749.81s - 1754.93s |  and other organizations so that we can come together and make sure that these threat actors
+1754.93s - 1761.01s |  aren't targeting people. Also, cloud services are a new vector that we really need to make sure that
+1761.01s - 1768.13s |  we're paying attention to. So you might think, oh, this is a really great feature that makes it really
+1768.13s - 1773.81s |  easy to collaborate with people. I love that your calendar invite is automatically populated on my
+1773.81s - 1780.93s |  end device. However, as we saw here, all of those features are also new vulnerability vectors.
+1780.93s - 1786.69s |  So we just have to think about those because not all features are actually useful.
+1788.45s - 1792.21s |  We also want to make sure we build the wall broader, not just taller in one place.
+1792.21s - 1797.33s |  So the last store for iMessage is amazing and it would probably be good to have something like that
+1797.33s - 1803.33s |  for other services as well, which Apple did. They created lockdown mode, which is supposed to close
+1803.33s - 1812.93s |  off any cloud connectivity, automated sharing, things like that. So yeah, that's how we discovered
+1812.93s - 1818.85s |  and re-instrumented the exploit. I hope you found it interesting and it's now the end of the day, so
+1819.41s - 1827.10s |  you can go to happy hour if you want. Thank you very much.

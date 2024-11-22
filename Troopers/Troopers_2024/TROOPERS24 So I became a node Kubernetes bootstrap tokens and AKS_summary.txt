@@ -1,0 +1,53 @@
+**Introduction**
+- Presentation title: *So I Became a Node*
+- Speakers: Paul Barbé and Kévin Schouteeten
+- Topic: Exploiting vulnerabilities in Azure Kubernetes Service (AKS)
+
+**Kubernetes Basics**
+- **Kubernetes**: An open-source system for automating deployment, scaling, and management of containerized applications.
+- **Cluster Components**: Control plane (scheduler, etcd, Kubernetes cluster manager, and IPI server) and nodes (run containers and pods).
+- **Pods**: Smallest unit in Kubernetes, containing one or more containers where applications run.
+- **Kubelet**: Component on each node that communicates with the control plane and applies specifications to the node.
+- **Control Plane Components**: Includes the scheduler, etcd database, and kubepi server (exposes Kubernetes API).
+
+**Authentication and Authorization in Kubernetes**
+- **Authentication**: Extracting caller identity from HTTP headers or mutual TLS authentication.
+- **Authorization**: Resolving whether the identity is allowed to perform the requested action.
+- **Identity Types**: Regular users, service accounts, and infrastructure components.
+- **Certificate-based Authentication**: Client and server certificates signed by a cluster certificate authority (CA) for verification.
+- **Role-Based Access Control (RBAC)**: Granting privileges to identities using roles and role bindings.
+- **Node Authorization Mode**: Restricting kubelet privileges to resources deployed on the related node to prevent lateral movement.
+
+**TLS and Certificate Management in Kubernetes**
+- **TLS Certificates**: Used for secure communication between various components in the cluster.
+- **Certificate Authority (CA)**: Signs all certificates in the cluster, including serving certificates for API server and etcd database.
+- **Client Certificates**: Used by different elements to authenticate to the API server.
+- **Node Certificates**: Kubelets require specific certificates for node authorization mode to restrict privileges.
+- **Certificate Signing Requests (CSRs)**: Built-in way to sign certificates automatically or manually by an administrator.
+- **Bootstrap Tokens**: Credentials stored as secrets in the cluster, providing permissions for CSR creation and retrieval.
+
+**Exploiting AKS Clusters**
+- **AKS Cluster Setup**: One node pool with two nodes, Kubernetes version 1.28.5, RBAC authentication, and Calico network policy.
+- **Demo Steps**:
+   - Leaking the TLS bootstrap token from a pod with host network namespace enabled.
+   - Decrypting the bootstrap token.
+   - Using the token to create a new pod and list nodes and pods in the cluster.
+   - Signing a certificate for a node with a target pod containing a secret.
+   - Retrieving the secret from the target pod.
+
+**Privilege Escalation in AKS**
+- **Goal**: Elevating privileges to Cluster Admin.
+- **Approach**:
+   - Enumerating resources in the cluster, focusing on Tigera Operator pod and service account.
+   - Exploiting the previous exploit to retrieve the node certificate for the Tigera Operator pod.
+   - Retrieving a JWT for the Tigera Operator service account.
+   - Creating a new cluster role binding to bind the cluster admin role to the Tigera service account.
+
+**Disclosure and Mitigation**
+- Microsoft acknowledged the issue as a security boundary bypass but did not consider it a high priority.
+- Mitigation: Avoid using pods that share the host network namespace. Monitor CSRs for suspicious activity.
+
+**Conclusion**
+- AKS is not inherently less secure than other cloud providers. Understanding how the cloud provider works is key to defending against such attacks.
+- The presented method will be added to the Kubelet-Main tool for automating node attacks.
+- A blog post with detailed research findings is available for reference.

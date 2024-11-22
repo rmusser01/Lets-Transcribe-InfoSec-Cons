@@ -1,0 +1,291 @@
+{
+  "webpage_url": "https://www.youtube.com/watch?v=IyInMgXj4k4",
+  "title": "DEF CON 32   Finding 0days in Vilo Home Routers   Justin Mott & Ava Petersen",
+  "description": "From January to May 2024, a team of student researchers at Brigham Young University looked for 0days in a consumer-grade home router made by Vilo Living. By April 2024, they had found 9 zero days, 6 of which were critical. This presentation covers the process they went through from initial reconnaissance to hardware hacking to finding buffer overflows to reporting the bugs to the organization. Outline: Initial recon - OSINT on the company, previous vulnerabilities released (none), and black-box interactions with network services on the LAN Hardware hacking - identifying chips on the board, connecting to the UART interface, deciphering boot up info, dumping the flash memory (didn\u2019t work), and observing reads/writes by the CPU to flash memory to obtain the firmware Cloud enumeration - discovering the AWS S3 buckets and IoT infrastructure, tracing cloud interactions (authenticating to the router remotely, retrieving MQTT certificates, etc.) Firmware enumeration - kernel + libc version, arch, how to emulate binaries on an x86 machine, compiling code to run on the router, what binary does what, etc. Vulnerability discovery - finishing reversing custom TCP protocol for mobile app-router interactions, searching for stack overflows, lack of authentication, command injection (and accidentally bricking 3 routers), info leaks, reviewing the 9 vulnerabilities we discovered, weaponizing and chaining some of the vulnerabilities, etc. Vendor disclosure - difficulty contacting the vendor in May 2024 with vulnerability details (they were almost dead), how the disclosure process went, filing for CVEs in June, publishing vuln details in August Conclusion - how stupid easy it is to hack IoT devices, how IoT vendors treat security issues, where future research can focus",
+  "channel_url": "https://www.youtube.com/channel/UC6Om9kAkl32dWlDSNlDS9Iw",
+  "duration": 1685,
+  "channel": "DEFCONConference",
+  "uploader": "DEFCONConference",
+  "upload_date": "20241016"
+}
+
+0.00s - 6.40s | This text was transcribed using whisper model: large-v2
+
+ uh good afternoon ladies gentlemen and hackers all around we are very very excited to be here
+6.40s - 12.16s |  with you today we're excited to share what we've done this year um the light's a little bright so
+12.16s - 18.24s |  i can't see you but i'm trusting that there's people out there so um as always keep your hands
+18.24s - 23.12s |  and and feet inside of the vehicles at all times um and enjoy the ride we're excited
+23.12s - 30.72s |  um okay so this is what we're going to go over today what i really want to point out is the link
+30.72s - 37.28s |  at the bottom it is a github link if you would like to follow along see more details actual
+37.28s - 42.40s |  code and the firmware of what we've gone through you can go ahead we published it about 30 minutes
+42.40s - 46.96s |  ago so you can go in and follow through or if you would just like to listen to the talk follow
+46.96s - 52.64s |  along and then maybe view it at the end there is a qr code that we have that you can scan i
+52.64s - 59.55s |  promise you it's not a rickroll um it'll just give you this github link okay first we'll do
+59.55s - 65.39s |  some introductions my name is justin applegate i am a rising graduate student at brigham young
+65.39s - 73.55s |  university um i am an avid ctfr i play for project sekai and the u.s cyber team i am avid peterson
+73.55s - 79.95s |  i'm also an undergraduate student at byu and i go by the handle delta blue jay and i am justin
+80.51s - 86.35s |  i am also a graduate student at byu and i go by the handle castor burris thank you yes i go by
+86.35s - 91.87s |  lego clones um if you've if you see me around the last member of our team for this project his name
+91.87s - 97.79s |  is wyatt pangirl he goes by spouting whale um he just graduated from byu he was not able to make
+97.79s - 106.08s |  it today um but he was an invaluable member of our team so let's just go over the project real
+106.08s - 111.52s |  quick but first i want to present to you the router graveyard we managed to break not one but
+111.52s - 117.76s |  two but three routers along the way of this journey um we really wanted to apply some ctf skills to a
+117.76s - 125.52s |  real life situation so we uh picked a router a device and and tried to hike into it so we formed
+125.52s - 131.28s |  our team we picked a timeline of about a semester long project and uh saw what we could get from
+131.28s - 141.01s |  there um so the device we picked was this vilo router uh home mesh wi-fi device so as any
+141.01s - 146.53s |  vulnerability researcher or security researcher does when you first start against a new target
+146.53s - 151.17s |  you want to do reconnaissance you want to oscent you want to figure out what has been done before
+151.17s - 157.25s |  so i don't have to reinvent the wheel so this is some of the results that of what we went through
+157.25s - 162.53s |  vilo living is the company that produced the routers that we went after they were a startup
+162.53s - 168.21s |  founded in 2021 so they're pretty they're pretty new pretty recent and they only have two products
+168.21s - 174.85s |  as of today they are both mesh routers one sports wi-fi five the other wi-fi six we search for cves
+174.85s - 180.45s |  that have been released any sort of technical deep dive or breakdown or even a consumer review that
+180.45s - 184.77s |  might go into some of the features a little bit and we didn't find anything so between the fact
+184.77s - 189.49s |  that it's a new company um the fact that we didn't see anything any other research that
+189.49s - 193.89s |  that had been done before and it was pretty cheap it was one of the cheapest routers that we could
+193.89s - 199.01s |  find on amazon we were thinking all right this is perfect for some college students to get our feet
+199.01s - 205.57s |  wet get involved find some cves just get used to the router hacking scene um a couple of notes i
+205.57s - 211.89s |  know a lot of routers especially the older ones are administered through a web interface you
+211.89s - 218.53s |  connect to the LAN or to the WAN you type in 192.168.1.1 in your browser it pops up that's how
+218.53s - 223.49s |  you set it up this was not the case with us and with this router it was all managed through an
+223.49s - 229.09s |  app on your phone kind of a new age thing um they said they have a bug bounty program when we did
+229.09s - 233.89s |  some research in order to access the bug bounty program you had to sign an NDA and be a part of
+233.89s - 239.97s |  their beta testing group um which i we didn't know what the NDA looked like so we reached out and
+239.97s - 243.97s |  said hey we want to join the beta testing group can you send us the NDA and they just never got
+243.97s - 247.81s |  back to us so we were like well i guess we'll just risk it for the biscuit go for it anyway
+247.81s - 253.09s |  see what we find um and last thing the firmware was not released by the vendor it's not something
+253.09s - 256.61s |  that we could just download and go through we had to go ahead and recover that ourselves
+257.57s - 265.01s |  this led to the three main goals for us today um first was to acquire the firmware that way it's a
+265.01s - 270.13s |  white box test and not a black box test you can see the code it makes it a lot easier to actually
+270.13s - 275.65s |  turn memory corruption vulnerabilities into exploits then we wanted to pop a shell actually
+275.65s - 280.85s |  get a shell on the device that makes debugging and extracting the latest version of the firmware
+280.85s - 287.49s |  much easier and our third goal was to find as many pre-authentication remote code execution
+287.49s - 292.53s |  vulnerabilities as we could that's kind of the holy grail anyone that does not have administrator
+292.53s - 297.33s |  access to this router that can run whatever code that they want on it so those were the goals that
+297.33s - 303.89s |  we had when we approached it so obviously the next step was to start enumerating our attack surface
+304.85s - 309.57s |  so we went and dissembles disassembled the router and this is what we ended up with
+309.57s - 315.17s |  uh and we found some uart pins so we tried to solder to them and that was the death of router
+315.17s - 323.73s |  number one uh you may be gone but it will live forever on in our hearts uh the second router
+323.73s - 330.45s |  had better pins that were easy to solder to so then we hooked it up uh got a linux log on screen
+331.17s - 334.29s |  uh the problem is we didn't know the password and it wasn't an easy one
+335.25s - 340.21s |  and the ur interface died after 30 seconds after boot and it was really hard to even try to put
+340.21s - 347.25s |  in a password because it printed out how much time you had left every second as a result there
+347.25s - 354.53s |  was no free shell from this interface so we moved on we went to go and look at the vilo app we pulled
+354.53s - 361.49s |  the apk from google play um and apparently the other members of our team think that mobile rev
+361.49s - 370.37s |  sucks um i thought it was a great time we found some firebase info um various cloud service stuff
+370.37s - 376.21s |  on the app but the biggest important thing that we found was a custom uh service running on tcp port
+376.77s - 384.93s |  5 4 3 2 this was used for wrap apt to router interactions when the router had not yet gotten
+384.93s - 389.97s |  at internet access uh this was used to get do all that setup it would spin this up they would
+389.97s - 394.37s |  talk to each other over this they had a custom protocol that we reversed engineer to learn how
+394.37s - 403.97s |  that was working go on next slide so this is kind of the overview at a 15 byte header and a payload
+404.53s - 411.81s |  um the header had uh all the fields that you see there not all op codes had payloads but many did
+411.81s - 418.69s |  and they were usually encrypted using this weird xxt plus custom uh obfuscation layer
+418.69s - 424.61s |  random things basically the app had a hard-coded key that obfuscated and then sent to the router
+424.61s - 429.17s |  and the router encrypted a new key and sent it back but it was all reversible and so we were
+429.17s - 435.65s |  able to go from the hard-coded key and generate our own ones to be able to talk to it uh which
+435.65s - 442.53s |  made it really easy to start once we were able to get the source for it uh start sending messages
+442.53s - 451.97s |  back and forth and uh exploit some of our some of the things we found so then we needed still
+451.97s - 457.41s |  needed to get the firmware off of it um we saw that there was a flash memory chip of the model
+457.41s - 464.37s |  on the slide we tried some software utilities and they only gave us bad data so then we got this
+464.37s - 470.77s |  salie logic analyzer and then it just worked uh we just hooked it up we fired up their software
+470.77s - 476.69s |  we turned the router on we got all of the spi data straight to their software and then we could just
+476.69s - 481.33s |  decode it and there was the binary and we extracted the firmware and then we had everything that was
+481.33s - 486.77s |  on the router just like that we spent about a month getting to this point trying all sorts of
+486.77s - 491.33s |  different stuff and like literally it took us about two hours and then we had everything on it
+491.33s - 500.02s |  the moment we plugged this in so this is just a look at what uh that spi data looked like in the
+500.02s - 506.26s |  software it was super easy once we had it um we have a more technical deep dive on exactly what
+506.26s - 513.46s |  that is and the python scripts we use to translate this into the binary on the github yep so check
+513.46s - 518.66s |  out the github if you want to see more about how that's done um at this point we had the firmware
+518.66s - 524.50s |  we had accomplished goal number one now we wanted to look for vulnerabilities and establish a shell
+524.50s - 529.06s |  so before you start looking for vulnerabilities it's usually a good idea to figure out
+529.06s - 536.82s |  how to emulate the firmware on your own machine um this specific device had a 32-bit little endian
+536.82s - 543.46s |  MIPS processor so that's what all the the binaries were compiled to be using most of us have x86 or
+543.46s - 547.86s |  even arm machines and so that's not something that we can run natively so we decided to use
+547.86s - 554.26s |  qemu which was statically compiled along with chroot and some precise gdb breakpoints that we
+554.26s - 559.46s |  had figured out after some reverse engineering in Ghidra in order to actually emulate the firmware
+559.46s - 564.50s |  and get it running on one of our machines this makes it significantly easier to fuzz for
+564.50s - 570.74s |  vulnerabilities to test things out um to to create exploits once you find a vulnerability
+570.74s - 576.34s |  in addition we wanted the ability to compile our own executables that we can place on the
+576.34s - 581.22s |  device and run them because a lot of these embedded devices do not have the executables
+581.22s - 586.34s |  that you would like to have on there for example netcat or whatnot um this one didn't even have
+586.34s - 593.54s |  who am i um and so we wanted to be able to create our own stuff now this device used uc libc as its
+593.62s - 600.82s |  libc library um uc libc was actually pretty much discontinued or unmaintained since 2012 and so
+600.82s - 607.86s |  someone created a fork called it uc libc ng or next generation um and so that is what we used
+607.86s - 612.74s |  along with buildroot to build a toolchain so that we could compile our own executables it worked
+613.38s - 618.26s |  for the most part not all the time um the bindshell that we had created and used for
+618.26s - 623.86s |  one of our exploits worked just fine we were able to compile gdb server but every time we
+623.86s - 628.66s |  tried to connect we tried to connect to it remotely it kept segfaulting it could be because
+628.66s - 634.02s |  we're using uc libc ng it could just be a skill issue on our part i'm not sure something happened
+634.02s - 640.66s |  there this is what it looks like when you actually have it emulated so like i said we're using ch
+640.66s - 646.50s |  root to mount the file system so that um the executable can find the libraries that it's
+646.50s - 652.02s |  looking for at the hard-coded path that it has then we have a statically compiled qemu which
+652.02s - 659.06s |  runs it now you can see a dash g1234 if you're not super familiar with qemu or gdb this opens
+659.06s - 666.02s |  up a remote debugging session on the local port 1234 which means on a separate terminal than what
+666.02s - 674.18s |  you see here you can open up gdb server um or gdb uh multi-arch and then connect to that local port
+674.18s - 679.46s |  and now you're running the firmware here but you can debug it with your own gdb setup in another
+679.46s - 684.26s |  terminal and then because this one opens up a socket and expects communication you have to
+684.26s - 690.34s |  open up a third terminal to actually send data to this service we got all that figured out again
+690.34s - 696.42s |  more details are in the github repo if you would like to see how that's done at this point we spent
+696.42s - 703.06s |  about a month and a half approximately six weeks looking for vulnerabilities in the vilo routers
+703.06s - 709.46s |  like we said the holy grail is pre-authentication rce we found nine vulnerabilities total in the the
+709.46s - 714.18s |  four months that we had for this project six of them were critical and three of them were medium
+714.18s - 719.38s |  out of those six critical vulnerabilities four of them were pre-authentication buffer overflow
+719.38s - 725.46s |  vulnerabilities now we had only figured out how to exploit one of them because three of them were on
+725.46s - 731.54s |  a version of the firmware that had canaries enabled for that and so we were actually able to
+731.54s - 736.98s |  overwrite the instruction pointer and execute our own code except for one of them we were able to
+738.10s - 743.38s |  and while we were working on trying to develop exploits see if we can get past these mitigations
+743.38s - 748.18s |  we accidentally discovered a blind authenticated command injection now we're going to go over three
+748.82s - 753.70s |  specific vulnerabilities the ones we found most entertaining for you guys today um i also want
+753.70s - 759.62s |  to note most of these bugs are present in the service the custom service running on port 5432
+759.62s - 764.66s |  that we talked a little bit about um these are the vulnerabilities up here so you can see the
+764.66s - 770.10s |  four buffer overflows are at the top um they're all 9.6 criticals there was an info leak and some
+770.10s - 775.22s |  lack of authentication um we have reserved cve numbers through mitre they're not published yet
+775.22s - 779.70s |  since we just published our public repo earlier today but we have reserved the numbers and they
+779.70s - 787.50s |  are in the same order that you see up here okay the first vulnerability that i want to talk about
+787.50s - 793.02s |  today is the lack of authentication in this custom service so as my team team member said
+793.02s - 799.50s |  most of the communications from the app to the router went through aws except if you if you're
+799.50s - 804.94s |  not connected to the internet you need some way to set it up so that goes through this service
+804.94s - 809.74s |  the thing is because it has hard-coded keys and there's really no authentication inside of it
+809.74s - 816.78s |  anyone that is that is on the LAN and knows how to speak this protocol can um can control the
+816.78s - 821.50s |  router pretty much so anything that you can do they can do for example you invite a friend over
+821.50s - 826.06s |  you give them the wi-fi password they're now on the wi-fi they can control the router the same way
+826.06s - 831.98s |  that you can they can see and change your ssid your password pppui username and password they
+831.98s - 837.18s |  can reboot it they can even exploit all of these vulnerabilities that was very useful for us because
+837.18s - 843.50s |  then a lot of the buffer overflows that we found became um unauthenticated rce vulnerabilities and
+843.58s - 849.10s |  not authenticated rce vulnerabilities the other important thing to note is while this service was
+849.10s - 855.74s |  used for initial setup when the router didn't have internet access it stayed up the whole time that
+855.74s - 863.10s |  the router was on even if it did so it was just always available no matter what so we first found
+863.10s - 869.10s |  the the first buffer overflow in this local app set router token function um we talked about how
+869.10s - 875.18s |  there are different messages that are differentiated by opcodes so the opcode 0x3e updates
+875.18s - 881.74s |  a token and a time zone using an encrypted json object encryption coming from this weird xxt and
+881.74s - 887.42s |  obfuscation that we talked about um if you are familiar with c and memory corruption you'll see
+887.42s - 893.50s |  this sscanf function immediately will stand out to you because it takes the token and pulls it
+893.50s - 899.42s |  into a fixed length buffer token but it doesn't check the length of the string so if token is for
+899.42s - 905.18s |  example only 16 bytes and you send a token that is 20 bytes you now have a four byte overflow
+905.18s - 910.46s |  pretty obvious so our next goal was how can we actually exploit this we don't want to just say
+910.46s - 916.14s |  oh this is a vulnerability we want to prove impact plus it's kind of fun doing this um for mitigations
+916.14s - 921.74s |  pi and canaries were disabled or at least that's what we thought we had later learned that in
+921.74s - 927.50s |  in the latest version of the firmware canaries were enabled and this ended up not being exploitable
+927.50s - 930.70s |  but we didn't know that we were dealing with an older version of the firmware it was the
+930.70s - 935.74s |  the newest one that we could get our hands on but it still wasn't the latest one so we were
+935.74s - 940.78s |  trying to figure out how can we exploit this we just have a generic buffer overflow vulnerability
+941.50s - 947.18s |  if you if you're into you know binary exploitation ROP probably comes to mind ROP is a little bit
+947.18s - 952.14s |  difficult in MIPS because it doesn't have a return instruction yeah you can still kind
+952.14s - 958.06s |  of get it but it makes it significantly more difficult as a side note um based off of what
+958.06s - 963.18s |  we had to do here I decided to make a CTF challenge with very very similar conditions
+963.18s - 968.46s |  that I wrote myself we released it as a part of BYU CTF 2024 if you would like to do that
+968.46s - 975.39s |  yourself give yourself a challenge you can look it up it's available on github um so
+976.35s - 980.51s |  how do we exploit this well we wanted to find kind of a one-shot gadget where we could just
+980.51s - 984.75s |  return there and then it would do everything for us and we didn't have to chain multiple gadgets
+984.75s - 990.35s |  together because of the overflow we could control the RA register or the return address register
+990.35s - 996.43s |  and the S8 register which is pretty much the stack pointer so we figured if we can control S8
+996.43s - 1002.59s |  and point it to a user controlled bash command and then set the instruction pointer to go to this
+1003.07s - 1010.59s |  gadget win right you profit ASLR is enabled so we can't use stack values but because pi is disabled
+1010.59s - 1014.59s |  we know where all the global variables are so we started looking through to see
+1014.59s - 1020.35s |  what global variables can we control that we can easily put our own command inside of it
+1021.31s - 1025.55s |  so us being the intelligent people that we are decided to put a semicolon reboot semicolon in
+1025.55s - 1030.27s |  there we ran it and nothing happened so we rebooted it just to make sure that we hadn't
+1030.27s - 1035.55s |  messed anything up and we ended up messing something up by doing that um the router just
+1035.55s - 1041.63s |  kept rebooting and it never actually got online turns out there's a uh an authenticated command
+1041.63s - 1047.55s |  injection vulnerability that Ava will now go over so after we found our accidental command
+1047.55s - 1051.87s |  injection vulnerability we went back to find the code that was responsible for this um so we ended
+1051.87s - 1058.03s |  up finding it in the sysconf binary which is run on boot um so as you can see here it formats a
+1058.03s - 1063.23s |  udhcpc bash command with several variables including the router host name and then it
+1063.23s - 1071.63s |  pipes that directly into the system function and so because we can control the router host name
+1071.63s - 1077.47s |  through the viral app we can get arbitrary rce by just setting that host name to a bash command
+1077.47s - 1082.43s |  um so we can verify that this command actually has been run by looking at the boot output which
+1082.43s - 1087.31s |  you can see here on the right you can see the output of that command right there we got this
+1087.31s - 1093.23s |  output from the ur interface that we connected to initially so there are a few limitations with
+1093.23s - 1098.27s |  this exploit um namely that the injected command is run only once on booting the router as well
+1098.27s - 1104.83s |  as that the router host name is limited to a length of 30 characters so as a result we had
+1104.83s - 1110.27s |  to write our payload into several 30 byte sections um which we what we ended up doing with that is
+1110.27s - 1115.07s |  write a script to the slash foley directory um which is one of the few directories that is both
+1115.07s - 1120.67s |  writable and persistent on the router um and so we wrote a script that itself then downloads a
+1120.67s - 1127.31s |  a longer script from the internet using wget um and runs that now we also found that the
+1127.95s - 1131.79s |  router does not have an internet connection at the time of running the injected command
+1132.35s - 1137.95s |  so we had to make our script um or our payload wait 20 seconds before running our first script
+1138.27s - 1143.07s |  so after we wrote our first payload um it then downloads and executes a second payload which
+1143.07s - 1149.63s |  itself then downloads and executes a compiled cbind shell um which we can connect to via netcat
+1149.63s - 1153.39s |  and so through this bind shell we were able to gain our first shell on the router
+1154.35s - 1158.91s |  so as you can see here we're able to netcat into the router and find that we have gained a shell
+1158.91s - 1170.88s |  as the root user okay so once april had come around we had reached our four months it was the end of
+1170.88s - 1177.36s |  the semester we had to wrap up the project and we decided you know let's reach out to the vendor
+1177.36s - 1181.52s |  try and get in contact send them the details for the vulnerabilities let's see if we can get this
+1181.52s - 1186.56s |  patched it was actually pretty much like it was a pretty big pain to get in contact with them they
+1186.56s - 1192.16s |  had an email address listed in their terms of service but it didn't exist it just bounced back
+1192.16s - 1196.08s |  we reached out to a couple other email addresses on their website we tried to guess the email
+1196.08s - 1200.88s |  addresses none of that worked we reached out over social media they have youtube they have
+1200.88s - 1205.36s |  i think facebook maybe in an instagram we didn't hear back from that we filed a couple support
+1205.36s - 1211.76s |  tickets and eventually we got a response from them um they put us in contact with the actual
+1211.76s - 1216.80s |  developers and the developers said hey thank you for for sending us this we'll take a look at it
+1216.80s - 1222.32s |  we'll get back to you on it this is the the overall timeline of what we did so we started
+1222.32s - 1229.28s |  the project in january we finished it up in early april we reached out to them and it took us a month
+1229.28s - 1234.24s |  before we actually got in contact and we said hey here are the details for these nine vulnerabilities
+1234.24s - 1238.80s |  we are giving you a 90 day deadline we are happy to help if you have any questions if you want us
+1238.80s - 1244.64s |  to elaborate etc we followed up a month later didn't hear anything we followed up two weeks
+1244.64s - 1249.60s |  after that we didn't hear anything and as we had told them we went ahead and filed cve numbers for
+1249.60s - 1254.00s |  mitre we then followed up two weeks later and they said we're working on it we'll publish
+1254.00s - 1258.56s |  something pretty soon here we'll get it out to you um so the 90 day disclosure deadline was a
+1258.56s - 1263.44s |  couple days ago we timed this for our talk today um and the vendors actually reached out to us
+1264.08s - 1268.56s |  like the day before we left here for defcon and said hey we've pushed a new firmware update can
+1268.56s - 1273.92s |  you check that and we said yes just not right now so we haven't looked at it yet um we'll take a
+1273.92s - 1277.76s |  look at that there but they have been somewhat responsive after we finally got in contact with
+1277.76s - 1286.64s |  them um just a quick conclusion we expected it to be a lot easier to get started um to get the
+1286.64s - 1291.60s |  firmware to find the initial vulnerability and get that initial root shell it took us two months to
+1291.60s - 1296.72s |  get to that point um so we were a little surprised about that that's also probably attributed to the
+1296.72s - 1302.16s |  lack of experience on our part um but then once we got in and we got the firmware we were able
+1302.16s - 1307.36s |  to find a lot of bugs and not a lot of time and we only looked at a very very small portion of
+1307.36s - 1311.60s |  the attack surface um there is still a lot more space for bugs if that's something that you're
+1311.60s - 1315.68s |  interested in looking for go to the github repo you'll notice that there are holes in the
+1315.68s - 1321.44s |  documentation that we just didn't have time to fill in um and we've we've hacked into a couple
+1321.44s - 1327.60s |  other devices since then and we found that the the cheaper lower quality devices hacking them
+1327.60s - 1334.32s |  is very very similar iot and embedded products still have a long long way to go when it comes to
+1334.40s - 1339.60s |  security so this is the qr code if you want to go ahead and go to the github repo and look at
+1339.60s - 1344.80s |  the details if you would like to connect with us on linkedin we also have ours our our links up
+1344.80s - 1368.00s |  here um what time are we at 53 are there any questions yes yeah feel free come on up don't
+1368.00s - 1392.48s |  expect that okay so the question was what method did you use to find the vulnerabilities was it
+1392.48s - 1399.12s |  fuzzing was it manual code analysis um we did not use any fuzzing um fuzzing is a little bit
+1399.12s - 1402.56s |  more difficult it's not impossible but it's a little bit more difficult when you have a closed
+1402.64s - 1408.24s |  source binary normally you would compile source code with some sort of sanitizer and then fuzz it
+1408.24s - 1412.08s |  from there but because it was closed source and it was mips and we're not super experienced with
+1412.08s - 1417.60s |  fuzzing we went the manual route so we just searched through the code um by hand and ghidra
+1417.60s - 1428.94s |  decompiling it to find it thank you other questions going once going twice yes right here
+1428.94s - 1442.90s |  yeah feel free to come up speak that protocol you could do basically any router administration
+1442.90s - 1448.02s |  could you not set the host name of the router from there and trigger a reboot and make that
+1448.02s - 1453.06s |  authenticated hostname injection uh let's make command injection to an unauthenticated injection
+1453.06s - 1460.34s |  because there's no credentials from that path perfect so the question was um like since um
+1460.98s - 1467.06s |  since that how would you say that um since the the local service is unauthenticated it was the
+1467.06s - 1471.78s |  question was about can we use that to turn the router hostname injection to an unauthenticated
+1471.78s - 1476.98s |  unauthenticated command injection um i think the answer to that is no kind of at least not that we
+1476.98s - 1481.22s |  know of not that we know of because the router hostname um the process of setting that actually
+1481.22s - 1486.66s |  goes through aws and so that was one area that we didn't have a lot of time to explore there are
+1486.66s - 1490.98s |  some keys associated with logging into that aws service um which is it's possible that those
+1490.98s - 1496.26s |  itself are vulnerable in some way but simply having access to the local service is not enough
+1496.26s - 1502.10s |  to set the router hostname yeah so a large part of the mobile app was just dealing with the aws
+1502.10s - 1506.18s |  api we didn't have a whole lot of time to go through that so it may be possible but from what
+1506.18s - 1510.42s |  we had seen we could only do that if you were authenticated if you already had the app set up
+1510.42s - 1541.07s |  with the router thank you i think we got one back there so the question was for someone who
+1541.07s - 1546.03s |  was new to hardware hacking and new to vulnerability research do you think following these steps would
+1546.03s - 1550.43s |  be good to learn some hardware hacking and do you think springboarding off of the research that we
+1550.43s - 1555.79s |  done would be a good way to get started um first off i'm still kind of a noob so i don't know that
+1555.79s - 1561.47s |  i have the best advice but i would say this is something that you definitely can do um for
+1561.47s - 1565.79s |  hardware hacking this was kind of my first exposure to it um and i learned a lot there's
+1565.79s - 1570.67s |  a lot of resources out there defcon has their hardware hacking village um i think reproducing
+1570.67s - 1575.63s |  these steps and going through it should be would be very very helpful um we do have some extensive
+1575.63s - 1579.87s |  write-ups specifically on the hardware part we spent more time documenting that because it was
+1579.87s - 1586.83s |  newer for us so hopefully it's it's helpful um as for finding cves um if you want to find cves and
+1586.83s - 1591.79s |  iot devices this is probably the easiest way to do it it does take a little bit of knowledge when
+1591.79s - 1596.43s |  it comes to memory corruption and whatnot but if you have an introduction to c and assembly and
+1596.43s - 1600.43s |  memory corruption and you want to find your own it's just a matter of looking through the code
+1600.43s - 1605.07s |  there is just so much code that we haven't even gone through so i would absolutely recommend that
+1605.07s - 1621.78s |  yes any other questions yes okay so the question is how do you get future firmware updates so this
+1621.78s - 1628.02s |  is kind of a tricky question we looked into it a little bit um initially there was an api endpoint
+1628.02s - 1632.90s |  just an http web server where you were able to say hey what is the latest firmware can you give
+1632.90s - 1638.42s |  me a link to it um the thing is it didn't actually give you the latest firmware so we talked about
+1638.42s - 1642.74s |  one of the buffer overflows that we tried to exploit that did not have stack canaries we
+1642.74s - 1646.98s |  thought that was the latest firmware version because we got it from that endpoint um pretty
+1646.98s - 1653.14s |  early on in the process um but the actual device had later firmware that i think it gets through
+1653.14s - 1662.26s |  the aws um like iot it uses encrypted mqtt communications um and so somehow it gets the
+1662.26s - 1667.46s |  update from that we have not fully reverse engineered that process we don't know how it is
+1667.46s - 1678.16s |  but it is somewhere within the aws mqtt sort of setup in there other questions going once
+1678.16s - 1683.44s |  going twice all right thank you for coming to our talk we appreciate it

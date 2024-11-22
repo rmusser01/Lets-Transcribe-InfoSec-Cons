@@ -1,0 +1,470 @@
+{
+  "webpage_url": "https://www.youtube.com/watch?v=jS3iNUfYtLA",
+  "title": "DEF CON 32 - Data On Demand The challenges of building a privacy focused AI Device - Matt Domko",
+  "description": "Building an AI product for the everyday person is challenging - doing it in a privacy focused way is nearly impossible without support from the right people. I'll walk through the techniques we're using at Rabbit to secure customer data and provide people a choice as to where their data goes.\n\nWe'll cover the pipelines that\n\nCollect and Manage customer identity after they login to a site\nLog, Anonymize, and Process customer voice interactions\nProvide \"just in time\" access to customer data for personalized RAG-like models\nAs a community, I think we're well within our rights to demand control over the data we provide to companies. This talk aims to provide engineers with a list of ideas on \"what right could look like\", and general attendees a list of things that are possible, so they know its ok to ask for them.",
+  "channel_url": "https://www.youtube.com/channel/UC6Om9kAkl32dWlDSNlDS9Iw",
+  "duration": 2447,
+  "channel": "DEFCONConference",
+  "uploader": "DEFCONConference",
+  "upload_date": "20241016"
+}
+
+0.00s - 6.08s | This text was transcribed using whisper model: large-v2
+
+ so hi everybody my name is Matt Domko I don't know who that was but they're my
+6.08s - 10.92s |  new best friend so you are at data on demand the challenges of building a
+10.92s - 19.52s |  privacy focused AI device and in reality like what I want to talk about is I am a
+19.52s - 28.48s |  consumer and also a supporter of the AI magical things and if if I have the one
+28.48s - 32.56s |  that I work on at work or if I have one from somebody else they're just certain
+32.56s - 36.68s |  things that I really want to make sure that they happen and that's kind of the
+36.68s - 43.92s |  the goal of this thing so I do have a job they pay me to do stuff these are my
+43.92s - 51.04s |  thoughts things in my brain that I wrote down in order to make a device safer but
+51.04s - 58.08s |  this is not the thoughts and ideas of my company my company a company I work at
+58.08s - 64.20s |  so I'm into 3d printing laser-cutting cosplay mostly steampunk stuff if you
+64.20s - 67.80s |  ever want to nerd out about any of that or just security education in general
+67.80s - 73.40s |  super super into it I'm also the director of fun at tines if anybody's
+73.40s - 78.08s |  familiar with tines it's an unofficial title and they don't pay me but I the
+78.08s - 86.12s |  director of fun here's the agenda will work through so the problem there's all
+86.12s - 89.44s |  these things and it's funny when I was creating these slides it was like okay
+89.44s - 92.96s |  what are the AI devices that exist and there were like three and then all of a
+92.96s - 97.24s |  sudden we had two new ones appear that are the exact same but different with
+97.24s - 100.60s |  the same name I don't know anyway the point is is I want a hardware device
+100.60s - 106.40s |  that makes AI easy for just the general consumer but I want to respect their
+106.40s - 112.68s |  privacy because it's the right thing to do and so it's it's kind of a challenge
+112.88s - 116.32s |  when you think about the difference between working in the consumer space
+116.32s - 121.72s |  where it's like anyone in my family who's not into technology might actually
+121.72s - 127.52s |  purchase one of these versus the team that I work with at an organization and
+127.52s - 131.60s |  they already have an understanding of how they treat their data and where it's
+131.60s - 137.76s |  going so before we get into the pipelines that we we should be using to
+137.76s - 143.72s |  protect those that data I want to start off talking about some basic request
+143.72s - 149.24s |  workflows so when I think about doing something with any kind of AI it's
+149.24s - 153.28s |  really four different types of requests and there are two it's basically two
+153.28s - 157.40s |  with a little differences so the first one is just a general knowledge request
+157.40s - 163.40s |  I don't need to know anything about you I can just make this request the second
+163.40s - 167.92s |  one is a contextual knowledge request so I need to know some things about you
+167.92s - 172.24s |  but I don't need any super sensitive data generic actions requests so if I
+172.24s - 176.16s |  want to do something for you but it could be anybody it could be done for
+176.16s - 179.84s |  Matt it could be done for Steve it could be done for Jay I think that's who that
+179.84s - 185.28s |  was now that's what we would do but if I wanted to do something on behalf of you
+185.28s - 189.48s |  on your Spotify account on your Grubhub account whatever it is I need to be
+189.48s - 196.60s |  authenticated and so that's that fourth type that I like to think about so if we
+196.60s - 202.88s |  look at the general knowledge request it's it's fairly simple so I have my my
+202.88s - 208.68s |  AI walkie-talkie I push the button and I say whatever it is I'm gonna say what
+208.68s - 214.92s |  what's the weather out today it's gonna go up through the internet into my cloud
+214.92s - 218.80s |  provider there's a routing and storage and replay engine that sort of glues
+218.80s - 223.12s |  everything together but at its core we're really just doing speech to text
+223.12s - 230.96s |  text to speech and some LLM calls to to figure out what the right answer is so
+230.96s - 236.64s |  that's a knowledge request when we're doing those those types of requests
+236.64s - 241.56s |  right what kind of data are we thinking about well if my request is tell me a
+241.56s - 248.12s |  cat about a fact about cats super easy if I say I've got a weird rash should I
+248.16s - 253.64s |  see a doctor a little bit more sensitive than tell me a fact about cats and so
+253.64s - 257.60s |  when I think about protecting this data it's really three different kinds I've
+257.60s - 262.16s |  got audio data that recording of my voice that needs to get converted into
+262.16s - 267.12s |  speech-to-text I've got the transcript data which is the result of that
+267.12s - 271.88s |  speech-to-text call and then I've got my response data which is where I took that
+271.88s - 279.73s |  that text ran it through an LLM and had the the LLM give me an answer when we
+279.73s - 284.89s |  think about generic action requests it's very very similar to what we just
+284.89s - 288.97s |  saw the only difference is now we insert an actuator so an actuator is just a
+288.97s - 294.77s |  thing that can perform a task when you provide an input and so this is this is
+294.77s - 302.99s |  the thing that calls the Google weather API for you as far as the types of data
+302.99s - 306.75s |  that that we need and that we need to protect we've still got our audio
+306.75s - 311.43s |  transcript and response data but we also have some contextual data right things
+311.43s - 317.71s |  like your location things like your interests if I ask about if I ask if I
+317.71s - 323.03s |  ask my a walkie-talkie for five restaurants in the area that are good
+323.03s - 329.03s |  ideally if I absolutely do not like cheeseburgers it would not give me the
+329.03s - 332.31s |  greatest cheeseburger restaurant in the neighborhood because it knows and so
+332.31s - 336.95s |  that contextual data is also something super sensitive that we want to protect
+336.95s - 342.83s |  and the last piece is the authenticated action request exact same flow as
+342.83s - 346.83s |  everything else the only difference is now we have to store some sort of
+346.83s - 352.47s |  credential somewhere right I can't order you food from your uber eats account
+352.47s - 358.55s |  unless I have a way to tell uber hey Matt wants food from uber so whenever I
+358.55s - 366.55s |  think about that more examples call me a nude an uber order me some tacos did
+366.55s - 371.63s |  Jimmy do his homework same old same data as before but we have additional
+371.63s - 376.23s |  context we have the identity of the person that's asking for it we have
+376.23s - 381.23s |  additional context about who this Jimmy person is right some like familial
+381.23s - 391.46s |  connection and then authentication information so this is like the sticky
+391.46s - 397.98s |  point that I feel like always it's always a really fun discussion and so
+397.98s - 401.54s |  so yeah I don't want to just make authentication information something
+401.54s - 406.90s |  tiny on the slide I want to actually talk about it so if I think about how
+406.90s - 414.82s |  can I authenticate a customer well or as a customer sorry I can do one of three
+414.82s - 419.18s |  things really I can save their username and password in a database and then
+419.18s - 424.78s |  anytime I need to do something as them I just log in as them that's cool right
+424.78s - 430.78s |  probably not I can have them log in and I can store their cookies so at least I
+430.78s - 435.74s |  can't create a new session I can only use that same session again and then the
+435.74s - 442.54s |  last option is I can just use OAuth the problem is is as security professionals
+442.54s - 447.06s |  it's really easy to just say go be a grown-up and use OAuth but whenever
+447.06s - 450.66s |  you're you're working with a business that has to make money you you actually
+450.66s - 454.98s |  have to think about these things and consider some of the trade-offs so we're
+454.98s - 457.86s |  going to talk about some of the trade-offs so if I just store the
+457.86s - 463.90s |  username and password it's great we can log in whenever we want sorry yeah
+463.90s - 468.34s |  wherever we want whenever we want I don't actually have to store any session
+468.34s - 471.66s |  information because if if I get logged out I'll just log back in because I know
+471.66s - 477.78s |  their username and password downside I have their username and password and
+477.78s - 485.46s |  someone can steal it bonus we can log in whenever we want I covered that part
+485.46s - 491.26s |  already and then the downside to that is in order to actually revoke our access a
+491.26s - 497.06s |  customer has to change their password again another bonus we can do anything
+497.06s - 501.18s |  that the customer can do because we have their username and password but the
+501.18s - 505.94s |  downside we can do anything the customer can do including change their password
+505.94s - 511.70s |  so if we're thinking about trade-offs this one doesn't feel like the right
+511.70s - 518.78s |  thing to do so the next thing we have right session cookies so lots of pros
+518.78s - 523.42s |  here sessions expire regularly the downside for the engineering team is
+523.42s - 528.46s |  sessions expire regularly I can have access to almost everything that a user
+528.46s - 534.62s |  can do if you've ever tried to go in and add someone to a repository in github
+534.62s - 539.62s |  like you can create a repository just I'm logged in but in order to add a
+539.62s - 542.86s |  person to that repository you have to step up you have to type in your
+542.86s - 548.06s |  password again you have to do an MFA push and so this is really great because
+548.06s - 553.58s |  if the provider supports it we can actually scope down what it is that
+553.58s - 558.74s |  we're able to do but the downside is the provider actually has to support that so
+558.74s - 564.02s |  while github might have that requirement the McDonald's mobile app maybe doesn't
+565.02s - 572.18s |  another nice thing on the engineering side is typically MFA requirements bot
+572.18s - 577.18s |  protection all of that happens at sign-in and before you actually get your
+577.18s - 584.86s |  session token for the site the downside is that it also doesn't usually generate
+584.86s - 588.94s |  a new login event so if you're like me and every time you get a message from
+588.94s - 593.38s |  Google that says hey you just logged in from somewhere new was that you and you
+593.38s - 598.42s |  get like super paranoid you're not gonna get those because most providers
+598.42s - 601.06s |  just say oh you've got a session token that already works so we're just gonna
+601.06s - 609.90s |  use that so that's it's not great a good thing users can can actually manually
+609.90s - 613.94s |  expire those sessions for themselves which is great right because if I go to
+613.94s - 619.02s |  gmail and I say where am I logged in and it says I'm logged into AWS I'm not
+619.06s - 624.14s |  logged into AWS I'm gonna click log out so that's great but again it requires
+624.14s - 630.50s |  the provider to actually create that opportunity for their customer and then
+630.50s - 634.54s |  the the other nice thing about this is it can be used on almost any website
+634.54s - 641.70s |  right when we get to the OAuth piece the biggest limitation is if you look at all
+641.70s - 646.62s |  of the websites on the internet how many of them actually support OAuth if we're
+646.62s - 653.22s |  in the b2b world and we're focusing just on oh I want I want Datadog I want
+653.22s - 658.18s |  GitLab I want all of these like commercial enterprises absolutely
+658.18s - 661.30s |  there's OAuth because it's a thing that we've been hounding vendors about for
+661.30s - 666.50s |  the last I don't know 20 years but there's a benefit there and that is if
+666.50s - 672.06s |  they do it they get our business whereas if you're a local mechanic shop and you
+672.06s - 677.62s |  just want people to book spots online with you you're not incentivized to
+677.62s - 683.14s |  invest in OAuth and so how do we support the general consumer with a technology
+683.14s - 688.78s |  that doesn't exist everywhere the other thing that I think sort of makes OAuth
+688.78s - 693.98s |  tricky in situations like this is you have to configure it for each site and
+693.98s - 699.82s |  so if there are a hundred million sites on the internet and I hire a 10x
+699.90s - 705.66s |  engineer who can knock out one integration every six hours okay so
+705.66s - 710.82s |  that's six hundred million did I say a hundred million sites I don't know but
+710.82s - 714.02s |  the the point is it's a very very long time to actually be able to reach the
+714.02s - 720.26s |  entire internet so we've done our pros and cons let's put them on a graph that
+720.26s - 723.98s |  graph saying low effort to high effort obviously the business likes that
+723.98s - 728.66s |  whenever we do things low effort not secure to more secure obviously as
+728.70s - 732.18s |  professionals we like to be over there on the far right hand side so we look at
+732.18s - 735.54s |  this graph and we say you know what there's just so much risk with username
+735.54s - 739.58s |  and password that's out and then we go to our CTO and we say hey I want to do
+739.58s - 744.26s |  OAuth to the world we're gonna call get token every time we need this and I tell
+744.26s - 748.02s |  them it's gonna take a thousand years to get all of the sites that they want to
+748.02s - 751.98s |  cover done and I get told no you know what that's probably not and even as a
+751.98s - 757.46s |  practitioner right I realized that if I try to make the world's most secure
+757.46s - 762.14s |  company that's just us not making money with all the computers turned off and I
+762.14s - 766.14s |  I like having a place to work I like building cool things for consumers and
+766.14s - 773.74s |  so working with cookies for now is kind of like the way that I see us going so
+773.74s - 781.34s |  let's talk about that user context that authentication information so there's
+781.34s - 785.74s |  sort of like the naive way right where you can just do it make it work it's
+785.74s - 789.98s |  gonna work great and then there's more of a more secure way so first let's talk
+789.98s - 794.38s |  about the naive way so the first thing that I'll do is recognize oh the user
+794.38s - 799.06s |  wants to store a cookie I'll create context the intention controller is
+799.06s - 803.14s |  going to recognize that and say oh they want to store a cookie cool it's going
+803.14s - 809.70s |  to create a context container that container exists purely to to to allow
+809.70s - 814.42s |  the user to store those cookies so some companies do it in a web browser some
+814.42s - 820.54s |  companies do it with a Chrome extension lots of different ways that you could do
+820.54s - 824.54s |  it but the point is we're going to collect that context we're gonna write
+824.54s - 829.86s |  it into a database whenever it comes time to use that cookie again it all
+829.86s - 834.98s |  fits on one slide I recognize I want to use this context I say oh this is Matt's
+834.98s - 840.06s |  user account I'm gonna go ahead and go into the database grab Matt's cookie and
+840.18s - 844.74s |  then stuff it into an actuator that actuator now has a login session for me
+844.74s - 850.18s |  and it can order the thing that I asked for it goes off into the third-party
+850.18s - 855.42s |  space and does the thing it's supposed to do what's the problem with this what
+855.42s - 862.61s |  makes you nervous stolen cookies I heard that in the front awesome yeah exactly I
+862.61s - 868.25s |  don't want to be the guy that has a database just full of cookies that other
+868.25s - 873.65s |  people can just come in and take from me that would be really really bad so
+873.65s - 878.49s |  let's think about a way that we could do this a little bit more securely so again
+878.49s - 883.01s |  I'll recognize I want to create some context I want to store that cookie the
+883.01s - 886.53s |  intention controller is going to recognize that very similar to before
+886.53s - 891.81s |  it's gonna create that that web browser so that the customer can log in but then
+891.81s - 896.49s |  notice we have a vault service down below and so once that cookies collected
+896.49s - 901.33s |  instead of just stuffing it into a vault and then returning it to the
+901.33s - 904.89s |  database what we're actually gonna do is we're gonna stuff it into the vault but
+904.89s - 909.33s |  we're also going to add the identity of the customer it belongs to and so when
+909.33s - 913.77s |  we get to the next slide you'll see that we should actually say hey yes I want
+913.77s - 918.37s |  this cookie also Matt said I could have it two minutes ago and so by having like
+918.37s - 924.57s |  a short-lived JWT that the user provides with you provides to you your life just
+924.57s - 928.41s |  gets a lot better I can sleep a lot better at night knowing that I'm not
+928.41s - 933.61s |  storing cookies for a hundred thousand people I'm storing things that I'm
+933.61s - 938.73s |  storing encrypted blobs and you would have to actually have a request from the
+938.73s - 945.28s |  user in order to go get that cookie so when we get to using the context
+945.28s - 949.44s |  securely I kind of already covered this but we'll walk through it again we
+949.44s - 953.32s |  recognize the user wants to take an authenticated action we get the object
+953.32s - 959.12s |  ID and not the actual object from the database we send that object ID and the
+959.12s - 965.80s |  users JWT to our vault or sorry to our context actuator the context
+965.80s - 970.96s |  actuator now is the thing that reaches out to the vault and gets that cookie
+970.96s - 977.84s |  and so this one tiny space in our network is the only place that with a
+977.88s - 983.96s |  request from the customer you can actually go get their cookie once once
+983.96s - 988.92s |  the actuator performs the action we tear it down we never use it again it was
+988.92s - 993.56s |  just that one thing and so the risk of someone coming in and stealing a token
+993.56s - 998.60s |  off of the the actuator gets a lot smaller right essentially we're looking
+998.60s - 1005.00s |  at like build system compromises that allow you to get in versus earlier it
+1005.00s - 1012.64s |  was just can someone access my database so it's a lot as far as securing the
+1012.64s - 1018.48s |  customer context so some do's and don'ts to sort of take away don't collect
+1018.48s - 1027.08s |  context that'll make you a target if you are only storing cookies for DoorDash
+1027.08s - 1034.28s |  Spotify and uber not a lot of people are gonna come after you right like like why
+1034.28s - 1040.32s |  do I want this cookie that is likely going to get caught there's much better
+1040.32s - 1045.48s |  things for me to spend my time on as an attacker so if we ever get to a world
+1045.48s - 1050.84s |  where somebody wants to use their AI walkie-talkie to spend money I don't
+1050.84s - 1056.00s |  want to store that financial instrument because that makes me a target and so
+1056.00s - 1061.64s |  allowing allowing vendors service providers to actually own that piece is
+1061.64s - 1069.50s |  super super important to me the second piece is don't reuse context or or yeah
+1069.50s - 1073.76s |  context containers or actuators across users so anytime I'm taking something
+1073.76s - 1078.36s |  sensitive from the customer it should be a one-off thing and then when it's done
+1078.36s - 1083.24s |  it should go away and then I don't ever have to worry about oh well I accidentally
+1083.24s - 1090.52s |  ordered $1,000 worth of tacos on Jay's uber eats account instead of on Matt's
+1090.52s - 1099.84s |  and now Jay has a ton of tacos to share with who I don't know so not doing those
+1099.84s - 1105.44s |  and then the the other don't big don't is don't trust that context as being
+1105.44s - 1111.44s |  true right it's really easy for for our engineers and developers to think oh
+1111.44s - 1114.68s |  yeah no this is a cookie that the customer gave us to order for them so
+1114.68s - 1118.68s |  that's good right no the answer is no this is data that came from the internet
+1118.68s - 1121.40s |  and we should just treat it like all the other data that came from the
+1121.40s - 1128.72s |  internet a couple of dues allow this vault access to only the that one thing
+1128.72s - 1135.56s |  that actually needs to go get it this way if you do if you do have any issues
+1135.56s - 1140.72s |  with people trying or having the ability to connect to your vault service they
+1140.72s - 1144.84s |  can't actually do anything right because you have to be running in that one
+1144.84s - 1150.64s |  specific container in order to access those tokens and then the last piece
+1150.64s - 1156.32s |  which is kind of my favorite is correlation IDs so anytime I need to ask
+1156.32s - 1162.88s |  for a cookie from the vault I should be able to match that up to a request that
+1162.88s - 1168.16s |  came from a physical device and if I can't that means that somebody that I
+1168.16s - 1171.56s |  work with is going to have a bad day or I'm gonna have a bad day because
+1171.56s - 1175.44s |  somebody else is creating those requests and so I think that's a thing
+1175.44s - 1179.56s |  that we sort of owe to our customers when we build devices like this is a way
+1179.56s - 1183.36s |  to tell them not only are we doing our best to protect your authentication
+1183.36s - 1188.24s |  information from random people on the internet but we also recognize your data
+1188.24s - 1192.60s |  is important to you we are not you so we shouldn't have access to it either and
+1192.60s - 1199.52s |  so by by introducing those correlation IDs you can do really cool things like
+1199.52s - 1204.68s |  requiring that correlation ID to exist before the request gets routed into the
+1204.68s - 1208.80s |  vault or you can just set up automated alerting so that you know if it ever
+1208.80s - 1216.92s |  happens you at least know about it so do's and don'ts for context so the next
+1216.92s - 1222.96s |  piece securing customer conversations this one was really really fun to think
+1222.96s - 1229.04s |  about so if I take out my AI walkie-talkie and I say what's my
+1229.04s - 1234.00s |  favorite color there's a couple of types of data that happen there right we still
+1234.00s - 1239.44s |  have our same speech-to-text request and response we still have the LLM request
+1239.44s - 1245.24s |  and response and the the text-to-speech back as well so essentially I have audio
+1245.24s - 1250.72s |  data and I have text data that I need to worry about as far as what type of
+1250.72s - 1254.60s |  binary data it might be an audio recording but it also might be a picture
+1254.60s - 1259.76s |  right maybe your your magic AI walkie-talkie takes magic photos and when
+1259.76s - 1266.36s |  it takes the photo it converts it into like some cool 8-bit format I probably
+1266.36s - 1270.28s |  don't want random people on the internet or even the company that makes that AI
+1270.28s - 1273.88s |  walkie-talkie to have access to those pictures right because I'm a general
+1273.88s - 1279.68s |  consumer why do people need access to that same thing goes with with all of
+1279.68s - 1282.84s |  the the text-to-speech that we just talked about right we have a transcript
+1282.84s - 1287.44s |  of what the user said we have an answer to their question and we have what we
+1287.44s - 1293.76s |  want the device to echo back so how do we store that well really really easy
+1293.76s - 1300.24s |  way is I have my magic AI gadget it sends a request to that super awesome
+1300.24s - 1306.00s |  router that will take everything that I wrote and then just store it in a
+1306.00s - 1311.64s |  database if it's binary data it'll just store it in s3 in the database I just
+1311.64s - 1316.60s |  put a pointer to s3 life's great this is super easy right again we're storing
+1316.60s - 1322.96s |  sensitive things about people in a database I don't want to be like going
+1322.96s - 1328.52s |  to sleep at night knowing that that happens so what do we do to make life a
+1328.52s - 1336.56s |  little bit safer so instead of just receiving that data from the the magical
+1336.56s - 1342.84s |  device and then writing it all down again we'll do the same thing with with
+1342.84s - 1349.72s |  our vault engine and so whenever we receive the data we'll actually reach
+1349.72s - 1355.00s |  out to the vault engine and say can I have a kind of got two really cool
+1355.00s - 1360.40s |  options here so you could have the the service send that data to the vault
+1360.40s - 1365.40s |  engine have it encrypt it and then return back to you the the ciphertext
+1365.40s - 1369.16s |  and now you can just write that now in the future you just have to take that
+1369.16s - 1372.48s |  ciphertext and say vault engine can you give me this data in plain text please
+1372.48s - 1377.12s |  the other option that you have is you can request the customers storage key
+1377.12s - 1380.60s |  and you can say please give me the key for Matt Domko I have a bunch of stuff I
+1380.60s - 1387.64s |  want to write in in both cases I'm not storing things that I have access to I'm
+1387.64s - 1392.04s |  storing things that I only have access to for that two-minute window whenever
+1392.04s - 1402.58s |  Matt Domko pushes the button so I've got some do's and don'ts for securing those
+1402.58s - 1408.66s |  conversations so don't please don't use built-in types for these things right
+1408.66s - 1413.82s |  the my worst day ever is whenever someone says oh yeah no we're just
+1413.82s - 1416.90s |  sending this JSON and there's just like a string there and I look at it I'm like
+1416.90s - 1420.70s |  okay cool it's just string no big deal and that string is actually like six
+1420.70s - 1424.98s |  hours of me watching Gilmore Girls because I started a meeting
+1424.98s - 1429.14s |  transcription during it so rather than taking these things and just going with
+1429.14s - 1433.50s |  the defaults let's create a custom object use a strongly typed language
+1433.50s - 1437.70s |  that allows you to say okay this this is actually a type of sensitive data and
+1437.70s - 1443.42s |  the only way that it's allowed to be logged is either through that vault
+1443.42s - 1451.22s |  controller interaction or through a secure logger so yeah don't please one
+1451.22s - 1459.74s |  second so the other thing that definitely in the business-to-business
+1459.74s - 1466.46s |  space it happens and it's not great but it could be worse right essentially if I
+1466.46s - 1470.34s |  need to do analytics on data and I have the data in a place well let me just go
+1470.34s - 1474.70s |  grab that data and do analytics it's one thing to do it whenever it's how many
+1474.70s - 1479.82s |  times did my employees click on a phishing link it's another thing all
+1479.82s - 1487.94s |  together for it to be a recording of me and my kid talking about something so
+1487.94s - 1494.46s |  don't let it happen right don't don't share data between production and
+1494.46s - 1498.98s |  anything else if you're not using that data to provide a direct value to the
+1498.98s - 1504.86s |  user you're essentially stealing their data right now and I not a fan and then
+1504.86s - 1510.10s |  the last one don't allow new log types without a privacy and security review
+1510.10s - 1516.26s |  and so this is a thing that I've sort of started harping on a lot more work which
+1516.26s - 1520.74s |  is just like if if you want to do something new and it has to do with
+1520.74s - 1526.26s |  customer data we owe it to our customers to spend 15 minutes drawing out what
+1526.26s - 1529.22s |  we're going to do identifying the data that we're going to write down and
+1529.22s - 1533.90s |  talking about whether or not that is a good thing to do with our customers data
+1533.90s - 1542.50s |  so yeah don't do that do move encryption to client-side where possible so the way
+1542.50s - 1550.62s |  that it is in this diagram that I just showed you as the service provider you
+1550.62s - 1556.02s |  can just grab a JWT and go get the data wouldn't it be great if the only person
+1556.02s - 1560.14s |  that had your data was like you in your web browser when you get to go view your
+1560.14s - 1565.02s |  pictures that would be great that's a technology that exists it's not a
+1565.02s - 1569.98s |  technology that exists as far as I'm aware that works really well with AI use
+1569.98s - 1573.54s |  cases where we want to get your permission to use your data to make
+1573.54s - 1579.46s |  things better and so that's that's a tough it's a tough road to climb but I
+1579.46s - 1585.06s |  think I think that there's it's it's a goal to move towards require a short
+1585.06s - 1591.30s |  lift JWT like this is really really easy to do you just when your user wants
+1591.30s - 1595.10s |  to do something make them send you a token that says that they want to do it
+1595.10s - 1599.74s |  and have that expire quickly if you look into the different types of vault
+1599.74s - 1605.30s |  providers that exist I know of at least one that that does that and you can give
+1605.30s - 1609.90s |  them a JWT and they will only give you the data back if that JWT is signed by
+1609.90s - 1614.02s |  the customer the person who owns the data I sleep a lot better at night
+1614.02s - 1619.14s |  knowing that I have that and then the last piece if you've ever worked at an
+1619.14s - 1625.14s |  AI company you probably have like a chat room where it's just AI news and people
+1625.14s - 1628.42s |  are excited about new models and new things that are coming out and
+1628.42s - 1634.98s |  anthropic has this AWS has this open AI has this and they want to try it out the
+1634.98s - 1640.42s |  problem is unless you have like like a commercial agreement with them a lot of
+1640.42s - 1645.50s |  times you're just sort of giving them free rein to do whatever they want with
+1645.50s - 1651.62s |  your customer data and so one of the things that that I've worked really hard
+1651.62s - 1655.86s |  on at the last few jobs has been making sure that we we actually make those
+1655.86s - 1660.98s |  thoughtful decisions we say okay this type of data maybe we're okay with with
+1660.98s - 1665.42s |  that company using it for whatever they want but this other type of data super
+1665.42s - 1670.30s |  super important to us and we're not gonna allow it to to go to those levels
+1670.30s - 1677.58s |  of LLMs essentially pay more to protect our customers I think it's worth it so
+1677.58s - 1684.26s |  the last one is privacy focused logging so if you're an engineer and you're
+1684.26s - 1688.18s |  coming up with logs for this new service you built this is probably how you're
+1688.18s - 1690.54s |  gonna do your logs you're just gonna take everything that you know you're
+1690.54s - 1694.86s |  like I might need this someday ship it to data doc and then one of your SRE
+1694.86s - 1698.54s |  managers is gonna be like hey so your data dog bills kind of high can you cut
+1698.54s - 1701.78s |  it back you're like no I need all of this need every single piece of data
+1701.78s - 1707.78s |  that comes in or I can't do my job okay that's that's a way but again we're
+1707.78s - 1711.90s |  talking about consumers we're not talking about business-to-business
+1711.90s - 1719.86s |  operations and so if I'm a consumer and and I have to worry about every single
+1719.86s - 1724.22s |  thing being stored on my behalf I start to get nervous and so what I like to do
+1724.22s - 1731.10s |  in these cases is require like a custom logging handler engineers are already
+1731.10s - 1734.78s |  creating these to make their lives easier all you have to do as the
+1734.78s - 1739.10s |  security person to say hey so right now it looks like you're taking everything
+1739.10s - 1742.06s |  you're formatting it and then you're you're shipping it out what I would love
+1742.06s - 1746.94s |  for you to do is instead explicitly declare these are the the fields that
+1746.94s - 1751.26s |  we're going to log and by forcing them to explicitly declare the fields that
+1751.26s - 1755.82s |  they're going to log you don't have to worry about oh I just updated the code
+1755.82s - 1761.90s |  to log this extra field also it's everyone's birthday and social security
+1761.90s - 1765.62s |  number that's okay right you don't have to worry about that because the logger
+1765.62s - 1770.34s |  won't allow it and now instead of monitoring your entire code base for a
+1770.34s - 1775.66s |  change that might log something in a wrong way you only have to monitor that
+1775.66s - 1782.38s |  that base privacy logger so it's definitely worth investment this code is
+1782.38s - 1789.10s |  from chachi PT write me a privacy focused log handler in Python it might
+1789.10s - 1794.06s |  work I don't I don't know but the the point is it's like it's not super
+1794.06s - 1801.38s |  difficult and your engineers are likely already doing it anyway so some some
+1801.38s - 1809.06s |  highlights on privacy focus logging prefer metrics over like actual counts
+1809.06s - 1812.86s |  and group by statements whenever you're thinking about things you don't need to
+1812.86s - 1817.18s |  log every single request in order to know how many requests happened right
+1817.18s - 1823.94s |  and so if you don't need to store the data don't a thing that I've been big
+1823.94s - 1830.66s |  about for a very long time has been the fact that business metrics and that type
+1830.66s - 1835.18s |  of work needs to be a feature request of the product this is not something
+1835.18s - 1839.06s |  where oh I've got a really strong program manager they're gonna go into
+1839.06s - 1842.66s |  data dog and create these dashboards that are gonna tell them like what our
+1842.66s - 1847.42s |  most popular feature is it's a very very easy shortcut but it's also a very very
+1847.42s - 1852.34s |  easy easy way to lose control of the way that you're managing the privacy of your
+1852.34s - 1859.10s |  customer data and so rather than getting into that when we do a like a product
+1859.10s - 1865.62s |  design doc right let's explicitly call out I need these metrics and now it's
+1865.62s - 1868.70s |  part of the product you don't have to go look through logs because you've already
+1868.70s - 1874.14s |  decided I'm going to use counters instead engineering logs for engineering
+1874.14s - 1880.66s |  things we talked about using custom logging classes anonymize where possible
+1880.66s - 1887.82s |  sudo anonymize everywhere else so I might need to know which user I'm
+1887.82s - 1891.98s |  dealing with whenever I'm solving an engineering challenge I don't need to
+1891.98s - 1897.70s |  know that users email I don't need to know that users address I don't need to
+1897.70s - 1903.66s |  know any of those things I just need to be to be able to say user 1 2 3 of a
+1903.66s - 1908.26s |  thousand and so this is where when we do logging rather than logging all of the
+1908.26s - 1912.54s |  information we have about that that customer let's just log a sudo
+1912.54s - 1917.14s |  anonymized user ID it doesn't provide access to anything but it lets us sort
+1917.14s - 1923.54s |  of work through the streams and track down when bugs happen set an extremely
+1923.54s - 1928.10s |  short time limit for your your engineering logs if you need something
+1928.10s - 1932.54s |  for longer than a week two weeks that should probably live somewhere else
+1932.54s - 1938.10s |  probably doesn't need to be in Datadog your CFO is gonna thank you and so are
+1938.10s - 1941.26s |  your customers because you're not storing their personal data somewhere
+1941.26s - 1948.14s |  that you don't need to enforce just-in-time logging so I think one of
+1948.14s - 1953.50s |  the coolest and scariest things about joining an engineering team at Facebook
+1953.50s - 1957.50s |  is like the first two days when they're like oh yeah and by the way if you look
+1957.50s - 1961.30s |  at anyone that you work with's data we're gonna fire you and I'm just like I
+1961.30s - 1964.30s |  don't even want to accidentally do that you're paying me really well I get free
+1964.30s - 1970.92s |  pizza like why would I mess that up and the way that they enforce that is if you
+1970.92s - 1975.06s |  need access to something and you don't have it by default you just go find the
+1975.06s - 1980.12s |  table and say I would like access to this I need it for this long and this is
+1980.12s - 1985.96s |  my business purpose behind it and as long as it's not like your ex-partners
+1985.96s - 1994.36s |  page it'll just grant you access and log it and I feel like it's way better to
+1994.36s - 1998.76s |  have that then oh yeah just everybody in engineering has access to everything all
+1998.88s - 2003.44s |  the time so that that just-in-time access gives us again a little bit more
+2003.44s - 2007.84s |  safety and a little bit better of a way to recognize when something's going off
+2007.84s - 2013.44s |  the rails all of the do's and don'ts that we talked about in in the other two
+2013.44s - 2020.68s |  sort of apply to privacy focused logging as well all right the last one privacy
+2020.68s - 2026.32s |  focused analytics so if I'm got a feature that's out there it's doing
+2026.32s - 2029.88s |  great things but I want to make it faster but I don't understand what
+2029.88s - 2034.48s |  requests are happening and so I need to like actually see these requests in
+2034.48s - 2041.32s |  order to make the product work better well 18 year old Matt Domko goes into
+2041.32s - 2046.96s |  the routing engine and he just adds a new branch of code for 2a that says yeah
+2046.96s - 2051.32s |  so anytime somebody makes a request I want you to go do the thing that you
+2051.32s - 2057.12s |  always do but also lock a copy of it to my analytics storage and then once that
+2057.12s - 2060.84s |  table is super full or that bucket has all the data I need I can go in and do
+2060.84s - 2065.88s |  some sort of analytics process on it the problem with that is in order to solve
+2065.88s - 2070.88s |  whatever challenge I'm facing again I probably don't need to know the
+2070.88s - 2075.72s |  customers name I don't need to know all of the things that they did I probably
+2075.72s - 2081.96s |  just need to know what's the length of their request and what time was it when
+2081.96s - 2086.72s |  they made the request well whatever the thing is that I need it's probably not
+2086.72s - 2094.88s |  everything so the way that the way that I've thought about handling this we have
+2094.88s - 2104.36s |  our our new analytics logger and again we still insert it into 2a but instead
+2104.36s - 2108.80s |  of having it directly write data outside of my little nice fancy
+2108.80s - 2112.52s |  production bubble where data never leaves I read it to a privacy filtering
+2112.52s - 2117.08s |  account and so that privacy filtering account whenever it receives new data it
+2117.08s - 2122.24s |  reaches in and it says oh I'm expecting that Matt needs to know the locations of
+2122.24s - 2130.08s |  every failed uber request and so what that privacy filtering lambda will do is
+2130.08s - 2136.84s |  it will just extract the location and the time that that it happened because I
+2136.84s - 2141.44s |  don't need to know anything else about that conversation or what's going on
+2141.44s - 2146.48s |  except for that one single line so why would I allow myself to copy the entire
+2146.48s - 2151.56s |  thing out so I create this process where in order to get data out of production I
+2151.56s - 2155.32s |  ensure that it's anonymized I ensure that I only have the data that I need
+2155.32s - 2161.12s |  once that data has been cleaned we've ran it through something like Amazon
+2161.12s - 2165.92s |  Macy to check for PII and things like that then we'll go ahead and copy it
+2165.92s - 2171.68s |  from the privacy account into the analytics account analytics is already
+2171.68s - 2177.28s |  expensive and so like this additional process that we're introducing in order
+2177.28s - 2188.83s |  to protect our customers is totally worth it and so we've got a summary of
+2188.83s - 2194.51s |  the the things that that have made my life easier in protecting customers
+2194.51s - 2201.99s |  privacy the first thing simple data classification guide anyone that was
+2201.99s - 2205.15s |  ever in the military they've got like those colors and when you see colors
+2205.15s - 2208.79s |  you're like oh this is sensitive I shouldn't do anything wrong with this oh
+2208.79s - 2214.27s |  this is green I think I can do whatever I want with this but let me check having
+2214.27s - 2219.75s |  some sort of simple guide where your engineers know if data is labeled as red
+2219.75s - 2224.95s |  that means it can't leave leave prod if data is labeled as yellow it means it
+2224.95s - 2230.79s |  can go from prod into the privacy account into an analytics account if
+2230.79s - 2236.99s |  data is labeled as green it's on the website so who cares but coming up with
+2236.99s - 2242.27s |  those shortcuts for your engineers it's gonna make your life a lot easier build
+2242.27s - 2246.59s |  that culture of design reviews show up to them I know that our engineers build
+2246.59s - 2251.55s |  a lot of really cool stuff all the time and that means I'm gonna be at more
+2251.55s - 2255.55s |  meetings but again it's worth it you're learning more about the product you you
+2255.55s - 2259.11s |  have a chance to actually step in and say well what is this data and why do
+2259.11s - 2265.51s |  you actually need to store it or move it or read it so build that culture show up
+2265.51s - 2272.47s |  to those things service control policies so these exist I know in AWS
+2272.47s - 2276.47s |  and Azure does GCP have something like this where you can say you're not allowed
+2276.47s - 2282.07s |  to break this rule no matter what I don't care who you are yeah okay and so
+2282.07s - 2285.79s |  set that up if you have a production account where all of your day-to-day
+2285.79s - 2290.27s |  data exists make it so you can't mess it up no data is allowed to leave
+2290.27s - 2296.19s |  production except for to go to this singular privacy account it works fairly
+2296.19s - 2299.87s |  well and it keeps you out of trouble when you're traveling or at a conference
+2299.87s - 2305.91s |  talking about privacy the two-step filtering process that we talked about I
+2305.91s - 2310.35s |  feel like that's the only way that we can truly ensure we're not accidentally
+2310.35s - 2315.55s |  moving data somewhere we shouldn't and so think about how to implement something
+2315.55s - 2319.91s |  like that there's tons of services and all the different cloud providers that
+2319.91s - 2326.27s |  will parse your data and tell you yes or no this can this can go or this yes
+2326.27s - 2334.11s |  or no this has sensitive data in it I just learned about s3 bucket filtering
+2334.11s - 2341.83s |  that I don't remember the exact name but anyway you can create a new s3 access
+2341.83s - 2346.43s |  point we'll go with that you can create a new s3 access point and say through
+2346.43s - 2351.71s |  this access point you can only read filtered data which kind of takes your
+2351.71s - 2354.75s |  hands away from having to do anything as long as you only let your developers
+2354.75s - 2365.46s |  read through that singular access point oh yes almost done so a couple of
+2365.46s - 2369.34s |  guidelines that that I've set with the teams that I've worked with in the past
+2369.34s - 2374.90s |  this is this is the one that you screenshot and and send to everyone and
+2374.90s - 2380.66s |  it's really just four questions are you logging a new type of data we should
+2380.66s - 2383.98s |  talk are you moving data outside abroad we
+2383.98s - 2389.46s |  should talk are you connecting to broad databases we should talk are you
+2389.46s - 2395.18s |  bringing in a new tool or vendor we should talk I think like those are
+2395.18s - 2401.06s |  fairly easy to do in practice and it's worth the extra time that that we have
+2401.06s - 2411.98s |  to invest that's it what time is it 442 I've time for questions if anybody has
+2411.98s - 2420.15s |  any if not I'm gonna get off the stage and chug a bunch of water Oh contact
+2420.15s - 2428.35s |  page so hashtag cyber on the Twitter and if like you're worried about your
+2428.35s - 2443.74s |  rabbit r1 security at rabbit tech don't that guy right there cool well thank
+2443.74s - 2447.14s |  you everybody have a great time

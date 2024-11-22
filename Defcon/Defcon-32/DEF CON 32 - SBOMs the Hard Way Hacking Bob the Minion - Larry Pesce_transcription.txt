@@ -1,0 +1,214 @@
+{
+  "webpage_url": "https://www.youtube.com/watch?v=Cxrwpij2MSQ",
+  "title": "DEF CON 32 - SBOMs the Hard Way  Hacking Bob the Minion - Larry Pesce",
+  "description": "This presentation delves into the intricate process of generating a Software Bill of Materials (SBOM) for the Bob the Minions WiFi router by Davolink\u2014a device whose firmware isn't publicly available. Traditional SBOM creation methods rely on readily accessible firmware, but Davolink's restricted release policies necessitated an unconventional approach. This talk covers the step-by-step journey of hardware disassembly, firmware extraction via SPI flash and JTAG/SWD interfaces, and the tools and techniques employed. Finally, we'll demonstrate how the recovered firmware is used to generate a comprehensive SBOM, highlighting any security vulnerabilities discovered and reported to the vendor. This session aims to provide attendees with practical insights into overcoming SBOM generation challenges in the IoT domain through hands-on hardware hacking, and leveraging the firmware and SBOMs for vulnerability discovery, as well as security improvement.",
+  "channel_url": "https://www.youtube.com/channel/UC6Om9kAkl32dWlDSNlDS9Iw",
+  "duration": 1254,
+  "channel": "DEFCONConference",
+  "uploader": "DEFCONConference",
+  "upload_date": "20241016"
+}
+
+0.00s - 4.08s | This text was transcribed using whisper model: large-v2
+
+ Alright, let's get started. We're running a little late. So I'm going to try not to talk too fast.
+4.72s - 11.44s |  But I got to make up some time here. So welcome to s bombs the hard way. For my adventures in
+11.44s - 17.28s |  hacking Bob the Minion. I am the product security research and analysis director and services team
+17.28s - 24.24s |  lead at a fun company called finite state. And we do all sorts of fun stuff with s bombs, and a
+24.24s - 27.84s |  whole bunch of other stuff. But I'm not here to talk to you about our product or any of that I'm
+27.84s - 36.96s |  talking about my adventure with Bob. Alright, so who am I? I am a reformed penetration tester
+36.96s - 43.36s |  and reformed crossed out. I left doing penetration testing to go do some thought leadership and some
+43.36s - 48.72s |  other hardware hacking and IoT bunch of stuff. And three months into the job, my boss came to
+48.72s - 51.84s |  me and said, Hey, we have a customer that wants to throw a lot of money at us to do pen tests.
+51.84s - 57.28s |  Can you do it? Are you signing my paycheck? Yes, I can do that. So I am a reformed penetration
+57.28s - 65.12s |  tester back doing penetration testing back in ot ICS, IoT, and lots of hardware. I'm also the
+65.12s - 71.36s |  co host of Paul's security weekly. We're in our 19th year soon to go into our 20th year of a
+71.36s - 78.64s |  weekly security podcast. How many of your listeners? Go listen. Right. Awesome. Thank you.
+79.76s - 86.48s |  I do a lot of work with sans. I'm both an instructor and a course author around wireless
+86.48s - 93.60s |  hacking and IoT hacking irony, the ironically, I'm a recent convert to the Oxford comma, because
+93.60s - 99.44s |  commas save lives, folks. Okay. And someone said, Why are you been using that Oxford comma for a
+99.44s - 103.68s |  really long time? So you're really not a recent convert. So but I'm going to keep it. So I'll add
+103.68s - 110.40s |  that. I also enjoy long walks on the beach weighed down by my ham radio. Yeah, prepping for the
+110.40s - 116.16s |  zombie apocalypse. Okay. Alright, so let's get into some fun, fun bits here. So we're going to
+116.16s - 125.12s |  hack Bob the minion. So on every one of my slides, except this one features AI generated art
+126.00s - 133.36s |  with minions. So let's get into character a little bit here. And I took this image of my headshot
+133.36s - 141.28s |  and fed fed it to mid journey so that I could become an evil, despicable me villain. So
+142.24s - 149.20s |  here we go. This is some of this art is terrifying. And I kept the ones that were insane just because
+149.20s - 156.48s |  insanity. I didn't know yesterday that there was an AI generated art competition. My I would have
+156.48s - 163.28s |  been good at that. Maybe. So I had lots of fun. I think I put more time into the art than the actual
+163.28s - 167.20s |  words on this on these slides. Don't get me wrong this. I think the presentation is really good.
+167.20s - 173.12s |  You're going to get something from it. Alright, so a little bit of background. I work for company,
+173.12s - 179.04s |  we do s bombs and a whole bunch of other stuff. But I really think that s bombs are fun. And that
+179.04s - 186.08s |  was sort of my end goal was to get a software bill of materials for Bob the minion. So a little bit
+186.08s - 191.52s |  of background. software bill of materials is an inventory of all your software, their versions,
+191.68s - 195.68s |  and who wrote it, where it came from, as part of your product security,
+196.56s - 202.08s |  sorry, your software supply chain, and can help you do some security. And we're going to start
+202.08s - 208.32s |  seeing somewhere around 2025, that every product that connected product that you buy, either at
+208.32s - 213.60s |  your company or for your personal consumption, will have an s mom associated with it, and will
+213.60s - 217.76s |  be available as part of some of its certification process and being able to be sold into the
+217.76s - 223.76s |  marketplace. Specifically, addressing some of those here in the United States are executive
+223.76s - 232.56s |  order 14 208. For a lot of stuff going into government and into consumer stuff. 524 B for
+232.56s - 239.36s |  the FDA. So any medical device that is being submitted to the FDA for use on humans requires
+239.36s - 244.56s |  that an s bomb as part of their submission process and a plan for securing their devices over time
+244.56s - 250.32s |  and managing vulnerabilities. And a voluntary program managed by the FCC here in the US,
+250.32s - 256.56s |  the cyber Trustmark program, it's kind of like a consumer protection thing so that as a voluntary
+256.56s - 262.56s |  program, that companies can submit their devices to the cyber Trustmark program, they can get a
+262.56s - 267.76s |  stamp on the box, and that a consumer can have a high degree of confidence that there is some
+267.76s - 273.04s |  security in this product baked in, and that they are monitoring for vulnerabilities over time and
+273.04s - 277.12s |  issuing some updates with a little barcode that links to a website that gives them an overall
+277.12s - 282.08s |  security store score. So while you're standing at Best Buy, you can scan this barcode and go,
+282.08s - 287.76s |  oh, this routers got a three for security, and that one's got a nine, nine being better. Yeah,
+287.76s - 294.24s |  I'm going to buy the one that's a nine. Cool. The one that is absolutely both fascinating and
+294.24s - 303.12s |  terrifying, in my opinion, is the EU Cyber Resiliency Act, or the EU CRA. EU CRA, their
+303.12s - 308.72s |  intent in the EU is that they do not want any connected products being sold into the marketplace
+308.72s - 314.96s |  that has any vulnerabilities. And they also need to have a process for managing vulnerabilities
+314.96s - 319.44s |  and patching and monitoring and all this type of stuff. And an s bomb will be included as part of
+319.44s - 325.60s |  that process. And they are significantly more stringent, and this is not a voluntary program.
+326.32s - 330.96s |  It's mandatory if you want to sell into Europe, and companies that sell into the US also sell
+330.96s - 338.00s |  into Europe, same device. So many manufacturers are going to have to submit to EU CRA, which means
+338.80s - 344.56s |  everywhere on the planet will largely benefit from those regulations. Overall, some general
+344.56s - 350.08s |  benefits outside of any of the regulatory stuff for software bill materials, they give us that
+350.08s - 356.08s |  software inventory list for both both first and third party stuff that you're developing and stuff
+356.08s - 361.12s |  that you've pulled in as part of your development process, and even into potential final firmware
+361.12s - 366.72s |  that you're delivering to your customers or you are consuming. With that list of those components
+366.72s - 372.56s |  and their versions, you can perform some enrichment on those find out whether there are vulnerabilities
+372.56s - 378.16s |  associated with those products so that you can then attempt to perform some risk mitigation and
+378.16s - 383.44s |  observe that some of that risk exists and take appropriate actions. And I'll also argue that
+383.44s - 389.20s |  you should be operationalizing your s bombs as either a consumer or a manufacturer, that you
+389.20s - 394.80s |  should take the software bill of materials and use them as part of your security process and your
+394.80s - 400.24s |  penetration testing process. Because knowing the components may give you an opportunity
+400.88s - 405.44s |  to improve that security knowing that their vulnerabilities exist. And that was the subject
+405.44s - 411.20s |  of my talk that I did at RSA entitled s bombs for evil. So you can go check that out as well. So we
+411.20s - 418.72s |  won't go too far into that. So as part of my day job, and as part of being a reformed unreformed
+418.72s - 425.28s |  penetration tester, I really love software bill of materials. And some of the fun stuff that I get to
+425.28s - 434.80s |  do at work is go find some random device, get the firmware and bacon, get an s bomb for it just to
+434.80s - 439.04s |  see what they're see if we can do some accurate detection helps build build some of the things
+439.04s - 443.52s |  that we're detecting for helps improve our product. And quite honestly, I think it's really fun and
+443.52s - 449.52s |  find all sorts of sort of scary things. So getting that firmware doing some extraction, verifying that
+449.52s - 454.96s |  the extraction is accurate for our product, figuring out all new things, going back and
+454.96s - 461.12s |  reinverse engineering some binaries to figure out the type of code and the code vulnerables.
+461.92s - 466.08s |  And as a result of that s bomb being able to discover that there's a product with a firmware
+466.08s - 472.16s |  that has some known vulnerabilities and known is here in air quotes, and that it's known to the
+472.16s - 477.28s |  community that these components have vulnerabilities, but maybe as a consumer, or maybe even
+477.28s - 481.68s |  as a manufacturer, you may not realize that these components have vulnerabilities, and they're using
+481.68s - 487.52s |  them in your, your products. So occasionally, we get to find some some oday and some other
+487.52s - 493.92s |  occasional hackery and discovering some surprises. And we may have some surprises here with Bob the
+493.92s - 500.88s |  minion. And arguably, it might not be all that surprising. After all, ultimately, I think the end
+500.88s - 507.12s |  result is so much fun, and arguably, I get to come talk to you about it at DEF CON. So finding all of
+507.12s - 517.68s |  those weird products, suddenly, a wild Bob appears. And yes, AI generated Bob in a dystopian future,
+518.40s - 522.88s |  and hasn't shaved in a little bit. He might look a little bit like me, I'm kind of disturbed about
+522.88s - 531.60s |  that. So suddenly, a wild Bob appears. So what is this Bob? This Bob is a wireless home router,
+531.60s - 540.24s |  the DavoLink AX1800. And it has been licensed by Universal for DavoLink to produce these
+540.24s - 547.20s |  wireless routers that are in the shape of Bob. It's a nice plastic fun looking case around a
+547.20s - 552.64s |  wireless router for your home. It's like that's pretty cool. Pretty darn good features for the
+552.64s - 561.84s |  price. Bob has Wi Fi six has some easy mesh support and supports WPA3. So some of our latest
+561.84s - 568.32s |  Wi Fi standards for for your home. Now I've been doing some hardware hacking around consumer
+568.32s - 575.04s |  routers for a really, really long time. And it was typical that we were seeing devices with flash
+575.04s - 581.12s |  and RAM of somewhere between four and eight megs, maybe 16. Yeah, we've come a long way. This
+581.12s - 590.40s |  particular one has, according to the box, and Amazon 128 megs of flash, and 256 megs of RAM.
+590.40s - 596.88s |  That's pretty darn robust and compared to some of the stuff that I've seen in the past. But it gets
+596.88s - 602.88s |  better. It's not 128 megs of flash, we'll see that in a little bit here. Currently, there's no open
+602.88s - 608.48s |  word support. So it is their own custom firmware, big thumbs down from Mick down front here. And
+608.48s - 614.08s |  they run about $70 on Amazon. So I didn't feel too bad about buying one of these things and
+614.08s - 621.12s |  ripping Bob's head off to see what was inside. I did not purchase the Kevin variety, the Kevin
+621.12s - 627.20s |  variety is a little bit taller. And one of the upgrades there is it does have Wi Fi 6E. So into
+627.20s - 632.48s |  the six gigahertz range, but they're about double the price. And well, this is coming out of my own
+632.48s - 637.68s |  personal budget. So I went for the cheap one, right? I figured that many of the challenges will
+637.68s - 645.04s |  probably be the same here. Alright, so, hey, I want firmware, right for these devices. So I can
+645.04s - 652.00s |  generate some as moms. Let's go get the firmware. But you tip my hat a little bit here. What
+652.00s - 659.84s |  firmware? All right. Unfortunately, I wasn't able to easily locate firmware for the devil. Inc. x
+659.84s - 667.04s |  1800. We powered the device up, used it figured out what all the interface was about logged in.
+667.68s - 671.28s |  Take a look at the web interface. And sure enough, in the web interface, there is a button that says
+671.28s - 676.24s |  check for updates. And as of two weeks ago, when I press the check for updates button,
+677.44s - 682.72s |  there were no updates. There is one version of firmware for this device, the one that came on it
+682.72s - 688.80s |  from the factory, which will be terrifying when we see this a little bit later. So there's one
+688.80s - 693.92s |  version firmware, it is what it is, there's no updates, which means if I click the update button,
+693.92s - 699.84s |  there's no firmware, which means I can't capture anything off the wire. They can't get anything
+699.84s - 704.08s |  via web inspection or TCP dump or any of that type of stuff to try to recover the firmware
+704.08s - 712.24s |  from network traffic. Oh, I'll go to the website. Nope, nothing on their website, you go to their
+712.24s - 718.00s |  support forums, you go to their support pages. Absolutely no firmware for the x 1800 available
+718.00s - 724.72s |  for download, there's manuals and stuff. But no firmware. So what happens if I break it by
+724.72s - 728.80s |  accident, I'd have no way to upload firmware to this because the manufacturer doesn't even make
+728.80s - 733.76s |  it available. I checked the support forums to see if I could find links somewhere in the support
+733.76s - 740.64s |  forums. And that was a mess. It's dabbling is a Korean company, they have two different support
+740.64s - 747.84s |  forums. One is in Korean, one is in English. The English has a little bit more population to it.
+748.48s - 753.44s |  In that more folks have asked some questions. The Korean version of the support forums,
+754.16s - 759.68s |  there's like three posts, and that's it. Clearly, Korea was not their intended market for these
+759.68s - 765.60s |  devices. And Google Translate had a really easy time trying to go through and translate that stuff
+765.60s - 771.60s |  because there wasn't a wasn't a lot there. search through all of the support forum posts, there are
+771.60s - 776.08s |  no links to firmware, there's nobody even asking, Hey, I bricked my router, can I get a copy of the
+776.08s - 781.36s |  firmware? So that I could reach out to them and try to ask them for it or try that same guys.
+782.64s - 788.72s |  And no, so nobody was asking and nobody was offering. Unfortunately, now that means with
+788.72s - 795.20s |  no ready access to the firmware, we've got to go do this the hard way. And no access ready access
+795.20s - 801.84s |  to firmware. That means no wrong way. That means no, no S bomb, no enrichment, no ability for me
+801.84s - 806.08s |  to figure out if there are vulnerabilities in this really easily, based on software components,
+806.08s - 814.72s |  and so forth. So but no s bombs means no fun. Right? I love some of this stuff. I really want
+814.72s - 822.80s |  I tried to make this image like the dystopian future dark gray. And the training for the AI
+822.80s - 827.36s |  models at mid journey was not picking up that I wanted this to be dirty and gritty, no matter how
+827.36s - 833.36s |  many times I told it and it came out really happy and bright and green and very cartoony for all
+833.36s - 840.72s |  these dogs. No, I wanted like, like wolves that were gonna tear Bob's head off. And now there's
+840.72s - 848.08s |  some nice puppies here. So I did the best I could. All right. But so if we can't get ready access to
+848.08s - 854.00s |  it, we got to go about this do this hard way. And while brain surgery is fun, right? Yeah, just ask
+854.72s - 858.32s |  buckaroo bonsai adventures of buckaroo bonsai in the eighth dimension.
+858.88s - 864.72s |  Hey, this was how some of this AI prompt ended up. I told mid journey that I wanted Bob the
+864.72s - 870.64s |  minion to go undergo brain surgery by buckaroo bonsai. Have the surgeon be buckaroo bonsai.
+871.20s - 878.24s |  Unfortunately, it actually crossed Peter Weller with a minion and came up with this abomination.
+878.88s - 885.84s |  It's quite amazing. Like this is the best of them. The other ones were just downright terrible.
+887.04s - 892.32s |  Also, if you've never seen buckaroo, the adventures of buckaroo bonsai in the eighth dimension,
+892.32s - 898.00s |  I highly recommend that you do so it is a 1980s very campy film with some really amazing stars.
+899.04s - 905.28s |  Peter Weller, John Lithgow, a whole host of folks and it's it's amazingly campy and maybe one for
+905.28s - 911.84s |  Jeff Moss to send a hacker movie night because it's it's hilarious and it's great. It's on the
+911.84s - 919.12s |  what the top 1000 movies you should see before you die and like number 43 in some of the campy
+919.12s - 927.36s |  sci fi movies, top lists and so forth. So my plug and note that Bob doesn't even have yellow ears
+927.36s - 931.76s |  in this one. They're apparently Peter Weller's ears. Not only did they do a brain transplant,
+931.76s - 935.92s |  they didn't hear transplant to. Alright, so let's get to this brain surgery.
+937.28s - 942.56s |  Alright, take this thing apart. We do this the hard way. Pull the boards out, do an inventory,
+942.56s - 949.12s |  take pictures of all the chips. Let's do some some analysis and figure out some of the spec
+949.12s - 953.44s |  sheets, go download those and then start figuring out how we can get access to that firmware.
+954.32s - 958.56s |  Are there serial ports available on the board? Yes, yes. In this case, there is I did not go
+958.56s - 965.84s |  that route. However, can we use JTAG or SWD to dump firmware from from the device from that bus?
+966.64s - 970.72s |  I fortunately did not have to go down that road either, because that is arguably the harder.
+971.92s - 979.60s |  But what about SPI? And being able to grab that from there? The first question was looking at
+979.60s - 987.04s |  the processor. It's an RTL 8198 D featured here in this slide. And I figured I was probably going
+987.04s - 992.16s |  to have to go use JTAG have the processor with internal memory and have to dump it from internal
+992.16s - 1003.84s |  memory and so forth, but not so much. But what I did find on the board was a Winbond W25N01GV,
+1004.64s - 1016.88s |  which is a three volt one gigabit flash chip. But they said 128 Meg. No one gigabit available on
+1016.88s - 1021.60s |  this board. And they're only using 128 megabit according to what they're saying. Yeah, so there's
+1021.60s - 1028.48s |  a lot more room on this. Yeah, why? I don't know. Because they're cheap. Honestly. Ask me how I know
+1028.48s - 1036.64s |  this. We'll see this in a little bit here. So SPI, and it is NAND. So alright, this will be
+1036.64s - 1043.68s |  interesting. And apparently Bob is really hungry for some chips. Alright, so I had to go now get
+1043.68s - 1050.64s |  this flash off of this Winbond SPI flash chip. And there was very much of progression of frustration
+1050.64s - 1057.20s |  going through going through this. So this is what society thinks I do when I remove firmware from a
+1057.20s - 1065.44s |  chip. Credit to Wired and IBM here, sorry, Intel, in some of their photographs about doing some
+1065.44s - 1069.44s |  really great work with a microscope and all sorts of fun stuff. And you'll note, I'm sort of
+1069.44s - 1074.24s |  featured down here in the right hand corner, looking very studious and doing a really great
+1074.24s - 1081.84s |  job of removing firmware and what society thinks I do. This is what my friends think I do using the
+1081.84s - 1087.84s |  PC bytes. And I'm starting to look a lot worse and maybe a little bit nerdier and geekier. And
+1087.84s - 1093.04s |  yes, this is my disaster of a desk and home office. And you get to see also other other fun
+1093.04s - 1097.76s |  stuff in the background. So this is what my friends think I do. Right, Mick? Yeah. All right.
+1098.72s - 1104.48s |  This is what I think I do. This is also one of my attempts, soldering wires directly to the
+1104.56s - 1113.20s |  flash chip and then holding it down with some tape. This didn't work either. Okay. So I'm
+1113.20s - 1119.36s |  getting worse and worse in my my studiousness here. And ultimately, this is what I really did.
+1120.64s - 1125.60s |  I now look like a really big goober. And I actually had to remove the chip from the board
+1125.60s - 1132.72s |  and put it in like a $3 adapter from Amazon and use some some DuPont wires and attach it to a
+1132.72s - 1140.56s |  Raspberry Pi and use that IO on the board for the Raspberry Pi. Yeah, and just reuse the PC bytes
+1140.56s - 1145.28s |  thing to hold my Raspberry Pi because I was too lazy to take it off my desk. So yeah, I actually
+1145.28s - 1149.60s |  had to do take the chip off of the board because I couldn't get any of the other stuff to work
+1149.60s - 1154.24s |  right. And it may not have been the fact that there was anything wrong with my PC bytes or
+1154.24s - 1162.00s |  with my solder job. But I do know that I bricked the one that I did the solder job to no longer
+1162.00s - 1169.12s |  functions. And we'll see why that maybe it wasn't actually the PC bytes or my solder job that
+1169.12s - 1177.60s |  wasn't allowing me to get access to the stuff. I see I thought I had an hour. Okay, I will I'll
+1177.60s - 1182.00s |  get out of your head here. What's a I'm going to do these slides real quick here what I really did.
+1183.52s - 1188.56s |  Not a lot of flash ROM or support found some stuff. I got a dump found some treasure,
+1188.56s - 1193.92s |  lots of exploits, lots of exploit intelligence, lots of remote code vulnerabilities,
+1195.52s - 1201.36s |  passwords, username, Bob password, Bob, other stuff in Korean language, some key material,
+1202.40s - 1207.76s |  a horrible web app that they wrote their own web server with some possible command injection via
+1207.76s - 1215.04s |  the password reset function, a bunch of scripts going to IP in China, all sorts of other fun
+1215.04s - 1219.76s |  stuff. And I really want to do the brain transplant to fix the one that I broke. And I've
+1219.76s - 1224.72s |  had no luck. I spent a week on the struggle bus with that, because the Nan support that I needed
+1224.72s - 1232.08s |  has no right support. So coming soon. All right. I'm out of here. I'm gonna if you want to catch
+1232.08s - 1236.64s |  me in the back or over in the IT village, I'm happy to do some more. But I want to say thank
+1236.64s - 1241.92s |  you and a big thank you to my co worker Edwin shuttleworth, who is all now so now a minion as
+1241.92s - 1246.88s |  well. So thank you very much. And apologies for taking an extra moment of your time. And I'll see
+1246.88s - 1249.92s |  you over at the IoT village. We'll be right up front here. If you've got any questions,
+1249.92s - 1253.44s |  and you want to see some more of these slides and some of the URLs.

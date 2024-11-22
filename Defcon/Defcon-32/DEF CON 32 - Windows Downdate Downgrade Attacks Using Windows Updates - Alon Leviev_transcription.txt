@@ -1,0 +1,387 @@
+{
+  "webpage_url": "https://www.youtube.com/watch?v=HHmxuxQ7bE8",
+  "title": "DEF CON 32 - Windows Downdate:  Downgrade Attacks Using Windows Updates - Alon Leviev",
+  "description": "Downgrade attacks force software to revert to an older, vulnerable version. In 2023, BlackLotus emerged, downgrading the boot manager to bypass Secure Boot. Microsoft addressed the threat, but was Secure Boot the only component vulnerable to downgrades?\n\nBy examining Windows Updates, we found a flaw enabling us to take full control over it and craft downgrading updates, bypassing all verification steps.\n\nWe then managed to downgrade DLLs, drivers, and even the kernel. Afterwards, the OS reported it\u2019s fully updated, unable to install future updates, with recovery tools unable to detect issues.\n\nWe aimed higher and found that the virtualization stack is at risk too. We successfully downgraded Hyper-V\u2019s hypervisor, Secure Kernel, and Credential Guard to expose privilege escalations.\n\nWe also discovered several ways to disable VBS, including its Credential Guard and HVCI features, despite its enforced UEFI locks. This is the first known bypass of VBS's UEFI locks.\n\nLastly, we found another vulnerability in a Windows Update restoration scenario, making the findings accessible to unprivileged attackers!\n\nIn this talk, we\u2019ll introduce \"Windows Downdate\", a tool that takes over Windows Updates to craft downgrades and expose dozens of vulnerabilities. It makes the term \u201cfully patched\u201d meaningless across any Windows machine worldwide.",
+  "channel_url": "https://www.youtube.com/channel/UC6Om9kAkl32dWlDSNlDS9Iw",
+  "duration": 2117,
+  "channel": "DEFCONConference",
+  "uploader": "DEFCONConference",
+  "upload_date": "20241016"
+}
+
+1.07s - 6.07s | This text was transcribed using whisper model: large-v2
+
+ you good? Alright. Hello everyone and welcome to my talk. Today I'm going to share with you my
+8.51s - 12.81s |  journey of researching downgrade attacks on Windows and their severe implications on
+12.81s - 19.25s |  Windows' platform security. My name is Alon and I'm a security researcher at SafeBridge. I'm
+19.25s - 24.63s |  22 years old and mainly self-taught. My focus reside in operating system internals, reverse
+24.63s - 28.53s |  engineering and vulnerability research and before joining the security field I was a
+28.53s - 34.93s |  professional Brazilian Jiu Jitsu athlete where I won several world and European titles. This is
+34.93s - 38.97s |  what I will be talking about today. We have a lot of interesting topics to cover so let's jump
+38.97s - 45.47s |  right in. Starting with the research background. So first things first, what are downgrade
+45.47s - 50.31s |  attacks? Downgrade, downgrade attack is the act of downgrading immune and fully up to date
+50.31s - 56.05s |  software to uh to uh an old and vulnerable software. And this act allows to expose past
+56.05s - 62.55s |  vulnerabilities in updated software and then exploit such vulnerabilities. My research
+62.55s - 66.79s |  started from from studying the Black Lotus UEFI bootkit and what caught mine and everyone
+66.79s - 71.83s |  else's attention with Black Lotus was the fact that it was able to bypass secure boot on a
+71.83s - 76.49s |  fully updated Windows 11. But in fact Black Lotus did not exploit a new zero level
+76.49s - 82.81s |  vulnerability. Instead it exploited an already known and patch vulnerability. And that was of
+82.81s - 88.57s |  course done by employing a downgrade attack. To give you a better understanding of how Black
+88.57s - 93.41s |  Lotus' downgrade was formed to bypass secure boot, you first need to know what is secure boot.
+93.41s - 97.91s |  So simply put, secure boot is a security feature which is responsible to verify that each
+97.91s - 102.25s |  component in the boot chain is digitally signed. It is very simple. If you are not signed
+102.25s - 106.83s |  you are not loaded. And so the days of floating a custom bootkit by replacing the boot manager
+106.83s - 113.57s |  are gone. Instead what Black Lotus did was to downgrade the Windows boot manager to signed
+113.59s - 118.97s |  but vulnerable version of it. And this allowed to then exploit a new vulnerability sourced in
+118.97s - 125.23s |  the vulnerable boot manager to then bypass secure boot. Microsoft's mitigation against
+125.23s - 129.41s |  secure boot downgrades included multiple actions with the main one being revoking vulnerable
+129.41s - 136.41s |  boot managers and boot applications. And revoked images are of course not allowed to be loaded.
+136.41s - 141.69s |  But here comes the critical question. Are there any other components other than secure boot
+141.69s - 147.29s |  that may be vulnerable to downgrade attacks? My goal in this research was to evaluate the
+147.29s - 152.25s |  state of downgrade, downgrade attacks on Windows and to find if components other than secure
+152.25s - 158.90s |  boot may have been overlooked. Now I'm sure you're all familiar with bring your own vulnerable
+158.90s - 164.10s |  driver attacks targeting third party drivers. My vision was to target first party entities
+164.10s - 170.24s |  not only drivers but even entities residing in the lower level than the kernel. My vision was
+170.26s - 176.84s |  to create a new category of bring your own vulnerable Windows. To kick off my research I've
+176.84s - 180.98s |  had to first form a reliable downgrade ability which led me to define what would be
+180.98s - 186.12s |  considered a perfect downgrade attack. So first the downgrade must be fully undetectable so
+186.12s - 190.86s |  that EDRs will not block the downgrade. Thus I aimed to perform the downgrade in the most
+190.86s - 195.86s |  legitimate way possible. Second the downgrade must be invisible so that future updates so so
+196.28s - 202.84s |  that the downgraded components should uh will not appear up to date um even if they're
+202.84s - 208.52s |  technically downgraded. Third the downgrade must be persistent so the future software updates
+208.52s - 213.36s |  are not overriding the downgrade. And then fourth the downgrade must be irreversible so that
+213.36s - 220.40s |  scanning and repairing tools will not be able to detect or repair corruptions. Having the
+220.40s - 225.24s |  downgrade requirements defined I then looked for a suitable component. But before I expose
+225.24s - 230.52s |  the target component I want to ask you. What would be the least expected component to
+230.52s - 238.82s |  perform downgrades? That would be of course Windows updates. So let's talk about Windows
+238.82s - 246.33s |  updates and see if they can be abused to perform downgrades. The Windows update
+246.33s - 250.57s |  architecture is as follows. We have an update client and an update server and they
+250.57s - 254.77s |  communicate over com. For those of you who are unfamiliar with com this is just an
+254.77s - 258.17s |  enterprise communication method in Windows and this is how the client and the server
+258.17s - 264.07s |  communicate. Administrator is usually forced on the client side and Trusted Installer is
+264.07s - 269.61s |  always enforced on the server side. And the last piece and the most important one is that
+269.61s - 275.35s |  system files once owned and updated by Windows updates are only accessible to Trusted
+275.35s - 280.35s |  Installer. So even administrators or anti-system cannot directly modify these system files. And
+284.56s - 289.16s |  this is where I found the first design problem in Windows updates. Administrator to
+289.16s - 293.32s |  Trusted Installer is not considered a security boundary and there are multiple working
+293.32s - 299.66s |  public proof of concepts of such elevation. So the Windows update team attempted to secure
+299.66s - 305.44s |  the update process by enforcing Trusted Installer. However since updates are only accessible
+305.44s - 311.14s |  to administrators, Trusted Installer is rendered completely ineffective. The only issue
+311.14s - 316.18s |  though is that administrator to Trusted Installer elevations are considered malicious and
+316.20s - 321.30s |  are blocked by EDRs which of course contradicts my first downward principle which is being
+321.30s - 326.98s |  fully undetectable. Now I could of course try to bypass the elevation detection which may
+326.98s - 331.28s |  have been possible but then I would have to implement the update process myself which could
+331.28s - 336.22s |  still be seen as malicious. And so the best option for me was to find the flaw in the update
+336.22s - 343.02s |  process which solves all of those problems. So let's take a look on a simplified flaw of the
+343.04s - 348.24s |  Windows update process. First, the client asks the server to perform an update given an
+348.24s - 355.24s |  update folder. The update folder is supplied by the client. Second, the server validates
+355.24s - 361.62s |  the integrity of the update folder. Third, following the verification, the server operates
+361.62s - 366.32s |  on the update folder to finalize the update files and these are saved to a server controlled
+366.32s - 370.86s |  folder, one that is not accessible to the client. And so at that point, the client cannot
+370.86s - 378.36s |  modify the finalized update files. Fourth, the server saves an action list to a server
+378.36s - 383.52s |  controlled folder as well, not accessible to the client. This action list is named pending
+383.52s - 388.26s |  dot XML and this contains the update actions to perform. So for example it specifies the
+388.26s - 394.74s |  files to update, the source and destination files etcetera. Lastly, when the operating system
+394.74s - 399.98s |  is rebooted, the action list is operated on and the actions uh and the update actions are
+399.98s - 407.46s |  performed during the update uh during the reboot. Now the client only controls the initial
+407.46s - 412.20s |  update folder and so I decided to look at this folder first and see maybe I can modify it
+412.20s - 419.00s |  resulting in custom downgrading update files. And as we already know, integrity checks are
+419.00s - 426.62s |  performed on the update folder so let's see how well the integrity checks are performed. The
+426.62s - 432.24s |  update folder contains update components and each update component contain a manifest
+432.24s - 439.00s |  MUM differential and catalog files. The MUM files are Microsoft update metadata, they
+439.00s - 445.44s |  contain metadata information, so component dependencies, installation order etcetera. The
+445.44s - 450.58s |  manifest files contain installation specific information such as file path, uh registry keys
+450.58s - 456.76s |  which installers to execute as part of the installation and more. The differential files are
+456.76s - 462.74s |  delta files from the base files and so a base plus delta would result in the full final update
+462.74s - 469.72s |  file. And lastly we have the catalog files which are the digital signatures of the MUM and
+469.72s - 474.98s |  manifest files. Catalogs allow signing multiple files at once instead of having the file
+474.98s - 480.96s |  that we want to sign embed its digital signature inside of it. In addition, the catalog files
+480.96s - 486.46s |  are digitally signed themselves which makes it impossible to modify them or any of the files
+486.46s - 490.34s |  that they protect. So we can't modify the catalogs and we can't modify the files that they
+490.38s - 497.38s |  protect that they sign. To recap, only cat- only the catalog files are digitally signed. The
+497.38s - 502.66s |  manifest and MUM files are not explicitly signed but they are signed in the catalog files. And
+502.66s - 507.46s |  the differential files are not signed at all and the differential files also control the final
+507.46s - 513.80s |  update file content which is very, very interesting. Is there any chance the differential
+513.80s - 520.75s |  files were left behind in terms of verification? No luck because the expected update file
+520.79s - 526.09s |  hash is hardcoded in the manifest. And the manifest cannot be changed since it will break its
+526.09s - 533.73s |  signature in the, in the catalog. Now at that point I decided to look at the action list. I knew
+533.73s - 538.17s |  that it's gon- it's, it's, it cannot be changed because it is trusted in solder and force so I
+538.17s - 543.25s |  cannot change the action list directly but I also knew that the update up, that, that update
+543.25s - 547.85s |  process is performed over multiple reboots and so I assumed that the state of this list is
+547.85s - 554.03s |  saved somewhere. And if I could modify the state, maybe I was, I would be able to uh, create a
+554.03s - 560.37s |  custom downgrading action list. So I searched the action list path in the registry and then I
+560.37s - 566.31s |  found this very interesting key named POQXXCMD line. It holds the executable that parses the
+566.31s - 571.21s |  list and the list path. I then looked at the security attributes of this key and I was
+571.21s - 578.23s |  extremely surprised to find that this key is not trusted in solder and force. And this allowed
+578.23s - 584.57s |  me to control all of the update actions. This is how the action list looks like in practice.
+584.57s - 589.67s |  It is an XML file that gives the functionality of creating files, deleting files, moving
+589.67s - 593.71s |  files, hard linking files, creating registry keys and values, deleting keys and values and
+593.71s - 600.62s |  much much more. In order to downgrade we can use the hard link file action and the source will
+600.62s - 609.21s |  replace the destination. To initiate an update all that is needed is to set the trusted in
+609.21s - 615.47s |  solar service as auto start and add the action list and its identifier in the registry. The
+615.47s - 620.11s |  identifier is a dynamic number which is compared with the action list identifier. So the
+620.11s - 625.91s |  identifier is needed for integrity purposes but since we control both the registry identifier
+625.91s - 630.43s |  and the identifier in the action list because we control the action list path, then this is
+630.43s - 635.67s |  not a problem because we can adjust them accordingly. Now the most important thing is that none
+635.69s - 641.73s |  of these three actions is trusted in solar and forced. And this allowed me to update the
+641.73s - 647.33s |  system with a custom downgrading action list. All of the integrity verifications are bypassed
+647.33s - 652.31s |  since the action list is assumed verified as it is created post verification. There is no
+652.31s - 657.25s |  need to perform the malicious trusted in solar elevation. Instead Windows updates does all
+657.25s - 663.95s |  of the work for me and this is a complete Windows update takeover. Now revisiting the
+663.97s - 668.87s |  downgrade principles, of course the downgrade is fully undetectable, there is no better way to
+668.87s - 675.92s |  downgrade Windows. In terms of invisibility, the system will appear up to date as we basically
+675.92s - 681.52s |  updated the system and we didn't uninstall anything. In terms of persistency of the
+681.52s - 685.90s |  downgraded components, I found that the action list parser is not digitally signed and so I
+685.90s - 690.70s |  patched it to install empty updates. And as a result, even after the downgrade when new
+690.74s - 697.58s |  updates are available, they will be falsely installed. And in terms of recovery, the
+697.58s - 701.92s |  integrity and repair utility is not digitally signed as well and so I patched it as well as
+701.92s - 708.42s |  part of the downgrade. And the patched version will no longer detect any corruptions. With
+708.42s - 713.76s |  that, let's see the first demo of the day. This demo will demonstrate downgrading a kernel
+713.76s - 718.84s |  driver named afd.sys to an old and vulnerable version of it by using the Windows update
+718.88s - 725.38s |  takeover. And then we'll see how the same kernel driver is exploited to achieve kernel code
+725.38s - 731.37s |  execution. So first we check the Windows version and then we will make sure that we are
+731.37s - 736.35s |  fully up to date and that we have no missing updates as you can see. We'll then uh use CMD
+736.35s - 740.95s |  and we'll use the seek check utility to see what is the current version of afd.sys, the driver
+740.95s - 746.05s |  that we are targeting. Is it fully up to date? You can see that the current version is 3672
+746.05s - 750.19s |  which is patched to the vulnerability that I want to exploit. If we use task list to find
+750.19s - 754.79s |  the current process ID and then we try to actually exploit a vulnerability, which the exploit
+754.79s - 758.33s |  gets a process ID and tries to elevate the system, you can see the LP failed because the
+758.33s - 763.33s |  driver is patched. So we'll then use Windows downdate which gets a config file that says
+763.33s - 767.97s |  downgrade the afd.sys driver to an old and vulnerable version of it. You can see that the
+767.97s - 774.63s |  attack succeeded. We now need to restore the machine in order for the update to take place.
+774.63s - 778.63s |  You can see um we we fast forward a bit, we'll log back into the machine after the update,
+778.63s - 782.87s |  we'll launch CMD and let's see what is the current version of the driver that we are
+782.87s - 790.48s |  targeting. Was it updated? And you can see that the current version is the base version.
+790.48s - 795.12s |  Although the system was updated, what actually happened is that it downgraded. We can see
+795.12s - 799.56s |  that we are not currently system. If we try to exploit a vulnerability again, we get a
+799.56s - 805.46s |  process ID and then we ex-execute the exploit again. You can see that it succeeded and we
+805.46s - 813.62s |  are now anti-authority system. Thank you. Thank you. We're just getting started guys. If we
+816.76s - 824.10s |  check for updates you can see that we are fully up to date. So what did we achieve so far?
+824.10s - 829.36s |  We gained a perfect downgrade ability and we gained kernel code execution. Our starting point
+829.36s - 834.00s |  was administrator so that was an administrator to kernel elevation. Now administrator to
+834.00s - 838.24s |  kernel is not considered a security boundary in Windows but gaining kernel code execution
+838.26s - 842.50s |  is still a threat and of course it gives much more functionality than administrator
+842.50s - 848.88s |  functionality. Although it is not a boundary, admin to kernel is still a threat and a serious
+848.88s - 854.02s |  one because nowadays lots of users are still running as administrators and running as
+854.02s - 859.58s |  administrator is also the default on Windows. And as a result, many users could easily
+859.58s - 865.70s |  compromise the kernel and this is an issue that Microsoft aimed to solve. Microsoft's
+865.72s - 869.86s |  solution was to de-privilege the kernel to make kernel access less valuable than it
+869.86s - 874.70s |  previously was. And the way that this privileging, de-privileging was done is by
+874.70s - 882.28s |  introducing a feature called virtualization based security or VBS for short. VBS is a
+882.28s - 889.72s |  secure and isolated virtual environment powered by the IPV hypervisor for isolation. And
+889.72s - 894.68s |  again the reason that VBS was introduced is because the kernel is assumed compromised and
+894.70s - 899.54s |  can no longer be trusted. There was a need for a secure place to implement critical
+899.54s - 907.28s |  security features and store secret keys. VBS features include the famous credential guard,
+907.28s - 912.26s |  HVCI, system core secure launch, um, shielded VMs and much more security features that
+912.26s - 917.66s |  really improved the security of Windows. And now that I've praised VBS so much, you may
+917.66s - 924.44s |  wonder how all of these works in practice. So before VBS, this is how Windows
+924.46s - 929.32s |  architecture looked like. We've had user mode in ring 3, we've had kernel mode in ring 0
+929.32s - 936.34s |  and then we've had the hypervisor running in ring minus 1. With VBS, the hypervisor
+936.34s - 941.84s |  introduces virtual trust levels or VTLs and the way it works is that the higher the VTL, the
+941.84s - 948.08s |  more privileged it is. So simply put, VTLs are like virtual machines. Lower VTLs should not
+948.08s - 954.66s |  be able to access memory or compromise higher VTLs. Currently on Windows, only 2 VTLs
+954.66s - 959.68s |  exist. VTL 0 known as normal mode and VTL 1 known as secure mode. Normal mode contains
+962.88s - 967.84s |  the original operating system and secure mode contains only the critical security features
+967.84s - 972.42s |  and mitigations as well as key isolation technologies. And everything that is implemented
+972.42s - 977.06s |  in the secure mode should not be compromised from normal mode, even if we talk about normal
+977.06s - 985.38s |  mode's kernel. Now when looking at security features and mitigations, the first thing to do
+985.38s - 989.66s |  is of course to check if the security features that we are targeting can be easily turned
+989.66s - 995.20s |  off. I wondered if VBS features could be easily turned off. Since they protect from
+995.20s - 1000.00s |  administrators, configuration modifiable by administrators would be ineffective because an
+1000.00s - 1006.84s |  attacker would just turn off VBS instead of dealing with it. The way that VBS protects such
+1006.84s - 1011.84s |  disablements is by implementing a feature called a UEFI lock. The UEFI lock is a UEFI boot
+1011.94s - 1019.44s |  service variable that holds the VBS configuration. So if VBS is configured with a lock, the lock
+1019.44s - 1025.06s |  is the source of configuration instead of the Windows registry. Then changing the registry
+1025.06s - 1031.10s |  configuration will have no effect. The UEFI variable is the source of truth. And of course
+1031.10s - 1035.60s |  the boot service variable that holds the configuration cannot be accessed in runtime from
+1035.60s - 1040.34s |  the operating system, but only during boot. So this is a very simple and reliable
+1040.34s - 1048.03s |  protection. If the user really wants to disable VBS, if it's configured with a UEFI lock, he
+1048.03s - 1054.51s |  must load a custom EFI application signed by Microsoft. And this EFI would then ask the
+1054.51s - 1060.41s |  user during boot to physically approve the disablement. And only if the user approves, VBS
+1060.41s - 1066.55s |  is disabled. Now the key element here is that all of this is performed during boot and the
+1066.55s - 1071.59s |  assumption is that only signed code is allowed to run because of secure boot. And the only
+1071.59s - 1077.29s |  signed code that touches the configuration, the variable, requires physical access. So without
+1077.29s - 1085.10s |  physical access to the target machine, it should not be possible to disable VBS. With the
+1085.10s - 1089.46s |  ability to control any file on the operating system, I wondered what will happen if I try to
+1089.46s - 1095.14s |  replace the secure kernel or the hypervisor, hypervisor powering VBS, with invalid files. For
+1095.14s - 1101.42s |  example, files that are not digitally signed, attacker controlled files. I believed that the
+1101.42s - 1106.18s |  result would be the machine booting into the recovery environment and that is because
+1106.18s - 1114.14s |  invalid files are a sign of compromise. Instead, I was extremely surprised to find out that if
+1114.14s - 1119.74s |  the operating system loader fails to validate one of VBS's files, it will just boot normally
+1119.74s - 1125.98s |  abandoning VBS. I repeat, if the OS loader fails to validate one of VBS's files, it just boots
+1125.98s - 1132.40s |  normally. And this can be used to disable VBS by passing the UEFI lock. And as far as I
+1132.40s - 1137.86s |  know, this is the first bypass of VBS's UEFI locks and this is a very simple bypass. All we
+1137.86s - 1142.56s |  need to do is to replace the secure kernel, the hypervisor of any VBS's files with invalid
+1142.56s - 1148.74s |  files. Very simple. So now it's time for another demo of chaining all of the capabilities
+1148.74s - 1153.78s |  gained so far together. In this demo I will show credential extraction against the most
+1153.78s - 1160.26s |  restrictive settings. Those settings will be PPL enabled for LSS with UEFI lock protecting
+1160.32s - 1167.32s |  LSS dumps. Um credential guard will be enabled with UEFI lock protecting secrets in VTL1 and
+1167.32s - 1172.10s |  Windows Defender will be up and running. The way that all of these will be bypassed is by
+1172.10s - 1177.34s |  first reverting the PPL fault patch to allow PPL bypass. Second, disabling credential guard
+1177.34s - 1181.80s |  by passing the UEFI locks. And third, turning Windows Defender on functional by invalidating
+1181.80s - 1188.54s |  the main Defender executable MSMP engine. Now just before I show you the demo, it is
+1188.56s - 1193.20s |  important to understand that credential guard and PPL for LSS are complementary. So if any
+1193.20s - 1199.26s |  only credential guard is bypassed, LSS cannot be dumped. And if only PPL is bypassed,
+1199.26s - 1202.84s |  credentials are encrypted and not usable. So this is what you will see if you try to dump
+1202.84s - 1208.04s |  credentials on a system with credential guard on. So let's see the demo of bypassing
+1208.04s - 1213.02s |  credential guard, PPL for LSS and Windows Defender all in once by utilizing downgrades and
+1213.02s - 1219.23s |  the UEFI lock bypass. So first we check the Windows version and then we'll make sure that
+1219.25s - 1225.65s |  we are fully up to date. Which you can see we have no missing updates. We'll then use SK
+1225.65s - 1230.29s |  tool to see um which is tool supp- supplied by Microsoft to see what VBS features are
+1230.29s - 1235.73s |  running. You can see that the uh uh the VBS is protected with UEFI lock. It's locked in UEFI
+1235.73s - 1240.67s |  and credential guard and key guard are currently running. We then use system informer to
+1240.67s - 1246.37s |  see what is the current state of LSS. You can see that it's run- it runs as PPL and then
+1246.41s - 1249.85s |  let's check that Windows Defender is up and running as well. We try to copy malicious files
+1249.85s - 1253.41s |  outside of the excluded directory. You can see that we can't use them and that Windows
+1253.41s - 1259.29s |  Defender detects them as malicious because it's up and running. Now it's time to execute
+1259.29s - 1265.38s |  the attack. We will use Windows downdate. We'll change directory to the Windows downdate
+1265.38s - 1269.98s |  directory. And we will supply Windows downdate with the config file that will say
+1269.98s - 1276.52s |  downgraded PPL fault patch, bypass the UEFI locks to disable VBS and invalidate the main
+1276.52s - 1281.06s |  defender executable to turn it unfunctional. You can see that the attack was successful. We
+1281.06s - 1285.56s |  finished the attack. These are the files that were updated and all we need to do is to
+1285.56s - 1290.60s |  restore the machine. So you can see, you you will see now that updates are underway but in
+1290.60s - 1296.50s |  practice what happens is that downgrades are underway. We fast forward, we log back into
+1296.50s - 1305.69s |  the machine. Now let's launch SK tool again to see what is the current state of VBS. Now you
+1305.69s - 1309.13s |  will see that the secure kernel is not currently running, credential guard is not currently
+1309.13s - 1313.09s |  running as well. So the UEFI lock has been bypassed and credential guard is no longer
+1313.09s - 1317.93s |  protecting credentials. We'll then launch uh system informer and we will see what is the
+1317.93s - 1322.31s |  current state of us. As you can see it runs as PPL. So we'll need to bypass it. And now let's
+1322.31s - 1326.57s |  check what is the state of Windows Defender. We'll copy malicious files outside of the
+1326.57s - 1331.55s |  excluded directory. And you can see that it worked successfully. So we defeated Windows
+1331.55s - 1337.89s |  Defender as well. We'll launch CMD CMD again and now it's time to bypass PPL. We'll change
+1337.91s - 1342.89s |  directory, we'll get the core, the process ID of LSAS and then we'll try to execute PPL
+1342.89s - 1347.85s |  fault. And remember PPL fault should have been patched in the system and it is seemingly
+1347.85s - 1356.51s |  patched in the system. We'll execute the attack and let's see what happens. So PPL fault was
+1356.51s - 1360.89s |  successful. The dump file was created on the desktop as you can see. We'll now use Mimikatz to
+1360.89s - 1364.63s |  parse the dump file and extract with credentials that should have been protected by
+1364.63s - 1370.17s |  credential guard. We'll load the dump file and extract credentials. You can see credentials
+1370.19s - 1377.23s |  are extracted and this credential should have been protected by credential guard. Now just
+1377.23s - 1381.61s |  to make sure that we are fully up to date and that everything looks correct. We'll check for
+1381.61s - 1388.53s |  updates. And you can see that we are fully up to date. Thank you. Thank you. Ok so we
+1398.57s - 1404.01s |  bypassed the UEFI locks and defeated VBS but now it's time to talk about real security
+1404.03s - 1410.77s |  boundaries. The security boundaries that VBS introduces are any VTL0 to VTL1 transition is
+1410.77s - 1415.75s |  considered a security boundary, an elevation of privilege. No VTL0 code should be able to
+1415.75s - 1420.75s |  compromise VTL1 code. And another boundary is ring 3 to ring 0 uh sorry any ring 3 to ring 0
+1423.65s - 1429.93s |  um sorry any ring 3 or ring 0 to ring minus 1 um so user mode to or kernel 2 hypervisor is
+1429.95s - 1434.61s |  considered an elevation of privilege. And due to the way that VBS is implemented
+1434.61s - 1441.43s |  compromising the hypervisor gives complete control over all of the VTLs. Now when looking at
+1441.43s - 1447.17s |  VBS downgrades my main goal was to understand if there was a downgrade detection, mitigation
+1447.17s - 1452.21s |  such as versioning checks or revocation mechanism. And if no downgrade mitigation was found
+1452.21s - 1458.05s |  regardless of how far I could go with the downgrade I considered this as a vulnerability. And
+1458.05s - 1462.53s |  that is because when new vulnerabilities will get patched in the target component it will
+1462.53s - 1467.57s |  make the exploitation much easier. So even if not immediately exploitable it is truly
+1467.57s - 1474.45s |  something that needs to get fixed. Firstly I targeted secure modes isolated user mode
+1474.45s - 1480.13s |  processes. And the most known isolated user mode process is credential guard. So I decided
+1480.13s - 1485.57s |  to target it first. Credential guard is implemented as an isolated user mode process
+1485.57s - 1491.57s |  named LSAISO which stands for LSA isolated. With credential guard running, secrets are
+1491.57s - 1497.15s |  stored in LSAISO in VTL 1 instead of in the original LSAISO process. And this is why
+1497.15s - 1501.73s |  dumping LSAISO with credential guard is no longer valuable. Because LSAISO only contains
+1501.73s - 1507.09s |  the encrypted blobs and the real secrets ones that are uh once that the attacker is
+1507.09s - 1515.99s |  interested in are only accessible um to in VTL 1 and not in VTL 0. I decided to target a
+1515.99s - 1523.33s |  downgrade with CV 2022 34709 which is a fixed elevation of privilege in credential guard. I
+1523.33s - 1528.87s |  found both the vulnerable module which is Kerpli insured and the vulnerable version.
+1528.87s - 1532.53s |  Downgrading the vulnerable module using the Windows update decoverer worked well on a
+1532.53s - 1538.27s |  fully patched machine. And this allowed escalating privileges from ring 3 VTL 0 to ring 3
+1538.27s - 1543.71s |  VTL 1 compromising credential guard and all of the secrets that it protects. There was no
+1543.73s - 1550.67s |  downgrade detection on VTL 1 isolated user mode. Now isolated user mode privileges are great
+1550.67s - 1554.75s |  but I wanted to gain even higher privileges. So I then moved on to target secure mode's
+1554.75s - 1561.69s |  kernel which is more privileged than isolated user mode. The kernel of secure mode is called
+1561.69s - 1566.69s |  secure kernel and it is a minimal kernel that only implements security features such as
+1566.71s - 1571.71s |  HVCI, HyperGuard and more. I decided to target this downgrade with CV 2021 27090 which is a
+1574.89s - 1580.19s |  fixed elevation of privilege in secure kernel. The only vulnerable module here could be
+1580.19s - 1585.27s |  secure kernel itself but in this case downgrading only the secure kernel did not work. It
+1585.27s - 1591.27s |  wasn't enough for me. I've had to downgrade dependency modules as well and only then it
+1591.35s - 1597.43s |  worked on a fully patched machine. And this allowed escalating privileges from ring 3 VTL 0 to
+1597.43s - 1604.63s |  ring 0 VTL 1 compromising the entire VTL 1 and any of the mitigations including HVCI,
+1604.63s - 1609.77s |  HyperGuard and more. There was no downgrade detection on the secure kernel and the secure
+1609.77s - 1616.23s |  mode either. Now secure kernel privileges are great but I wanted to gain even higher
+1616.23s - 1621.57s |  privileges. So I then moved on to target the most privileged entity of VBS which is the
+1621.59s - 1627.97s |  Hyper-V hypervisor. The hypervisor is HVIX on Intel systems and HVAX on AMD systems. The
+1631.37s - 1638.86s |  hypervisor is a stand alone microkernel which makes it a valuable target for downgrades. With
+1638.86s - 1643.90s |  the hypervisor though it was more challenging to target a specific vulnerability. And that
+1643.90s - 1648.70s |  is because many vulnerabilities titled Hyper-V elevation of privileges were fixed over the
+1648.70s - 1654.74s |  last 2 years. But Hyper-V is a very large component. And in CV descriptions Microsoft do
+1654.74s - 1661.84s |  not share which component in the Hyper-V stack is the vulnerable one. So it could be um a an
+1661.84s - 1666.28s |  elevated user mode process, it could be a kernel driver or it could be the hypervisor itself
+1666.28s - 1671.28s |  which is the only component that I am targeting in the Hyper-V stack. And so I decided to go
+1671.28s - 1676.28s |  2 years backward to prove the vulnerability. Because 2 years is old enough to be confident
+1676.30s - 1680.80s |  that there was at least one hypervisor elevation of privilege vulnerability unfixed in the
+1680.80s - 1686.54s |  old hypervisor. Downgrading the hypervisor and the hypervisor loader worked well on a fully
+1686.54s - 1692.16s |  patched machine and the cross security boundary here was ring 3 VTL 0 to ring minus 1
+1692.16s - 1696.92s |  potentially compromising the entire visualization stack. And this rendered the entire
+1696.92s - 1703.06s |  visualization stack vulnerable to downgrade attacks. So let's see a demo of the hypervisor
+1703.08s - 1708.94s |  downgrade. First as usual we check the Windows version and then we make sure that it is fully
+1708.94s - 1715.65s |  up updated and that we have no missing updates as you can see. We'll then launch SK tool again
+1715.65s - 1719.93s |  but this time we're interested to see what is the current state of the hypervisor. You can
+1719.93s - 1723.73s |  see the hyper the Microsoft hypervisor was detected and the current version is 2 2 6 2 1
+1723.73s - 1728.47s |  which is the base version. You can also see the VBS runs as usual. We'll then use Windows
+1728.47s - 1732.77s |  downdate with a config file that will say downgrade the hypervisor to a 2 years old
+1732.81s - 1737.21s |  hypervisor. The attack was succeeded, you can see the update files. We now restore the
+1737.21s - 1745.00s |  machine in order for the update to take place. We fast forward, Windows is updating. What
+1745.00s - 1749.94s |  happens under the hood is that the hypervisor is being downgraded. We log back into the
+1749.94s - 1754.94s |  machine and let's see what is the current state of the hypervisor. We run SK tool again and
+1757.62s - 1763.08s |  we can see that the hypervisor is still detected but it's version is 2 2 0 0 0 which is a
+1763.08s - 1767.72s |  2 year old version. You can also see what's interesting here is that VBS is running as
+1767.72s - 1772.02s |  usual. So credential guard everything is running with an old hypervisor. And if we check
+1772.02s - 1780.78s |  that we are fully up to date, you can see that we are. Ok so overall I found no downgrade
+1780.78s - 1786.42s |  mitigation in any component of the virtualization stack. The entire stack was found to be
+1786.42s - 1793.19s |  vulnerable to downgrade attacks. Now let's talk about one last vulnerability that expose
+1793.19s - 1799.39s |  all of the attack vectors to unprivileged attackers in certain scenarios. So it all started
+1799.39s - 1803.77s |  with this Windows dot old folder which I came across in some of my machines and looking at it
+1803.77s - 1808.43s |  and Googling it, I found that this is the old Windows operating system and it is saved for
+1808.43s - 1812.51s |  restoration purposes after a quality update is installed. So when you install a quality
+1812.51s - 1819.44s |  update, Windows dot old is saved uh Windows is saved to Windows dot old. Of course the first
+1819.46s - 1824.74s |  thing I did was to try to to to modify files inside Windows old but I noticed that access
+1824.74s - 1829.14s |  lists are copied from the old operating system and so it was impossible to temper files that
+1829.14s - 1834.92s |  could not be previously tempered with. The next thing I did was to try to check access to
+1834.92s - 1840.22s |  the Windows dot old folder itself and I found that as an unprivileged user I have full
+1840.22s - 1846.72s |  access to this folder. The exploitation strategy is straight forward. First renaming the
+1846.74s - 1851.38s |  original Windows dot old folder to any name and then creating an attacker controlled Windows
+1851.38s - 1856.02s |  old folder and the attacker controlled operating system will be used in case of update
+1856.02s - 1860.96s |  restoration. So then in a restoration scenario triggered by administrator, the attacker
+1860.96s - 1865.40s |  controlled operating system will be used instead of the backup operating system. So this is
+1865.40s - 1869.56s |  another way to perform the same downgrades from an unprivileged user in a restoration
+1869.56s - 1876.87s |  scenario. Closing remarks, let's talk about the disclosure process, next steps and
+1876.89s - 1882.93s |  takeaways. Starting from the disclosure process, we notified Microsoft of our research
+1882.93s - 1887.93s |  findings in February 2024, Microsoft issued CV 2024-21302 and CV 2024-38202. This is
+1894.25s - 1898.45s |  Microsoft's official response to the research and I would like to thank Microsoft here for
+1898.45s - 1905.00s |  the great cooperation and effort on these cases. For those of you who want to further
+1905.00s - 1909.48s |  research the topic that we explored today, here are some of the topics that I would
+1909.50s - 1915.46s |  recommend looking at. First and foremost, the critical question still arises. Are there
+1915.46s - 1921.80s |  additional Windows features vulnerable to downgrade attacks? So far, both secure boot and the
+1921.80s - 1926.88s |  virtualization stack was found vulnerable. Do you have in mind additional critical features
+1926.88s - 1932.64s |  that you think are vulnerable to downgrades? Another interesting feature introduced not too
+1932.64s - 1937.56s |  long ago is Linux virtualization based security. And this is a game changer for Linux
+1937.56s - 1944.48s |  security. Would the same design issues exist in the Linux implementation? Lastly, are there
+1944.48s - 1948.98s |  any other operating systems such as Mac OS or Linux that may be vulnerable to downgrade
+1948.98s - 1954.52s |  attacks? May the implications on those operating systems be similar to the Windows
+1954.52s - 1962.04s |  implications? What are the takeaways for this talk? First, the cyber security industry
+1962.04s - 1966.92s |  should raise its awareness of OS downgrade attacks and the danger that they pose. I found
+1966.92s - 1970.66s |  no mitigation preventing the downgrade of critical operating system components,
+1970.66s - 1975.84s |  suggesting the downgrade attacks were not a focal point barrier to my research. The
+1975.84s - 1981.60s |  significant implications made um made by downgrade attacks emphasize the danger that they
+1981.60s - 1987.14s |  pose. And while Windows is currently affected, could Mac OS or Linux be next? We need to
+1987.14s - 1993.50s |  address these questions before real attackers do. Second, design should always be reviewed
+1993.50s - 1997.96s |  and regarded as a relevant attack surface. The downgrade attack on the virtualization stack
+1997.96s - 2002.84s |  was possible due to a design flow that permits less privileged VTLs or rings to update
+2002.84s - 2008.74s |  components residing in more privileged VTLs or rings. Even though virtualization based
+2008.74s - 2013.24s |  security has became more popular among security researchers in recent years with some
+2013.24s - 2018.24s |  great research papers papers on the subject, this attack surface, the downgrade attack
+2018.24s - 2022.58s |  surface has existed since the very beginning of VBS when Microsoft first announced it in
+2023.04s - 2030.86s |  2015. And this indicates that the design was probably not thoroughly examined. Third, in the
+2030.86s - 2035.62s |  wild attacks should be thoroughly examined and expanded upon whenever possible. With the
+2035.62s - 2039.56s |  Black Lab's UEFI boot kit employing downgrade attacks, we realized that the concept of
+2039.56s - 2044.06s |  downgrade attacks was right under our noses. Although a year has passed, it seems that this
+2044.06s - 2048.68s |  time we were able we were able to study and expand upon downgrade attacks before attackers
+2048.70s - 2055.79s |  did. So we exp- we expanded uh security boots downgrade to virtualization stack downgrades.
+2055.79s - 2059.69s |  This is not always guaranteed and this emphasizes the importance of studying in the wild
+2059.69s - 2065.33s |  attacks and always considering what other components or areas may also be affected by an in
+2065.33s - 2072.11s |  an in the wild attack. Now before we wrap everything up, I would like to credit these
+2072.11s - 2080.28s |  talented people for their work. It was a pleasure for me to share with you my journey of
+2080.28s - 2083.98s |  researching downgrade attacks on Windows and their severe implications on Windows as
+2084.00s - 2088.74s |  platform security. Using the findings that I revealed today, you can bring back to life
+2088.74s - 2094.18s |  thousands of old and fixed vulnerabilities. Windows downdate essentially makes the term
+2094.18s - 2100.12s |  fully patched meaningless across any Windows machine worldwide. If you have any question
+2100.12s - 2105.26s |  questions please catch me in the wrap up room or here and also feel free to reach out on
+2105.26s - 2109.76s |  social media and with that I would like to thank you all for joining me today and have a
+2109.76s - 2111.62s |  great rest of your day. Thank you.

@@ -1,0 +1,475 @@
+{
+  "webpage_url": "https://www.youtube.com/watch?v=6lJ26UG9hLU",
+  "title": "DEF CON 32 - Signature-Based Detection Using Network Timing - Josh Pyorre",
+  "description": "Malware traffic is commonly identified using signatures based off its code, strings, and associated network infrastructure. However, it's also possible to build signatures from the timing between network transactions. This presentation will explore using network captures of known malicious network activity to find similar behavior in random traffic. The talk is technical as it involves processing packets with Python and a some data science, but will be presented in a way that anyone should be able to understand and enjoy.",
+  "channel_url": "https://www.youtube.com/channel/UC6Om9kAkl32dWlDSNlDS9Iw",
+  "duration": 2563,
+  "channel": "DEFCONConference",
+  "uploader": "DEFCONConference",
+  "upload_date": "20241016"
+}
+
+0.00s - 5.00s | This text was transcribed using whisper model: large-v2
+
+ Alright, good afternoon everyone and it is 1.30 Pacific time in beautiful Las Vegas, Nevada. Um,
+9.80s - 14.80s |  thank you so much for joining us today and this next talk is um, sponsored by the Packet
+17.34s - 22.34s |  Hacking Village and it is my absolute pleasure to introduce to you Josh Piore. Thank you.
+22.90s - 30.52s |  Alright, so um, that's me. I uh, work with secur- uh, Cisco Talos. Um, previously I've worked with
+32.70s - 37.70s |  Zscaler, um, Umbrella, OpenDNS, NASA, and Mandiant and some other places, some non-profits
+38.90s - 43.90s |  and what not. So, I do security research and I uh, make music and do a bunch of other stuff.
+45.84s - 50.34s |  So, uh, before I get into all the details I'm gonna talk about what I wanna focus on when I'm
+50.40s - 54.76s |  doing this kind of thing. I'm gonna talk about attribution and the infection chain real quick
+54.76s - 58.66s |  and uh, it's probably very familiar to you. So, hopefully I'm not gonna bore everyone but I'll
+58.66s - 63.60s |  just continue on. Um, so looking at attribution, when you're looking for something, I spent most
+63.60s - 68.24s |  of my time as a threat hunter. When you're looking for something, uh, you're following one thing
+68.24s - 73.94s |  that you see. So, maybe I found a- a domain or a URL. In this case I found this one at
+73.94s - 79.34s |  urlhouse.abuse.ch and then I um, I can see it's part of Emotet. A lot of the samples I'm using
+79.34s - 83.42s |  are kind of some old samples for the moment. I have some newer stuff later on but uh, this is
+83.42s - 88.42s |  part of Emotet, part of Epoch 4. There are various epochs, various um, evolutions. Um, if I look
+90.92s - 97.60s |  at that in like VirusTotal, I can find a hash that's associated with this- this uh, URL and then
+97.60s - 104.04s |  I can follow that trail looking for more hashes. Uh, VirusTotal has- makes this very easy. Um, I
+104.04s - 108.64s |  can then keep on going and getting more and more attribution and finding more of this uh,
+108.64s - 114.58s |  particular variation of Emotet. Maybe it's today's variant or this week's variant. Um, uh, I
+114.58s - 118.72s |  can copy the hash for that file and I can go in multiple different directions. Take that to
+118.72s - 123.72s |  another interface and uh, find additional things. Uh, keep on looking, basically ending up at
+127.66s - 131.60s |  finding a whole bunch of different URLs. So, as a threat hunter I would do this to like find
+131.60s - 137.34s |  additional compromised URLs. In this case a bunch of WordPress URLs that are um, dropping uh,
+137.34s - 143.88s |  this- this specific version of Emotet at the time. Um, maybe I have another example, just to
+143.88s - 149.74s |  give you another example. Um, I go to any.run which is a- a malware sandbox that you can go to
+149.74s - 155.18s |  and I grab something. I see a URL that's at this IP address and I grab that IP address, go look
+155.18s - 161.16s |  for it in another place and get some hashes. Um, and get more information. Keep building up my
+161.16s - 165.86s |  thing. You have to know when to quit of course, but keep building and um, eventually you can do
+165.88s - 171.48s |  something like you can map it all together following host infrastructure. Uh, finding what
+171.48s - 176.76s |  these specific threat- threat actors are- are using to make their um, their malware do what it
+176.76s - 181.60s |  does. Um, but there's always patterns as we all know like when you look at binary analysis or
+181.60s - 185.44s |  anything like that. There's certain variable names- names that are the same because it's- it's
+185.44s - 191.74s |  difficult to change your habits uh, as a- anything in the world. Um, there's a framework for
+191.76s - 196.16s |  this. You probably all know about it. Minor attack framework to uh, attribute various tools,
+196.16s - 202.44s |  tactics, procedures to things and to groups like APT29 which is a threat group and it's you
+202.44s - 207.08s |  know if something belongs to them because it follows these certain procedures. Um, they use
+207.08s - 211.12s |  certain techniques. You can track everything with this. It's- it's nice. It's a little hard to
+211.12s - 216.02s |  automate, but it's nice. Um, there's books about this kind of thing. This is a great book about
+216.02s - 221.22s |  this. I actually bought it at Defcon a few years ago. Um, but there are levels of attribution.
+221.24s - 225.24s |  Uh, when I worked in the government we were very interested in threat actors. Like what threat
+225.24s - 230.64s |  actor is responsible for this thing and APT was the word of the day every single day. So, um, we
+230.64s - 235.32s |  were interested in individuals, other governments, the state sponsored stuff. Uh, in some
+235.32s - 239.56s |  cases, many places I'm interested in campaigns. So what is the malware campaign that I'm looking
+239.56s - 245.56s |  at? Uh, is it Emotet or is it something like a remote access Trojan or is it ransomware or
+245.56s - 250.80s |  whatever? Um, and then in most cases like small environments you just want to know what's
+250.84s - 256.72s |  inside your network. That's your attribution level. So let me talk briefly about the
+256.72s - 261.18s |  infection chain cause it doesn't change much just like the behaviors of all these things don't
+261.18s - 265.86s |  change much. Um, making it possible to track them. Using Emotet again, it's just so easy to
+265.86s - 270.60s |  use and I'd like to make fun of it. Um, it usually comes in via an email and then you get a
+270.60s - 276.50s |  link to something or an attachment to something. Leads to OfficeDoc with macros, PowerShell,
+276.54s - 281.48s |  uh, more macros, it'll install additional components than the C2 stuff back then. I mean,
+281.48s - 285.28s |  not, not so, I mean it would lead to Cobalt strike, but maybe it leads to remote access
+285.28s - 290.18s |  Trojan. Um, this is just Emotet, but this is kind of a pattern with, with most things. The
+290.18s - 294.82s |  easiest way to compromise is, you know, get the user via some kind of email dropper or a link
+294.82s - 302.86s |  to something or drive by download. Um, uh, usually, uh, oh, let's see. I forgot that I made
+302.86s - 308.20s |  this segmented, but I just went over that. So, uh, another one, QuackBot, same kind of
+308.20s - 312.84s |  thing, but a little bit more complex, maybe to make it seem more authentic. Um, usually they
+312.84s - 318.04s |  get an email which has a link, which leads to a password protected zip file. They, uh,
+318.04s - 321.72s |  possibly open that file and then they have an ISO and they're like, what do I do with this?
+321.72s - 325.38s |  They open that, there's a Windows shortcut, downloads things and then it does what it does
+325.38s - 332.78s |  after that. Um, and typically you see that get request, uh, in, over HTTP. Maybe you see it
+332.78s - 337.42s |  more these days over SSL, but often you'll see it over HTTP and then SSL traffic starts after
+337.42s - 342.30s |  that. When you're detecting this, this kind of stuff, um, it's harder where you get to the SSL,
+342.30s - 347.30s |  but I'm gonna talk about that too. Uh, the problem that I'm addressing here is how do we find
+347.30s - 351.60s |  bad things in the network? How do we get the attribution of what's inside our environment
+351.62s - 357.90s |  without knowing too much? Um, so, you know, this is just my home network. I'm just capturing
+357.90s - 363.54s |  stuff on a, on a capture device. Um, it's not very busy, but I mean, of course networks are way
+363.54s - 367.54s |  busier than this, but how do you find something like this? This is just a super simple example
+367.54s - 373.08s |  of like a post, uh, over clear text of someone putting a username and password in, into a
+373.08s - 377.26s |  compromised WordPress site. How do you find that inside that? There are ways, obviously we
+377.28s - 383.12s |  know about this, I'm sure. Uh, intrusion detection and Yara, I'm gonna talk about these. Um, so
+383.12s - 387.16s |  IDS rules, uh, this is kind of a crazy slide, but at the very top, if you're familiar with this,
+387.16s - 392.36s |  is an IDS rule. I'm using Emotet and Zenempel. Uh, it would capture what you see in this PCAP.
+392.36s - 396.30s |  It's gonna look for things like the, the content being the post. It's gonna look for a specific
+396.30s - 402.68s |  kind of post content. Uh, maybe it's looking for the user agent, uh, or some other data. Um, and
+402.68s - 406.68s |  when I run this, like if I run a PCAP or I run that malware in my, when I ran it in my home
+406.70s - 412.28s |  environment, I, I triggered six alert fires, uh, through Suricata, um, reading this rule. So
+412.28s - 417.68s |  there's really easy detection mechanisms for certain things. Of course, as with most things,
+417.68s - 421.58s |  you have to know what you're looking for. You have to have already seen it in many cases. Yara
+421.58s - 426.48s |  rules are typically, uh, not thought of as a streaming detection mechanism. I mean, they can
+426.48s - 432.40s |  be used in such a way. Uh, we use them at my work like that. Um, but, uh, they're typically for
+432.42s - 438.52s |  finding strings or, or data in binary analysis. You can look for stuff in HTTP text and
+438.52s - 443.20s |  JavaScript. So it's not really thought of as a thing you can use for PCAPs or net streaming
+443.20s - 448.50s |  network traffic. But I did find that someone wrote a tool called Yara PCAP. I took that and I
+448.50s - 453.24s |  modified it. My code's gonna be at the very end of this. I have a link to it. Um, but I modified
+453.24s - 457.64s |  that to include it as a proof of concept if you wanna play with it. Uh, so you can upload a PCAP,
+457.66s - 464.66s |  um, uh, and test it. What it, how it works with the Yara PCAP thing is you write a Yara rule, um,
+464.66s - 469.30s |  just like based off this IDS rule that I had before. It becomes a really simple, much easier to
+469.30s - 475.90s |  read. I'm looking for a post for the, um, user agent, certain kind of content, the refer information,
+475.90s - 480.14s |  and then I wanna get all those things when it sees them, it triggers. So like if you look at my
+480.14s - 486.78s |  web app that I built, um, uh, you browse to something. It, I pull up like a test Yara. It, I
+486.78s - 494.30s |  can see that I get these two alerts basically. So it's possible to, to capture stuff over network
+494.30s - 499.30s |  with Yara as a dec, detection mechanism. Um, there's just a view of it. Uh, there are some
+503.00s - 508.60s |  obstacles here. I'm gonna talk about a lot of obstacles. But, um, visibility, SSL, I briefly
+508.60s - 514.42s |  touched on this. Um, uh, going back to that infection chain, usually you get your email and
+514.42s - 518.12s |  that's gonna be one endpoint detection. You're looking at your email detection. Does it
+518.12s - 522.76s |  hopefully have something that's watching your email? Uh, you maybe have a, uh, going to get that
+522.76s - 528.70s |  link over HTTP or you have an attachment already in the email. So, I mean, you hopefully
+528.70s - 533.64s |  detected it in the email and then your endpoint detection is hopefully catching that office
+533.64s - 539.18s |  doc with all the macros and it's seeing PowerShell run and it's stopping it. Um, uh, then
+539.18s - 543.22s |  installing additional components is probably gonna be over SSL. You're probably not gonna know
+543.22s - 548.08s |  that's, uh, something weird is happening. Uh, except for the endpoint that it's con,
+548.08s - 551.52s |  connecting to if you're in monitoring that or if you're looking at DNS, you can also get some
+551.52s - 557.22s |  information from that too. Um, and the C2 is did, usually gonna be SSL as well and beyond
+557.22s - 561.64s |  remote access Trojan traffic, everything. And then when they drop ransomware on there, it's
+561.64s - 567.60s |  just like you don't have visibility into the whole thing like you did maybe 15 years ago. Um,
+567.62s - 574.30s |  and here's an example like a iced ID dropper. Uh, it, it was a, you get it via over HTTP and
+574.30s - 579.70s |  then, uh, traffic starts right afterwards with SSL. So, you can capture that HTTP and maybe
+579.70s - 585.68s |  the SSL with some kind of magical behavioral analysis or in some cases stuff I'm showing you
+585.68s - 590.88s |  kinda catches it sometimes. Uh, there are solutions for this. I, when I give talks, I don't
+590.88s - 595.38s |  do vendor talks usually. So, I, I try to talk about free things. Um, there, I think Proxifier
+595.40s - 601.14s |  has a, a fee, but you, uh, enterprises like my company and other companies offer solutions to
+601.14s - 605.18s |  man in the middle of your SSL traffic. You have to install something on the, the clients and so
+605.18s - 610.82s |  you can intercept that stuff for better detection. Um, but you can also do it for free. Uh, so
+610.82s - 615.92s |  is this possible, this thing I'm talking about here? Well, let's find out. Um, I had this idea
+615.92s - 620.56s |  from a talk I gave a long, long time ago. I was looking at, these are really old samples. Um,
+620.58s - 627.52s |  these are the, okay, I'm not a data scientist, so ignore the numbers on the left. Um, I, uh, was
+627.52s - 631.36s |  plotting the time, I was plotting when things were happening with a sample like over the
+631.36s - 636.96s |  network. When does it make a GET or a PORT request or when's the SYN, SYNAC, uh, etc. Um, and
+636.96s - 640.54s |  it's a whole bunch of samples. And I was seeing there's a relationship between these samples,
+640.54s - 645.60s |  but I, I don't know, maybe, maybe not. Um, then I looked at Emotet samples. I, it's different
+645.62s - 650.62s |  than Hansitor. Um, it's different and they're related by the way, but they're, um, the traffic
+653.26s - 656.70s |  stuff is different. And then we look at Trickbot, same kind of thing. They're related to each
+656.70s - 660.94s |  other, very different from Hansitor and Emotet. I'm not gonna show you more examples of malware,
+660.94s - 665.80s |  but I was like, maybe there's an idea here of something I could explore. Um, so let's talk
+665.80s - 671.24s |  about finding some patterns and show like some examples. Um, I'll use dropper downloads. So
+671.26s - 675.46s |  when you first get that dropper, beginning out, um, and we'll have a little bit of SSL in there
+675.46s - 679.46s |  and then benign versus malicious, because in many cases I'm wondering, is this just how
+679.46s - 684.00s |  networking works the way that I'm doing this? Or is it bandwidth that's causing issues or not
+684.00s - 689.30s |  causing issues? Um, looking at dropper downloads first, I'll take two separatized ID
+689.30s - 694.24s |  downloads. Um, I'm getting these requests. I've got almost double the transactions on the top
+694.24s - 700.14s |  one than the bottom one. And, uh, the download is basically the same. Um, but so these, they
+700.14s - 706.76s |  look different, but in terms of how many transactions happen, um, I'll, uh, look at the timing
+706.76s - 710.56s |  in between these. Like, so when a transaction happens, then the next transaction and what's the
+710.56s - 715.40s |  timing between that. And that's what I'm gonna be focusing on mostly in this talk. Um, and I,
+715.40s - 718.96s |  despite the difference in transactions, I'm seeing that there's a sort of a pattern just, you
+718.96s - 726.70s |  know, just using my meat brain. Um, I've got a big time and a small and larger, small, really
+726.70s - 731.04s |  big, smaller, et cetera. So I'm seeing a pattern. I'm wondering it, is this something I can work
+731.04s - 738.54s |  with? Um, let's look at beaconing. Um, this is over SSL Cobalt strike beaconing, two samples. Um,
+738.54s - 744.12s |  I, is this even, can I, am I gonna see the kind of same results or is this just how networking
+744.12s - 749.22s |  works? This is what I'm always asking myself. Is this just stuff I don't know about? Um, I look
+749.22s - 752.86s |  at it, I'm kind of seeing the same patterns where I get that big one and small one. So it's, it's
+752.86s - 759.00s |  still maybe, maybe it's just how it works. Um, I do emotet and trick bot beacons. Um, same kind
+759.00s - 766.04s |  of thing. So I need to find something to show me a difference. I need two samples that are alike
+766.04s - 769.94s |  and I wanna know if they're, they behave differently. So benign versus malicious. Um, I
+769.94s - 773.84s |  downloaded this, uh, thing called existential.exe. I found it when I was looking for a benign
+773.84s - 779.52s |  exe file. It's, someone wrote it to look like a, a malicious dropper download, which is usually
+779.52s - 785.76s |  pretty small. Um, you can see I get it and I'm getting it from some site, a domain that I own. Um,
+785.76s - 790.22s |  and then I compared it with a malicious dropper download. I don't remember the malicious dropper,
+790.22s - 795.50s |  but I'm seeing there are some similarities, but it's starting to be different enough that I decided
+795.50s - 800.70s |  to explore further. So let's talk about the processes that I'm going to play with and use in
+800.70s - 806.84s |  this. I'm going to talk about averages, Levenstein distance, and some fuzziness. There's some
+806.90s - 814.78s |  challenges. Um, again, um, finding the part that I'm interested in. Uh, if you have, uh, network
+814.78s - 819.84s |  traffic, how do you find the bad stuff? I have malware, malware analysis sandboxes at home. We
+819.84s - 825.12s |  have them at work. We have them all available to us for free. Um, so you can find this stuff. Um,
+825.12s - 830.06s |  but if you have a, a PCAP full of stuff, how do you find it? And there's always, there's flows
+830.06s - 833.62s |  in, in a, in a huge PCAP file. You're gonna, these are the connections between all the
+833.64s - 837.82s |  different servers, or maybe just do one machine and all the places it connects to. So how do you
+837.82s - 844.18s |  separate all these flows in an efficient manner and then operate on them? Um, there are, as I
+844.18s - 847.36s |  mentioned, there are places we can go get stuff. I'm gonna use a lot of examples from malware
+847.36s - 852.66s |  traffic analysis for the awesome site. You can download, uh, an exact peak, like almost a
+852.66s - 857.14s |  carved PCAP. Sometimes there's extra data in there, but of malicious stuff. And I'm going to use
+857.14s - 862.24s |  that for what I'm going to build signatures out of. Uh, so once I have a viable key PCAP, like I
+862.26s - 868.40s |  downloaded from malware traffic analysis, um, uh, like I'm gonna use this iced ID with cobalt
+868.40s - 874.54s |  strike. It's old, but, um, oh wait, I forget something. Oh yeah, once I have a viable PCAP, I, I
+874.54s - 879.64s |  can use that. So I'll play with the detection ideas. I'll play with the averages and I'm gonna
+879.64s - 884.02s |  look at co-integration. And, um, once again, I'm not a data scientist. I'm gonna talk about
+884.02s - 887.86s |  co-integration and I might mess it up a little bit, but I know how to make it work in the thing,
+887.88s - 894.72s |  sort of. So, um, averages first. Um, when I look at an isolated trick bot post from that viable
+894.72s - 900.88s |  PCAP that I download, I've got 840 queries. Um, I'll take the queries in between the
+900.88s - 905.76s |  transactions and I'll put them in a big list. And this is basically the entire PCAP in terms of
+905.76s - 911.40s |  time from the very beginning to the end from when it runs. And then I'll find the average. So,
+911.40s - 915.54s |  you know, I'll add them together and I'll divide them, um, and get the average number. So
+915.56s - 921.68s |  average time between is 12,748 for this one PCAP. And then, um, take another one. I've got a
+921.68s - 927.76s |  different set of queries, do the same thing. And I've got these, uh, averages that on their own
+927.76s - 934.24s |  don't look that similar. The number is 14, uh, 14, 748 and 16, 125 different, but I need to
+934.24s - 938.20s |  compare it to other stuff to see how related they might be to each other. So I'll compare this
+938.20s - 945.00s |  against some random traffic. I take a random PCAP just with stuff in it and it's got 779
+945.00s - 950.26s |  queries. And I'm also taking one flow from that random traffic just to add another thing, just
+950.26s - 954.98s |  32 queries. So it's not that much data. And, um, when I look at it in this context, I'm seeing
+954.98s - 959.14s |  that there's a little bit more of a relationship between them. And if I scale this, I'm seeing
+959.14s - 965.30s |  even more of a relationship between them. I don't have that as a example, but, um, so I'm like
+965.30s - 970.42s |  feeling like I can continue on and explore this further. I'm going to talk about co-integration
+970.44s - 976.00s |  as another method. Um, so co-integration as described is usually a drunk guy and a dog are
+976.00s - 979.76s |  walking, they're walking together. So they're co-occurring with each other, but are they
+979.76s - 985.00s |  actually together? Um, so there's this model to, to run it against them. And if they start to move
+985.00s - 988.76s |  in a different direction, you can see that they, uh, they co-occurred, but they don't, didn't
+988.76s - 992.76s |  co-integrate. They're not actually together. They're just doing their own thing. Um, basically
+992.76s - 998.72s |  like that. And some of it's just, uh, some little parts, uh, to describe it. When I show some
+998.72s - 1004.50s |  graphs, uh, P value, it's the probability that the relationship between those series is due to
+1004.50s - 1009.54s |  chance. And then there's a spread, which is the difference between the two actually co-integrated
+1009.54s - 1014.38s |  time series, um, to show how far they deviate from their, their long-term relationship with each
+1014.38s - 1020.44s |  other. Um, just some examples like Russia, Ukraine searches on Google, they, they, um, they, on
+1020.44s - 1026.62s |  the spread, they were together and they, they separated, um, away from the spread, but they did
+1026.62s - 1030.28s |  at the same time. So they're, they're co-integrated and they're, they stay together. Basically
+1030.28s - 1035.16s |  these are co-integrated co-occurring things happen at the same time. Um, Twitter and Elon Musk
+1035.16s - 1040.08s |  around that time, I think that's around when he took it over. Um, so they, they, they don't
+1040.08s - 1044.88s |  really, they're way off the spread. The timelines don't match up, but they come together right at
+1044.88s - 1048.88s |  the same time, uh, to zero on the spread right there. So there was a relationship because
+1048.88s - 1052.76s |  everyone's like, Oh, what's going on with this? And they're Googling it or whatever. And then,
+1052.76s - 1056.30s |  um, you know, 5G and COVID, I just had to put this in here because people were searching it.
+1056.30s - 1060.38s |  They, they matched, stayed on the spread all the time. And then they both searched the same
+1060.38s - 1069.70s |  time that people, whatever. Um, so two identical PCAP files. If I take the same exact ones,
+1069.70s - 1074.78s |  they're going to definitely co-integrate, um, uh, just as a test to see if I could do it, I
+1074.78s - 1078.90s |  guess, you know, and you've got, uh, I put a scatter plot here. The little numbers on the
+1078.90s - 1082.84s |  bottom are the times that in the milliseconds, um, and they're on top of each other. There's a
+1082.84s - 1086.80s |  blue value underneath the orange value. Of course, they're identical and the P value, which
+1086.80s - 1092.28s |  you want to be between zero and one. It's the probability value. Um, they matched exactly. So I
+1092.28s - 1096.32s |  want to try two different PCAP files. It doesn't matter what they are, if they're malware or not.
+1096.32s - 1102.76s |  Um, they won't co-integrate though. Uh, and, and they don't, the P value for file one is way off
+1102.76s - 1107.60s |  and, and the scatter plots just a mess. Um, and I'm starting to think that there may be some
+1107.62s - 1113.06s |  problems with co-integration, but there's maybe also a method to start finding similarities. Um,
+1113.06s - 1120.10s |  I'll try two different PCAP files with similar traffic. So this, these are benign, um, one to, uh,
+1120.10s - 1126.18s |  DigiCert and one to Windows Update, just some get requests. Um, when I map them, I've got a
+1126.18s - 1130.38s |  seconds marker. I'm using seconds here and most of the stuff I'm gonna use microseconds and I'll
+1130.38s - 1136.72s |  mention this in a second. Um, but at 48 seconds, then 50 seconds, then 53 seconds, then zero and
+1136.72s - 1141.64s |  that other one at 38 seconds and 46 rolling through time as we go forward. Um, and at the
+1141.64s - 1146.42s |  number of transactions at those seconds. Um, when I map them, I get similar P values cause
+1146.42s - 1151.36s |  they're kind of similar. Um, the timing difference is a little bit off because one started later
+1151.36s - 1156.66s |  and one started earlier. Um, there are some problems as I mentioned with co-integration like,
+1156.66s - 1161.34s |  um, the time value. Uh, I've got this one and I've got this other one that has a huge one. I'm
+1161.34s - 1166.54s |  gonna get a scatter plot or, or data that the second one's gonna far exceed the other one. They
+1166.56s - 1170.56s |  aren't gonna really match up the way I want them to. Even if I'm doing just individual flows
+1170.56s - 1175.76s |  compared against each other. Um, as you can see, that's what I did here. I forgot that I put the
+1175.76s - 1182.80s |  slide here, but, um, the orange one keeps on going. The P values are different. So, um, uh,
+1182.80s - 1187.92s |  short sample size. In many cases, a flow will be very minimal. So, uh, I'm gonna get something
+1187.92s - 1193.92s |  where I, I can't do anything with it. So let me talk about time resolution. I just briefly
+1194.00s - 1199.54s |  mentioned I talk about this. Um, you have to decide where you, how much time you wanna work
+1199.54s - 1204.44s |  with. At the minutes resolution, you're not gonna get much data. It's gonna be spread out one per
+1204.44s - 1209.54s |  minute. And then, um, or all your transactions in a minute. The seconds you're gonna get some
+1209.54s - 1213.02s |  data, but it's not gonna be useful. Microseconds you get a lot more data. So I'm gonna work with
+1213.02s - 1218.62s |  microseconds. Uh, also normalization because things aren't starting at the same time. I want
+1218.62s - 1223.56s |  them to start at the same time. So I decided to make all PCAPs, um, or any network transactions
+1223.96s - 1231.14s |  throw through this to start at January 1st, 2000, just to get them to line up. Um, and, uh, this
+1231.14s - 1235.34s |  just sort of shows that I don't have to really describe it, but they show how they all start at
+1235.34s - 1239.74s |  the same time. Um, now talking about signatures and detection where it's getting a little more
+1239.74s - 1243.42s |  interesting, where I'm starting to play with actually building the signatures. Uh, I wanna
+1243.42s - 1247.22s |  separate the flows first. I'm gonna calculate percentages. I'm gonna do distance. I'm gonna do
+1247.22s - 1251.92s |  fuzziness and I'll involve, uh, Levenstein distance and other things. So first I have to
+1251.92s - 1256.26s |  separate these flows. As I showed before, it's a lot of flows inside network data. And if you're
+1256.26s - 1261.52s |  running this, uh, with like, you have Damon logger or you have TCP dump writing a packet, uh,
+1261.52s - 1268.10s |  capture to file on your, um, your logging systems. Um, and then you're, you're gonna have tons of
+1268.10s - 1271.34s |  data in there. You have to separate those flows. So I'm gonna operate against each flow
+1271.34s - 1277.04s |  individually. This is computationally, um, intense. So, uh, in my code I've made it so it's
+1277.06s - 1281.64s |  multiprocessing. At least there's that. Um, so when I run it, I, it'll just use whatever
+1281.64s - 1287.40s |  processing power you have. I'm using on this laptop and it was pretty fast for like a, um, a
+1287.40s - 1292.98s |  fairly large file. And so once I operate that, I get the average time between queries and the
+1292.98s - 1297.12s |  total queries. And I also get some other data. I added more after this point. Uh, and then I'm
+1297.12s - 1303.36s |  gonna calculate percentages because I'm ending up with these times and these averages and, uh,
+1303.38s - 1307.56s |  it's kind of messy. I want it to be smaller. I'm, I'm, I'm ultimately working towards a goal of
+1307.56s - 1313.46s |  building a small list of numbers that I can make into a signature. So when I take those
+1313.46s - 1318.70s |  frequencies, so I started off, I'm getting ahead of myself, those, um, numbers and the times in
+1318.70s - 1323.60s |  between. And I say, this time is what percentage of the entire PCAP. I do that for the whole
+1323.60s - 1328.04s |  thing. And I ended up with, there's a lot of zeros. And then there's a lot of times where it
+1328.06s - 1333.24s |  doesn't. Theoretically this whole list should equal a hundred. Um, I do some stuff to it and, uh,
+1333.24s - 1337.30s |  it doesn't quite equal a hundred after I get, after I deal with it. But if I look at just a quick
+1337.30s - 1342.60s |  look at just this raw percentage data, I'm kind of seeing the same traffic patterns between
+1342.60s - 1347.88s |  PCAPs. Uh, I had a little chaos. Like I said, I do some stuff to it. I take away those zeros, I
+1347.88s - 1353.76s |  round things. Um, uh, this, you add it up, it won't equal a hundred, but it's because I did
+1353.78s - 1359.68s |  stuff to it. But, um, it's all in my code, which you can see. Um, basically what I'm ending up
+1359.68s - 1363.42s |  with is something like this, where I have this list of numbers and I'm thinking, well, this is,
+1363.42s - 1368.70s |  okay, this is something. It represents the time of a transaction. Uh, so we can find exact
+1368.70s - 1374.00s |  matches, like the exact same thing and other PCAP data. And that's nice, but I'm looking for
+1374.00s - 1381.60s |  variations of malware. Like, um, when the new variant of today's hot malware drops, uh, because
+1381.62s - 1388.66s |  the last one was burned, um, how do we find it? Uh, so I look at percentages and distances. I've
+1388.66s - 1392.70s |  talked about Levenstein distance. And, um, let me go into that a little bit more. Uh,
+1392.70s - 1398.70s |  Levenstein distance, if you don't know, it's, uh, usually used on string data. And, um, uh, if
+1398.70s - 1403.14s |  you want to know like how far away the word kitten is from sitting, you replace that K with an S
+1403.14s - 1407.44s |  that's one distance. You place the E with an I that's a second distance. You add a G that's a
+1407.44s - 1413.76s |  third distance. So it's three, uh, distance from each other. And I was thinking maybe I could use
+1413.76s - 1418.86s |  this even on small bits of data and treat those numbers, not like integers, but, uh, like
+1418.86s - 1427.00s |  strings. So, uh, if we remember, I want to find this behavior, this little bad thing in this
+1427.00s - 1433.60s |  whatever thing. So I'll create my signature, um, which looks like this and it doesn't look that
+1433.62s - 1442.34s |  valuable. It's a bunch of ones and twos and that one. Um, and when I run it, uh, uh, on something
+1442.36s - 1446.82s |  using Levenstein distance, I get a number at the very end. That number are going up to a hundred
+1446.82s - 1453.00s |  equals the probability that I'm finding inside of flow is something that matches. Um, um, but I
+1453.00s - 1457.12s |  like, I can see if there's a lot of like 58, 67, there's one that's a hundred. That's the one I
+1457.12s - 1463.04s |  made my signature from. So of course it matches cause it's exactly identical. Um, so I'm starting
+1463.04s - 1469.12s |  to get somewhere where I can maybe be a little looser in my searching. Um, I'm just looking at
+1469.20s - 1473.56s |  that PCAP and seeing this, the thing I made a signature from. Um, but I need to be fuzzier with
+1473.56s - 1478.64s |  it. I needed to get a little bit looser. Um, there was something that was called fuzzy, was he,
+1478.64s - 1484.68s |  which is so cool, but it's the fuzz now. Um, uh, so I'm using this to apply a different
+1484.68s - 1490.24s |  threshold, um, based on the Levenstein distance. When I run this, I'm going to get another number
+1490.24s - 1495.36s |  that's been modified. It still has the hundred for the signature match, but it has other numbers
+1495.36s - 1501.24s |  that I'm interested in, like the 75, uh, 67. Um, what are these numbers and what do they
+1501.24s - 1510.72s |  represent? So, um, can't remember if I opened the PCAP in this one. Let's see. I did not. So
+1510.72s - 1514.68s |  the signature made from this flow, as pointed out before, got these two other ones I'm interested
+1514.68s - 1519.96s |  in. Um, if I look at one of them, I get an exact match. Um, if I look at another one, it's exact
+1519.96s - 1526.44s |  match. Um, so that's interesting. I have no match on 67. So maybe there's a number I can pick
+1526.44s - 1531.32s |  that is my magical number. That's going to find this all the time. Um, there's some tuning
+1531.32s - 1535.72s |  involved because different malware campaigns are different with each other. And this is, um,
+1535.72s - 1539.88s |  I'll talk about this in the future work I'm going to work on, but just showing tuning. Um, I'm
+1539.88s - 1545.96s |  sorry to show you code. Um, but basically I'm looking as kind of described already. Um, the
+1545.96s - 1551.08s |  partial ratio is greater than my threshold. That's that partial ratio is from the fuzz thing.
+1551.08s - 1554.52s |  And Levenstein distance is less than my Levenstein threshold. So I'm working with these two
+1554.52s - 1560.72s |  variables. Um, and I just have to tune them depending on what I'm working with. Um, and I can
+1560.72s - 1566.20s |  set that, you know, at the very top of my code. And this is all in the read me on the GitHub. Uh,
+1566.20s - 1574.28s |  so if I go get two things, um, dark gate activity, I downloaded one from 1130, uh, 2023 and 12,
+1574.28s - 1579.32s |  seven, 2023, I don't think I could find, I wasn't able to find newer stuff than that. Um, just like
+1579.32s - 1588.89s |  last week. But, um, uh, what I'm going to do is I'm going to carve out the bit I'm interested in
+1588.89s - 1599.69s |  from the 1130 one first. Uh, let me scroll down here to a post. So I'm finding, uh, this
+1599.69s - 1606.41s |  information here, this post that's a suspicious and we know it's bad. And I'm going to save this
+1606.41s - 1611.53s |  to create a signature out of it. So I'm just, I'm exporting just the displayed packets,
+1611.53s - 1619.05s |  saving it as dark gate post. And then, um, just showing you where it looks like this. It has no
+1619.05s - 1623.93s |  other flows in it. Just this one flow between these two servers. And then I'm going to upload
+1623.93s - 1630.20s |  this to create a signature. And when I uploaded it, it creates a really simple, like there's three,
+1631.16s - 1635.40s |  there's three numbers. It doesn't seem like I can do much with that, but I'll show you.
+1637.16s - 1644.04s |  And then when I go and I, um, upload the same file, I want to see the, I want to,
+1644.04s - 1648.52s |  I'm tuning it right now. So I'm getting a match, of course, on my exact match. Um,
+1651.80s - 1656.04s |  but if I look at some of the other ones below it there, um, I'm going to see some other
+1656.04s - 1660.60s |  additional matches here. So it's not quite tuned yet. I've got 11 sign distance of four,
+1660.68s - 1665.72s |  a ratio of 75%. I click on the very top one, which is the most matchy that didn't match.
+1665.72s - 1675.08s |  It's the same one. Um, I continue down the list and maybe go to 67%, um, uh, distance of four
+1675.08s - 1681.40s |  on 11 Stein. And I've got another match here. So I I'm, I've obviously got to fix the thresholds
+1681.40s - 1689.61s |  I'm working with. I look at 64%. Let's see what this is. And, uh, in this case, I'm not getting
+1689.61s - 1699.53s |  a match. So I'm starting to define the numbers I can work with. Now, um, uh, I look at this one,
+1699.53s - 1707.53s |  the 67%, it's a match. And so between 67 and 64 is where I want to be 11 Stein five or four
+1707.53s - 1712.25s |  somewhere on there. And so I just want to adjust those values and play with it. Then we'll try this
+1712.25s - 1716.41s |  again. So I've, uh, unfortunately you've got to see me carve out that part again. I'm going to
+1716.41s - 1719.45s |  carve out a little bit different parts. So it's going to create a slightly different signature.
+1719.45s - 1727.77s |  Um, and, um, I think I ran it on, um, Oh, I, I think I ran it on the same one. Sorry.
+1728.33s - 1733.21s |  And I'm seeing my math, my don't matches, um, don't match and my matches match. So I've got
+1733.21s - 1737.85s |  this tuned and I can start applying it to other things. So now I want, now I'm going to upload
+1737.85s - 1743.77s |  the newest signature from 12 seven. This is a later PCAP different version, basically. And
+1743.77s - 1748.41s |  I'm looking at my matches and I'm getting, um, similar, but they're different things happening
+1748.41s - 1755.13s |  in there. It's the same kind of posts to a different server. Um, basically, and the,
+1755.69s - 1763.61s |  I think if I show you two of them and then the, um, the ones that are in the not matching will
+1763.61s - 1768.89s |  show that they don't match. So I'm feeling a lot more confident about what I'm seeing here.
+1768.89s - 1773.37s |  Um, and I can apply it to other things. So I want to try an older signature, newer variant. This is
+1773.37s - 1777.21s |  the part I was saying, you have to watch me carve out the same thing again, but I'm going to carve
+1777.21s - 1784.25s |  it out from the 1130 and make a signature out of it. And then I'm going to, um, uh, I'll,
+1784.25s - 1790.17s |  I'll talk you through it. So I opened that up. I'll isolate the flow that I'm interested in.
+1791.61s - 1797.53s |  Uh, I keep on selecting that same get request, but basically I want to follow this post here
+1800.94s - 1813.77s |  and I'll save this and then, um, upload that to create my signature. And this is where I'm going
+1813.77s - 1817.05s |  to have some different numbers from the last one, because it's a slightly different transaction.
+1818.33s - 1824.25s |  And, um, I want to analyze against one, um, from six months later, uh, dark gate. So I was
+1824.25s - 1829.29s |  actually able to find a newer one. Um, and I'm getting a whole bunch of matches. So I can review
+1829.29s - 1835.26s |  those and I can go to the very bottom, which is the least matchy of the matches. And, um,
+1836.38s - 1841.10s |  Oh, actually, I guess I'm gonna look at the top one first. Um, no matter how many times I
+1841.10s - 1845.98s |  build these videos, I always forget what I did, but the very top one matches of course.
+1845.98s - 1851.66s |  And I can put this, throw this in the last search. If I want to, I'll get all those matches, 169 hits.
+1851.66s - 1857.18s |  Um, when I look at the signature, the signature is based off this, this visit to trans one,
+1857.18s - 1862.86s |  translate Google dot Google com.com misspelled type of squatting. And the bottom one is this
+1862.86s - 1867.58s |  same kind of post to a different place. Um, and I'm getting 169 matches. So that's pretty cool.
+1868.22s - 1872.22s |  Um, I've thought it'd be cool to add a map cause we all love maps or management loves maps.
+1872.22s - 1880.46s |  Um, and so it's thought to be cool that, um, red skulls are the bad locations. The unmapped
+1880.46s - 1887.18s |  things are black because you can't, I couldn't put a internal IP address on a map, but I put,
+1887.18s - 1890.78s |  I try to put them in the middle of the Pacific ocean when they're unmapped, but there are some
+1890.78s - 1896.46s |  other ones that actually get unmapped. So I'm working on that. Uh, production use. This is cool
+1896.46s - 1900.70s |  that you can use. You have a web app. If you're, I've been a stock analyst and I, um, pulled
+1900.70s - 1905.58s |  PCAPs down and I'm like, I open it up and I see what actually happened once the ideas rule fired.
+1905.58s - 1910.86s |  Um, but I'd be cool to have something like this where I could upload it, see what's happening,
+1910.86s - 1915.90s |  see if it compares with anything in my database of signatures. Um, but there's other ways to do it.
+1915.90s - 1920.14s |  For example, I was talking about the Damon logger or TCP dump. If you're writing packets to,
+1920.78s - 1929.82s |  to your disc, how do you run this on a rolling basis? Um, so, uh, I wrote this as a fast API
+1930.94s - 1936.30s |  thing with, um, with flask running on top of it. Uh, so if I start this over on the left,
+1936.30s - 1942.46s |  I'm running my fast API app. And then on the right, I have a Python script, um, sending a
+1942.46s - 1948.54s |  PCAP and it sends it and gets back Jason data. And then I can, uh, refresh my, my, whatever my
+1948.54s - 1953.58s |  SIM is, it can be elastic search or anything else that you use or want to use and get those matches.
+1953.58s - 1959.02s |  So that's nice, at least for, um, for rolling PCAP. Uh, it, of course, as mentioned before,
+1959.02s - 1963.10s |  the multiprocessing happens when the flows are separated. So you want to do it on a fast machine,
+1963.10s - 1968.22s |  but generally machines that are doing, um, um, like, uh, packet capture are going to be fast.
+1969.82s - 1973.66s |  Additionally, just cause I thought it'd be fun. I, um, the, you can use notify,
+1973.66s - 1980.54s |  which is NTFI to like notify you. So when I run this again, I can get like a notification on my
+1980.54s - 1987.42s |  phone, which is kind of cool. Um, kind of cool. It could also be kind of terrible. For example,
+1987.42s - 1993.10s |  like you can get analyst fatigue when I did this and got a whole bunch of stuff. So I turned,
+1993.10s - 2001.10s |  I have that off on my system, but you can run it if you want to. Um, uh, because this,
+2001.10s - 2005.02s |  I'm gonna talk about something completely impractical. I love doing research because,
+2005.02s - 2011.10s |  um, uh, opens my mind to new things. I get to create and build things. I feel like this is a
+2011.10s - 2017.18s |  security research is a creative process and it, it fuels my other creative passions like music.
+2017.18s - 2021.58s |  Um, so I just wanted to play around with this and see if I could do something with audio. I don't
+2021.58s - 2027.42s |  know. It's not practical, but let's just see what happens. So I like this quote a lot. Art is how
+2027.42s - 2032.22s |  we decorate space. Music is how we decorate time. And I, I painted before I made things,
+2032.22s - 2037.58s |  built things to fill up the space we live in. I also make music and music is all based on time.
+2037.58s - 2041.50s |  You change the beat. It's completely different. You change a note and the length of the note
+2041.50s - 2049.02s |  is different. Um, so, uh, they're powerful things in their own areas. Um, and I was thinking, well,
+2049.02s - 2053.10s |  I'm playing with time. Let's see if I can make something musical with this. So, you know,
+2053.10s - 2056.78s |  although about Shazam, I'm sure I use it. I'm always in the, if I'm at a club, I'm in the
+2056.78s - 2063.82s |  corner like Shazamming. So, um, uh, you, here's basically, you know, if you don't know how it
+2063.82s - 2071.68s |  works, this is what it looks like. Oh, that's not what it looks like. So you press Shazam,
+2071.68s - 2076.24s |  you hear a song you want to hear, and then, um, it tells you what it is. Add it to your Spotify
+2076.24s - 2081.20s |  playlist. You can listen to it over and over again. It's great. Sorry to rickroll you. Um,
+2081.92s - 2087.52s |  so I was researching this. I was like, could I do this with Python and, and, and NumPys? I found
+2087.52s - 2091.92s |  this article. I also found something called Deja Vu that someone wrote, um, that they wanted to
+2091.92s - 2097.20s |  make a, their own personal Shazam server where they could store their music. And if they had,
+2097.20s - 2101.60s |  they heard a sample of something, it would play that, it would listen for the sample, or you,
+2101.60s - 2107.60s |  you send it to Deja Vu and it would, um, uh, go, oh yeah, that's the song. Oh, I thought,
+2107.60s - 2112.40s |  oh, I can probably do this. So I am back to my, my transactions, not the percentages,
+2112.40s - 2117.12s |  but the actual, the times in between the microseconds or milliseconds, or whatever
+2117.12s - 2123.68s |  time I was using or want to use. Um, and, uh, I'm looking at this and thinking about pitch.
+2123.68s - 2130.24s |  Frequency is the number. So zero would be a low, like a low sound and up high would be a high
+2130.24s - 2134.56s |  number is a high sound. So like I can make audio out of this. It's not going to be beautiful. I
+2134.56s - 2140.64s |  mean, um, you're going to hear it right now, what it sounds like when you listen to a PCAP file,
+2141.60s - 2146.32s |  but there's patterns in there. It's all, like I said, this is not practical,
+2147.12s - 2151.04s |  but let's play with this. Let's go same, same malware sample, different environments.
+2151.04s - 2157.84s |  Um, I'm gonna grab my malware. I grabbed from Malware Bazaar, uh, agent Tesla and old. Um,
+2157.84s - 2162.96s |  I ran it in any run, downloaded this, uh, the sample, just, I don't know why download sample.
+2162.96s - 2169.20s |  I always do. Um, and I get the PCAP and then, um, I can see that it's like doing a post.
+2169.20s - 2172.88s |  And in this case, I'm not going to be applying my Levenstein stuff. I'm just playing with audio.
+2172.88s - 2178.48s |  Um, but I, I see there's a post here and I also want to address the idea of bandwidth.
+2178.48s - 2181.60s |  That's why I'm running this any run. Then I'm also going to run at my own very busy network
+2181.60s - 2187.68s |  environment at home. Um, I run it on my system. This is just a picture of one of my malware VMs
+2187.68s - 2191.92s |  and I've got the same kind of post happening. I'm going to have different times, transaction
+2191.92s - 2198.00s |  times because of bandwidth, but, um, and I'm going to just say that. So there's a little bit of
+2198.00s - 2202.16s |  stuff here. I have to reverse it. I'm instead going to be making a signature out of the entire
+2202.16s - 2208.00s |  PCAP, not the little bit. So like I said, not practical, but, um, and then I'm going to play
+2208.00s - 2214.64s |  my little bit and see if it finds it. Um, uh, if I open up this PCAP, let's see here.
+2215.52s - 2224.08s |  And we're looking at that post. Um, I've got to create an audio file from it. So I have a little
+2224.08s - 2230.48s |  Python script I wrote to convert those frequencies into different pitches, um, using Fourier transform
+2230.48s - 2234.56s |  and some other stuff. Um, and in the back you can see there's a bunch of MP3s being made,
+2234.56s - 2237.60s |  then they'll all disappear. Those are all the flows individually. And then they get combined
+2237.60s - 2246.72s |  into one big PCAP MP3. And then I'm left with that thing. And then I've got, um, a carved one.
+2246.72s - 2251.44s |  This is the little tiny bit that I want to identify in my Shazam. Um, I'm going to do the
+2251.44s - 2258.08s |  same thing with that. Um, I've got that MP3 file, which is huge by the way, compared to the PCAP,
+2258.08s - 2262.96s |  which is like 500 K or something. Uh, it's not that huge, but I've got others that are huger.
+2262.96s - 2266.96s |  Um, same kind of, so I've got my carved one here. I'm going to make the signature from this one
+2269.56s - 2272.52s |  and you see a bunch of it's card, but those flows in there,
+2273.64s - 2277.24s |  cause I didn't carve it all the way. And I've got these two MP3 files.
+2278.20s - 2286.41s |  Let's see. Uh, so now I'm going to try to identify it. Um, initially when I, uh, try to identify,
+2286.41s - 2290.17s |  it's not going to see it. Cause I have to add it to a database, a deja vu database. It's not like
+2290.17s - 2295.29s |  a clean like app, like Shazam. It's just a program you can run. So I try to recognize it. It's not
+2295.29s - 2298.81s |  going to recognize my file yet, but that's because I haven't added it. So what I'm going to do is
+2298.81s - 2303.77s |  I'm about to add it. I got to drop it into the signatures folder, um, which I'm going to do right
+2304.73s - 2317.07s |  now, slowly drop it in there. I'm going to run a script to, um, have it identify that. So it
+2317.07s - 2321.39s |  sees it. It's like, now there's a signature for this, this audio file, this song of yours.
+2322.59s - 2328.59s |  And then, um, I want to recognize the file, the just my, just my part. And it's seeing,
+2328.59s - 2335.63s |  there's a song ID recognized, um, this, uh, this traffic pattern that we're seeing.
+2335.63s - 2338.75s |  And if I apply Levenstein to it, which I didn't do in this example, because I don't want to bore
+2338.75s - 2345.95s |  you with like more of this, um, running commands, but, um, it gets even more interesting. But of
+2345.95s - 2350.43s |  course, like I said, many times it's not practical because those, those P gap files can grow to huge
+2350.43s - 2356.75s |  sizes where they're empty threes and who wants to run their network and three mode. So maybe I do,
+2356.75s - 2361.95s |  but I guess I kind of talked fast. I'm kind of getting towards the end here. It's supposed to go
+2361.95s - 2367.71s |  for, uh, 50 minutes or 55 minutes, but you can go get some coffee. But so going further,
+2367.71s - 2371.63s |  I've been working on some third party API APIs. Like I said, I like to, when I release stuff
+2371.63s - 2375.63s |  personally and whether that's not a work talk, I, um, I want people to be able to try it and
+2375.63s - 2380.35s |  play with it if you want to. Um, so you can, you can add stuff if you want integrations with virus
+2380.35s - 2385.87s |  total with my company's product, investigate or other things like that. Um, uh, I didn't add it.
+2385.87s - 2391.23s |  It's very easy to add. Um, then you can look at things like domain IP reputation relationships.
+2391.23s - 2394.59s |  If you have a sinkhole in your environment, you can pull that data in. You could play with
+2394.59s - 2400.99s |  anything you have. And, um, to, to add more things with conviction. Um, and I'll analyze
+2400.99s - 2405.39s |  various components of the P caps so I can add that in the future. And I should probably learn rust.
+2405.39s - 2409.63s |  I should learn something. So it's fast. Like, you know, how snort is a C binary or I think it's a C
+2409.63s - 2415.15s |  binary and it uses its rules. It runs very fast streaming. I'd love to do that. Um, the code is
+2415.15s - 2420.43s |  available. It's a long name, but, um, if you want, I just uploaded it about two days ago.
+2420.43s - 2424.35s |  So hopefully it's okay. There's a couple of things you have to do if you want to play with it.
+2424.35s - 2431.47s |  But I, um, uh, I was very, uh, very verbose in my documentation on the read me. Um, and there's a
+2431.47s - 2436.67s |  couple of utilities too. I added a malware traffic analysis unzipper file cause the, as a password
+2436.67s - 2441.23s |  scheme. So if you want to unzip malware traffic analysis, P caps, you can do that. Um, you can
+2441.23s - 2446.75s |  reach me at my website, my personal site, which is pyrosec.com. And, um, not a Twitter because I
+2446.75s - 2451.55s |  just don't post, don't even really look at it anymore. And I'll probably rewrite all my posts
+2451.55s - 2456.35s |  with nonsense. Um, and bastard on, I don't even have the app installed, but I should cause it's
+2456.35s - 2470.19s |  kind of cool. But anyways, that's my talk and thank you for coming. There's time for questions.
+2470.19s - 2491.76s |  If you have questions. Well, um, I was a lot, a lot of the time I was working in a clean
+2491.76s - 2497.76s |  environment for the most part. Um, but I did run stuff over my network at home, which I know
+2497.76s - 2504.64s |  that's crazy, but I would, I do it. And, um, I didn't see negative results, but my, my network
+2504.64s - 2510.72s |  is busy. It's not a corporate environment. I have, I have like 20 VMs and three or four servers.
+2510.72s - 2516.96s |  And so it's busy, but yeah, I have, I have a family Spotify, you know, the whole Netflix,
+2516.96s - 2526.35s |  YouTube. What's that? Yeah. Yeah. It shows promise. I want to keep exploring it.
+2527.23s - 2542.19s |  Yeah. Oh, sorry. Say again. No, but that's what I mentioned in like that stuff. I want to explore
+2542.19s - 2547.15s |  future stuff and that's easy enough to do a direction. That's also good to play with. I
+2547.15s - 2551.71s |  started to play with it with a mapping, like making the source changes constantly. So,
+2553.95s - 2562.27s |  oh yeah. Oh, that's really cool. I'd love to talk. Yeah. All right. Thank you very much.

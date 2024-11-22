@@ -1,0 +1,226 @@
+{
+  "webpage_url": "https://www.youtube.com/watch?v=42OjQtrJQ5s",
+  "title": "DEF CON 32 - Small Satellite Modeling and Defender Software - Kyle Murbach",
+  "description": "The proliferation of ride-share rocket launches and decrease in the overall cost of sending payloads to space due to recent successes in the private space industry has made small satellite systems a cost effective and time-efficient method to put research vehicles in space.\n\nThe University of Alabama in Huntsville\u2019s Center for Cybersecurity Research and Education (CCRE) has been funded by the U.S. Army Space and Missile Defense Command (SMDC) over the last several years to investigate the overall cybersecurity posture of small satellite systems. Numerous iterations of student teams led by CCRE and SMDC staff members have managed to accomplish notable research milestones.\n\nThis talk is meant to inform the next generation in aerospace cybersecurity by discussing our major research milestones, relevant findings, lessons learned, and areas of concern relating to the overall cybersecurity posture of small satellite systems.\n\nRelevant items to be covered in this talk include what it took to build a working small satellite system model as close to real-world as possible (Raspberry Pis vs PyCubed boards vs other contenders), implementation of small satellite functions (payload camera, radio communications, positioning/sensor array, orbital simulation, battery/solar charging, etc.), performing vulnerability analysis against the implemented model, creating different attack scenarios (MitM, DoS, spoofing, hardware attacks), implementing defensive mitigations (hardening scripts, command validation, health checks), and the development of a lightweight software solution named \u201cSmall Satellite Defender\u201d (SSD) designed to protect satellites from potential threat vectors.",
+  "channel_url": "https://www.youtube.com/channel/UC6Om9kAkl32dWlDSNlDS9Iw",
+  "duration": 1480,
+  "channel": "DEFCONConference",
+  "uploader": "DEFCONConference",
+  "upload_date": "20241016"
+}
+
+0.00s - 2.88s | This text was transcribed using whisper model: large-v2
+
+ All right, good afternoon, everyone. I'm going to go ahead and get started.
+3.84s - 8.96s |  So I'm here today to talk to you about small satellite modeling and defender software.
+8.96s - 14.80s |  My name is Dr. Kyle Merbach, and I'm from the University of Alabama in Huntsville Center for
+14.80s - 20.08s |  Cybersecurity Research and Education. And this project has been in partnership with the U.S.
+20.08s - 24.16s |  Army Space and Missile Defense Command, and we're excited to share with you what we've been doing
+24.16s - 32.40s |  the last few years. So a little bit about myself. I'm a principal research engineer at UAH CCRE.
+32.40s - 38.88s |  I've been there since 2020. I've been a PI and SME on various research projects at a variety
+38.88s - 44.48s |  of different topics, ranging from malware analysis, tool development, reverse engineering,
+44.48s - 51.04s |  and vulnerability analysis. That can be in various topic areas, including satellites.
+51.76s - 55.76s |  I have nine years of prior experience as a cybersecurity researcher and software
+55.76s - 61.52s |  reverse engineer. I got my Ph.D. in cyber operations at Dakota State University,
+61.52s - 67.28s |  and my B.S. and M.S. in computer security at Rochester Institute of Technology. I'm the
+67.28s - 73.68s |  technical director of the space testing and resiliency simulation team at CCRE, where
+74.48s - 80.64s |  we did a satellite project. So a little bit about the project itself. It's been going on
+80.64s - 87.52s |  since fall of 2019. We have had a wide variety of student teams coming in and out throughout the
+87.52s - 95.20s |  last five years. So as they come in, they work on various parts of the project, and then they may
+95.20s - 101.12s |  either move on to other projects or they graduate, and then we hire on additional students and try
+101.12s - 107.36s |  to continue the work. So as a director, I've been the continuee throughout that to make sure that
+107.36s - 114.56s |  we continue to make meaningful progress. Here is a brief list of major project milestones that we've
+114.56s - 120.80s |  achieved over the last five years, and we'll go over each of most of these in the slides coming
+120.80s - 128.16s |  ahead. We'll talk about how we identified and acquired hardware and software to configure
+128.16s - 134.00s |  a small satellite testbed to model a real-world functioning satellite system,
+134.96s - 141.20s |  how we try to test for vulnerabilities and create different test scenarios, and come
+141.20s - 146.16s |  up with ways to harden satellite systems to protect from cybersecurity threats.
+147.36s - 152.32s |  We developed Small Satellite Defender, which is a software. We'll talk more about that later.
+153.04s - 160.64s |  And we were able to go to the U.S. Cyber Command Cyber Recon Symposium in Dreamport, Maryland,
+161.28s - 168.40s |  and we also were able to experiment this Small Satellite Defender software on an actual satellite
+168.40s - 174.80s |  orbiting Earth with Lockheed Martin, and we are currently working on assembling and experimenting
+174.80s - 182.16s |  with TubeSat kits, and we're hoping to continue our efforts there with Small Satellite Defender
+182.16s - 196.82s |  on those TubeSats. So the purpose of this research project was to come up with a
+198.42s - 205.38s |  testbed of a small satellite system to be able to perform different research experiments to inform
+205.38s - 212.02s |  how to better defend satellites from potential cybersecurity threats. As you may know,
+212.82s - 219.70s |  launching satellites to space has become much more affordable these days with SpaceX launching
+219.70s - 223.38s |  constantly all these rockets, which is great for our industry. We're able to
+223.94s - 232.26s |  affordably launch a satellite, and that leads to the need of being able to ensure we harden
+232.26s - 238.98s |  those satellites from potential threats. So in this testbed that we were developing,
+238.98s - 246.26s |  we wanted to make it as real-world as possible. So our goal was to be able to operate
+246.26s - 252.66s |  a payload of some sort. It could be either imagery, GPS, or communications, and then to
+252.66s - 258.98s |  have the underlying critical infrastructure to support ground station communication, orbit
+258.98s - 265.94s |  movement and positioning, as well as data processing and battery charging and pointing
+265.94s - 271.38s |  towards the solar panels to get that charge. And by developing that, we would be able to
+271.38s - 279.22s |  replicate a real-world system. So in the very beginning of this project, we spent time
+279.22s - 286.34s |  researching, trying to figure out what the best avenue was to build this testbed. And we were
+286.34s - 293.70s |  looking at the Raspberry Pi 4 as well as the Pi3 version 4 as well. We found that the Raspberry
+293.70s - 300.42s |  Pis were relatively easy to acquire, obviously everyone's badges. It's fairly inexpensive,
+301.62s - 307.70s |  simple to modify payloads and add payloads. There's a lot of pre-existing libraries already
+307.70s - 313.14s |  configured. There's been a lot of research done out there in the community. Whereas the PiQ boards,
+313.78s - 321.86s |  they were developed to be nanosatellites, and we found it very difficult to be able to write to
+321.86s - 328.18s |  the boards. There was very little documentation available, and unfortunately when we acquired
+328.18s - 335.22s |  that hardware, it was end of support. So we shifted back to the Raspberry Pi platform moving forward.
+337.14s - 342.34s |  So this is an illustration of what we were trying to achieve with these Raspberry Pis.
+342.34s - 348.34s |  We would have a satellite and the ground station. With the satellite, we have a payload, which in
+348.34s - 353.62s |  this case we went with a camera where we can take pictures. We have antennas on both the satellite
+353.62s - 359.54s |  and ground station. We're able to communicate to each other, send commands. And as you can see,
+359.54s - 364.74s |  we had an encasement and some ports to be able to connect with it with a laptop, be able to
+365.94s - 374.10s |  upload code, configure things, and so forth. And this is the real world image of what we created
+374.10s - 380.10s |  in the lab. We were able to replicate that diagram. And essentially the camera, the radios,
+380.10s - 386.58s |  and everything we ordered and put together pre-loaded libraries. So for the camera, we went
+386.58s - 394.18s |  with the Aokin Raspberry Pi cameras capable of taking very low quality images, but just for the
+394.18s - 399.94s |  purposes of showing that you can use payloads with the system we were setting up. And that uses
+399.94s - 412.74s |  pre-existing Raspberry Pi libraries. We also used the RFM69ACW radios that attach directly to the
+412.74s - 420.02s |  GPIO header on the Raspberry Pis that function at two different frequencies. It had a decent range.
+420.02s - 424.66s |  We were able to go as far as 100 meters without any problems. We never had any need to go any
+424.66s - 432.29s |  further than that for the purposes of this project. And for the communication with these
+432.29s - 439.49s |  radios that we had in place, we set up a TCP style communication between the ground station and
+439.49s - 445.97s |  satellite. The satellite would interface with cesium. We'll talk more about that later. And then
+445.97s - 451.97s |  we would simulate this orbit window. And then when it would be in the communication window,
+452.85s - 459.25s |  the satellite would send data to the ground station based on its previous tasking. And then
+459.25s - 465.09s |  they would listen for additional tasking from the ground station. And we would control different
+465.09s - 477.12s |  states for the satellite with the first byte of the data transmitted as an identifier. So in this
+477.12s - 484.32s |  custom communication setup that we had, we had various bytes. We would let the satellite know
+484.32s - 488.96s |  this is the end of the stream, or this is the start of a specific stream for pictures,
+488.96s - 499.79s |  or it was a task, or it was for a configuration on the satellite. We also acquired the SenseHat
+499.79s - 506.03s |  add-on board. This was originally developed for the International Space Station by the Raspberry
+506.03s - 513.71s |  Pi Foundation. This allowed us to have an array of sensors with a variety of different temperature
+513.71s - 520.11s |  communities. And the big thing for us was the gyroscope being able to position the satellite
+520.11s - 526.11s |  to be able to figure out which way it's facing, which is really important for yaw and axis,
+526.11s - 531.79s |  making sure the satellite doesn't spin out, and make sure that it's orienting the solar panels
+531.79s - 538.51s |  in the right direction to get the energy to charge the batteries. With this add-on board,
+538.51s - 542.11s |  there are a wide variety of different functions available with those sensors.
+543.63s - 548.59s |  We would want to position the payload in the right direction to be able to take pictures
+548.59s - 554.51s |  of Earth, and we would also want to protect the camera from not facing the sun, which can burn
+554.51s - 561.87s |  the image sensor. We would orient the solar arrays using those positions, and we were able to measure
+561.87s - 567.63s |  the orbit speed and g-force using the accelerometer built on the SenseHat board.
+572.24s - 578.24s |  With all of these different components that we put together, we also had to keep track of
+579.12s - 583.92s |  the satellite orbiting Earth. Obviously, it's in a lab just sitting on a table,
+583.92s - 590.16s |  so we had to simulate the actual orbital movement. So we tried a variety of different
+590.16s - 598.64s |  open-source software. The one that worked the best with our setup was Cesium Orbit software,
+598.64s - 604.80s |  and as you can see in the pictures, we were able to configure two different views. You can see from
+604.80s - 612.48s |  the satellite view to Earth, and you can see as it moves around the world, and whenever it would
+612.48s - 619.20s |  come into a range of this ground station, you'll be able to see the pre-configured GPS location that
+619.20s - 624.32s |  we would choose to be able to simulate that communication window opening and closing.
+625.20s - 630.80s |  And as that orbit would occur, that's when we would transmit messages back up and down from
+630.80s - 641.79s |  the ground station to the satellite. Once we had this test bed working well and functioning
+641.79s - 648.27s |  the way we wanted it to, we started to move towards coming up with different task scenarios
+648.27s - 653.87s |  and trying to come up or find different vulnerabilities that may be of interest
+653.87s - 658.67s |  to try and make sure that a satellite that a researcher might send up to space, you want to
+658.67s - 664.43s |  make sure that it doesn't happen to you, lose access to the satellite for whatever reason.
+664.43s - 669.95s |  So we tried a variety of different attacks, man-in-the-middle attacks, denial of service,
+669.95s - 676.19s |  spoofing that would interfere with the payload, as well as instructions that would send
+676.19s - 681.71s |  configuration messages to the satellite. We would try to mess with those. We also tried to attack
+681.71s - 687.39s |  the hardware itself to see if we could cause it to fail and no longer function in space.
+693.44s - 697.28s |  So we looked at this in a variety of different ways. We looked at the communication,
+697.28s - 701.12s |  the software that we were using, the hardware in the operating system.
+701.68s - 706.32s |  We used a variety of traditional scanners, packet sniffers, and so forth.
+707.28s - 711.60s |  I'm going to give you an example of one of the different scenarios that we came up with.
+712.16s - 720.64s |  This was a man-in-the-middle attack scenario where the malicious actor with the correct
+720.64s - 728.48s |  transmission bytes, we were able to send a configuration message to the satellite orbiting
+728.48s - 734.48s |  Earth to make it think that we were the ground station when we were not supposed to be.
+735.12s - 741.04s |  And essentially we were able to change the satellite IDs and take over on that communication.
+743.34s - 751.26s |  So this created a lockout scenario where the satellite orbiting Earth would ignore messages
+751.26s - 758.38s |  from the legitimate ground station and only listen to the hijacked ground station. And as you can see
+758.38s - 766.38s |  we were able to take pictures in the bottom four images. You can see those were the normal pictures.
+766.38s - 771.98s |  And then we were able to essentially take over and change the images being sent back to the
+771.98s - 780.54s |  ground station. So we were able to either modify or withhold data or even change the data being
+780.54s - 789.60s |  sent to the real ground station. Some other attack scenarios that the students worked on were
+789.60s - 796.24s |  coming up with ways to mess with the Raspberry Pi system that ran the ground station as well as
+796.24s - 804.40s |  a satellite. They had a lot of fun doing this. Most of this worked pretty well and we were creating
+804.40s - 812.18s |  these different experiments that we might be able to in a more real world scenario. And after creating
+812.18s - 818.10s |  all these different attack scenarios we spent time looking at ways to try to prevent different
+818.10s - 824.58s |  things that we created. And we wanted to make sure that those things can't happen or it would be harder
+824.58s - 830.90s |  to do. One of the obvious things was to us was to come up with a way to do command validation.
+831.46s - 838.66s |  There were some commands that we were sending maybe with a typo or in a wrong order that
+838.66s - 847.38s |  would cause a satellite to get confused and actually crash. We also created timeouts to
+847.38s - 852.58s |  prevent the satellite from indefinitely waiting for the ground station to acknowledge messages
+852.58s - 858.98s |  because this is a TCP communication model that we created. We also implemented a health check
+858.98s - 867.22s |  where it would monitor the system and report any unusual warnings and then send that back
+867.22s - 875.78s |  to the ground station. So by building this model we were hoping to avoid the need for
+875.78s - 882.58s |  other researchers to launch satellites up to space and realize that something's vulnerable
+882.58s - 889.06s |  or broken and not be able to fix it without having to launch another one. We really want to reduce
+889.06s - 895.86s |  the chances of compromise or functionality of those satellites. And with this research we're
+895.86s - 901.30s |  hoping to reduce the likelihood of having to replace what you already launched. And we created
+901.30s - 907.46s |  this baseline testing system with this model to be able to improve the overall resource posture.
+908.66s - 914.50s |  We published all of our efforts with this paper, the IEEE International Conference
+914.50s - 922.42s |  on Cybersecurity and Resilience last year. And you can find the paper on there
+922.42s - 928.02s |  and talks about the model in more detail and the different parts that we put together to make
+928.02s - 935.86s |  this happen in more detail about these attack scenarios. I'm going to pivot over after we did
+935.86s - 942.42s |  all of this stuff creating the model. We kind of shifted our efforts after we lost some students
+942.42s - 948.90s |  from graduating. We got some additional students on the project. We started to focus on creating a
+948.90s - 955.94s |  lightweight program that can monitor and protect satellites that are orbiting Earth. We found that
+955.94s - 962.74s |  commercial off-the-shelf products that provide that level of security were too resource intensive.
+962.74s - 969.14s |  So we wanted to create this lightweight program that can run and essentially protect the satellite
+969.14s - 975.78s |  for potential threats. A variety of different things we incorporated including a scanner from
+975.78s - 984.83s |  malware, monitoring different metrics of the file system, network checks, secure configuration, and
+984.83s - 994.02s |  so forth. So these different attack scenarios that we came up with, we found some mitigation
+994.02s - 1000.34s |  strategies and we wanted to implement those on that small satellite defender to be able to protect
+1000.34s - 1009.47s |  the satellite from threats. I'll go in more detail about what we monitored. So we monitored all of
+1009.47s - 1016.03s |  these different metrics essentially creating a baseline of known good of what is normal for a
+1016.03s - 1021.07s |  satellite. And once you have that baseline, we would collect all this information and send it
+1021.07s - 1026.27s |  back to the ground station for anything that may be unusual and have the ground station
+1026.27s - 1035.41s |  operator to further investigate and figure out what may be going on. With that small satellite
+1035.41s - 1043.81s |  defender work, we submitted a app stat to the CyberVCon symposium which was run by the U.S.
+1043.81s - 1050.77s |  Cyber Command. And essentially they assigned us a mentor which was an Air Force colonel and he
+1050.77s - 1056.21s |  worked with us to help develop small satellite defender and focus on creating different
+1056.21s - 1064.61s |  experiments. And after that, we, the team traveled to the symposium and presented the work to the
+1065.33s - 1073.65s |  director of the National Security Agency, Mr. Billy Cole. With all of those efforts with a small
+1073.65s - 1082.37s |  satellite defender, we were approached by Lockheed Martin to run this software that we created on an
+1082.37s - 1091.33s |  actual orbiting satellite. So Lockheed Martin has this Ignite team where they essentially create
+1091.33s - 1099.01s |  opportunities for academia and other companies or researchers to be able to perform experiments on a
+1099.01s - 1105.17s |  decommissioned satellite. And we were fortunate enough to have this opportunity with Lockheed
+1105.17s - 1111.73s |  Martin where we were able to run the small satellite defender on an actual orbiting satellite.
+1112.53s - 1121.41s |  So we worked with Lockheed Martin. They had their own identical twin of the satellite orbiting Earth
+1121.41s - 1127.81s |  on a test bed and we worked with their engineers to run small satellite defender and we found that the
+1128.21s - 1135.09s |  satellite did not work on the architecture that we developed, which was Python, and they needed us to
+1135.09s - 1141.09s |  convert everything to Bash. So it was a challenge for the team to be able to quickly convert everything
+1141.09s - 1147.65s |  we created from Python to Bash, refactored all the code, and worked with the test bed and Lockheed
+1147.65s - 1154.13s |  Martin to be able to get the code to work and quickly deploy that. I believe in a couple of
+1155.09s - 1160.61s |  weeks that's how quick we were working because we didn't know how long it would be until that
+1160.61s - 1164.61s |  decommissioned satellite would no longer be available to perform experiments with.
+1166.05s - 1174.05s |  And once we have a small satellite defender working with that test bed, we had a session with
+1174.05s - 1182.61s |  their ground control team and we deployed small satellite defender on Linus space vehicle orbiting
+1182.61s - 1190.85s |  Earth. We collected a system baseline and then we ran this experiment where we would introduce
+1190.85s - 1196.69s |  some malicious activity where we would write a bunch of random garbage to different files,
+1197.33s - 1203.41s |  basically clogging up the system resources in that small satellite defender would collect
+1204.29s - 1210.45s |  metrics of the satellite and send them back to the ground station showing that unusual activity for
+1210.45s - 1218.61s |  the operator to identify that something's going on. So that experiment was successful
+1219.33s - 1226.77s |  and we were able to showcase the success and viability of monitoring a real world satellite
+1226.77s - 1233.01s |  using small satellite defender within the small VM console available.
+1233.97s - 1238.29s |  We had an article published and we also had an additional paper published
+1238.29s - 1243.65s |  with Lockheed Martin where they wrote this paper talking about the process
+1243.65s - 1248.37s |  of working rapidly with different universities to run different experiments
+1249.97s - 1252.69s |  on actual space vehicles that are decommissioning.
+1254.69s - 1260.37s |  And in the University of Alabama we put together this list of experiments and are working on
+1260.53s - 1263.89s |  and are working on developing additional experiments to be able to
+1264.69s - 1269.41s |  perform more of them if we have additional upcoming opportunities potentially with
+1270.21s - 1285.42s |  the SMDC as well as Lockheed Martin moving forward. So where are we today? Right now we
+1285.42s - 1293.66s |  are working on interorbital system tube sats. We ordered these six to nine months ago. It's
+1293.66s - 1301.02s |  been a while. They've been building them and they finally sent us the kits. The reason why
+1301.02s - 1306.86s |  we're now doing this is because we feel like this is the next step in our research and we're hoping
+1306.86s - 1314.78s |  to finish putting together these satellites and just continue these different test scenarios that
+1314.78s - 1321.82s |  we've developed and to do additional vulnerability research with actual real world satellites
+1321.82s - 1328.86s |  instead of our test bed. And these satellites were about $8,000 each. We have two of them and
+1328.86s - 1337.50s |  they're the small size probably like a a big can basically and it has space in there for a payload
+1337.50s - 1342.14s |  of whatever you like to add in there which is really cool. We haven't figured out what we're
+1342.14s - 1349.34s |  going to do yet with that but we are hoping to integrate small satellite defender in those tube
+1349.34s - 1358.86s |  sats and to further iterate improvements with small satellite defender. So this one this image
+1358.86s - 1364.38s |  is actually the one we put together in one of our labs and as you can see it's pretty small. You can
+1364.38s - 1371.74s |  see the solar panels on that and the tube sats use a different architecture than the raspberry
+1371.74s - 1377.82s |  pi's or linus so we're going to have to further modify the small satellite defender to work with
+1377.82s - 1386.50s |  that. So with small satellite defender moving forward we're hoping to come up with two different
+1386.50s - 1392.34s |  iterations one focusing on the ground station and one that focuses on the actual satellite
+1394.74s - 1399.94s |  and we're hoping to collect all these different metrics to be able to provide a level of security
+1399.94s - 1404.98s |  and to have that available for researchers to be able to secure their satellites when they
+1407.79s - 1414.56s |  launch into space. These are the different metrics that we're hoping to collect. We're
+1414.88s - 1420.80s |  paying attention to battery health system information and do health checks. We're going to be
+1420.80s - 1426.96s |  focusing on satellite specific information. We're going to try to map those out on visualizations
+1426.96s - 1432.16s |  for the ground station operator to be able to quickly see and identify some things that may
+1432.16s - 1438.72s |  be going on and we're also going to obviously introduce security to this as well. Program error
+1438.72s - 1446.80s |  chat sums and so forth. Here are some sample graphs that we're going to do with
+1446.80s - 1452.00s |  Octave to be able to plot and visualize the tube sat metrics that we're going to collect.
+1452.00s - 1461.41s |  We're going to show the solar panel charge, bus current, and temperature. We're also going to be
+1461.41s - 1466.85s |  collecting information on the positioning of the satellite. If it starts to spin you'd be able to
+1466.85s - 1478.11s |  quickly find that on those graphs as well. That's all I have for you today.

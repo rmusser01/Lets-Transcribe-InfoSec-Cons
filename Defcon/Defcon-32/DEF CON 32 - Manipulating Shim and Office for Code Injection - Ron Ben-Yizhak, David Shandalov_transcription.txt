@@ -1,0 +1,853 @@
+{
+  "webpage_url": "https://www.youtube.com/watch?v=-Z34ya4rb8A",
+  "title": "DEF CON 32 - Manipulating Shim and Office for Code Injection - Ron Ben-Yizhak, David Shandalov",
+  "description": "This talk brings back from the dead an attack surface that security vendors believed they had addressed a long time ago.\n\nWe will introduce a novel and stealthy technique to apply malicious shims on a process that does not require registry modification or SDB files and leaves no traces on the disk.\n\nThe reverse engineering of the shim infrastructure will be shown while focusing on undocumented API and the kernel driver of the infrastructure.\n\nThe various operations offered by the infrastructure will be analyzed from an offensive point of view, and the course we took to achieve this unique technique will be presented.\n\nIn addition, we will unveil an attack surface research that resulted in a noteworthy attack that manipulates 2 different OS components into performing DLL injection and privilege escalation.\n\nResearching the undocumented RPC interfaces of the service OfficeClickToRun.exe uncovered a method that can inject a DLL into another process running as \u201cNT AUTHORITY\\SYSTEM\u201d, which achieves privilege escalation. For this to work, specific conditions had to be met.\n\nThe conditions we tailored will be displayed as we abuse the Opportunistic Lock and App Compatibility (shim) mechanisms.",
+  "channel_url": "https://www.youtube.com/channel/UC6Om9kAkl32dWlDSNlDS9Iw",
+  "duration": 2472,
+  "channel": "DEFCONConference",
+  "uploader": "DEFCONConference",
+  "upload_date": "20241016"
+}
+
+0.82s - 4.38s | This text was transcribed using whisper model: large-v2
+
+ Hello everyone, thank you for coming to our talk,
+4.38s - 5.94s |  Shimmy What You Got,
+5.94s - 9.18s |  Manipulating Shim and Office for Code Injection.
+9.18s - 11.06s |  We're very excited to be here.
+11.06s - 12.58s |  Let's introduce ourselves.
+13.86s - 15.74s |  My name is Ron Ben-Yitzhak.
+15.74s - 17.86s |  I'm a security researcher at Deep Instinct.
+17.86s - 19.58s |  And this is the third year in a row
+19.58s - 25.85s |  I'm speaking here at DEF CON.
+25.85s - 27.93s |  And my name is David Shandalov.
+27.93s - 30.45s |  I'm also a security researcher at Deep Instinct.
+30.45s - 39.13s |  And this is my first time here.
+39.17s - 41.69s |  This is what we're going to talk about today.
+41.69s - 43.25s |  I'll start with an intro
+43.25s - 45.53s |  about the App Compatibility Framework,
+45.53s - 48.77s |  what it is made of and known techniques to abuse it.
+48.77s - 52.17s |  Then I'll dive into our attack surface research
+52.17s - 53.81s |  on Microsoft Office.
+53.81s - 56.81s |  I'll show how we found an interesting RPC method
+56.81s - 60.45s |  and combined several manipulations into a single attack
+60.45s - 64.77s |  that achieves both code injection and privilege escalation.
+64.77s - 67.69s |  Then we'll show another novel attack.
+67.69s - 70.73s |  We'll show the reverse engineering process of the driver
+70.73s - 72.69s |  and the undocumented structures
+72.69s - 75.13s |  that make the App Compatibility Mechanism
+75.13s - 77.53s |  and how we discovered the finest technique
+77.53s - 80.05s |  to apply a malicious shim on a process.
+80.05s - 81.57s |  At the conclusion of the talk,
+81.57s - 85.41s |  we'll discuss how to detect the attacks shown here
+85.41s - 90.22s |  and how the community can continue our research.
+90.22s - 91.74s |  The App Compatibility Framework
+91.74s - 94.46s |  is used for backwards compatibility.
+94.46s - 97.26s |  Software developed for old versions of Windows
+97.26s - 100.30s |  might behave unexpectedly on newer versions.
+100.30s - 103.10s |  Microsoft offers many compatibility modes
+103.10s - 106.26s |  that might look familiar from this window.
+106.26s - 108.78s |  Programs might access registry paths
+108.78s - 111.34s |  or directories that no longer exist,
+111.34s - 114.62s |  such as the C documented settings for those who remember.
+115.58s - 118.46s |  Those issues are fixed with API hooking,
+118.46s - 120.50s |  patching the assembly of the program itself
+120.50s - 122.50s |  and other runtime modifications.
+123.78s - 126.90s |  Behind the scenes, this is how the mechanism works.
+127.58s - 130.82s |  The OS uses shim database files, or SDB files,
+130.82s - 132.46s |  that contain the fixes and modes
+132.46s - 134.46s |  various applications require.
+134.46s - 137.18s |  The main file is sysmain.sdb.
+137.18s - 139.02s |  It is maintained by Microsoft
+139.02s - 142.26s |  and can only be modified by system updates.
+142.26s - 144.70s |  We can view those files using a graphic software
+144.70s - 148.14s |  provided by Microsoft, the Compatibility Administrator.
+149.86s - 152.22s |  Here we can see that Age of Empires III
+152.22s - 155.54s |  requires the compatibility mode High DPI Aware.
+155.54s - 158.34s |  Users can also install custom SDB files
+158.34s - 160.74s |  by writing them to these registry paths.
+162.54s - 164.50s |  Like every component of the OS,
+164.50s - 166.70s |  people looked for ways to abuse it.
+166.70s - 168.58s |  There were several talks over the years
+168.58s - 171.74s |  about the malicious implications to the shim framework.
+171.74s - 175.02s |  Here you can see a DEF CON talk from almost 10 years ago
+175.02s - 177.98s |  that shows shims can be used for credential access,
+177.98s - 180.30s |  network redirection, and more.
+180.30s - 183.46s |  Also, Alex UNESCO released several articles
+183.46s - 186.50s |  about this subject back in 2007.
+186.50s - 189.10s |  Because this is such an old attack vector,
+189.10s - 192.38s |  most security products should detect malicious shim usage.
+192.38s - 194.10s |  And the easiest way to do it
+194.10s - 196.14s |  is by monitoring the registry paths
+196.14s - 198.70s |  used for installing custom SDB files.
+200.06s - 203.10s |  So once upon a time, David and I
+203.10s - 205.26s |  wanted to start a new research.
+205.26s - 207.82s |  Initially, we thought about bypassing an EDR
+207.82s - 209.86s |  or even disabling it.
+209.90s - 213.38s |  But apparently, some products just disable themselves.
+214.26s - 216.14s |  So instead of EDR bypass,
+216.14s - 218.82s |  we decided to start an attack surface research,
+218.82s - 220.54s |  and we needed the targets.
+220.54s - 223.86s |  One of the first choices we came up with is Office.
+223.86s - 225.94s |  This software is very popular.
+225.94s - 228.78s |  It can be found on almost every Windows machine.
+228.78s - 230.62s |  It is also very complex.
+230.62s - 233.14s |  It has com objects, scripting engines,
+233.14s - 235.26s |  cloud synchronization, and more.
+235.26s - 236.98s |  The more components there are,
+236.98s - 239.54s |  the higher the chances to find an issue.
+239.54s - 241.86s |  And the most promising feature about Office
+241.86s - 244.06s |  is the backwards compatibility.
+244.06s - 246.54s |  It was released over 30 years ago,
+246.54s - 249.62s |  and legacy code is usually the problematic one,
+249.62s - 251.06s |  which is good for us.
+252.14s - 254.46s |  Now let's talk about the research itself.
+255.94s - 259.38s |  We wanted to find RPC servers related to Office,
+259.38s - 262.62s |  and that led us to the service ClickToRunSVC.
+263.70s - 267.18s |  Here you can see the RPC interfaces it exposes.
+267.22s - 270.54s |  And narrowing down this list to files related to Office
+270.54s - 272.38s |  results in three files.
+272.38s - 275.46s |  The actual executable of the service,
+275.46s - 277.42s |  OfficeClickToRun.exe,
+277.42s - 279.74s |  and let's skip the long prefix
+279.74s - 282.86s |  and just call them virtualization.dll
+282.86s - 287.59s |  and subsystemcontroller.dll.
+287.59s - 289.47s |  We started looking into these files
+289.47s - 291.71s |  to see what functionality they provide,
+291.71s - 294.87s |  and we found an interesting string in the virtualization.dll.
+295.87s - 299.15s |  Could not inject subsystem.dll to child process.
+299.15s - 302.51s |  And lucky us, this string is used by a function
+302.51s - 304.83s |  that is exposed through RPC.
+304.83s - 307.43s |  This means that you can easily invoke it.
+307.43s - 310.31s |  Still, before we start reverse engineering
+310.31s - 313.23s |  the RPC interface and its methods,
+313.23s - 317.11s |  we wanted to make sure it actually performs DLL injection.
+317.11s - 318.79s |  So we debugged it,
+318.79s - 321.91s |  put breakpoints on API used for code injection,
+321.91s - 323.71s |  and then we launched Word.
+323.71s - 327.15s |  That caused the service to call write-process-memory.
+327.15s - 330.99s |  This diagram shows the call stack that led to this API.
+330.99s - 334.19s |  The RPC call went through several undocumented functions
+334.19s - 339.43s |  in a few DLL files until it reached write-process-memory.
+339.43s - 341.79s |  So what is this DLL?
+341.79s - 344.35s |  The file description is Microsoft Application
+344.35s - 348.03s |  Virtualization Client Virtualization Manager Component.
+348.03s - 350.79s |  And yes, it says virtualization twice.
+351.79s - 355.43s |  This file exposes two undocumented RPC methods.
+355.43s - 357.87s |  Instead of diving headfirst into the code,
+357.87s - 359.27s |  we wanted to find symbols
+359.27s - 362.03s |  that can shed some light on these functions.
+362.03s - 364.63s |  We used PowerShell to find RPC clients,
+364.63s - 369.63s |  and that led us to a file that has symbols, subsystem64.dll.
+370.15s - 372.43s |  Again, I'm going to skip the long names.
+372.43s - 375.59s |  The functions in the client are called notifyNewProcess
+375.59s - 377.67s |  and notifyNewChildProcess.
+377.67s - 380.43s |  We didn't find anything interesting about the first one.
+381.11s - 382.67s |  The second function causes the server
+382.67s - 386.97s |  to call write-process-memory.
+386.97s - 388.69s |  Now we want to understand the flow
+388.69s - 390.65s |  that leads to the DLL injection.
+390.65s - 393.25s |  So we'll start by debugging the client.
+393.25s - 395.85s |  We notice that before Word performs the call,
+395.85s - 400.85s |  it spawns ai.exe as a child process in a suspended state.
+400.93s - 402.81s |  Then we reach the call itself.
+402.81s - 406.05s |  We reverse-engineered it and came with its definition.
+406.05s - 408.49s |  This syntax is for the IDL file.
+408.49s - 410.37s |  It sends two parameters.
+410.41s - 415.41s |  The process ID of ai.exe and the string subsystem64.dll,
+415.81s - 417.89s |  the name of the DLL that made the call.
+419.41s - 422.21s |  Time to switch sides to the RPC server.
+422.21s - 426.09s |  Like I said before, those DLL files are undocumented,
+426.09s - 428.93s |  and we want to save time on reverse-engineering them.
+428.93s - 431.13s |  We searched for all the files that are related
+431.13s - 433.21s |  to the app virtualization platform
+433.21s - 435.65s |  and found out that there are files with similar names
+435.65s - 437.81s |  in the system32 directory.
+437.81s - 439.89s |  Those files have symbols,
+439.89s - 443.09s |  and they show that the DTools library is being used.
+443.09s - 446.73s |  This is an official library by Microsoft used for hooking,
+446.73s - 449.97s |  and it can also inject code into another process.
+449.97s - 453.21s |  The functions DToolUpdateProcessWithDLL
+453.21s - 455.85s |  and DToolCopyPayloadToProcess are used
+455.85s - 458.65s |  to patch the import address table of the target process
+458.65s - 460.65s |  and force it to load a DLL.
+460.65s - 462.73s |  Comparing the two files with bindif
+462.73s - 464.85s |  further proves the similarities.
+464.85s - 467.93s |  The name primary column belongs to the office file,
+467.93s - 471.77s |  and the name secondary column belongs to the system32 file.
+471.77s - 473.93s |  Those functions are a perfect match.
+475.73s - 478.25s |  We can easily understand how the injection is done
+478.25s - 480.05s |  with the source code of DTools.
+480.05s - 482.21s |  The optional header is modified to point
+482.21s - 484.17s |  to a new copy of the import table
+484.17s - 486.53s |  that includes an additional import descriptor
+486.53s - 488.29s |  to the injected DLL.
+488.29s - 490.89s |  This is how WinDebug displays the headers.
+490.89s - 494.45s |  We can see the full path to the DLL, which is unusual.
+494.45s - 498.16s |  Compilers link the base name.
+498.16s - 500.88s |  This is everything done by the RPC server.
+500.88s - 502.48s |  Now let's go back to the client
+502.48s - 504.80s |  and finish going through this process.
+504.80s - 506.96s |  Word resumes ai.txt,
+506.96s - 509.56s |  and since the process is not yet initialized,
+509.56s - 511.84s |  the loader uses the new import table.
+511.84s - 516.48s |  Because of that, subsystem64 is loaded into the process.
+516.48s - 520.20s |  We looked at what happens if we imitate the RPC call
+520.20s - 523.40s |  but specify a 32-bit process as the target.
+523.40s - 525.24s |  In this case, Office Click-to-Run
+525.24s - 528.40s |  isn't writing to the memory of this process directly.
+528.40s - 530.96s |  It launches the tool mavinject32,
+530.96s - 533.24s |  which is known as a living off-the-land binary,
+533.24s - 537.40s |  but the injection is exactly the same.
+537.40s - 539.36s |  Now we want to understand exactly,
+539.36s - 542.36s |  now that we know exactly how the DLL is injected,
+542.36s - 544.16s |  what can we gain from it?
+544.16s - 547.76s |  Security products detect all kinds of malicious behavior,
+547.76s - 551.72s |  file encryption, shellcode execution, and code injection.
+551.72s - 554.52s |  But sometimes legitimate programs do that.
+554.52s - 556.16s |  We just saw an example.
+556.16s - 559.72s |  And to avoid generating false positive events for customers,
+559.72s - 563.00s |  such programs will be excluded by the products.
+563.00s - 565.36s |  This means that if we force Office Click-to-Run
+565.36s - 568.48s |  to inject the DLL, we'll be able to bypass detection.
+569.56s - 572.04s |  We know the definition of the RPC method,
+572.04s - 576.00s |  and we can imitate it to inject subsystem64.dll.
+576.00s - 580.36s |  But the big question is, can we inject another DLL?
+580.36s - 583.32s |  As I showed before, the function receives a string,
+583.32s - 586.28s |  so we can just change the name of the file.
+586.28s - 588.32s |  But that means we'll have to write our DLL
+588.32s - 591.36s |  to the office directory, which is very suspicious,
+591.36s - 593.68s |  and it also requires admin privileges.
+595.40s - 597.80s |  We tried providing a full path to the file
+597.80s - 601.40s |  instead of the base name, and this is what happened.
+601.40s - 604.64s |  We changed the string to ctemp-injected.dll,
+604.64s - 608.00s |  and it was appended as it is to the office directory.
+608.00s - 611.20s |  This should raise a flag for every security researcher.
+611.20s - 614.60s |  It means that there are no sanity checks on the inputs.
+614.60s - 619.30s |  So we can go back to the 90s and use directory traversal.
+619.30s - 620.92s |  We can manipulate the file lookup
+620.92s - 623.36s |  to a completely different place.
+623.36s - 625.50s |  Let's display the headers of the process again
+625.50s - 629.34s |  with WinDebug, this time after we manipulated the call.
+629.34s - 631.32s |  We can see our malicious string was appended
+631.32s - 633.20s |  to the office directory and written
+633.20s - 634.84s |  to the memory of the process.
+636.36s - 639.78s |  With this trick, we can inject any DLL we want.
+639.78s - 642.14s |  But there are still a few limitations.
+642.14s - 644.62s |  The modified import address table will be used
+644.62s - 647.06s |  only if the process was launched as suspended
+647.06s - 649.58s |  and wasn't resumed until the injection was done.
+649.58s - 651.82s |  It must be uninitialized.
+651.82s - 653.72s |  Right now, we have a new technique
+653.72s - 656.94s |  to force a legitimate program to inject a DLL for us,
+656.94s - 659.82s |  but what more can we achieve from this?
+659.82s - 662.34s |  A nice thing about RPC is that the client
+662.34s - 665.06s |  can have lower privileges than the server.
+665.06s - 668.22s |  The office service runs this anti-authority system,
+668.22s - 679.15s |  so can we perform privilege escalation?
+679.15s - 681.63s |  Well, the short answer is no.
+681.63s - 684.23s |  The server calls RPC impersonate client
+684.23s - 686.15s |  before the injection is done.
+686.15s - 688.67s |  This means that the thread that handles our request
+688.67s - 691.75s |  will use our token, and not the token
+691.75s - 693.15s |  of anti-authority system.
+694.15s - 695.99s |  This is done to verify that the client
+695.99s - 699.15s |  has enough permissions to access the remote process.
+699.15s - 701.75s |  After the impersonation, the request reaches
+701.75s - 705.31s |  a subsystem controller.dll, which calls open process
+705.31s - 707.47s |  to gain a handle to the remote process.
+707.47s - 710.99s |  If we can't get this handle, so will the RPC server,
+710.99s - 712.63s |  and the call will fail.
+712.63s - 715.83s |  But still, maybe we can escalate from admin to system.
+717.35s - 721.11s |  The first step to do that will be to launch a process
+721.11s - 724.45s |  with the privileges of system in a suspended state.
+724.45s - 727.17s |  We used API monitoring to find such calls,
+727.17s - 729.27s |  and we found that the task scheduler service
+729.27s - 731.23s |  does exactly that.
+731.23s - 733.23s |  Scheduled tasks are a great target
+733.23s - 735.15s |  because there are many default ones
+735.99s - 737.39s |  that are configured to run a system,
+737.39s - 739.91s |  and even some that are related to Office,
+741.39s - 744.79s |  such as this one, Office Automatic Updates 2.0.
+744.79s - 746.99s |  Our injection will be even less suspicious
+746.99s - 749.89s |  if the service will inject a DLL to another process
+749.89s - 751.71s |  that is related to Office,
+751.71s - 754.11s |  but we still have a few challenges ahead.
+754.11s - 756.59s |  The task scheduler service resumes the process
+756.59s - 758.41s |  shortly after it is launched.
+758.41s - 760.79s |  We need to find a way to hold the execution
+760.79s - 762.71s |  of the task scheduler service,
+762.71s - 767.93s |  and we can do that with an opportunistic lock.
+767.93s - 770.97s |  Opportunistic locks, or OP locks for short,
+770.97s - 772.41s |  are a special kind of locks
+772.41s - 774.37s |  that are used to keep data coherency
+774.37s - 777.09s |  across computers accessing a file server.
+777.09s - 778.81s |  A client can lock a file,
+778.81s - 781.81s |  and when another client tries to access the same file,
+781.81s - 783.17s |  it will wait.
+783.17s - 784.89s |  The server will break the lock
+784.89s - 786.93s |  and notify the first client.
+786.93s - 788.71s |  The new data will be flushed,
+788.71s - 790.07s |  the file will be closed,
+790.07s - 791.93s |  and only then the second client
+791.93s - 793.89s |  will be able to access it.
+793.89s - 795.45s |  The nice thing about OP locks
+795.45s - 796.85s |  is that they can be requested
+796.85s - 799.81s |  from the local file system by a process.
+799.81s - 802.13s |  This usage is effectively a semaphore
+802.13s - 803.97s |  managed by the local file system
+803.97s - 805.93s |  that synchronizes multiple processes.
+807.57s - 810.21s |  So how does it relate to our attack?
+810.21s - 811.57s |  If we could find a file
+811.57s - 814.37s |  that is accessed by the task scheduler service
+814.37s - 815.97s |  after the process is created,
+815.97s - 817.65s |  but before it is resumed,
+817.65s - 818.69s |  we could lock it,
+818.69s - 822.23s |  and it will stop the service from resuming the process.
+822.23s - 823.57s |  Keeping the process suspended
+824.25s - 826.37s |  will allow us to inject a DLL to it.
+826.37s - 829.33s |  We monitor the system for file access
+829.33s - 832.81s |  while launching the scheduled tasks,
+832.81s - 835.97s |  and we saw that sysmain.sdb was accessed.
+835.97s - 838.25s |  In this image, we can see the call stack.
+838.25s - 840.01s |  Inside createProcessInternal,
+840.01s - 842.95s |  functions related to the app compatibility were called,
+842.95s - 847.10s |  and then the shim database was opened.
+847.10s - 849.28s |  At this point, we know that the task scheduler
+849.28s - 851.76s |  sometimes reads sysmain.sdb,
+851.76s - 854.90s |  but we need to understand which tasks lead to that.
+855.70s - 857.62s |  We need to find a task that executes a file
+857.62s - 859.78s |  with app compatibility settings.
+859.78s - 862.74s |  To do that, we locked the sdb file,
+862.74s - 865.62s |  launched every task registered on the machine,
+865.62s - 869.06s |  and checked when we were notified about the lock breaking.
+869.06s - 873.36s |  This led us to a task that executes Microsoft Edge updates.
+873.36s - 875.46s |  This file has app compatibility settings
+875.46s - 877.26s |  because of the following entry.
+878.10s - 880.26s |  The generic installer fix will be applied
+880.26s - 883.54s |  on every process that has the word update in it.
+883.54s - 884.68s |  So this is good,
+885.46s - 886.58s |  but still, it's not good enough.
+886.58s - 889.60s |  This file is under Program Files x86,
+889.60s - 892.12s |  which means it is a 32-bit process.
+892.12s - 894.70s |  We want to find a target for 64-bit as well.
+896.40s - 898.28s |  We continued digging into this subject
+898.28s - 900.88s |  to understand under which circumstances
+900.88s - 902.72s |  the sdb file will be read,
+902.72s - 904.40s |  and we noticed a strange behavior
+904.40s - 906.48s |  that applies to the OS as a whole,
+906.48s - 909.12s |  not just the task scheduler service.
+909.12s - 912.24s |  The sdb file was read the first time an executable ran
+912.24s - 913.76s |  since the machine started,
+913.76s - 915.80s |  even if it didn't need a fix.
+915.80s - 918.70s |  And after that, in all other runs, it wasn't.
+920.16s - 922.52s |  If we could guarantee that the sdb file
+922.52s - 925.20s |  will be read any time an executable runs,
+925.20s - 928.40s |  we could choose any scheduled task as our targets.
+928.40s - 931.76s |  And of course, we could register a custom sdb file
+931.76s - 934.44s |  that applies some fix to every process,
+934.44s - 936.22s |  but that is too noisy.
+936.22s - 937.40s |  We want to avoid actions
+937.40s - 940.08s |  that are monitored by security products.
+940.08s - 941.08s |  We need to find a way
+941.12s - 944.00s |  to manage the app compatibility mechanism.
+944.00s - 946.20s |  We looked for files related to this mechanism
+946.20s - 948.88s |  and found apphelp.dll.
+948.88s - 950.64s |  By looking at the code of this DLL,
+950.64s - 953.24s |  we understood that it wraps various operations
+953.24s - 956.90s |  with the API anti-apphelp-cache-control.
+956.90s - 960.70s |  Let's try to understand how to use it.
+960.70s - 964.72s |  This is an undocumented API that is exported by anti-DLL.
+964.72s - 967.40s |  We searched for references to this API online
+967.40s - 969.52s |  and in several DLL files
+969.52s - 972.28s |  until we found that the symbols of combase.dll
+973.08s - 974.60s |  contain information about it.
+974.60s - 977.16s |  This is a screenshot of a function from combase
+977.16s - 979.52s |  without any reverse engineering.
+979.52s - 982.20s |  We can see that the first parameter is an integer
+982.20s - 985.00s |  that represents the type of operation to be performed,
+985.00s - 987.06s |  and the second parameter is a structure
+987.06s - 988.76s |  with various members that are filled
+988.76s - 992.97s |  based on the operation chosen.
+992.97s - 995.57s |  We extracted those definitions
+995.57s - 997.21s |  and that revealed to us everything
+997.21s - 999.17s |  that can be done with this API.
+999.17s - 1002.85s |  We applied the definitions on calls from other DLL files
+1002.85s - 1005.17s |  and that helped us understand them better.
+1005.17s - 1008.01s |  Let's look at create-process, for example.
+1008.01s - 1010.61s |  Now we know that it performs the lookup operation
+1010.61s - 1013.49s |  and what information it requires.
+1013.49s - 1016.61s |  Like I said before, we encountered a strange behavior.
+1016.61s - 1019.97s |  The SDB file was read the first time in an executable run
+1019.97s - 1023.13s |  since the machine started, even if it didn't need a fix,
+1023.13s - 1024.89s |  and then it wasn't.
+1024.89s - 1027.13s |  At this point, we had enough information
+1027.13s - 1030.01s |  to come up with an assumption on why it happens.
+1031.01s - 1034.85s |  In this scenario, CMD is going to launch calc,
+1034.85s - 1036.69s |  so we have these two processes,
+1036.69s - 1040.71s |  and also the app-help cache, which is empty at this point.
+1040.71s - 1042.73s |  We know that when we call create-process,
+1042.73s - 1045.25s |  the lookup operation is done on the cache,
+1045.25s - 1048.81s |  so CMD is going to look for an entry about calc.
+1048.81s - 1052.73s |  The cache is empty, so the response is no entry found.
+1052.73s - 1055.45s |  That causes CMD to read the SDB file
+1055.45s - 1057.41s |  to check if it contained information
+1057.41s - 1059.81s |  about fixes calc requires.
+1060.61s - 1061.89s |  It doesn't require any fix.
+1061.89s - 1064.37s |  So the next step is that the cache is updated
+1064.37s - 1066.13s |  and an entry is added.
+1066.13s - 1068.57s |  Calc, no fix needed.
+1068.57s - 1072.09s |  Then, let's say CMD launches calc again,
+1072.09s - 1075.71s |  so it queries that cache one more time.
+1075.71s - 1079.01s |  This time, the response is no fix needed,
+1079.01s - 1083.19s |  and that is why CMD doesn't read sysmin.sdb again.
+1083.19s - 1084.89s |  Based on this assumption,
+1084.89s - 1087.17s |  if we could remove this entry from the cache,
+1087.17s - 1091.10s |  the SDB file will be read again.
+1091.10s - 1094.18s |  We looked at various calls to empty app-help cache control
+1094.18s - 1097.50s |  and found out that both kernel32 and app-help
+1097.50s - 1099.70s |  performs the remove operation.
+1099.70s - 1102.76s |  In this pseudocode, we can see the information required.
+1102.76s - 1105.66s |  It requires the path and the handle to the file.
+1105.66s - 1107.62s |  Kernel32 exports a function
+1107.62s - 1109.54s |  that does most of the work for us,
+1109.54s - 1110.72s |  and it saves us the effort
+1110.72s - 1112.68s |  of recreating this call in our code.
+1113.74s - 1115.94s |  After this call, the execution of the file
+1115.94s - 1118.88s |  will once again trigger reading the SDB file.
+1120.70s - 1123.50s |  Okay, so we talked about a lot of stuff.
+1123.50s - 1126.90s |  RPC methods, locks, and undocumented API.
+1126.90s - 1130.24s |  So in case you lost track, let's put everything together.
+1130.24s - 1132.22s |  This is the flow of the attack.
+1132.22s - 1135.30s |  We'll start by writing the DLL that will be injected.
+1135.30s - 1137.14s |  Then, we'll pick a schedule task.
+1137.14s - 1140.42s |  Let's say Office Automatic Updates 2.0.
+1140.42s - 1142.38s |  We need to take care of the shim cache.
+1142.38s - 1145.36s |  The file that will be executed might have an entry,
+1145.36s - 1147.24s |  so we're going to remove it.
+1148.14s - 1152.43s |  Then, we'll lock sysmain.sdb.
+1152.43s - 1154.89s |  The next step will be to start the task,
+1154.89s - 1157.03s |  and that will launch a suspended process
+1157.03s - 1159.19s |  with the privileges of system.
+1159.19s - 1162.67s |  The task scheduler will try to read the SDB file
+1162.67s - 1164.59s |  and start waiting.
+1164.59s - 1167.63s |  That will send us a notification about the lock breaking,
+1167.63s - 1170.15s |  which means it's time to send the RPC request
+1170.15s - 1172.31s |  to the Office service.
+1172.31s - 1174.55s |  The service will patch the import table
+1174.55s - 1178.55s |  of the suspended process and link it to our DLL.
+1178.55s - 1181.07s |  The last step will be to release the lock,
+1181.07s - 1182.79s |  and that will cause the task scheduler
+1182.79s - 1188.21s |  to resume the process, and our DLL will be loaded.
+1188.21s - 1195.06s |  Ready to see if it works?
+1195.06s - 1198.02s |  First, we'll copy our tool to the machine.
+1198.02s - 1201.49s |  And let's even scan it.
+1201.49s - 1203.49s |  And of course, Defender won't detect it.
+1204.55s - 1206.29s |  Now, just to make it clear,
+1206.29s - 1212.07s |  we are running the latest version of Office 365,
+1212.07s - 1216.67s |  and also the latest Windows 11 build.
+1216.67s - 1218.27s |  Now that we made it clear,
+1218.27s - 1224.39s |  let's start monitoring the system and launch our tool.
+1224.39s - 1228.51s |  We can see that Office C to our client loaded our DLL,
+1228.51s - 1231.95s |  and that we gained a console with the privileges of
+1231.95s - 1239.93s |  anti-authority system.
+1239.93s - 1241.41s |  Time to summarize.
+1241.41s - 1243.75s |  We decided to make an attack surface research
+1243.75s - 1245.27s |  on Microsoft Office.
+1245.27s - 1247.83s |  We manipulated several components of the OS
+1247.83s - 1250.07s |  into a single functioning attack.
+1250.11s - 1253.43s |  And these are the advantages of it.
+1253.43s - 1256.47s |  Security products will most likely ignore code injection
+1256.47s - 1260.45s |  done by Office Click to Run, because this is its purpose.
+1260.45s - 1262.39s |  So we'll bypass detection.
+1262.39s - 1265.97s |  It will be difficult to link this attack back to us,
+1265.97s - 1269.31s |  because not only the injection is done by another process,
+1269.31s - 1272.35s |  but the target process is spawned under the task scheduler,
+1272.35s - 1274.43s |  not under us.
+1274.43s - 1277.65s |  We escalate our privileges from admin to system,
+1277.65s - 1279.87s |  and the rest of the actions we perform
+1280.55s - 1281.39s |  aren't suspicious.
+1281.39s - 1284.07s |  It is very unlikely that someone monitor calls
+1284.07s - 1288.13s |  to anti-app-help-cache-control or monitors using Oprox.
+1289.15s - 1291.49s |  So this is the end of my part of the talk.
+1291.49s - 1301.05s |  Now please welcome David Chandalov.
+1301.05s - 1302.49s |  Thank you, Ron.
+1302.49s - 1305.49s |  As we concluded our first attack surface research,
+1305.49s - 1308.21s |  we identified a significant knowledge gap
+1308.21s - 1311.25s |  regarding anti-app-help-cache-control.
+1311.25s - 1314.61s |  Despite extensive information available online,
+1314.61s - 1317.77s |  we found that crucial details about some data structures
+1317.77s - 1319.71s |  and flows remain unclear.
+1320.61s - 1324.05s |  Additionally, with the continuous updates and changes
+1324.05s - 1326.77s |  in Windows versions over the years,
+1326.77s - 1328.65s |  many publicly shared insights
+1328.65s - 1330.97s |  have been altered by Microsoft.
+1330.97s - 1334.49s |  Today, I'll provide a comprehensive overview
+1334.49s - 1337.07s |  of the mechanism and the modernized attack.
+1337.07s - 1338.81s |  So let's dive right in.
+1340.61s - 1342.91s |  As we embarked on our research journey,
+1342.91s - 1345.51s |  we were driven by a fundamental question.
+1345.51s - 1349.77s |  What can we achieve with the anti-app-help-cache-control API?
+1349.77s - 1352.03s |  This inquiry became our guiding light,
+1352.03s - 1356.39s |  sparking our curiosity and determination to delve deeper.
+1356.39s - 1359.01s |  Our initial exploration gave us a foothold,
+1359.01s - 1360.91s |  but we knew we needed more.
+1360.91s - 1364.67s |  We needed to understand the technical intricacies.
+1364.67s - 1368.09s |  After all, this API controls shim fixes.
+1368.09s - 1370.05s |  Maybe we can bend it to our will
+1370.05s - 1372.31s |  and control which shim fixes are applied
+1372.71s - 1376.04s |  to specific processes.
+1376.04s - 1378.52s |  Our second question was more technical.
+1378.52s - 1380.80s |  As you can see from the screenshots,
+1380.80s - 1383.44s |  during the reading of sysmain.sdb,
+1383.44s - 1386.24s |  we noticed that anti-app-help-cache-control
+1386.24s - 1388.28s |  interacts with the kernel.
+1388.28s - 1392.44s |  This API calls a driver named ahcache.sys,
+1392.44s - 1396.40s |  which contains some intriguingly named functions.
+1396.40s - 1399.12s |  Functions like api-lookup and write-to-process
+1399.12s - 1401.16s |  and cache-lookup stood out,
+1401.16s - 1403.78s |  suggesting deeper mechanisms at play.
+1404.76s - 1407.48s |  These findings hinted at something significant
+1407.48s - 1409.60s |  inside of ahcache.sys,
+1409.60s - 1411.88s |  something that required us to dig deeper.
+1412.78s - 1417.12s |  So, down the rabbit hole we go.
+1417.12s - 1419.44s |  All right, let's lay the foundation.
+1419.44s - 1422.64s |  To understand how ahcache.sys operates,
+1422.64s - 1424.36s |  we need to start with the basics
+1424.36s - 1426.76s |  of its initialization process.
+1426.76s - 1430.42s |  When the system boots up, ahcache.sys is loaded,
+1430.42s - 1434.58s |  and it requires some initial setup to function properly.
+1434.58s - 1436.90s |  This is where the registry comes into play.
+1438.26s - 1440.58s |  The registry provides essential values
+1440.58s - 1444.34s |  that ahcache.sys reads and stores data to.
+1444.34s - 1446.70s |  These values act as a safe location
+1446.70s - 1448.56s |  for the driver's operations.
+1450.18s - 1452.50s |  This path contains binary data
+1452.50s - 1455.90s |  that the driver sorts into an AVL table.
+1455.90s - 1458.22s |  The cache needs to be properly initialized
+1458.22s - 1460.02s |  through the Windows API
+1460.02s - 1464.70s |  before these components can start working.
+1464.70s - 1468.18s |  The opposite process happens a shutdown and restart.
+1468.18s - 1470.82s |  The AVL table is dumped into the registry
+1470.82s - 1475.32s |  into the AppCompatCache value.
+1475.32s - 1477.16s |  Let's take a moment to understand
+1477.16s - 1481.40s |  the link between sysmain.sdb, registry entries,
+1481.40s - 1483.92s |  and the AppCompatibility cache.
+1483.92s - 1486.56s |  Each entry in the registry's values data
+1486.56s - 1489.96s |  is representing either a file that needs a shimfix
+1489.96s - 1491.88s |  or a file that doesn't.
+1491.88s - 1493.76s |  We'll revisit the decision-making process
+1493.76s - 1496.20s |  for applying fixes, but for now,
+1496.20s - 1500.08s |  let's focus on entries indicating files that need a fix.
+1500.08s - 1503.36s |  These entries contain several fields,
+1503.36s - 1506.08s |  the most significant being the exit tag,
+1506.08s - 1508.76s |  which points to a specific shimfix.
+1508.76s - 1511.24s |  By examining the data within these entries,
+1511.24s - 1514.20s |  we can observe notable differences.
+1514.20s - 1517.72s |  Specifically, three bytes vary across entries,
+1517.72s - 1521.12s |  and in the last entry, the three bytes are zeroized.
+1521.12s - 1524.44s |  Is it a sign for a file not needing a fix?
+1524.44s - 1527.20s |  Considering the data's little-endian format,
+1527.20s - 1533.03s |  converting it could reveal connections to sysmain.sdb.
+1533.03s - 1536.91s |  With SDB Explorer, we can search for these converted values
+1536.91s - 1539.99s |  in a readable version of sysmain.sdb.
+1539.99s - 1542.71s |  Zooming in on the fields that appear in the SDB,
+1542.71s - 1544.83s |  we have the name of the file field,
+1544.83s - 1547.39s |  and we can see the matching file field.
+1547.39s - 1550.35s |  The matching file field contains just an asterisk,
+1550.35s - 1554.63s |  so the whole name field will be compared as it appears.
+1554.63s - 1557.63s |  And lastly, we find the shimreference field.
+1557.63s - 1560.95s |  Each shimreference has a name and an ID.
+1560.95s - 1564.43s |  Some have a command line for additional arguments.
+1564.43s - 1567.51s |  Each field has a hexadecimal number attached.
+1567.51s - 1570.38s |  Why?
+1570.38s - 1572.98s |  It represents the address in the SDB
+1572.98s - 1574.94s |  that contains the exit tag
+1574.94s - 1580.16s |  as it prefixes the shimfix information block.
+1580.16s - 1582.80s |  Now that we understand what an exit tag is
+1582.80s - 1586.48s |  and how the registry cache and sysmain.sdb are linked,
+1586.48s - 1590.36s |  we wanted to look under the hood of ahcache.sys.
+1590.36s - 1592.64s |  We started looking at the dispatch routines
+1592.64s - 1594.84s |  for device ahcache,
+1594.84s - 1597.36s |  and we found that, among other things,
+1597.36s - 1600.40s |  anti-app-help-cache-control can
+1600.40s - 1603.20s |  update the table with hc-api-update
+1603.20s - 1606.92s |  that utilizes insert-element-api,
+1606.92s - 1610.52s |  lookup a table entry with hc-api-lookup-cdb
+1610.52s - 1612.60s |  that uses lookup-element-api,
+1614.16s - 1616.52s |  or it can remove an entry from the table
+1616.52s - 1620.20s |  with hc-api-remove using delete-element-api.
+1621.24s - 1626.78s |  We decided to continue looking for the dispatch routines.
+1626.78s - 1628.62s |  As we already have shown,
+1628.62s - 1632.98s |  anti-app-help-cache-control uses the ahc-service class enum,
+1632.98s - 1636.26s |  but it is also being used in the dispatch routine
+1636.26s - 1638.82s |  inside of ahcache.sys.
+1638.82s - 1642.42s |  The enum has an interestingly sounding member
+1642.42s - 1644.46s |  in its process data for short.
+1644.46s - 1647.02s |  We traced a function that is using this value.
+1648.42s - 1650.42s |  We were surprised to see no mentions
+1650.42s - 1652.24s |  of AVL table manipulation.
+1653.98s - 1656.04s |  Maybe this is what we were looking for,
+1656.04s - 1658.26s |  writing to a process for a kernel driver?
+1658.26s - 1659.30s |  Sounds awesome.
+1660.94s - 1663.30s |  But before we check if we got the good news,
+1663.30s - 1665.74s |  let's go through some definitions.
+1665.74s - 1667.38s |  Almost every dispatch routine
+1667.38s - 1669.62s |  has a unique structure for its operation.
+1671.38s - 1675.02s |  This structure contains an undocumented data field.
+1675.02s - 1677.36s |  We tried to search the web for definitions,
+1677.36s - 1680.52s |  and with some more in-house reverse engineering,
+1682.22s - 1683.98s |  we got shim data.
+1683.98s - 1687.74s |  It contains a fixed magic value and a fixed size value.
+1687.74s - 1692.86s |  Remember this struct as we will come to visit it later.
+1692.86s - 1695.28s |  Dive in deeper inside the function.
+1695.28s - 1697.68s |  The calling process and the target process
+1697.68s - 1698.74s |  are being checked.
+1700.40s - 1701.88s |  Now here is the tricky part.
+1701.88s - 1705.24s |  We need to have protected signer app and PPL.
+1706.62s - 1709.24s |  And these two values will be important later.
+1710.50s - 1714.56s |  But the call fails in psget process protection.
+1714.56s - 1717.80s |  Looking at every process in Windows 11,
+1717.80s - 1720.10s |  we concluded that no Windows apps
+1720.10s - 1723.52s |  with this kind of protection exist.
+1723.52s - 1724.92s |  We came to a dead end.
+1725.52s - 1729.12s |  But the undocumented structure I talked about before,
+1729.12s - 1730.68s |  it piqued our interest.
+1732.48s - 1735.04s |  We decided to take that strange name we found
+1735.04s - 1738.56s |  and try to look for references of this structure.
+1738.56s - 1741.72s |  Maybe we can understand by which operation it is being used
+1741.72s - 1745.28s |  and who can be the target.
+1745.28s - 1747.18s |  There were a few hits.
+1747.18s - 1749.12s |  Reverse engineering the functions
+1749.12s - 1751.76s |  that reference shim data revealed
+1751.76s - 1754.44s |  that this structure represents the shim fixes
+1754.44s - 1756.52s |  that need to be applied to a process.
+1758.34s - 1760.44s |  Let's see how a new process is born.
+1761.88s - 1764.44s |  Notepad.exe is the child process
+1764.44s - 1768.98s |  that is created on behalf of the parent process cmd.exe.
+1768.98s - 1770.92s |  The parent queries the app help cache
+1770.92s - 1774.68s |  to check if the child process requires shim fixes
+1774.68s - 1776.82s |  as we have shown in the first attack.
+1778.00s - 1780.80s |  The parent process readsysmain.sdb
+1780.80s - 1783.88s |  to retrieve the complete information about the fixes.
+1785.93s - 1787.73s |  The parent builds the structure
+1787.73s - 1790.41s |  according to the specific fixes
+1790.41s - 1796.12s |  and writes it to the memory of the child process.
+1796.12s - 1797.76s |  The parent modifies the value
+1797.76s - 1800.80s |  of the process environment blocks pshim data
+1800.80s - 1805.47s |  to point to the new structure.
+1805.47s - 1808.57s |  NTDLL is already loaded in the child process.
+1810.23s - 1813.63s |  So NTDLL's loader loads app help.dll
+1813.63s - 1816.47s |  if pshim data is not empty.
+1817.47s - 1821.63s |  App help identifies which shim fixes are to be applied.
+1823.11s - 1826.23s |  And so app help.dll applies the shim fixes
+1826.23s - 1830.19s |  according to the structure.
+1830.19s - 1832.47s |  We also wanted to share the flow
+1832.47s - 1836.99s |  of the shim data structure creation for future references.
+1836.99s - 1841.45s |  The flow starts with create process internal in kernel base,
+1841.45s - 1843.05s |  goes through kernel 32,
+1843.05s - 1847.25s |  and finally ends with app help.dll.
+1847.25s - 1849.25s |  The finished struct is built
+1849.25s - 1852.53s |  in the sdb pack up compa data function
+1852.53s - 1856.05s |  inside of app help.dll.
+1857.49s - 1861.29s |  Okay, let's consider the implications
+1861.29s - 1863.65s |  of manipulating a system component
+1863.65s - 1867.13s |  to build and trigger unauthorized fixes.
+1867.13s - 1870.85s |  This could potentially allow us to inject or alter code
+1870.85s - 1874.13s |  in a way that bypasses typical security measures.
+1875.13s - 1878.45s |  Our investigation into pshim data
+1878.45s - 1881.01s |  begins with understanding what data
+1881.01s - 1883.37s |  is being written to this specific part
+1883.37s - 1887.70s |  of the process environment block.
+1887.70s - 1890.70s |  We utilized the compatibility administrator
+1890.70s - 1895.61s |  to create and apply custom rules.
+1895.61s - 1900.55s |  By extracting the shim data directly from process memory,
+1900.55s - 1904.07s |  we gained a first insight into how the data is organized.
+1904.79s - 1909.79s |  We chose to fuzz the inputs to see the effect on the data.
+1909.79s - 1912.39s |  This process helped us identify patterns
+1912.39s - 1915.15s |  in the data handling.
+1915.15s - 1916.63s |  By following these steps,
+1916.63s - 1918.75s |  we gained a comprehensive understanding
+1918.75s - 1922.84s |  of how shim data looks like.
+1922.84s - 1924.60s |  And so at last,
+1924.60s - 1927.82s |  we have reversed engineered the shim data structure,
+1927.82s - 1929.34s |  essential for understanding
+1929.34s - 1932.06s |  how to manipulate shims to our advantage.
+1933.06s - 1936.44s |  Here we can see the previous version of the shim data.
+1936.44s - 1937.86s |  If you can recall,
+1937.86s - 1940.60s |  this is the struct I ask you to remember.
+1940.60s - 1942.38s |  There are quite a few changes.
+1942.38s - 1945.20s |  Most notably, the exit up type field,
+1945.20s - 1946.52s |  the exit tag field,
+1946.52s - 1948.54s |  and the exit count field.
+1948.54s - 1954.95s |  All are essential for correct use of shim fix manipulation.
+1954.95s - 1955.99s |  At this stage,
+1955.99s - 1958.67s |  we are preparing to use all of our accumulated knowledge
+1958.67s - 1960.05s |  for an attack.
+1960.05s - 1962.67s |  We can make a target process load the shim fix
+1962.67s - 1965.45s |  simply by building our own shim data struct
+1965.45s - 1968.67s |  and pointing to the target pshim data to it.
+1968.67s - 1970.77s |  The process won't check any condition
+1970.77s - 1972.89s |  the original rule has configured.
+1972.89s - 1976.37s |  This allows us to apply any fix we want.
+1976.37s - 1978.93s |  We chose to inject the DLL,
+1978.93s - 1983.93s |  to inject the DLL into the target process by itself.
+1987.28s - 1988.20s |  Okay.
+1988.20s - 1990.58s |  We chose to inject the DLL
+1990.58s - 1993.28s |  into the target process by itself.
+1993.30s - 1996.68s |  This effectively makes the attack a file-less
+1996.68s - 1998.78s |  and registry-less DLL injection
+1998.78s - 2000.28s |  that can evade detection.
+2002.02s - 2003.66s |  According to this entry,
+2003.66s - 2006.34s |  rtvideo.dll will be injected
+2006.34s - 2009.70s |  if the process name starts with glj,
+2009.70s - 2011.66s |  ends with the temp extension,
+2011.66s - 2013.78s |  and it has the correct checksum.
+2013.78s - 2017.38s |  Luckily, these checks are done by the parent process
+2017.38s - 2019.72s |  and not by the child process.
+2019.72s - 2022.78s |  This means that once the exit tag in shim data
+2022.78s - 2024.16s |  points to this entry,
+2024.16s - 2027.68s |  the child process's app.ldll will apply the fix
+2027.68s - 2029.78s |  without checking the conditions.
+2031.48s - 2032.76s |  Having said all that,
+2032.76s - 2035.20s |  our tech has three limitations.
+2035.20s - 2038.86s |  The target process must be started as a suspended process.
+2040.36s - 2043.16s |  If the injected process executable file
+2043.16s - 2045.28s |  resides in this specific path
+2045.28s - 2048.68s |  or the security identifier of the file's owner
+2048.68s - 2050.42s |  is trusted installer,
+2050.42s - 2052.42s |  the shim fix won't be loaded.
+2053.68s - 2057.80s |  Injected DLL is not available to 64-bit processes
+2057.80s - 2059.92s |  as acgeneral.dll revealed.
+2061.08s - 2062.40s |  And you won't believe it,
+2062.40s - 2063.92s |  we found the target.
+2063.92s - 2066.96s |  And it's the Microsoft Edge updater we have shown before.
+2068.40s - 2070.72s |  Microsoft has made our lives easier
+2070.72s - 2073.24s |  as all three limitations are not present.
+2073.24s - 2074.28s |  Let's inject.
+2075.84s - 2077.00s |  At this point,
+2077.00s - 2078.52s |  we have enough knowledge
+2078.52s - 2080.88s |  to abuse the app compatibility mechanism.
+2080.88s - 2083.28s |  So let's go over all of the steps.
+2084.46s - 2086.58s |  We need to write our own DLL
+2086.58s - 2088.64s |  as the name of the rule specifies.
+2090.14s - 2093.34s |  We launch our binary as a suspended process.
+2094.46s - 2097.78s |  The struct is built with the correct tag
+2097.78s - 2101.08s |  as in our example.
+2101.08s - 2103.86s |  We write the struct to the target process's memory.
+2104.72s - 2107.12s |  We point to the struct.
+2108.16s - 2110.68s |  We resume the execution.
+2110.70s - 2112.76s |  And so app help will help us
+2112.76s - 2114.82s |  and apply our desired fix.
+2114.82s - 2117.98s |  And RTVideo will load to the target process.
+2117.98s - 2123.98s |  Let's see how it looks in action.
+2123.98s - 2129.27s |  shim injector.exe is dropped.
+2129.27s - 2131.71s |  And so we can see the hello message
+2131.71s - 2134.55s |  from inside of the child process.
+2134.55s - 2137.87s |  RTVideo.dll is loaded by our target.
+2137.87s - 2141.19s |  We can see our call stack going from install after init
+2141.19s - 2143.19s |  to NSInject.dll.
+2143.19s - 2145.75s |  And lastly, to load library.
+2146.57s - 2148.37s |  We also have some logs on the command prompt.
+2148.37s - 2151.03s |  You can see the unique size, magic,
+2151.03s - 2161.89s |  exit type, and exit tag we defined earlier.
+2161.89s - 2163.83s |  Let's recap our second attack.
+2163.83s - 2166.13s |  There is a long history of shim attacks
+2166.13s - 2168.89s |  and how security products typically detect
+2168.89s - 2172.49s |  and mitigate malicious shim attacks, attack vectors.
+2174.01s - 2176.55s |  We were able to uncover new definitions
+2176.55s - 2179.51s |  and insights on the app compatibility component.
+2179.51s - 2181.81s |  And we used them to change what we think
+2181.81s - 2183.47s |  about this attack vector.
+2184.99s - 2186.75s |  This new perspective allowed us
+2186.75s - 2189.91s |  to create a new file-less and registry-less attack.
+2191.53s - 2193.55s |  We essentially took care of the problem
+2193.55s - 2196.19s |  of creating a custom SDB on a system
+2196.19s - 2198.01s |  with all that comes with it,
+2198.01s - 2203.24s |  namely registry and disk tracks.
+2203.24s - 2206.64s |  By writing to a child process, which is not suspicious,
+2206.64s - 2208.32s |  and by loading the target DLL
+2208.32s - 2210.36s |  from the suspended child process
+2210.36s - 2213.76s |  before any EDR hook can be established,
+2213.76s - 2219.21s |  we effectively bypassed EDR detection.
+2219.21s - 2221.47s |  We chose this specific shim fix
+2221.47s - 2224.51s |  because it is applicable to many scenarios
+2224.51s - 2226.91s |  and demonstrates our attack in a clear way.
+2227.95s - 2229.75s |  There are many more shim fixes
+2229.75s - 2231.95s |  that can be used for malicious purposes.
+2231.95s - 2233.75s |  This was only one of them.
+2235.43s - 2236.75s |  We've come a long way.
+2236.75s - 2238.31s |  Let's summarize both attacks
+2238.31s - 2243.04s |  and see what we can take away from this research.
+2243.04s - 2245.28s |  As for detections, let's go over
+2245.28s - 2247.88s |  how should someone detect these kinds of attacks.
+2248.88s - 2251.00s |  For the first attack,
+2251.00s - 2254.44s |  RPC is a big and early part of the first attack,
+2254.44s - 2257.56s |  so monitoring remote procedure calls
+2257.56s - 2259.28s |  made to click-to-run service
+2259.28s - 2262.48s |  can reveal the use of non-standard DLL paths.
+2263.32s - 2265.96s |  Requests for opportunistic locks
+2265.96s - 2272.26s |  on critical system files like sysmain.sdb should be flagged.
+2272.26s - 2274.40s |  Implementing security policies
+2275.38s - 2278.36s |  that restrict such high-level memory write operations
+2278.36s - 2280.36s |  as it is very suspicious,
+2280.36s - 2282.60s |  click-to-run service shouldn't write
+2282.60s - 2286.94s |  to this type of processes on its own.
+2286.94s - 2288.52s |  Regarding the second attack,
+2289.70s - 2292.20s |  keeping an eye on file system activity,
+2292.20s - 2295.30s |  particularly for the creation of DLL files
+2295.30s - 2298.22s |  which are listed in sysmain.sdb
+2298.22s - 2302.30s |  and are in directories unrelated to the original files,
+2302.30s - 2306.16s |  to the original rules.
+2306.16s - 2309.36s |  Also, we invite the community to take our findings
+2309.36s - 2312.94s |  to refine our attacks and make new and better ones.
+2314.24s - 2315.68s |  Some ideas.
+2315.68s - 2317.36s |  The community could find a target
+2317.36s - 2322.00s |  for the init process data operation that we didn't find.
+2323.64s - 2325.60s |  There is much more to understand
+2325.60s - 2327.38s |  about the shim data structure
+2327.38s - 2329.72s |  and how it can affect the execution
+2329.72s - 2333.92s |  of the ahcache.sys functions.
+2333.92s - 2335.12s |  There are many more flows
+2335.12s - 2338.04s |  that can potentially manipulate the AVL table,
+2338.04s - 2340.48s |  which in turn will affect which process
+2340.48s - 2345.94s |  will get what shim fix.
+2345.94s - 2350.76s |  In conclusion, in our presentation,
+2350.76s - 2353.00s |  we detailed our comprehensive methodology
+2353.00s - 2355.40s |  for conducting attack surface research.
+2357.12s - 2360.52s |  By leveraging and manipulating various system components,
+2360.52s - 2363.16s |  including services, op locks,
+2363.16s - 2365.20s |  and compatibility mechanisms,
+2365.20s - 2368.08s |  we demonstrated how to consolidate these elements
+2368.08s - 2372.85s |  into a singular, cohesive attack strategy.
+2372.85s - 2375.73s |  The op lock and the compatibility mechanisms
+2375.73s - 2379.57s |  could be integral parts of other multi-component,
+2379.57s - 2382.73s |  sophisticated, and complex attacks.
+2382.73s - 2386.57s |  Op lock can be used in many scenarios as a building block,
+2386.57s - 2388.17s |  and there are many more shim fixes
+2388.17s - 2390.53s |  that can be used with malicious intent,
+2390.53s - 2395.76s |  even with 64-bit processes.
+2395.76s - 2398.40s |  Our extensive research uncovered new techniques
+2398.44s - 2402.20s |  for stealthy injection and privileged escalation,
+2402.20s - 2407.37s |  enhancing the effectiveness of these attacks.
+2407.37s - 2411.85s |  We demonstrated two attacks that won't be monitored by EDRs.
+2411.85s - 2414.97s |  The injection occurs in a very early stage,
+2414.97s - 2421.18s |  a stage where EDRs can't establish a hook yet.
+2421.18s - 2424.26s |  Through reverse engineering and undocumented API
+2424.26s - 2426.38s |  and its associated structures,
+2426.38s - 2429.02s |  we gained valuable insights that contributed
+2429.02s - 2431.10s |  to the development of these methods.
+2432.90s - 2434.70s |  Additionally, we modernized
+2434.70s - 2437.10s |  a previously known malicious technique,
+2437.10s - 2439.62s |  transforming it into a more elusive,
+2439.62s - 2441.66s |  file-less, and registry-less attack.
+2442.86s - 2445.74s |  Lastly, we once again encourage the community
+2445.74s - 2448.14s |  to continue building on our research,
+2448.14s - 2450.18s |  exploring the leads we have provided
+2450.18s - 2454.19s |  to further advance this field.
+2454.19s - 2455.03s |  Thank you.
+2455.99s - 2459.35s |  Thank you so much for being here and hearing our talk.
+2459.35s - 2462.11s |  The source code of our tools is now public.
+2462.11s - 2464.23s |  If you have any questions, you are free to ask.
+2464.23s - 2466.83s |  You can also find us on Twitter and LinkedIn.
+2466.83s - 2467.67s |  Thanks again.

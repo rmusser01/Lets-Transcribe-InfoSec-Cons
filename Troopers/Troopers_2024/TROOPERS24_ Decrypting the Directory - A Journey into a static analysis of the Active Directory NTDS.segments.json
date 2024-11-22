@@ -1,0 +1,2111 @@
+{
+  "metadata": {
+    "webpage_url": "https://www.youtube.com/watch?v=PZcLCh8ru6Y",
+    "title": "TROOPERS24: Decrypting the Directory - A Journey into a static analysis of the Active Directory NTDS",
+    "description": "Talk by Bastien Cacace, Florian Duthu - June 26th, 2024 at TROOPERS24 IT security conference in Heidelberg, Germany hosted by @ERNW_ITSec\n\n#TROOPERS24 #ITsecurity \nhttps://troopers.de/troopers24/talks/8ekvxr/\n\nMore impressions:\nhttps://twitter.com/WEareTROOPERS\nhttps://twitter.com/ERNW_ITSec\nhttps://infosec.exchange/@WEareTROOPERS\nhttps://infosec.exchange/@ERNW https://ernw.de",
+    "channel_url": "https://www.youtube.com/channel/UCPY5aUREHmbDO4PtR6AYLfQ",
+    "duration": 2646,
+    "channel": "TROOPERS IT Security Conference",
+    "uploader": "TROOPERS IT Security Conference",
+    "upload_date": "20240902"
+  },
+  "segments": {
+    "metadata": {
+      "webpage_url": "https://www.youtube.com/watch?v=PZcLCh8ru6Y",
+      "title": "TROOPERS24: Decrypting the Directory - A Journey into a static analysis of the Active Directory NTDS",
+      "description": "Talk by Bastien Cacace, Florian Duthu - June 26th, 2024 at TROOPERS24 IT security conference in Heidelberg, Germany hosted by @ERNW_ITSec\n\n#TROOPERS24 #ITsecurity \nhttps://troopers.de/troopers24/talks/8ekvxr/\n\nMore impressions:\nhttps://twitter.com/WEareTROOPERS\nhttps://twitter.com/ERNW_ITSec\nhttps://infosec.exchange/@WEareTROOPERS\nhttps://infosec.exchange/@ERNW https://ernw.de",
+      "channel_url": "https://www.youtube.com/channel/UCPY5aUREHmbDO4PtR6AYLfQ",
+      "duration": 2646,
+      "channel": "TROOPERS IT Security Conference",
+      "uploader": "TROOPERS IT Security Conference",
+      "upload_date": "20240902"
+    },
+    "segments": [
+      {
+        "Time_Start": 0.0,
+        "Time_End": 12.96,
+        "Text": "This text was transcribed using whisper model: large-v2\n\n Hello, and welcome to our talk."
+      },
+      {
+        "Time_Start": 12.96,
+        "Time_End": 16.88,
+        "Text": " My name is Bastien, and I'm with Florian, and today we will talk about the Active Directory"
+      },
+      {
+        "Time_Start": 16.88,
+        "Time_End": 26.2,
+        "Text": " Database, also called NTDS.dit, in order to identify misconfiguration and vulnerability,"
+      },
+      {
+        "Time_Start": 26.2,
+        "Time_End": 35.24,
+        "Text": " and the purpose of this talk is also to give you, to want, to explore your own NTDS after."
+      },
+      {
+        "Time_Start": 35.24,
+        "Time_End": 43.6,
+        "Text": " So we are from a French security company, a security consulting company called XMCO,"
+      },
+      {
+        "Time_Start": 43.6,
+        "Time_End": 52.64,
+        "Text": " and so we are auditors, especially for Active Directory, but also other stuff, and we are"
+      },
+      {
+        "Time_Start": 52.64,
+        "Time_End": 60.0,
+        "Text": " also contributors from our own solution, Active Directory, in our company called IAMBUSTER,"
+      },
+      {
+        "Time_Start": 60.0,
+        "Time_End": 64.04,
+        "Text": " based on NTDS analysis."
+      },
+      {
+        "Time_Start": 64.04,
+        "Time_End": 70.2,
+        "Text": " So today, what we will see, why we would like to analyse the NTDS."
+      },
+      {
+        "Time_Start": 70.2,
+        "Time_End": 74.32,
+        "Text": " So what is interesting inside the NTDS."
+      },
+      {
+        "Time_Start": 74.32,
+        "Time_End": 79.88,
+        "Text": " And also we will have a quick look at the format and the structure of the database,"
+      },
+      {
+        "Time_Start": 79.88,
+        "Time_End": 86.39999999999999,
+        "Text": " and how to get, to parse and get the data, outside a Microsoft environment."
+      },
+      {
+        "Time_Start": 86.39999999999999,
+        "Time_End": 93.56,
+        "Text": " And at the end, we will take a look on the trending topic, which is ACL and control path,"
+      },
+      {
+        "Time_Start": 93.56,
+        "Time_End": 99.47999999999999,
+        "Text": " and also present our little script to help you to dig inside NTDS."
+      },
+      {
+        "Time_Start": 99.47999999999999,
+        "Time_End": 104.19999999999999,
+        "Text": " NTDS stands for NT Directory Service."
+      },
+      {
+        "Time_Start": 104.2,
+        "Time_End": 110.24000000000001,
+        "Text": " You have a copy, so this is basically a big file, it could be small, but usually it's"
+      },
+      {
+        "Time_Start": 110.24000000000001,
+        "Time_End": 112.92,
+        "Text": " kind of big."
+      },
+      {
+        "Time_Start": 112.92,
+        "Time_End": 123.44,
+        "Text": " It's stored on each domain controllers of your domain, and the format is EAC format,"
+      },
+      {
+        "Time_Start": 123.44,
+        "Time_End": 132.32,
+        "Text": " it was created by Microsoft, and was shipped first with Windows NT in 1995, and after Microsoft"
+      },
+      {
+        "Time_Start": 132.48,
+        "Time_End": 141.23999999999998,
+        "Text": " used this format also for other Windows solutions, Active Directory as well, and Outlook."
+      },
+      {
+        "Time_Start": 141.23999999999998,
+        "Time_End": 148.12,
+        "Text": " And you may be wondering why Microsoft didn't use SQL formats at that time."
+      },
+      {
+        "Time_Start": 148.12,
+        "Time_End": 157.04,
+        "Text": " We didn't find any official statement, but multiple sources say it was mostly because"
+      },
+      {
+        "Time_Start": 157.04,
+        "Time_End": 161.51999999999998,
+        "Text": " of performance issues and technical issues."
+      },
+      {
+        "Time_Start": 161.52,
+        "Time_End": 170.08,
+        "Text": " But if you have an official statement, we can share it after."
+      },
+      {
+        "Time_Start": 170.08,
+        "Time_End": 174.96,
+        "Text": " So the story behind this presentation."
+      },
+      {
+        "Time_Start": 174.96,
+        "Time_End": 184.20000000000002,
+        "Text": " So we were pen tester before in Active Directory environment, and after compromise a domain,"
+      },
+      {
+        "Time_Start": 184.20000000000002,
+        "Time_End": 190.24,
+        "Text": " we like to grab the NTDS and test the password strength."
+      },
+      {
+        "Time_Start": 191.16,
+        "Time_End": 198.68,
+        "Text": " So it was a kind of bonus for our customer in the report, with other findings."
+      },
+      {
+        "Time_Start": 198.68,
+        "Time_End": 206.48000000000002,
+        "Text": " And after that, some customer start asking us a specific Active Directory password audit."
+      },
+      {
+        "Time_Start": 206.48000000000002,
+        "Time_End": 215.48000000000002,
+        "Text": " So then we start like building our own script with Python, we were familiar with Python,"
+      },
+      {
+        "Time_Start": 215.48000000000002,
+        "Time_End": 223.28000000000003,
+        "Text": " and so we used impact at that time, and we were wondering if we can go further than just"
+      },
+      {
+        "Time_Start": 223.28000000000003,
+        "Time_End": 226.92000000000002,
+        "Text": " auditing password."
+      },
+      {
+        "Time_Start": 226.92000000000002,
+        "Time_End": 231.08,
+        "Text": " So there's a lot of previous work on the NTDS."
+      },
+      {
+        "Time_Start": 231.08,
+        "Time_End": 244.16000000000003,
+        "Text": " Joachim has made great work, he released format specification paper in 2011, and also library"
+      },
+      {
+        "Time_Start": 244.28,
+        "Time_End": 248.96,
+        "Text": " in C language, libescdb."
+      },
+      {
+        "Time_Start": 248.96,
+        "Time_End": 256.92,
+        "Text": " His work inspired other tools, impact, NTDS, Airbus BTA, and we are not exhaustive here,"
+      },
+      {
+        "Time_Start": 256.92,
+        "Time_End": 258.44,
+        "Text": " other tools as well."
+      },
+      {
+        "Time_Start": 258.44,
+        "Time_End": 265.68,
+        "Text": " And later, also Microsoft published managed ESCNT that provides access to the library,"
+      },
+      {
+        "Time_Start": 265.68,
+        "Time_End": 268.44,
+        "Text": " to the DLL, ESCNT."
+      },
+      {
+        "Time_Start": 268.44,
+        "Time_End": 275.84,
+        "Text": " I know DS internal uses it, maybe other tools as well."
+      },
+      {
+        "Time_Start": 275.84,
+        "Time_End": 280.28,
+        "Text": " So a little bit more on the NTDS, what you can find inside."
+      },
+      {
+        "Time_Start": 280.28,
+        "Time_End": 284.68,
+        "Text": " All data on your Active Directory is inside the database."
+      },
+      {
+        "Time_Start": 284.68,
+        "Time_End": 293.24,
+        "Text": " The size of the database could start from 30, maybe, megabytes, to like 15 gigabytes."
+      },
+      {
+        "Time_Start": 293.24,
+        "Time_End": 297.96,
+        "Text": " 15 gigabytes is actually the most biggest one we have seen in production."
+      },
+      {
+        "Time_Start": 297.96,
+        "Time_End": 300.88,
+        "Text": " Maybe you guys have the biggest one."
+      },
+      {
+        "Time_Start": 300.88,
+        "Time_End": 313.4,
+        "Text": " 15 gigabytes, it's like 200,000 users, and the domain was created in 2001."
+      },
+      {
+        "Time_Start": 313.4,
+        "Time_End": 318.67999999999995,
+        "Text": " Because when your domain is old, you have a lot of backlog transactions, and the size"
+      },
+      {
+        "Time_Start": 318.67999999999995,
+        "Time_End": 322.64,
+        "Text": " of the NTDS gets bigger."
+      },
+      {
+        "Time_Start": 322.64,
+        "Time_End": 323.64,
+        "Text": " So yeah."
+      },
+      {
+        "Time_Start": 323.64,
+        "Time_End": 329.08,
+        "Text": " So does someone have a bigger one than 15?"
+      },
+      {
+        "Time_Start": 329.08,
+        "Time_End": 332.08,
+        "Text": " Maybe?"
+      },
+      {
+        "Time_Start": 332.08,
+        "Time_End": 335.08,
+        "Text": " Okay."
+      },
+      {
+        "Time_Start": 335.08,
+        "Time_End": 350.96,
+        "Text": " It could go until, I think, one terabyte, or something like that, according to Microsoft."
+      },
+      {
+        "Time_Start": 351.0,
+        "Time_End": 356.08,
+        "Text": " So to dump the NTDS, you need domain admin rights by default, and you can dump it easily"
+      },
+      {
+        "Time_Start": 356.08,
+        "Time_End": 360.79999999999995,
+        "Text": " with NTDS util tool, this is the most common one."
+      },
+      {
+        "Time_Start": 360.79999999999995,
+        "Time_End": 365.76,
+        "Text": " And the database is almost the same on each domain controller."
+      },
+      {
+        "Time_Start": 365.76,
+        "Time_End": 371.0,
+        "Text": " I said almost, because we will see later in the presentation, some attributes value are"
+      },
+      {
+        "Time_Start": 371.0,
+        "Time_End": 376.08,
+        "Text": " not replicated between them."
+      },
+      {
+        "Time_Start": 376.08,
+        "Time_End": 380.0,
+        "Text": " So finally, why we want to analyze it."
+      },
+      {
+        "Time_Start": 380.04,
+        "Time_End": 387.64,
+        "Text": " It's an alternative way to audit your Active Directory offline."
+      },
+      {
+        "Time_Start": 387.64,
+        "Time_End": 396.24,
+        "Text": " You can conduct an offline audit, or a light forensic, in comparison to a dynamic tool,"
+      },
+      {
+        "Time_Start": 396.24,
+        "Time_End": 403.36,
+        "Text": " you know, like Bloodhound, or Purple Knight, or whatever."
+      },
+      {
+        "Time_Start": 403.36,
+        "Time_End": 409.0,
+        "Text": " So you don't need to be connected to the system, the information system, or to your domain."
+      },
+      {
+        "Time_Start": 409.0,
+        "Time_End": 412.08,
+        "Text": " You just need to have the file."
+      },
+      {
+        "Time_Start": 412.08,
+        "Time_End": 418.72,
+        "Text": " And it's the only way to audit the password, because this is the only place you will find"
+      },
+      {
+        "Time_Start": 418.72,
+        "Time_End": 421.46,
+        "Text": " the password hashes."
+      },
+      {
+        "Time_Start": 421.46,
+        "Time_End": 429.0,
+        "Text": " So at the end, it's useful for Bluetimer that doesn't want to generate extra nodes on their"
+      },
+      {
+        "Time_Start": 429.0,
+        "Time_End": 430.0,
+        "Text": " network."
+      },
+      {
+        "Time_Start": 430.0,
+        "Time_End": 436.92,
+        "Text": " It could be useful also, especially when you audit a sensitive environment."
+      },
+      {
+        "Time_Start": 436.92,
+        "Time_End": 443.6,
+        "Text": " I know when we go to a factory, industrial factory, they don't like too much when we"
+      },
+      {
+        "Time_Start": 443.6,
+        "Time_End": 451.46000000000004,
+        "Text": " connect to the network, and sending many requests, so they prefer, like, offline audits."
+      },
+      {
+        "Time_Start": 451.46000000000004,
+        "Time_End": 456.64,
+        "Text": " They are afraid that we can maybe break their machine."
+      },
+      {
+        "Time_Start": 456.64,
+        "Time_End": 462.72,
+        "Text": " And also it could be useful for pen testers, after compromising a domain, to have extra"
+      },
+      {
+        "Time_Start": 462.72,
+        "Time_End": 467.32000000000005,
+        "Text": " findings in the report."
+      },
+      {
+        "Time_Start": 467.32000000000005,
+        "Time_End": 475.12,
+        "Text": " So we will see what could be interesting in security perspective."
+      },
+      {
+        "Time_Start": 475.12,
+        "Time_End": 484.44000000000005,
+        "Text": " So you have everything on users, like activity, if they have SPN, if there are security attributes"
+      },
+      {
+        "Time_Start": 484.44000000000005,
+        "Time_End": 491.20000000000005,
+        "Text": " or not, delegations, and also the membership."
+      },
+      {
+        "Time_Start": 491.2,
+        "Time_End": 500.84,
+        "Text": " You have the password, so the password properties, which is you can try to break passwords with"
+      },
+      {
+        "Time_Start": 500.84,
+        "Time_End": 506.03999999999996,
+        "Text": " tools like John the Reaper or Ashcroft, because you have the password hashes."
+      },
+      {
+        "Time_Start": 506.03999999999996,
+        "Time_End": 515.36,
+        "Text": " You have the format, LM or NT, so you can find if they still use LM obsolete format."
+      },
+      {
+        "Time_Start": 515.36,
+        "Time_End": 516.96,
+        "Text": " You can detect passwords we use."
+      },
+      {
+        "Time_Start": 517.36,
+        "Time_End": 526.08,
+        "Text": " A fun fact is we have a customer, he has a tiering in his domain, but one domain admin"
+      },
+      {
+        "Time_Start": 526.08,
+        "Time_End": 533.48,
+        "Text": " uses the same password on his T0 account, T1 account, and T2 account, so breaking the"
+      },
+      {
+        "Time_Start": 533.48,
+        "Time_End": 534.8000000000001,
+        "Text": " whole tiering."
+      },
+      {
+        "Time_Start": 534.8000000000001,
+        "Time_End": 539.4000000000001,
+        "Text": " And we didn't break the password because it was strong, but you can compare the password"
+      },
+      {
+        "Time_Start": 539.4000000000001,
+        "Time_End": 546.9200000000001,
+        "Text": " hashes to say, okay, so you use the same password, so if your T2 admin is compromised, you can"
+      },
+      {
+        "Time_Start": 546.92,
+        "Time_End": 550.88,
+        "Text": " also compromise your T0 account."
+      },
+      {
+        "Time_Start": 550.88,
+        "Time_End": 558.0,
+        "Text": " And you have also information about the password change date, et cetera, system, because every"
+      },
+      {
+        "Time_Start": 558.0,
+        "Time_End": 566.5999999999999,
+        "Text": " machine on your active directory has an account, so you have also property on the system machine."
+      },
+      {
+        "Time_Start": 566.5999999999999,
+        "Time_End": 571.26,
+        "Text": " You can detect if the Kerberos password has been changed recently or not."
+      },
+      {
+        "Time_Start": 571.26,
+        "Time_End": 578.34,
+        "Text": " You have information on the trust, the way of the trust, if LAPS is installed on your"
+      },
+      {
+        "Time_Start": 578.34,
+        "Time_End": 581.22,
+        "Text": " domain, et cetera, et cetera."
+      },
+      {
+        "Time_Start": 581.22,
+        "Time_End": 586.02,
+        "Text": " And of course, ECL are part of the NTDS."
+      },
+      {
+        "Time_Start": 586.02,
+        "Time_End": 594.66,
+        "Text": " I will let Florian talk about that later."
+      },
+      {
+        "Time_Start": 594.66,
+        "Time_End": 596.4,
+        "Text": " A little bit feedback."
+      },
+      {
+        "Time_Start": 596.4,
+        "Time_End": 603.4399999999999,
+        "Text": " We have analyzed last year 80 domains, 80 different NTDS from different companies."
+      },
+      {
+        "Time_Start": 603.4399999999999,
+        "Time_End": 607.3199999999999,
+        "Text": " Password is still an issue, but I think you already know that."
+      },
+      {
+        "Time_Start": 607.3199999999999,
+        "Time_End": 615.36,
+        "Text": " But high privilege accounts are less weaker than before, less weak than before."
+      },
+      {
+        "Time_Start": 615.36,
+        "Time_End": 618.4,
+        "Text": " Before we have seen more than that."
+      },
+      {
+        "Time_Start": 618.4,
+        "Time_End": 626.72,
+        "Text": " We still have LM formats in 2023, but it's mostly service accounts that haven't changed"
+      },
+      {
+        "Time_Start": 626.72,
+        "Time_End": 631.04,
+        "Text": " their password since their creation."
+      },
+      {
+        "Time_Start": 631.04,
+        "Time_End": 636.8,
+        "Text": " And a thing is interesting, it's changing your password regularly doesn't make your"
+      },
+      {
+        "Time_Start": 636.8,
+        "Time_End": 644.04,
+        "Text": " password stronger, because the user will have an extra character at the end of the previous"
+      },
+      {
+        "Time_Start": 644.04,
+        "Time_End": 646.64,
+        "Text": " password or whatever."
+      },
+      {
+        "Time_Start": 646.64,
+        "Time_End": 654.6,
+        "Text": " So this is, we have cracked almost the same amount of password that was changed before"
+      },
+      {
+        "Time_Start": 654.6,
+        "Time_End": 660.08,
+        "Text": " six months ago and after six months ago."
+      },
+      {
+        "Time_Start": 660.08,
+        "Time_End": 664.96,
+        "Text": " And a little bit of overview of your system in production today."
+      },
+      {
+        "Time_Start": 664.96,
+        "Time_End": 672.12,
+        "Text": " So this is a good graph to see Microsoft version failed, because we've never seen Windows Vista"
+      },
+      {
+        "Time_Start": 672.12,
+        "Time_End": 678.36,
+        "Text": " and Windows 8 maybe a couple of times, but Windows Vista never."
+      },
+      {
+        "Time_Start": 678.36,
+        "Time_End": 685.36,
+        "Text": " And we have still Windows XP, Windows 2003, and today, yeah, Windows 10 is the most used"
+      },
+      {
+        "Time_Start": 685.36,
+        "Time_End": 692.68,
+        "Text": " for clients, and Windows 2016 is the most used for servers."
+      },
+      {
+        "Time_Start": 692.68,
+        "Time_End": 695.7,
+        "Text": " Other categories is non-Windows system."
+      },
+      {
+        "Time_Start": 695.7,
+        "Time_End": 705.7,
+        "Text": " So Mac OS, Linux, maybe NAS storage, et cetera."
+      },
+      {
+        "Time_Start": 705.7,
+        "Time_End": 712.22,
+        "Text": " We have talked about what we could find in the NTDS, but what is not part of the NTDS,"
+      },
+      {
+        "Time_Start": 712.22,
+        "Time_End": 715.34,
+        "Text": " but very interesting in security perspective."
+      },
+      {
+        "Time_Start": 715.34,
+        "Time_End": 720.38,
+        "Text": " Event logs for forensic investigation are not part of your NTDS."
+      },
+      {
+        "Time_Start": 720.38,
+        "Time_End": 721.62,
+        "Text": " Of course for your NTDS."
+      },
+      {
+        "Time_Start": 721.62,
+        "Time_End": 729.78,
+        "Text": " If event logs were in your NTDS, it will be so big, you won't be able to read it."
+      },
+      {
+        "Time_Start": 729.78,
+        "Time_End": 737.54,
+        "Text": " That's why conduct an offline forensic with your NTDS, it's very light, because you don't"
+      },
+      {
+        "Time_Start": 737.54,
+        "Time_End": 744.7,
+        "Text": " have event logs, and event logs are more precious, because you have everything, if you have good"
+      },
+      {
+        "Time_Start": 744.7,
+        "Time_End": 748.66,
+        "Text": " logs of course, to track user action, account action."
+      },
+      {
+        "Time_Start": 749.06,
+        "Time_End": 754.26,
+        "Text": " GPO details are not part of the NTDS as well."
+      },
+      {
+        "Time_Start": 754.26,
+        "Time_End": 762.42,
+        "Text": " You have GPO reference, like the name of the GPO, the ID of the GPO, the creation of the"
+      },
+      {
+        "Time_Start": 762.42,
+        "Time_End": 771.3,
+        "Text": " GPO, but the content, the XML file, are stored in your sysvol share on your domain controller."
+      },
+      {
+        "Time_Start": 771.3,
+        "Time_End": 777.6999999999999,
+        "Text": " So you will need to go in this folder to see what exactly do a GPO."
+      },
+      {
+        "Time_Start": 777.7,
+        "Time_End": 784.1800000000001,
+        "Text": " DCS templates also are not in the NTDS, as well as Windows patching level and Windows"
+      },
+      {
+        "Time_Start": 784.1800000000001,
+        "Time_End": 787.7,
+        "Text": " system configuration."
+      },
+      {
+        "Time_Start": 787.7,
+        "Time_End": 793.86,
+        "Text": " If you want to know the last KB installed on a Windows machine, you will need to go"
+      },
+      {
+        "Time_Start": 793.86,
+        "Time_End": 799.82,
+        "Text": " after the machine directly and ask it directly."
+      },
+      {
+        "Time_Start": 799.82,
+        "Time_End": 807.9000000000001,
+        "Text": " You just know the version of the Windows, like Windows 10, 11, et cetera."
+      },
+      {
+        "Time_Start": 807.9000000000001,
+        "Time_End": 812.0600000000001,
+        "Text": " So a little bit about the format and the structure."
+      },
+      {
+        "Time_Start": 812.0600000000001,
+        "Time_End": 818.6600000000001,
+        "Text": " So as I said before, to dump the NTDS, you need NTDS util."
+      },
+      {
+        "Time_Start": 818.6600000000001,
+        "Time_End": 827.98,
+        "Text": " It dumps by default three files, if you run the command, as you can see here."
+      },
+      {
+        "Time_Start": 827.98,
+        "Time_End": 833.7,
+        "Text": " The NTDS.file, of course, the system hive, and the security hive."
+      },
+      {
+        "Time_Start": 833.7,
+        "Time_End": 836.0600000000001,
+        "Text": " System hive will be useful for us."
+      },
+      {
+        "Time_Start": 836.0600000000001,
+        "Time_End": 842.0600000000001,
+        "Text": " We will see why after."
+      },
+      {
+        "Time_Start": 842.0600000000001,
+        "Time_End": 845.1800000000001,
+        "Text": " Here another view of the NTDS tables."
+      },
+      {
+        "Time_Start": 845.1800000000001,
+        "Time_End": 847.98,
+        "Text": " You have more than 12 tables."
+      },
+      {
+        "Time_Start": 847.98,
+        "Time_End": 852.3000000000001,
+        "Text": " Most of them are useful to run the service, the Active Directory service."
+      },
+      {
+        "Time_Start": 852.3000000000001,
+        "Time_End": 858.7400000000001,
+        "Text": " And four of them are very useful for us, because they contain data, very interesting."
+      },
+      {
+        "Time_Start": 858.7400000000001,
+        "Time_End": 868.5000000000001,
+        "Text": " The MISC subject data table, sorry, it contains metadata on all other tables, especially for"
+      },
+      {
+        "Time_Start": 868.5000000000001,
+        "Time_End": 870.1800000000001,
+        "Text": " the data table."
+      },
+      {
+        "Time_Start": 870.1800000000001,
+        "Time_End": 881.1800000000001,
+        "Text": " The data table contains information on objects, so this is the huge one, and the biggest one,"
+      },
+      {
+        "Time_Start": 881.1800000000001,
+        "Time_End": 888.0600000000001,
+        "Text": " and you have all information on user, machine, groups, GPU, et cetera."
+      },
+      {
+        "Time_Start": 888.0600000000001,
+        "Time_End": 893.7,
+        "Text": " After you have the link table, useful to know the relationship between objects."
+      },
+      {
+        "Time_Start": 893.7,
+        "Time_End": 899.5000000000001,
+        "Text": " And the SD table that contains security descriptor of objects."
+      },
+      {
+        "Time_Start": 899.5000000000001,
+        "Time_End": 904.86,
+        "Text": " Useful to edit the SEL, SCE."
+      },
+      {
+        "Time_Start": 904.86,
+        "Time_End": 913.1,
+        "Text": " So the data table could be also named as the hollow table, because it's full of hole inside."
+      },
+      {
+        "Time_Start": 913.1,
+        "Time_End": 914.26,
+        "Text": " Why?"
+      },
+      {
+        "Time_Start": 914.26,
+        "Time_End": 924.0600000000001,
+        "Text": " So you could have more than 3,500 columns, but depending on the type of the object, most"
+      },
+      {
+        "Time_Start": 924.0600000000001,
+        "Time_End": 930.74,
+        "Text": " of the column will be empty."
+      },
+      {
+        "Time_Start": 930.74,
+        "Time_End": 939.9,
+        "Text": " So for instance, if you have a domain object, the domain object has different attributes"
+      },
+      {
+        "Time_Start": 939.9,
+        "Time_End": 946.26,
+        "Text": " than machine accounts or user accounts."
+      },
+      {
+        "Time_Start": 946.26,
+        "Time_End": 950.58,
+        "Text": " So it could be represented like this."
+      },
+      {
+        "Time_Start": 950.58,
+        "Time_End": 958.9,
+        "Text": " So each entry represents an object, user, computer, domain, et cetera."
+      },
+      {
+        "Time_Start": 959.06,
+        "Time_End": 966.1,
+        "Text": " And as you see, depending on the kind of entry here, we have the column empty or filled out."
+      },
+      {
+        "Time_Start": 966.1,
+        "Time_End": 967.5,
+        "Text": " It depends."
+      },
+      {
+        "Time_Start": 967.5,
+        "Time_End": 974.1,
+        "Text": " But the problem is when you read at first time the data table, you can see that the"
+      },
+      {
+        "Time_Start": 974.1,
+        "Time_End": 977.86,
+        "Text": " name of the column here, I completely abstract for you."
+      },
+      {
+        "Time_Start": 977.86,
+        "Time_End": 986.06,
+        "Text": " You don't know really what is inside, and so you can guess, maybe."
+      },
+      {
+        "Time_Start": 986.0600000000001,
+        "Time_End": 992.1800000000001,
+        "Text": " Here we can take a look at this column, and you will see Legolas, Gimli, Aragon, maybe."
+      },
+      {
+        "Time_Start": 992.1800000000001,
+        "Time_End": 994.82,
+        "Text": " This is a SAM account name, maybe."
+      },
+      {
+        "Time_Start": 994.82,
+        "Time_End": 1001.22,
+        "Text": " But when it starts to be a number, it's hard to know what's exactly inside and what kind"
+      },
+      {
+        "Time_Start": 1001.22,
+        "Time_End": 1006.94,
+        "Text": " of data is in this kind of column."
+      },
+      {
+        "Time_Start": 1006.94,
+        "Time_End": 1011.9000000000001,
+        "Text": " And just a word on the SD table, the SD table contains a security descriptor."
+      },
+      {
+        "Time_Start": 1011.9,
+        "Time_End": 1018.98,
+        "Text": " It's very small comparing to the data table, and only four columns."
+      },
+      {
+        "Time_Start": 1018.98,
+        "Time_End": 1024.1399999999999,
+        "Text": " So we will talk about at the end of the presentation."
+      },
+      {
+        "Time_Start": 1024.1399999999999,
+        "Time_End": 1036.62,
+        "Text": " So how you can parse and get the data of your NTDS."
+      },
+      {
+        "Time_Start": 1036.62,
+        "Time_End": 1040.98,
+        "Text": " As we said before, the column name is abstract."
+      },
+      {
+        "Time_Start": 1041.06,
+        "Time_End": 1048.3,
+        "Text": " So the first thing to do is to go to the MC subject, and inside the MC subject, you have"
+      },
+      {
+        "Time_Start": 1048.3,
+        "Time_End": 1051.18,
+        "Text": " all the column names in your data table."
+      },
+      {
+        "Time_Start": 1051.18,
+        "Time_End": 1058.5,
+        "Text": " And so you can grab the ID of the columns, and in the data table, you have an attribute"
+      },
+      {
+        "Time_Start": 1058.5,
+        "Time_End": 1066.5,
+        "Text": " ID columns that helps you to identify on the same line the LDAP name."
+      },
+      {
+        "Time_Start": 1066.5,
+        "Time_End": 1072.5,
+        "Text": " And the LDAP name, it's usually more familiar for you."
+      },
+      {
+        "Time_Start": 1072.5,
+        "Time_End": 1084.5,
+        "Text": " And when you know the ATTM590045 here, corresponding to the SAM account name, after you just need"
+      },
+      {
+        "Time_Start": 1084.5,
+        "Time_End": 1091.94,
+        "Text": " to go to this column and grab the SAM account name for your domain users."
+      },
+      {
+        "Time_Start": 1091.94,
+        "Time_End": 1097.18,
+        "Text": " So this process is kind of boring, and you don't want to do that each time you look at"
+      },
+      {
+        "Time_Start": 1097.18,
+        "Time_End": 1099.22,
+        "Text": " your NTDS."
+      },
+      {
+        "Time_Start": 1099.22,
+        "Time_End": 1104.54,
+        "Text": " So it's not really documented by Microsoft."
+      },
+      {
+        "Time_Start": 1104.54,
+        "Time_End": 1112.8600000000001,
+        "Text": " I can't find, like, a really good dictionary of translation from the Microsoft website,"
+      },
+      {
+        "Time_Start": 1112.8600000000001,
+        "Time_End": 1121.8200000000002,
+        "Text": " where we just released a script that outputs all the translation between the abstract attributes"
+      },
+      {
+        "Time_Start": 1121.86,
+        "Time_End": 1124.46,
+        "Text": " and the LDAP name."
+      },
+      {
+        "Time_Start": 1124.46,
+        "Time_End": 1132.78,
+        "Text": " It will be the same on all Active Directory, except depending on the version, if you have"
+      },
+      {
+        "Time_Start": 1132.78,
+        "Time_End": 1143.26,
+        "Text": " a Windows 2003 level, comparing to Windows 2016 level, Microsoft had some attributes,"
+      },
+      {
+        "Time_Start": 1143.26,
+        "Time_End": 1145.9399999999998,
+        "Text": " of course, so you will have more attributes."
+      },
+      {
+        "Time_Start": 1145.94,
+        "Time_End": 1155.6200000000001,
+        "Text": " The more recent your level is, the more attributes you have."
+      },
+      {
+        "Time_Start": 1155.6200000000001,
+        "Time_End": 1165.22,
+        "Text": " So to get the data, you have different libraries, C, like LIMP, SENT, Python, you have IMPAKET,"
+      },
+      {
+        "Time_Start": 1165.22,
+        "Time_End": 1169.54,
+        "Text": " you have DESECT, and Go also."
+      },
+      {
+        "Time_Start": 1169.54,
+        "Time_End": 1179.42,
+        "Text": " But with external library, so to get the data, you cannot use like a kind of SQL language"
+      },
+      {
+        "Time_Start": 1179.42,
+        "Time_End": 1183.74,
+        "Text": " to directly grab your data."
+      },
+      {
+        "Time_Start": 1183.74,
+        "Time_End": 1189.86,
+        "Text": " You will need, like, a file to read from the beginning of the data table to the end to"
+      },
+      {
+        "Time_Start": 1189.86,
+        "Time_End": 1192.58,
+        "Text": " find your data."
+      },
+      {
+        "Time_Start": 1192.86,
+        "Time_End": 1199.3,
+        "Text": " So here, if we want to find how many, the user that logged ten times on your domain"
+      },
+      {
+        "Time_Start": 1199.3,
+        "Time_End": 1206.4199999999998,
+        "Text": " controller, you will need to iterate all over your data table, and save the corresponding"
+      },
+      {
+        "Time_Start": 1206.4199999999998,
+        "Time_End": 1208.6999999999998,
+        "Text": " SAM account name."
+      },
+      {
+        "Time_Start": 1208.6999999999998,
+        "Time_End": 1217.6599999999999,
+        "Text": " So reading the old data table, for a small NTDS like 30 megabytes, it's kind of ten seconds,"
+      },
+      {
+        "Time_Start": 1217.66,
+        "Time_End": 1226.9,
+        "Text": " but for 15 gigabytes, it could take several hours, so you won't do that many times."
+      },
+      {
+        "Time_Start": 1226.9,
+        "Time_End": 1237.7,
+        "Text": " So you prefer maybe read at least at once, and store all the results in another database"
+      },
+      {
+        "Time_Start": 1237.7,
+        "Time_End": 1245.3400000000001,
+        "Text": " like SQL or NoSQL to request it for your audit or your forensic."
+      },
+      {
+        "Time_Start": 1245.34,
+        "Time_End": 1251.4599999999998,
+        "Text": " If you're working exclusively on Microsoft, on Windows environments, if you can use the"
+      },
+      {
+        "Time_Start": 1251.4599999999998,
+        "Time_End": 1257.02,
+        "Text": " managed TLC library, this one should be faster."
+      },
+      {
+        "Time_Start": 1257.02,
+        "Time_End": 1260.1399999999999,
+        "Text": " We haven't tried yet, but we should."
+      },
+      {
+        "Time_Start": 1260.1399999999999,
+        "Time_End": 1268.3799999999999,
+        "Text": " But this library can use internal index that Microsoft uses, and it could be really faster,"
+      },
+      {
+        "Time_Start": 1268.38,
+        "Time_End": 1279.42,
+        "Text": " and maybe you don't need to store the whole NTDS data in another kind of database."
+      },
+      {
+        "Time_Start": 1279.42,
+        "Time_End": 1289.0600000000002,
+        "Text": " This is a very basic function that reads your data table, and looking for accounts that"
+      },
+      {
+        "Time_Start": 1289.06,
+        "Time_End": 1306.5,
+        "Text": " log ten times, so you just need to specify which attributes you want to look at, and"
+      },
+      {
+        "Time_Start": 1306.5,
+        "Time_End": 1313.46,
+        "Text": " after you iterate all over the data table, and you print it out, the SAM account name"
+      },
+      {
+        "Time_Start": 1313.46,
+        "Time_End": 1317.54,
+        "Text": " and the log-on count value."
+      },
+      {
+        "Time_Start": 1317.54,
+        "Time_End": 1330.7,
+        "Text": " So here, we use the Fox IT library, which is great if you want to take a look."
+      },
+      {
+        "Time_Start": 1330.7,
+        "Time_End": 1336.1,
+        "Text": " Data in the NTDS has types, of course."
+      },
+      {
+        "Time_Start": 1336.1,
+        "Time_End": 1337.1,
+        "Text": " Different types."
+      },
+      {
+        "Time_Start": 1337.1,
+        "Time_End": 1343.34,
+        "Text": " We are not exhaustive here, but you have integer, large text, et cetera."
+      },
+      {
+        "Time_Start": 1343.34,
+        "Time_End": 1351.78,
+        "Text": " In the column names, you have a letter, and this letter indicates what kind of type is"
+      },
+      {
+        "Time_Start": 1351.78,
+        "Time_End": 1353.4599999999998,
+        "Text": " inside your column."
+      },
+      {
+        "Time_Start": 1353.4599999999998,
+        "Time_End": 1358.84,
+        "Text": " So for instance, if you have a G, it should be an integer, should be, because sometimes"
+      },
+      {
+        "Time_Start": 1358.84,
+        "Time_End": 1367.1399999999999,
+        "Text": " we have some surprise, M, large text, et cetera."
+      },
+      {
+        "Time_Start": 1367.14,
+        "Time_End": 1383.0600000000002,
+        "Text": " So just a very short list of what kind of attributes in that translation."
+      },
+      {
+        "Time_Start": 1383.0600000000002,
+        "Time_End": 1386.5400000000002,
+        "Text": " And you have also special kind of attributes."
+      },
+      {
+        "Time_Start": 1386.54,
+        "Time_End": 1400.02,
+        "Text": " So you have encrypted attributes for sensitive data, such as like LM and NT password hashes."
+      },
+      {
+        "Time_Start": 1400.02,
+        "Time_End": 1405.5,
+        "Text": " Those attributes are encrypted with the PEC."
+      },
+      {
+        "Time_Start": 1405.5,
+        "Time_End": 1415.26,
+        "Text": " The PEC, so the password encryption key, it is also encrypted with the boot key, and the"
+      },
+      {
+        "Time_Start": 1415.26,
+        "Time_End": 1419.22,
+        "Text": " boot key, you will grab it in the system hive."
+      },
+      {
+        "Time_Start": 1419.22,
+        "Time_End": 1427.66,
+        "Text": " That's why when you do like an NTDS util, it dumps the system hive, and with the system"
+      },
+      {
+        "Time_Start": 1427.66,
+        "Time_End": 1436.62,
+        "Text": " hive, you can grab the PEC, and you can decrypt the NT and the LM hash."
+      },
+      {
+        "Time_Start": 1436.62,
+        "Time_End": 1441.9,
+        "Text": " Exception also, yeah, the boot key is unique for your domain controllers, so don't mix"
+      },
+      {
+        "Time_Start": 1441.9,
+        "Time_End": 1446.26,
+        "Text": " them up with other domain controllers of your domain, it won't work."
+      },
+      {
+        "Time_Start": 1446.26,
+        "Time_End": 1457.94,
+        "Text": " And also, the LAPS legacy, so the first version of LAPS didn't require a boot key to read"
+      },
+      {
+        "Time_Start": 1457.94,
+        "Time_End": 1465.38,
+        "Text": " the password, because Microsoft stored them in clear text in the NTDS."
+      },
+      {
+        "Time_Start": 1465.38,
+        "Time_End": 1468.9,
+        "Text": " Now they released a new version last year."
+      },
+      {
+        "Time_Start": 1468.9,
+        "Time_End": 1478.6200000000001,
+        "Text": " We haven't seen in production once, only once, but it's, I think it will start to be"
+      },
+      {
+        "Time_Start": 1478.6200000000001,
+        "Time_End": 1487.02,
+        "Text": " more common, and now it's encrypted, but you can still store it unencrypted, but you can"
+      },
+      {
+        "Time_Start": 1487.02,
+        "Time_End": 1494.7,
+        "Text": " normally, it should be encrypted in the future."
+      },
+      {
+        "Time_Start": 1494.7,
+        "Time_End": 1503.3400000000001,
+        "Text": " Just a word on the description field, it's not designed to store the password, but we"
+      },
+      {
+        "Time_Start": 1503.3400000000001,
+        "Time_End": 1513.5,
+        "Text": " still see password in this field, and sometimes it's privileged account, so it was not designed"
+      },
+      {
+        "Time_Start": 1513.5,
+        "Time_End": 1519.8600000000001,
+        "Text": " to do that, to use it, to store sensitive information, and it's accessible to every"
+      },
+      {
+        "Time_Start": 1519.8600000000001,
+        "Time_End": 1524.6200000000001,
+        "Text": " user on your domain."
+      },
+      {
+        "Time_Start": 1524.6200000000001,
+        "Time_End": 1530.3000000000002,
+        "Text": " Other kind of attributes are non-replicated attributes."
+      },
+      {
+        "Time_Start": 1530.3000000000002,
+        "Time_End": 1538.74,
+        "Text": " So the attribute value are not synchronised between domain controllers, so, for instance,"
+      },
+      {
+        "Time_Start": 1538.74,
+        "Time_End": 1549.18,
+        "Text": " if we take an example with logon counts, so if the Gimli goes on the DC1 and the logon,"
+      },
+      {
+        "Time_Start": 1549.18,
+        "Time_End": 1557.18,
+        "Text": " so on the DC1, the counter will be incremented, but on the DC2 and DC3, the counter won't"
+      },
+      {
+        "Time_Start": 1557.18,
+        "Time_End": 1559.1000000000001,
+        "Text": " be incremented."
+      },
+      {
+        "Time_Start": 1559.1000000000001,
+        "Time_End": 1566.78,
+        "Text": " So if you want to know how many times Gimli logged on on your domain, you need to get"
+      },
+      {
+        "Time_Start": 1566.78,
+        "Time_End": 1576.0600000000002,
+        "Text": " the three NTDS and addition the logon count together."
+      },
+      {
+        "Time_Start": 1576.06,
+        "Time_End": 1580.86,
+        "Text": " So those kind of attributes, if you have only one copy of your NTDS, you cannot trust"
+      },
+      {
+        "Time_Start": 1580.86,
+        "Time_End": 1581.86,
+        "Text": " them."
+      },
+      {
+        "Time_Start": 1581.86,
+        "Time_End": 1590.62,
+        "Text": " Usually, Microsoft documents on his website if they are replicated or not."
+      },
+      {
+        "Time_Start": 1590.62,
+        "Time_End": 1592.98,
+        "Text": " Normally."
+      },
+      {
+        "Time_Start": 1592.98,
+        "Time_End": 1597.32,
+        "Text": " And the last kind of attributes are dynamic attributes."
+      },
+      {
+        "Time_Start": 1597.32,
+        "Time_End": 1604.6599999999999,
+        "Text": " We call it dynamic because they are not at the active directory installation."
+      },
+      {
+        "Time_Start": 1604.66,
+        "Time_End": 1613.78,
+        "Text": " They are added after by third-party software, like LAPS legacy, for instance."
+      },
+      {
+        "Time_Start": 1613.78,
+        "Time_End": 1621.46,
+        "Text": " So when you install LAPS, this solution modifies your active directory schema and adds new"
+      },
+      {
+        "Time_Start": 1621.46,
+        "Time_End": 1625.78,
+        "Text": " attributes in your active directory."
+      },
+      {
+        "Time_Start": 1625.78,
+        "Time_End": 1633.8200000000002,
+        "Text": " So to retrieve the LAPS password, for instance, first of all, you need to look at the LDAP"
+      },
+      {
+        "Time_Start": 1633.98,
+        "Time_End": 1641.1399999999999,
+        "Text": " name of LAPS password, which is MSMCS IDM password."
+      },
+      {
+        "Time_Start": 1641.1399999999999,
+        "Time_End": 1647.46,
+        "Text": " And when you have a match, it means LAPS is installed on the domain."
+      },
+      {
+        "Time_Start": 1647.46,
+        "Time_End": 1658.1399999999999,
+        "Text": " You have to look at the special ID, int ID, and then you will be able to retrieve the"
+      },
+      {
+        "Time_Start": 1658.1399999999999,
+        "Time_End": 1663.22,
+        "Text": " right column to get the LAPS password."
+      },
+      {
+        "Time_Start": 1663.22,
+        "Time_End": 1667.58,
+        "Text": " So you don't need to miss this object for this one, you just need to go."
+      },
+      {
+        "Time_Start": 1667.58,
+        "Time_End": 1675.74,
+        "Text": " But each time, on each new domain, it's different."
+      },
+      {
+        "Time_Start": 1675.74,
+        "Time_End": 1682.34,
+        "Text": " So now I will let Florian talk about the SD table and ACL, and also talk about our little"
+      },
+      {
+        "Time_Start": 1682.34,
+        "Time_End": 1683.34,
+        "Text": " scripts."
+      },
+      {
+        "Time_Start": 1683.34,
+        "Time_End": 1686.7,
+        "Text": " Thank you, Bastien."
+      },
+      {
+        "Time_Start": 1686.7,
+        "Time_End": 1693.42,
+        "Text": " So yeah, for now we were mostly focusing on the data table and what kind of interesting"
+      },
+      {
+        "Time_Start": 1693.42,
+        "Time_End": 1700.3,
+        "Text": " findings we have when we look at the configuration of users, machine, system, and so on."
+      },
+      {
+        "Time_Start": 1700.3,
+        "Time_End": 1706.76,
+        "Text": " But the ACL topic is very trendy and we wanted to add that to our tooling."
+      },
+      {
+        "Time_Start": 1706.76,
+        "Time_End": 1711.8600000000001,
+        "Text": " So first we started by looking at what was already done in the past."
+      },
+      {
+        "Time_Start": 1711.8600000000001,
+        "Time_End": 1719.7,
+        "Text": " So mostly these two projects made by also French people, so AAD Contropas and BTA."
+      },
+      {
+        "Time_Start": 1719.7,
+        "Time_End": 1726.1000000000001,
+        "Text": " They are not maintained anymore, but were a great start for us to understand how ACL"
+      },
+      {
+        "Time_Start": 1726.1000000000001,
+        "Time_End": 1727.1000000000001,
+        "Text": " works."
+      },
+      {
+        "Time_Start": 1727.1000000000001,
+        "Time_End": 1732.14,
+        "Text": " So that was there and very helpful for us."
+      },
+      {
+        "Time_Start": 1732.14,
+        "Time_End": 1739.3000000000002,
+        "Text": " And also, of course, Sean mentioned it this morning, and ASAP the sleeve, this white paper"
+      },
+      {
+        "Time_Start": 1739.3,
+        "Time_End": 1747.62,
+        "Text": " was really great to have a starting point in understanding how ACL works in an active"
+      },
+      {
+        "Time_Start": 1747.62,
+        "Time_End": 1751.3,
+        "Text": " directory, so thank you to them."
+      },
+      {
+        "Time_Start": 1751.3,
+        "Time_End": 1758.62,
+        "Text": " So what was our plan to tackle the SD table, how to parse it, and how to identify potentially"
+      },
+      {
+        "Time_Start": 1758.62,
+        "Time_End": 1762.82,
+        "Text": " vulnerable ACLs through the analysis of the NTDS?"
+      },
+      {
+        "Time_Start": 1762.82,
+        "Time_End": 1767.26,
+        "Text": " So our goal was to make a Python script to do that, because in our company we mostly"
+      },
+      {
+        "Time_Start": 1767.26,
+        "Time_End": 1775.34,
+        "Text": " use Python and it's easy to code in Python, and we don't want to have a really big infrastructure"
+      },
+      {
+        "Time_Start": 1775.34,
+        "Time_End": 1782.74,
+        "Text": " to do that, so we just want to store the information in CSV files, from now at least."
+      },
+      {
+        "Time_Start": 1782.74,
+        "Time_End": 1789.1,
+        "Text": " So we saw that BTA was actually made in Python as well, so for us we were very lucky."
+      },
+      {
+        "Time_Start": 1789.1,
+        "Time_End": 1795.3,
+        "Text": " It's not maintained anymore, but some pieces of code we think can be reused for us."
+      },
+      {
+        "Time_Start": 1795.3,
+        "Time_End": 1799.78,
+        "Text": " So we will look at that a bit later."
+      },
+      {
+        "Time_Start": 1799.78,
+        "Time_End": 1805.94,
+        "Text": " Also even though mPacket is really useful to parse the NTDS and at least some part of"
+      },
+      {
+        "Time_Start": 1805.94,
+        "Time_End": 1813.62,
+        "Text": " it, we saw that the DSEC library from Fox IT is actually very much efficient than mPacket"
+      },
+      {
+        "Time_Start": 1813.62,
+        "Time_End": 1820.8999999999999,
+        "Text": " to do so, and it's really easy to use, we will show you that also later."
+      },
+      {
+        "Time_Start": 1821.1000000000001,
+        "Time_End": 1829.14,
+        "Text": " For testing purposes we used LOAD, which is an Active Directory environment that can deploy"
+      },
+      {
+        "Time_Start": 1829.14,
+        "Time_End": 1838.0600000000002,
+        "Text": " easily on AWS, so if you wanted to play with permissions, set new permissions, perform"
+      },
+      {
+        "Time_Start": 1838.0600000000002,
+        "Time_End": 1847.0600000000002,
+        "Text": " an extract of the NTDS and see what it does on the data, it was convenient for us."
+      },
+      {
+        "Time_Start": 1847.06,
+        "Time_End": 1854.1399999999999,
+        "Text": " For the future, we want to have the same terminology than Bloodhound when it comes"
+      },
+      {
+        "Time_Start": 1854.1399999999999,
+        "Time_End": 1860.4199999999998,
+        "Text": " to the AC edges that we identify, so for example the white owner, white account restriction"
+      },
+      {
+        "Time_Start": 1860.4199999999998,
+        "Time_End": 1865.26,
+        "Text": " and so on."
+      },
+      {
+        "Time_Start": 1865.26,
+        "Time_End": 1871.22,
+        "Text": " So how do we find the ACL for an object in the NTDS?"
+      },
+      {
+        "Time_Start": 1871.22,
+        "Time_End": 1876.22,
+        "Text": " So let's take an example, so first we look at the data table which contains information"
+      },
+      {
+        "Time_Start": 1876.38,
+        "Time_End": 1883.98,
+        "Text": " for every object in the Active Directory, and let's pick a specific object here, Aragon."
+      },
+      {
+        "Time_Start": 1883.98,
+        "Time_End": 1892.98,
+        "Text": " So we see that its NT security descriptor is 296, and that is really important for us"
+      },
+      {
+        "Time_Start": 1892.98,
+        "Time_End": 1899.82,
+        "Text": " because we want to cross-reference that with the SDID value in the SD table, which contains"
+      },
+      {
+        "Time_Start": 1899.82,
+        "Time_End": 1906.9399999999998,
+        "Text": " the data related to the security descriptors and so the permissions on the objects."
+      },
+      {
+        "Time_Start": 1906.9399999999998,
+        "Time_End": 1917.54,
+        "Text": " So in the SD table we look for the SDID value that matches 296 and we grab the SD value"
+      },
+      {
+        "Time_Start": 1917.54,
+        "Time_End": 1923.78,
+        "Text": " that contains the actual permissions on the object."
+      },
+      {
+        "Time_Start": 1923.78,
+        "Time_End": 1926.66,
+        "Text": " So in practice, how does it look?"
+      },
+      {
+        "Time_Start": 1926.66,
+        "Time_End": 1932.82,
+        "Text": " So with Dissect, it's just a few lines of code to parse the SD table and we choose these"
+      },
+      {
+        "Time_Start": 1932.82,
+        "Time_End": 1940.74,
+        "Text": " two values, so the SDID and the raw value of the SD value, and it looks a bit unfriendly"
+      },
+      {
+        "Time_Start": 1940.74,
+        "Time_End": 1950.66,
+        "Text": " at first, but fortunately there is some documentation about the structure of a security descriptor"
+      },
+      {
+        "Time_Start": 1950.66,
+        "Time_End": 1958.1000000000001,
+        "Text": " by Microsoft, and so the most interesting bits in the structure for us and our topic"
+      },
+      {
+        "Time_Start": 1958.1000000000001,
+        "Time_End": 1965.5,
+        "Text": " are the owner and the DACL elements."
+      },
+      {
+        "Time_Start": 1965.5,
+        "Time_End": 1971.74,
+        "Text": " So the owner is of course the object's owner of the object we are analysing, and the DACL"
+      },
+      {
+        "Time_Start": 1971.74,
+        "Time_End": 1979.66,
+        "Text": " or Discussion Area Access Control List contains actual permissions that are set on the object."
+      },
+      {
+        "Time_Start": 1979.66,
+        "Time_End": 1982.74,
+        "Text": " Let's take a deep look in the DACL."
+      },
+      {
+        "Time_Start": 1982.74,
+        "Time_End": 1989.98,
+        "Text": " So you can see it as an array of access control entries, and each access control entry is"
+      },
+      {
+        "Time_Start": 1989.98,
+        "Time_End": 1990.98,
+        "Text": " like that."
+      },
+      {
+        "Time_Start": 1990.98,
+        "Time_End": 1997.5800000000002,
+        "Text": " So there is a size, a type, for us the most interesting types are access allowed types,"
+      },
+      {
+        "Time_Start": 1997.5800000000002,
+        "Time_End": 2001.6200000000001,
+        "Text": " but you can find access denied types, because sometimes you want to deny a permission to"
+      },
+      {
+        "Time_Start": 2001.6200000000001,
+        "Time_End": 2008.5800000000002,
+        "Text": " an object, but if you want to look for suspicious ACL that could be used in a pen test or so"
+      },
+      {
+        "Time_Start": 2008.5800000000002,
+        "Time_End": 2011.9800000000002,
+        "Text": " on, we just look at allowed."
+      },
+      {
+        "Time_Start": 2011.9800000000002,
+        "Time_End": 2017.9,
+        "Text": " There is an access mask which contains the actual permissions that are set on the object,"
+      },
+      {
+        "Time_Start": 2017.9,
+        "Time_End": 2020.7600000000002,
+        "Text": " and there are some object flags."
+      },
+      {
+        "Time_Start": 2020.7600000000002,
+        "Time_End": 2028.94,
+        "Text": " And finally the SID of the object that has a permission on the object that we are analysing."
+      },
+      {
+        "Time_Start": 2028.94,
+        "Time_End": 2031.2800000000002,
+        "Text": " So let's take a look at the object types."
+      },
+      {
+        "Time_Start": 2031.28,
+        "Time_End": 2038.32,
+        "Text": " So basically there are GUIDs, and they are present only where some specific ACLs are"
+      },
+      {
+        "Time_Start": 2038.32,
+        "Time_End": 2039.32,
+        "Text": " set."
+      },
+      {
+        "Time_Start": 2039.32,
+        "Time_End": 2044.48,
+        "Text": " So for example, read property, write property, or control access."
+      },
+      {
+        "Time_Start": 2044.48,
+        "Time_End": 2046.58,
+        "Text": " Let's take two specific examples."
+      },
+      {
+        "Time_Start": 2046.58,
+        "Time_End": 2055.72,
+        "Text": " So if in my ACL I have the write property access mask with this object type, which translates"
+      },
+      {
+        "Time_Start": 2055.7200000000003,
+        "Time_End": 2062.4,
+        "Text": " to the MSDS credentialing attributes that you can find in the documentation of Microsoft,"
+      },
+      {
+        "Time_Start": 2062.4,
+        "Time_End": 2067.8,
+        "Text": " you can conclude that you actually have a NAT key credentialing permission on the object."
+      },
+      {
+        "Time_Start": 2067.8,
+        "Time_End": 2068.8,
+        "Text": " And what does that mean?"
+      },
+      {
+        "Time_Start": 2068.8,
+        "Time_End": 2073.0000000000005,
+        "Text": " It means that you can perform a shadow credentialing tag and take control of the object if you"
+      },
+      {
+        "Time_Start": 2073.0000000000005,
+        "Time_End": 2079.1200000000003,
+        "Text": " have a PKI infrastructure in the environment that you are auditing."
+      },
+      {
+        "Time_Start": 2079.12,
+        "Time_End": 2085.52,
+        "Text": " One example with the control access mask, and this object type, which translates to"
+      },
+      {
+        "Time_Start": 2085.52,
+        "Time_End": 2088.94,
+        "Text": " the user force change password extended write."
+      },
+      {
+        "Time_Start": 2088.94,
+        "Time_End": 2094.24,
+        "Text": " It means that you can force change password of the object that you are analysing."
+      },
+      {
+        "Time_Start": 2094.24,
+        "Time_End": 2099.92,
+        "Text": " So by doing that and iterating over each ACL, you can conclude what permissions an object"
+      },
+      {
+        "Time_Start": 2099.92,
+        "Time_End": 2103.7599999999998,
+        "Text": " has over another object."
+      },
+      {
+        "Time_Start": 2103.76,
+        "Time_End": 2109.4,
+        "Text": " And there are some specific cases for the GUID of the object type and iterated object"
+      },
+      {
+        "Time_Start": 2109.4,
+        "Time_End": 2110.4,
+        "Text": " types."
+      },
+      {
+        "Time_Start": 2110.4,
+        "Time_End": 2116.76,
+        "Text": " So the zero GUID, or even when there is no GUID, which means that you actually have all"
+      },
+      {
+        "Time_Start": 2116.76,
+        "Time_End": 2124.76,
+        "Text": " the permissions, you have the rights on all the properties or extended rights on the object."
+      },
+      {
+        "Time_Start": 2124.76,
+        "Time_End": 2133.2000000000003,
+        "Text": " So for example, write property with a zero GUID, you can write any property on the object."
+      },
+      {
+        "Time_Start": 2133.2,
+        "Time_End": 2139.04,
+        "Text": " So in practice, to pass the ID value, the BTA project was very helpful for us because"
+      },
+      {
+        "Time_Start": 2139.04,
+        "Time_End": 2145.48,
+        "Text": " we could take its code and readapt it a little and make it work."
+      },
+      {
+        "Time_Start": 2145.48,
+        "Time_End": 2152.52,
+        "Text": " So it helped us translate the binary data to a more friendly readable JSON structure."
+      },
+      {
+        "Time_Start": 2152.52,
+        "Time_End": 2159.68,
+        "Text": " And in this JSON structure, you can actually find the table of the ACL structures I showed"
+      },
+      {
+        "Time_Start": 2159.68,
+        "Time_End": 2163.74,
+        "Text": " you earlier."
+      },
+      {
+        "Time_Start": 2163.74,
+        "Time_End": 2166.68,
+        "Text": " So now let's take a practical example."
+      },
+      {
+        "Time_Start": 2166.68,
+        "Time_End": 2174.44,
+        "Text": " Let's say I am an administrator and I want to configure the modify owner right on the"
+      },
+      {
+        "Time_Start": 2174.44,
+        "Time_End": 2177.3599999999997,
+        "Text": " Aragon object for Gimli."
+      },
+      {
+        "Time_Start": 2177.3599999999997,
+        "Time_End": 2186.96,
+        "Text": " So I will use ADSI or any PowerShell scripting to set up this permission for Gimli on Aragon"
+      },
+      {
+        "Time_Start": 2187.08,
+        "Time_End": 2190.68,
+        "Text": " and you can see on the right screenshot that it is actually set."
+      },
+      {
+        "Time_Start": 2190.68,
+        "Time_End": 2196.88,
+        "Text": " So Gimli can modify the owner of the Aragon object."
+      },
+      {
+        "Time_Start": 2196.88,
+        "Time_End": 2201.2,
+        "Text": " In the Bloodown world, it would be like that."
+      },
+      {
+        "Time_Start": 2201.2,
+        "Time_End": 2207.4,
+        "Text": " You would see this edge after running SharePoint and importing it in Bloodown."
+      },
+      {
+        "Time_Start": 2207.4,
+        "Time_End": 2214.52,
+        "Text": " So you have a white owner edge from Gimli to Aragon."
+      },
+      {
+        "Time_Start": 2214.52,
+        "Time_End": 2221.36,
+        "Text": " So let's do what we did earlier to find these privileges in this table."
+      },
+      {
+        "Time_Start": 2221.36,
+        "Time_End": 2231.4,
+        "Text": " So first we find the anti-security descriptor of Aragon and then we look in the post as"
+      },
+      {
+        "Time_Start": 2231.4,
+        "Time_End": 2241.72,
+        "Text": " the table for the DSL of the object that matches the SDID 296."
+      },
+      {
+        "Time_Start": 2241.7200000000003,
+        "Time_End": 2247.88,
+        "Text": " So it looks a bit like that which is, you will agree, much more readable than before."
+      },
+      {
+        "Time_Start": 2247.88,
+        "Time_End": 2255.92,
+        "Text": " And now we have this big array that contains all the ACL and so we iterate over it to analyze"
+      },
+      {
+        "Time_Start": 2255.92,
+        "Time_End": 2260.6400000000003,
+        "Text": " all the permissions and we finally end up on this ACL."
+      },
+      {
+        "Time_Start": 2260.6400000000003,
+        "Time_End": 2266.6000000000004,
+        "Text": " So we can see that there is an access type, access allowed, a white owner flag set to"
+      },
+      {
+        "Time_Start": 2266.6000000000004,
+        "Time_End": 2270.4,
+        "Text": " true and an SID."
+      },
+      {
+        "Time_Start": 2270.4,
+        "Time_End": 2278.64,
+        "Text": " And this SID, if you look in the data table, we can actually see that it is actually Gimli."
+      },
+      {
+        "Time_Start": 2278.64,
+        "Time_End": 2286.4,
+        "Text": " So what this structure means, it means that Gimli has the white owner right on Aragon"
+      },
+      {
+        "Time_Start": 2286.4,
+        "Time_End": 2294.0,
+        "Text": " which the anti-security descriptor is 296."
+      },
+      {
+        "Time_Start": 2294.0,
+        "Time_End": 2301.76,
+        "Text": " So we made a script that automates this process and dumps all the suspicious ACL into a CSV"
+      },
+      {
+        "Time_Start": 2301.76,
+        "Time_End": 2307.84,
+        "Text": " file and so if we were to take the example of Bloodhound that we showed before, the white"
+      },
+      {
+        "Time_Start": 2307.84,
+        "Time_End": 2313.96,
+        "Text": " owner edge is represented here in our script so you have Gimli that have indeed white owner"
+      },
+      {
+        "Time_Start": 2313.96,
+        "Time_End": 2320.64,
+        "Text": " rights on Aragon."
+      },
+      {
+        "Time_Start": 2320.64,
+        "Time_End": 2326.92,
+        "Text": " So final words, we released an open source script in Python that does automate all of"
+      },
+      {
+        "Time_Start": 2326.92,
+        "Time_End": 2333.3599999999997,
+        "Text": " this or the parsing and dumping of data table and its table in CSV files so it's really"
+      },
+      {
+        "Time_Start": 2333.3599999999997,
+        "Time_End": 2340.3199999999997,
+        "Text": " easy to use, you just have to provide it with the NTDS and the system hive and it will do"
+      },
+      {
+        "Time_Start": 2340.3199999999997,
+        "Time_End": 2341.72,
+        "Text": " the work for you."
+      },
+      {
+        "Time_Start": 2341.72,
+        "Time_End": 2348.72,
+        "Text": " So you will find all the information on the GitHub."
+      },
+      {
+        "Time_Start": 2348.7200000000003,
+        "Time_End": 2356.88,
+        "Text": " It looks like this, so we put some calculation of execution time for each function, usually"
+      },
+      {
+        "Time_Start": 2356.88,
+        "Time_End": 2365.0400000000004,
+        "Text": " the bigger the NTDS the longer it will take especially for the parsing ACL part and the"
+      },
+      {
+        "Time_Start": 2365.0400000000004,
+        "Time_End": 2374.6000000000004,
+        "Text": " tool dumps the data in six different reports matching domain data, group data, user data,"
+      },
+      {
+        "Time_Start": 2374.6,
+        "Time_End": 2380.96,
+        "Text": " suspicious ACL, trust data."
+      },
+      {
+        "Time_Start": 2380.96,
+        "Time_End": 2386.08,
+        "Text": " We still have some work to do on the script, there are some bugs that are somehow related"
+      },
+      {
+        "Time_Start": 2386.08,
+        "Time_End": 2392.0,
+        "Text": " to the libraries that we use to parse the NTDS, so the sect and there are open issue"
+      },
+      {
+        "Time_Start": 2392.0,
+        "Time_End": 2399.2,
+        "Text": " on the project but it will not be treated in the coming year I think."
+      },
+      {
+        "Time_Start": 2399.2000000000003,
+        "Time_End": 2410.28,
+        "Text": " We have also some way of improvement regarding the new labs attributes that are not incorporated"
+      },
+      {
+        "Time_Start": 2410.28,
+        "Time_End": 2418.9600000000005,
+        "Text": " at the moment and we haven't made the mapping for the generic call, generic write permission"
+      },
+      {
+        "Time_Start": 2418.9600000000005,
+        "Time_End": 2427.2400000000002,
+        "Text": " on that, just a matter of deciding what sum of writes the objects have and do that, so"
+      },
+      {
+        "Time_Start": 2427.2400000000002,
+        "Time_End": 2430.44,
+        "Text": " it will be done in the future."
+      },
+      {
+        "Time_Start": 2430.44,
+        "Time_End": 2437.44,
+        "Text": " Also things that we want to do to improve the tool are maybe to decry everything and"
+      },
+      {
+        "Time_Start": 2437.44,
+        "Time_End": 2445.96,
+        "Text": " have something that is really ready to use and everywhere, maybe use a proper DB to store"
+      },
+      {
+        "Time_Start": 2445.96,
+        "Time_End": 2451.48,
+        "Text": " the object because actually at the moment we are just using CSV files and doing all"
+      },
+      {
+        "Time_Start": 2451.48,
+        "Time_End": 2459.44,
+        "Text": " the parsing in Python without actual storage of the data."
+      },
+      {
+        "Time_Start": 2459.44,
+        "Time_End": 2466.68,
+        "Text": " We are thinking of doing some interactions with Bloodhound, for example being able to"
+      },
+      {
+        "Time_Start": 2466.68,
+        "Time_End": 2472.4,
+        "Text": " translate our data into Bloodhound compatible data so that it will be ingested in the tool"
+      },
+      {
+        "Time_Start": 2472.4,
+        "Time_End": 2480.12,
+        "Text": " and it draws the beautiful graphs so we could maybe perform the Bloodhound audit directly"
+      },
+      {
+        "Time_Start": 2480.12,
+        "Time_End": 2487.52,
+        "Text": " from having the NTDS which would be really cool and maybe enrich the data that is in"
+      },
+      {
+        "Time_Start": 2487.52,
+        "Time_End": 2494.04,
+        "Text": " the Neo4j database by actually pointing out which user will use the same passwords that"
+      },
+      {
+        "Time_Start": 2494.04,
+        "Time_End": 2500.64,
+        "Text": " would allow us to identify more attack paths in Bloodhound."
+      },
+      {
+        "Time_Start": 2500.64,
+        "Time_End": 2509.44,
+        "Text": " Also we think that we have some work to do on the ACL for some containers or GPO so that"
+      },
+      {
+        "Time_Start": 2509.44,
+        "Time_End": 2515.48,
+        "Text": " will be also something for the future and maybe collecting even more interesting attributes,"
+      },
+      {
+        "Time_Start": 2515.48,
+        "Time_End": 2521.6,
+        "Text": " so Bastien talked about dynamic attributes like LAPS but other tools from vendors can"
+      },
+      {
+        "Time_Start": 2521.6,
+        "Time_End": 2527.6,
+        "Text": " also modify the schema of the Active Directory, so we saw for example in Pentest that some"
+      },
+      {
+        "Time_Start": 2527.6,
+        "Time_End": 2534.28,
+        "Text": " tools actually had an attribute that is readable by all users and that contains the MD5 of"
+      },
+      {
+        "Time_Start": 2534.28,
+        "Time_End": 2540.76,
+        "Text": " the password of the user, so that would be interesting to recover and yeah, if you have"
+      },
+      {
+        "Time_Start": 2540.76,
+        "Time_End": 2548.0400000000004,
+        "Text": " suggestions do not hesitate to put us on GitHub, we would be happy to treat it and also if"
+      },
+      {
+        "Time_Start": 2548.0400000000004,
+        "Time_End": 2552.84,
+        "Text": " you have put requests there, they are welcome."
+      },
+      {
+        "Time_Start": 2552.84,
+        "Time_End": 2562.0400000000004,
+        "Text": " So yeah, we're good."
+      },
+      {
+        "Time_Start": 2562.0400000000004,
+        "Time_End": 2563.36,
+        "Text": " Thanks guys."
+      },
+      {
+        "Time_Start": 2563.36,
+        "Time_End": 2564.36,
+        "Text": " Any questions?"
+      },
+      {
+        "Time_Start": 2564.36,
+        "Time_End": 2565.36,
+        "Text": " All are good."
+      },
+      {
+        "Time_Start": 2565.36,
+        "Time_End": 2566.36,
+        "Text": " Thanks again."
+      },
+      {
+        "Time_Start": 2566.36,
+        "Time_End": 2567.36,
+        "Text": " Ah, where's one?"
+      },
+      {
+        "Time_Start": 2567.36,
+        "Time_End": 2568.36,
+        "Text": " Sorry."
+      },
+      {
+        "Time_Start": 2568.36,
+        "Time_End": 2581.84,
+        "Text": " Just I have one question, regarding the tool set that you are going to provide, do you"
+      },
+      {
+        "Time_Start": 2581.84,
+        "Time_End": 2588.36,
+        "Text": " have like any roadmap on what you want to still continue to push and contribute to the"
+      },
+      {
+        "Time_Start": 2588.36,
+        "Time_End": 2594.76,
+        "Text": " community on the script, like what is the next step for your parts and today's script?"
+      },
+      {
+        "Time_Start": 2594.76,
+        "Time_End": 2602.96,
+        "Text": " I think adding new attributes, extra attributes, just like we have talked just before and also"
+      },
+      {
+        "Time_Start": 2602.96,
+        "Time_End": 2614.4,
+        "Text": " I think put everything in the MongoDB database that it could be interesting to perform most"
+      },
+      {
+        "Time_Start": 2615.02,
+        "Time_End": 2622.44,
+        "Text": " suffocated requests for audits after."
+      },
+      {
+        "Time_Start": 2622.44,
+        "Time_End": 2623.44,
+        "Text": " Any other questions?"
+      },
+      {
+        "Time_Start": 2623.44,
+        "Time_End": 2624.44,
+        "Text": " Okay, thanks again."
+      },
+      {
+        "Time_Start": 2624.44,
+        "Time_End": 2624.94,
+        "Text": " Thank you."
+      },
+      {
+        "Time_Start": 2644.4,
+        "Time_End": 2646.46,
+        "Text": " you"
+      }
+    ]
+  }
+}

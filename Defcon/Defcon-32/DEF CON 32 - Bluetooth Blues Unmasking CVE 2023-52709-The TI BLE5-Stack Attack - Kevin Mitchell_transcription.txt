@@ -1,0 +1,275 @@
+{
+  "webpage_url": "https://www.youtube.com/watch?v=mrb_3z5OP2M",
+  "title": "DEF CON 32 - Bluetooth Blues: Unmasking CVE 2023-52709-The TI BLE5-Stack Attack - Kevin Mitchell",
+  "description": "In this talk, I will detail my discovery and analysis of CVE 2023-52709, a vulnerability in the TI Bluetooth stack. This flaw allows the stack to fail in generating a resolvable Random Private Address (RPA), which can lead to a Denial of Service (DoS) for already bonded peer devices. The discussion will cover the technical aspects of the vulnerability, the implications for automotive security, and potential mitigation strategies.",
+  "channel_url": "https://www.youtube.com/channel/UC6Om9kAkl32dWlDSNlDS9Iw",
+  "duration": 1590,
+  "channel": "DEFCONConference",
+  "uploader": "DEFCONConference",
+  "upload_date": "20241016"
+}
+
+0.00s - 6.96s | This text was transcribed using whisper model: large-v2
+
+ Okay. Thank you all for joining. My name is Kevin Mitchell. Today I want to talk to you
+6.96s - 14.20s |  all about a vulnerability that I discovered while testing a phone as key system. The official
+14.20s - 22.80s |  vulnerability title is CVE-2023-52709. The name of this talk is Bluetooth Blues Unmasking
+22.80s - 38.43s |  CVE-2023-52709, the TI-BLE5 stack attack. Okay. So here's the agenda. First I'm going
+38.43s - 44.87s |  to do a brief introduction, go into a little bit of a speaker bio, look at the impact of
+44.87s - 49.27s |  denial of service attacks on keyless entry systems, and then we're going to jump into
+49.27s - 55.43s |  the origin of the vulnerability itself, the timeline, the testing setup, the testing results,
+55.43s - 59.59s |  the outcome, the consequences, and then I want to talk to you about the vulnerability
+59.59s - 65.59s |  disclosure process with Texas Instruments and Bosch, and then we're going to jump into
+65.59s - 71.23s |  the denial of service attack details, looking at the attack mechanisms, also looking at
+71.23s - 76.25s |  some Wireshark analysis, and then I'm going to jump into the root cause analysis, give
+76.25s - 82.95s |  you some context behind the root cause analysis, some background, and then a detailed explanation.
+82.95s - 88.15s |  Then we're going to jump into the affected devices, the initial assessment of the affected
+88.15s - 96.95s |  devices, the updated list. After a couple of months of looking at this vulnerability,
+96.95s - 101.31s |  we found that it was more and more devices that were impacted by it. Then we're going
+101.31s - 107.19s |  to look at some of the real world impacts, potentially the supplier pre-production cost
+107.19s - 111.79s |  of the vulnerability, just looking at it from how much it would cost like Texas Instruments
+111.79s - 117.95s |  before these devices actually go into vehicles, and then just to give you some context, look
+117.95s - 123.23s |  at like some NISTA recall numbers as far as like how many recalls are typically done by
+123.23s - 130.45s |  NISTA on a year-to-year basis, and then going to the mitigation strategy, how Texas Instruments
+130.45s - 137.03s |  put out like an SDK to mitigate this issue, and then the conclusion, outcome, consequences,
+137.03s - 140.59s |  and then we're going to do a question and answers, and then you all can connect with
+140.59s - 147.19s |  me if you like. So a little bit about myself. My name is Kevin Mitchell. I've been doing
+147.19s - 152.07s |  IT since about 2008 once I joined the Army as a human resources information management
+152.07s - 160.23s |  system specialist. Then I worked for Hewlett-Packard for a little bit. Then I went to FCA where
+160.23s - 166.67s |  I was hired as a certified ethical hacker on the Uconnect team after the infamous Jeep
+166.67s - 171.15s |  attack. I was like the only cybersecurity professional on the Uconnect team out of like
+171.15s - 178.71s |  a team of 30 QREs. I was like the only one specializing in automotive cybersecurity then,
+178.71s - 182.95s |  and then I went on to work for Mercedes-Benz Financial Services where I was doing some
+182.95s - 188.97s |  penetration testing, vulnerability management, as well as penetration testing management.
+188.97s - 193.47s |  Then I got into like some web application penetration testing, and then now to my current
+193.47s - 197.91s |  job right now where I am a senior automotive security tester where I work for a company
+197.91s - 205.51s |  called ETAS, and ETAS's primary goal is to enhance tomorrow's automotive software, and
+205.51s - 209.05s |  so like the way that I contribute to that goal is just by being an automotive security
+209.05s - 217.55s |  tester. I hack cars. And so I want to give you a quote by a famous hacker. The advance
+217.55s - 221.35s |  of technology is based on making it fit in so that you really don't even notice it, so
+221.35s - 229.11s |  it's a part of everyday life by Bill Gates. And so if you look at technology, it's really
+229.11s - 233.11s |  baked into every aspect of our life. Like from the time that you wake up, you're probably
+233.11s - 238.71s |  using technology to make coffee to your daily commutes, and that's really where I want to
+238.71s - 243.43s |  focus on because I'm an automotive security tester, so I'm looking at technology when
+243.43s - 251.35s |  it comes to the automotive industry. And so I'm not here to pick on any one OEM, but
+251.35s - 256.23s |  I just did a random Google search, like how many vehicles does GM produce in a year? And
+256.23s - 264.75s |  so it says in the year 2023, GM sold about 6.2 million vehicles, right? So my next point
+264.75s - 270.07s |  is what is the average cost of an automotive recall? And so that average cost of an automotive
+270.07s - 278.15s |  recall is about $500. And so if you're looking at 6.2 million vehicles times 500, you really
+278.15s - 282.39s |  get to see, like, the impact. And that might not be an accurate number, but we're just,
+282.39s - 287.63s |  you know, providing these numbers for context and seeing, like, how much, you know, a recall
+287.63s - 294.63s |  could actually affect your everyday life. And so it leads me to my next quote. The problem
+294.63s - 300.39s |  with technology is when it doesn't work, you're SOL. That's from a clerk at a corner
+300.39s - 308.87s |  store after a failed tap to pay. So now I'm going to jump into the origin of the CVE itself.
+308.87s - 314.39s |  Okay, so if you look at these updates, I didn't provide exact dates for them. I just kind
+314.39s - 319.59s |  of provided the months. But if you're tracking, we'll just say each update was a different
+319.59s - 325.55s |  day. So the first update, Texas Instruments acknowledges the vulnerability disclosure
+325.55s - 332.39s |  that we provided them on the phone as key systems in the BLE-5 stack. The next update
+332.39s - 340.03s |  the next day, the Texas Instruments engineers were unable to reproduce the issue based on
+340.03s - 347.77s |  the report that we sent them. Then I replied with instructions on how to actually reproduce
+347.81s - 353.45s |  the issue. The next day, they came back and said, we cannot reproduce this issue. And
+353.45s - 358.85s |  so after that, I doubled down and just reworded my previous email in telling them how to reproduce
+358.85s - 363.53s |  the issue. And then, you know, I was working with Bosch. So a couple of Bosch engineers
+363.53s - 371.81s |  suggested that I test the TI launch pad, which is just like, yeah, it's essentially just
+371.81s - 377.59s |  like a microcontroller that's used for development. And they were like, you should pretty much
+377.59s - 381.91s |  test the launch pad to see if you can get the launch pad to fail in the same way that
+381.91s - 387.45s |  you got the phone as key systems to fail. And so the next update, TI engineers were
+387.45s - 391.81s |  asking me clarifying questions and tripling down based on the previous communications
+391.81s - 395.19s |  that they actually couldn't just reproduce the issue. So then I decided to schedule a
+395.19s - 401.15s |  meeting with the stakeholders. I demoed the issue, and I was able to reproduce the issue
+401.15s - 407.71s |  and show them the actual testing method on how I was actually able to do that. And this
+407.71s - 411.23s |  is happening. You know, this is going on the entire month of August and then the entire
+411.23s - 417.83s |  month of September. And so the Bosch engineers that I actually worked with, they were able
+417.83s - 422.87s |  to reproduce the same issue that we had initially sent them, that we had initially sent Texas
+422.87s - 427.51s |  Instruments. And so the reason why it was important that Bosch engineers actually, you
+427.51s - 432.75s |  know, helped me verify that this was actually an issue, because if I'm telling them they
+432.75s - 437.11s |  have a vulnerability and I'm the only one who can demo the vulnerability, is it really
+437.11s - 442.51s |  a vulnerability? Or if it's not really reproducible by anybody besides me, is it even something
+442.51s - 448.43s |  that can be verified? Where's the veracity in that? So then we actually had the Bosch
+448.43s - 453.79s |  engineers come into the ETAS office, and the Bosch engineers were also able to reproduce
+453.79s - 458.31s |  the issue on the Phonus key systems. And before then, I was able to reproduce the issue
+458.31s - 463.59s |  on the launch pad, like they suggested. And so we now have, I was able to reproduce the
+463.59s - 468.35s |  issue on the Phonus key systems and the launch pad, and Bosch engineers were able to do the
+468.35s - 472.59s |  exact same thing. And so at this point, I think it's a pretty good time to report it
+472.59s - 478.07s |  to Bosch PSIRT. And the reason why I reported it to Bosch PSIRT is because they're a CNA.
+478.07s - 485.23s |  They have the ability to, they have the ability to create CVEs. And so, you know, I wanted
+485.23s - 490.87s |  to get this out there as soon as possible. So then Texas Instruments stakeholders respond
+490.87s - 497.39s |  to Bosch really, you know, putting forth that CVE and contacting them. And they said that
+497.39s - 504.03s |  they needed, you know, time to review the issue and try to reproduce again. So the next
+504.03s - 511.39s |  update, you know, this happened, like I said, August, September, November. Yeah. August,
+511.39s - 517.91s |  September, October, November. And by the time we get to November, the TI engineers are like
+517.91s - 524.11s |  quadrupling down and they're pretty much saying, we're going to stop testing this issue until
+524.11s - 527.75s |  you can show us exactly how to do this. But at this time, I had already shown them how
+527.75s - 535.15s |  to do this like three or four times. So internally, TI is actually escalating this issue. And
+535.15s - 541.55s |  then Bosch, some Bosch engineers pretty much detail the differences in Texas Instruments
+541.55s - 549.21s |  testing setup and my testing setup. A few moments later, Texas Instruments engineers
+549.21s - 558.09s |  are finally able to reproduce the vulnerability on the launch pad or aka the CC26X2R1. And
+558.09s - 564.77s |  the reason why this is important, this is important is because the vulnerability or
+564.77s - 572.25s |  I'm sorry, the responsible disclosure period does not start until after the engineers of
+572.25s - 579.69s |  the responsible company are able to reproduce the issue. And so that responsible disclosure
+579.69s - 584.85s |  period was about like six months. And so that mean, that meant that I actually couldn't
+584.85s - 589.57s |  talk about this vulnerability until six months till after they were able to reproduce the
+589.57s - 595.77s |  issue. Coincidentally enough, two weeks after they were able to reproduce the issue, they
+595.77s - 604.49s |  had a mitigating SDK, and they were ready to push out that the mitigations. Okay, so
+604.49s - 609.13s |  now I'm going to go into like the testing setup. And I forgot to give my disclaimer
+609.13s - 614.85s |  that all the images were created by chat GPT. But we have like an Alice in Wonderland theme
+614.85s - 619.81s |  here. So you'll keep seeing like Alice in Wonderland kind of theme here. And what I'm
+619.81s - 625.45s |  trying to show with this image is like you're using legacy systems on new vehicles, you're
+625.45s - 629.65s |  using the legacy technology on new vehicles, and there's pretty much making them vulnerable.
+629.65s - 637.77s |  So the hardware setup that you know, we use was going to be the CCX2, the CC26X2R1 as
+637.77s - 645.37s |  the device under test. And then we also had a BLE654 dongle as the central device that's
+645.37s - 650.45s |  actually connecting to the device under test and testing it. And then we're also using
+651.45s - 657.13s |  Defensics test case. The specific test case for this vulnerability was test case 1001.
+657.13s - 662.53s |  And it's a security manager protocol test case. And I'll jump into that in detail. Shout
+662.53s - 668.33s |  out to Synopsys for in Defensics for, you know, helping me discover this vulnerability
+668.33s - 673.93s |  and you know, having the tools that allow me to do my job. So it's my quick shout out.
+673.93s - 679.89s |  So the testing results. So the outcome of the test when running Defensics fuzzing test
+679.89s - 688.13s |  case 1001 on loop mode, the device under test using a resolvable private address for
+688.13s - 697.57s |  connecting or connectable advertising, the device ends up generating unresolvable RPAs
+697.57s - 702.09s |  after a while, which causes a denial of service. And I'll really jump into this. So I went
+702.09s - 710.05s |  back and forth with Texas Instruments on the CVE base score because in the phone as
+710.05s - 715.85s |  a key system, it failed every time. And once it failed, if you are using your phone as
+715.85s - 723.77s |  a key and you lock your door and I come behind you and run this exploit, you actually can't
+723.77s - 729.13s |  get back into your vehicle until you hard reset the vehicle. So if we're looking at
+729.13s - 735.05s |  the CIA or, you know, triad, we're looking at confidentiality, integrity and availability.
+735.05s - 739.77s |  In my mind, if I knocked off one of those, you know, triads, if I knocked off availability,
+739.77s - 743.93s |  I would think it's a high severity vulnerability at the very least. But they, you know, came
+743.93s - 747.25s |  back and said, you know, this is the case when it comes to phone as key systems, but
+747.25s - 754.85s |  it might not be the case in every other application that uses the TI BLE5 stack. And so that made
+754.85s - 761.73s |  me think that, oh, this might be a little bit bigger, you know, issue than just automotive.
+761.73s - 768.01s |  So the consequence of this is the vulnerability can impact BLE devices running the affected
+768.01s - 775.29s |  SDK versions and the devices that are enabled with Bluetooth privacy with resolvable private
+775.29s - 779.29s |  address feature. And I'm going to jump into this a little bit later about the context
+779.29s - 785.73s |  about the RPAs. And so the vulnerability disclosure, the, you know, the vulnerability
+785.73s - 793.03s |  disclosure that the Texas Instruments PSIRT team came back and pretty much they created
+793.03s - 800.33s |  an internal PSIRT ID. And this is the PSIRT ID. And this was the initial advisory, the
+800.33s - 805.13s |  very, very initial advisory before we started to discover how many different devices that
+805.13s - 812.65s |  this actually affected. So they just labeled this as the CCX or CC26X2R1 BLE denial of
+812.65s - 817.85s |  service through unexpected RPAs. And like I said, this is just the first response that
+817.85s - 825.09s |  they gave us. When Bosch PSIRT actually published their security advisory based on what Texas
+825.09s - 831.81s |  Instruments sent us, they created the CVE with the same base score, and they updated
+831.81s - 837.97s |  the title of that CVE to TI Bluetooth stack can fail to generate resolvable random private
+837.97s - 842.49s |  addresses leading to a denial of service for already peer-bonded devices. And I'm going
+842.49s - 847.85s |  to jump into that because it's, you know, it's kind of deep because if a device is already
+847.85s - 854.17s |  peer-bonded to it and I'm running this attack on it, then every device that was previously
+854.17s - 858.61s |  connected to it will not be able to actually connect to it again until there is a hard
+858.61s - 862.13s |  reset. Now, if we're talking about a vehicle, then you actually have to get into the vehicle
+862.13s - 866.69s |  and hard reset the vehicle or restart it. But if you're only like using your phone as
+866.69s - 871.53s |  a key, then how are you going to do that? So looking at the details itself, we're looking
+871.53s - 879.01s |  at Defensics Test Case 1001, and this is specifically on the CC26X2R1. And the reason why I'm showing
+879.01s - 888.53s |  this is because Defensics Test Case 1001 does not always work on the development chip
+888.53s - 894.41s |  or the development board, but the test case works 100% of the time on the phone as key
+894.41s - 901.37s |  systems. And the reason why I decided to escalate this to Bosch PSIRT is because there was another
+901.37s - 910.81s |  test case that worked specifically on the phone as key systems and on the CC26X2R1.
+910.81s - 914.85s |  And this is Test Case 3. And I'm not sure how small that font is, but I can kind of
+914.85s - 920.69s |  go over it with you all. So you get a pairing request, and then you get a pairing confirm
+920.69s - 926.01s |  that the testing device or the central is sending the device under test. So it sends
+926.01s - 931.05s |  it a pairing request, and then it also sends it a pairing confirmation, and then it sends
+931.05s - 936.89s |  it a pairing random. And when it sends it that pairing random, essentially, encryption
+936.89s - 942.01s |  fails and the device no longer is responding to previously peer-bonded devices. And this
+942.01s - 946.97s |  is a little bit of context to showing you exactly, like, the structure of the packets
+946.97s - 954.78s |  that were being sent to the device under test. Okay. And so we're looking at a Wireshark
+954.78s - 960.98s |  analysis of Test Case 3 because Test Case 3 is, you know, something that we're building
+960.98s - 967.02s |  our proof of concept off of. So like I said, you send it the 128 bytes plus the 8-byte
+967.02s - 974.66s |  header, and it receives that pairing request. And then it – then you also send it a pairing
+974.66s - 980.46s |  confirmation, and then you send it a pairing random. And so we developed a POC that pretty
+980.46s - 985.78s |  much automates the connection of the pairing process with the Bluetooth device, sending
+985.78s - 990.62s |  a specific sequence of pairing messages that, you know, like I said, the pairing request,
+990.62s - 994.38s |  encryption confirmation, pairing random. And like I said, this will pretty much get
+994.38s - 1000.82s |  the device to fail 100 percent of the time. So we'll have a GitHub, and the POC isn't
+1000.82s - 1004.62s |  published as of yet, but as soon as I get done with this talk, I'll make sure that I
+1004.62s - 1010.30s |  make this, like, available to everybody. And so if we're looking at the root cause analysis,
+1010.30s - 1014.66s |  this is where it's going to get maybe a little technical, maybe a little bit boring. Every
+1014.66s - 1020.80s |  Bluetooth low-energy device has a unique 48-bit address, and these addresses are pretty
+1020.80s - 1025.94s |  much characterized into public addresses and then random addresses. And the random addresses
+1025.94s - 1032.02s |  can be further classified into static addresses or private addresses, and depending on whether
+1032.02s - 1038.16s |  or not they change. And furthermore, private addresses can either be resolvable or non-resolvable.
+1038.16s - 1044.18s |  So all BLE devices must either have a public address or a random static address, and they
+1044.18s - 1050.30s |  also can have a resolvable or non-resolvable private address, which is pretty much just
+1050.30s - 1055.66s |  typically used for, like, security reasons. And so this is the boring but exciting part
+1055.66s - 1061.14s |  for me. Okay, so you have random addresses, random private addresses, which are pretty
+1061.14s - 1066.06s |  much used in addition to public or random static addresses when a device wishes to protect
+1066.06s - 1073.14s |  its privacy. And then moving on to the resolvable random private addresses, a resolvable private
+1073.14s - 1078.14s |  address is true to its name. It's intended to have users, like, have this pre-shared
+1078.14s - 1083.70s |  key that the device can pretty much figure out the address every time it changes. And
+1083.70s - 1088.98s |  so the pre-shared key is the identity-resolving key, which is used to generate and resolve
+1088.98s - 1095.38s |  random addresses. Kind of boring stuff, right? And then we have non-resolvable random private
+1095.38s - 1102.70s |  addresses. And non-resolvable random private addresses is pretty much used by devices when
+1102.70s - 1110.34s |  they want to prevent tracking. And this is not commonly used, but it's relevant for this,
+1110.34s - 1119.30s |  you know, hack. And so providing a little bit of context, the BLE core specification
+1119.30s - 1125.90s |  of the Bluetooth 5.3 core specification of Volume 6, Part B, 4.7, the resolving list,
+1125.90s - 1130.94s |  if the link layer using the resolving list and the peer device has been resolved but
+1130.94s - 1136.38s |  encryption fails, the resolvable private address shall be immediately discarded and
+1136.38s - 1140.74s |  a new private address will be generated. So this is kind of like, you know, where we're
+1140.74s - 1144.86s |  looking at. I'm providing you all a little bit of context as well as, like, this root
+1144.86s - 1152.10s |  cause analysis. So this is what we received back from Texas Instruments verbatim for,
+1152.10s - 1157.90s |  like the reason for the failure. So the malformed packet in our stack map link layer encrypt
+1158.06s - 1163.50s |  decrypt will return false and then trigger RPA update. But however, at this point, the stack
+1163.50s - 1168.94s |  has not terminated the link. So for the next ACL packet within the same connection, that function
+1168.94s - 1173.42s |  will still get called. And when that function gets called right before the RPA update is
+1173.42s - 1179.46s |  happening, then the RPA update using encryption will fail, which leads to non-resolvable private
+1179.46s - 1184.42s |  addresses. And so the reason why I gave you this context before is because it's like the
+1184.42s - 1188.62s |  device is actually operating according to the Bluetooth stack itself or according to the
+1188.62s - 1194.82s |  Bluetooth specification itself, right? It receives a pairing request, it receives a
+1194.82s - 1199.22s |  pairing confirmation, and then it receives a pairing random and that pairing random
+1199.26s - 1204.42s |  actually makes the encryption fail. And once the encryption fails, then the MAC address is
+1204.46s - 1209.38s |  automatically discarded. The MAC address is automatically discarded. And when the MAC
+1209.38s - 1214.46s |  address is automatically discarded, every previously peer bonded device can no longer can
+1214.46s - 1220.26s |  connect to the device. So that's what we're seeing. And that's kind of like, you know, the
+1220.26s - 1227.50s |  root cause analysis of of the vulnerability itself. I found it exciting, you know, to really
+1227.50s - 1231.50s |  do like a deep dive and understand exactly what's happening, because it's not like Texas
+1231.50s - 1238.34s |  Instruments, like, did a bad job at actually, like, you know, developing this system. Things
+1238.38s - 1243.46s |  just happened too fast. And like I said, the link wasn't actually terminating. So it just
+1243.46s - 1249.90s |  caused a denial of service. So now we want to look at the affected devices. So initially, we
+1249.90s - 1257.18s |  had 19 different affected parts and two different software development kits. And so these
+1257.18s - 1261.86s |  are all the kits and the software versions that were affected by it in the software stack. I
+1261.86s - 1267.02s |  was pretty proud of myself, like the BLE-5 stack, you know, vulnerability on that. It seemed,
+1267.06s - 1272.98s |  you know, rewarding, especially being a penetration tester on automotive, you know, on
+1272.98s - 1277.42s |  vehicles. And sometimes if you don't go about it the right way, you really can't talk about some
+1277.42s - 1281.62s |  of your research. And so this was just a confirmation that we went about it the right way,
+1281.62s - 1286.38s |  we handled the responsible disclosure period the right way. And now, you know, we're, you
+1286.38s - 1293.98s |  know, enjoying the fruits of my labor. So Texas Instruments, after a couple of months, you
+1293.98s - 1297.06s |  know, I was asking them, hey, when are you guys going to publish? When are you guys going to
+1297.06s - 1301.54s |  publish? And I realized that they weren't publishing because they were still discovering
+1301.98s - 1307.70s |  devices within their inventory that were still vulnerable. And so they updated it from 19
+1307.70s - 1314.30s |  parts to 28 parts in six different software versions. And I found this pretty interesting,
+1314.30s - 1323.42s |  right? There's a BLE-5 stack, BLE-5 stack, BLE stack 2.X, I don't know what that is. But at
+1323.42s - 1330.54s |  any rate, we have, you know, an updated parts list, and it included 28 parts. And I did a, you
+1330.54s - 1336.66s |  know, a little bit of a research on the, on all of these parts that are listed here. And I was
+1336.66s - 1340.58s |  looking at the real world impact. And so if you go on texasinstruments.com, you can actually
+1340.58s - 1344.86s |  search their inventory by parts. And so I was able to see all of these vulnerable parts that
+1344.86s - 1349.78s |  were listed here. And what I have in bold are just the automotive parts. And so, you know, I'm
+1349.78s - 1354.42s |  suspecting in Texas Instruments, the reason why they said that this is not a high severity
+1354.42s - 1358.10s |  vulnerability is because they have other devices such as like medical devices that this
+1358.10s - 1363.18s |  vulnerable, that this vulnerability is, is, is present on. I haven't done the research to see,
+1363.18s - 1368.94s |  you know, what devices are actually affected. But you know, I was just more so concerned about
+1368.94s - 1374.06s |  like the automotive part of it. So there's like, 2.6 million devices that they have in their
+1374.06s - 1380.54s |  inventory. And that's about $2.6 million in inventory that they have. But that is before
+1380.54s - 1387.38s |  these devices actually get sold to any OEM and OEM puts their software on top of that. So that's
+1387.38s - 1391.42s |  why I call it a supplier pre production costs of the vulnerability because we're just looking at
+1391.42s - 1397.34s |  it from Texas Instruments. We're not looking at it if like GM or Ford purchased one of these and
+1397.34s - 1403.34s |  then they developed, you know, vulnerable software on top of that. And so I think I'm
+1404.42s - 1412.06s |  think I'm good on time. I got like two minutes left. Okay, so Mr. recall. So, you know, I
+1412.06s - 1417.54s |  believe this is for the year 2022. And we're just looking at electrical systems. And so if we
+1417.54s - 1424.98s |  have, you know, 3.4 million, you know, electrical system recalls averaging at around like
+1424.98s - 1433.30s |  $500, then that's like $1.7 billion. Right. And the reason why I put this here is because like,
+1433.66s - 1441.54s |  as as a security engineer, or as a penetration tester, it's kind of hard to quantify your impact
+1441.62s - 1447.82s |  on the world. It's kind of hard to quantify exactly, you know, the impact that you're having
+1447.98s - 1453.02s |  on figuring out some of these things. And so my thing is like, say, for instance, each one of
+1453.02s - 1458.82s |  these recalls doesn't cost $500. Maybe if it only costs 1% of that, we're still looking at $17
+1458.82s - 1464.06s |  million. So you should really just do a penetration test on your system before you're stuck
+1464.06s - 1468.38s |  paying, you know, for recalls that that might cost you, you know, billions or millions of
+1468.38s - 1475.14s |  dollars. And so like I said before, it was pretty interesting that Texas Instruments was able to
+1475.14s - 1481.74s |  come up with a fix and publish that fix two weeks after they were able to reproduce it but
+1481.74s - 1488.86s |  couldn't reproduce the issue for like six months. I thought that was, you know, genius of them. And
+1488.86s - 1494.62s |  this is the mitigating strategies that they put out. I know that they still have a lot of SDKs
+1494.62s - 1501.54s |  that they have to publish in order to make sure that all of the systems are mitigated or
+1501.54s - 1508.74s |  remediated in the right way. But they're still working on that right now. And right on time.
+1509.18s - 1526.28s |  Questions? Any questions? Right there. So for scanning and talking to the launchpad, we use
+1526.32s - 1542.38s |  Defensics as well. We also use Bluetooth CTL. And we also use the TI launchpad with a software
+1542.38s - 1549.82s |  called Sniffle that was developed by NCC group. And it specifically scans for long range
+1549.82s - 1556.10s |  advertisements or extended advertisements that are specific to BLE 5. That answers your
+1556.10s - 1571.37s |  question. Mr. McKee. Oh, can I get this last question right here? All of the devices, the 19
+1571.37s - 1577.49s |  devices are in the CVE. The extended list has not been updated or published yet. We're still
+1577.49s - 1583.09s |  waiting. You can get it. Yes, yes. And I believe that this is publicly available. There's a QR
+1583.09s - 1586.21s |  code. You guys can connect with me on LinkedIn. Thank you for your time.

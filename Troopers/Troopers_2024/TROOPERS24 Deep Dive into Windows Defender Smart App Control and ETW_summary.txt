@@ -1,0 +1,56 @@
+## Introduction
+- **Troopers24**: IT security conference in Heidelberg, Germany
+- **Topic**: A new feature of Windows called **Smart App Control**
+- **Speakers**: Tillmann Oswald and Dr. Baptiste David
+
+## Smart App Control
+- Introduced with Windows 11, version 22572
+- **Purpose**: Block what Microsoft considers "unsafe applications"
+- Focuses on defining and allowing only **safe applications** to run
+- **Not an antivirus solution**: Moves away from the trust model based on application trustworthiness
+- **Based on** **WDAC** **(Windows Defender Application Control)**: A feature that helps mitigate security threats by restricting applications
+- **Three stages**: Evaluation, enforcement, and off
+- **Evaluation mode**: Observes system activity, application usage, and provides feedback
+- **Enforcement mode**: Blocks untrusted applications; no exceptions allowed
+- **Off mode**: Disables Smart App Control, but it cannot be reactivated without reinstalling Windows
+- **Requires internet connection**: Blocks applications when unable to connect to the cloud for analysis
+- **Exceptions**: Applications signed with certificates from trusted authorities, including Microsoft applications
+- **No third-party integration**: Only Windows Defender can interface with Smart App Control
+
+## Smart App Control Functionality
+- Explorer.exe executes an application, which goes through a long path to the kernel to create a new process
+- The kernel notifies **ci.dll** (Code Integrity.dll) to check if the application can be allowed to run
+- ci.dll checks **Windows policies** (XML files) that define which applications can run based on signatures and metadata
+- **WDAC policy matching**: The kernel checks a system cache to see if the application has already been analyzed and allowed
+- If not in the cache, the **cipApplySipPolicyExit** function is called with various parameters:
+  - **Validation context**: Details about the application (path, signature, etc.)
+  - **Policy objects**: Number of WDAC policies in the system
+  - **Validation procedure**: Specific treatment or callback for each policy
+- **SAC** (Smart App Control) is a specific procedure and policy that directs the system to use SAC
+- SAC checks the file extension and makes a transition to user mode for analysis
+- **KripCat Service**: A service launched at Windows boot time, responsible for checking certificate chains and managing catalog files
+- KripCat Service interfaces with **Windows Defender** via an **RPC** (Remote Procedure Call) connection
+- Windows Defender has a complex architecture with multiple components and uses asynchronous processing and thread pools
+- Windows Defender performs a memory scan of the file and generates a **Spynet report** for communication with Microsoft
+
+## Communication with Microsoft
+- The Spynet report includes machine information, Windows Defender version, configuration, and file metadata
+- The report is sent to **wdcp.microsoft.com** with user agent and OS information
+- Microsoft's response includes feedback about the analyzed file and potential information about Smart App Control mode
+- The response is personalized for Smart App Control analysis and is used to make decisions about blocking or allowing applications
+- Windows Defender notifies CI.dll about the response, which then updates policies and notifies the user via RPC or **WNF** (Windows Notification Framework) notifications
+
+## Windows Defender Logging
+- Windows Defender has two types of logs: regular log text files and **ETW** (Event Tracing for Windows) provider
+- ETW provider is a valuable source of information but is protected by a security flag
+- The security flag can be removed using a debugger (Winbag) to access detailed logging information
+- ETW provider shows step-by-step detection of a DLL injection attack, including open process, memory allocation, and thread creation
+
+## Conclusion and Questions
+- Smart App Control's complexity and reliance on WDAC raise questions about its necessity
+- Microsoft may have intended to automate WDAC configuration using cloud reputation
+- Smart App Control is not an antivirus but has similar functionality and relies on Windows Defender
+- The position of Windows Defender in the system and its disclosure of information to Microsoft are concerns
+- There is no documented way for third-party applications to interface with Smart App Control
+- **SAC cannot be reactivated once turned off**: Reinstalling Windows is required
+- **Switching between enforcement and evaluation modes**: Not possible; once in enforcement, cannot go back to evaluation

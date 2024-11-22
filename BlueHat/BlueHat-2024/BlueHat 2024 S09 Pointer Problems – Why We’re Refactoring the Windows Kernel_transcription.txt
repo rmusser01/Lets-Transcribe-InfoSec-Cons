@@ -1,0 +1,719 @@
+{
+  "webpage_url": "https://www.youtube.com/watch?v=-3jxVIFGuQw",
+  "title": "BlueHat 2024: S09: Pointer Problems \u2013 Why We\u2019re Refactoring the Windows Kernel",
+  "description": "BlueHat 2024: Session 09: Pointer Problems \u2013 Why We\u2019re Refactoring the Windows Kernel Presented by Joe Bialek from Microsoft\n\nAbstract: The Windows kernel ecosystem is facing security and correctness challenges in the face of modern compiler optimizations. These challenges are no longer possible to ignore, nor are they feasible to mitigate with additional compiler features. The only way forward is large-scale refactoring of over 10,000 unique code locations encompassing the kernel and many drivers.\n\nThis talk provides an overview of some optimizations the compiler performs that are often unexpected for developers. We will show real-life examples of these optimizations creating MSRC cases or correctness problems. Finally, we\u2019ll show what we\u2019re doing to fix the problem, the progress we\u2019ve made in the latest Windows release, and what developers will need to do to ensure their code is also robust.",
+  "channel_url": "https://www.youtube.com/channel/UCKmzq2lAhDxLy36KtvVWpaQ",
+  "duration": 2642,
+  "channel": "Microsoft Security Response Center (MSRC)",
+  "uploader": "Microsoft Security Response Center (MSRC)",
+  "upload_date": "20241108"
+}
+
+0.00s - 6.80s | This text was transcribed using whisper model: large-v2
+
+ Yeah, so my name is Joe Bilek, and I work at Microsoft primarily on Windows security.
+6.80s - 11.24s |  And today I'm going to be talking about some issues that we have with kernel mode code
+11.24s - 18.24s |  in Windows and why we're now going and refactoring quite a bit of the code that we have.
+18.24s - 23.52s |  So the first thing that we need to talk about, though, kind of like Michael alluded to, is
+23.52s - 27.60s |  what the optimizer is doing under the covers for us, because that is sort of the root of
+27.60s - 30.12s |  a lot of the problems that we're having.
+30.12s - 35.64s |  And if you go and you look at the CPP reference website, they have this thing called the as-if
+35.64s - 41.76s |  rule, and effectively this is just the rules that the optimizer optimizes by.
+41.76s - 50.30s |  And from a high level, if your program follows the programming language's rules and the optimizer
+50.30s - 55.84s |  also follows the programming language's rules, then your optimized program will work exactly
+55.84s - 58.48s |  the same as your unoptimized program.
+58.48s - 63.72s |  You know, it might have different code gen, but the output that you get is the same.
+63.72s - 67.96s |  For the purposes of this talk, the most important thing that you really need to internalize,
+67.96s - 71.92s |  though, is that compilers do not understand threads.
+71.92s - 75.24s |  As far as the compiler is concerned, there is a single thread running on your computer
+75.24s - 76.96s |  at all times.
+76.96s - 81.72s |  And if you are doing things with other threads, such as you have multiple threads accessing
+81.72s - 86.84s |  the same piece of data at the same time, you need to use various synchronization primitives,
+86.84s - 91.22s |  could be locks, it could be memory barriers, it could be volatile memory accesses, to make
+91.22s - 92.40s |  your code safe.
+92.40s - 95.64s |  And even if you use those things, the compiler still doesn't understand what a thread is.
+95.64s - 99.84s |  The compiler just knows, oh, I'm not allowed to do certain optimizations, like, around
+99.84s - 101.76s |  this thing, because there's a barrier here.
+101.76s - 106.44s |  And so we use these primitives in order to make code safe in the presence of threading,
+106.44s - 109.20s |  because the compiler doesn't know what that is.
+109.20s - 111.92s |  So what is the compiler allowed to do under the covers?
+111.92s - 115.72s |  I have what is hopefully a simple program here.
+115.72s - 119.92s |  We have a structure, and this structure has two 4-byte fields in it, and there is a global
+119.92s - 124.24s |  variable of this structure, and then there's a function, and it has a local variable of
+124.24s - 125.80s |  the same structure type.
+125.80s - 131.62s |  And all this function does is it copies the value 1 field from the global to the local,
+131.62s - 135.80s |  and then it copies the value 2 field from the global to the local.
+135.80s - 139.36s |  And a lot of people would look at this, and they would say, oh, OK, so the assembly I'm
+139.36s - 143.36s |  going to get is there's going to be two 4-byte loads and two 4-byte stores.
+143.36s - 145.16s |  That might be the assembly you get.
+145.16s - 148.96s |  But under the covers, what the compiler probably would do on most architectures today is it
+148.96s - 152.88s |  would turn this into a single 8-byte load and a single 8-byte store, half the number
+152.88s - 153.88s |  of instructions.
+153.88s - 160.04s |  Now, one thing that people are very commonly surprised by is that, because the architectures
+160.04s - 165.64s |  that we run on today are completely fine with unaligned memory accesses, the compiler does
+165.64s - 167.36s |  not care about alignment.
+167.36s - 171.72s |  So those 4-byte loads and 4-byte stores might be what we call naturally aligned.
+171.72s - 177.28s |  Since it's a 4-byte load, the address is a multiple of 4.
+177.28s - 182.88s |  But when those two 4-byte loads get turned into an 8-byte load, the compiler does not
+182.88s - 185.32s |  care if that resulting load is naturally aligned.
+185.32s - 189.56s |  So it might still only be 4-byte aligned, not 8-byte aligned.
+189.56s - 194.56s |  But the compiler could also choose to turn this into one-byte loads if it wanted to.
+194.56s - 197.36s |  Or the compiler could turn this into a call to memcopy.
+197.36s - 200.44s |  So it could just memcopy the structure from global to local.
+200.44s - 204.88s |  And of course, under the covers, memcopy could be going byte at a time, two bytes at a time,
+204.88s - 205.88s |  you know, whatever.
+205.88s - 207.28s |  It's implementation defined.
+207.28s - 212.24s |  The compiler could lower this to a call to the repmoveSB instruction, which is a CPU
+212.24s - 214.40s |  instruction that effectively just does memcopy.
+214.40s - 216.84s |  What's the memory access size?
+216.84s - 217.84s |  Implementation defined.
+217.84s - 218.84s |  Could be byte at a time.
+218.84s - 219.84s |  Could be larger.
+220.24s - 224.60s |  Now, in this function, because we're copying from this global to the local variable and
+224.60s - 229.40s |  then the local variable is never used, what the compiler would probably do in this case
+229.40s - 233.20s |  is it would just completely optimize away these loads and stores because it would say
+233.20s - 236.72s |  you're doing this copy and then nobody even consumes the result of the copy.
+236.72s - 238.44s |  So this is unneeded work.
+238.44s - 242.84s |  But if you imagine for a moment that maybe only one of these fields is referenced or
+242.84s - 247.00s |  maybe only part of one of these fields is referenced, like it's a 4-byte field but you
+247.00s - 252.00s |  only reference one byte of it, the compiler can shrink those loads and stores down so
+252.00s - 255.88s |  that you only copy over the one byte or the two bytes or the four bytes that you actually
+255.88s - 256.88s |  reference.
+256.88s - 257.88s |  Okay.
+257.88s - 261.28s |  So this is where things get a little bit more exciting.
+261.28s - 266.24s |  So the example is mostly the same, but in this case, there's a few key differences.
+266.24s - 271.16s |  The first key difference is that we're only using the first field, the first value one
+271.16s - 272.16s |  field.
+272.16s - 275.56s |  We're not using that second U long called value two.
+275.56s - 279.04s |  And the other difference in this example is that we read the value from the global
+279.04s - 282.44s |  to the local and then we perform some arithmetic on this value.
+282.44s - 286.16s |  So I think we add eight to it and then we divide it by two.
+286.16s - 290.32s |  And then we write that local variable back out to the global.
+290.32s - 296.96s |  Now the compiler may choose to never actually copy any of this data to the stack because
+296.96s - 301.36s |  it might realize, well, I can just keep this value in a register so there's no reason to
+301.36s - 304.00s |  spill it to the stack.
+304.00s - 308.44s |  The compiler could also not even load this value to a register at all.
+308.44s - 313.24s |  The compiler could just use instructions that operate on a memory address and just do plus
+313.24s - 318.16s |  equals eight to that global variable and then divide equals two to that global variable,
+318.16s - 322.48s |  which means that if you are inspecting that global variable and imagine for a moment that
+322.48s - 330.04s |  the global variable's initial value is zero, you could see the values zero, eight, and
+330.04s - 331.84s |  four in that global variable.
+331.84s - 336.28s |  So you're not just going to see the value before and the value after, you can see intermediate
+336.28s - 337.28s |  state.
+337.28s - 341.12s |  And actually something that takes a lot of people by surprise is that you could see complete
+341.12s - 342.72s |  garbage at that global variable.
+342.72s - 347.52s |  The compiler could just write three to that global variable temporarily, could write 9,000.
+347.52s - 351.72s |  It could spill a register into that global variable.
+351.72s - 356.84s |  So you really have no guarantee what is going to be in that global variable at any particular
+356.84s - 358.40s |  moment in time.
+358.40s - 363.68s |  And this is all legal because it would all be correct under single-threaded operation.
+363.68s - 368.76s |  As long as the end result of this program is correct, then it's allowed.
+368.76s - 374.32s |  The compiler is not guaranteed to only perform the memory accesses that you specify.
+374.32s - 379.76s |  So even though in this you can see that we only load from the global variable one time,
+379.76s - 383.68s |  the compiler could have multiple loads from that global variable.
+383.68s - 387.32s |  So the compiler could say, well, I'm going to read from the global variable, do the plus
+387.32s - 390.72s |  equals 8, and then write back to the global variable.
+390.72s - 394.72s |  And then I'm going to read from the global variable again, do the divide equals 2, and
+394.72s - 396.26s |  then write that back.
+396.26s - 399.72s |  So there can be multiple accesses to this memory.
+399.72s - 404.72s |  And the last point, just as kind of a counterexample to some of these optimizations that are going
+404.72s - 408.36s |  on, one thing that the compiler would not be allowed to do is it would not be allowed
+408.36s - 411.08s |  to go and mess with the value 2 field.
+411.08s - 414.90s |  And the reason for that is because you are not messing with the value 2 field.
+414.90s - 419.22s |  So as far as the compiler is concerned, that may be unmapped memory.
+419.22s - 421.78s |  The compiler has no guarantee that that memory is accessible.
+421.78s - 425.96s |  The only reason it's allowed to do all these optimizations to the other fields is because
+425.96s - 432.06s |  in these examples, your code is unconditionally already reading and writing to this memory.
+432.06s - 435.82s |  And so the compiler can just assume that memory is fair play.
+435.82s - 440.68s |  It's clearly mapped because you're accessing it.
+440.68s - 444.52s |  Memcpy is a very interesting function.
+444.52s - 446.16s |  The name is literally memory copy.
+446.16s - 450.04s |  And so a lot of people assume that it copies memory.
+450.04s - 453.04s |  But memcpy does not copy memory.
+453.04s - 458.56s |  Memcpy is effectively just a variable size load store as far as the compiler is concerned.
+458.56s - 462.72s |  And it is allowed to perform all of the same optimizations that we just talked about on
+462.72s - 463.76s |  a memcpy.
+463.76s - 467.36s |  So the compiler could choose to just eliminate a memcpy.
+467.36s - 470.14s |  The compiler could turn a memcpy into a double fetch.
+470.14s - 472.94s |  The compiler could shrink the size of a memcpy.
+472.94s - 473.94s |  Everything is fair play.
+474.36s - 476.00s |  There's nothing special about memcpy.
+476.00s - 481.29s |  And so you should not assume that it actually copies memory.
+481.29s - 487.01s |  So you might be wondering, okay, what if I do actually need to have some, you know, requirements
+487.01s - 488.41s |  on how memory is accessed?
+488.41s - 491.71s |  What if I need to only do a single access to this memory?
+491.71s - 496.93s |  And that's where we have what we call volatile accessors.
+496.93s - 502.75s |  And really all a volatile accessor is a memory access that goes through a volatile pointer.
+502.75s - 507.99s |  And volatile pointers tell the compiler effectively, you know, you need to do exactly what I'm
+507.99s - 510.25s |  specifying and make no assumptions about it.
+510.25s - 511.33s |  You can't optimize it.
+511.33s - 512.93s |  You can't shrink the size of the access.
+512.93s - 514.33s |  You can't eliminate the access.
+514.33s - 516.61s |  You can't turn it into multiple accesses.
+516.61s - 521.13s |  You need to do only what I specify.
+521.13s - 526.13s |  Various programming languages have libraries for volatile accessors now.
+526.13s - 531.53s |  It's worth noting that, you know, like C++ and C have support for volatile accessors
+531.53s - 533.67s |  in their atomics package.
+533.67s - 539.15s |  But doing a volatile access does not mean an expensive interlocked access.
+539.15s - 540.83s |  You can do interlocked accesses.
+540.83s - 546.03s |  But really you just need to be doing a volatile load or a volatile store.
+546.03s - 550.63s |  It doesn't need to be interlocked.
+550.63s - 554.99s |  For things like memcpy, if you need to do a memcpy and you don't want the compiler to
+554.99s - 559.55s |  do double fetches and whatnot on that, right now there's nothing in the standard libraries
+559.55s - 561.11s |  to help you there.
+561.21s - 566.29s |  But in the Windows SDK and WDK, we do have functions that guarantee that, you know, it
+566.29s - 568.37s |  will do the copy when the function returns.
+568.37s - 571.89s |  There will be no further accesses to that memory, no double fetches, none of that kind
+571.89s - 574.52s |  of thing.
+574.52s - 575.52s |  Okay.
+575.52s - 580.16s |  And I'm going to be talking about some issues that we have.
+580.16s - 585.88s |  And one thing that I want to emphasize is that, you know, while we do have a number
+585.88s - 590.76s |  of problems with our code, the vast majority of these things are not actually exploitable
+590.78s - 593.86s |  right now because of some mitigating factors.
+593.86s - 598.50s |  And the primary mitigating factor is that in the Windows 8 timeframe, we kind of realized,
+598.50s - 602.66s |  oh, geez, we've got some problems with how we're accessing some of these pointers.
+602.66s - 607.66s |  And so we put a hack in place in the compiler where when you compile code with the slash
+607.66s - 613.50s |  kernel compiler flag, which all kernel code has to be compiled with, the compiler would
+613.50s - 619.98s |  kind of attempt to apply volatile semantics to a lot of memory accesses, basically anything
+620.20s - 622.84s |  that isn't a stack variable that you're accessing.
+622.84s - 629.04s |  The compiler would say, okay, well, I won't turn that into a double fetch, for example.
+629.04s - 634.04s |  And this was an attempt to basically bootstrap safety onto a bunch of code that was not written
+634.04s - 636.64s |  with volatile accessors from the get-go.
+636.64s - 639.72s |  The downside of this approach, though, of course, is that it's bad for performance.
+639.72s - 644.60s |  The whole reason that these optimizations exist is because they make your code faster
+644.60s - 645.60s |  and smaller.
+645.60s - 651.22s |  And so to just blanket turn that kind of optimization off for pretty much all of your memory accesses
+651.22s - 655.90s |  is not really a great thing as far as performance is concerned.
+655.90s - 659.18s |  But that's what we have right now.
+659.18s - 663.02s |  The other thing that we have kind of working in our favor with respect to security in this
+663.02s - 667.98s |  case is that a lot of the programming patterns that I'm going to be talking about happen
+667.98s - 672.54s |  inside of structured exception handling scope.
+672.56s - 677.28s |  And due to the various guarantees that structured exception handling needs to make with respect
+677.28s - 683.12s |  to you need to be able to access stack variables in the catch statement, it basically means
+683.12s - 690.00s |  that when you write code inside of SEH scope, it ends up killing a bunch of optimizations.
+690.00s - 693.50s |  And so that ends up keeping a lot of our code safe as well.
+693.50s - 697.84s |  But with that said, we really want to get away especially from the slash kernel compiler
+697.84s - 698.92s |  magic.
+698.92s - 702.36s |  We want our code to be able to be as optimized as possible.
+703.18s - 707.06s |  So while these hacks that we put in place are great for keeping people safe, we don't
+707.06s - 708.38s |  really want to live with them forever.
+708.38s - 711.50s |  We just want to get our code fixed.
+711.50s - 717.30s |  So the first thing that we're going to talk about is issues with the Windows driver model.
+717.30s - 721.46s |  And I'm assuming that not everyone here is like a kernel guru.
+721.46s - 726.62s |  And so I'm going to give you like a one-minute overview of how the kernel works kind of.
+726.62s - 730.38s |  On a 64-bit operating system, which is all that we support at this point on Windows,
+730.38s - 735.08s |  64-bit kernels, even though you have a 64-bit pointer, we don't actually need 64 bits of
+735.08s - 737.16s |  virtual address space.
+737.16s - 740.76s |  And it is actually really expensive to implement that in hardware.
+740.76s - 745.12s |  So what the hardware implements instead is a 48-bit pointer typically.
+745.12s - 746.32s |  And that's what we use.
+746.32s - 752.80s |  If you look at how the memory is laid out in a process, starting from address 0, user
+752.80s - 756.34s |  mode gets 128 terabytes of virtual address space.
+756.34s - 760.92s |  And then the kernel gets the top 128 terabytes of the address space.
+760.92s - 764.64s |  And in the middle is this unaddressable memory.
+764.64s - 768.72s |  And the reason it's unaddressable is because there's 16 bits of the pointer that we don't
+768.72s - 769.72s |  use, right?
+769.72s - 776.96s |  And so that results in a bunch of virtual address space that is not addressable.
+776.96s - 784.02s |  Now hardware knows about, you know, if a page is for user mode or a page is for kernel mode.
+784.02s - 787.96s |  And hardware knows if you're currently running in privileged or unprivileged mode.
+787.96s - 790.90s |  So it knows if you're currently executing code in user mode.
+790.90s - 794.72s |  And it will prevent user mode from going and accessing kernel mode pages.
+794.72s - 799.56s |  Even though this stuff is all in the same virtual address space, user mode can't touch
+799.56s - 800.56s |  kernel mappings.
+800.56s - 803.02s |  That would be a horrible security problem.
+803.02s - 809.10s |  But kernel can access user mode mappings, which is a little bit dangerous because if
+809.10s - 812.80s |  you make a mistake, you have a pointer, you dereference that pointer, and you didn't realize
+812.80s - 819.20s |  it was a user mode pointer, you are now just interacting with user mode memory unexpectedly.
+819.20s - 824.50s |  And so over time, CPUs have added features to kind of clamp down on this behavior a little
+824.50s - 825.58s |  bit.
+825.58s - 827.86s |  So there's SMEP and PXN.
+827.86s - 832.22s |  And these are features that say, okay, when you're executing in privileged mode on the
+832.22s - 836.18s |  processor, you can't execute code that is accessible to user mode.
+836.18s - 839.70s |  That is a, you know, that's a programming mistake.
+839.72s - 843.96s |  And the other feature that CPUs support is called SMAP and PAN.
+843.96s - 847.48s |  And these features take it even further and say when you're executing in privileged mode,
+847.48s - 849.70s |  you can't even touch user mode data.
+849.70s - 852.60s |  User mode is completely off limits to you.
+852.60s - 856.12s |  Now kernels do need to be able to access user mode memory from time to time.
+856.12s - 861.28s |  And so typically the way that these features, the SMAP and PAN specifically, are implemented
+861.28s - 865.88s |  is that you have dedicated functions for interacting with user mode memory, and those dedicated
+865.88s - 869.52s |  functions will just temporarily punch a hole through the feature and say, okay, I'm going
+869.54s - 872.94s |  to access user mode memory right now just for a second, and then we'll go back to not
+872.94s - 876.82s |  being able to access user mode memory.
+876.82s - 877.82s |  Okay.
+877.82s - 881.10s |  And then when you make a system call, you'll be, you know, you're executing your code in
+881.10s - 886.66s |  user mode, in unprivileged mode, and in order to execute a system call, you will use a dedicated
+886.66s - 891.70s |  processor instruction, like the syscall instruction, and from a high level, that instruction does
+891.70s - 893.94s |  a few things.
+893.94s - 899.74s |  It switches the execution mode of the processor from unprivileged mode to privileged mode.
+899.74s - 903.36s |  Now that you're in privileged mode, you can access kernel memory, which means that you
+903.36s - 909.20s |  can start executing from the kernel's system call handler, and the way that you get to
+909.20s - 913.68s |  system call handler is that when you execute this instruction, there's a dedicated register
+913.68s - 918.48s |  on the platform that only the kernel can program, and the kernel can say, okay, this is the
+918.48s - 921.32s |  safe entry point for user mode to kernel mode.
+921.32s - 925.76s |  So when user mode executes a syscall instruction, here's where you start executing, and that
+925.76s - 931.50s |  allows the kernel to, you know, safely handle all the user's input and set up the environment
+931.50s - 934.46s |  for the system call to be made safely.
+934.46s - 936.54s |  So why does this matter?
+936.54s - 942.12s |  Well, when user mode is trying to communicate with kernel mode to make syscalls, one very
+942.12s - 946.54s |  typical thing that ends up happening is user mode needs to pass the kernel a pointer to
+946.54s - 947.54s |  something, right?
+947.54s - 952.42s |  It says, hey, I'm doing a read file operation, and I need you to go and populate this buffer
+952.52s - 956.12s |  of mine with the contents of a file.
+956.12s - 958.50s |  So how does the kernel handle that safely?
+958.50s - 963.48s |  Because user mode is just giving the kernel a pointer, and then the kernel needs to decide,
+963.48s - 966.56s |  you know, am I actually allowed to use this pointer or not?
+966.56s - 968.84s |  We're all in the same address space.
+968.84s - 972.90s |  So the first thing that the kernel needs to do is it needs to make sure that user mode
+972.90s - 976.90s |  only passes the kernel pointers to user mode.
+976.90s - 980.88s |  So if the user mode application tries to tell the kernel, hey, here's kernel memory, go
+980.88s - 985.32s |  and write a file to it, I mean, that's effectively just user mode tricking the kernel into corrupting
+985.32s - 986.32s |  itself, right?
+986.32s - 989.10s |  User mode has no business interacting with kernel memory.
+989.10s - 992.48s |  So on Windows, we have functions like probe for read and probe for write that you call,
+992.48s - 997.44s |  and those functions just ensure that the pointer that was passed is in the user mode portion
+997.44s - 1000.12s |  of the virtual address space.
+1000.12s - 1004.32s |  But just because the pointer's in the user mode portion of the virtual address space
+1004.32s - 1008.72s |  still doesn't mean that it's safe to just interact with that pointer, because that could
+1008.72s - 1011.12s |  be unmapped memory, for example.
+1011.12s - 1015.04s |  Or it could be a page of memory that is mapped, but it's mapped read only, and you're trying
+1015.04s - 1016.44s |  to write to it.
+1016.44s - 1020.20s |  So whenever you interact with these pointers, you need to do it inside of structured exception
+1020.20s - 1025.64s |  handling scope, so inside of a try block, so that if this memory is not mapped or the
+1025.64s - 1029.64s |  page protections are wrong, you can catch the exception and the whole kernel doesn't
+1029.64s - 1030.64s |  crash.
+1030.64s - 1032.88s |  You can just return an error to user mode.
+1032.88s - 1037.36s |  And you have to remember that it's not sufficient to just check the page permissions or check
+1037.36s - 1041.32s |  that the memory's mapped, because user mode has multiple threads running concurrently.
+1041.32s - 1046.92s |  And so user mode can be changing the state of this memory while kernel mode is accessing
+1046.92s - 1047.92s |  it.
+1047.92s - 1052.08s |  So we don't really attempt to validate that the page is indeed mapped.
+1052.08s - 1057.60s |  We just wrap the accesses in structured exception handling, and that's how we handle this stuff.
+1057.60s - 1058.60s |  OK.
+1058.60s - 1063.04s |  So the next point is that whenever you are interacting with user mode data, it is completely
+1063.04s - 1064.04s |  untrusted.
+1064.16s - 1068.68s |  And if you need to validate that data, you first need to make a local copy of that data
+1068.68s - 1070.08s |  in the kernel.
+1070.08s - 1074.64s |  Because if you validate that data while it is in the user mode process, like I just said,
+1074.64s - 1075.92s |  user mode has other threads running.
+1075.92s - 1079.68s |  So user mode can be changing that data after you validate it.
+1079.68s - 1082.64s |  So you copy it locally, you validate it, and then you use it.
+1082.64s - 1088.44s |  That way, you ensure that the data you validate is the data that you use.
+1088.44s - 1094.00s |  Now one interesting thing that is fairly unique to Windows is that drivers are free to do
+1094.96s - 1095.96s |  directly dereference pointers.
+1095.96s - 1100.40s |  As long as you follow all of these steps, you know, you have a pointer, it checks out
+1100.40s - 1104.24s |  your instruction exception handling, you can just dereference that pointer.
+1104.24s - 1107.44s |  Hey, you know, read a byte, read a Yulong.
+1107.44s - 1108.44s |  That's fair game.
+1108.44s - 1113.24s |  And actually, if you look at our documentation, some of our examples don't even use volatile
+1113.24s - 1115.88s |  accesses when they're reading these pointers.
+1115.88s - 1120.04s |  It's just a normal memory dereference.
+1120.04s - 1123.80s |  And because it's not a volatile access, that means that in theory, the compiler could perform
+1123.80s - 1125.72s |  some of these unwanted optimizations, right?
+1125.72s - 1129.72s |  You try to make a local copy, but the compiler could turn it into a double fetch.
+1129.72s - 1137.00s |  So we are really dependent on that slash kernel compiler behavior to keep this code safe.
+1137.00s - 1139.04s |  So where does this stuff go wrong?
+1139.04s - 1142.52s |  Well, first off, it's very easy to forget probing.
+1142.52s - 1147.12s |  And even though Microsoft developers are very familiar with the fact that they need to probe
+1147.12s - 1150.72s |  pointers before they use them, even we still mess up.
+1150.72s - 1156.04s |  So you can imagine third parties that are not necessarily as well funded, this sort
+1156.04s - 1159.48s |  of problem is a lot more common.
+1159.48s - 1165.08s |  It's also very easy to accidentally double fetch data from user mode rather than make
+1165.08s - 1166.08s |  a safe copy.
+1166.08s - 1169.22s |  A lot of times, people don't realize that the pointer that they're interacting with
+1169.22s - 1171.76s |  is actually still a user mode pointer.
+1171.76s - 1176.16s |  People will, you know, they'll receive, their function will receive a pointer and they say,
+1176.16s - 1180.20s |  OK, this is a kernel pointer, it's already been validated, I'm free to just read from
+1180.20s - 1186.00s |  this pointer however, boom, you have a double fetch, people can bypass your validation.
+1186.00s - 1188.16s |  So we don't really like that.
+1188.16s - 1193.28s |  And with the whole dependency that we have on the slash kernel flag, the downside of
+1193.28s - 1199.16s |  that is that we actually have had regressions in the past in the guarantees that the slash
+1199.16s - 1200.16s |  kernel flag makes.
+1200.16s - 1206.36s |  This is kind of the downside of having non-standard compiler behavior is that whenever anyone is
+1206.36s - 1210.24s |  building optimizations, they have to remember about this flag and handle it correctly.
+1210.24s - 1215.40s |  And if they don't, they could kind of silently break our code, which isn't great.
+1215.40s - 1221.72s |  It's worth noting that since 2015, we've had at least 56 cases reported through MSRC.
+1221.72s - 1226.56s |  So we've shipped these bugs that I could find where people either inserted double fetches
+1226.56s - 1232.64s |  into their code or forgot to probe a pointer before using it.
+1232.64s - 1236.84s |  And the last point that I'd like to make is that because people are just dereferencing
+1236.84s - 1241.36s |  pointers directly, it effectively has always meant that it is impossible for Windows to
+1241.36s - 1246.60s |  use the CPU SMAP and PAN features, because as I mentioned, the only way that you can
+1246.60s - 1250.60s |  really support those features is if you have some choke point function that all user mode
+1250.60s - 1254.48s |  accesses go through so that you can turn the feature on and off.
+1254.48s - 1260.76s |  But right now, the Windows driver model, these user mode memory accesses are just inlined
+1260.76s - 1262.32s |  all over the place in drivers.
+1262.32s - 1264.56s |  So we don't have any way to support these features.
+1264.56s - 1267.35s |  OK.
+1267.35s - 1271.83s |  So this is a real life example that we'll just talk about briefly.
+1271.83s - 1275.95s |  This was inspired by an MSRC case that we fixed last year, I believe.
+1275.95s - 1280.93s |  I had to shorten it a lot, because I can't put an entire system call inside of a PowerPoint
+1280.93s - 1282.07s |  slide deck.
+1282.07s - 1285.47s |  But effectively, what was happening here, we had a system call.
+1285.47s - 1289.45s |  And I don't have a laser pointer.
+1289.45s - 1290.75s |  So we had a system call.
+1290.75s - 1293.83s |  And the system call takes a pointer.
+1293.83s - 1296.47s |  And this pointer is expected to be in user mode.
+1296.47s - 1301.07s |  And so the system call, it enters structure exception handling scope.
+1301.07s - 1302.35s |  We're in that tri-block.
+1302.35s - 1305.91s |  And it calls probe for read on that pointer to make sure that that pointer is in user
+1305.91s - 1306.91s |  mode memory.
+1306.91s - 1307.91s |  Good.
+1307.91s - 1308.91s |  So they're following the guidance.
+1308.91s - 1315.07s |  And then the next line is they copy that structure from user mode into kernel mode.
+1315.07s - 1317.39s |  So now we have a safe copy of that structure.
+1317.39s - 1318.39s |  Great.
+1318.39s - 1320.75s |  And that structure also has a pointer in it.
+1320.75s - 1322.73s |  And so we have to probe that pointer as well.
+1322.73s - 1325.57s |  So we call probe for write on that pointer.
+1325.57s - 1329.81s |  And now we know that that pointer is also pointing at user mode memory.
+1329.81s - 1331.13s |  Great.
+1331.13s - 1335.09s |  Then the system call went and executed whatever the logic was that it had to execute.
+1335.09s - 1340.53s |  And right before the system call finished, it went and wrote to that pointer that we
+1340.53s - 1343.65s |  had just called probe for write on.
+1343.65s - 1349.77s |  And the issue is that this actually allowed for kernel memory corruption.
+1349.77s - 1353.85s |  Because the slash kernel compiler flag had a regression.
+1353.85s - 1360.21s |  And what I've done in these slides is in yellow here, I've kind of highlighted what the compiler
+1360.21s - 1362.97s |  inserted for code generation.
+1362.97s - 1363.97s |  It's not what we wrote.
+1363.97s - 1365.97s |  It's kind of what the compiler did under the covers.
+1365.97s - 1369.17s |  So in this case, we call the probe for read.
+1369.17s - 1370.17s |  It works.
+1370.17s - 1371.49s |  We make the local copy of the structure.
+1371.49s - 1374.13s |  And the compiler did make that local copy of the structure.
+1374.13s - 1376.85s |  Copied the structure from user mode to kernel mode.
+1376.85s - 1382.17s |  But then when we were intending on validating the point, the local, sorry, when we were
+1382.17s - 1387.97s |  intending to validate the pointer that was stored in that local copy of the structure,
+1387.97s - 1390.33s |  the compiler did not use the local copy of the structure.
+1390.33s - 1394.49s |  The compiler went and just read the pointer out of user mode again and validated that
+1394.49s - 1396.25s |  pointer.
+1396.25s - 1400.45s |  Then at the very end of the function, when we go and we write through that pointer, the
+1400.45s - 1405.17s |  compiler went and it used the copy of the pointer that was stored on the stack.
+1405.89s - 1410.57s |  The problem here is that that is a different pointer than what we validated with probe
+1410.57s - 1411.57s |  for write.
+1411.57s - 1419.73s |  Because user mode could have changed that data while specifically in between the structure
+1419.73s - 1422.45s |  copy to the stack and the call to probe for write.
+1422.45s - 1426.09s |  User mode could have changed the contents of that pointer.
+1426.09s - 1427.09s |  So what did we do in this case?
+1427.09s - 1430.97s |  Well, I mean, we obviously went and fixed the compiler so that it wouldn't do this under
+1430.97s - 1432.29s |  slash kernel.
+1432.41s - 1438.49s |  But it takes a little bit of time to validate a compiler fix and ship that.
+1438.49s - 1444.47s |  And so to get this specific case fixed quicker, we also just updated that structure copy to
+1444.47s - 1451.17s |  use this RTL copy volatile memory API that I previously mentioned, which says, hey, actually
+1451.17s - 1454.65s |  do the copy operation, not allowed to do any weird optimizations.
+1454.65s - 1461.41s |  And this ensures that the compiler cannot insert double fetches in this case.
+1461.41s - 1466.53s |  But as I previously mentioned, we really don't want to depend on this slash kernel
+1466.53s - 1467.93s |  behavior forever.
+1467.93s - 1474.29s |  And so we started investigating what would it look like to get off of this magic that
+1474.29s - 1476.45s |  we have going on.
+1476.45s - 1482.67s |  And one option that we have is we could just tell everyone, you need to use volatile accessors
+1482.67s - 1487.09s |  when you're interacting with data from user mode so that there's no possibility for double
+1487.09s - 1491.77s |  fetches and other unwanted optimization.
+1491.77s - 1492.77s |  And that'd be great.
+1492.77s - 1493.77s |  It would solve our issues.
+1493.77s - 1495.85s |  We could get off slash kernel.
+1495.85s - 1499.81s |  But it does not help us enabling SMAP and PAN.
+1499.81s - 1503.69s |  And we'd really like to be able to enable those features.
+1503.69s - 1508.05s |  And the reason that it doesn't help us enable those features is because volatile accessors
+1508.05s - 1509.57s |  are a generic thing.
+1509.57s - 1513.49s |  The only way we can enable SMAP and PAN is if we have dedicated functionality for interacting
+1513.49s - 1516.46s |  with user mode memory.
+1516.58s - 1519.86s |  So we used ASAN to help us out here.
+1519.86s - 1524.74s |  And we did not use ASAN in the normal sense of, you know, ASAN all your code and then
+1524.74s - 1527.22s |  find memory corruption by fuzzing it.
+1527.22s - 1532.34s |  Instead, we leveraged the ability, we leveraged the fact that when you compile your code with
+1532.34s - 1538.42s |  ASAN, you effectively are able to instrument every load and store in your binary.
+1538.42s - 1543.54s |  And so in that instrumentation, we just added checks to say, hey, is this accessing user
+1543.54s - 1544.54s |  mode memory or not?
+1544.62s - 1549.70s |  And we compiled all of our kernel code with this and ran all of our tests against all
+1549.70s - 1551.90s |  of our kernel code.
+1551.90s - 1557.14s |  And we were able to figure out that there's about 10,000 spots that we could see that
+1557.14s - 1561.98s |  interact with user mode memory, either read from it or write to it.
+1561.98s - 1569.46s |  And we were also able to see that only about 1,000 of those spots are using volatile accessors.
+1569.46s - 1572.70s |  The other 9,000 are not using volatile accessors.
+1572.86s - 1580.14s |  So at a minimum, if we want to get off kernel semantics, we have to refactor 9,000 spots.
+1580.14s - 1583.94s |  So what we decided is, well, if we're already touching 9,000 spots, why not just refactor
+1583.94s - 1589.22s |  all 10,000 spots, move everyone over to user mode accessors, and then, you know, at some
+1589.22s - 1592.74s |  point, we'll be able to use SMAP and PAN in the future.
+1592.74s - 1595.94s |  And if you look at Windows Insider builds, you'll see that is what we are doing right
+1595.94s - 1596.94s |  now.
+1597.06s - 1602.02s |  This summer, we had a small six-person V Team that spent we had a time boxed effort two
+1602.02s - 1607.74s |  weeks just porting Windows code to use dedicated user mode accessor functions.
+1607.74s - 1612.50s |  And we were able to get through about 1,300 user mode accesses in that two weeks.
+1612.50s - 1613.62s |  And that includes learning time.
+1613.62s - 1616.86s |  We were trying to figure out what the model was that we wanted to use, how we wanted the
+1616.86s - 1618.38s |  refactoring to go.
+1618.38s - 1621.94s |  So I think in practice, you can go even faster than this.
+1621.94s - 1628.30s |  We are going to be requiring that all Windows code is refactored.
+1628.30s - 1633.02s |  And eventually, we're going to require that all third-party driver code is also refactored.
+1633.02s - 1635.94s |  These APIs are designed to be very easy to port.
+1635.94s - 1641.86s |  It is not a complicated process, for the most part, to port these things into existing kernel
+1641.86s - 1644.74s |  code.
+1644.74s - 1648.92s |  They prevent the sort of double fetch and other unwanted optimizations.
+1648.92s - 1654.92s |  So they are also a volatile accessor under the covers.
+1654.92s - 1656.80s |  And they always probe.
+1656.80s - 1660.68s |  So if you have code that you're writing in your driver that is expected to interact with
+1660.68s - 1665.08s |  user mode memory, it will always have a probe on it when you are using user mode accessors
+1665.08s - 1666.36s |  now.
+1666.36s - 1667.36s |  So that's great.
+1667.36s - 1669.36s |  It makes these APIs just a lot safer to use.
+1669.36s - 1671.60s |  We're super excited about this.
+1671.60s - 1675.44s |  Also worth noting that in our secure kernel environment, which I don't have time to really
+1675.44s - 1680.56s |  detail, but if you're familiar with it, we control 100% of the code that runs in that
+1680.56s - 1682.08s |  environment today.
+1682.08s - 1686.28s |  And so we're going to be able to turn on SMAP and PAN in that environment in the very near
+1686.28s - 1687.60s |  future.
+1687.60s - 1694.60s |  At this point, the secure kernel is almost entirely ported to use user mode accessors.
+1694.60s - 1695.60s |  OK.
+1695.60s - 1700.00s |  So that covers the driver model.
+1700.00s - 1704.52s |  The next thing I'm going to talk about is more just generic lockless programming.
+1704.52s - 1708.84s |  And usually when you start talking about lockless programming, people just start off
+1708.84s - 1709.84s |  by saying, why?
+1709.84s - 1710.84s |  Why are you doing this?
+1710.84s - 1713.60s |  You're just bringing a world of pain on yourself.
+1713.60s - 1718.12s |  But unfortunately, sometimes you have to do lockless programming, either for performance
+1718.12s - 1720.08s |  reasons, scalability reasons.
+1720.08s - 1725.16s |  For example, you might say, well, it would be terrible for performance and scalability
+1725.16s - 1728.04s |  to have a global lock for all of these objects.
+1728.04s - 1730.24s |  So we need to have a per object lock.
+1730.24s - 1734.40s |  And we don't have space to put an entire mutex inside of every single one of these objects.
+1735.28s - 1740.28s |  So we need to use our own custom locking implementation.
+1740.28s - 1746.26s |  We also have things that we do on Windows, where one example is bitmap scanning.
+1746.26s - 1750.60s |  In some areas of the memory manager, we might need to go and scan a large bitmap and look
+1750.60s - 1752.20s |  for a free index.
+1752.20s - 1756.76s |  And rather than doing that entire scanning operation while holding a lock, we will do
+1756.76s - 1759.68s |  the scanning operation without holding the lock.
+1759.68s - 1763.48s |  And when we find a free index, we will then acquire the lock, check to see if that index
+1763.48s - 1767.12s |  is still free, take the index, and then release the lock.
+1767.12s - 1770.24s |  And if it's not still free, then we'll drop the lock, and we'll just do this process over
+1770.24s - 1771.68s |  and over again.
+1771.68s - 1775.72s |  And this is, once again, it's just a scalability and performance thing.
+1775.72s - 1781.81s |  It can really dramatically reduce the amount of time that you spend inside of locks.
+1781.81s - 1783.89s |  So how can things go wrong?
+1783.89s - 1787.87s |  Let's look at a very simple interlock compare exchange example.
+1787.87s - 1794.25s |  And really, all that this code is trying to do is they want to update the value that is
+1794.25s - 1796.25s |  stored in some object.
+1796.25s - 1800.73s |  And the invariant that is being enforced here is that the value stored in the object will
+1800.73s - 1802.57s |  never shrink.
+1802.57s - 1808.29s |  So they read the current value, and they check, is the value I want to set bigger than the
+1808.29s - 1809.29s |  current value?
+1809.29s - 1810.85s |  And if it is, great.
+1810.85s - 1813.21s |  Then I will call interlock compare exchange.
+1813.21s - 1817.59s |  And in case you don't remember, you know, the parameters for interlock compare exchange,
+1817.59s - 1820.29s |  the first parameter is the address you want to update.
+1820.29s - 1823.85s |  The second parameter is the value you want to write to that address.
+1823.85s - 1828.97s |  The third parameter is what you expect the current value to be.
+1828.97s - 1830.13s |  So what goes wrong here?
+1830.13s - 1834.29s |  Well, once again, there's no volatile access that was used here.
+1834.29s - 1838.65s |  And so again, in yellow, I've kind of highlighted what the compiler will do under the covers,
+1838.65s - 1842.25s |  which I think really illuminates what happens here.
+1842.25s - 1845.93s |  When you do that if check to say, hey, is the value I want to write bigger than the
+1845.93s - 1851.09s |  current value, the compiler goes and loads that memory location, sees what the current
+1851.09s - 1852.09s |  value is.
+1852.45s - 1856.17s |  But then when you call interlock compare exchange, the compiler just goes and loads that value
+1856.17s - 1858.25s |  again as the expected value.
+1858.25s - 1861.61s |  And the value could change in between those two spots, right?
+1861.61s - 1867.85s |  And so you could actually end up shrinking the value that's stored in that object.
+1867.85s - 1871.29s |  Another example that I don't want to spend too much time talking about this one, but
+1871.29s - 1876.57s |  this is just in our memory management code, effectively what this code is doing is it's
+1876.57s - 1882.69s |  updating PFN database entries, which we use to track the state of memory.
+1882.69s - 1885.41s |  And what the memory manager would do is it would say, OK, I'm going to go and I'm going
+1885.41s - 1888.41s |  to there's a lock bit in each structure.
+1888.41s - 1892.57s |  So the first step is we go and we acquire the lock for each structure that we're going
+1892.57s - 1893.57s |  to update.
+1893.57s - 1894.57s |  Great.
+1894.57s - 1898.09s |  Then we go through this loop and we say we have this new value that we want to write
+1898.09s - 1899.21s |  to that structure.
+1899.21s - 1903.01s |  The lock bit is still set in the new value.
+1903.01s - 1907.85s |  And we're just going to go and copy the new structure over the old one.
+1907.85s - 1911.41s |  And then when this whole operation is done, we'll go and release the lock bit.
+1911.41s - 1916.73s |  And because locking is used here, as you probably can imagine, there are other threads that
+1916.73s - 1917.73s |  are running.
+1917.73s - 1921.49s |  And those threads might be looking at this and might be trying to acquire the lock.
+1921.49s - 1926.49s |  And what the compiler could do under the covers, since we are not using a volatile copy, is
+1926.49s - 1931.45s |  the compiler could just write out garbage into these PFN structures, temporarily at
+1931.45s - 1933.09s |  least.
+1933.09s - 1938.49s |  And that garbage that it writes out could, for example, clear the lock bit temporarily.
+1938.49s - 1940.93s |  And so then you have another thread that says, oh, this lock bit is clear.
+1940.93s - 1942.81s |  I could go and take the lock on this structure.
+1942.81s - 1945.41s |  Now I'm the only one working on this structure.
+1945.41s - 1949.13s |  But you're not, of course, because this loop is running and this loop is going to go and
+1949.13s - 1950.41s |  overwrite the structure.
+1950.41s - 1956.13s |  And so the fact that the compiler can go and just temporarily write out garbage to this
+1956.29s - 1960.41s |  location completely breaks the locking paradigm that you're trying to go for.
+1960.41s - 1966.21s |  And this was not an actualized issue.
+1966.21s - 1969.41s |  So our tooling detected this as a potential issue.
+1969.41s - 1971.93s |  But the compiler did not actually do this code gen.
+1971.93s - 1976.52s |  It's just possible for the compiler to do this code gen.
+1976.52s - 1977.52s |  OK.
+1977.52s - 1979.12s |  So what are we doing here?
+1979.12s - 1984.84s |  We have two strategies that we are using to try to fix the way that we're doing lockless
+1984.84s - 1985.84s |  programming.
+1985.84s - 1990.16s |  The first is we have our kernel concurrency sanitizer.
+1990.16s - 1996.36s |  And effectively, the way that this tool works is by, once again, instrumenting all the loads
+1996.36s - 1998.56s |  and stores in the kernel.
+1998.56s - 2001.60s |  We run all of our tests against the kernel.
+2001.60s - 2006.12s |  And periodically, this tool will just stop the world on all threads and look at what
+2006.12s - 2009.68s |  memory address each thread is accessing.
+2009.68s - 2013.92s |  And if you have multiple threads that are accessing the same memory address at the same
+2013.92s - 2020.04s |  time and those threads are not using volatile, then we file a bug against people.
+2020.04s - 2023.76s |  And we say, hey, I know that you think you're doing a 4-byte load on this memory address
+2023.76s - 2025.72s |  or a 4-byte store on this memory address.
+2025.72s - 2027.64s |  And you might be doing that right now.
+2027.64s - 2032.96s |  But the compiler is free to optimize this thing since you're not using volatile.
+2032.96s - 2039.80s |  To date, we have fixed hundreds of issues in Windows as a result of the KCCN finds.
+2039.80s - 2041.80s |  It's super effective.
+2041.80s - 2045.96s |  It has very nice diagnostics information that it provides.
+2045.96s - 2048.52s |  And the bugs are generally super actionable.
+2048.52s - 2055.32s |  The only real downside with the KCCN stuff is that, because it runs on a timer periodically
+2055.32s - 2060.72s |  stopping the world, it is not deterministic in that you might do a test run one time.
+2060.72s - 2061.72s |  You get no results.
+2061.72s - 2062.72s |  You do another test run.
+2062.72s - 2063.72s |  You get some results.
+2063.72s - 2067.16s |  Third test run, you don't get any results again.
+2067.16s - 2072.48s |  So you have to get a lot of iterations to really find all the concurrency issues that
+2072.48s - 2074.96s |  you have.
+2074.96s - 2077.64s |  The other way that we're tackling these is with static analysis.
+2077.64s - 2082.72s |  And the interlock compare exchange example is actually a great one for static analysis,
+2082.72s - 2090.20s |  because it's very easy to really just tell a static analyzer, hey, if somebody is doing
+2090.20s - 2095.74s |  nonvolatile loads to some address that they are then passing to interlock compare exchange,
+2095.74s - 2096.74s |  that has to be a bug.
+2097.32s - 2099.46s |  And the whole reason they're using interlock compare exchange is because they're doing
+2099.46s - 2100.52s |  lockless programming.
+2100.52s - 2110.34s |  So any memory accesses to that same pointer should be volatile.
+2110.34s - 2117.76s |  And the last thing that I'm going to talk about is issues with ARM64 device memory.
+2117.76s - 2122.66s |  And just a little bit of background for folks on this one.
+2122.66s - 2128.24s |  Some of you are probably aware that whenever you map a page of memory inside your process,
+2128.24s - 2133.30s |  that page of memory can have attributes that control the cacheability of the page.
+2133.30s - 2141.46s |  So most applications are only interacting with write-back cacheable memory, which means
+2141.46s - 2150.10s |  that the CPU can cache any memory access that you do in your L1, L2, L3 CPU caches, and
+2150.10s - 2151.62s |  everything goes super fast.
+2151.62s - 2157.90s |  But you can also tell the CPU, hey, don't cache anything from this page in the CPU caches
+2157.90s - 2158.90s |  at all.
+2158.90s - 2161.76s |  Whenever I write to this page, it needs to go straight out to the memory controller.
+2161.76s - 2165.00s |  When I read from this page, it needs to come from the memory controller.
+2165.00s - 2167.08s |  It can't be stored in the cache.
+2167.08s - 2172.12s |  And even more extreme is you can mark memory as device memory, which makes it uncacheable
+2172.12s - 2177.72s |  but also has some ordering requirements on how those memory accesses actually go out
+2177.72s - 2179.56s |  to the memory controller.
+2179.56s - 2185.84s |  And device memory, as you might imagine, is typically used for mapping the memory mapped
+2185.84s - 2190.13s |  IO ranges of a hardware device.
+2190.13s - 2195.29s |  When we were doing the ARM64 bring up on Windows, there were cases where people were calling
+2195.29s - 2201.41s |  mem copy against memory that was mapped as device memory.
+2201.41s - 2206.49s |  And to aid the bring up, we basically just built a little bit of a hack inside of the
+2206.49s - 2212.65s |  mem copy implementation to guarantee that the CRT's mem copy implementation will only
+2212.65s - 2216.77s |  perform naturally aligned memory accesses.
+2216.79s - 2222.07s |  And that was required because one of the restrictions that I guess I forgot to mention about ARM64
+2222.07s - 2226.59s |  device memory is that all memory accesses to device memory have to be naturally aligned.
+2226.59s - 2232.23s |  So if you try to do an unaligned access on device memory, you get an exception.
+2232.23s - 2235.91s |  So we just put this hack into place in mem copy to say, oh, that's cool.
+2235.91s - 2240.19s |  We'll just let you call mem copy on device memory and we'll just guarantee that mem copy
+2240.19s - 2244.31s |  only does aligned accesses.
+2244.93s - 2250.65s |  This is not the kind of thing you want to live with forever because for one, mem copy
+2250.65s - 2253.37s |  can still perform unaligned accesses.
+2253.37s - 2255.57s |  Because remember what we talked about earlier?
+2255.57s - 2258.97s |  Mem copy can be optimized in all sorts of ways by the compiler.
+2258.97s - 2263.77s |  So even though you said mem copy, you're not necessarily actually calling into the CRT
+2263.77s - 2265.21s |  mem copy function.
+2265.21s - 2270.01s |  The compiler could choose to just emit some loads and stores directly in the function
+2270.01s - 2271.85s |  to do the mem copy operation.
+2271.85s - 2274.09s |  And the compiler does not care about alignment.
+2274.09s - 2278.15s |  So you end up with unaligned memory accesses.
+2278.15s - 2282.19s |  This ended up being a real pain when we were going to ingest new compilers into Windows
+2282.19s - 2287.11s |  because we take the new compiler in, try to run all our tests.
+2287.11s - 2288.11s |  Windows is crashing.
+2288.11s - 2289.11s |  Why is Windows crashing?
+2289.11s - 2294.35s |  Oh, because some new optimizer came along and added some unaligned memory accesses to
+2294.35s - 2297.80s |  what used to be a mem copy.
+2297.80s - 2299.28s |  So that was really annoying.
+2299.28s - 2305.16s |  The other thing that was really suboptimal about this, though, is that contrary to what
+2305.86s - 2311.18s |  a lot of people expect, mem copy can actually go a lot faster if it performs unaligned memory
+2311.18s - 2312.18s |  accesses.
+2312.18s - 2316.34s |  A lot of people think, you know, aligned memory accesses are the fastest.
+2316.34s - 2317.34s |  And they're right.
+2317.34s - 2319.70s |  Aligned memory accesses typically are the fastest.
+2319.70s - 2325.46s |  But what is slow is having to do a bunch of alignment checks in your mem copy function
+2325.46s - 2329.86s |  rather than just getting on with it and doing some, you know, copy operations.
+2329.86s - 2335.36s |  If you have to spend a bunch of time testing alignment and doing, you know, pointer adjustment
+2335.36s - 2339.40s |  to, like, make sure that the pointers are aligned, it just really slows things down.
+2339.40s - 2345.48s |  So it turns out you can make mem copy go about twice as fast, if not faster, by allowing
+2345.48s - 2348.30s |  it to do unaligned accesses.
+2348.30s - 2355.28s |  So for the latest version of Windows 11, we have kind of unwound this hack.
+2355.28s - 2359.10s |  We built this special stress test mem copy.
+2359.10s - 2366.54s |  And what this mem copy does under the covers is it always performs an unaligned memory
+2366.54s - 2367.54s |  access.
+2367.54s - 2370.50s |  At the very start of the function, we test if the size is greater than 2.
+2370.50s - 2375.46s |  And if the size is greater than 2 that you're copying, then we will load 2 bytes from the
+2375.46s - 2379.50s |  source and 2 bytes from the destination.
+2379.50s - 2381.88s |  That may or may not be aligned.
+2381.88s - 2385.58s |  And then we will add 1 to both the source and destination pointer.
+2385.58s - 2387.78s |  And we will load 2 bytes again.
+2387.78s - 2389.82s |  Now, one of those has to be unaligned, right?
+2389.82s - 2393.90s |  If you load 2 bytes from the source and then you add 1 to the source and you load 2 bytes,
+2393.90s - 2395.78s |  one of those is not aligned.
+2395.78s - 2400.22s |  And so we use that to stress test the system and find spots that we're calling mem copy
+2400.22s - 2401.74s |  on device memory.
+2401.74s - 2406.46s |  Now, one kind of annoyance came up, which is that there were places where people were
+2406.46s - 2412.02s |  calling mem copy on device memory inside of structured exception handling.
+2412.02s - 2416.98s |  And so we would generate this alignment exception, but then they would catch that exception,
+2416.98s - 2418.46s |  and their code would blow up somewhere else.
+2418.46s - 2421.82s |  And it was really confusing trying to figure out where things went wrong.
+2421.82s - 2426.74s |  So we also just put in a registry key into Windows for testing purposes to say just bug
+2426.74s - 2428.86s |  check the system if an alignment fault happens.
+2428.86s - 2432.26s |  You don't even return that to structured exception handling.
+2432.26s - 2435.82s |  And that allowed us to really figure out, okay, here are the spots that are calling
+2435.82s - 2438.18s |  mem copy on device memory.
+2438.18s - 2440.70s |  Go and fix that stuff.
+2440.70s - 2446.42s |  So found fixed all that stuff on the latest version of Windows on ARM64.
+2446.42s - 2451.14s |  Mem copy now defaults to an unaligned implementation that is way faster.
+2451.14s - 2455.70s |  And we don't have to worry about, you know, really annoying compiler ingestion issues
+2455.70s - 2460.74s |  due to us kind of incorrectly using mem copy on device memory.
+2460.74s - 2467.18s |  And for drivers and kernel code and user mode code, for that matter, that is actually trying
+2467.18s - 2472.34s |  to do a mem copy-like operation against device memory.
+2472.34s - 2475.66s |  We just added an API specifically for that.
+2475.66s - 2481.66s |  And really all this API guarantees is that it will not generate an alignment fault per
+2481.66s - 2483.66s |  the CPU rules, right?
+2483.66s - 2490.04s |  So if, like, if you're running on ARM64 and ARM64 CPUs say device memory accesses have
+2490.04s - 2495.42s |  to be naturally aligned, this API will guarantee that it will meet those requirements.
+2497.48s - 2498.48s |  Okay.
+2498.48s - 2499.48s |  So wrapping up.
+2499.48s - 2500.84s |  You know, we've talked about a lot of issues.
+2500.84s - 2506.04s |  I just want to emphasize that most of the issues that we've talked about today are not
+2506.04s - 2511.04s |  actually reproducing in Windows code because we have these safety nets like the slash kernel
+2511.04s - 2513.84s |  switch that are keeping things safe.
+2513.84s - 2519.44s |  So, you know, the issues are kind of rampant, but there are controls in place to stop them.
+2519.44s - 2523.08s |  But we are going to make things better, and we are actively working on making things better
+2523.08s - 2524.52s |  right now.
+2524.52s - 2529.16s |  And the result of this is going to be better security, better performance, better correctness,
+2529.16s - 2530.52s |  better reliability.
+2530.52s - 2533.58s |  So it's just a win on all fronts, really.
+2533.58s - 2538.12s |  We are going to be requiring that drivers also come along for the ride.
+2538.12s - 2542.24s |  We need to test this stuff internally first, make sure that all the tooling's there, the
+2542.24s - 2545.24s |  process is down, everything works well.
+2545.24s - 2548.46s |  But once we have all of that stuff ironed out, everyone's coming along for the ride
+2548.46s - 2551.20s |  with us.
+2551.20s - 2552.64s |  A few announcements.
+2552.64s - 2557.88s |  So kernel ASAN will be available on Windows for third-party drivers.
+2557.88s - 2560.84s |  Tentatively, on November 11th, it might slip.
+2560.84s - 2562.92s |  You know, they said, hey, maybe don't put the date in.
+2562.92s - 2564.68s |  I decided I'm going to put the date in.
+2564.68s - 2569.96s |  But I'm just going to caveat it with, you know, we're not signing, you know, it's not
+2569.96s - 2570.96s |  a contract.
+2570.96s - 2572.64s |  We're doing our best.
+2572.64s - 2577.48s |  The concurrency sanitizer that I talked about will be shipping soon.
+2577.48s - 2582.04s |  I don't know exactly when, but we are working on making that available for third-party drivers
+2582.04s - 2583.04s |  as well.
+2583.04s - 2588.28s |  And the user mode accessor APIs that we're moving to will also be available soon.
+2588.28s - 2591.52s |  They will be in the next version of Windows.
+2591.52s - 2595.04s |  I can't comment on when the next version of Windows is released, of course.
+2595.04s - 2599.44s |  It seems like we have a pattern, but I never know until it happens.
+2599.44s - 2602.96s |  But yeah, that's what we've got going on.
+2602.96s - 2606.40s |  Big thank you to everyone who has helped with this project at Microsoft.
+2606.40s - 2611.88s |  There's way too many names to list, but there's a lot of folks that have either spent a lot
+2611.88s - 2616.40s |  of work on these projects or a lot of time just advising us on these projects and helping
+2616.40s - 2617.40s |  us prototype.
+2617.40s - 2621.88s |  You know, we can't do this stuff without everyone's help, especially when you're talking about,
+2621.88s - 2626.08s |  you know, many, many, many thousands of spots in the kernel that need to be refactored.
+2626.08s - 2627.56s |  And Morris is hiring.
+2627.56s - 2632.96s |  So if you're, you know, interested in working with us, there's the link.
+2632.96s - 2634.64s |  And yep.
+2634.64s - 2635.60s |  I am at time.

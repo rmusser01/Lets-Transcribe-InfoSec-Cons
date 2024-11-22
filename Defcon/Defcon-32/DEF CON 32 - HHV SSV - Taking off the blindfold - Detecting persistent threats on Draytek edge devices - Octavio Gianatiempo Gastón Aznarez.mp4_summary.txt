@@ -1,0 +1,72 @@
+**Introduction**
+- **Octavio Gianatiempo** and **Gastón Aznarez** from the **Faraday Research Team** present their research on **Draytek edge devices**.
+
+**Motivation**
+- A client reported a security breach with outdated Draytek equipment on their network.
+- Previous vulnerabilities and exploits were found in high-end Draytek routers.
+- The researchers wanted to determine if these routers were the entry point for attackers.
+
+**Attack Surface of Draytek Routers**
+- Over 5,100 exposed devices were found, mostly in the UK.
+- Vulnerabilities ranged from information disclosure to authenticated remote code execution.
+
+**Research Methodology**
+- The researchers used a **Draytek Vigor 2925** running **MIPS32 RTOS** as their test subject.
+- They encountered challenges due to the closed-source nature of the firmware.
+
+**Firmware Format Reverse Engineering**
+- The firmware consists of two main sections: the **binary section** and the **web section**.
+- The binary section includes the bootloader, compressed RTOS kernel, and the DLM (Dynamic Kernel Modules) code.
+- The web section contains a compressed file system with static files for the router's web UI.
+- The researchers created a specification of the firmware structure using **KTI structs** for easier manipulation.
+
+**Compression Algorithm Reverse Engineering**
+- During boot, the RTOS is decompressed into the same memory space as the bootloader.
+- The decompression function is also used during runtime to decompress file systems.
+- Draytek uses a **custom frame format** with a standard LC4 compression block format.
+- The researchers wrote a **decompressor and compressor** for this custom format.
+
+**DLM (Dynamic Kernel Modules) Analysis**
+- DLM stands for **Dynamic Kernel Modules**.
+- The RTOS can load code modules dynamically during runtime, independent of the firmware.
+- There are three modules: **VR9 GeoIP**, **VR9 App E** (used to block LAN traffic), and **VR9 SSH** (SSH server implementation).
+- These modules can be updated during runtime and take precedence over the modules included in the firmware.
+- The modules are compressed using the same algorithm as the RTOS and are also encrypted.
+- The researchers identified the encryption algorithm as a **modified version of XDA** and wrote a **decryptor and encryptor**.
+- Decrypted and decompressed modules are **relocatable ELFs**, making them easy to reverse engineer.
+- The firmware includes an **ELF loader** and a **symbol table** for linking modules to the kernel.
+
+**Firmware Analysis and Exploitation**
+- The researchers developed a tool called **DRYTEXT Arsenal** to extract and analyze firmware components.
+- They identified insecure password storage and non-constant time comparison of credentials, leading to a timing attack vulnerability.
+- The second-step authentication code was predictable due to the use of a self-random function with the seed based on the time elapsed since boot.
+- A null reference vulnerability was found in the HCP server, which could be exploited remotely if the router was exposed to the internet.
+- By combining vulnerabilities, an attacker could predict second-step authentication codes and gain unauthorized access.
+
+**Vulnerabilities in Module Update Process**
+- Draytek's APP Enforcement signature feature allows blocking specific web traffic by updating signature modules.
+- However, the update process lacks proper security measures:
+   - Modules are uploaded without SSL enforcement or certificate checks.
+   - Post-authentication endpoints and configuration file upload endpoints lack proper security checks, allowing arbitrary DLM uploads.
+   - Supply chain risks: modules can be easily crafted and appended to the firmware.
+- An attacker could exploit these vulnerabilities to install malicious modules, such as a backdoor SSH module.
+
+**Exploiting the Module Update Process**
+- The researchers demonstrated how to create and install a malicious SSH module:
+   - Reverse engineer the SSH module to find the authentication function.
+   - Write and compile a hook function that checks custom credentials.
+   - Merge the hook with the original module and modify relocations in the entry table.
+   - Upload the modified DLM to the router.
+
+**Mitigation Strategies**
+- The researchers proposed removing the dynamic module feature or implementing in-memory integrity checks for loaded modules.
+- They devised a mechanism to check module integrity by fetching signatures from a trusted server and verifying certificates.
+- This defensive module was implemented as a proof of concept, but ideally, the vendor should include such features in the firmware with a secure update chain.
+
+**Conclusions and Takeaways**
+- The vulnerabilities were found in the Draytek Vigor 2925 router but are likely present in other models due to the shared RTOS.
+- All identified vulnerabilities have been patched, but CEIDs are not yet available.
+- The RTOS code is complex and vast, suggesting more vulnerabilities may exist.
+- The researchers open-sourced their tool, **DRYTEXT Arsenal**, to facilitate further research.
+- Closed-source firmware hinders security and makes it challenging to identify and report vulnerabilities.
+- Vendors should include features that facilitate observability, vulnerability research, and threat detection solutions.

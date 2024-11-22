@@ -1,0 +1,56 @@
+**Introduction**
+- Speaker: Dylan Franke, Senior Proactive Security Consultant at Mandiant (now part of Google)
+- Talk focuses on fuzzing macOS IPC mechanisms and general fuzzing techniques
+
+**Fuzzing Basics**
+- **Fuzzing**: Sending unexpected inputs to a system to trigger unexpected behavior
+- **Attack Vector**: Channel through which inputs are sent to a system (e.g. Bluetooth, IPC, network packets)
+- Fuzzing targets **memory-unsafe languages** like C and C++ to exploit vulnerabilities such as buffer overflows, use-after-free, and memory leaks
+
+**Types of Fuzzing**
+- **Mutation-based Fuzzing**: Modifying existing valid inputs to create new ones
+- **Grammar-based Fuzzing**: Generating inputs based on specified rules or syntax
+
+**macOS IPC Mechanisms**
+- XNU Kernel has three layers: Mach, BSD, and IOKit
+- Focus is on **Mach layer** and its IPC mechanisms, specifically **Mach ports**
+- Mach ports are IPC message queues managed by the kernel, allowing processes to communicate
+
+**The Fuzzing Cycle**
+- Identifying an **attack vector** and generating a **corpus** of valid inputs
+- Creating a **fuzzing harness** to send inputs through the attack vector
+- Fuzzing to produce crashes and identifying relevant ones for exploit development
+
+**Finding an Entry Point**
+- Initial idea: Modify real Mach messages being sent between processes
+- Cons: Slow, potential points of failure, difficulty in determining the cause of crashes
+- Improved approach: Call the message handler function directly, getting closer to the system of interest
+
+**Building a Corpus of Inputs**
+- Need valid inputs to send through the attack vector for effective fuzzing
+- Used tools like **SBTool** to identify sandboxed processes that can send messages to specific mock services
+- Extracted framework binaries from the dylshared cache and analyzed them to find the mock receive functionality
+
+**Creating a Fuzzing Harness**
+- Wrote a custom harness to call the desired function and send inputs
+- Used **Mako symbol parser** to get the function offset and call it due to symbol not being exported
+
+**Fuzzing and Code Coverage**
+- A fuzzer generates inputs, sends them through the harness, and monitors for crashes
+- Importance of **code coverage** to understand which parts of the code are being reached by the inputs
+- Used dynamic instrumentation tools like **Frida** and **TinyInst** to collect code coverage data
+
+**Improving Fuzzing**
+- Regularly checking code coverage to identify areas of the code not being reached
+- Need to consider **initialization** of the process being fuzzed to ensure the fuzzer is in the same state
+- Approaches: Calling specific initialization functions or modifying a process with proper initialization to spawn the fuzzer
+
+**Identifying Relevant Crashes**
+- Heuristics: Crashes on write/execution, illegal instruction exceptions, heap corruption, stack traces containing free/malloc
+- Tools: **Crash Wrangler** and **Crashmon** to sift through crash dumps and identify potentially exploitable crashes
+- Emphasizes the importance of **crash reproducibility**
+
+**Conclusion**
+- Covered fuzzing basics, macOS IPC mechanisms, the fuzzing process, and common pitfalls
+- Personal fuzzing tips: Get close to the target function, view difficulty as an indicator of potential vulnerabilities, and leverage code coverage
+- Encouraged attendees to explore vulnerability research and fuzzing

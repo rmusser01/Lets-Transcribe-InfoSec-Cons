@@ -1,0 +1,425 @@
+{
+  "webpage_url": "https://www.youtube.com/watch?v=wT9gyOeN6zY",
+  "title": "DEF CON 32 - QuickShell Sharing is caring abt RCE attack chain on QuickShare - Or Yair, Shmuel Cohen",
+  "description": "Quick Share (formerly Nearby Share) has enabled file sharing on Android for 4 years and expanded to Windows a year ago.\n\nGoogle's promotion of Quick Share for preinstallation on Windows, alongside the limited recent research, ignited our curiosity about its safety, leading to an investigation that uncovered more than we had imagined.\n\nWe studied its Protobuf-based protocol using hooks, built tools to communicate with Quick Share devices, and a fuzzer that found non-exploitable crashes in the Windows app. We then diverted to search for logical vulnerabilities, and boy oh boy, we regretted we hadn\u2019t done it sooner.\n\nWe found 10 vulnerabilities both in Windows & Android allowing us to remotely write files into devices without approval, force the Windows app to crash in additional ways, redirect its traffic to our WiFi AP, traverse paths to the user\u2019s folder, and more. However, we desired the holy grail, an RCE. Thus, we returned to the drawing board, where we realized that the RCE is already in our possession in a form of a complex chain.\n\nIn this talk, we\u2019ll introduce QuickShell - An RCE attack chain on Windows combining 5 out of 10 vulnerabilities in Quick Share. We\u2019ll provide an overview about Quick Share\u2019s protocol, present our fuzzer, the found vulnerabilities, a new HTTPS MITM technique, and finally the RCE chain.",
+  "channel_url": "https://www.youtube.com/channel/UC6Om9kAkl32dWlDSNlDS9Iw",
+  "duration": 2707,
+  "channel": "DEFCONConference",
+  "uploader": "DEFCONConference",
+  "upload_date": "20241016"
+}
+
+0.00s - 12.25s | This text was transcribed using whisper model: large-v2
+
+ I'd like to introduce Or and Shmuel. Here we go. And away we go.
+12.25s - 17.25s |  Okay. Hi everyone. Today we will present Quickshare. Sharing is caring about an RC attack chain
+20.39s - 25.39s |  on Quickshare. So, my name is Or Yair. I'm the security research team lead at SafeBreach.
+28.69s - 33.97s |  I have more than six years of experience in security research. My past research included
+33.97s - 38.97s |  some research on Linux environments, embedded devices, Android devices, and more. And for
+41.31s - 46.25s |  more than three years now my main focus lies in vulnerability research in a Windows operating
+46.25s - 53.88s |  system and third party apps that run on it. Hi everyone. My name is Shmuel Cohen and I'm
+53.88s - 59.30s |  excited to be here today and present the finding of our recent research. A little bit about
+59.30s - 65.16s |  myself. I have six years of experience in the cyber security industry. Previously I
+65.16s - 70.72s |  conducted APT malware research within the checkpoint research group and currently I'm part
+70.72s - 75.70s |  of the SafeBreach original research team where I focus primarily on vulnerability research on
+75.70s - 83.87s |  various products. Okay. So, let's see what we're going to talk about today. We'll start with
+86.25s - 92.45s |  what is Quickshare and why we chose it as our primary target for this research. We'll then
+92.47s - 97.47s |  move on to get to get a brief overview about the protocol that Quickshare uses. We'll then see
+99.65s - 105.19s |  the first research approach that we took for this research which is fuzzing. We'll see the
+105.19s - 110.39s |  research approach shift um that we took that led us to other vulnerabilities and we'll see the
+110.39s - 117.23s |  vulnerability discovery that um that we had vulnerability discoveries that we had um based on
+117.25s - 123.69s |  these two approaches. Then we'll see how we managed to assemble a very unconventional and
+123.69s - 128.69s |  creative RCE attack chain from these vulnerabilities and we'll conclude with takeaways and a
+131.47s - 136.47s |  link to the GitHub repository of all the tools that we created. So, what is Quickshare?
+140.27s - 147.11s |  Quickshare is Google's nearby file transfer solution for Android just like Apple's AirDrop.
+147.13s - 152.67s |  Quickshare was formerly known as NearbyShare and then last January at CES, Google and
+152.67s - 158.91s |  Samsung decided to combine their file sharing solutions into a single one and call it
+158.91s - 165.31s |  Quickshare. So, we know what the talk is about but why did we even choose to target
+165.31s - 171.65s |  Quickshare? Last July, Google has officially released a Windows version of Quickshare for
+171.67s - 176.77s |  Windows allowing to share files between Windows computers to any other device with
+176.77s - 183.15s |  Quickshare. An interesting fact from Google's announcement about Quickshare at CES is that
+183.15s - 188.95s |  they are working with leading PC manufacturers just like LG to expand Quickshare to Windows
+188.95s - 196.94s |  PCs as a pre-installed app making Quickshare for Windows a much more attractive target.
+196.94s - 202.38s |  Moreover, Quickshare performs file transfers using several communication methods. It
+202.38s - 208.88s |  supports WebRTC, Bluetooth, Wi-Fi, NFC, Wi-Fi direct and even sending files over a Wi-Fi
+208.88s - 213.88s |  hotspot of one of the devices. As far as we knew, Quickshare was Google's first Windows app
+216.54s - 222.66s |  to use all these communication methods. In general, most of Google's services that are used
+222.66s - 229.26s |  on Windows are in the browser. This was a first of a kind for Google and thus chances for
+229.28s - 235.82s |  mistakes were higher. Looking for past research, the only one that we could really find was a
+235.82s - 240.30s |  research called Nearby Threats, Reversing, Analyzing and Attacking Google's Nearby
+240.30s - 246.20s |  Connections on Android. The research analyzed Google's Nearby Connections API that is the
+246.20s - 253.34s |  API that Nearby Share and later on Quickshare use in their implementations. And Quickshare
+253.34s - 258.38s |  and Nearby Share didn't even exist back then. It was just an API for third party
+258.40s - 263.40s |  applications. The Windows app did not exist um also of course. Another interesting fact was
+267.84s - 272.78s |  that we saw that most of the applications code can be found in open source repositories by
+272.78s - 277.78s |  Google. It was not all of it but some of it at least. And in addition we just could not find any
+280.56s - 285.56s |  CVEs related to Quickshare. Concluding all of these facts together led us to evaluate Quickshare
+288.76s - 293.76s |  as a valuable and likely to be breached target. Our final goal was to achieve something that was
+297.04s - 302.04s |  never achieved using Quickshare and that was remote code execution. Starting our journey we
+306.60s - 313.24s |  needed to understand Quickshare's protocol of course. Therefore the first thing we did was to
+313.24s - 319.92s |  find the most basic functions that Quickshare uses to send and receive packets. Once we
+319.92s - 325.10s |  find such functions if they are generic and are used for all communication methods then we'll
+325.10s - 331.60s |  be able to get a clear view of all packets that are being sent and received by the app in
+331.60s - 337.88s |  their binary form. Then just as we needed we found the read and write functions as part of a
+337.88s - 343.96s |  base class that was called base endpoint channel. Deeper inside the read function we were
+343.96s - 349.06s |  able to understand that the packets that are being sent and received are packets of a type
+349.06s - 355.34s |  called offline frame. That is because each packet that was received was parsed into an
+355.34s - 360.34s |  offline frame object. But offline frame object was not a normal object as its class was
+363.52s - 368.52s |  generated by protobuf. In here we can see the protobuf definition of offline frame and using
+371.86s - 376.86s |  protobuf this proto file is being compiled into CPP files that define the offline frame and
+379.10s - 384.10s |  provide functions to serialize it to bytes and deserialize it from bytes. But don't be
+386.40s - 392.64s |  alarmed by the name offline frame too much because offline frame is the base type for almost
+392.64s - 398.72s |  all packet types that we are going to discuss in this talk and so from now on we will just
+398.72s - 403.72s |  mostly call them packets instead of offline frames. And so our first tool for this research
+404.72s - 409.72s |  was born pretty fast. We needed a tool that will provide us abilities to watch the
+412.42s - 418.30s |  communication. So we wrote a DLL that hooks the read and write functions and textually logs
+418.30s - 423.90s |  each packet that is being sent and received with all of its fields. This tool allowed us to
+423.90s - 428.60s |  understand the protocol much better and Shmuel will be the one to elaborate on what we
+428.60s - 435.81s |  learned. Thank you all. Cool. So now that we can sniff QuickShare packets it's time to take a
+438.17s - 444.45s |  deep dive of the protocol used by QuickShare. So there's an API called Nearby Connections
+444.45s - 451.45s |  API and it's used to discover, connect and exchange data with nearby devices in real time
+451.45s - 456.79s |  regardless of network connectivity. QuickShare uses the Nearby Connections API with its
+456.81s - 463.45s |  own implementation. Let's start with reviewing the Nearby Connections API. So it's based on
+463.45s - 468.55s |  protobuf which is used to serialize structured data. It's mostly encrypted. The encryption is
+468.55s - 474.55s |  handled using Google's UK2 library. Each app is uniquely identified within the Nearby
+474.55s - 481.33s |  Connections API by a service ID that is provided by the app's developers. It has multiple
+481.37s - 487.65s |  connections strategies such as peer-to-peer, star and a cluster. We will focus on the
+487.65s - 493.15s |  peer-to-peer strategy because it's the one used by QuickShare. In this strategy there's
+493.15s - 498.89s |  initiator and the responder functioning much like a client and server. In our protocol
+498.89s - 505.73s |  overview we will examine packets that send during a file transfer from a phone to a PC. The
+505.73s - 510.83s |  first stage of communication is a connection request packet. Following that the initiator
+510.83s - 516.67s |  starts with encryption handshake. The encryption handshake starts by sending a UK client
+516.67s - 523.45s |  init packet to the responder. Then the responder replies with a UK server initialization
+523.45s - 530.09s |  packet and finally the initiator responds with a UK client finish packet. At this point the UK
+530.09s - 535.13s |  encryption handshake is successfully completed ensuring that all subsequent packets will be
+535.13s - 540.81s |  encrypted. Next the responder sends a connection response packet indicating that it's
+540.81s - 547.21s |  accepted the connection and the initiator responds with a similar packet back. At this point
+547.21s - 551.95s |  QuickShare proprietary communication begins. This proprietary communication uses various types
+551.95s - 558.33s |  of packets provided by the Nearby Connections API. Let's review some of those packets. So
+558.33s - 563.93s |  these packets as all mentioned are called offline frames. Here you can see all types of
+563.93s - 570.41s |  packets that can be used within the protocol. So far we've seen two types, the connection
+570.41s - 577.39s |  request and the connection response. In our talk we will focus on two types, payload transfer
+577.39s - 584.07s |  and bandwidth hybrid negotiation. Now let's explore how QuickShare manages the connections at
+584.07s - 589.41s |  this stage. Just a quick reminder, this is where we stopped earlier, just when the
+589.41s - 595.49s |  proprietary communication begins. The next sequence of packets were payload transfer which
+595.49s - 602.19s |  both sides send to each other. Using our sniffer let's examine those packets. As shown in the
+602.19s - 607.19s |  image the payload transfer packet contains binary data which was initially unclear to us. However
+610.33s - 615.27s |  with the help of another portable file that we found in the Chromium open source project we
+615.27s - 620.77s |  were able to decode this binary data and we discovered that the payload transfer packet
+620.77s - 625.77s |  contained another packet called paired key encryption. So both sides exchange this uh
+629.45s - 634.81s |  paired key encryption packet followed by a paired key result packet. We want to understand
+634.81s - 639.55s |  the purpose of these packets and with the help of our sniffer we observed that they used
+639.55s - 645.17s |  among other things to enforce uh device visibility modes. These modes allow the user to
+645.17s - 651.27s |  control who can send data to them. For example the user can choose that only their contact
+651.27s - 657.41s |  will be able to send data to them. After this stage is done the initiator that wants to send
+657.41s - 663.61s |  the file sends an introduction packet. As a result the responder is prompt with a file
+663.61s - 669.79s |  introduction dialog on the computer saying that the initiator would like to send the file. To
+669.79s - 675.39s |  receive the file the responder simply simply needs to press the accept button which will
+675.39s - 680.39s |  cause QuickShare to send an accept packet to the initiator. After the responder accept the
+682.59s - 688.29s |  initiator sends the file using a payload transfer packet. And that's it. After this stage is
+688.29s - 694.97s |  completed the file will be sent. Let's see a short demo of this overview. So on the right side
+694.99s - 700.03s |  we have a phone and on the left side we have a PC which uh QuickShare is installed and we'll
+700.03s - 705.03s |  just show how a file transfer normally send from a PC to a phone. So choosing the target device
+709.47s - 715.17s |  the phone gets prompt with an accept or decline dialog. The phone chooses to accept and the
+715.17s - 720.17s |  file is on the phone. See it's very simple right? So now that we have basic understanding of
+720.85s - 725.85s |  how QuickShare file transfer works under the hood we can proceed to fuzz this flow um on
+729.39s - 736.23s |  QuickShare in uh for Windows. We chose the most straightforward infrastructure for fuzzing in
+736.23s - 742.87s |  Windows which is WinAFL of course. For instrumentation we used Dynamario and since
+742.87s - 749.07s |  Protobuf is being used everywhere we wanted a solution that supports Protobuf as well.
+749.07s - 755.79s |  Google developed a leap Protobuf mutator that can be used with WinAFL. Combining these
+755.79s - 761.55s |  solutions together helped us a lot in the fuzzing process and let's now discuss our approach.
+761.55s - 768.53s |  So our goal is to fuzz an entire session of file sending rather than just individual packets.
+768.53s - 775.01s |  However there might be a potential issue with this approach. Can you guess what? So as we
+775.01s - 780.05s |  already mentioned when a file is sent an accept or decline buttons are being prompt in the
+780.05s - 785.65s |  responder side. Since we want to fuzz all stages of communication including when a file is
+785.65s - 792.57s |  being accepted we needed our fuzzer to um our fuzzing target sorry to accept every file that's
+792.57s - 798.53s |  being sent to it automatically without the need of the user to press the accept button. So we
+798.53s - 803.91s |  started to look for ways to accept automatically every file that is being sent. Our first
+803.91s - 808.05s |  approach was to reverse engineer the relevant models and patch it in such a way that every
+808.05s - 813.95s |  file will be accepted automatically. But fortunately for us within the uh Chromium open
+813.95s - 818.89s |  source project we found out that Google already implemented a built in feature called auto
+818.89s - 824.99s |  accept. So we just needed to patch this if statement to make it work all the time. And that's
+824.99s - 831.17s |  exactly what we did. We located the relevant uh binary and we patched it. Now our fuzzing
+831.17s - 836.17s |  target automatically accept every file every time. Next we needed to implement a harness
+839.31s - 844.71s |  that could handle an entire session during each fuzzing iteration rather than just sending
+844.71s - 850.85s |  single packet. To achieve that we created a simple binary format to encapsulate all packets
+850.85s - 856.99s |  for an entire session which would be sent each fuzzing iteration. The structure we decided was
+857.01s - 863.73s |  straightforward. Four bytes for length followed by a serialized offline frame of that length.
+863.73s - 868.69s |  At this stage we were ready to start fuzzing QuickShare for Windows. However as you can see
+868.69s - 873.69s |  on the screen this process was quite slow. So we started to check again what makes it slow. And
+876.37s - 882.27s |  with the help of QuickShare logs we found that after each file is being transferred the stop
+882.29s - 888.07s |  advertising function is getting called. And as the name suggests this function used to stop
+888.07s - 894.03s |  the advertising of the device and later on it's starting advertising back again. Meaning it's
+894.03s - 900.11s |  closing sockets, it's opening new ones and those things take time. On top of that another
+900.11s - 906.31s |  function is called with the name remove endpoint. And it has 500 milliseconds flip at the end.
+906.33s - 911.93s |  Think about it. After each file is being uh that is being sent there's a half of a second
+911.93s - 917.37s |  slip time. That's huge when you're talking about fuzzing speed. So again we patched we patched
+917.37s - 923.55s |  the relevant models and prevented this behavior. Those patches help us a lot as you can see.
+923.55s - 931.08s |  Made our fuzzing process much faster. About ten times. Unfortunately the speed improvement
+931.08s - 936.42s |  created a persistent issue for us. The combination of instrumentation which significantly
+936.46s - 942.04s |  slows down the fuzzing target and our patch to increase the file transfer speed led to an
+942.04s - 947.68s |  unhandled race condition that was too complex to manage. As a result we received numerous
+947.68s - 953.64s |  crashes report and we were uh that we were unable to reproduce. Therefore we made a decision
+953.64s - 959.86s |  to abandon this approach and revert back to the original functionality of QuickShare. Despite
+959.86s - 965.84s |  this slower performance over time the fuzzer did yield several positive uh several positive
+965.84s - 972.84s |  positive results. Let's discuss them. Overall there were four reproducible crashes. We
+972.84s - 977.72s |  attempted to explore further the exploitation of those crashes but they are unlikely to be
+977.72s - 984.06s |  exploited. But now we have the ability to crush QuickShare and who knows that ability might be
+984.06s - 990.54s |  handy in the future. Another very interesting uh finding by the fuzzer was a reproducible
+990.54s - 997.28s |  timeout. You see when QuickShare receives a file it first check the existence of a file with
+997.28s - 1003.42s |  the same name by attempting to open it. If the file opens successfully this this indicates
+1003.42s - 1008.82s |  that the file is already exist. In response QuickShare appends an index number suffix to the
+1008.82s - 1016.07s |  file name. It's very similar to what browsers do when you download the file. So QuickShare
+1016.07s - 1022.23s |  tries to add um the suffix before the file extension as you can see on the screen. That's
+1022.23s - 1028.71s |  why it splits the name into two parts. The name and the extension. But what happens if the
+1028.71s - 1033.71s |  name before the extension has a null terminator in it? The result is that anything added after
+1034.15s - 1039.15s |  the null terminator is irrelevant when the file name is passed to the open function. It reads
+1042.65s - 1048.29s |  the string up only to the null terminator. This causes QuickShare to get stuck in an endless
+1048.29s - 1054.37s |  loop. Continuously incrementing indexes while mistakenly thinking it's searching for
+1054.37s - 1059.37s |  available index. When in fact it's trying to open the same files open over and over again. So
+1060.17s - 1065.17s |  to sum things up. We managed to get um the fuzzer working constantly but each fuzzing
+1068.07s - 1073.21s |  iteration took too much time. Making the process quite slow. Even when we identified some
+1073.21s - 1078.21s |  crashes it wasn't uh necessarily always exploitable. So we thought it was time to review what
+1080.25s - 1086.29s |  we achieved and consider our next steps. We felt confident enough with the QuickShare and the
+1086.31s - 1091.85s |  protocol and to start searching for logical vulnerabilities. And we certainly found some
+1091.85s - 1096.85s |  gold there. And one on one observation that we made is the code is extremely generic with a
+1099.73s - 1104.47s |  handler class for each packet type. Additionally the code is filled with threads and async
+1104.47s - 1109.51s |  methods all over the place. Those specs made us think it will be a good place to find
+1109.51s - 1116.11s |  vulnerability in it. So the first logical vulnerability that we'll introduce is a file
+1116.89s - 1122.67s |  acceptance bypass. As mentioned earlier to send a file the initiator first needed to send an
+1122.67s - 1128.17s |  introduction packet and wait for an accept packet from the responder. After that the initiator
+1128.17s - 1133.71s |  will send a payload transfer packet containing our file. We thought to ourselves wait. What
+1133.71s - 1138.39s |  happened if we skip the introduction and accept packets and send the payload transfer packet
+1138.39s - 1143.39s |  directly? We found out that the file will be sent anyway resulting a complete bypass of the
+1144.17s - 1150.67s |  acceptance of the of the of the file from the responder side. To make things even better we
+1150.67s - 1155.45s |  discovered that this approach works for any discovery mode. So even if your device is
+1155.45s - 1161.85s |  configured to accept files from your context for example, we could still be able to send files
+1161.85s - 1168.69s |  to your device without requiring your acceptance and without any notification. It's also
+1168.69s - 1174.23s |  important to note that these visibility modes doesn't grant a file transfer capability. Even
+1174.23s - 1179.23s |  if someone else can see your device for some reason in the quick setup they won't be able to
+1179.23s - 1185.07s |  send files if your device is set to accept files only from your context. This is because the
+1185.07s - 1190.89s |  protocol includes a verification step at the beginning to ensure the sender is authorized to
+1190.89s - 1195.89s |  send files to the receiver. Let's see a demo of it. So we have our phone here and we can see
+1198.79s - 1205.87s |  that I configured the phone to allow um files acceptance only from your device. Now let's see
+1205.87s - 1210.63s |  the quick share folder we can see that it's empty on the phone and now let's see our
+1210.63s - 1215.65s |  attacker uh machine. You we used our tools send files with bypass and few seconds after it you
+1217.87s - 1223.15s |  could see that nothing happened on the phone but our file is there. So we implement the file in
+1223.15s - 1228.29s |  the phone without any notification on any Android device that has quick share and we can do
+1228.29s - 1233.29s |  it um even on any any Windows device that has quick share in it. Pretty awesome right?
+1235.29s - 1244.40s |  Thank you. So let's continue with our next logical vulnerability. Forcing victim device to
+1244.40s - 1249.40s |  connect to a rogue wifi access point. In the context of data transfer a medium refers to a
+1251.64s - 1256.68s |  channel through which information is transmitted. When sending a file quick share checks
+1256.68s - 1261.92s |  whether there's a need to upgrade the medium and to achieve better transmission uh speed. For
+1261.92s - 1266.96s |  example upgrade from Bluetooth to wifi. As shown on the slide there are various possible
+1266.96s - 1273.06s |  upgrades connections. When discussing um bandwidth update negotiation uh bandwidth
+1273.06s - 1277.80s |  upgrade negotiation sorry it's important to reference previous research that highlighted a
+1277.80s - 1283.10s |  specific attack scenario. In that study researcher forced an Android device to connect to a
+1283.10s - 1289.74s |  rogue wifi network to carry out a man in the middle attack. This attack lasted maximum of 30
+1289.74s - 1295.14s |  seconds and has been mitigated by Google. Today if your Android device receive an uh bandwidth
+1295.14s - 1300.22s |  upgrade negotiation packet via quick share other internet connections uh will not be
+1300.22s - 1305.22s |  redirected to that wifi network. But what about Windows? We have noticed that uh one of the
+1307.56s - 1312.06s |  upgrade methods is through wifi hotspot access point. Basically during transfer the
+1312.12s - 1317.10s |  initiator creates a temporary hotspot and send to the responder the credentials to connect to
+1317.10s - 1322.46s |  this hotspot. By the way this process can be initiated from the responder side as well. When the
+1322.46s - 1328.98s |  transfer is completed this hotspot is getting closed. But we've noticed that during this time the
+1328.98s - 1334.22s |  internet connection of the responder device is still working even though it's connected to our
+1334.22s - 1340.22s |  hotspot. We started to sniff the network packets from the initiator device and we found out that
+1340.24s - 1346.62s |  all the traffic from the responder side is going through our device. Meaning that we can get a man
+1346.62s - 1352.42s |  in the middle for the time of the transfer and sniff the entire responder traffic. So I can
+1352.42s - 1357.70s |  connect every phone that has a quick share to my hotspot and create a man in the middle attack.
+1357.70s - 1366.10s |  Now I will continue and explain what we can be done next. Cool. Okay yeah so uh that was pretty
+1366.86s - 1371.86s |  awesome. Forcing any Windows device with quick share to connect to our rogue wifi AP. Um but
+1378.44s - 1383.44s |  let's see what we managed to uh find so far. So so far we found 8 vulnerabilities in total. The
+1386.74s - 1391.88s |  most critical vulnerability in our opinion was the one that allowed us to send a file without
+1391.90s - 1398.78s |  approval. But we were looking really for the holy grail as I mentioned at the beginning which
+1398.78s - 1403.78s |  was an RCE vulnerability that we still did not have. Thus just like turning standard stones
+1407.58s - 1413.56s |  into deadly drones, that sounds pretty much impossible, we decided that we are going to
+1413.56s - 1419.87s |  chain these vulnerabilities into an RCE. So so far we had 4 primary abilities using these
+1420.83s - 1425.83s |  8 vulnerabilities. We could create files in the victim's downloads folder without any
+1428.53s - 1434.27s |  requirement for acceptance or authorization. We could force the target device, the target
+1434.27s - 1440.11s |  Windows device into connecting to a different wifi network and um connect to the internet
+1440.11s - 1445.11s |  through it but only for about 30 seconds. Um we could also crash quick share in multiple ways
+1445.29s - 1450.29s |  that uh we found using the fuzzer and finally um we could also reproduce that reproducible
+1453.97s - 1458.97s |  timeout that we saw in that uh the fuzzer found which um can force quick share into an endless
+1461.25s - 1469.19s |  loop continuously opening a file that we choose from the victim's download folder. Talking
+1469.19s - 1476.17s |  about the main the wifi man in the middle vulnerability is um uh as I mentioned it allows us
+1476.19s - 1482.49s |  to see all the wifi traffic of the victim for about 30 seconds and but with that being said as
+1482.49s - 1488.73s |  you all know encryption is a standard for today's application layer so manipulating the
+1488.73s - 1493.73s |  traffic in 30 seconds to achieve an RCE is not likely to succeed except in very specific
+1496.91s - 1501.91s |  situations. However we then had a crucial insight and I want you to remember that. The
+1502.89s - 1507.89s |  insight was that the downloads folder to which we can write any file that we want using R
+1511.77s - 1516.77s |  exploits on quick share for Windows is the same folder where browsers place their downloaded
+1519.67s - 1526.01s |  files. This led us to an idea. What if we could overwrite an executable that was downloaded
+1526.95s - 1531.95s |  into the downloads folder before it runs? If being a man in the middle can somehow help us
+1535.85s - 1540.87s |  know which executable files are downloaded by the browser to the downloads folder and if we
+1543.67s - 1548.67s |  can somehow overwrite them using our abilities then this would lead to an RCE. That is
+1549.07s - 1556.25s |  because we'll be able to replace the executable with our malicious one and then the user will
+1556.25s - 1562.59s |  run our executable. The simplest example would be a victim that downloads the VS code
+1562.59s - 1568.35s |  installer for instance and then we overwrite it with one of our vulnerabilities right after it
+1568.35s - 1574.87s |  was downloaded and then the victim runs our executable instead of the VS code installer.
+1574.87s - 1579.87s |  Now of course we still did not have uh sorry, yeah, okay. Now of course we still did not have
+1582.31s - 1588.39s |  the exact abilities we needed but since being a man in the middle might help us anyway we
+1588.39s - 1593.73s |  decided to start with making the WiFi connection last longer as it was only active for about
+1593.73s - 1598.73s |  30 seconds. To do that we tried to think of a way to prevent quick share from returning to its
+1599.07s - 1604.07s |  original WiFi network once a file sending session was over. Then a very simple solution came
+1608.47s - 1614.57s |  up. Crashing quick share right after the WiFi connection to our rogue WiFi AP was
+1614.57s - 1621.21s |  established. The result was that if we force a Windows computer with quick share to connect to
+1621.21s - 1627.53s |  our WiFi network, to our malicious WiFi network and then instantly crash the app with one of
+1627.53s - 1633.27s |  our denial of service vulnerabilities that a fuzzer found, we get a forever lasting WiFi
+1633.27s - 1639.78s |  connection to our WiFi hotspot. As regards to the crash, the fear of it preventing us from
+1642.88s - 1649.32s |  continuing to exploit the app did not exist. Why? Because when quick share is installed it
+1649.32s - 1655.90s |  creates a scheduled task that runs every 15 minutes and runs quick share if it's not already
+1655.90s - 1660.90s |  running. So we don't really lose the ability to further exploit quick share. And actually we
+1663.70s - 1669.54s |  will continue to exploit quick share and this is why these 2 links are only the first part of
+1669.54s - 1675.64s |  our RCE attack chain. So far we established a lasting WiFi connection that we expect to
+1675.64s - 1682.38s |  come in handy for identifying downloaded file. Now let's understand the reason for why it
+1682.40s - 1689.34s |  was actually so helpful for doing that. And the reason and this is the reason. Metadata
+1689.34s - 1695.52s |  matters. Seeing this tweet by Talberry which by the way had a different picture that we
+1695.52s - 1701.82s |  changed but can still be found in Tal's feed, uh we thought that it explains exactly how we
+1701.82s - 1707.80s |  leveraged the WiFi connection. It was indeed true that files are normally downloaded over
+1707.82s - 1712.82s |  HTTPS meaning that the traffic is encrypted. However there were still 2 very important
+1715.16s - 1720.16s |  elements in the metadata of an HTTPS session. The first one is the server's domain. The
+1723.20s - 1728.74s |  encryption of HTTPS is performed using the TLS protocol of course and the TLS session
+1728.74s - 1733.74s |  starts with an unencrypted client hello message that is sent by the client. Normally a server
+1734.46s - 1739.46s |  name indication extension is being added to this message which indicates the domain of the
+1743.94s - 1748.94s |  server. That means that if you are exposed to victim's traffic you can determine the domains
+1751.40s - 1758.29s |  that they communicate with. The second element that is present of part of the metadata of an
+1758.29s - 1763.29s |  HTTPS session is the approximate size of data that is being transferred in the session.
+1765.99s - 1770.99s |  When a file is being downloaded over HTTPS it's normally downloaded in one TCP session. Even
+1773.83s - 1779.27s |  though encryption might add some random padding the amount of data that is being transferred
+1779.27s - 1784.27s |  from the server to the client during a file download of the same file stays relatively the
+1786.75s - 1791.75s |  same. In addition the size of an executable file is usually much bigger than the size of other
+1792.13s - 1797.13s |  pages or resources that may be transferred from a website to a client in an HTTPS session. The
+1803.90s - 1810.20s |  conclusion is that if we know the domain that the client communicated with and we know that
+1810.20s - 1816.82s |  there is a large file that is being downloaded along with it's approximate size then that
+1816.82s - 1821.82s |  means that we can also very accurately guess the name of the downloaded file. For instance
+1823.76s - 1828.76s |  if we know that 95 megabytes were downloaded from code.visualstudio.com then we can
+1831.16s - 1836.16s |  confidently say that the latest VS Code installer was probably downloaded. Think of the most
+1840.24s - 1845.80s |  popular installers for software that you use like VS Code for example. Entering the VS Code
+1845.80s - 1852.04s |  download page leads you to a single download button for a single VS Code version that matches
+1852.04s - 1857.04s |  your OS and is the newest one. This installer has the size of 95 megabytes which is larger than
+1860.98s - 1865.98s |  any other resource in the website. And so this really narrows down the options and makes it much
+1868.22s - 1873.22s |  easier to detect a download of the latest VS Code installer. Most websites that offer such
+1873.48s - 1878.48s |  installers have really only one relevant file. And so we framed and defined our new man in the
+1884.42s - 1890.40s |  middle technique more specifically. In order to be as precise as possible we understood that
+1890.40s - 1895.40s |  we need to define what we call domain paths. A domain path is a sequence of domains to which
+1895.80s - 1900.80s |  we expect the victim to access until the download starts. Let's look at Notepad++ for example.
+1906.54s - 1912.24s |  Clicking on the download button in its website does not download the executable from the
+1912.24s - 1917.24s |  Notepad++.org domain. Instead it references GitHub.com. Then GitHub.com actually redirects
+1917.24s - 1922.24s |  the request to another domain and this is the final domain. It's objects.githubusercontent.com.
+1929.58s - 1934.94s |  And the file is downloaded from there. If we just look at this final domain we won't be able to
+1934.94s - 1939.96s |  determine that the downloaded file is the installer of Notepad++. However what we can do is to
+1940.48s - 1945.48s |  follow access to previous domains. Basically we what we need to do is to see that in a limited
+1948.92s - 1953.92s |  time period Notepad++.org was accessed followed by access to GitHub.com and then to
+1956.96s - 1963.50s |  objects.githubusercontent.com. If that access to the final domain downloads the file with an
+1963.50s - 1968.84s |  approximate size as we expect for the installer then we can determine that it's actually the
+1968.92s - 1975.52s |  installer. To conclude this is how we define the new man in the middle technique that we
+1975.52s - 1980.52s |  created. We start by creating a mapping between domain paths to executables that match these
+1983.74s - 1988.74s |  domain paths and their sizes. Then we wait until the victim hits a certain domain path in a
+1991.58s - 1996.58s |  limited time frame and we start counting the downloaded data. Finally we check if the size
+1998.98s - 2004.66s |  of the downloaded data is equal or a bit bigger than the installer that matches this domain
+2004.66s - 2011.10s |  path. If it does then we are safe to determine that the expected installer was indeed the one
+2011.10s - 2016.10s |  that was downloaded. And so we change another link to our RCE chain. Now we can also detect the
+2020.08s - 2025.08s |  name of an executable that is downloaded by a victim. That being said for an RCE we still need
+2026.08s - 2031.08s |  the ability to overwrite files as we mentioned before. And we did not have it yet. But it
+2036.96s - 2041.86s |  doesn't have to be a generic ability to overwrite files using our vulnerabilities in
+2041.86s - 2047.36s |  quick share. It could be an ability that allows to overwrite files only in our very specific
+2047.36s - 2053.74s |  situation when files are being downloaded. So what we're trying to do is to overwrite Google
+2053.76s - 2060.58s |  Chrome's download while it's still ongoing. So first let's understand Chrome's basic download
+2060.58s - 2067.34s |  process. When Chrome downloads a file, no matter which file it is, it starts by checking if the
+2067.34s - 2073.76s |  file name already exists. If it does, it adds a number surrounded by parenthesis to the final
+2073.76s - 2078.76s |  name for the download. If it doesn't, it keeps the original name. Then it starts downloading the
+2079.76s - 2084.76s |  file but into a temporary file with a CR download extension. Once the download is fully
+2090.74s - 2096.10s |  complete and we got all the contents of the file and only then Chrome renames the temporary
+2096.10s - 2101.10s |  file to the actual name of the downloaded file and the download is then really complete. But
+2101.36s - 2106.36s |  since Chrome checks whether the name already exists and decides on the final name for the
+2109.24s - 2115.80s |  downloaded file only when it starts the download, we thought that there's good potential to
+2115.80s - 2122.22s |  create confusion if we send the file with the same name in the middle of this process. That
+2122.22s - 2128.46s |  will be after the name for the final downloaded file will already be final and has been
+2128.48s - 2137.08s |  decided on. We thought it might lead Chrome to fail in renaming the downloaded file, the
+2137.08s - 2144.02s |  temporary file, to the final name for the file, leaving our file in place. But how can we
+2144.02s - 2150.42s |  know the name of the downloaded file and still send it before the download is complete? We
+2150.42s - 2156.30s |  must wait for the final TCP packet to be sent from the server in order to determine the
+2156.32s - 2163.06s |  approximate size of the file and then as a result of it, determine its name. In order to
+2163.06s - 2168.60s |  prevent the download from being finished in Chrome, what we do is that we hold this last
+2168.60s - 2176.45s |  packet as the man in the middle and do not forward it to the client. So we try to send a file
+2176.45s - 2181.75s |  with the exact same name right before the download is finished, hoping Chrome might be
+2181.77s - 2188.45s |  confused and will fail to rename the temporary file, leaving our file as the presumably
+2188.45s - 2196.89s |  downloaded file. But unfortunately, this did not work. As a result, Chrome just overwrote the
+2196.89s - 2204.27s |  file that we sent, finishing its download successfully, deleting our malicious file. But this
+2204.27s - 2209.45s |  was not the end of it. We understood that we need to find a way to prevent Chrome from
+2209.47s - 2214.47s |  overwriting our file. Then it was not long until we figured out that we maybe already have
+2217.11s - 2222.11s |  this ability. If you remember from before, one of the reproducible uh uh timeouts that the
+2226.59s - 2232.69s |  father found um was uh a vulnerability that allowed us to bring QuickShare into a state where
+2232.69s - 2238.23s |  it continuously opens and closes any file that we want from the downloads folder of the
+2238.31s - 2245.31s |  victim. We thought that we can utilize this vulnerability just right for this case. What we
+2245.31s - 2250.33s |  hope for is that maybe if the file is endlessly opened and closed, the file that we sent, then
+2252.93s - 2257.93s |  this will fail Chrome in overwriting it. So the result was that our hopes actually became
+2260.93s - 2265.93s |  reality and Chrome actually failed in overwriting our file. It was actually the best
+2268.27s - 2273.65s |  scenario that we hoped for. Once Chrome finishes the download, the result is that it
+2273.65s - 2280.65s |  deletes the temporary CR download file. It fails to overwrite our malicious file. In its user
+2280.65s - 2286.89s |  interface, Chrome reports that the download was finished successfully and clicking on the
+2286.89s - 2291.89s |  downloaded file in Chrome's downloads window actually runs our malicious file. Thank you.
+2292.13s - 2301.22s |  Yeah I know it's cool. Okay so uh and so another two links were added to our RCE chain
+2307.16s - 2312.16s |  completing it into the RCE chain attack that we were aiming for from the beginning. And
+2314.94s - 2321.34s |  finally we prepared a demonstration video presenting the entire QuickShare RCE attack chain
+2321.38s - 2326.38s |  for you to see it in action. So let's watch it and before we do I'll mention that the video
+2328.58s - 2333.58s |  starts um uh when the video starts we'll see the attacker's computer. We'll see that that the
+2335.86s - 2340.86s |  attacker enabled a mobile hotspot on on um his Windows computer. And then we'll move we'll
+2343.86s - 2348.86s |  move on to the victim computer where we'll see QuickShare installed. Um and we'll start by
+2349.06s - 2354.06s |  seeing how the attacker forces the victim into connecting to the WiFi hotspot that the
+2357.50s - 2362.50s |  attacker created. Okay so let's begin. So we can see that the hotspot is enabled and we'll see
+2365.44s - 2370.44s |  just the IP address on that hotspot. Now we run our tool and we find nearby victims. One of
+2370.54s - 2375.54s |  them is called Test Machine. We choose Test Machine. This is Test Machine. And now it's
+2379.24s - 2385.42s |  connected to SafeBridge but we force it into connecting to our test IP and crash QuickShare to
+2385.42s - 2390.56s |  make it um to make the WiFi connection last and now we see all the domains that the victim
+2390.56s - 2397.02s |  accesses. Now the victim the victim goes into the Spotify website to download the uh Spotify
+2397.04s - 2401.62s |  for Windows installer. We can see that the downloads folder is just empty there's nothing
+2401.62s - 2406.62s |  inside. Now the victim downloads the file. Let's see what happens uh with the download. It's
+2409.56s - 2414.56s |  now complete. We click it and our malware runs instead. Now thank you. Now let's do the same
+2420.00s - 2425.00s |  with Notepad++. We go into its website download the newest version of Notepad++ for Windows
+2427.80s - 2434.08s |  the victim downloads the file. The download starts. You can see that we can do that for many
+2434.08s - 2439.08s |  installers. So the download is now finished and the victim runs it and it's again our malicious
+2442.42s - 2454.14s |  executable. Thank you. Pretty cool right? So I know it might seem like we found exactly the
+2457.54s - 2463.32s |  vulnerabilities that we needed to build this RCE chain but in reality it was a bit different. In
+2463.36s - 2468.34s |  fact we discovered two addition vulnerabilities. One allowed us to send file to the parent
+2468.34s - 2474.48s |  folder of downloads folder and other let us crash quick share by leveraging some of the findings
+2474.48s - 2480.48s |  from all magic dot research that he presented last April. However these vulnerability weren't
+2480.48s - 2486.38s |  you uh were not used um in the RCE chain and could not be exploited for a remote code
+2486.38s - 2491.70s |  execution. We'll share more details about them in our upcoming blog post that will be published
+2491.74s - 2497.82s |  after this talk. Overall we identified ten distinct vulnerabilities along with additional
+2497.82s - 2504.12s |  bug in Chrome. We reported all of these vulnerabilities to Google at the end of January
+2504.12s - 2510.70s |  this year. They've confir- they've confirmed they fixed every one of them. Every one of them.
+2510.70s - 2516.70s |  Google decided to issue two CVEs for these ten vulnerabilities. The first CVE addresses how
+2516.74s - 2522.14s |  uh two of the vulnerabilities can uh combine can force a persistent Wi-Fi connection. The
+2522.14s - 2529.26s |  second CVE deals with bypassing the file approval dialogue in Windows. Google was very
+2529.26s - 2533.86s |  responsive throughout the process confirming and reproducing each of the vulnerability
+2533.86s - 2540.20s |  reported. We wanted to thank them for their collaboration and for addressing these issues.
+2540.20s - 2545.00s |  Here's those official response. You can take a moment to read it now but of course it will
+2545.04s - 2554.88s |  all uh it will be included in the published presentation. Give you a few seconds. So we've
+2554.88s - 2559.42s |  covered pretty much everything about technical flow and now it's time to talk about the
+2559.42s - 2565.72s |  takeaways which which are just as important. Our first and most significant takeaway is that
+2565.72s - 2571.26s |  standard stones may sometimes be forged into the lead runs. What we mean by that is that
+2571.26s - 2577.00s |  as a hacker you often have limited tools at your disposal. You might achieve something but
+2577.00s - 2582.04s |  it's not exactly what you are aiming for. Reflecting on our research we believe that even
+2582.04s - 2587.94s |  seamlessly basic or unimpressive abilities can sometime be transformed into much much
+2587.94s - 2593.92s |  greater uh much more powerful uh capabilities. We're familiar with uh typical chains of
+2593.92s - 2598.90s |  vulnerabilities that addresses known issues like bypassing stack cookies or other memory
+2598.90s - 2603.86s |  corruption mitigations. But it's not always so straightforward. Sometimes you might have
+2603.86s - 2609.06s |  unconventional abilities like forcing an endless loop that repeatedly opens a file. For
+2609.06s - 2614.94s |  real, who thought this ability might be helpful? So this can use to create a very
+2614.94s - 2621.24s |  unconventional flows that still allow you to achieve your ultimate goal. The next takeaway
+2621.24s - 2626.88s |  shifts to the defensive side. Many products leave known issue and bugs unfixed due to
+2626.88s - 2633.48s |  prioritization. Often this issue seems to pose no security risk or only minor ones that
+2633.50s - 2638.68s |  doesn't require immediate attention. However addressing these known issue bugs or minor
+2638.68s - 2644.68s |  security risk can sometime be crucial for mitigating much greater risk that you might not
+2644.68s - 2649.68s |  be aware of. For example if we didn't have the DOS vulnerability that allows quick share to
+2649.68s - 2656.66s |  crash, we wouldn't be able to have uh establish a stable wifi connection and this would
+2656.66s - 2663.00s |  have completely disabled our RC chain. Lastly it's crucial for organizations to develop
+2663.02s - 2669.36s |  software and develop software to focus not only on specific programming mistake like memory
+2669.36s - 2674.40s |  corruption bugs. When evaluating a program security it's important to take a broader
+2674.40s - 2680.74s |  perspective and consider whether a simple logic or intended behavior might also introduce
+2680.74s - 2687.24s |  security risk. That's pretty much it. Here's the QR code for our repository. Feel free to
+2687.32s - 2693.46s |  take picture. It has a lot of tools to play with quick share. You can also find the contact
+2693.46s - 2699.70s |  details for all and myself and we'd like to thank everyone for joining to our session. We
+2699.70s - 2704.70s |  hope you enjoyed it. Thank you. Thank you everyone. Thank you. It was really fun.

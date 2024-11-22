@@ -1,0 +1,314 @@
+{
+  "webpage_url": "https://www.youtube.com/watch?v=-iNezAL_EF0",
+  "title": "DEF CON 32 - Sudos and Sudon\u2019ts: Peering inside Sudo for Windows - Michael Torres",
+  "description": "In February 2024, Microsoft announced the release of Sudo for Windows for Windows 11 Insider Preview[1]. Like the Unix sudo utility, it provides a method for users to run commands with elevated permissions. This talk will share the results of an analysis of Sudo for Windows, starting with a summary of the information provided by Microsoft. From there, we will explore the architecture used to coordinate the elevation of the specified process, the ALPC service used to communicate between elevated and non-elevated processes, how Rust interoperates with Windows APIs, and the path resolution process for files and relative paths. As part of that journey, we will discuss a few discovered security issues.\n\nThis presentation will be valuable to anyone with an interest in Windows reverse engineering or Rust memory safety. A conceptual understanding of Windows Inter-Process Communication (IPC) and heap allocation may make parts of the talk more approachable, but the main ideas will be accessible to anyone with a high-level understanding of process memory layout (stack vs heap).",
+  "channel_url": "https://www.youtube.com/channel/UC6Om9kAkl32dWlDSNlDS9Iw",
+  "duration": 1640,
+  "channel": "DEFCONConference",
+  "uploader": "DEFCONConference",
+  "upload_date": "20241016"
+}
+
+0.91s - 8.22s | This text was transcribed using whisper model: large-v2
+
+ Hey everybody, how's it going? My name is Michael Torres. I'm going to be talking about uh,
+8.22s - 14.22s |  pseudo for Windows. Title of the talk is Pseudos and Pseudonts. Here's a quick overview of
+14.22s - 17.70s |  what I'm going to talk about. You can read so I'm not going to bore you too much, but first
+17.70s - 21.64s |  we're going to go over what pseudo for Windows is cause it sounds weird. Then we're going to
+21.64s - 27.58s |  hit uh, some research, initial research on it, how it all works. Talk about some non-security
+27.58s - 31.54s |  issues according to MSRC, I'm supposed to use those words. Uh, then we're going to talk
+31.56s - 35.60s |  about some security issues that we found. One of them is unfortunately still under embargo.
+35.60s - 41.60s |  Talk more about how I found that one later. Uh, but let's hit it. So who am I? Uh, I do operational
+43.84s - 48.68s |  technology security at Google. I also sort of do cyber depending on who you ask for the
+48.68s - 52.62s |  United States Marine Corps Reserve. I also volunteer my time with VETSEC which is a
+52.62s - 56.68s |  profit focused on helping uh, veterans of the armed services for the US and allied
+56.70s - 61.80s |  countries get careers in cyber security. I also just do random research projects like this
+61.80s - 69.16s |  that are not related to any of that when I get bored. So here I am. So what is pseudo for
+69.16s - 73.72s |  Windows? They uh, Microsoft announced that they're going to introduce this utility in Windows
+73.72s - 78.96s |  11 in the H2 update which usually drops around September so in a month or so. It's currently
+78.96s - 83.44s |  an insider preview which is how I got access to test all this good stuff. The way it works at a
+83.48s - 89.32s |  very high level is it uses UAC, that standard process elevation thing, to support the type of
+89.32s - 93.06s |  command line features you're probably used to if you use pseudo on Linux. So taking your
+93.06s - 97.66s |  input, your output, all that, putting it back into the prompt that you originally ran it in.
+97.66s - 101.26s |  Uh, that's both console input and output which are different on Windows than standard in,
+101.26s - 105.44s |  standard out, and standard error. It does this via fancy pipes and redirection and all that
+105.44s - 110.74s |  good stuff. It's written in Rust. It is now fully open source. At the time they just, at the
+110.74s - 114.54s |  time I did this research, they said it was open source but it wasn't published yet. Uh,
+114.54s - 118.62s |  which meant that I did a lot more work than I actually had to do but that's alright. That's
+118.62s - 124.28s |  what, that's what's fun I guess. Uh, I found two issues with again, according to MSRC, no
+124.28s - 128.26s |  security impact. I have to use those words over and over again. One is a memory corruption
+128.26s - 132.02s |  issue which is fun cause like I said it's written in Rust. Uh, and the other one was a
+132.02s - 137.10s |  search order confusion issue. I found two issues with security impact. One allowed uh,
+137.10s - 141.74s |  cross user code execution which, kind of sad. You don't really want other users to run code
+141.74s - 146.94s |  as you if you like your secrets being yours. And the other one allows you to data tamper
+146.94s - 151.84s |  the input and output data for sudo. And again I can't go into too much detail on that one
+151.84s - 158.15s |  but we'll talk more about it later. Most of my research was conducted against sudo version
+158.15s - 162.99s |  1. Uh, you'll note that both of these bullet points say sudo version 1 but have different
+162.99s - 167.39s |  signature dates. I can't help you. They didn't increment the version number so I just had to
+167.41s - 173.53s |  use the signature date on the binary to distinguish the two. Uh, one is from February, one's
+173.53s - 177.09s |  from March. I don't know if they've released a more recent update cause I haven't checked in
+177.09s - 182.09s |  the last three weeks. So they might have but three weeks ago it was still the version from
+182.09s - 189.89s |  March. So precursor things to know. User account control. If you use Windows, which I
+189.89s - 194.59s |  assume most of you do cause you came to a talk about sudo for Windows, you've seen a user
+194.59s - 197.35s |  account control prompt, right? You always just hit yes cause you don't care what you're
+197.35s - 202.77s |  doing you just want it to work. Uh, the way it works is normal processes without elevation run
+202.77s - 208.31s |  in what's called medium integrity. That's pretty much everything except for processes or
+208.31s - 213.45s |  systems that are designed to use low integrity. Which quick shorthand is basically just web
+213.45s - 217.49s |  browsers and your PDF reader because they want that to have the absolute least privilege they
+217.49s - 222.19s |  can. Elevated processes, so the thing that runs once you hit that yes button cause you don't
+222.19s - 227.97s |  care you just want it to work. Uh, we're run as high integrity. Only processes running in
+227.97s - 234.11s |  high integrity are allowed to modify system resources which implicitly means that they can
+234.11s - 239.11s |  get system level permissions which is roughly equivalent to root on Windows, right? It's
+239.11s - 242.55s |  considered a defense in depth measure by Microsoft. They do not consider it a primary
+242.55s - 247.73s |  control. They do not consider UAC bypasses a security issue. They won't service them, they
+247.73s - 252.13s |  don't consider them part of bug bounty. Importantly for why sudo for Windows needs to
+252.13s - 258.63s |  exist, you can't spawn a process with UAC and inherit the standard in standard out standard
+258.63s - 263.17s |  error or console input and console output into the privilege process. Meaning that if you're
+263.17s - 269.25s |  in a command prompt and you try to run, you know, reg query as a privilege process, you can't
+269.25s - 273.85s |  then pipe that into another command or redirect it into a text file or something like that.
+273.85s - 281.24s |  It'll spawn it as a new process that can't put it back into your same window. Other things to
+281.24s - 286.74s |  know about, uh, the ALPC interface. It's an inter-process communications framework. It is
+286.74s - 291.92s |  officially undocumented and only used by Microsoft internal systems. The way it works is the
+291.92s - 296.88s |  server listens on a port which is just an object cause everything in Windows is an object.
+296.88s - 302.02s |  That port is just a string name. Sometimes it's a string as is the case with sudo. You can
+302.02s - 308.16s |  see the example there. Uh, sometimes it's a GUID if it's a com object or things like that.
+308.16s - 313.60s |  The way that security is supposed to be implemented on ALPC is that the server can query
+313.60s - 319.26s |  attributes of the client, like the process ID, the, uh, SID, the principal name, and all of
+319.26s - 325.88s |  that of the color. And the client is able to say I only want to connect to an ALPC server if
+325.88s - 330.08s |  it's also this SID or some other properties that I don't remember frankly and they're not in
+330.08s - 334.52s |  the slide so I'm not gonna remember them right now. Um, the other thing to know is that in
+334.52s - 340.18s |  Rust if you want to use Windows native APIs like create process or shell execute X which are
+340.18s - 344.48s |  important if you're trying to run a process as an elevated user. Um, you have to use one or
+344.48s - 349.16s |  you don't have to but Microsoft released two crates for it. Windows and Windows Sys. So
+349.16s - 354.36s |  those are first party owned by Microsoft. They both require you to run in unsafe Rust.
+354.36s - 358.60s |  Meaning that now we can get memory issues and buffer overreads and buffer overruns and all
+358.60s - 363.34s |  that good stuff. Um, the only difference between Windows and Windows Sys is the Windows
+363.36s - 369.76s |  crate does type coercion for you. So if you have a Rust string and you want to call a Windows
+369.76s - 373.94s |  API if you use the Windows crate you just give it the Rust string and magic happens. I don't
+373.94s - 377.78s |  really know Rust that well so sorry it just magically happens to me. Uh, whereas with
+377.78s - 382.52s |  Windows Sys you have to explicitly cast things into the right data type to get it to work in
+382.52s - 390.56s |  Rust. So Microsoft's blog post did actually include a fair bit of detail, uh, which was cool
+390.56s - 394.86s |  to see, uh, both from a security research perspective and just a curiosity perspective. It's
+394.88s - 399.74s |  cool to see them publish information about their tools like this. Uh, there are three modes
+399.74s - 404.26s |  that Sudo for Windows supports. Those are new window, input closed, and inline. The new
+404.26s - 409.06s |  window one is basically just the same as if you ran run as and then the command. So there's
+409.06s - 413.66s |  not really much novelty there. Uh, the input closed and inline modes do this weird client
+413.66s - 418.26s |  server thing which you can see at the bottom, uh, right there. That sort of high level thing
+418.26s - 422.78s |  we'll go into that more in a second. The difference between inline and input closed is in
+423.76s - 428.06s |  input closed the elevated process can't see the un-elevated console's standard end. So if you
+428.06s - 433.14s |  were to pipe the result of a command into a Sudo execution and your system is configured to
+433.14s - 439.04s |  run it in input closed mode, your elevated process won't be able to see it. They say that
+439.04s - 444.82s |  those are in order by most secure to least secure so new window being the most secure and
+444.82s - 448.78s |  inline being the least secure. Um, they don't really go into a lot of details about that
+448.78s - 453.80s |  other than that it's, it keeps things open for longer. Um, again I mentioned earlier it, in
+456.10s - 460.26s |  the blog post they say it's open source. They link to a GitHub repo. That GitHub repo was
+460.26s - 464.50s |  empty when I was doing this research so I just got to look at Rust code in Ghidra which if
+464.50s - 469.48s |  you haven't done it I don't recommend it. Um, but now it's open source. You can go on GitHub
+469.48s - 473.14s |  and look at all their stuff. Um, they included that diagram as I mentioned to explain the
+473.14s - 476.74s |  request flow. We'll go into that more in a second but you can see that there's a client
+476.74s - 485.17s |  server thing in there. So off the rip like this was actually found after the rest of this
+485.17s - 489.31s |  research cause I was finally able to look at the source code. The new window mode still
+489.31s - 495.11s |  creates that RPC server so you're still able to do fun things with the RPC server. Um, it
+495.11s - 500.45s |  doesn't always do what's on the tin. Sometimes it does actually pull in your standard in,
+500.45s - 503.85s |  standard out, standard error in your console input and console out and pipe it into the new
+503.85s - 510.13s |  process. Um, again it's supposed to be the most secure uh but it does always get the standard
+510.13s - 516.53s |  in handle unlike the input disabled one. I don't know of any ways that that's necessarily a
+516.53s - 520.53s |  security issue but it's kind of an odd novelty because they describe it as being the most
+520.53s - 527.63s |  isolated from the unprivileged process perspective. So I started looking into this because
+527.63s - 533.11s |  I saw on Hacker News that veritable Y Combinator uh news aggregator that one of my co-workers
+533.11s - 536.45s |  at Google actually which I didn't know at the time made a blog post about Sudo for Windows
+536.45s - 541.71s |  and published some research. Um, he pulled apart the RPC server some and found that at the
+541.71s - 547.09s |  time that RPC client server thing had zero authentication which is obviously very bad. That
+547.09s - 550.95s |  means you can just tell the server you would like to run a privileged command and it'll
+550.95s - 555.93s |  happily do it. Um, that was fixed by the time I was testing it. Note that that's in quotes.
+555.93s - 561.23s |  Talk more about that in a second. Um, and it talked to again it pulled apart that RPC like
+561.23s - 566.39s |  client server API if you will and highlighted the methods of interest to call. Specifically
+566.39s - 572.03s |  that server do elevation API. That's what actually is called by the client into the server
+572.03s - 577.01s |  to coordinate execution, passes handles that the process binds to and then you can get all
+577.01s - 581.11s |  your input and output and all that good stuff. It also passes a bunch of parameters relevant
+581.11s - 585.65s |  to the command being ran like the command to run, arguments to the command, the current
+585.65s - 594.60s |  working directory and optionally the environment depending on the flags you pass to Sudo.
+594.62s - 598.96s |  Here is a more detailed look at run mode 3 inline mode. This is the one I did most of my
+598.96s - 603.74s |  research with because it is listed as the most insecure so it's probably the easiest target
+603.74s - 608.84s |  right? I'm lazy. Um, you can see on the far side there you have the actual unprivileged
+608.84s - 613.64s |  console where the person runs Sudo who am I and they're trying to run it as that elevated
+613.64s - 619.08s |  user. The way that works is it first spawns an elevated process to host that RPC service
+619.08s - 623.12s |  using normal run as. The user gets a prompt again they click yes like everyone does
+623.14s - 628.32s |  because they just want the thing to work. Um, the client then sends an RPC into that
+628.32s - 633.22s |  privileged process telling it what command it wants to run. The privileged process binds to
+633.22s - 637.42s |  the handles that gets passed in there so that all your input output and standard error stuff
+637.42s - 643.00s |  just flows naturally. Privileged process that the user specified gets spawned and then
+643.00s - 649.91s |  magic happens you can do all your normal command line pipes and stuff. So summarizing
+649.91s - 653.35s |  everything we just talked about sort of high level notes. Uh, it's written in Rust, it's
+653.37s - 658.45s |  open source. Uh, Rust requires you to enter into unsafe mode so again memory safety issues
+658.45s - 664.01s |  can happen. Uh, to call Windows native APIs which things like this kind of have to do. Um,
+664.01s - 672.34s |  an ALPC is what's used to coordinate the actual execution of the user specified process. So
+672.34s - 676.84s |  our first issue, the memory safety issue in Rust. Um, sort of odd right but as I just
+676.84s - 682.42s |  mentioned you have to use unsafe APIs. Uh, they removed this functionality before they
+682.44s - 688.18s |  published it to GitHub so I can't tell you exactly how it happened. But at a hi- at a from
+688.18s - 694.28s |  my analysis what happened was if you gave a path that rewrote from the beginning meaning
+694.28s - 700.82s |  that you had a leading like backslash or C colon backslash right. It would write your path
+700.82s - 705.96s |  to the start and then when it passed it to an API function it didn't truncate at the end of
+705.96s - 711.04s |  where your path was. It just read until the end of the buffer to the first null byte. I think
+711.06s - 717.30s |  that that happened because they assumed that a path as string would point to a null
+717.30s - 721.50s |  terminated buffer as you would kind of expect it to if you're used to C. When in fact it just
+721.50s - 726.50s |  points to a vector of U8s that may or may not include a null byte at the end. Um, here's
+728.64s - 733.04s |  sort of my mock up of the code. Uh, you can pull these slides off the Defcon media server if
+733.04s - 736.28s |  you want to take a better look at it but this is just sort of demonstrating what I just
+736.28s - 741.96s |  talked about where if you assume that you can take the path as a string and then just get a
+741.96s - 747.24s |  pointer to it and pass it to the Windows API function you'll end up very sad because it'll
+747.24s - 752.50s |  just read until the first null byte not necessarily until the end of your target string.
+752.50s - 758.44s |  Meaning you have buffer overread in heap, uh, for arbitrary numbers of bytes that you can't
+758.44s - 764.02s |  necessarily control but because you can control the path you can control approximately how
+764.06s - 769.76s |  far into that heap buffer you read. Uh, so like I just said you can read everything up to the
+769.76s - 776.10s |  first non, non-null byte. You don't control which heap allocation you're reading and it
+776.10s - 781.04s |  doesn't let you write memory into arbitrary things that are outside of your heap boundary
+781.04s - 785.44s |  because it is rust. It's a vector. Uh, so it'll reallocate if you reach the capacity of the
+785.44s - 791.12s |  current heap allocation. Um, but still you get to read things from previous heap
+791.12s - 796.56s |  allocations which in my testing tended to just be paths but it could be something like a
+796.56s - 802.66s |  token or something like that. Um, it says at the bottom there why I, it's not really a
+802.66s - 808.50s |  security issue. Uh, the main problem being this is only noticeable if you run sudo with an
+808.50s - 814.98s |  unprov- or a untrusted input which you shouldn't do anyway so it's not really security
+814.98s - 820.38s |  impacting if you run sudo with arbitrary things someone you don't trust supplied and then
+820.40s - 824.68s |  you can read other memory because you shouldn't be doing that in the first place because
+824.68s - 830.01s |  you're going to execute someone else's code. This screenshot shows what I was talking
+830.01s - 834.29s |  about so you can see on the left there I run sudo with a leading slash and then a path and
+834.29s - 839.43s |  then you can see in process monitor that at the end of the day a create file operation or
+839.43s - 845.27s |  trying to read the file, um, ends up re- trying to read a file that's the thing that I was
+845.27s - 849.63s |  trying to read and then a bunch of things from presumably a previous heap allocation
+849.65s - 853.39s |  because that's the path, that's the current working directory and then some garbage at the
+853.39s - 861.44s |  end until it reaches the first null byte. So the second issue, uh, search order inconsistency
+861.44s - 865.48s |  so in Windows just like, actually I shouldn't say that I don't know if it's true in Linux but
+865.48s - 871.96s |  in Windows if you run a command without a path it is supposed to execute that command in
+871.96s - 876.56s |  the current working directory if it's present and then search your path. Uh, so if you run
+876.56s - 881.76s |  sudo program.exe you expect it to run the program.exe in the current working directory
+881.78s - 888.28s |  not some other random program.exe. Uh, path resolution didn't work that way. The way it
+888.28s - 892.66s |  worked is again because of that client server thing it would try to resolve the path in
+892.66s - 896.52s |  the context of the privilege process which had a different current working directory
+896.52s - 901.40s |  meaning that you could end up running a command you didn't expect to run. Uh, says up there
+901.40s - 904.96s |  it's a somewhat contrived example but if you had compiled your own binary and named it
+904.96s - 911.14s |  cmd.exe and then you tried to run sudo cmd.exe it wouldn't run your command.exe it would
+911.18s - 917.12s |  run the system32 cmd.exe. According to Microsoft it's not a vulnerability. I have their exact
+917.12s - 922.12s |  response quoted there at the bottom. But they fixed it anyway. Um, so they more or less
+925.76s - 930.84s |  looked up the in the unprivileged process they looked up the command you gave them and
+930.84s - 936.88s |  resolved it and then passed the fully resolved path into the privileged process. Um, they
+936.88s - 942.06s |  fixed it. I'm not gonna complain too much but it's kind of odd that you accept input from
+942.06s - 945.16s |  people on what issues are, fix them and then tell them yeah but we don't think it's a real
+945.16s - 954.15s |  issue. And this is a very well drawn I'm an artist if you didn't know uh example of how that
+954.15s - 960.07s |  would work from an attacker's perspective. So you try to run cmd.exe you expect it to run
+960.07s - 965.67s |  yours it ends up running some other command in the privileged process path which isn't the
+965.67s - 974.21s |  one you wanted. So let's talk more about that RPC server. Again, it's ALPC. Um, source code
+974.21s - 979.39s |  wasn't available so I had to look in Giger to figure out what all these parameters meant. Uh, I
+979.39s - 984.13s |  got pretty good results out of it. I didn't know what those handles were or how to deal with
+984.13s - 989.09s |  them necessarily but luckily I didn't have to. You can just bind to input and output without
+989.09s - 994.77s |  dealing or without worrying about the handles too much. Um, importantly the unprivileged
+994.77s - 999.05s |  process ID so the one that you run before you hit that yes prompt as quick as humanly
+999.05s - 1005.15s |  possible is what is used to create the socket name. So it's predictable as long as you know
+1005.15s - 1010.19s |  the process ID that's uh trying to run sudo. And again I mentioned earlier after James
+1010.19s - 1014.69s |  Foreshaw's blog post they added an authentication check which was checking that the
+1014.69s - 1020.93s |  client's process path so that unprivileged process was the same as the server's process path
+1020.93s - 1029.04s |  meaning both are running sudo.exe. See Windows system 32 sudo.exe, right? Um, overview of
+1029.04s - 1033.28s |  that, that auth check on the right, right? Just is the image name of my calling process the
+1033.28s - 1040.90s |  same as my image name? If it is, good to go. We'll run your command. Which brings us to our
+1040.90s - 1046.74s |  first security issue. Um, it turns out that that's not really a good authentication check. Um,
+1046.74s - 1053.42s |  any user can issue elevation requests to that RPC server meaning that any user of a multi-user
+1053.42s - 1057.76s |  Windows system to include, you know, unprivileged users because anyone can call an
+1057.76s - 1063.52s |  ALPC socket like your web browser, um, can go ahead and run commands in the context of a
+1063.52s - 1068.86s |  user, uh, when they run sudo. So it's not latent and a privileged user would have to try to
+1068.86s - 1075.22s |  run sudo and then you'd be able to exploit this to run it in the context of that user.
+1075.22s - 1080.26s |  Exploitation requires two things. So, like I mentioned, insufficient authentication. Um, the
+1080.26s - 1086.66s |  way I did that is I just injected a DLL into a sudo.exe, sudo process that I controlled so
+1086.66s - 1091.70s |  that I could do whatever I want in the context of a process whose image name is the legitimate
+1091.70s - 1096.24s |  sudo.exe. Um, and the other part of this was that predictable, uh, port name. That
+1096.24s - 1101.68s |  predictable RPC control port name. Because users can view the process IDs of other users in
+1101.68s - 1106.28s |  Windows, uh, pretty much no matter what there are some types of tokens that can't do that. Uh,
+1106.30s - 1111.92s |  you can get that information very easily and then you can just call the target sudo,
+1111.92s - 1117.22s |  privileged sudo process and have it run whatever you command you want and gain execution in
+1117.22s - 1123.16s |  that user's context. This was patched in the version, in the second version 1 of sudo. The
+1123.16s - 1129.10s |  one that was, uh, code signed on the 4th of March. So again, high level attack diagram you
+1129.10s - 1132.40s |  see at the top there we have our victim who's just trying to run sudo and get on with their
+1132.46s - 1139.20s |  day. We have our attacker with again, I'm an artist, very well drawn horns, thank you. Um, the
+1139.20s - 1145.70s |  attacker starts their code that's just waiting and trying to find a victim sudo that is
+1145.70s - 1152.04s |  running and then as soon as it notices one, it spawns its own sudo with a hooked method to
+1152.04s - 1158.62s |  connect to the target RPC server instead of one that it spawned, uh, to run whatever
+1158.64s - 1162.72s |  command the attacker wants. From the victim's perspective, what this looks like is they ran
+1162.72s - 1167.22s |  sudo, they as fast as humanly possible because again, they're just trying to get the job done,
+1167.22s - 1171.88s |  hit the yes button on the UAC prompt and then nothing happens from their perspective. But in
+1171.88s - 1180.64s |  reality, the attacker was able to run whatever command they wanted. Uh, demo, I think. Do I
+1180.64s - 1191.64s |  have that wrong? Hopefully it plays. All right. Well, that was surprising. So here I'm just
+1191.64s - 1196.84s |  showing there's nothing up my sleeve. Um, uh, the left prompt is going to be our victim user. So
+1196.84s - 1204.22s |  who am I? I'm MTU. Um, it can run sudo just fine. The right prompt is now my unprivileged user or
+1204.22s - 1210.30s |  my non-administrative user, not MTU. Right now I'm going to show that, uh, sudo works and then
+1210.30s - 1218.15s |  that the base prompt is not running elevated. And then on the right, on the right, we're
+1218.15s - 1222.89s |  running that implant code that's just going to spawn some stuff, uh, to try to target that
+1222.89s - 1228.89s |  victim sudo process. We are racing because if we don't beat the legitimate process, um, the
+1228.89s - 1234.09s |  RPC socket closes and we can't run our command. So we go slowly insane trying to win the race. I
+1234.09s - 1239.27s |  did test this in a debugger first, so I was pretty confident it was supposed to work. But man,
+1239.27s - 1244.97s |  recording this video and just sitting there doing this for two minutes was not fun. Um, at the
+1244.99s - 1250.13s |  end there, you can see that it worked. On the right side, our unprivileged process again, we were
+1250.13s - 1256.17s |  able to inject into that victim server process and run command.exe as this, as the privileged
+1256.17s - 1260.77s |  user. We run who am I? And we see that we're now running as that other user who is just trying to
+1260.77s - 1268.50s |  run something with sudo. Well, I already played the video, but we could play it again if you
+1268.50s - 1279.34s |  want. Oh, nothing showing up there. Neat. Let's try it this way. Can you see this? This video
+1279.36s - 1300.82s |  now? So again, uh, again, left prompt is the uh, privileged user who's just trying to run
+1300.82s - 1305.32s |  sudo. Uh, the right prompt that's about to spawn is the unprivileged user, not MTU, some evil
+1305.32s - 1312.38s |  attacker man. Um, user runs command, everything works. Let's see if I can skip this bit a bit. Um,
+1316.38s - 1320.08s |  user keeps running command, they keep working because you'll notice on the other side, the
+1320.08s - 1324.18s |  attacker process is failing, it's not winning that race. Uh, like I mentioned, I confirmed
+1324.20s - 1329.20s |  this in a debugger, but still very frustrating watching it fail over and over and over again. Um,
+1329.20s - 1333.54s |  but eventually it does work. And we can see on that right side now, we just got a command
+1333.54s - 1338.18s |  prompt back from the attacker's perspective. We run who am I? And we see that we are running as
+1338.18s - 1351.82s |  a user other than ourselves, which is not good, I think is what it's called in the business.
+1351.82s - 1365.91s |  All right. Work with me here. Nope. Hands. Perfect. Um, so I did find out after I tested
+1365.93s - 1370.03s |  this again, after they made the source code available, that they made that race window really
+1370.03s - 1374.97s |  short. So I assumed that the way it worked was the victim process ran its command
+1374.97s - 1381.01s |  successfully and then went ahead and uh, then went ahead and closed the socket after it was
+1381.01s - 1385.97s |  done. In fact, as soon as you called that elevation request API, it locked all future calls
+1385.97s - 1391.19s |  of it, which would explain why I had to run the command over and over again, going slowly
+1391.23s - 1396.31s |  and saying until it worked, but I don't know, not, not really a security control, but good for
+1396.31s - 1401.91s |  them for locking out other users and thinking about it. So the second vulnerability I
+1401.91s - 1406.65s |  mentioned, it's still under embargo, unfortunately. Um, I reported it 13th of June while the
+1406.65s - 1412.75s |  rest of this research was done, April, May timeframe. Um, sort of interesting story for you
+1412.75s - 1417.59s |  since I can't talk too much about the details of this one. The reason I thought of this was I
+1417.59s - 1423.69s |  was on a run trying to avoid working on the slides and I realized that there was some other
+1423.69s - 1429.63s |  issues with how they do that client server thing. So I was able to prove it out and get data
+1429.63s - 1433.93s |  tampering and information disclosure from again, the process or the perspective of a non
+1433.93s - 1441.96s |  privileged user on the privileged users stuff. So public issues again, it is a GitHub repo.
+1441.96s - 1446.12s |  There are public issues that I think are sort of notable to talk about when we talk about
+1446.12s - 1450.38s |  sudo for Windows. The first one, um, the elevation prompt is confusing. So there's a
+1450.38s - 1455.12s |  screenshot of it on the right. You saw it earlier in the video. You don't know what hitting yes
+1455.12s - 1459.06s |  will do because it's just telling you it's a sudo invocation, right? It doesn't tell you, oh,
+1459.06s - 1462.62s |  sudo is actually going to spawn this other process over here. Maybe you don't want to do that.
+1462.62s - 1469.20s |  It just says, hi, I'm Microsoft. I'm a legitimate binary. Would you like me to run? Um, not
+1469.20s - 1473.18s |  great from a security perspective, right? Admittedly, again, most of us probably just click
+1473.20s - 1477.40s |  yes as fast as humanly possible anyway, or type in our credentials if we have that version
+1477.40s - 1484.14s |  of UAC enabled. But, um, I believe that they committed to trying to figure out how to make
+1484.14s - 1487.88s |  it so it was more obvious what the actual command that's going to run is instead of just
+1487.88s - 1491.66s |  saying, yeah, it's, it says it's legitimate. I'm just going to hit yes and hope everything's
+1491.66s - 1496.32s |  okay. And the second issue, uh, which is critical to me because I like my computers to
+1496.32s - 1503.06s |  insult me is, um, sudo for Linux or Unix if you will, has a mode to have it insult you.
+1503.08s - 1507.78s |  If you don't have legitimate access to run a command, uh, I want that in windows cause I
+1507.78s - 1515.65s |  like my computers to be mean to me when I'm silly. So summary of everything we just
+1515.65s - 1519.85s |  talked about, sudo for windows is coming soon. Again, it is scheduled to be in mainline
+1519.85s - 1525.79s |  windows 11 and I think windows server, don't quote me on that one. Uh, end of September
+1525.79s - 1530.83s |  ish in the, in the H2 update, uh, it's open source. Again, we, we love to see that. It
+1530.83s - 1534.53s |  makes it so people like me or people like anyone in this audience can go look at the
+1534.57s - 1538.91s |  source code and pull it apart and understand not only how it works, but maybe find some
+1538.91s - 1543.71s |  more security issues in it. So we're not shipping products that are enabling bad things
+1543.71s - 1547.75s |  to happen on windows or if you're on the other side of it, using it to make bad things
+1547.75s - 1553.63s |  happen on windows. I don't know. I don't judge. Um, it is meant to be a drop in replacement
+1553.63s - 1557.27s |  for the way sudo works on Linux. So it lets you actually have standard in standard out
+1557.27s - 1561.03s |  standard air piped and redirected and all that stuff within your command prompt or your
+1561.03s - 1566.61s |  PowerShell prompt. Um, and it does all of that using user account control to elevate
+1566.61s - 1572.85s |  processes and inner process, uh, communication to actually coordinate that across the not
+1572.85s - 1578.15s |  a trust boundary because that's not what Microsoft calls it of UAC. Uh, sort of the big
+1578.15s - 1583.45s |  takeaway for me and it's informing some more stuff I'm looking into is you cannot call a
+1583.45s - 1588.47s |  windows native API without going into unsafe rust. If you want to do that or for anything
+1588.87s - 1595.37s |  that uses a windows API, that means there is now the potential for you to get memory
+1595.37s - 1601.35s |  corruption vulnerabilities in something written in rust, which is counter to what everyone
+1601.35s - 1605.05s |  tells you about rust. So be on the lookout for that if you're a bug hunter that if you see
+1605.05s - 1609.03s |  something calling a windows native API from a rust program, somewhere in that code it is
+1609.03s - 1615.87s |  unsafe. Poke at that boundary. And then I'll show some references and if anyone has any
+1615.87s - 1620.17s |  questions, you can step up to that mic in the middle and I'll be happy to answer them. I
+1620.17s - 1635.08s |  don't know how much time I have left, but I'll answer any questions I can. Thank you. Cool.
+1635.08s - 1636.08s |  Well, thanks everyone.

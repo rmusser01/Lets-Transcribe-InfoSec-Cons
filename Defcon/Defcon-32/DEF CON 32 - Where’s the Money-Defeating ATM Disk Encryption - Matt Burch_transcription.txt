@@ -1,0 +1,314 @@
+{
+  "webpage_url": "https://www.youtube.com/watch?v=lF8NEsl3-kQ",
+  "title": "DEF CON 32 - Where\u2019s the Money-Defeating ATM Disk Encryption - Matt Burch",
+  "description": "Holding upwards of $400,000, ATMs continue to be a target of opportunity and have seen over a 600% increase in crime in just the last few years. During this time, I led security research with another colleague into the enterprise ATM industry resulting in the discovery of 6 zero-day vulnerabilities affecting Diebold Nixdorf\u2019s Vynamic Security Suite (VSS), the most prolific ATM security solution in the market. 10 minutes or less is all that a malicious actor would need to gain full control of any system running VSS via offline code injection and decryption of the primary Windows OS. Diebold Nixdorf is one of three major North American enterprise class ATM manufacturers with a global presence in the financial, casino/gaming, and point-of-sale markets. Similar attack surfaces are currently being used in the wild and impact millions of systems across the globe. Furthermore, VSS is known to be present throughout the US gaming industry, including most of the ATM/cash-out systems across Vegas.\n\nIn this session, I will publicly disclose this research, review the discovery process, and dive into the technical intricacies of each vulnerability. The Full Disk Encryption module of VSS conducts a complex integrity validation process to ensure a trusted system state, performed as a layered approach during system initialization. Examination of the workflow will highlight various deficiencies that I will demonstrate through PoC exploitation.\n\nEach vulnerability presented in this session has been observed to have a recursive impact across all major versions of VSS and represents a systemic ongoing risk. We will explore the root-cause, vendor remediation steps, and short-comings thereof \u2013 perpetuating the attack narrative. In conclusion, proper mitigation techniques and procedures will be covered, providing valuable insights into defending against potential compromise.",
+  "channel_url": "https://www.youtube.com/channel/UC6Om9kAkl32dWlDSNlDS9Iw",
+  "duration": 2313,
+  "channel": "DEFCONConference",
+  "uploader": "DEFCONConference",
+  "upload_date": "20241016"
+}
+
+0.11s - 6.81s | This text was transcribed using whisper model: large-v2
+
+ Over the past several years, this content has been both a passion and an obsession of mine
+6.81s - 11.35s |  that has led me down some very interesting paths.
+11.35s - 17.11s |  And I am very honored and privileged to be able to finally do public disclosure
+17.11s - 25.14s |  of this content here today.
+25.14s - 30.44s |  So, my name is Matt Birch, and I am an independent security researcher
+30.44s - 33.44s |  with a passion for IoT and hardware devices.
+33.46s - 39.10s |  I have developed several MFA bypass tools affecting various MDM solutions.
+39.10s - 43.54s |  I have performed expert opinion against a major ATM manufacturer,
+43.54s - 51.65s |  and I have had the opportunity of examining cartel-designed ATM black box devices.
+51.65s - 55.93s |  For today's agenda, we'll take a brief look at the ATM industry,
+55.93s - 60.65s |  and then we'll introduce Diebold Nixdorf's dynamic security suite.
+60.65s - 64.45s |  We'll then dive a little bit deeper into the pre-boot authentication process
+64.45s - 70.65s |  implemented within that software, and finally wrap up with a little bit of cat and mouse.
+70.65s - 75.33s |  So, starting off, let's take a look at the industry.
+75.33s - 79.73s |  The ATM market is essentially divided into two classes of systems.
+79.73s - 84.77s |  You have consumer-grade platforms, and these are the standalone units you typically see
+84.77s - 90.61s |  in your local grocer or at the gas station, pretty much all over the place in the market.
+90.61s - 95.57s |  These devices usually run Windows CE and lack a lot of the enterprise security controls
+95.57s - 98.41s |  that you typically see within your corporate environment.
+98.41s - 104.25s |  On the other hand, the financial-class systems are the enterprise-class ATMs.
+104.25s - 108.97s |  These are the ones that are specifically located at your banking institution,
+108.97s - 115.37s |  and they're represented as the larger standalone units or the through-wall devices.
+115.37s - 119.25s |  These are equipped with Windows Embedded 10.
+119.25s - 122.13s |  Some of the newer models are starting to introduce 11,
+122.13s - 126.09s |  and each manufacturer has their own proprietary security stack,
+126.09s - 130.89s |  offering various endpoint detection and full-disk encryption.
+130.89s - 137.29s |  Here in the States, there are only three major financial institution ATM manufacturers,
+137.29s - 144.40s |  and those are Hyosung, NCR, and Diebold Nixdorf.
+144.40s - 150.24s |  So, opening up an ATM, the system is essentially divided into two hemispheres.
+150.24s - 153.36s |  You have the top portion, or the top hat.
+153.36s - 157.76s |  This contains all the PC peripherals and components of the device,
+157.76s - 164.96s |  and then the bottom portion, aka the vault, carrying the cash cassettes and all the system's currency.
+164.96s - 169.72s |  Each component of the ATM is physically isolated from each other,
+169.72s - 175.32s |  but the physical security controls between those hemispheres vary drastically.
+175.32s - 179.84s |  The bottom portion of the ATM is equipped with multi-factor authentication,
+179.84s - 186.28s |  usually implemented with a digital combination lock and an I button for authorization verification.
+186.28s - 191.80s |  It's designed to have about one inch thick steel, has a very heavy bolt locking mechanism,
+191.80s - 197.24s |  and will be equipped with seismic detectors or tamper detection to indicate of any malicious entry.
+197.24s - 203.28s |  However, in contrast to that, you have the top hat of the ATM,
+203.28s - 206.84s |  and this only has about one-eighth inch thick steel.
+206.84s - 212.68s |  It is equipped with numerous vent holes for PC ventilation, airflow,
+212.68s - 217.88s |  comes with default tubular locks that you can actually pick up pretty easily online,
+217.88s - 221.92s |  and the locking mechanism is a cantilever-style lock
+221.92s - 225.92s |  that's activated from a cable that's hooked up to the cylinder of the lock.
+225.92s - 230.68s |  Because of the plastic components that are usually presented in the front of the ATM,
+230.68s - 234.68s |  it's very easy to get access to the locking mechanism via destructive entry
+234.68s - 240.21s |  or just shoving a coat hanger in through a PC speaker.
+240.21s - 244.73s |  So, when we start taking a look at the attack factors affecting these platforms,
+244.73s - 251.09s |  there's one thing in common. Most of the attack factors require some level of physical access to the device.
+251.09s - 255.77s |  Uh, some of the most common attacks that we see are black box devices.
+255.77s - 260.01s |  Uh, and these are small little units that are placed inside or outside the ATM
+260.01s - 268.49s |  with the goal of manipulating, uh, dispense requests and, uh, simulating the ATM hosting network.
+268.49s - 272.77s |  We are all familiar with card skimmers. Uh, they attach to the front of the ATM.
+272.77s - 280.29s |  They're designed to steal your card data. Uh, and then there's the significant physical attacks, uh, RAM raiding.
+280.29s - 283.69s |  Really awesome, you wrap a chain around an ATM, hook it up to your Ford pickup,
+283.69s - 285.69s |  and just rip it right out of the ground.
+285.69s - 290.29s |  Or you just borrow your local construction company equipment and bust a hole right through the wall.
+290.29s - 296.21s |  Uh, some of the less common attacks, though, that we see here in the States are explosive attacks against the ATMs
+296.21s - 301.81s |  because our currency, uh, is mostly paper derived and when you ignite it, it tends to catch on fire.
+301.81s - 304.37s |  So, it's very counterproductive to do that attack.
+304.37s - 308.41s |  However, internationally, where there's a higher plastic consistency of the money,
+308.41s - 310.97s |  uh, you do see a lot more explosive attacks.
+310.97s - 318.77s |  Uh, and they actually have started designing explosive proof ATMs to prevent this attack procedure.
+318.77s - 329.29s |  So, looking at the landscape, the ATM market is full of thousands of devices, all of which hold very large sums of cash.
+329.29s - 336.93s |  And despite the need of physical access, criminal activity has exponentially grown over just the last several years.
+336.93s - 344.73s |  But the logical infrastructure, uh, within these platforms provides little resistance against a logical attack.
+344.73s - 353.05s |  The foundation of how the ATM works relies on an unauthenticated API known as Extension for Financial Services, or XFS.
+353.05s - 361.65s |  This is the abstraction layer between the software and the hardware allowing vendor agnostic, uh, cash cassettes to be installed in the ATM.
+361.65s - 367.85s |  Additionally, most of the software on these ATM platforms all run in the context of high privilege
+367.85s - 377.61s |  and systems are designed with layers of default credentials to get into operator mode, system administration, and various other functions of the ATM.
+377.61s - 383.93s |  As a result, these devices have become a very lucrative target for organized crime.
+383.93s - 390.41s |  So, we can't really talk about ATMs without briefly discussing the network in which they work.
+390.41s - 396.93s |  In order for you to free your money from the bank, the ATM needs to be connected to the ATM network,
+396.93s - 403.69s |  uh, which is essentially a private network that's controlled through the hosting provider or gatekeeper.
+403.69s - 409.41s |  However, not all systems are provided access to the network and there's a specific certification approach
+409.41s - 415.81s |  where only certain pieces of software and hardware combinations are allowed access to the ATM network.
+415.81s - 421.41s |  So, in an environment or a financial institution that has ATMs across various vendors,
+421.41s - 428.33s |  administration of that platform can be very difficult, uh, because it's different software, different patch levels,
+428.33s - 435.53s |  which usually results in banking institutions working with a managed service provider.
+435.53s - 442.09s |  This all brings us to Diebold Nixdorf and their proprietary Dynamic Security Suite software.
+442.09s - 449.93s |  Unlike the other ATM security stacks, Dynamic, or Diebold, has multi-vendor certification,
+449.93s - 457.81s |  allowing their software to be installed on any ATM hardware platform and gain access to the ATM network.
+457.81s - 463.73s |  In 2015, they were assumed to represent about 35% of the ATM market.
+463.73s - 472.61s |  And in 2018 and 19, they partnered with two of the largest financial institutions representing the U.S. gaming industry.
+472.61s - 479.29s |  AKA, Dynamic Security is present in almost every casino across the United States,
+479.29s - 485.97s |  if not most or all of the casinos right here in the Vegas Strip.
+485.97s - 491.93s |  So, now that we have a little brief background of what the network looks like,
+491.93s - 495.29s |  let's introduce Dynamic Security.
+495.29s - 499.17s |  So, like all security stacks, it comes with a number of security features.
+499.17s - 506.81s |  Uh, you get USB filtering, firewall policy, tamper detection, delegated access, and then it also does disk encryption.
+506.81s - 513.09s |  But, it's not really full disk encryption, uh, and there's two unencrypted partitions on the disk.
+513.09s - 520.01s |  The standard partition is UEFI, and this isn't, uh, pretty common in most enterprise configurations.
+520.01s - 526.77s |  But, what isn't common is an unencrypted Linux partition, and that's somewhat of a red herring.
+526.77s - 534.73s |  Uh, initially investigating what that Linux partition is, it self-identifies itself as Super's Chaff.
+534.73s - 542.13s |  And online reconnaissance against that doesn't actually result in much information being identified.
+542.13s - 546.41s |  But, it does lead us to a very interesting game known as Worms Armageddon.
+546.41s - 550.57s |  In Worms Armageddon, you launch sheep as mobile projectiles against your enemy.
+550.57s - 555.17s |  The game's really fun. I think we wasted several minutes playing the game once we identified it.
+555.17s - 559.45s |  But, unfortunately, it has absolutely nothing to do at all with ATMs.
+559.45s - 570.69s |  But, what it did do is help us identify what Super's Chaff was actually a German translation for Super Sheep.
+570.69s - 579.69s |  And, Super Sheep actually is the install directory located in user that contains most of the system binaries.
+579.69s - 586.89s |  Interestingly enough, this resulted in much more information from OSINT Discovery.
+586.89s - 592.61s |  Specifically, in 2016, a consulting firm known as SecConsult wrote a blog article
+592.61s - 598.21s |  detailing a code execution vulnerability in a piece of software known as Cryptware CryptoPro.
+598.21s - 602.45s |  And, the underlying Super Sheep Linux operating system.
+602.45s - 607.85s |  In the article, there were several similarities between the Vynamic Security Linux operating system
+607.85s - 614.69s |  and that of Super Sheep, leading us to go back and look at DeepWorld's user license agreements.
+614.69s - 621.85s |  Specifically, identifying Cryptware CryptoPro as a third-party integrator as part of Vynamic Security.
+621.89s - 629.85s |  However, that third-party integration was only mentioned once in version 3.0.
+629.85s - 638.53s |  Versions 4.0, 4.1, 4.2, 4.3 all remove any reference to the integration of Cryptware CryptoPro.
+638.53s - 641.73s |  So, who is Cryptware CryptoPro?
+641.73s - 648.89s |  It's a cryptographic spinoff started in 2002 with the objective of enhancing Microsoft BitLocker functionality.
+648.89s - 653.45s |  Specifically, by introducing a pre-boot authentication process.
+653.45s - 663.21s |  Today, the organization exists across numerous countries and drastically different domain and website presence.
+663.21s - 670.73s |  Each website has a significantly different representation of the content than any of the other websites put together.
+670.73s - 676.21s |  However, despite the suspicious online presence, they boast over half a million licenses sold
+676.21s - 681.53s |  and advertise that employees love their encryption, so it's gotta be good, right?
+681.53s - 687.89s |  So, let's dive a little bit deeper into the pre-boot authentication process.
+687.89s - 692.61s |  So, Vynamic Security essentially uses a dual-boot operating system.
+692.61s - 699.05s |  From UEFI, it launches a Super Sheep Linux operating system, which performs some magic against the desk.
+699.05s - 702.65s |  It then shuts down, goes back through UEFI and launches Windows.
+702.65s - 710.93s |  Windows will perform an auto-logon and then initiate or launch all the ATM software, bringing the system operational.
+710.93s - 717.33s |  Any attempts to modify the content on a Linux partition result in an integrity error.
+717.33s - 719.93s |  However, not all files on the system are treated the same.
+719.93s - 725.73s |  Modifying different file content or directories results in a significantly different error message to be presented.
+725.73s - 729.57s |  However, this one provides a little bit more detail.
+729.57s - 734.85s |  Designating about 253 elements are validated on the desk, which is interesting.
+734.85s - 738.29s |  I wonder what those elements are.
+738.29s - 749.33s |  So, we go back to the Linux partition and look to identify any directory contents that may contain a SHA index or representation of what's validated.
+749.33s - 751.73s |  We stumbled across the log directory.
+751.73s - 758.37s |  Inside the directory, there was content evaluating about 2,500 files on the desk.
+758.37s - 763.01s |  The full Linux operating system had slightly under 11,000 files.
+763.01s - 767.97s |  This gave us a delta of about 8,000 files, which are potentially not validated.
+767.97s - 779.09s |  Although drastically more than 253, evaluating 8,000 files and determining whether or not they have any impact against the boot-up sequence is a rather daunting process.
+779.09s - 783.61s |  So, I prefer to step back and then take a look at background images.
+783.61s - 785.13s |  Those are really easy to modify.
+785.13s - 786.45s |  They're very representative.
+786.45s - 789.01s |  If there's any impact against the system.
+789.01s - 793.93s |  So, randomly pick an image, shut down and reboot.
+793.93s - 798.81s |  Although unfortunately, when the system powers back up, the default background is presented.
+798.81s - 803.73s |  However, after just a few seconds later, we did get our hacked image.
+803.73s - 809.45s |  Specifically indicating that the pre-boot authentication process is not completely infallible.
+809.49s - 817.93s |  And there is a way to take advantage of the pre-boot authentication process and maliciously execute something.
+817.93s - 829.81s |  Ultimately, using the modified background image and modifying content within the Linux partition, we're able to map out the different phases of the pre-boot authentication process.
+829.81s - 839.93s |  The 253 elements are validated in UEFI during BIOS initialization in the boot XSA or boot XSA2 system binaries.
+839.93s - 850.25s |  Upon completing that validation check, Linux is then initialized, doing the rest of the validation of the other 2,500 files.
+850.25s - 856.05s |  Those 2,500 files are then used to unlock the TPM and recover the disk encryption key.
+856.05s - 866.89s |  Unfortunately, ATMs are equipped with secure boot and the ability to modify boot XSA or boot XSA2 within UEFI is not possible.
+866.89s - 874.37s |  Because all the UEFI binaries are digitally signed and that signature is associated to the BIOS.
+874.37s - 882.61s |  So, in order to take advantage of the system, we need to specifically map out what files are validated as part of phase one.
+882.61s - 896.79s |  And then look to identify anything that's not checked but may allow uh redirection of the execution workflow in Linux before phase two is initiated.
+896.79s - 901.97s |  Fair enough. Challenge accepted. Let's play cat and mouse.
+901.97s - 911.97s |  We'll start off in version 18.x. So, version 18.x, the PBA authentication process scans about 253 elements on the disk.
+911.97s - 922.25s |  This is executed out of boot XSA2. Upon completing that process, Linux is bootstrapped through the system V architecture and several RC initialization scripts.
+922.25s - 929.01s |  After which, root performs an auto logon and phase two is initiated from root's profile script.
+929.01s - 935.93s |  Phase two then scans the other 2,500 files, ultimately unlocking the TPM.
+935.93s - 941.17s |  The run state of Linux operating system is designed through several temporary file systems.
+941.17s - 946.05s |  And these are designed to give the system a somewhat pseudo read only perspective.
+946.05s - 961.65s |  Uh, those temporary file systems are then populated from several tar archives, which unfortunately are validated during phase one.
+961.65s - 980.05s |  So, there isn't much of, so there isn't much of an ability to modify that content because they are validated during the phase one initialization process.
+980.05s - 992.17s |  Ultimately, in order to identify the attack surface, we take our phase one integrity index and then we examine that against the full system V initialization architecture.
+992.17s - 1001.29s |  Look to identify any RC scripts or other ancillary scripts that are pulled in during the boot up sequence, but aren't validated during phase one.
+1001.29s - 1012.05s |  Unfortunately, going through this process, most of the RC initialization scripts, the whole architecture, uh, is relatively locked down and there isn't much of an attack surface.
+1012.05s - 1021.21s |  However, taking a step back, there was one file that was overlooked. Etsy init tab.
+1021.21s - 1030.37s |  By having control over Etsy init tab and it not being validated during phase one, we have the ability to now gain a foothold in the architecture.
+1030.37s - 1040.05s |  However, we still need a staging directory. Like any good security solution, SuperSheep doesn't scan its own installation files.
+1040.05s - 1048.23s |  And since our objective is code execution on the ATM, what better staging directory to use than SuperSheep Avira?
+1048.23s - 1058.67s |  So, all we need to do is clone the RC initialization script over to our safe directory, patch global variables, inject our POC into X,
+1058.67s - 1073.91s |  and then call our new run level three from Etsy initialization. With that, I have a small demo for CVE-2023-24064.
+1073.91s - 1082.29s |  Inside this demo, uh, the dynamic security is virtualized. Initially powering on the system, we receive the integrity error.
+1082.29s - 1091.33s |  Shutting down the system, patching the disk, moving the RC initialization process, then gives us the ability to obtain code execution on the platform.
+1091.33s - 1112.26s |  Once we power the system back up, root will perform an auto log on, will receive, will gain code execution, and receive our callback shell.
+1112.26s - 1128.97s |  There we go. We have control of Linux. Although, vanilla code execution isn't enough. So what? We're on Linux. Windows is still encrypted.
+1128.97s - 1137.01s |  How are we gonna go from Linux to Windows? Luckily, SuperSheep has an app for that. Mount Winpart.
+1137.01s - 1148.79s |  Mount Winpart, as a command line argument, takes the TPM disk encryption key, decrypts Windows, and initializes a third phase of the integrity validation check.
+1148.79s - 1165.07s |  That, so, all we need to do to gain that key, is restart the integrity check, and monitor proc command line. Doing so, after a few seconds, we get our TPM disk encryption key,
+1165.07s - 1183.81s |  we're able to decrypt Windows, from here, we can install malware, directly interacting with the XFS API, and dispense money out of the ATM on demand.
+1183.81s - 1192.11s |  Alright, let's talk about timeline. This vulnerability was observed to only impact version 18 of the dynamic security suite.
+1192.11s - 1201.59s |  Uh, vulnerability was identified December of 21, and then confirmed remediated just a few days later when we looked at the next major release of dynamic security.
+1201.59s - 1215.49s |  It's somewhat misleading, uh, because from version 18 to version 3.0, D-Build actually changed the version strategy to introduce minor versioning, restarting the number from, from 3, uh, 3.3.
+1215.49s - 1229.21s |  So, the next major supported release actually was 3.0. So, inside this, the way that they patched the attack surface, is scinit-tab is now validated as part of phase 1.
+1229.21s - 1242.75s |  No longer able to manipulate the system that way. However, interestingly enough, the phase 1 integrity check is now reduced by 20%, going from 253 elements to only 56.
+1242.75s - 1256.42s |  Okay? Reporting this to D-Build, they had indicated that this is not a security vulnerability, because of the superior protections of IMA. Okay, what's IMA?
+1256.44s - 1272.02s |  IMA is a kernel signature verification check where all binaries on the system are digitally signed along with the kernel. That digital signature is applied as an extended attribute to each file, validating the file name, file path, and various details about the I-known.
+1272.02s - 1284.66s |  The kernel then validates the parent-child process of any executable, determining whether or not it's actually allowed to execute. However, what IMA doesn't do, is it doesn't validate script interpretation.
+1284.66s - 1307.82s |  For example, your, uh, bench shell is certified and allowed to execute, needed to run the Linux architecture, but then it, when it interprets a file such as profile, it goes through and performs all, any execution commands within that interpreted script in the context of a certified binary.
+1307.82s - 1329.90s |  Let's continue with service release 9. So, in service release 9, the Linux architecture is relatively unchanged from what was pre-release, previously discussed. But, reviewing the mountfs initialization script, we're able to identify mtab is deleted before the mount command is called.
+1329.90s - 1357.82s |  So, since there's a delete call before the mount command, and the security architecture of the system is based around temporary file systems, which are executed from fstab, we just replace mtab with fstab. Fstab gets deleted before the mount command is called, giving us persistence to root's home directory, allowing us to patch the profile script, and again, obtain code execution.
+1357.82s - 1395.66s |  With that, here is CVE-2023-24063. Inside this demo, we patch the offline desk, and we relocate fstab to mtab, powering back on the virtual system. Once root performs its auto logon activity, we'll receive code execution, and our callback shell. There we go. Again, we have control of the Linux architecture.
+1395.66s - 1425.02s |  So, let's go back to timeline. This vulnerability was observed to impact all prior versions of 3.3.0. Vulnerability was identified in June of 2022, and then confirmed or mediated the following day, magically, preemptively, in service release 10. In service release 10, the delete call to mtab is now removed from the mountfs initialization script, removing the opportunity to delete fstab before the temporary file systems are initialized.
+1426.34s - 1450.54s |  Alright, let's dive a little bit deeper into service release 10. So, service release 10, init-tab is validated, mtab does nothing, but what about the mount logic? So, mount is used to actually build a temporary file system architecture, but there's one interesting limitation with mount. The default behavior of mount is if you call
+1450.54s - 1456.88s |  mount against a mount point that's previously mounted, the call to mount will fail. And
+1456.88s - 1461.98s |  what's the default mount point associated with any Linux file system? The root file
+1461.98s - 1467.86s |  system. So if we flatten the file system and re-associate our critical mount points to
+1467.86s - 1473.40s |  that of root, we're able to regain persistence to root's home directory, patch the profile
+1473.50s - 1478.50s |  script, and then again obtain code execution. Here's CVE 2023-24062. Inside this demo, again,
+1486.39s - 1491.55s |  we patch the offline disk, we flatten the file system, uh gain persistence to root's home
+1491.55s - 1496.97s |  directory and power back on the virtual system. Once root performs its auto logon, we'll
+1496.97s - 1518.83s |  receive code execution and again our callback shell. Taking a look at the timeline here, it's
+1518.83s - 1524.17s |  a little bit different. So once again, all prior versions of 3.3.0 were made vulnerable to
+1524.17s - 1529.17s |  this attack surface, but now we have a patch for version 4.0, 4.1, and 4.2. Representing at
+1531.47s - 1538.05s |  the point in time, the entire software release of dynamic security. The vulnerability was
+1538.05s - 1544.35s |  identified in June of 2022 and I confirmed remediation in December of 22 as part of
+1544.37s - 1550.74s |  service release 12. In service release 12, MountFS is updated again. This time, adding several
+1554.06s - 1560.06s |  delete calls to remove root temp var amount and then recreate those directories. This
+1560.06s - 1565.80s |  essentially removes any sim links that we've defined or any other uh persistent content
+1565.80s - 1572.24s |  that we may have placed on that disk. Fair enough. Let's look at service release 12. So, in
+1573.24s - 1578.24s |  service release 12, how do you work around a delete call? Well, interestingly enough, there's
+1583.08s - 1588.08s |  still some black magic amount. Specifically, the uh kernel extension mount points are
+1589.88s - 1596.62s |  initialized earlier in the initialization process. And what's interesting about this is when
+1596.62s - 1601.42s |  you place a file in a mount point, once the mount point is mounted, the content is no longer
+1601.44s - 1608.44s |  accessible. Since all the previous mitigation checks were implemented within MountFS, why
+1608.44s - 1614.46s |  don't we just move MountFS to proc? Then once the kernel initializes, the file is no longer
+1614.46s - 1620.82s |  accessible, it doesn't delete our root directory and we again, regain persistence to root, patch
+1620.82s - 1625.84s |  the profile script, and gain code execution. Here's CVE 2023-28865. Inside this demo, again,
+1626.30s - 1632.74s |  we patch the offline disk, relocate MountFS to proc, power back on the virtualized system. Once
+1639.18s - 1665.05s |  root performs its auto logon, we again, gain code execution. Just as before, this vulnerability
+1667.39s - 1672.39s |  impacted all prior versions of 330. In addition, also required new patches for 4.0, 4.1, and
+1672.71s - 1677.71s |  4.2. Also representing the entire security stack of dynamic security. The vulnerability was
+1682.29s - 1687.29s |  identified in December of 2022 and then confirmed remediated in February of 23 as part of
+1689.93s - 1694.93s |  service release 15. Service release 15 is a slightly more complex remediation strategy. This
+1694.95s - 1699.95s |  time, phase one integrity checks are expanded to include a number of null sum indexes
+1704.75s - 1710.59s |  against critical mount points. This essentially confirms the content in those mount points has
+1710.59s - 1715.63s |  not been modified and those directories are truly empty before Linux is allowed to
+1715.63s - 1724.60s |  initialize. Let's look at service release 15. So, in service release 15, I like to fall back on
+1724.98s - 1729.98s |  the idea that the more complicated a security control is, the more likely something is going to
+1736.66s - 1741.66s |  be overlooked. However, in order to identify those barriers, we need to first understand how
+1744.00s - 1749.00s |  that security control is implemented. So, if we create a file or we create a SIM link to a known
+1749.60s - 1754.60s |  file, it produces a hash sum as part of the phase one integrity check and the system fails to
+1756.54s - 1761.54s |  boot. However, if we create a directory or a tree of empty directories, no sum value is
+1762.98s - 1767.98s |  created and the system boots successfully. Interestingly enough, null SIM links also
+1772.06s - 1778.37s |  produce a null sum value. In order to take advantage of that, we need to return, uh, and
+1779.37s - 1784.37s |  identify a new staging directory that allows us to establish a transversal point, uh, with a
+1788.71s - 1793.61s |  directory path that doesn't previously exist. In order to identify one, we return to our
+1793.61s - 1799.75s |  previous attack surface and look at what directory structures are created once the Linux
+1799.75s - 1804.75s |  kernel is initialized that may not actually exist in the offline desk. Allowing the creation
+1805.25s - 1810.25s |  of a transversal SIM link that will represent as a broken link on the offline desk during
+1812.95s - 1817.95s |  phase one integrity, but then becomes valid once Linux is launched, allowing us to redirect and
+1819.13s - 1824.13s |  gain access to our new root location. Luckily after just a few seconds, it wasn't hard to
+1826.17s - 1831.17s |  find dev block, which is actually a special mount point, routing or mounting the block device
+1831.19s - 1836.19s |  of the system itself. Uh, this special mount point was also observed to exist, uh, be
+1840.17s - 1845.77s |  contained in all prior versions of dynamic security, also giving some persistence against the
+1845.77s - 1850.77s |  other versions of software. So, we just move our mount points to the, uh, secondary mount
+1853.45s - 1858.45s |  points, VAR to VAR2, ROOT to ROOT2, and we SIM link to those via dev block. Offline desk
+1859.11s - 1864.11s |  link is broken, no SIMs are created, Linux powers up, links are valid, we get access to ROOT's
+1866.95s - 1871.95s |  home directory. Here's CVE-2023-33206. Again, the offline desk is patched, we relocate to
+1879.76s - 1885.76s |  our new mount points and establish the transversal SIM link. Powering back on the system,
+1885.78s - 1891.18s |  ROOT's gonna perform it's auto logon, we'll receive code execution and again, our callback
+1891.18s - 1913.78s |  shell. So, at this point, I kinda feel like I've been here before. All prior versions of
+1913.78s - 1918.78s |  3.3.0 were vulnerable to this, including 4.0, 4.1, 4.2, and 4.3. Again, the entire dynamic
+1920.58s - 1926.22s |  security stack. The vulnerability was identified in April of 23, and then confirmed
+1926.22s - 1931.22s |  remediated in July of 23 as service release 16. In service release 16, the vulnerability
+1934.26s - 1939.26s |  release 16, the PBA phase one process now validates the integrity of SIM links. So, if
+1941.94s - 1947.04s |  there's a broken SIM link, the PBA integrity process will fail and the system doesn't boot
+1947.04s - 1952.04s |  up. However, what's also interesting are the prior, prior mitigation strategy of deleting
+1954.98s - 1960.56s |  the directories or the mount points in the ROOT or in the mount FS initialization script
+1960.56s - 1965.04s |  are now commented out and removed. Unfortunately, this didn't seem to reproduce the
+1965.04s - 1970.54s |  attack surface because we have null sum checks and SIM link validation as part of phase
+1970.54s - 1975.54s |  one. But it is an interesting approach to back out previous, uh, remediation strategy. With
+1979.57s - 1986.36s |  that, let's look at service release 16. So, service release 16. SIM link validation, null
+1986.56s - 1991.56s |  sums, bummer, that's pretty good security control. However, the entire integrity process of
+1998.70s - 2003.70s |  the system is based on the need to create hash sums and hash sum validation of files. You
+2007.28s - 2012.28s |  know what doesn't change the hash sum of a file? It's file attributes. So, for example, if we
+2013.28s - 2018.28s |  remove execute permissions from something, it has the same hash sum value. So, if we just
+2022.57s - 2027.77s |  remove the execute permissions of IMA, we disable the entire security architecture of
+2027.77s - 2032.77s |  dynamic security and have the ability to execute any unsigned binary we want. Here's CVE
+2038.48s - 2045.27s |  2023-40261. In this demo, we remove execute permissions from IMA, gaining the ability to
+2046.19s - 2051.19s |  execute anything that we want, power back on the system, root performs its auto log on, and we
+2055.41s - 2077.91s |  receive our callback shell. Alright, just as before, the entire security stack of dynamic
+2080.41s - 2085.41s |  security is vulnerable to this attack surface. All prior versions of 330, all prior versions
+2086.99s - 2091.99s |  of 4.0, all prior versions of 4.1, all prior versions of 4.2, and all prior versions of 4.1
+2093.75s - 2099.49s |  and all prior versions of 4.3. The vulnerability was identified in July of 2023, and I've been
+2099.49s - 2104.51s |  informed from dbold that this was mitigated as part of the November 2023 release of service
+2107.27s - 2112.27s |  release 17. Additionally, version 3.3 was designated to be end of life at the end of December
+2112.27s - 2117.29s |  uh 23. So with that, do you need defense? Well, during the content of this talk, I've been
+2128.06s - 2134.00s |  able to demonstrate impact of the entire dynamic security suite and their hard drive
+2134.00s - 2139.00s |  encryption model. I've also identified that the attack surface is recursive, where new
+2139.60s - 2144.60s |  versions of the patch system are recursively vulnerable against, against those attacks. Um, but
+2150.98s - 2156.16s |  it's all based around the root cause of the Linux file system being unencrypted. So
+2156.16s - 2161.26s |  technically, it's a continuous cat and mouse game to defend against this attack surface, and
+2161.26s - 2166.26s |  there are likely going to be new attacks. But, you can rest assured, because physical access is
+2166.36s - 2171.36s |  required to take advantage. So, let's discuss some mitigation strategies. First and foremost,
+2177.54s - 2182.54s |  the dynamic security platform should be patched up to the latest release of any uh of the
+2185.44s - 2190.44s |  major service releases that have been discussed here. In addition, I am very proud to announce
+2191.44s - 2196.44s |  that this security research has directly influenced Diebold Nixdorf to redesign the SuperSheep
+2201.54s - 2207.92s |  architecture, and as of April this year, they have released version 4.4 that is supposed to
+2207.92s - 2216.50s |  offer full encryption of the SuperSheep operating system. In addition, there is a security
+2216.50s - 2221.50s |  configuration check known as enable security check. If this is disabled in the dynamic
+2229.94s - 2234.94s |  security configuration, also first introduced in version 4.0 of the software, this disables
+2237.74s - 2244.12s |  the TPM key from being sent to mount winpart. Without that TPM key being sent as a command
+2244.14s - 2249.88s |  line argument, it does significantly reduce the attack surface. Because from just the Linux
+2249.88s - 2254.16s |  operating system itself, there is not much of an advantage point to attack the Windows
+2254.16s - 2259.76s |  operating system. Additionally, you can just choose to replace dynamic security with an
+2259.76s - 2264.76s |  industry recognized disk encryption solution, such as Microsoft BitLocker. Um, there are
+2267.76s - 2273.84s |  also a number of secondary actions. Uh, ensure the top hat entry is properly monitor-
+2274.80s - 2280.30s |  uh, any malicious entry to that system should be, uh, triggered as an alert. Disable all
+2280.30s - 2285.30s |  unused USB ports, ensure the USB ports validate what peripherals are connected, and lock the
+2287.08s - 2293.02s |  hard drive screws. There is no business justification for a hard drive on an ATM to be
+2293.02s - 2299.26s |  removed without having to completely pull out the chassis. That should significantly reduce
+2299.28s - 2304.28s |  the attack surface. With that, I'd like to thank all of you for, uh, coming here today and, uh,
+2307.72s - 2308.72s |  listening to this content.

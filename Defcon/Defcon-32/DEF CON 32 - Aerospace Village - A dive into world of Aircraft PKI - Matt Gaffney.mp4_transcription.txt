@@ -1,0 +1,357 @@
+{
+  "webpage_url": "local:1731740947:14bdd520:DEF CON 32 - Aerospace Village - A dive into world of Aircraft PKI - Matt Gaffney.mp4",
+  "title": "DEF CON 32 - Aerospace Village - A dive into world of Aircraft PKI - Matt Gaffney.mp4",
+  "description": "Local file",
+  "channel_url": null,
+  "duration": null,
+  "channel": null,
+  "uploader": null,
+  "upload_date": null
+}
+
+0.00s - 9.44s | This text was transcribed using whisper model: large-v2
+
+ So, I'm Matt Gaffney, also known as Gaffers, I'm a principal engineer at United Airlines.
+9.44s - 15.36s |  I'm also a village lead at the Aerospace Village, so a big shout out to those guys, put on a
+15.36s - 16.92s |  great show this year.
+16.92s - 24.16s |  I'm going to do a shallow dive into aircraft PKI, and I've got a few caveats to start with.
+24.16s - 27.84s |  Like I said, this is a shallow dive into the topic.
+27.84s - 33.00s |  I see a few operators that I recognize in the room, and at least one expert who will
+33.00s - 37.80s |  know this topic several times better than I ever will.
+37.80s - 40.90s |  And you'll understand when I say this, this is something you can easily spend three days
+40.90s - 41.90s |  talking about.
+41.90s - 44.70s |  It is so complex.
+44.70s - 50.00s |  So there are some simplifications, and there are some generalizations, and I'm also only
+50.00s - 53.34s |  going to speak to what I'm authorized to speak to.
+53.34s - 57.52s |  And through the village, our ethos is to bring light and not heat to the topic of cyber in
+57.52s - 58.76s |  aerospace.
+58.76s - 62.48s |  So this will be supplier agnostic, and there are some industry challenges that we're working
+62.48s - 68.80s |  together to fix, which I cannot cover, all right?
+68.80s - 71.28s |  That's what we'll go through today.
+71.28s - 78.56s |  The importance, some use cases, methods A, B, and C, a bit of it on ATA spec 42, and
+78.56s - 82.96s |  then some about post-quantum world PKI for aircraft.
+82.96s - 86.70s |  I've included a slide of acronyms because I know the slides are going to be available
+86.70s - 89.30s |  later through DEF CON.
+89.30s - 93.82s |  But like I said, those of you who work in aerospace will know what I'm talking about.
+93.82s - 97.82s |  I will try to name them out every time I mention them the first time around.
+97.82s - 101.46s |  If I don't, just throw something at me.
+101.46s - 102.46s |  So why is it important?
+102.46s - 107.22s |  Well, in aviation, we have this thing called field loadable software, or FLS, and in modern
+107.22s - 110.02s |  commercial aircraft, FLS is everywhere.
+110.02s - 112.98s |  And don't just think about your IFE, right?
+113.42s - 118.42s |  It's like your in-flight entertainment, sorry, with your films or movies.
+118.42s - 122.82s |  We have sensors which generate logs for maintenance and preventative maintenance, communication
+122.82s - 127.38s |  systems, control surfaces, and navigation databases.
+127.38s - 131.18s |  And then for legacy, and in most cases on next-gen aircraft, if you wanted to update
+131.18s - 138.54s |  the firmware in a line replaceable unit or an LRU, you'd have to take it out and put
+138.54s - 139.54s |  a new one in.
+140.38s - 145.58s |  Whereas with the enabled aircraft, there are certain LRUs to which you can just push a
+145.58s - 151.82s |  new FLS to activate new features or just to update the functionality to fix any bugs.
+151.82s - 157.90s |  And if you saw my talk on DEF CON 28 on the aircraft information systems domain, you might
+157.90s - 163.46s |  remember my favorite factoid, and that's that there are about 1,400 different software parts
+163.46s - 170.94s |  on a 787 to control the bathrooms.
+170.98s - 173.14s |  So these are the typical use cases.
+173.14s - 178.50s |  It's not an exhaustive list, but it covers the main use cases in commercial aviation
+178.50s - 183.62s |  and those which I generally have time for today.
+183.62s - 187.26s |  So aircraft operators receive FLS from multiple sources.
+187.26s - 192.70s |  They can be manufacturers, OEMs, suppliers, and even from internal teams who can build
+192.70s - 199.50s |  a subtype of FLS called UMI, or user modifiable information.
+199.50s - 203.46s |  A good example of UMI is a configuration load for the aircraft information systems
+203.46s - 209.70s |  domain on certain aircraft, which will define things like connectivity to the ground, enabling
+209.70s - 212.34s |  and disabling features or systems.
+212.34s - 216.70s |  And that is a part we would create and sign before we can put it on the aircraft.
+216.70s - 220.82s |  And when we receive an FLS from an external source, we are required by regulation to verify
+220.82s - 222.90s |  its authenticity.
+222.90s - 227.18s |  For handling FLS, the manufacturers provide operators with the software to which we configure
+227.18s - 229.98s |  them with the verified supplier's trust shares.
+229.98s - 236.52s |  And that allows us to verify it's been signed by the trusted entity.
+236.52s - 242.16s |  As important as verifying its authenticity, it's vital we check the FLS integrity as well.
+242.16s - 247.56s |  And we're also required by regulation to do that as well.
+247.56s - 250.28s |  In fact, through various standards, we're mandated to do this before uploading to the
+250.28s - 251.28s |  aircraft.
+251.28s - 253.96s |  And there's a new requirement, and I'm sure I'm going to get some eye rolls from somebody
+253.96s - 261.84s |  in the front row here, about the recent implementation or basically new rules around using ARINC
+261.84s - 266.00s |  645-1 portable data loaders, or PDLs.
+266.00s - 268.84s |  It's been a bit of a thing for us.
+268.84s - 275.36s |  But these enforce signature checking of the FLS prior to loading onto the aircraft in
+275.36s - 276.56s |  a technical sense.
+276.56s - 280.52s |  So we're not relying on the mechanic or the technician to do those checks.
+280.52s - 283.80s |  We actually can't physically put it on the aircraft until that signature has been checked,
+283.80s - 287.04s |  which is great.
+287.04s - 291.44s |  And it may or may not surprise you when I say that an aircraft can generate hundreds
+291.44s - 295.80s |  of megabytes, if not several gigabytes, of data per flight length.
+295.80s - 299.96s |  We've come a long way from the days of OOE messages over A-cars, although they do still
+299.96s - 301.88s |  exist.
+301.88s - 305.32s |  The vast majority of data comes from the engines.
+305.32s - 310.72s |  Or a certain aircraft, if you have an AD pilot and he slams it on a landing, the carbon fiber
+310.88s - 314.84s |  they also generate stress data.
+314.84s - 318.08s |  And as soon as the aircraft touches down, you get that infamous weight on wheels signal
+318.08s - 319.08s |  to the avionics.
+319.08s - 322.48s |  It will start trying to establish a link to the ground systems.
+322.48s - 327.52s |  And sometimes even before the aircraft reaches the gate.
+327.52s - 330.80s |  These connections are typically 4G and Wi-Fi.
+330.80s - 336.12s |  And most airport gates have an access point for a service called gate link, which can
+336.12s - 341.68s |  best be described as a common use network dedicated for aircraft traffic.
+341.68s - 345.44s |  And for that reason, many operators also implement a VPN through gate link to their
+345.44s - 347.36s |  network boundary.
+347.36s - 351.68s |  And depending on the aircraft, each VPN can require between one and three certificates
+351.68s - 353.80s |  just for that connection.
+353.80s - 356.84s |  And that's per aircraft.
+356.84s - 361.84s |  It's also worth noting the logs are digitally signed and verified before being ingested
+361.84s - 370.06s |  by the operator in the relevant tools or sent on to third parties for analysis.
+370.06s - 376.18s |  Certificates can also be used to enforce boundary server and even application authentication.
+376.18s - 382.14s |  It does require mapping these certificates to AD identities, which is fun, especially
+382.14s - 384.38s |  if you operate a large number of enabled aircraft.
+384.38s - 389.90s |  And it's no secret that, you know, at United, we're trying to upgrade our fleet.
+389.90s - 395.26s |  I think when I started with 150 enabled aircraft in our fleet, which was a minority, by the
+395.26s - 399.26s |  time we finished updating it, we'll have over 1000 enabled aircraft.
+399.26s - 407.26s |  And that's going to mean a lot of work in terms of this PKI and the connectivity piece.
+407.26s - 411.86s |  And the final use case I'd like to cover today touches a little bit on ATA spec 42, which
+411.86s - 414.46s |  I'm going to cover a bit later on.
+414.46s - 419.14s |  But suffice to say, there are some real wins possible using certificates in smart cards
+419.14s - 420.14s |  for user authentication.
+420.14s - 425.86s |  Not only does it provide two-factor without a mobile device, but it has advantages from
+425.86s - 429.70s |  a user experience perspective as well.
+429.70s - 434.66s |  If you're in a public-facing role, would you rather a password with 15 plus characters,
+434.66s - 447.20s |  which is rotated every three to 12 months, or would you prefer a smart card with a PIN
+447.20s - 448.94s |  code instead?
+448.94s - 454.20s |  And every time you log in, you type in a PIN code, and when you pull the smart card out,
+454.20s - 456.76s |  it locks the screen automatically.
+456.76s - 460.64s |  So you get great security, and you also get a great user experience as well.
+460.64s - 465.84s |  And if you're a gate agent working in a public area, that could be a real win.
+465.84s - 468.24s |  We're working on it.
+468.24s - 474.40s |  But going back to signing FLS, so ATA spec 42 requires all PKI subscribers to authenticate
+474.40s - 480.32s |  to the PKI management platform using those smart card-based hardware certificates, like
+480.32s - 484.11s |  I just showed you in my hand there.
+484.11s - 490.69s |  The spec puts a huge emphasis on identity verification, dual controls, and audit of
+490.69s - 493.03s |  all activities.
+493.03s - 497.75s |  Without strong authentication mechanisms, all of that would be for naught.
+497.75s - 502.07s |  In some scenarios, depending on the method used to sign the FLS, the signing certificate
+502.07s - 509.91s |  can be held on the smart card of those specific subscribers who are authorized to sign the
+509.91s - 513.40s |  software.
+513.40s - 522.20s |  So coming on to the signing then, so signing FLS method A. On the left there, we're receiving
+522.20s - 525.24s |  the software, or it's coming from that internal team.
+525.24s - 532.80s |  And in method A, it's typically, in this scenario, it's typically unsigned.
+532.80s - 540.60s |  If it was signed, it would just be verified and then put into the storage or the repository.
+540.60s - 549.48s |  But in method A, you get your data, your software part here, which is an ARINC 665 load.
+549.48s - 554.56s |  Typically, it's an ARINC standard of zip file structures and header files.
+554.56s - 563.56s |  And then using the manufacturer-provided tools, the device sponsor here will use their smart
+563.56s - 572.24s |  card and they will, the software will then verify that certificate on his smart card
+572.24s - 574.12s |  with an OCSP response.
+574.12s - 579.14s |  And if it's valid, the software will go ahead and sign that software using that device sponsor's
+579.14s - 581.58s |  private key.
+581.58s - 586.06s |  And it creates a load with a signed OCSP response along with the data and the encrypted
+586.06s - 588.86s |  hash or the signature.
+588.86s - 589.86s |  And this is great.
+589.86s - 591.92s |  It's got a bunch of advantages.
+591.92s - 597.32s |  So once an FLS has been signed with a valid certificate, it never needs to be signed again
+597.32s - 599.42s |  unless that software is modified.
+599.42s - 604.76s |  So it doesn't matter if that certificate is revoked later or it expires.
+604.76s - 610.59s |  We know that at the time of signing that that certificate was valid.
+610.59s - 615.35s |  And also in this situation, the aircraft does not need to access a CRL or a certificate
+615.35s - 616.71s |  revocation list.
+616.71s - 620.51s |  It just needs to be configured with a trust chain.
+620.51s - 625.07s |  The disadvantages are you don't control the PKI and you have to pay for it.
+625.07s - 629.39s |  And also, you know, these ground system environments often use virtual machines.
+629.39s - 633.51s |  And if you can imagine here, I've oversimplified it here, but this device sponsor is probably
+633.51s - 638.47s |  on a laptop going to a jump box to go into a high secure zone.
+638.47s - 641.95s |  And you've got to get that smart card that he's got on his laptop read by the software
+641.95s - 644.83s |  that's on a VM through a jump box.
+644.83s - 645.83s |  That can be tricky to set up.
+645.83s - 651.75s |  And I'm probably getting some nods in the front row I can't see for the lights.
+651.75s - 656.51s |  Method B, a little bit more simplistic.
+656.51s - 661.75s |  So we will receive data signed or unsigned.
+661.75s - 666.39s |  If it's signed, we verify the signature and then strip it off.
+666.39s - 674.19s |  And then we keep our signing signature or signing certificate, sorry, in a HSM, which
+674.19s - 682.39s |  is used by that software, is checked by the CRL, of course, and then goes a much more
+682.39s - 686.15s |  simple structure here and then goes into repository.
+686.15s - 689.35s |  From the repository, I didn't cover that in the last slide, sorry, there are multiple
+689.35s - 692.83s |  ways to get that from the repository to the aircraft.
+692.83s - 697.99s |  There's the over-the-air technique, which some aircraft enable us to do.
+697.99s - 703.83s |  It still requires a mechanic or a technician to go into the cockpit and press some buttons.
+703.83s - 706.07s |  And there's some other conditions which have to be true as well.
+706.07s - 711.71s |  So all this science fiction you read about changing software in flight, yeah, I'm going
+711.71s - 714.75s |  to tell you what those conditions are, but there are conditions which stop that kind
+714.75s - 716.43s |  of thing.
+716.43s - 722.03s |  You can also use USBs, and these are not your typical USBs you keep at home.
+722.03s - 725.47s |  These are actually assigned as tools, and they are treated as such.
+725.47s - 727.39s |  They're signed in and out of the tool store.
+727.39s - 732.31s |  They go through procedures to wipe and clean them, or at least they should anyway.
+732.31s - 735.87s |  And then the one in the middle there is a PDL or a portable data loader.
+735.87s - 742.83s |  That's what I was talking about earlier there at 6451.
+742.83s - 746.63s |  And they will connect to the network, pull the software into the PDL.
+746.63s - 752.05s |  You walk to the aircraft and plug the PDL into the aircraft and do it that way.
+752.05s - 757.89s |  And then there's method C, which is very similar to method A, but it also includes assigned
+757.89s - 762.33s |  SCDP response as well.
+762.33s - 768.13s |  And as far as I'm aware, and correct me if I'm wrong, but I'm not aware of this method
+768.13s - 771.45s |  in use for commercial aircraft today.
+771.45s - 775.05s |  It may well happen in the future, but today it's not currently in operation for commercial
+775.05s - 776.05s |  aircraft.
+776.05s - 783.21s |  But it does have practical uses where FLS is designed to be kept for a long term.
+783.21s - 787.65s |  Because while I said earlier in method A the FLS doesn't need to be re-signed, that's only
+787.65s - 791.45s |  as long as the CA it was issued from remains valid.
+791.45s - 796.29s |  So that could be a few years, or it could be 20 years, depending on when you've caught
+796.29s - 798.93s |  it in that cycle.
+798.93s - 804.17s |  Method C allows for really long term FLS to remain valid with the least amount of disruption
+804.17s - 807.53s |  to any aircraft FLS you've got loaded on there.
+807.53s - 812.37s |  It's also an interesting solution for record keeping in aircraft maintenance, where you
+812.37s - 817.01s |  have to keep documentation, sometimes for the lifespan of the aircraft, and you have
+817.01s - 825.29s |  to be able to prove that it hasn't been modified during that time.
+825.29s - 830.09s |  So this is a typical process load for the generation of an aircraft certificate.
+830.09s - 834.45s |  It is not by all means the only way of doing it, but I'm pressed for time, so it's the
+834.45s - 837.59s |  only one I'm going to cover today.
+837.59s - 841.13s |  So keying an aircraft is part of the maintenance function, and this means procedures are in
+841.13s - 845.89s |  place to make sure it's done only when authorized, and there is adequate documentation and approvals
+845.89s - 848.53s |  in the process.
+848.53s - 854.17s |  So obviously your device sponsor here, or somebody in your technical operations department,
+854.17s - 859.89s |  tech ops, will generate the key instruction, or the key generation work instruction.
+859.89s - 865.49s |  And then someone would go to the aircraft and generate that key pair, and then depending
+865.49s - 870.41s |  on whether you've got over the air, or whether you're using PDLs and USBs, you will bring
+870.41s - 880.77s |  that CSR back to the network, validate it, and then send it off to your PKI provider.
+880.77s - 885.97s |  The RA function there, that's the registration authority, that's an interesting one.
+885.97s - 892.37s |  So this is an ATA spec 42 requirement, and it's all about dual control.
+892.37s - 900.99s |  ATA spec 42 requires the PKI to have this registration authority who proves all registrations
+900.99s - 903.05s |  and requests.
+903.05s - 909.01s |  And when an airline outsources their PKI operation to a third party, there can be a need to insert
+909.01s - 914.29s |  an airline employee as the RA inside the PKI provider, and that's where this stuff gets
+914.29s - 916.41s |  interesting.
+916.41s - 922.65s |  And this is especially important for confirming aircraft identities, because the PKI provider,
+922.65s - 926.01s |  they do PKI, they don't do aircraft, right?
+926.01s - 930.93s |  Not all the time, but there is one.
+930.93s - 935.65s |  And this creates a challenge when it comes to the audit side of the PKI, and obviously
+935.65s - 938.93s |  that audit is a key part of spec 42.
+938.93s - 943.29s |  But yes, the RA will authenticate and approve the CSR, that then gets passed on to the certificate
+943.29s - 949.41s |  authority who will again validate the CSR information and the signature, and then issue
+949.41s - 950.65s |  the certificate.
+950.65s - 957.05s |  And then your technician goes back, retrieves the certificate, generates the loading work
+957.05s - 960.73s |  instruction, takes it to the aircraft, the aircraft validates the certificate, and, you
+960.73s - 963.37s |  know, bobs your uncle.
+963.37s - 964.37s |  That's a typical process.
+964.37s - 969.45s |  And as you can see, one of the key things is that just like if you're generating a key
+969.45s - 975.87s |  pair on a server, the private key stays on the aircraft.
+976.31s - 978.43s |  All right, 42.
+978.43s - 987.63s |  So the ATA e-business data security working group, or the DSWG, is to set the strategic
+987.63s - 993.15s |  path for these standards and ensure that all project team efforts and specification changes
+993.15s - 998.35s |  requests are consistent with the industry's e-business vision, mission, and strategic
+998.35s - 999.35s |  plan.
+999.35s - 1003.67s |  I couldn't paste that from their website, I never sound that professional.
+1003.67s - 1009.67s |  But basically, it's a group formed by experts across the industry, including OAMs,
+1009.67s - 1012.07s |  manufacturers, operators.
+1012.07s - 1013.43s |  I'm in there.
+1013.43s - 1020.39s |  I feel very, I feel less intelligent than I usually do in that room because these guys
+1020.39s - 1025.31s |  have just brains the size of a planet, but it's important that we're there.
+1025.31s - 1030.07s |  Suppliers are in the room, and then interested parties from the ATA membership as well.
+1030.23s - 1036.39s |  And ATA spec 42 has a strong emphasis on the establishment of trust based on verified identity.
+1036.39s - 1040.51s |  So when you become a subscriber as a person, you go through identity checks to verify that
+1040.51s - 1045.51s |  you are who you say you are, and that then goes through two-person control as well.
+1045.51s - 1051.83s |  We also have strong emphasis on certificate usage, technical and procedural controls,
+1051.83s - 1055.47s |  protection of PII, audit documents.
+1055.47s - 1059.07s |  It's 410 pages, and it's very complex language.
+1059.11s - 1060.11s |  I'm going to be straight with you.
+1060.11s - 1061.99s |  The first time I read it, it was tough.
+1061.99s - 1062.75s |  I did not get it.
+1062.75s - 1066.47s |  It took me several reads, and it also put me to sleep a few times.
+1066.47s - 1068.19s |  I'm not going to lie.
+1068.19s - 1071.19s |  It's a good cure for insomnia.
+1071.19s - 1079.11s |  But we were told that all PKI have to basically use to design software parts shall now be
+1079.11s - 1081.47s |  compliant with the ATA spec 42.
+1081.47s - 1085.91s |  So what that means is if we're using one certificate to sign parts, then we're just going to start
+1085.91s - 1090.91s |  using ATA spec 42 compliant certificates for all of our PKI.
+1090.91s - 1093.79s |  So that's what we've been doing.
+1093.79s - 1099.31s |  Audit scope is defined by the network and technology used in operating the PKI.
+1099.31s - 1100.91s |  It's a bit like the fruit of the poison tree.
+1100.91s - 1104.63s |  So everything the PKI touches is in scope.
+1104.63s - 1108.19s |  So remember that RA role I was talking about earlier?
+1108.19s - 1113.47s |  This is where it gets fun because the RA is considered part of the PKI, but they use the
+1113.47s - 1116.47s |  operator's IT and network.
+1116.47s - 1123.67s |  And so to avoid bringing the entire operator IT into a very painful and thorough audit,
+1123.67s - 1131.47s |  they need to use a very locked-down IT device with bare bones of what's required and minimum
+1131.47s - 1135.27s |  interaction with the network and the infrastructure.
+1135.27s - 1138.55s |  It's strictly controlled by the certificate policy and certificate practice statement
+1138.55s - 1141.47s |  and forms a part of the onsite checks during the annual audit.
+1141.47s - 1147.35s |  And we've got a few of these all over the country actually because a lot of us are remote.
+1147.35s - 1150.47s |  And the auditor is going to have to go and fly and see them and check their lockdown
+1150.47s - 1153.75s |  to the specifications in the CPS.
+1153.75s - 1155.71s |  So it's fun.
+1155.71s - 1163.27s |  And then finally, so the challenges to radiation PKI in a post-quantum world.
+1163.27s - 1170.79s |  This one's been really eating away at my brain the last six to 12 months because the threats
+1170.83s - 1175.51s |  are not only very real, but also very difficult to figure out in terms of aviation.
+1175.51s - 1179.91s |  Depending on who you talk to, a quantum computer capable of breaking Shor's algorithm is either
+1179.91s - 1182.79s |  5, 10, 15 or 20 years away.
+1182.79s - 1189.07s |  But regardless, an aircraft lifespan is typically 30 years or even more.
+1189.07s - 1192.63s |  And once an aircraft is certified, it's really hard to change it.
+1192.63s - 1196.07s |  It's certainly very expensive.
+1196.07s - 1199.67s |  I mean, the rumor is it takes so much testing that changing one line of code in the avionics
+1199.67s - 1202.71s |  costs a million dollars just because you have to go through all those tests afterwards.
+1202.71s - 1206.63s |  I don't know if that's true or not, but that's what I've been told.
+1206.63s - 1212.59s |  So imagine how much effort it would take to enable post-quantum key sizes across all manufacturers
+1212.59s - 1214.51s |  and all fleets.
+1214.51s - 1222.35s |  Does the hardware in the LIU have the required memory and processing power for PQ algorithms?
+1222.35s - 1228.11s |  The switch from SHA-1 to SHA-2 back in about 2017 caused a friend of mine in a previous
+1228.11s - 1234.91s |  job to complain a lot about how it now took 10 minutes to create a key pair instead of
+1234.91s - 1237.07s |  the five minutes that it used to.
+1237.07s - 1241.15s |  How long would a post-quantum safe signature take to generate in an LIU?
+1241.15s - 1242.15s |  I don't know.
+1242.15s - 1248.64s |  That's going to be an interesting one to do.
+1248.64s - 1256.56s |  So I'm coming to the end here, and I want to talk a little bit about the way ahead.
+1256.56s - 1262.36s |  So at the operator level, some advice from the DSWG is to start an inventory of all your
+1262.36s - 1264.84s |  PKI use cases.
+1264.84s - 1271.92s |  And when NIST finally figures out which algorithms are good to use for which use case, start
+1271.92s - 1274.96s |  identifying those suitable algorithms for each one.
+1274.96s - 1278.04s |  And then with the manufacturers and OEMs, we're going to have to figure out the embedded
+1278.04s - 1280.04s |  software challenge, because that's a big one.
+1280.04s - 1285.56s |  If you've ever coded in C, dealing with memory pointers and the digital signature, which
+1285.64s - 1292.80s |  was a few dozen kilobytes is now several megabytes, that's going to be fun.
+1292.80s - 1297.52s |  And of course, we need to do a lot of testing, regulator approval, and it's not going to
+1297.52s - 1302.56s |  happen in the timeline we've got for post-quantum computing to become a thing or to become a
+1302.56s - 1305.48s |  threat. So we're up against it on that front.
+1305.48s - 1307.04s |  I'm going to be back in the village after this talk.
+1307.04s - 1311.08s |  If anyone wants to come and talk about post-quantum PPI, I'm all ears.
+1311.08s - 1314.08s |  I'd love to hear from any experts out there.
+1314.12s - 1317.92s |  I can take that back to the SWG and maybe sound a little bit more intelligent than I
+1317.92s - 1322.92s |  usually do. But yeah, or if you want to come back and talk PPI, I'll be there for a
+1322.92s - 1324.12s |  little bit. I've got malorts.
+1324.24s - 1329.00s |  I live in Chicago now, so I'm now, you know, it's obligatory to become a malort fan.
+1329.12s - 1330.92s |  So I've got malorts if you want that, too.
+1331.88s - 1333.68s |  But yeah, I've got a few moments for questions, I think.
+1337.32s - 1338.80s |  Crikey, this light is great.
+1339.96s - 1360.85s |  Thank you. So gentlemen, it's hard to say yes to that.
+1362.29s - 1367.33s |  The reason being is that it's not specifically covered in regulation.
+1367.69s - 1369.05s |  A lot of this isn't actually.
+1370.21s - 1375.37s |  It's actually more to do with the manufacturers send down recommendations and
+1375.37s - 1377.97s |  instructions to operators on how to do things.
+1378.13s - 1380.37s |  And they also build things around a secure framework.
+1381.37s - 1383.81s |  They all have product security teams and they all do a lot of work.
+1384.33s - 1387.69s |  They can't share a lot of information with us except for these recommendations and
+1387.69s - 1391.09s |  instructions. And the FAA has quite rightly said, even if it's a
+1391.09s - 1393.57s |  recommendation, you implemented it as if it was an instruction.
+1394.17s - 1396.29s |  So that's good and that's what we do.
+1397.93s - 1403.05s |  So that signing of the logs coming off the aircraft obviously is probably a part of
+1403.05s - 1406.21s |  that risk assessment that the manufacturers have gone through because that is
+1406.21s - 1407.41s |  potentially safety related.
+1408.13s - 1417.93s |  If the logs are tampered with, then either a required, you know, maintenance check or
+1418.21s - 1421.25s |  job is not going to be done or it's going to be done and it's not required.
+1421.45s - 1423.77s |  Right. And that's a problem.
+1424.01s - 1427.37s |  So that's why they're signed. So when they come off and they're analysed, we're sure
+1427.37s - 1428.85s |  they're integrity. Yeah.
+1429.61s - 1432.86s |  Good question. Yeah.
+1432.86s - 1433.14s |  Sorry.
+1433.46s - 1438.89s |  Good jacket. Sorry, say that again.
+1445.26s - 1450.14s |  With method A, you just grab a new certificate and carry on.
+1450.74s - 1454.06s |  With method B, you get a new certificate and resign everything.
+1460.48s - 1460.92s |  Yes, sir.
+1464.81s - 1466.97s |  Yeah. Yeah.
+1467.05s - 1468.05s |  Yeah. I would say logs.
+1468.05s - 1468.89s |  I mean, all of it. Yeah.
+1469.13s - 1469.29s |  Yeah.
+1469.29s - 1470.25s |  Focal is a part of that.
+1471.89s - 1476.85s |  So for those who don't know, focal data is engine related and actually we don't decode
+1476.85s - 1479.25s |  that. It goes to back to the engine manufacturers.
+1479.81s - 1481.45s |  They decode it and they're really nice.
+1481.45s - 1482.41s |  They sell it back to us.
+1491.15s - 1493.83s |  Yeah. As well.
+1493.95s - 1495.95s |  Yeah. All right.
+1496.31s - 1497.51s |  I think I'm being kicked off stage.
+1497.79s - 1499.31s |  So like I said, I'm in the village.
+1499.31s - 1502.15s |  You're going to come and chat and, you know, share some along.
+1502.59s - 1502.91s |  Thanks.

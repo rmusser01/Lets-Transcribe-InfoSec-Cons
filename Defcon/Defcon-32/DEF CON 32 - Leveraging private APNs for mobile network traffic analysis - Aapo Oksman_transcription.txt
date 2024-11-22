@@ -1,0 +1,374 @@
+{
+  "webpage_url": "https://www.youtube.com/watch?v=4lQ2GnmTFkY",
+  "title": "DEF CON 32 - Leveraging private APNs for mobile network traffic analysis - Aapo Oksman",
+  "description": "Knowing where and how your mobile and IoT devices communicate on the Internet is essential for ensuring privacy and security.\n\nIn the past, it has been easy to follow their communication through a WIFI connection that you control. However, your devices are becoming more locked down and utilize mobile networks such as 4G and 5G for communication. As the devices communicate directly through mobile network base stations operated by Internet Service Providers (ISPs), tampering with or even monitoring their communication is outside your reach.\n\nWhile it is possible to set up a private base station, it requires expensive components and is hard to operate. However, many ISPs have begun offering private Access Point Names (APNs) to allow you to have a private network inside the ISP infrastructure.\n\nThis talk will show how you can affordably leverage ISP-operated mobile networks and their private APN services to control your mobile devices' network traffic. This technique lets you inspect, filter, and tamper with your mobile devices' IP traffic for offensive and defensive cyber security needs, such as penetration testing IoT devices or monitoring mobile device endpoints for malicious traffic.",
+  "channel_url": "https://www.youtube.com/channel/UC6Om9kAkl32dWlDSNlDS9Iw",
+  "duration": 2486,
+  "channel": "DEFCONConference",
+  "uploader": "DEFCONConference",
+  "upload_date": "20241016"
+}
+
+0.00s - 8.48s | This text was transcribed using whisper model: large-v2
+
+ So my name is Aapo. I do a lot of things with IoT, but especially for my work
+8.48s - 15.32s |  security research, consulting, and mainly look at IoT and other kinds of devices.
+15.32s - 20.96s |  I work a lot on cryptography and network protocols. Outside of that,
+20.96s - 25.88s |  bug bounty. So if you run a hardware bug bounty program, you know where to find
+25.88s - 36.02s |  me, and I'm also a coach for a Finnish CTF team. But yeah, so here is some IoT
+36.02s - 44.90s |  and my trusty EPC, and I want to kind of see how it works. I might want to hack it
+44.90s - 53.22s |  or I might want to check out something about it. This particular device connects
+53.22s - 58.98s |  to the Internet with an Ethernet port or Wi-Fi. So that should be quite
+58.98s - 64.02s |  straightforward. If we want to know where it's connecting to, and that's a
+64.02s - 71.98s |  big part of IoT, we can simply plug in an Ethernet cable to the device and the
+71.98s - 78.08s |  other end to our laptop, and then on our laptop in the Ethernet interface, we will
+78.08s - 85.62s |  see any traffic it's trying to send. We can do the same with Wi-Fi. So if we have
+85.62s - 91.38s |  our access point, the device connected to it, and then again we will see the
+91.38s - 99.97s |  traffic on the Ethernet interface. But there are some kind of devices, and
+99.97s - 105.81s |  especially industrial IoT, that have a very specialized job and they have been
+105.81s - 111.53s |  made to be very cheap. So they have only one way to connect to the Internet, and
+111.53s - 117.61s |  nowadays a big part of it is some kind of something else than Ethernet or
+117.61s - 125.05s |  Wi-Fi. So today we will be talking about these kind of devices. So some kind of
+125.05s - 131.61s |  4G connection on this one, and how that works. There's a modem, you plug in a SIM
+131.61s - 137.01s |  card and it connects to 4G, and it's connected to the Internet. But the
+137.01s - 145.37s |  problem is, how do we actually see the data? So this is kind of the topic of
+145.45s - 151.86s |  today. There are also different kind of devices, they might have multiple ways of
+151.86s - 157.34s |  connecting to the Internet. So here we have a phone currently connected to my
+157.34s - 161.18s |  Wi-Fi access point, and I can see everything it's sending to the Internet.
+161.18s - 168.14s |  Or can I? So if you might not be able to see it, but there's a little 5G icon
+168.14s - 173.62s |  there, so it's actually connected to 5G as well. So a question is, is there
+173.62s - 181.30s |  traffic over 5G as well? So it might be something built-in, there might be
+181.30s - 191.46s |  something malicious. So let's talk about that. So why would you want to look into
+191.46s - 197.34s |  mobile network traffic? If you're just a tinkerer, if you're at DEF CON here, or
+197.34s - 202.38s |  watching this video, then you might be curious. You might care about your
+202.38s - 209.30s |  privacy. You might think, where do my devices talk to? Is there some kind of
+209.30s - 215.18s |  unencrypted private information flying through the air? And if you are in
+215.18s - 220.54s |  traveling in some countries, you might want to kind of know what exactly your
+220.54s - 227.94s |  devices are sending. From offensive security point of view, we might think
+227.94s - 232.02s |  that can we tamper with the traffic and find vulnerabilities? If you do
+232.02s - 238.06s |  penetration testing, and you have these kind of devices, you need to hack them,
+238.06s - 245.06s |  you need to kind of do some kind of security audit or something like that,
+245.06s - 250.14s |  you might want to look at the traffic. Can you actually say we've kind of
+250.14s - 258.49s |  penetration tested this, if you haven't looked at the mobile traffic? From
+258.49s - 263.29s |  defensive point of view, you might want to detect malicious traffic, or just
+263.29s - 269.53s |  filter some unwanted things. You can do this in most cases on the device, so if
+269.53s - 274.37s |  you have a phone, you can install something and it will kind of filter
+274.37s - 278.85s |  things, or endpoint detection, or whatever. But if you have some advanced
+278.85s - 284.53s |  malware on your phone, it might not respect the on-device protections. So if
+284.53s - 291.61s |  it's running on very low inside the operating system, it can easily just not
+291.61s - 299.30s |  allow the endpoint protection to run. So we might not want to do the testing on
+299.30s - 310.97s |  the device, we want to do it outside. So what are these mobile networks? Sometimes
+310.97s - 316.53s |  called like cellular networks, and these come in different flavors. There is 2G,
+316.53s - 325.53s |  3G, 4G, 5G, etc. Some older ones, but I think these are the currently used,
+325.53s - 333.37s |  and in 4G and in 5G, there are these slightly different, like NB-IoT is a
+333.37s - 342.53s |  special version of LTE, but the main thing is that you have different
+342.53s - 352.54s |  frequency bands and special radios that can talk with these protocols. Usually
+352.54s - 358.38s |  the mobile networks are operated by Internet Service Providers, so ISPs, and
+358.38s - 364.30s |  they have massive amounts of base stations all over the world, so if you
+364.30s - 371.02s |  have a civilization, you most likely have a mobile network there. And how
+371.02s - 376.62s |  you use these mobile networks is you just buy a subscription from an ISP, they
+376.62s - 381.86s |  will give you a SIM card or send it to you, and then you plug the SIM card into
+381.86s - 388.10s |  your device, the SIM card authenticates you to the network, and then you connect.
+388.10s - 396.02s |  You can kind of send text messages or phone calls, but nobody really does that
+396.02s - 401.74s |  anymore, so it's mainly used to route IP traffic from your device to the
+401.74s - 408.65s |  Internet or wherever you want to go. Usually this mobile network stuff, this
+408.65s - 414.13s |  is very specialized, and it comes in this separate hardware module called a modem,
+414.13s - 422.69s |  and that's a separate device on your device. These modems are very complex,
+422.69s - 427.81s |  usually run their own operating systems, and are basically a small computer that
+427.81s - 438.51s |  you just connect to your board, and then it handles a lot of things. Here you can
+438.51s - 445.43s |  see a picture of this, so on the left we have a mobile device, it has a CPU and
+445.43s - 452.35s |  the modem, and the CPU runs some kind of operating system, Linux or Windows or
+452.35s - 458.07s |  whatever, and then talks with the modem and offloads the actual mobile network
+458.07s - 463.83s |  thing to it, and then you just give it data, and the data somehow finds its way
+463.83s - 473.47s |  into the Internet. On 4G we have these cell towers, so these are the base
+473.47s - 478.59s |  stations that are all over the world, and they, your device usually connects to
+478.59s - 484.51s |  the nearest one or the one with the least amount of traffic, so they handle
+484.51s - 491.99s |  it themselves. The cell tower is connected to the ISP infrastructure, so
+491.99s - 497.27s |  there's different kind of things, we're not going to go that in depth, because
+498.07s - 503.99s |  this talk not only covers 4G, but all kinds of mobile networks. But usually
+503.99s - 510.39s |  they have similar way of operating, so first the radio connects to a serving
+510.39s - 515.99s |  gateway, and some kind of authentication mechanism, so the SIM card from the
+515.99s - 523.31s |  modem talks with the off, and then your mobile device is then, the traffic is
+523.31s - 533.13s |  routed with these packet gateways to the Internet. So how do we intercept this
+533.13s - 537.57s |  mobile network traffic? So if we want to analyze it, we need to see it, to see it
+537.57s - 546.43s |  we need to somehow intercept it at some point. So of course the easiest way to
+546.43s - 553.71s |  intercept traffic is on the device, so just log in, run TCP dump, and you will
+553.71s - 560.31s |  see the network connections. So if you have a Linux based device, the CPU is
+560.31s - 564.83s |  sending the data to the modem, but you can look at the traffic already on the
+564.83s - 570.47s |  device, so no need to any kind of fancy things. So if you can do this, it's very
+570.47s - 575.35s |  powerful, and especially if you want to know if your device is accepting
+575.35s - 579.31s |  connections, you might want to take a look at that from the device, so no need
+579.31s - 584.47s |  to scan all UDP ports if you just like type in a command that shows you all
+584.47s - 591.32s |  listening UDP ports. This however requires root access to the device, so if
+591.32s - 597.24s |  you want to hack something, you might not have this, or if you have some kind
+597.24s - 602.88s |  of secure device, like an iPhone, you might not be able to have enough
+602.88s - 608.98s |  permissions to do this. And also I said that the modem has its own operating
+608.98s - 613.66s |  system, might have some over there updates, some of the functionality can be
+613.66s - 619.30s |  offloaded to it, so for example FTP, you can just say to the modem that hey
+619.86s - 625.82s |  download these files from this FTP server and hand them to me. And that might not
+625.82s - 630.78s |  be secure, and if you're just looking at the traffic on the device, you will most
+630.78s - 635.26s |  likely you will not see that. And if you're doing penetration testing and you
+635.26s - 638.50s |  have been relying on this, I have bad news for you, you haven't kind of done
+638.50s - 647.53s |  your work really well. And we have found a lot of vulnerabilities in the modems.
+647.53s - 652.93s |  So if we actually want to intercept the traffic, there is the CPU, there's a
+652.93s - 657.89s |  modem, so how this works is they have some kind of serial interface, usually
+657.89s - 663.93s |  not encrypted because you don't really need to, and just kind of look at the
+663.93s - 670.09s |  board and find the traces and sniff them. This works with these AT commands,
+670.09s - 674.21s |  sometimes a little bit different, but basically the CPU says to the modem that
+674.25s - 678.85s |  hey please make a connection to Google and then send this data through that
+678.85s - 686.59s |  connection and you will get the traffic. So you can just kind of sniff the
+686.59s - 692.39s |  traffic and decode it and or even replace the modem with your own software
+692.39s - 698.79s |  based simulator. So this is something that we've already done. In some cases
+698.79s - 704.27s |  it's quite simple, if you have kind of clear traces and you just solder your
+704.55s - 711.26s |  serial port adapter to it and pull the modem to reset, you can do this. But of
+711.26s - 716.14s |  course it requires hardware reverse engineering and some tiny soldering and
+716.14s - 725.74s |  again there's very complex setup sometimes, so it might not be as easy as
+725.74s - 736.07s |  it's shown here. And we cannot see the modem's own traffic here as well. I
+736.19s - 740.63s |  usually have written my own because it's quite simple to do, but I found this
+740.63s - 746.67s |  GitHub project that seems to have made a similar thing. So if you want to play
+746.67s - 756.04s |  around with this you can look at that and try it out. The next thing I tried to
+756.04s - 761.08s |  run my own base station because I want to see the modem traffic. I figured out
+761.08s - 767.84s |  just like I have my Wi-Fi access point, I'll do a 4G access point. You can buy
+767.84s - 774.88s |  this, you can build your own and the software defined radios can do pretty
+774.88s - 779.60s |  much anything nowadays. Just a couple hundred bucks and open source software
+779.60s - 786.08s |  and you can do this. A basic setup, like a thousand bucks, not that much if you're
+786.08s - 792.76s |  into kind of professional penetration testing, but it requires a week worth of
+792.80s - 798.40s |  work to get running and if you want to buy the commercial thing then it's really
+798.40s - 806.52s |  expensive. The problem with these, the radio bands are heavily licensed, they
+806.52s - 812.96s |  are used quite a lot and that means that kind of all available bands have been
+812.96s - 817.96s |  bought by someone, so it's illegal to run without a Faraday cage. So you need to
+817.96s - 824.60s |  have a kind of pouch that you put your radio in and your device in and you
+824.60s - 829.40s |  have to kind of be careful not to leak the thing because someone will find you
+829.40s - 835.52s |  and come find you. Some of the frequency bands can be licensed, some countries
+835.52s - 843.32s |  have unlicensed bands, but then you're limited into that one band or that one
+843.32s - 850.12s |  physical location where you are running this. So if you're into this, there's the
+850.12s - 855.08s |  LibraCellular, they have good instructions how to do this, but I have
+855.08s - 863.88s |  something better for you. So let's go back to the 4G mobile network. We have
+863.88s - 869.32s |  our mobile device, it talks to the cell tower and then there's the authentication
+869.32s - 879.14s |  and some other stuff. But what exactly is that other stuff? Like I said, the devices
+879.18s - 884.54s |  are authenticated with SIM cards and then there's some kind of a packet
+884.54s - 891.22s |  filtering going on. There is this thing called lawful interception that kind of
+891.22s - 898.38s |  means that your traffic can be inspected by the authorities and I think if it can
+898.38s - 906.10s |  be inspected then it most likely is. But yeah, other things that it does is
+906.34s - 913.06s |  policy enforcement. So basically it means if you buy a slow speed subscription, it
+913.06s - 919.38s |  will make sure that you won't get good speeds. They calculate the billing, so if
+919.38s - 923.54s |  you have a kind of per megabyte subscription then they calculate the
+923.54s - 931.62s |  megabytes. Then they route the packets. So there might be some kind of ISP
+931.66s - 936.74s |  internal things like DNS servers, so some of the things might not go to the
+936.74s - 941.74s |  internet at all. So they might go to kind of internal DNS service or something
+945.74s - 952.47s |  else. But also the packets can be routed internally in different ways. So we have
+955.75s - 960.75s |  these things called APNs, which basically mean that how to get the packets to the
+963.39s - 968.39s |  ISP. So this is something that if you're old, you know what these are because
+973.03s - 977.63s |  you've kind of gotten a new SIM card, you put it in and it doesn't work and then
+977.63s - 982.11s |  you need to go to these and then you need to type something. But nowadays you
+982.11s - 986.51s |  might not even know that these exist. So and if you need to type something in
+986.51s - 992.39s |  just type in internet and then you get to the internet. These are actually used
+993.39s - 999.23s |  so you might have some kind of restricted internet or something. So some
+999.23s - 1004.23s |  ISPs offer some kind of child safe things so they do more more things. Or
+1008.37s - 1012.95s |  some kind of at some point you can kind of get more speed if you from some
+1012.95s - 1016.95s |  certain ISP. So if you don't use the internet but you use something else then
+1016.95s - 1020.99s |  it's faster because there's less people there or or something like that. But
+1020.99s - 1025.99s |  usually just you use what comes with the subscription. So these a big change
+1030.07s - 1034.63s |  nowadays that these are pushed usually through the network to your device. So
+1034.63s - 1038.37s |  when you connect and you don't have an APN, the modem asks the network that
+1038.37s - 1045.38s |  hey, do you have something for me and then it's automatically set up. You can
+1045.38s - 1051.40s |  change these, configure them manually on the device, but it might not be
+1051.42s - 1055.30s |  respected by the ISP. So it basically just tells the ISP hey this is what I
+1055.30s - 1063.72s |  want but it can of course offer you whatever it wants. So there is this
+1065.00s - 1070.00s |  thing called private APN. So something that you can kind of buy as a service.
+1074.36s - 1079.38s |  So if you run big fleets of IOT devices you might want to buy this from an ISP.
+1079.84s - 1084.84s |  So they will set you up with a internal network where your devices are
+1088.12s - 1092.52s |  connected to and they might not go to the internet at all or there might be
+1092.52s - 1098.16s |  some kind of you can run your own server there or something like that. It's a
+1098.16s - 1103.16s |  private network and they can be configured however. So routing, filtering,
+1104.16s - 1109.16s |  everything can be configured and direct connection between the devices are
+1113.50s - 1118.54s |  kind of at least you can configure them to be allowed. So this is a big
+1118.54s - 1123.54s |  difference to normal APNs that you cannot really do device to device
+1125.14s - 1131.88s |  connections but you just have to go through the internet. These also by
+1131.90s - 1136.90s |  default usually they don't filter the traffic so it's sometimes the ISPs
+1139.58s - 1144.58s |  don't really like some kind of traffic or if you do like port scanning over
+1145.68s - 1149.92s |  mobile network they might shut you down and you don't really know if it works
+1149.92s - 1157.83s |  or not. So you can also set the private APN to connect you to the internet so
+1159.33s - 1163.57s |  you have access to all these services and then you can get also access to the
+1163.59s - 1168.59s |  internet maybe even with a static IP that then you can configure your servers
+1169.53s - 1174.57s |  to only accept that. So then it's used quite heavily in IOT so that's where I
+1174.57s - 1179.57s |  found out that this exists and a lot of the customers are using this so I kind
+1181.61s - 1186.61s |  of figured that this sounds something that kind of if we want to do this
+1187.33s - 1192.33s |  inspect the packets and they use the same things for the lawful interception
+1194.07s - 1199.07s |  things then it might help me kind of look at my traffic. So I had this
+1201.37s - 1206.37s |  question, could I get a private APN? Sounds expensive and I went on a journey
+1208.35s - 1213.35s |  to send a bunch of emails to different ISPs and I found out that there's a huge
+1214.33s - 1219.33s |  variance in price and usability so the first place I went they had this contact
+1221.97s - 1226.97s |  us for pricing and they were like yeah we can do this no problem so you just pay
+1228.21s - 1233.21s |  us 3k to get started and then 500 monthly. So I was like yeah this sounds a bit
+1234.31s - 1239.31s |  too much for a proof of concept and I might as well just run my own base station
+1239.45s - 1244.45s |  in a couple of offices. The next place they were also contact us for pricing but
+1245.45s - 1250.45s |  I was pleasantly surprised so they also said that hey just go to our self service
+1251.19s - 1256.19s |  portal and activate it and you're good to go and they had a 100 USD setup fee
+1257.03s - 1262.03s |  and 150 bucks a month so this is completely doable. There was another place
+1262.33s - 1267.33s |  so they have this $10 setup fee and 75 cents per hour so different pricing
+1271.27s - 1276.27s |  models so if you look at the similar schemes here so the first one if you kind
+1277.51s - 1282.51s |  of no matter how much you use it it's 250 bucks but then for a year it's just
+1283.65s - 1288.65s |  2k so you can rent it out easily and the other one so 30 bucks a day, 100 bucks
+1289.35s - 1294.35s |  a week and 6.5k for a year so if you want to kind of do it for longer times you
+1296.85s - 1301.85s |  might want to have this local ISP and then if you just want it for a day then you
+1304.59s - 1311.80s |  have options for that. There is a lot of difference in coverage so some of them
+1312.88s - 1316.78s |  are really global they offer services in all the countries some are US specific,
+1316.80s - 1321.80s |  some are EU specific and even some that are just inside your country. There's
+1323.30s - 1327.42s |  also differences in the available data plans so you still have to pay for your
+1327.42s - 1331.92s |  subscription even though you have the private APN because it's kind of a
+1331.92s - 1336.92s |  different thing. Some of the like IOT orientated ISPs they offer a really good
+1339.82s - 1345.76s |  pricing that you only pay like 2 bucks a year if you send 100 kilobytes of data a
+1345.78s - 1350.78s |  year but if you want to look at your phone traffic I recommend not using these
+1351.28s - 1356.28s |  IOT things because it might be costly but some of just regular ISPs offer this so
+1361.20s - 1366.02s |  then you can use your own already kind of own subscriptions and you can have
+1366.02s - 1371.04s |  like unlimited data for whatever you are paying for it in your country and then
+1371.72s - 1379.12s |  you can push that to the private APN. So how to configure this? Like once you buy
+1380.52s - 1385.52s |  it first you want to disable the traffic filtering if there is one and then disable
+1386.96s - 1390.64s |  routing to the internet because we don't want the devices to connect to the
+1390.64s - 1397.97s |  internet without us seeing it. Next just the side to side VPN between the private
+1398.31s - 1403.31s |  APN and kind of our cloud server. We could do a bunch of these things inside the
+1406.41s - 1410.99s |  private APN but I kind of like to be in control of what I do and have like a
+1410.99s - 1415.99s |  command line access to the server where the data is. But once we have the tunnel we
+1418.23s - 1423.73s |  can set our cloud server as the default gateway for the network and that basically
+1423.73s - 1428.77s |  means that all the data from the SIM cards first go to the private APN and then it
+1428.77s - 1433.77s |  just shoves through the VPN tunnel into our cloud server. And this basically should
+1436.05s - 1443.13s |  mean that the SIM card data is now on our cloud server. And so we need to add some
+1444.87s - 1449.87s |  mobile devices to the private APN so we have our SIM card we push it into the device.
+1450.47s - 1455.47s |  Some ISPs kind of require you to set some APN settings on the device so they are not
+1459.75s - 1464.75s |  pushing anything to the devices or they are roaming and you kind of need to set it up.
+1467.09s - 1471.95s |  And kind of some of the ISPs that say that you need to set the APN and you need to set it to
+1471.95s - 1476.97s |  this you might be able to just set anything and it works like on some carriers and then some
+1477.47s - 1482.47s |  it doesn't and it's it's weird. So yeah. And then there are some ISPs like if you actually
+1489.05s - 1494.05s |  run both the kind of ISP and you run the kind of infrastructure and you run the cell towers
+1496.09s - 1501.59s |  and everything then you have more control over things. So you have this easy checkbox that
+1501.59s - 1506.59s |  just redirect everything to the private APN no matter what settings or anything there's on
+1507.63s - 1512.63s |  the device. So this is something that you want to look for when you are testing devices that
+1515.47s - 1520.47s |  don't want to be tested because then you just it thinks it's connected to normal internet
+1521.51s - 1528.18s |  but it's connected to you. And this should be it. So profit. Let's see. So this is a
+1533.38s - 1539.62s |  proof of concept for this. So I talked about there's the IOT device connected to some of uh
+1539.62s - 1544.62s |  some AS uh ISP and then there's a private APN configured uh inside the ISP. We have the IPsec
+1547.74s - 1552.74s |  VPN tunnel to our server and then I'm SSH into the server. So uh yeah. Let's see a demo. So
+1553.74s - 1560.69s |  um here we have the trusty EPC. So it's kind of it's doesn't require fancy things. You just SSH
+1569.63s - 1574.63s |  into your uh server. My server is called private APN because it's connected to the private APN.
+1577.27s - 1582.27s |  Here we are running a TCP dump so the interface is the IPsec VPN tunnel interface and we're looking
+1582.29s - 1587.29s |  for traffic from host uh 10.2.2.2.0.1. And yeah. So we have the uh 2.2.2.0.1 SIM card so that
+1599.88s - 1604.88s |  has like statically uh static IP that every time that uh SIM card is pushed to a device it will
+1606.82s - 1611.82s |  get that IP address and here it is uh booting up and I'm really interested to see what it
+1612.44s - 1617.44s |  actually does. So let's see. Of course takes some time to boot but uh we have uh yeah. And now
+1628.04s - 1633.04s |  we see some traffic. So it wants to know the time. So not that interesting after all. But if
+1635.98s - 1642.16s |  you leave the SIM card to the device then you will see some uh unencrypted uh location data
+1642.20s - 1648.18s |  from that. So if you're running that tracker somewhere uh the ISP knows where you're kind of
+1648.18s - 1653.18s |  uh exactly where you're running it. It's kind of uh one nice thing about this setup is also you
+1655.22s - 1660.22s |  just kind of uh put the SIM card into something and then you see the traffic. So here is a modem.
+1662.02s - 1667.02s |  It's used to connect uh laptops or ethernet based devices uh to the internet with 4G. So here is
+1667.96s - 1672.96s |  booting up. And I like I said it runs its own operating system. This is kind of a device but it
+1677.00s - 1682.50s |  might also be a chip uh inside your phone or whatever. But they run their own operating
+1682.50s - 1687.52s |  systems. So once it's uh booted up uh we can see that it has so it actually says here zero
+1688.52s - 1693.52s |  devices connected. But there's uh data there. So it's connecting to netgear.com and uh a lot
+1700.06s - 1706.04s |  of doing a lot of things. So it's downloading or checking for software updates. But luckily we
+1706.04s - 1712.38s |  can see that it's uh 443 so it's DLS traffic and I couldn't use my certmetem tool to hack that.
+1712.38s - 1717.38s |  So it's it can be okay. Maybe. But now we at least know that it's it's not uh completely bad.
+1722.96s - 1727.96s |  And also so here next up we have an iPhone. So we're booting it up and uh I have the SIM card
+1732.40s - 1738.14s |  tray and you can see me struggle getting it in. So this is the kind of hardest part of the setup
+1738.14s - 1743.92s |  is actually kind of boosting the SIM card inside. One of our project uh kind of penetration
+1743.94s - 1747.88s |  tester push the SIM card and it we heard this kind of clunk clunk clunk clunk clunk clunk
+1747.88s - 1752.38s |  because it was inside the device and it was a competition and we only had 30 minutes so we had
+1752.38s - 1758.80s |  to shake it out of the device. But yeah that was one joke and uh that's all of them. So if we
+1758.80s - 1763.66s |  push the SIM card into the device you can see it's actually locked. So this is the first boot
+1763.66s - 1768.66s |  before unlock. We push a SIM card into an iPhone. So let's see what happens. Yeah. Okay. So
+1774.74s - 1779.74s |  it's connecting to somewhere. So in here I think it's doing uh some uh push notifications or it's
+1783.92s - 1788.92s |  uh getting that. And I think it uh won't do that many things before you actually unlock it but we
+1791.06s - 1796.06s |  are actually seeing something. So if you are into hacking locked devices you might want to look
+1796.52s - 1801.52s |  into this. So yeah. So this is the demo. That's uh how easy to actually run it uh once you've set
+1808.56s - 1825.88s |  it up. Yeah. And let's get back to this question. So is there traffic over 5G as well? So of
+1828.28s - 1834.06s |  course when I made this slide I was like hey I will need to kind of uh check it. So this is my
+1834.08s - 1840.74s |  phone. I connected it to a Wi-Fi then I pushed the uh same SIM card into it and this is what I
+1840.74s - 1847.58s |  see. So even though it's connected to Wi-Fi you will see traffic. So these are the I think
+1847.58s - 1854.00s |  similar Apple push notifications. Uh first when I Googled these IP addresses I went kind of uh
+1854.00s - 1859.00s |  the first match was some weird Russian forum and I got scared. Um but turned out it's uh maybe
+1859.88s - 1864.88s |  not some uh malware on my phone. But yeah. So there is uh something that the operating system
+1872.51s - 1877.51s |  does so it overrides the Wi-Fi and pushes directly uh through the 5G. And if there is some kind of
+1879.89s - 1887.54s |  advanced malware then it might also pop up here. So proof of concept it's kind of uh kind of uh
+1887.54s - 1897.28s |  yes. So um from kind of moving on from the proof of concept to an actual project that uh you
+1903.86s - 1910.10s |  guys can use. Uh so I collaborated with some IOT security experts. Some of them are here in the
+1910.10s - 1915.10s |  room and they have had the same exact problems. So how do you of course they have the problem
+1916.06s - 1921.06s |  of how do you kind of uh look at your mobile traffic and a bunch of them were in the face of
+1925.00s - 1930.00s |  using their own uh kind of mobile base stations and uh software defined radios and kind of
+1932.54s - 1936.88s |  trying to use an IOT device that you need to kind of boot up and then you need to press a
+1936.88s - 1942.76s |  button but once it's inside the bag it's kind of hard to best press the button and uh then I
+1942.78s - 1947.86s |  told about this that hey I I kind of uh think this is the way to do it and and kind of I can
+1947.86s - 1952.86s |  see them contemplating kind of uh years worth of uh doing all the previous steps. And yeah
+1959.44s - 1966.10s |  some uh I also heard that they are running similar set up than I do. Like one person I know
+1966.10s - 1972.73s |  that has been running this uh and a bunch of that haven't. So of course I'm from Finland so I
+1974.41s - 1979.69s |  we have the kind of uh holy land of uh network connectivity so of course everything works
+1979.69s - 1984.69s |  there. Uh it's cheap and uh stuff like that. So I wanted to look at the US where it's uh the
+1986.79s - 1991.79s |  opposite. There's it's not cheap um and also EU and global stuff. So it turns out a lot of ISPs
+1996.47s - 2001.47s |  and companies offer affordable private APNs and um they a little bit different but uh
+2004.47s - 2009.47s |  I created this uh GitHub page so it's online now and you can see this uh to get uh uh some up
+2014.21s - 2021.05s |  to date things. So they are there are global ISPs there so one of the 10 bucks uh to set up
+2021.05s - 2026.05s |  and 20 bucks per day thing works everywhere. Uh if you've seen me uh before today I've kind of
+2026.65s - 2031.65s |  given out bunch of SIM cards so you can try this out. But uh there would should be something
+2035.29s - 2040.29s |  there that works in your country. Uh but of course the global IOT uh providers might be too
+2043.43s - 2048.57s |  expensive for your use case if you want to use more data. Uh and if you want to use kind of
+2048.57s - 2055.15s |  your existing uh mobile plans or you want to use your local ISP you really should kind of show
+2055.15s - 2061.05s |  them this GitHub page and ask them hey do you want to go there on the GitHub page so people
+2061.05s - 2066.05s |  will buy your services and uh figure out if you can make it work. Uh if they have to do it
+2068.53s - 2073.53s |  manually it will be expensive so uh usually you want to look for something that has a the
+2075.23s - 2080.23s |  self-service portal that works. But yeah. So this is my kind of uh full set up that I run.
+2085.15s - 2090.15s |  So I have the multiple IOT devices connecting to an ISP and so a global ISP one of the
+2092.99s - 2097.99s |  devices is in Helsinki in uh in my home. One is here in Las Vegas and they are kind of in the
+2100.33s - 2105.33s |  opposite sides of the world but they still connect to the same ISP and they do the ISP stuff,
+2107.73s - 2112.73s |  go into the private APN uh different uh ISPs have different kind of uh uh tunnels and
+2115.51s - 2120.51s |  but uh they end up in my my server. There I run WireGuard but you can also set up uh another
+2123.09s - 2128.09s |  type of VPN uh for your pentesting like uh workstations. So here I have on the right like a
+2130.89s - 2137.03s |  Kali Linux machine in Helsinki. Uh some of my colleagues maybe be in Stockholm and they have
+2137.03s - 2143.63s |  the same. And uh with this uh VPN server on the cloud server so there's like one to one mapping
+2143.63s - 2148.63s |  so IOT like SIM card one goes to VPN profile one and the VPN profile one is opened uh in
+2151.63s - 2158.63s |  Helsinki and then the traffic just magically goes there. So once you set up this uh if you are
+2158.63s - 2163.71s |  working in a company your colleagues will love you. You just hand them out SIM cards, you
+2163.71s - 2170.11s |  hand them out uh uh VPN profiles and then like they're hey what's this and you just hey push
+2170.13s - 2174.97s |  that in there and then just double click that and then you see the data and everyone's amazed
+2174.97s - 2182.01s |  and you're a hero. So uh it's that easy. But you can of course don't have to have this fancy
+2182.01s - 2190.68s |  setup if you just want to do everything on the cloud server you can do it there. Um also like I
+2190.68s - 2195.68s |  said on the GitHub you have um a list of uh private APNs. The list is quite small because I use
+2195.90s - 2200.90s |  things that uh I found that work in Finland. When I flew here I tested uh London so in London
+2207.14s - 2214.08s |  this works great. Uh here uh I run into the problem that the modem I was using to kind of uh
+2214.08s - 2219.08s |  figure out if they uh work in different ways uh doesn't work in the US because I noticed that
+2219.62s - 2224.62s |  the US has different mobile network stuff for some reason. But um I I tested that this work
+2229.76s - 2234.74s |  well on my phone here so I just push it into my phone and I can see the traffic uh on the
+2234.74s - 2239.74s |  server. So confirm to work well um everywhere in the world. But yeah so let's wrap up and uh
+2243.50s - 2248.50s |  go back to the kind of why do would you want to do this. So curiosity and privacy. 50 bucks
+2255.18s - 2261.76s |  couple days of tinkering on a device like that's a good deal. Um it's actually the 15 bucks
+2261.76s - 2266.76s |  is like one evening of like six hours of of uh tinkering with this. So not not much. And
+2267.76s - 2274.76s |  even if you use this uh if you want to use it for a longer time you might want to look into uh
+2274.76s - 2281.70s |  other options that are kind of uh less expensive in long term. But hacker spaces or even
+2281.70s - 2287.94s |  tiniest penetration testing companies like 2K a year should be a no brainer to uh if you
+2287.94s - 2296.02s |  really want to uh look at the traffic. Offensive security. So if you do penetration testing
+2296.04s - 2302.76s |  on IOT and you say to your customers that hey we kind of look at the device and look where
+2302.76s - 2308.90s |  it's connects to. You really need some kind of setup to do this and 2,000 a year versus an
+2308.90s - 2315.60s |  illegal setup that's kind of you need to have your best engineers work a week on. So that's
+2315.60s - 2322.78s |  really expensive as well. These devices especially in industrial IOT um they're everywhere and
+2323.10s - 2330.08s |  people don't really look at their traffic that much. So there's just a handful of companies
+2330.08s - 2335.08s |  that actually I know that do this but now anyone can do this. And like I said maybe some
+2339.64s - 2345.34s |  new attack vectors for high security devices that if you can push a SIM card in and it you get
+2345.34s - 2350.34s |  the data then you can also uh send some uh malicious things uh to it. Defensive point of
+2350.86s - 2357.24s |  view. So these private APNs uh like I connect it to my server but you can connect the IPsec
+2361.98s - 2366.98s |  tunnel to your existing firewall. So if you are running some kind of uh firewall then uh you
+2369.52s - 2376.06s |  can just connect this to it. Um kind of the first devices might kind of uh cost something and
+2376.08s - 2381.58s |  then you it costs more to add devices but the cost goes down uh gradually. So if you have
+2381.58s - 2386.58s |  thousands of devices it will be still uh quite uh inexpensive to do. And the mobile phone
+2390.93s - 2395.93s |  malware infections they might not communicate at all over Wi-Fi or VPN. So there was this uh
+2398.13s - 2404.37s |  hack some kind of some triangles or something and uh they said that when they noticed the
+2404.37s - 2409.71s |  hack uh they were uh scanning their or like they were looking at their Wi-Fi traffic at their
+2409.71s - 2416.19s |  office and they noticed that some of the phones were sending things to some uh C2 servers and
+2416.19s - 2421.93s |  they also analyzed the malware and the malware had these properties that it can detect if it's
+2421.93s - 2426.93s |  been uh run over Wi-Fi or VPN and not do it. So it might have been misconfigured to allow
+2429.57s - 2434.27s |  traffic over Wi-Fi because why would you, people are looking at the Wi-Fi why would you do
+2434.27s - 2439.55s |  your malicious stuff over that? So it might have just been a misconfigured malware that they
+2439.55s - 2446.25s |  happened to find through their Wi-Fi. So I might think that the advanced malware that sometimes
+2446.25s - 2452.35s |  are not that advanced uh might get better at this or they might already be doing this and that
+2452.35s - 2457.37s |  was just one uh slip up. Uh so yeah, if you are targeted by uh advanced malware you might want
+2457.47s - 2462.47s |  to do kind of this kind of thing. But you can find the project details, you can uh snap a uh photo
+2470.36s - 2476.60s |  of this to remember it and you can find me here at Defcon or the internet and um thank you for
+2476.60s - 2478.60s |  your uh coming here.

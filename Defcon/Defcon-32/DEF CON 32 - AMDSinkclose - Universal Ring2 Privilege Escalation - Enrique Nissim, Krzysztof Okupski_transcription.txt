@@ -1,0 +1,455 @@
+{
+  "webpage_url": "https://www.youtube.com/watch?v=zZurduFDuPk",
+  "title": "DEF CON 32 - AMDSinkclose - Universal Ring2 Privilege Escalation - Enrique Nissim, Krzysztof Okupski",
+  "description": "",
+  "channel_url": "https://www.youtube.com/channel/UC6Om9kAkl32dWlDSNlDS9Iw",
+  "duration": 2668,
+  "channel": "DEFCONConference",
+  "uploader": "DEFCONConference",
+  "upload_date": "20241028"
+}
+
+0.00s - 6.30s | This text was transcribed using whisper model: large-v2
+
+ Um, well, thanks everyone for joining into this session. This is the AMD SYNCLOS, a
+6.30s - 11.38s |  universal way into SMM. My name is Enrique Nissim and here with me is Kristof
+11.38s - 18.02s |  Okupski. We are principal security consultants at IOactive and we work on the
+18.02s - 26.02s |  embedded system mostly. Um, so yeah, this is our outline for today. It's very uh, a
+26.02s - 30.36s |  good summary of it. It's gonna be pretty rough. We're gonna need your undivided
+30.36s - 35.00s |  attention for this so stay with us. Um, yeah, we're just gonna jump into it. This
+35.00s - 41.10s |  is uh, gonna be a brief on SMM. So SMM stands for System Management Mode. It's
+41.10s - 47.08s |  one of the most powerful execution modes in x86. It grants you full access to IO
+47.08s - 51.48s |  devices and memory. And it's very good for attackers cause it definitely will
+51.48s - 55.08s |  grant you some potential, some persistence uh, capabilities. Either as a
+55.08s - 59.38s |  boot kit or in some cases as a firmware implant as we'll see later. What's good
+59.38s - 65.98s |  also is that code here is hidden from the OS and the hypervisor. So antivirus,
+65.98s - 71.70s |  EDRs or anti-cheat engines won't, won't, won't see these things, right? Now in terms
+71.70s - 75.16s |  of privilege level, this is just a simplification but we can think it about like
+75.16s - 79.10s |  this. We have our applications, like for instance our browser, running at the very
+79.10s - 84.64s |  top of ring three. Then we have our OS, ring zero. And if we have a hypervisor, it's
+84.64s - 90.28s |  down the OS of course. And only then we have SMM. Now, how does this work? We can
+90.28s - 95.38s |  divide the uh, the thing in, in, in two, two phases. We have boot time where the
+95.38s - 102.02s |  firmware BIOS UFI code will, after initializing the, the hardware, will load the SMM
+102.02s - 108.16s |  code into an special area of memory called SM RAM. And then it will hand off the
+108.16s - 113.60s |  execution to the OS loader, then the OS loads. And as you can see, SMM is just a
+113.60s - 118.04s |  run time concept. It will provide services for the, for the platform. For instance, power
+118.04s - 123.74s |  management, security, and the OS can invoke some services from it as well. So how does
+123.74s - 128.38s |  that happen? Well there's this con, concept of system management interrupt. When an SMI
+128.38s - 135.08s |  occurs, the processor gets interrupted and then this, the, the current register set of the
+135.08s - 140.10s |  processor is saved into the SM RAM into a safety area. And then whatever needs to happen
+140.84s - 145.84s |  happens. Some um, good feature for the system. And it then comes back to the OS. In this
+148.84s - 155.08s |  case, we are doing a synchronous SMI like a software SMI. The OS is um, invoking a
+155.08s - 160.08s |  service from SMM. Now, we've been working on this area for a bit. Um, we published some,
+163.48s - 167.82s |  some blogs. We've done some, some presentations before. How are you on Hexagon? We have a
+167.82s - 174.02s |  couple of CVEs in 2023 and we also released some tools for um, checking for
+174.02s - 179.92s |  misconfigurations and known issues. Um, all of these things that we've done before are
+179.92s - 184.46s |  mostly related to either misconfigurations from vendors or software vulnerabilities in
+184.46s - 190.58s |  components. Now, we're gonna present today is an architectural flaw in the AMD processor
+190.58s - 196.08s |  itself. So that's very different. And so for that we're gonna just see again what is, what
+196.10s - 201.64s |  makes the security of SMM. So we can think on the CPU when it's an SMM mode. We have the
+201.64s - 206.32s |  memory controller in the middle and we can just access this area with, where the SMM code
+206.32s - 211.18s |  and data lives. We can execute instructions from this area. We can write to this area and
+211.18s - 215.60s |  read. However, when the CPU is in normal mode, meaning non-SMM, the memory controller just
+215.60s - 222.24s |  rejects um, if, if, if you read from this uh, from this memory, you're just gonna return,
+222.62s - 227.16s |  receive Fs. Writes are discarded and of course execution is disallowed. How does this
+227.16s - 234.04s |  hap- how is this happening? Well we have um, what's called a TSIG region or top of memory
+234.04s - 239.04s |  segment region. Essentially the firmware after loads, after it loads SMM at boot time, it
+241.74s - 246.74s |  will hopefully configure these two registers and the idea is to overlap um, have this region
+247.22s - 254.22s |  to overlap with all the contents of SMRAM to protect it. We have uh, two registers, we have
+254.22s - 259.00s |  the TSIG base and the TSIG mask which is the length. The TSIG ma- the TSIG mask as you can
+259.00s - 264.74s |  see have also uh, additional fields and yeah, essentially this is the way. The memory
+264.74s - 269.74s |  controller will see that uh, the CPU is executing in normal mode and will just reject to read
+270.08s - 275.08s |  the content or write the content of the SMRAM. Has to be enabled, that's why the T-valid is
+278.08s - 283.08s |  there. Now the layout of SMRAM uh, basically it's up to the vendor to define, but most
+287.10s - 293.10s |  systems out there are gonna follow what the EDK2 has, which is TianoCore, this is reference
+293.10s - 299.34s |  code. And uh, essentially it's gonna consist at the very bottom you can see here um, SMM
+299.34s - 304.88s |  core area, this is just supporting code for the rest of um, of what's gonna be in there. And
+304.88s - 309.88s |  then for each core we're gonna have an SMM base and at a specific offset 8000 from the SMM
+312.06s - 317.30s |  base we're gonna have the entry point, which is where the processor, the core is gonna start
+317.30s - 322.90s |  executing from when the SMI happens. And then we have a safe state at offset FE00. This is
+322.90s - 328.54s |  TianoCore, right? It can be laid out differently by the vendor. And then we have the SMI
+328.54s - 333.78s |  handlers at the very top which is, are gonna be the functions that are, are gonna be useful
+333.78s - 339.68s |  for, for us, for the system. Handling power, security, or whatever. Um, so yeah, just
+339.68s - 343.96s |  assume of the SMRAM registers, we have the three just, we just mentioned, and we also have
+343.96s - 350.26s |  an SMM block. That's very important. Hopefully the firmware code is gonna set this bit so
+350.26s - 355.20s |  that the, whatever runs at run time, the OS cannot tamper with these registers. We don't
+355.20s - 360.70s |  want, for example, at run time, having the OS disabling the TSEC location because this will
+360.70s - 366.78s |  just, um, update or change the code at the SMRAM location and execute with these
+366.78s - 373.02s |  additional privileges, right? Now this needs to be configured for each core. With that we
+373.02s - 378.02s |  can see a first difference between how Intel and AMD manage the access to MSRs. On Intel
+378.68s - 383.68s |  systems, these MSRs that are related to SMM are only accessible while the CPU is in SMM. In
+388.60s - 395.36s |  fact obtaining the SMM base, for example, on Intel, could be considered a leak. On AMD, all
+395.36s - 401.80s |  these MSRs are accessible from ring zero, no problem. Again, if we have the SMM block bit
+401.80s - 406.98s |  set, then the configuration cannot be changed. Not even SMM can change the configuration
+406.98s - 410.40s |  until the next power cycle in which, I mean, the firmware will take over again and
+410.40s - 417.52s |  configure this in the same way. But we can now spot the bug in the documentation. This is
+417.52s - 422.52s |  the same TSEC mask register and the fields, just a picture from the documentation. We can
+424.96s - 430.90s |  see how the SMM block is covering all of the fields except for two over there. These two
+430.90s - 436.16s |  fields are gonna be what we're gonna be talking about, um, in this session. And we have
+436.18s - 442.88s |  T-CLOSE and A-CLOSE. Um, we're just gonna focus on T-CLOSE. A-CLOSE stands for um, the same
+442.88s - 447.26s |  feature but for uh, a previous region called ASEC which overlaps on the video memory. It's
+447.26s - 452.36s |  not used anymore so it doesn't matter. But what happens is when this bit is set, the data
+452.36s - 458.36s |  accesses that the core, that the core performs when it's running in SMM are gonna be
+458.36s - 465.24s |  directed to MMIO instead of to SMRAM. And that's, that's, that's cool because as we said
+465.26s - 472.32s |  before, we can set this bit from ring zero because it's not blocked by the SMM block, right?
+472.32s - 476.80s |  It actually, in the, in the A-CLOSE description it also says hey, I mean, don't forget to
+476.80s - 482.24s |  unset this when you are returning from SMM because otherwise your safety are gonna be
+482.24s - 487.24s |  erroneously read from MMIO. That's bad. Um, the documentation says as well hey, if you have a
+488.24s - 495.28s |  valid T-CLOSE region and you're in SMM and the T-CLOSE is set, then instruction fetches are
+495.28s - 500.76s |  still gonna be directed to DRAM but data accesses are gonna go to MMIO instead. If you are
+500.76s - 506.76s |  not in SMM then both accesses, both type of accesses are gonna go to MMIO. So we can
+506.76s - 513.40s |  say um, X86 behaves in a hardware, like a hardware architecture. Goes to hardware, right? If
+513.40s - 518.14s |  we have um, our core, core zero for example running in normal mode, both data and
+518.14s - 523.54s |  instruction fetches just go to MMIO. If we have our core zero now in SMM with the T-CLOSE
+523.54s - 529.38s |  off, this is what happens. No problem. We read and execute from SMRAM. However when set
+529.38s - 534.38s |  T-CLOSE on, now data fetches go like this. This is a problem because this portion can be
+535.08s - 540.08s |  controlled by an attacker. So triggering the condition is super easy. We just need to um, set
+544.26s - 549.22s |  this, this bit, this T-CLOSE bit and call into an SMI and the system will immediately freeze
+549.22s - 554.24s |  and um, you're gonna spot the problem right there. This feature exists because um, well AMD
+557.94s - 564.24s |  wanted to have the ability to reuse the physical address space and have SMM code um, access an
+564.26s - 570.68s |  MMIO device that were using the same SMRAM uh, physical memory essentially. Um, we haven't
+570.68s - 577.68s |  seen any vendor using this feature. Um, but yeah, that's why. And it was on, on what we could
+577.68s - 582.46s |  track is in 2006 there was this document that first mentioned the feature. So it means it's
+582.46s - 587.46s |  been around at least for 18 years. Now, for people familiarized with um, biosecurity they're
+588.46s - 593.46s |  probably gonna remember this vulnerability presented by Christopher Domas in 2015 called the
+597.36s - 603.20s |  memory sinkhole attack. And what happened was that he was able to remap the APIC which is a
+603.20s - 609.34s |  specific device um, in the um, available and overlap it with the TSIG area and it caused the
+609.34s - 614.28s |  same effect. Uh, data fetches will go to MMIO instead of SMRAM. Now the difference here of
+614.28s - 620.88s |  course is that that was only limited to the APIC and it only affected the 4K region where the
+620.88s - 625.88s |  APIC was overlapped with. The sinkholes behavior changed uh, how the entire TSIG works. Um,
+628.42s - 634.06s |  any device in theory could be overlapped right? Because we just direct any access to the
+634.06s - 639.06s |  MMIO space. So we can bring some, some attack ideas in. Our easy thing will be, the easiest
+639.06s - 644.06s |  thing will be to just grab any PCI device and hopefully we'll have a good register layout on
+649.06s - 653.80s |  its bar so that we can take control of the execution at the very beginning of the entry point.
+653.80s - 657.60s |  As there are multiple integrated devices that we could use, we could just try remapping one
+657.60s - 663.54s |  of those and based on what we read, the register should become visible at the TSIG location
+663.56s - 668.56s |  from the OS. However this failed. We can see here how uh, we have an ethernet controller uh,
+672.24s - 677.24s |  with its original uh, bar 2 uh, D0714000. We have some registers right here, they're
+679.64s - 683.78s |  visible registers and we're gonna try to overlap, when we try to overlap it with the SMM
+683.78s - 688.78s |  entry uh, BFEB0000, we can see that we're still reading Fs. So the remapping failed.
+689.06s - 694.06s |  Registers are not available. Um, we can see that the registers were moved from their
+697.24s - 702.24s |  original location. They're, they're, something happened. When we restore, we can see the
+704.58s - 710.38s |  registers again. So it's not that we broke anything, so it's just the the priority of the
+710.38s - 715.42s |  memory probably failed right? So what that that led us to try to understand ok how that
+716.14s - 723.14s |  how how is that working? Have this register called top of memory or TOM. Um, this thing
+723.14s - 729.98s |  defines a limit between the usable DRAM before 4 gigabytes on the physical address space and
+729.98s - 736.98s |  MMIO space on top. Now on Intel, this register has a lock bit. Once it's configured you
+736.98s - 741.62s |  cannot tamper with it anymore at runtime. But on AMD it doesn't have such a lock so we
+741.62s - 747.10s |  can just you know, modify this and maybe that's good for us. The idea is simple, we have
+747.10s - 752.54s |  this is uh, imagine this is layout right? And we'll move the MMIO space of the TOM that
+752.54s - 758.04s |  defines the MMIO space to match with the TSEC base. So we have something like that. Maybe
+758.04s - 763.04s |  then trying the same trick that we uh did before could work. Unfortunately we could move
+765.22s - 769.86s |  the TSEC no problem but it didn't change the behavior that we saw before. In practice it
+769.86s - 774.86s |  didn't work. So that led us to dig dig dig uh deeper into into the computation and we found
+777.70s - 782.50s |  there are some actual priorities when the core access um some portion of the physical address
+782.50s - 786.74s |  space. Essentially determines what where it's going. And we can see that the TSEC and ASIC
+786.74s - 792.48s |  mechanisms are listed 4. Which means 1, 2 and 3 whatever is listed there has less less
+792.48s - 797.72s |  priority than this. And at the at the number 1 we can see the TOM is is is listed there. So
+797.72s - 803.62s |  we have that's why it never worked right? It would have never worked. What's at 5 where we
+803.62s - 808.62s |  have the MMIO configuration space and the APIC? Uh that makes sense. We the APIC was used
+812.66s - 819.44s |  before in the Intel attack. The MMIO config space we cannot use really. Um and then at 6 we
+819.44s - 824.58s |  have this NOR bridge address space uh routing but uh that probably stands for older
+824.60s - 829.60s |  architectures. This is not seen in modern modern stuff. So we cannot use it. For the APIC we
+832.38s - 837.22s |  cannot really use it and we're gonna explain why. But for that we need to give an analysis
+837.22s - 842.22s |  of of um how the SMM entry point code works. When the SMM when the SMI occurs the SMM core
+845.82s - 851.26s |  uh the the core um executing at SMM starts executing in real mode. In 16 bit mode flat. No
+851.28s - 857.06s |  protection whatsoever. What it has to do is quickly go to protected mode 32 bit and then goes
+857.06s - 861.42s |  to long mode and then passes the execution to the handlers. This is a very simplified view.
+861.42s - 866.50s |  Now that first step going to from real mode to protected mode is is key right? That's the
+866.50s - 873.24s |  first thing that needs to happen. For this um on x86 we need essentially an are enabled
+873.24s - 878.24s |  segmentation. Uh segmentation provides um the ability for the for the core to see the
+878.40s - 885.00s |  memory in a segmented way. That's that's how it's called. Essentially we can have different
+885.00s - 890.08s |  segments for memory and assigns uh different permissions or like um the ability to execute
+890.08s - 894.78s |  code or or just read data and stuff like that. We have this key data structure called global
+894.78s - 901.62s |  descriptor table of G or GDT. And we have a register on the processor that is called GDTR
+901.62s - 907.52s |  that's gonna point to the base of our GDT structure and it's gonna have a limit in bytes. And
+907.54s - 910.98s |  so the GDT is just really an array of descriptors. And we're gonna have different type of
+910.98s - 914.74s |  descriptors. We have we have code descriptors, data descriptors. Each one is gonna have a
+914.74s - 919.08s |  base. The first one is never used. That's why it's called it's called null descriptor. But
+919.08s - 924.78s |  then when we have a jump you can see we'll have um a jump. It's not only having an offset
+924.78s - 928.96s |  like a target location but it's also gonna have like a segment selector right here. That
+928.96s - 932.46s |  segment selector picks the descriptor that we're gonna use for the for for our our code
+932.48s - 939.48s |  segment. And then the top the the offset is added to the base that is indicated by the GDT
+939.48s - 944.48s |  forming the final linear address. With that we can do uh an analysis of um the EDK2 SMM
+946.98s - 951.98s |  entry point. Essentially um we can see that at the very beginning we are moving into the
+954.50s - 960.96s |  register BX. The entry point plus 4D. This is in this is a decom like um extracted from a
+961.90s - 967.84s |  compiled uh SMM code. So you can see at 4D right there we have a GDT description ready to to to
+967.84s - 972.64s |  be loaded into the GDTR. The next instruction that matters for us is the load GDT. This is
+972.64s - 978.48s |  instruction that is gonna load the GDTR with the content that BX points to. And finally we
+978.48s - 985.26s |  have a jump over here that's gonna perform the actual um going into protected mode. And it
+985.26s - 992.04s |  has the selector of co of code as well and the offset. Now with this what what will happen
+992.04s - 998.88s |  if we over overlap a device that we control on the entry point? And we control offset 4D.
+998.88s - 1003.18s |  What will happen is that the load GDT will be loading something that we control. So we can
+1003.18s - 1008.86s |  load our fake GDT right? So that's what we're trying to do here. We're trying to get control
+1008.86s - 1015.06s |  over the offset 4D with any device that we can find. So that the the fake GDT then provides
+1015.06s - 1019.86s |  the descriptors we need and we can take control and jump down there. That's the whole idea of
+1019.86s - 1026.94s |  the attack. And that's why the APIC is a problem. Two things. First the system becomes
+1026.94s - 1032.48s |  unstable when the APIC is moved. Super unstable. Second, the APIC racers are not useful for
+1032.48s - 1037.78s |  taking control in the way we need. We can see that at 4D we have these reserved regions with
+1037.78s - 1043.32s |  all zeros. Rights are discarded here. We're not able to control here and if we load a GDTR
+1043.32s - 1049.72s |  with all zeros we're essentially saying to the processor hey here's an empty GDT. So this
+1049.72s - 1054.56s |  won't work. And at this point we found another device not documented by the the
+1054.56s - 1059.90s |  specification that also has priority over uh the TSEC region. That's the spy controller and
+1059.90s - 1064.90s |  Christophe's gonna describe it for us. Alright. So the spy controller is a very nice device
+1067.80s - 1071.24s |  for us because it's present in all the systems we've tested. And it's basically used to
+1071.24s - 1077.14s |  access the spy flash on um AMD uh systems. So for example for reading, writing, erasing the spy
+1077.14s - 1081.74s |  flash. It always goes for the spy controller. And it has a couple of key features that are
+1081.74s - 1087.42s |  really uh interesting to us. First of all, we can relocate the bar over the SMM entry point.
+1087.42s - 1092.18s |  Secondly, the portions which are interesting to us at offset 4D we can control them. And
+1092.18s - 1098.00s |  three, it actually takes precedence over uh SMRAM when TCLOS is enabled. So with that in
+1098.02s - 1103.06s |  mind, what we will do for our attack is simply take the spy bar, relocate it over the SMM
+1103.06s - 1108.14s |  entry point of core zero. And then afterwards manipulate the values at offset 4D within that
+1108.14s - 1113.14s |  bar. Um the um registers that actually correspond to that portion of memory in the bar uh are
+1115.98s - 1121.14s |  the memory range and ROM protection zero register. Those were used in the past to uh lock
+1121.14s - 1126.28s |  down access to the spy flash. But mostly these are not configured and not fixed. So we can
+1126.30s - 1131.40s |  fully control them. On some systems they are fixed. But actually they are fixed to values
+1131.40s - 1136.40s |  which are still useful for us. So before I dive into the exploits, uh I also want to uh show
+1138.82s - 1145.22s |  you a little bit our debugging stuff because it's a little bit special. Um so we are facing
+1145.22s - 1150.62s |  actually two challenges uh when we try to develop the exploit. First of all, we didn't have
+1150.62s - 1155.66s |  really have a way to know whether our payload ran because the system just crashes, reboots
+1155.68s - 1160.42s |  and memory is just all wiped. Uh and secondly, we didn't really have any debugging framework
+1160.42s - 1166.12s |  for SMM. Um and like for example, when crashes happen, we want to be able to modify the
+1166.12s - 1171.92s |  code however we see fit. So to resolve the first issue, we actually took a PCI squirrel which
+1171.92s - 1177.70s |  is typically used with PCI leach for DMA attacks. But the nice thing about it is actually
+1177.70s - 1182.70s |  is that it has a bar buffer as we call it. Where when we write to it, it actually survives
+1183.02s - 1188.02s |  across reboots. So for instance a payload can write a value to uh the bar buffer kind of like a
+1190.52s - 1194.52s |  checkpoint so we know it ran. And then when the system reboots it's still going to be there.
+1194.52s - 1199.76s |  Right. And if we want to modify for example for the second issue, if we want to modify uh code
+1199.76s - 1205.74s |  in SMM for some extra debugging capabilities, for that we just um injected a firmware implant
+1205.74s - 1211.20s |  uh that loads a nice SMM module that allows us to do all of that. So the setup looks like
+1211.20s - 1216.78s |  this. We just have the PCI squirrel connected to our target device via an M2 uh adapter
+1216.78s - 1222.18s |  and all of this is powered externally by a power supply. So it's time to get our hands dirty.
+1222.18s - 1227.32s |  So let's take a look at how uh the exploit looks like. In the first attempt uh we remap the
+1227.32s - 1232.80s |  spy bar just like mentioned before over the SMM entry point of core zero. Then we tweak uh
+1232.80s - 1238.94s |  these values at offset 4D. We create a fake GDT in the beginning of the address space uh
+1238.94s - 1242.94s |  with the with a nice base address that will allow us when the jump happens to redirect
+1242.94s - 1248.82s |  execution to our own payload. And then when we uh execute the SMM entry point code with T
+1248.82s - 1254.16s |  cost enabled what's going to happen is uh the all GDT is actually going to load the GDT
+1254.16s - 1259.76s |  register uh with a value that points to our own fake GDT. So that's great. And afterwards when
+1259.76s - 1265.64s |  the jump happens a descriptor from the fake GDT is going to be taken that we control um and
+1265.64s - 1272.88s |  it's going to be used as a base uh for the jump. So and um this is going to redirect
+1272.88s - 1279.28s |  execution like this at least in theory. So um an interesting detail is actually how we pick
+1279.28s - 1286.22s |  the base address in the GDT descriptor. Um and for that we have to understand how it
+1286.22s - 1291.36s |  normally executes and how it executes with T cost in this case. So um when the for jump
+1291.38s - 1297.76s |  happens um and the normal execution what happens is the GDT register is going to point to a
+1297.76s - 1302.36s |  GDT with an SMRAM where it's nicely protected. Um and the segment selector is going to
+1302.36s - 1307.70s |  index into that table um and the base is going to be actually fixed to zero. Which means
+1307.70s - 1313.54s |  with a base of zero when we add it uh to the far jump offset what's going to happen is the
+1313.54s - 1318.72s |  linear address is going to be the same. Now in our case actually we have a bit of an issue.
+1318.72s - 1325.68s |  We want to read the execution um outside of TSEG. The only problem is that within the first
+1325.68s - 1331.22s |  four gigs of memory after TSEG there's not really any spot where we can put a payload. Right?
+1331.22s - 1334.96s |  So if we increase the base a little bit sure the instruction pointer is going to go a bit more
+1334.96s - 1340.74s |  up up up up. And the address space we don't really have DRAM over there that we control. So
+1340.74s - 1347.74s |  we wondered okay what happens if we actually increase the base such that when we uh the
+1347.76s - 1353.54s |  base of the GDT descriptor such that when we add it to the far jump offset it actually
+1353.54s - 1358.54s |  overflows. Um yeah? It just overflows. So we thought okay this isn't going to be possible but
+1360.94s - 1366.62s |  actually it was. Uh and this is nice because uh if we choose the base efficiently big and we
+1366.62s - 1369.72s |  add the offset we can actually make it wrap around and make it jump to our own payload in the
+1369.72s - 1373.32s |  beginning of the physical address space. The beginning of the physical address space we have
+1373.44s - 1380.44s |  DRAM there. Great. We control all of that. So uh that was one of the key takeaways actually
+1380.44s - 1385.98s |  that we had from the research as well. So this worked. Our payload actually ran and we saw
+1385.98s - 1390.88s |  this because it would write a value this nice checkpoint to our bar buffer but the system
+1390.88s - 1395.46s |  would crash and we wondered okay why is this happening? Um the reason was the SMM safe
+1395.46s - 1400.36s |  state. So like Enrique mentioned when a CPU goes to SMM mode it actually saves the current
+1400.40s - 1404.94s |  register state into the uh SMM safe state. When it returns it just restores it. What happens
+1404.94s - 1411.48s |  is when T-Close is enabled actually the writes when the core enters SMM are going to be
+1411.48s - 1416.22s |  discarded which means when we return with T-Close disabled actually it's just going to use
+1416.22s - 1422.02s |  stale values that were still there that were stored before. And to resolve this the trick is
+1422.02s - 1428.12s |  actually pretty straight forward. We trigger the SMM twice. One time um without T-Close and
+1428.12s - 1434.86s |  the second time with T-Close. So we first put the core zero into a known controlled state
+1434.86s - 1439.20s |  and then trigger an SMI without T-Close. This is going to prime the SMM safe state and
+1439.20s - 1444.24s |  afterwards when we trigger the bug with T-Close enabled the code is going to go for the same
+1444.24s - 1450.78s |  execution path and is just going to reuse the values that we stored before. So that worked
+1450.78s - 1455.98s |  but unfortunately it crashed again. But this time around we did see actually that the uh
+1456.14s - 1460.78s |  core zero was returning from SMM so that was great. We had full control of core zero.
+1460.78s - 1466.66s |  OS code was running. We saw our checkpoints. Great. But no matter what we tried this damn
+1466.66s - 1471.12s |  thing was still crashing. Um so we spent an eternity debugging this thing until we
+1471.12s - 1478.14s |  stumbled into this. When we enable T-Close what happens is we enable it on core zero only
+1478.14s - 1484.30s |  but actually it gets enabled on both cores. Core zero and core one. Um and we found that
+1484.30s - 1487.96s |  the culprit for this is symmetric multi-threading. So this is AMD's implementation of
+1487.96s - 1492.66s |  Intel hyper-threading. Um and what it does is it divides a physical core into two logical
+1492.66s - 1497.70s |  cores. And some of the resources on these logical cores are shared and some of them are not.
+1497.70s - 1503.58s |  So for instance the SMM base MSR is separate so every logical core has a different base MSR.
+1503.58s - 1510.62s |  But the T-Sec mask is actually shared which is what we just saw. Right? And we wondered is
+1510.70s - 1516.04s |  this the actual issue because we assume when an SMI gets triggered that only one core goes
+1516.04s - 1521.52s |  into SMM at a time. And we put this to the test and what we saw is the following. When we
+1521.52s - 1527.36s |  have multiple cores running in normal mode so outside of SMM um when we when one of them
+1527.36s - 1532.86s |  triggers an SMI an interrupt gets asserted on all of the cores and all of the cores are
+1532.86s - 1539.30s |  gonna go into SMM mode and gonna start executing the SMM entry point codes um for uh for each
+1539.32s - 1545.16s |  one of them. So our assumptions were actually wrong. Right? We assumed SMIs are local but
+1545.16s - 1549.42s |  they're actually not. And we thought that this was actually the case because the indicate
+1549.42s - 1554.90s |  two code has a so called rendezvous routine which will every time you enter into SMM this
+1554.90s - 1560.34s |  routine is gonna be triggered and that core which entered into SMM will send an explicit
+1560.34s - 1565.78s |  inter-processor interrupt to all of the logical cores to explicitly pull them from whatever
+1565.80s - 1570.50s |  state they were in into SMM. And well what's the point of that if actually all the cores
+1570.50s - 1575.20s |  always go into SMM anyway right? Um and we dug a little bit deeper into the documentation
+1575.20s - 1579.98s |  and we found that the IO hub seems to be responsible for this to uh basically assert this
+1579.98s - 1584.98s |  interrupt on all of the cores so we're out of luck. So to summarize we had all cores always
+1587.74s - 1593.06s |  going into SMM and T-Cores being enabled on two cores at the same time and not just one as
+1593.08s - 1599.08s |  we initially thought. And this will actually make just core one go haywire. Right? We have
+1599.08s - 1604.28s |  control of core zero but core one is uh just gonna go nuts and crash the whole system. So to
+1604.28s - 1610.98s |  tackle the problem we had to get control of core one some way. Uh and we dug deep into our
+1610.98s - 1617.00s |  bag of tricks to really uh see if maybe there's a nice elegant solution to this to just take
+1617.00s - 1623.94s |  core one out of the running. Um so we tried to um we tried to find another device to
+1623.94s - 1629.08s |  overlap with the entry point of core one. There was none. Uh we tried to disable SMT in the
+1629.08s - 1635.62s |  BIOS that also didn't work. We tried to uh use the uh so called init IPI and also the SKN
+1635.62s - 1641.22s |  instruction to put core one into a state that would actually make it ignore SMIs. That also
+1641.22s - 1646.64s |  didn't work. And finally we also tried to send a so called SMI IPI which at least according
+1647.30s - 1651.98s |  to the documentation would allow us to trigger a SMI on individual cores. And it also didn't
+1651.98s - 1657.22s |  work. So despite the documentation indicating one thing in practice we didn't manage to uh get
+1657.22s - 1661.68s |  it to work. So we're running out of options and we had to take a step back and analyze the
+1661.68s - 1666.66s |  problem. And we realized okay the LGDT is the actual problem because it's gonna be load
+1666.66s - 1673.70s |  loading the GDT register with all Fs. Right? So is this is there maybe some way we can
+1673.70s - 1680.30s |  actually still take advantage of this. Um so when the SMM entry point normally executes what
+1680.30s - 1684.44s |  happens with the GDT register is it's gonna be loaded with a nice value for the base. It's
+1684.44s - 1690.58s |  gonna be pointing to the GDT within uh SMRAM. Right? And afterwards the segment selector is
+1690.58s - 1697.22s |  gonna be taken, added to it, uh and the base within that uh descriptor is gonna be used to
+1697.22s - 1703.16s |  calculate the final linear address. Now in our case what's gonna happen with the
+1703.16s - 1708.36s |  cores is enabled uh the GDT register is gonna be loaded with all Fs. Both the limit and the
+1708.36s - 1714.96s |  base. And what's gonna happen then is when the four jump the segment selector is gonna be
+1714.96s - 1720.50s |  added to it. And once again we have our good old friends integer overflow. It's actually
+1720.50s - 1725.28s |  gonna result in the physical address seven. And this is actually awesome because address
+1725.28s - 1729.84s |  seven and the physical address space once again that's DRAM. We control DRAM. So we can
+1729.86s - 1734.70s |  take advantage of that. We can put our GDT at the beginning of DRAM and we can just
+1734.70s - 1741.10s |  overflow this thing like this. And afterwards uh from the GDT we control we set a nice base so
+1741.10s - 1747.04s |  that afterwards uh the code jumps wherever we want it to. So to summarize we have two types of
+1747.04s - 1751.38s |  wraparounds. One is between the GDT descriptor base and the four jump offset. And the second
+1751.38s - 1757.26s |  one between the GDT register base and the four jump segment selector. And the nice thing
+1757.28s - 1762.28s |  about this is we can actually reuse the same fake GDT for both core zero and core one. And
+1764.48s - 1770.59s |  the added bonus is we don't even need the spy bar anymore. The only thing that we really have
+1770.59s - 1775.93s |  to take care of is the SMM safe state. Once again for core one. For core zero we just do the
+1775.93s - 1780.77s |  same thing as before. But core one is gonna be running in some unknown state. It could be
+1780.77s - 1784.87s |  running in ring three, ring zero just in an unknown context. We have to bring it to uh the
+1784.87s - 1790.21s |  same controlled state as core zero. And we do so by using a kernel synchronization API.
+1790.21s - 1796.29s |  Which on Windows is the deferred procedure call. Or on Linux symmetric multiprocessing. And
+1796.29s - 1802.13s |  basically once that's done uh we have both cores in a known state. And we can use the same
+1802.13s - 1808.17s |  trick we did uh use for core zero. So all good things are three. So let's try again. The
+1808.17s - 1813.67s |  exploit this time is greatly simplified. And well the only thing we have to do is we create
+1813.67s - 1818.47s |  a fake GDT in the beginning of the address space. We choose the um base address within the
+1818.47s - 1824.35s |  descriptor accordingly. And that's it. And then when we trigger when we enable T-Close and
+1824.35s - 1829.51s |  run the uh SMM entry point code again. The old GDT this time around is gonna point to the
+1829.51s - 1835.09s |  very end of the address space of the first four gigs. But then when the far jump happens it's
+1835.09s - 1839.23s |  gonna wrap around. It's gonna fetch the GDT descriptor entry from the beginning of the
+1839.25s - 1844.73s |  address space. From our fake GDT. And then afterwards it's gonna redirect execution for both
+1844.73s - 1851.13s |  core zero and core one to our own payload. And that finally worked. Well we managed to
+1851.13s - 1856.27s |  control both cores. Core zero and core one. Uh our payload was executed with SMM privileges.
+1856.27s - 1861.87s |  And uh it would return gracefully from SMM to the operating system and nothing would crash.
+1861.87s - 1865.61s |  And that was great. There were only a couple of things that we wanted to improve uh in our
+1865.63s - 1870.63s |  exploit. And that was um to reload the GDT because the base actually is um a bit off. So we
+1874.91s - 1879.01s |  just reloaded the GDT so that the base address is zero again. So that we don't have strange
+1879.01s - 1884.39s |  misalignment issues. We set up long modes. Uh so page tables, stack pointer etc. So we can
+1884.39s - 1890.89s |  execute like uh any SQL that we want. Uh and then we also install an SMI handler so that we
+1890.89s - 1894.73s |  only have to exploit the bug once. And then basically we have kind of semi persistence of
+1894.75s - 1901.19s |  the system resets. Right? So for the demo just to show you I'm not selling just some snake
+1901.19s - 1906.19s |  snake oil. Uh we have a system over here which is a Huawei MateBook V16 from 2000 uh 23. And
+1912.17s - 1916.51s |  you can see when the system boots it actually shows the Huawei logo. That logo is embedded in
+1916.51s - 1922.65s |  the firmware code. For that um so for our exploit we're actually gonna modify that uh that
+1922.67s - 1927.67s |  logo. So um we're gonna run our exploit with uh kernel privileges. So you'll see over here
+1930.01s - 1934.91s |  that we have to elevate privileges and it's gonna be triggered via a malicious driver. And
+1934.91s - 1940.49s |  then our exploit is gonna do uh 3 things. At first it's gonna use the synclose issue to
+1940.49s - 1946.59s |  elevate privileges to SMM. Then it's gonna disable the spy flash protections. And then
+1946.59s - 1952.17s |  afterwards it's gonna write to the spy flash the portion where the um boot splash logo is
+1952.19s - 1957.19s |  actually residing. This takes a little while about 15 minutes so we just fast forward that
+1957.19s - 1963.69s |  portion. And you can see okay it shows done patching. All good. And at this point we just
+1963.69s - 1968.71s |  reset the system and pray that it works. So let's see. Yeah this one takes a little while. And
+1982.28s - 1996.10s |  there we go. Well successful. So I mean this was just one example of what we can do with this
+1996.14s - 2000.94s |  kind of access into the system. But let's take a more systematic approach to see whether this
+2000.94s - 2005.32s |  works on all systems just on some. What does this actually depend on? So the next attack
+2005.32s - 2011.92s |  path um paths depend on how the platform is actually configured. Um so every vendor
+2011.92s - 2016.36s |  configures certain features that uh AMD provides to them. And specifically there are 2 of
+2016.36s - 2021.64s |  them which are key to this. One is room armor which can be used to restrict access to the
+2021.64s - 2026.98s |  portions of the spy flash. And the second one is platform secure boot which is AMD's
+2026.98s - 2033.66s |  equivalent of boot guard which will verify the initial stages of the firmware code. Um so if
+2033.66s - 2038.60s |  everything is enabled the very least thing that we can do is we can write to a portion of the
+2038.60s - 2041.80s |  spy flash where you have your variables lived. So for instance in these variables you're
+2041.80s - 2047.60s |  gonna have things like the secure boot uh keys which I used. So we can break secure boot.
+2047.60s - 2052.30s |  That's nice. Um but if nothing is enabled actually we have firmware implants. I'm gonna
+2052.30s - 2055.98s |  explain in a moment uh what the difference actually is. So in the first configuration
+2055.98s - 2060.32s |  whenever where everything is uh properly configured. We see ok we escalate from the
+2060.32s - 2066.02s |  operating system to SMM. And from there we can write to the let's say firmware uh data
+2066.02s - 2069.92s |  portion of the spy flash where the configurations are. So we can manipulate like secure
+2069.92s - 2074.70s |  boot keys. So that afterwards we can actually load our own malicious boot loader before the
+2075.06s - 2080.34s |  OS loader runs. And the second configuration where the PSB is not enabled. We have basically
+2080.34s - 2085.34s |  the same scenario. Um roam armor still will still restrict write access to um to the data
+2087.84s - 2094.58s |  portion. And we can we can still just um uh inject our own boot kits. And the third
+2094.58s - 2099.32s |  configuration we can write to even firmware code but that's gonna be still verified by
+2099.34s - 2105.18s |  platform secure boot. So ok in these three we have the same scenario. We can just inject a
+2105.18s - 2109.18s |  boot kit which is still nice because it runs before the OS loader. Any protections provided
+2109.18s - 2116.26s |  by the operating system would still be um rendered null. But in the last scenario where
+2116.26s - 2120.86s |  none of these features are enabled what we can do is we can inject our uh malware into the
+2120.86s - 2126.24s |  spy flash into the firmware code portion of it. And when that happens uh uh is what we're
+2126.26s - 2133.20s |  gonna get is we can um run our own malware at the very earliest stage of the boot process.
+2133.20s - 2139.80s |  And there's a key difference here between a firmware implant and uh a boot kit. Is that this
+2139.80s - 2144.68s |  attack actually is resistant to uh to OS reinstallations. So even if you wipe your drive
+2144.68s - 2148.92s |  it's still gonna be around. Um and even if you try to push a firmware update from the
+2148.92s - 2153.36s |  operating system it's still gonna be around because the uh the malware can just say well
+2153.58s - 2160.32s |  update was successful. Um and the only way to really get rid of it at that point is to take
+2160.32s - 2166.66s |  apart your system, take a spy programmer to read out the spy flash, inspect it and if it's
+2166.66s - 2173.76s |  infected um just uh rewrite it. But typically it's not really in the repertoire of a typical
+2173.76s - 2179.50s |  IT guy right? So to illustrate how prevalent actually these misconfigurations are we did
+2179.52s - 2184.16s |  some research last year on that and we saw that the majority of the systems have none of the
+2184.16s - 2188.96s |  security features actually enabled. Which means all the systems which have none of the
+2188.96s - 2194.44s |  features enabled are vulnerable to firmware implants. Which is pretty bad. And to put a cherry
+2194.44s - 2199.20s |  on top we also found that once you're infected with that kind of uh firmware implant you can
+2199.20s - 2204.18s |  even disable platform secure boot forever by burning a specific fuse so that your system
+2204.20s - 2209.20s |  remains vulnerable to firmware uh implant reinfections forever. Sweet. So let's wrap up the
+2212.14s - 2220.12s |  presentation. Thanks Christoph. So yeah in terms of affected systems right? Pretty much all of
+2224.20s - 2229.20s |  them. Uh yeah um our tests were on Ryzen mostly, several laptops uh but turns out the Threat
+2229.36s - 2234.36s |  Reaper series is also affected, Epic series is also affected meaning servers. Um and yeah uh due
+2242.90s - 2247.90s |  to the longevity of this this this thing we can estimate the total number of affected chips
+2251.24s - 2256.24s |  are in around the hundreds of millions. Um there's an advisory from AMD published now um
+2259.42s - 2265.92s |  where more information on the system, the affected systems and cover uh there's a microcode
+2265.92s - 2270.92s |  update now. Information is there and so you can check. Mitigations. Yeah AMD as I just said
+2275.06s - 2281.56s |  provided um with microcode updates. However it might not cover all of the affected systems of
+2281.56s - 2286.58s |  course. Um in terms of what an OEM can do, they can just modify the SMM entry point code and
+2289.44s - 2295.92s |  to detect if the T-close bit is set. And if it is then just abort the execution and this this
+2295.92s - 2302.62s |  will just render the exploitation unfeasible. Uh this can even be done at the EDK 2 level for
+2302.62s - 2307.62s |  AMD system right? And we really haven't covered here core boot but core boot is affected in
+2311.00s - 2315.84s |  the same way. We just I mean um core boot does the very beginning of the entry point performs
+2315.84s - 2322.42s |  a low GDT. They have to go to protected mode as well so it's it's the same thing. Um and
+2322.42s - 2326.76s |  actually core boot they are checking for this uh for for other issues as well at the entry
+2326.76s - 2331.76s |  point so they could they could very well do this. Um and users well they can you know a
+2334.56s - 2339.56s |  hypervisor could trap the access on the TSEC mask MSR so that's another uh way to stop this.
+2340.06s - 2345.06s |  Timeline wise well we reported this back in October of 2023. A CVE of 2023 uh 3.1.3.15 was
+2350.64s - 2355.28s |  assigned in November. And then we discussed mitigations and impact with AMD over the course
+2355.28s - 2361.18s |  of the next months. Um and yeah finally yesterday um the advisory was published and we are
+2361.18s - 2366.18s |  here at DEF CON today. This was the official AMD response. Essentially we work with them in a
+2370.12s - 2378.24s |  process of uh responsible disclosure. And yeah they've been great to work with. Conclusions
+2378.24s - 2384.54s |  and takeaways. Well the vulnerability has been around for nearly two decades. Um the
+2384.54s - 2389.82s |  complexity of the architecture clearly plays in favor of attackers and we see this uh with
+2389.82s - 2396.20s |  the flexibility of of of the GDT. Um the two types of wraparounds, the the the byte level
+2397.06s - 2402.06s |  uh um address um like granularity that there is with it, no problem. Um and also with the how
+2405.34s - 2411.40s |  the MSRs can be accessed without any restriction. Uh that that's that's all good for attackers
+2411.40s - 2416.42s |  right? Um these things combined are what made this exploit approach possible. It might be
+2417.42s - 2422.42s |  on other exploit methods too. Um but yeah all of this of of course requires an in depth
+2426.66s - 2431.46s |  understanding of the architecture. And in the end we managed to exploit this without
+2431.46s - 2437.00s |  requiring physical presence. So that's very good. And yeah, exploit code will be released
+2437.00s - 2441.90s |  soon. So stay tuned for that. Questions?
+2442.90s - 2456.31s |  What is the question up there? Is there a microphone? Okay. Oh there's Christoph.
+2462.18s - 2467.18s |  Uh uh hello. Um it wasn't entirely clear to me. Is the spyflash chip you're referring to on
+2470.76s - 2475.76s |  the uh CPU die or is it external? External. Okay. Yes. Yep. Hi how are you? We were talking
+2475.76s - 2480.76s |  with Enrique that this is interesting also to bypass an anti-cheat system right? Uh in the
+2485.10s - 2492.10s |  video game industry. Um Playstation 5 runs on an MID chip. Uh is is is it also vulnerable or
+2492.10s - 2497.10s |  is it uh a different kind of chip and it doesn't affect it? Thank you. Um so I'm sorry if
+2499.74s - 2504.98s |  if I understood your question correctly was about bypassing uh anti-cheat systems uh using
+2505.00s - 2510.00s |  this method? No installing something to bypass uh the anti-cheat systems and uh uh. Once
+2513.34s - 2518.34s |  you achieve arbitrary code execution in SMM uh yeah pretty much uh like modern anti-cheat
+2521.42s - 2527.26s |  systems running uh either kernel or even maybe a hypervisor level could could run and and
+2527.26s - 2532.26s |  this this runs even below that. Does that make sense? Um but uh since uh MID has this
+2532.74s - 2537.74s |  closed the processors that are vulnerable to this attack it is the it is not disclosed in
+2540.38s - 2545.38s |  Playstation 5 which has MID. So that's what I was asking if maybe it's also yeah. Ah okay.
+2553.43s - 2559.03s |  But yeah I'm sorry I I don't know uh I I don't understand your question correctly. The the
+2559.03s - 2564.03s |  Playstation 5 hypervisor blocks the MSR. Oh. Uh if it's for that yes. The the yes. The
+2565.43s - 2570.71s |  we we check that. And it is being trapped by the hypervisor layer on the Playstation. Yes.
+2570.71s - 2575.71s |  Sorry. Hey thank you. Um quick question. Um why didn't disabling SMT prevent the system
+2579.05s - 2584.05s |  from becoming unstable? Uh yes. So the SMT when we try to disable it um essentially what
+2586.25s - 2591.63s |  happened is the other logical core will just not run but it still be there and it will be
+2591.83s - 2595.87s |  the all the entry points and uh will be already configured by the firmware if that makes
+2595.87s - 2600.97s |  sense. So when the SMI happens it was a level underneath I mean it won't you won't see the
+2600.97s - 2608.01s |  processor available at the OS level but all all the layout and and and and and at at yeah at
+2608.01s - 2612.75s |  the deeper level the the logical core is still there if that makes sense. Yes it does. So we
+2612.75s - 2620.17s |  have to deal with that regardless. Yes we try it. Thank you. Hello. Do you know what uh
+2620.23s - 2625.77s |  changes AMD microcode update made? Um I'm sorry could you could you speak up louder? I'll say.
+2625.77s - 2631.75s |  Do you know what changes AMD microcode update made to mitigate this issue? Oh interesting
+2631.75s - 2636.75s |  question. Uh yes. Um no I mean officially we don't. Uh. Um what uh we don't. That's a long and
+2636.75s - 2642.75s |  short of it. Uh yes. Ok well if no more questions thank you so much for joining us today.

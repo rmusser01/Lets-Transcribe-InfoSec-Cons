@@ -1,0 +1,255 @@
+{
+  "webpage_url": "https://www.youtube.com/watch?v=AS_bSDxTU4w",
+  "title": "DEF CON 32 - Sneaky Extensions  The MV3 Escape Artists - Vivek Ramachandran, Shourya Pratap Singh",
+  "description": "Ever since the pandemic and the rising popularity of work-from-home and hybrid models, there has been an increase in the usage of browsers, particularly video conferencing and collaboration applications. While some extensions enhance the user experience, some can gravely affect users' privacy and security.\n\nOver the past few years, extensions have gained recognition for nefarious activities, from simple color picker extensions to productivity-first AI extensions. And now more than ever, attackers are leveraging malicious extensions to steal user data, promote ads, affiliate marketing, and more. Realizing the abuse, Google pivoted from the MV2 model to the latest MV3, providing better security and locking down the extension from running rampant. While some security measures have been introduced in MV3, it is far from safe. In this talk, we will be demonstrating a suite of attacks, while requiring the least amount of permissions, which 95% of extensions on the Chrome store have. We will showcase stealth stealing of webcam feed, audio streams, clipboard data, and stealing credentials from other extensions like password managers.\n\nMV3 also introduced security measures to block the usage of functions like eval and new Function that allowed arbitrary code execution. We\u2019ll showcase how an extension can still do arbitrary code execution effectively bypassing the MV3 restrictions.\n\nIn this talk, we will also propose changes to the extension security model to prevent the lurking loopholes. We will also be demonstrating how malicious extensions can interfere with other extensions and steal sensitive information such as Credit card, passwords, OTP, etc, from other extensions.",
+  "channel_url": "https://www.youtube.com/channel/UC6Om9kAkl32dWlDSNlDS9Iw",
+  "duration": 1231,
+  "channel": "DEFCONConference",
+  "uploader": "DEFCONConference",
+  "upload_date": "20241016"
+}
+
+0.00s - 5.52s | This text was transcribed using whisper model: large-v2
+
+ Morning everyone. Thank you so much for coming. I mean I know this is the very
+5.52s - 9.64s |  first talk happening literally in every single screen out there. So really
+9.64s - 15.28s |  appreciate you making it out to ours. I'm Vivek Ramachandran. I have Shaurya with me.
+15.28s - 19.92s |  And we're going to talk about something very interesting. Sneaky extensions. The
+19.92s - 25.44s |  MV3 escape artists. Little bit about me. I've been in cyber security 20 years.
+25.44s - 32.00s |  Very first Defcon 2007 when I spoke. Found multiple vulnerabilities. Started
+32.00s - 36.48s |  multiple cyber security companies. Now we run Squarex, a browser native security
+36.48s - 43.14s |  company. Hello everyone. I'm Shaurya. I work as a principal software engineer at
+43.14s - 47.80s |  Squarex. My work mainly involves researching extensions, malicious
+47.80s - 54.81s |  extensions and working on methods to actually tackle them. And we have Sasha
+54.93s - 61.05s |  from the speaker ops team. Okay so browser extensions. I think almost
+61.05s - 65.77s |  everyone uses it. Anyone here doesn't use browser extensions? I'm guessing maybe in
+65.77s - 71.05s |  this audience a few people are skeptical. But overall I guess everybody uses
+71.05s - 76.01s |  browser extensions. Good convenience feature. And that is really where I think
+76.01s - 82.29s |  our talk is about how easy it is for a browser extension to cause backdoors, a
+82.29s - 87.45s |  lot of attacks within your organization. And the grand finale is we'll actually
+87.45s - 93.09s |  show you a browser extension which we've written. Which can steal live calls on
+93.09s - 97.69s |  you know Google Meet, Zoom and all of that while the call is happening. Without
+97.69s - 104.01s |  having any indication that that MITM interception is going on. So as I said
+104.01s - 107.53s |  everybody uses extensions. Grammarly, 1password, you know some of the more
+107.61s - 113.33s |  common ones. And now because of AI, every second day you keep hearing about
+113.33s - 118.57s |  somebody offering a free extension which gives you access to chat GPT premium.
+118.57s - 122.85s |  Right? And then people just go about installing it thinking they're getting
+122.85s - 129.54s |  free access. But many of those extensions are backdoored. Now this
+129.54s - 134.26s |  problem is starting to compound. So you know some statistics from Forbes where
+134.26s - 140.10s |  over 280 million installs of extensions containing malware in just three years.
+140.10s - 147.39s |  Just 32 of them managed to go ahead and have a download count of over 75 million.
+147.39s - 152.67s |  I think a lot of folks think that the Chrome store does a lot of analysis but
+152.67s - 156.63s |  it doesn't. It's very high level, very basic sanity checks and nothing more
+156.63s - 161.59s |  than that. And that's why this problem is starting to compound more and more year
+161.59s - 170.91s |  over year. So give it to Shaurya to continue. So how many of you have ever
+170.91s - 176.83s |  written an extension before? Can you raise your hand? Okay. So I'll just tell
+176.83s - 181.51s |  you all a little bit about how an extension code structure looks like. This
+181.51s - 184.63s |  will actually help us understand how the whole permission model is
+184.63s - 190.43s |  and how exactly people can leverage that against. So typically any extension has
+190.51s - 194.23s |  these four things. So they have a manifest file, then they have a service
+194.23s - 197.83s |  worker which runs on the background and then they have a content script. So
+197.83s - 203.35s |  content script is basically injected on whatever web page you're opening. Now
+203.35s - 207.51s |  what all pages it is allowed to be present is specified in the manifest
+207.51s - 213.55s |  file. Lastly some extensions also have an HTML page. So let's say you go ahead and
+213.55s - 216.99s |  click on an icon, you can see like a small pop-up will appear. So there's
+216.99s - 221.35s |  actually an HTML page. Similarly some extensions can also have like a separate
+221.35s - 226.59s |  page which you can access through your address bar by chrome hyphen extension
+226.59s - 232.23s |  colon slash slash and specifying the extension ID. So this is what a typical
+232.23s - 237.15s |  extension structure look like. Now to understand how the whole permission
+237.15s - 243.03s |  model works, it's important to note two things. The first one is that you know in
+243.11s - 247.51s |  the extension the very best thing that has been done is that you have to
+247.51s - 252.55s |  specify what all permissions are required you know upfront. So your
+252.55s - 256.99s |  manifest or JSON file itself specifies that what kind of permissions your
+256.99s - 262.95s |  extension is going to ask for. And this actually helps a lot as well. Now after
+262.95s - 268.11s |  this we also have this a small you know a snippet. This snippet is actually a
+268.11s - 271.55s |  manifest file. So this is how it typically looks like. If you see on the
+271.55s - 276.11s |  top this is where you specify the manifest version. So the current latest
+276.11s - 282.07s |  version is version 3. Now you know this has been actually a very I would say
+282.07s - 286.67s |  important transition as extensions are moving from version 2 to version 3.
+286.67s - 291.35s |  Because as you can see here you know earlier in the permissions we had to
+291.35s - 295.67s |  specify a URL. Like you know on this particular URL you have access to. But
+295.67s - 299.75s |  now it's much more clearer. So it's been broken up into further keys to bring
+299.75s - 304.67s |  much more clarity on how the permission is being handled. Now if we look at the
+304.67s - 308.07s |  kind of permissions most of the extensions are asking for here are some
+308.07s - 313.35s |  stats. So you can see that the third most is actually all URLs which is quite I
+313.35s - 318.15s |  would say dangerous because most of your extension actually have access to
+318.15s - 324.13s |  modify any page if they want. Most people don't even read what the permission you
+324.13s - 329.03s |  know the prompt is saying to you. Now the second important thing to know is how
+329.03s - 334.43s |  the whole process architecture inside the Chromium works like. So in Chromium
+334.43s - 340.23s |  we have a multi process architecture. So we have separate processes for doing
+340.23s - 345.43s |  separate things. For example you know if you have like a particular tab so
+345.43s - 348.59s |  whatever you're seeing on the page is being done through a renderer process.
+348.59s - 352.39s |  Similarly if there's a network call it will actually happen through an entirely
+352.39s - 357.79s |  different process. So by having all these processes separated you know it really
+357.83s - 363.75s |  helps out in a security kind of point. The reason being that all these are
+363.75s - 368.87s |  basically isolated from the operating system point of view
+368.87s - 374.55s |  because these cannot really you know interact at much other than the IPCs. Now
+374.55s - 380.15s |  there is one more thing which is quite interesting. So every tab that you see is
+380.15s - 385.67s |  actually having a different renderer process which actually further isolates
+385.71s - 390.11s |  them from interacting with each other. Now you must be wondering you know what
+390.11s - 395.21s |  happens if there's an iframe on the page right. So if a page has an iframe it is
+395.21s - 399.63s |  further put in a different process. It's actually I would say a very big
+399.63s - 403.83s |  engineering milestone because if you simply go to a web page and type you
+403.83s - 408.07s |  know a command F to find a text it's actually searching that text across
+408.07s - 413.31s |  multiple processes. So it's quite an engineering feat I would say. There are
+413.31s - 417.99s |  different terms for this called a site isolation or site fission. Now we'll come
+417.99s - 421.71s |  back to how the whole you know this architecture fits in. So this diagram
+421.71s - 425.27s |  basically shows it pretty well. So all the components which I showed you
+425.27s - 428.55s |  earlier like extension pages, your content script, this is how the whole
+428.55s - 434.51s |  structure looks like. Now content script are I would say the very first thing
+434.51s - 439.43s |  that we all should you know be careful about because content scripts are
+439.43s - 444.91s |  injected on the web pages. Now to see it in action I'll actually show you a live
+444.91s - 449.35s |  code right now to see how exactly content script can modify a given page.
+449.35s - 456.63s |  So it's actually pretty straightforward. This is a typical extension. You can see
+456.63s - 461.59s |  like there's a manifest file. I'm just naming it test extension for now and in
+461.59s - 466.51s |  this I'm inserting a content.js file. So if you see here there's a JS file
+466.51s - 472.27s |  here which is simply just gonna write a text on the page. So you know if I go
+472.27s - 475.99s |  back to my browser and let's say you know I try to load this specific
+475.99s - 485.51s |  extension and if I disable it now if I try to access a website let's say
+485.51s - 490.99s |  google.com it loads normally but the moment I basically enable this test
+490.99s - 496.31s |  extension and I try to open google.com it will get overwritten by whatever I
+496.31s - 500.83s |  have specified on the extension. Now this is how basically content script works
+500.83s - 505.99s |  like you know you have a way to inject something on the web page. Now if you see
+505.99s - 511.71s |  this specific extension there is no permission key here and that's what
+511.71s - 515.55s |  makes it more dangerous because you know I was able to modify a page but I'm not
+515.55s - 520.35s |  actually asking for any explicit permission other than like in what pages
+520.35s - 524.43s |  I'm actually inserting the content script. So it's important not just to
+524.43s - 527.39s |  look at the permissions key but also to look at you know in what particular
+527.59s - 533.55s |  pages the content script is being injected to. Now coming back one of the
+533.55s - 537.83s |  biggest problems that arise with this is actually remote code execution. So let's
+537.83s - 541.91s |  say you know I allow any of the extension to be installed on your
+541.91s - 547.03s |  browser and later on I'm sending some code from my server which is definitely
+547.03s - 552.07s |  unmonitored and I'm sending that code to execute on any random web page. Now this
+552.07s - 556.67s |  is quite dangerous so to avoid this lot of changes were done in the mv3 version
+556.71s - 560.75s |  itself. So we have these functions like eval where you know you can specify like
+560.75s - 565.51s |  any kind of JavaScript code and it executes on a given page. So all these
+565.51s - 570.23s |  things were banned in the mv3 at the same time also enforced to be blocked
+570.23s - 575.63s |  using the content security policy that is CSP. However there are ways to bypass
+575.63s - 582.15s |  this as well. So you know just to give a small example of this if I go back and
+582.35s - 587.35s |  look at the very same extension which I just showed you and if I try this with
+587.35s - 591.79s |  you know just an eval. Now this is how eval looks like you know you're sending
+591.79s - 596.11s |  a string and this string is going to execute on the page. If I go back to my
+596.11s - 602.07s |  browser and I try to you know reload my extension and if I refresh now the page
+602.07s - 607.15s |  will load normally. Reason being that it has been blocked because of
+607.15s - 613.51s |  a CSP policy. However JavaScript is a funny language so you can actually
+613.51s - 618.95s |  access the object the functions like normal arrays or objects as well. So if I
+618.95s - 622.71s |  go down and I write simply something like this like you know so I specify my
+622.71s - 628.47s |  right within the square brackets and the argument in a simple string then it
+628.47s - 633.27s |  actually work as well. So if I go back and I you know basically try to refresh
+633.27s - 638.03s |  my extension and if I go back this will again show me back hello from extension.
+638.03s - 643.27s |  Now as you can see all these two things were simple strings and this can
+643.27s - 647.39s |  actually be leveraged to further send those strings from an external
+647.39s - 652.53s |  server as well. And this can also be used to in fact you know change the URL as
+652.53s - 656.79s |  well. So if you see the snippet here this will simply change the location of a
+656.79s - 663.07s |  given page. Now you know the same thing can be extended by connecting this to a
+663.07s - 668.55s |  server as well. So if you see here I have a simple Flask server which just
+668.55s - 672.29s |  returns two things. One is a function name and the other one is just an
+672.29s - 680.25s |  argument. So if I run this server right now so I have my Flask server running
+680.25s - 687.01s |  and I'll simply go back and I will load the other extension which has an
+687.01s - 701.50s |  integration with this API. Now if I try to access the page it still works and
+701.50s - 705.70s |  you can see a hello from server is written there. Reason being that if you
+705.70s - 710.70s |  look at the code of this extension it is making an API call, getting what the
+710.70s - 715.00s |  function name is, getting what the argument is and simply using it to
+715.00s - 720.48s |  change the content of the page.
+720.48s - 725.84s |  Okay so I think you know given the talk time is limited we'll start with some
+725.84s - 731.16s |  demo videos as well. I think we have 10 minutes on the clock. 10 minutes? Okay yeah
+731.20s - 736.12s |  So the very first demo you want to show is I mean there are a bunch of them is
+736.12s - 740.92s |  social engineering where you could literally once you install an extension
+740.92s - 745.40s |  it could pretend to go ahead and let's say drop a zoom update right because
+745.40s - 749.40s |  it's so common that you try to access zoom and it says go update and Shoury
+749.40s - 756.74s |  will show you that. So we can see here that you know I'm simply opening the
+756.74s - 761.10s |  zoom website and it looks like you know a normal zoom website how it's supposed
+761.10s - 765.78s |  to be. If I go ahead and enable this malicious extension it's simply using a
+765.78s - 770.50s |  content script to add another object on that specific page which says hey there's
+770.50s - 775.14s |  an update now. At the moment you click on this you download a file and if you see
+775.14s - 779.46s |  here the download we are triggering is actually a blog based download. So even
+779.46s - 783.02s |  if you go to the downloads and you look at the URL you will see it as you know
+783.02s - 789.77s |  it's coming from zoom.us but actually it was shipped with the extension. Now if we
+789.77s - 794.49s |  simply open that executable it might affect your computer. The the key thing
+794.49s - 798.77s |  to realize over here is extensions have the power to run in the context of
+798.77s - 802.81s |  whichever page that they're injecting into. So if you install a random
+802.81s - 807.65s |  extension which says it's a color picker and then you open zoom.us at that point
+807.65s - 812.81s |  it can actually inject into that page and anything which happens from the
+812.81s - 817.01s |  browser's perspective is in the context of the page. So if a file download is
+817.01s - 822.65s |  triggered you feel it's probably from you know the actual zoom website. Now one
+822.65s - 827.85s |  interesting demo he'll actually show you is something live. Yeah. Okay and while
+827.85s - 833.45s |  he's he's getting that ready. Imagine you have an extension and now you're doing a
+833.45s - 838.09s |  video call right. How many of you end up using the browser version of zoom and
+838.09s - 843.29s |  Google Meets and whatnot. Now you might actually imagine that when a Google Meet
+843.41s - 848.21s |  call is actually happening nothing else can monitor. So we'll show you a demo of
+848.21s - 854.05s |  an extension which we've created which while a live call is happening it can go
+854.05s - 859.73s |  ahead do a side monitoring and literally get the entire feed of the call live and
+859.73s - 864.41s |  send it wherever. With zero indication in the Google Meet session that something
+864.41s - 870.21s |  is intercepting or monitoring this. So as you can see here you know I'm basically
+870.33s - 883.30s |  gonna open Google Meet. We hope the internet connection works or else we'll
+883.30s - 886.10s |  show you a very quick video. Okay we have five minutes on the clock while he's
+886.10s - 892.22s |  getting it. The key thing to realize is you can actually host a Chromium
+892.22s - 897.66s |  extension or an Edge extension. Much of the times there is barely any security
+897.66s - 902.26s |  checks which are really happening. So if you see a featured extension it isn't
+902.26s - 905.82s |  that you know Google's team has looked at the code run a bunch of tests
+905.82s - 910.54s |  unbelievably even in the enterprise version some of the basic stuff that
+910.54s - 916.18s |  they end up showing doesn't really look at what that code could do. Now here's
+916.18s - 921.18s |  the worst part. We all fear download and execs right because you run the stub get
+921.18s - 925.30s |  something that's something extensions can do right off the box. Is the
+925.30s - 929.26s |  extension just loads looks innocent but it can actually bring back foreign code
+929.26s - 937.77s |  and run it. So if you see here we are starting a new Google Meet session. Now
+937.77s - 942.65s |  the malicious extension is installed. So we're gonna simply open you know another
+942.65s - 946.49s |  window and open an extension page to see what's actually seeing and you can see
+946.49s - 950.49s |  like you know the live feed from that particular meet page is being transferred
+950.49s - 955.17s |  to the other page. And that shows a lot because you know having a simple a
+955.17s - 959.49s |  simple host permission it was not even a specified permission you were actually
+959.49s - 965.69s |  able to steal a live stream from a given meet page. So the key thing to realize is
+965.69s - 970.61s |  you know extensions have superpowers just like you know an endpoint security
+970.61s - 974.05s |  you end up installing something in kernel mode and that has one privilege
+974.05s - 978.93s |  level above what user space processes have. Similarly extensions are sitting
+978.93s - 983.77s |  one level above you know the page itself. Yeah we'll also look at just two quick
+983.77s - 989.13s |  demos right now. Another one is called silent account hijacking. So in this what
+989.13s - 993.57s |  I'm gonna do is I'll simply have a malicious extension installed and what
+993.57s - 997.53s |  it's gonna do is that in the background it's gonna log into your GitHub account
+997.53s - 1001.69s |  because extensions have a highly privileged so they have access to all
+1001.69s - 1006.49s |  HTTP only cookies as well. And if you're doing it from your service worker that
+1006.49s - 1010.29s |  is from your background you don't even have to ask for explicit permission for
+1010.29s - 1013.85s |  accessing cookie as well. If you're simply making a fetch call instead of
+1013.85s - 1019.89s |  you know just getting the cookie value. So in this demo we can see that we have
+1019.89s - 1027.00s |  a demo GitHub account and I have a private repo here. In this private repo
+1027.00s - 1032.56s |  if we go to the settings and look at the collaborators right now there are no
+1032.56s - 1037.60s |  additional collaborators in this repo. Now what I'll do is I'll simply go and
+1037.60s - 1045.21s |  start the malicious extension. Now if you see nothing really happened and for a
+1045.21s - 1050.33s |  very small moment a small tab just open and closed automatically. Now if I go
+1050.33s - 1057.42s |  back and check that specific repo back again go to the settings and see
+1057.42s - 1063.04s |  who all are the collaborators. Then I will see that there's one more
+1063.04s - 1068.64s |  collaborator added here now. So this just shows you know how how sneaky they can
+1068.64s - 1073.76s |  be and they can actually also take over your private repos. And and the best way
+1073.76s - 1077.20s |  to think about it is think about any form of browser automation with things
+1077.20s - 1081.44s |  like Selenium which some of you may have done. With an extension it can just do
+1081.44s - 1085.76s |  literally everything in the background, act on your behalf, go through complex
+1085.76s - 1090.60s |  workflows, anything the you know author would have probably baked into it. And
+1090.60s - 1095.16s |  some of these can just download at payloads and happen at runtime. Doesn't
+1095.16s - 1101.20s |  need to be at you know extension compile or upload time to the Chrome store. Yeah
+1101.20s - 1105.16s |  now we look at one more which is interference with password managers. So
+1105.16s - 1109.32s |  many people often use extensions for you know using saving their password and
+1109.32s - 1113.28s |  using them. So actually other malicious extension can interfere with that as
+1113.28s - 1119.60s |  well. So in this example we can see that a user is using one of the password
+1119.60s - 1124.28s |  manager vendors. And if you go to let's say a random SaaS application where you
+1124.28s - 1128.96s |  were already using that specific password manager. We can see that the
+1128.96s - 1133.60s |  password manager works and a person is you know able to log in normally how
+1133.60s - 1140.08s |  it's supposed to be. However the moment if we go back and enable the malicious
+1140.08s - 1144.96s |  extension, what this extension will do is that it will override what the default
+1144.96s - 1149.60s |  action of clicking on that icon was. So if we can see here it's still the
+1149.60s - 1154.44s |  password managers icon but the moment I click on this it will take me to another
+1154.44s - 1159.48s |  login page. So for the test purpose and for demonstration we have just named our
+1159.48s - 1163.96s |  extension with a malware word so that you know that this page is actually you
+1163.96s - 1168.36s |  know a fake one. But you know looking at the URL you can't really figure that out.
+1168.36s - 1172.62s |  So here a person will then you know saying that they might have logged out
+1172.62s - 1176.76s |  of their password manager and they will end up ending the credentials. And the
+1176.76s - 1182.92s |  moment they do that they will get phished. So you run out of time. I think
+1182.92s - 1186.56s |  if you're interested all the source code everything we have here you can go to
+1186.56s - 1192.08s |  sqrx.com. We put all of that up. We also put up a much more detailed video. We
+1192.08s - 1198.28s |  only got 20 minutes. We have a lot of research. Now the key summary is even
+1198.28s - 1202.08s |  known extensions on the Chrome store get bought out all the time. And what
+1202.08s - 1205.16s |  attackers have started doing is if an extension has a hundred thousand
+1205.16s - 1209.20s |  installs they just offer ten thousand dollars to the author and they can
+1209.20s - 1214.96s |  transfer over ownership. And that means you know extensions you trusted could
+1214.96s - 1219.08s |  now automatically be untrusted. And a bunch of other supply chain attacks
+1219.08s - 1222.56s |  which can kind of happen in the context of the Chrome store right. Thank you so
+1222.56s - 1228.64s |  much and yeah please visit sqrx.com for more. Thank you.

@@ -1,0 +1,1202 @@
+{
+  "webpage_url": "https://www.youtube.com/watch?v=5P7KatZBr_I",
+  "title": "DEF CON 32 - Grand Theft Actions Abusing Self Hosted GitHub Runners - Adnan Khan, John Stawinski",
+  "description": "GitHub Actions is quickly becoming the de facto CI/CD provider for open-source projects, startups, and enterprises. At the same time, GitHub\u2019s security model is full of insecure defaults. This makes it easy for their customers to expose themselves to critical attacks from the public internet. The end result? A systemic vulnerability class that won\u2019t go away.\n\nDuring our research, we identified GitHub Actions misconfigurations at scale that would allow threat actors to backdoor major open-source projects. An example of this is our attack on PyTorch, a prominent ML framework used by companies and researchers around the world.\n\nThrough this attack, we could contribute code directly to the main branch of the PyTorch repository, upload malicious releases, backdoor other PyTorch projects, and more. These attacks began by compromising self-hosted runners, which are machines that execute jobs in a GitHub Actions workflow. From there, we leveraged misconfigurations and GitHub \u201cfeatures\u201d to elevate our privileges within GitHub Actions workflows.\n\nOur research campaign included dozens of reports, over $250,000 in bug bounties, and endless war stories. Tune in for a deep dive into the TTPs that allow turning a trivial runner compromise into a full supply chain attack.",
+  "channel_url": "https://www.youtube.com/channel/UC6Om9kAkl32dWlDSNlDS9Iw",
+  "duration": 2663,
+  "channel": "DEFCONConference",
+  "uploader": "DEFCONConference",
+  "upload_date": "20241016"
+}
+
+1.94s - 4.76s | This text was transcribed using whisper model: large-v2
+
+ All right, hello everyone.
+4.76s - 7.60s |  All right, let's address the burning question in the room.
+7.60s - 10.08s |  No, we did not get access to the source code
+10.08s - 11.48s |  for Grand Theft Auto 6,
+11.48s - 14.00s |  nor do we know if the game will ever be released.
+14.00s - 16.96s |  Maybe in the following presentation, but not today.
+16.96s - 18.60s |  This is Grand Theft Actions
+18.60s - 21.12s |  abusing self-hosted GitHub runners at scale.
+22.20s - 23.94s |  Hello, everybody.
+23.94s - 25.60s |  Before we get started, we read online
+25.60s - 26.80s |  that as long as we have a disclaimer,
+26.80s - 29.68s |  nobody's allowed to sue us, so here we go.
+29.68s - 31.40s |  All vulnerabilities mentioned during this talk
+31.40s - 32.80s |  have been remediated.
+32.80s - 35.02s |  The views and opinions expressed are solely our own
+35.02s - 37.12s |  and the content is not endorsed by,
+37.12s - 40.20s |  nor does it represent the views of our employers.
+40.20s - 42.36s |  All right, whoa, there we go.
+42.36s - 44.00s |  Adnan, I think we're good to go.
+47.48s - 48.92s |  All right, if you're wondering about us,
+48.92s - 50.68s |  so my name is Adnan Khan.
+50.68s - 52.96s |  For my day job, I work as a security engineer.
+52.96s - 54.72s |  I'm also a security researcher
+54.72s - 56.10s |  and bug bounty hunter on the side,
+56.10s - 58.56s |  and you can find some of my socials below.
+58.56s - 59.80s |  My name is John Stawinski.
+59.80s - 62.24s |  I'm a red team security engineer at Praetorian.
+62.24s - 65.36s |  I also do CICD security research on the side.
+65.36s - 67.08s |  In the last year, I've watched Avatar,
+67.08s - 69.92s |  The Last Airbender, three times, the animated version,
+69.92s - 75.32s |  and in a past life, I was a collegiate wrestler.
+75.32s - 76.96s |  All right, so we're going to be talking a lot
+76.96s - 78.32s |  about self-hosted runners today,
+78.32s - 80.08s |  so I want to make sure everyone has a background
+80.08s - 82.28s |  and understanding of how GitHub runners work.
+82.28s - 84.48s |  On one side, you have GitHub-hosted runners.
+84.48s - 87.24s |  These are built by GitHub, updated frequently,
+87.24s - 89.04s |  and as of writing, cover a wide variety
+89.04s - 91.06s |  of operating systems and architectures.
+91.06s - 92.98s |  The key thing with GitHub-hosted runners
+92.98s - 96.34s |  is that they are ephemeral, meaning they are torn down
+96.34s - 99.18s |  at the conclusion of each workflow job.
+99.18s - 101.74s |  On the other hand, you have self-hosted runners.
+101.74s - 105.34s |  These are managed and secured entirely by the end user,
+105.34s - 107.22s |  and it's not surprising here
+107.22s - 109.26s |  that the path of least resistance
+109.26s - 112.30s |  when configuring one of these self-hosted runners
+112.30s - 114.50s |  is a non-ephemeral self-hosted runner
+114.50s - 116.58s |  that is actually the least secure.
+116.58s - 119.06s |  Both GitHub-hosted and self-hosted runners
+119.06s - 121.34s |  work to service GitHub Actions workflows
+121.34s - 123.94s |  that are triggered from repositories on GitHub.
+124.86s - 126.42s |  So why are we here today?
+126.42s - 129.18s |  Well, all the organizations and projects
+129.18s - 130.54s |  that you see on the screen here
+130.54s - 133.10s |  use or at one point use self-hosted runners
+133.10s - 135.34s |  on their public GitHub repositories.
+135.34s - 138.04s |  Not only that, but they use them in an insecure manner,
+138.04s - 139.64s |  and over the last 12 months,
+139.64s - 141.62s |  we were able to identify vulnerabilities
+141.62s - 143.66s |  in these organizations and many more
+143.66s - 144.94s |  that we can't talk about.
+144.94s - 147.46s |  Some of these cases could have led to widespread,
+147.46s - 149.24s |  critical supply chain attacks.
+150.82s - 153.22s |  You may be wondering if we just showed that last slide
+153.22s - 154.82s |  to flex our cool bones at DEF CON,
+154.82s - 157.58s |  and I just want to go on record saying that,
+157.58s - 159.86s |  yeah, pretty much.
+159.86s - 162.40s |  But it also raises a bigger question.
+162.40s - 165.22s |  Why were we in a position to execute supply chain attacks
+165.22s - 166.66s |  on all of these companies?
+166.66s - 167.86s |  And the reason behind that
+167.86s - 171.02s |  is that GitHub Actions provides this broad attack surface
+171.02s - 173.58s |  that exposes these organizations to compromise,
+173.58s - 176.46s |  especially when they use self-hosted runners.
+177.70s - 179.78s |  All right, so how do we get started
+179.78s - 181.42s |  with our vulnerability research campaign?
+181.42s - 185.14s |  Well, it all started all the way back in August of 2022
+185.14s - 188.06s |  when I was working on a red team with my former employer.
+188.06s - 189.66s |  I was fairly new to red teaming at the time,
+189.66s - 190.50s |  and I tripped a canary
+190.50s - 191.94s |  and got us kicked out of the client network.
+191.94s - 193.76s |  Maybe that's happened to some of y'all.
+193.76s - 195.10s |  But while trying to get back in,
+195.10s - 196.24s |  we did some social engineering,
+196.24s - 198.74s |  and I found that we could use a GitHub access token
+198.74s - 200.66s |  that we obtained to execute a workflow
+200.66s - 203.02s |  and persist on a non-ephemeral self-hosted runner
+203.02s - 204.22s |  inside that client's network,
+204.22s - 206.94s |  and that got us back in and we reached objective.
+206.94s - 209.02s |  That led to a talk at ShmooCon
+209.02s - 210.30s |  called Phantom of the Pipeline
+210.30s - 212.10s |  that was given in January of 2023
+212.10s - 214.70s |  and the release of the original Gato tool.
+215.90s - 218.26s |  Around the time that Anand, Mason Davis,
+218.26s - 220.42s |  and Matt Chkosky were developing Gato,
+220.42s - 221.50s |  I joined them on the red team,
+221.50s - 223.36s |  and Gato was my entry to CICD Security.
+223.36s - 225.02s |  So I started using Gato
+225.02s - 227.02s |  to identify GitHub Actions vulnerabilities
+227.02s - 228.46s |  during red team engagements,
+228.46s - 231.86s |  and then we started diving deeper into GitHub Actions abuse,
+231.86s - 234.06s |  especially around post-exploitation.
+234.06s - 235.32s |  And as we were doing our research,
+235.32s - 236.92s |  we were trying to brainstorm ways
+237.76s - 238.60s |  to blow this up and bring it
+238.60s - 241.20s |  from internal red team engagements to everybody,
+241.20s - 242.52s |  and Anand had an idea
+242.52s - 244.64s |  that really took it to the next level.
+244.64s - 246.12s |  So one of the little asterisks
+246.12s - 247.84s |  at the end of the ShmooCon presentation
+247.84s - 250.72s |  was that if you fixed a typo on a public repository
+250.72s - 253.16s |  that was using a non-ephemeral self-hosted runner,
+253.16s - 254.48s |  you could just make a pull request
+254.48s - 257.12s |  and modify the workflow file and get persistence.
+257.12s - 258.92s |  I demonstrated that vulnerability
+258.92s - 261.82s |  against GitHub Actions runner images repository,
+261.82s - 264.36s |  which was accepted as a critical vulnerability.
+265.36s - 268.40s |  After Anand hacked GitHub Actions runner images,
+268.40s - 271.08s |  we started looking at all public repositories
+271.08s - 273.28s |  and realized that these misconfigurations were everywhere.
+273.28s - 274.80s |  So we decided to team up.
+274.80s - 276.00s |  Our first joint operation
+276.00s - 277.88s |  was breaching Microsoft's perimeter
+277.88s - 280.24s |  by getting code execution on a domain-joined machine
+280.24s - 282.04s |  through Microsoft DeepSpeed,
+282.04s - 285.52s |  and then we launched a series of attacks,
+285.52s - 288.44s |  the next one of which we will cover today.
+288.44s - 290.16s |  All right, so at a high level,
+290.16s - 291.60s |  there's three steps to discovering
+291.60s - 293.56s |  this vulnerability at scale.
+293.56s - 296.36s |  The first step is to search for candidate repositories
+296.36s - 298.32s |  that might be using a self-hosted runner.
+298.32s - 301.56s |  To do this, we used a combination of GitHub CodeSearch
+301.56s - 304.28s |  and Sourcegraph CodeSearch dorks.
+304.28s - 305.56s |  Both have pros and cons,
+305.56s - 309.00s |  so we used both and deduplicated the results
+309.00s - 311.10s |  to get a nice list of candidate repositories
+311.10s - 313.12s |  for further analysis.
+313.12s - 316.24s |  To do this, use the tool that's open source right now
+316.24s - 317.50s |  called GatoX.
+317.50s - 320.32s |  It uses automated workflow run log analysis
+320.32s - 321.88s |  to determine if there's a non-ephemeral
+321.88s - 323.48s |  self-hosted runner in use.
+324.28s - 326.58s |  Once you have the results, you can plan your next step,
+326.58s - 328.76s |  which is essentially, can you hack it,
+328.76s - 330.82s |  and can you hack it for some good impact?
+332.24s - 335.36s |  Self-hosted runner takeover is a special case
+335.36s - 337.70s |  of public Poison Pipeline execution,
+337.70s - 340.24s |  so Poison Pipeline execution at a high level
+340.24s - 342.52s |  is any time you can get your own code
+342.52s - 345.04s |  executed by a GitHub Actions workflow,
+345.04s - 347.24s |  you can conduct a Poison Pipeline attack.
+347.24s - 348.68s |  In the case of self-hosted runner,
+348.68s - 350.24s |  we'll use this to deploy persistence
+350.24s - 352.56s |  on the self-hosted runner via a pull request,
+352.56s - 354.96s |  and that opens up a ton of lateral movement
+354.96s - 356.28s |  and privilege escalation paths.
+356.28s - 358.80s |  So the first two aspects of this diagram
+358.80s - 360.12s |  are pretty straightforward.
+360.12s - 363.28s |  This last section, the GitHub Actions post-exploitation,
+363.28s - 365.24s |  is where we focus most of our research.
+366.16s - 368.80s |  All right, so it's a tale as old as Unix time itself.
+368.80s - 372.24s |  Misconfigurations are amplified by insecure defaults.
+372.24s - 375.44s |  So the default setting for a pull request approval
+375.44s - 377.36s |  on the pull request trigger is that
+377.36s - 380.56s |  it only requires approval for first time contributors.
+380.56s - 382.28s |  So if someone has a pull request,
+383.00s - 385.04s |  no matter how trivial, merged into the default branch,
+385.04s - 387.92s |  they won't need approval for workload executions
+387.92s - 389.76s |  on their pull requests.
+389.76s - 394.84s |  This is that bad insecure default.
+394.84s - 397.56s |  Today, we're gonna walk through playing with fire,
+397.56s - 399.92s |  which is what we've called our supply chain attack
+399.92s - 401.64s |  on the PyTorch repository,
+401.64s - 404.64s |  which began by compromising self-hosted runners.
+404.64s - 406.36s |  This was one of our more complex
+406.36s - 408.72s |  and more intricate attacks,
+408.72s - 410.32s |  so we're gonna use it as a case study
+410.32s - 412.76s |  to teach technical TTPs of GitHub Actions
+412.76s - 415.08s |  exploitation and post-exploitation as we go.
+416.00s - 417.88s |  All right, so what is PyTorch?
+417.88s - 419.32s |  I'm sure a lot of you already know what it is,
+419.32s - 420.76s |  but it's a machine learning framer
+420.76s - 423.12s |  originally developed by Meta that's been open-sourced,
+423.12s - 424.88s |  and it's used by companies around the world
+424.88s - 427.64s |  like Google, Lockheed Martin, OpenAI, and more.
+427.64s - 429.44s |  If someone were to backdoor PyTorch,
+429.44s - 431.32s |  this could allow compromising developers
+431.32s - 433.08s |  and organizations in that very much
+433.08s - 435.06s |  red-hot AIML space right now.
+436.56s - 439.68s |  In all seriousness, probably the hardest part
+439.68s - 442.40s |  of compromising PyTorch was searching
+442.92s - 443.74s |  through their workflows.
+443.74s - 446.16s |  They had something like over 90 workflows,
+446.16s - 447.64s |  over 15 GitHub secrets,
+447.64s - 449.52s |  and more than five self-hosted runners
+449.52s - 451.12s |  on their public repository,
+451.12s - 453.56s |  and I vividly remember sitting at my desk.
+453.56s - 455.72s |  I had like three different notebooks out,
+455.72s - 457.76s |  and I was manually, pen and paper,
+457.76s - 460.56s |  mapping out the data flow through all these workflows,
+460.56s - 463.44s |  a lot of which were nested in preparing for this attack
+463.44s - 465.52s |  so that we could try to figure out the potential impact
+465.52s - 466.88s |  before we actually started.
+468.08s - 469.88s |  When we confirm that a repository
+469.88s - 471.74s |  has a self-hosted runner,
+471.74s - 473.02s |  we look at the workflow logs
+473.02s - 474.50s |  like Adnan talked about earlier.
+474.50s - 477.06s |  So here's an example of the PyTorch repository,
+477.06s - 478.42s |  and in this screenshot,
+478.42s - 479.66s |  you can see in the workflow log,
+479.66s - 481.02s |  it has the runner name,
+481.02s - 481.88s |  the runner group name,
+481.88s - 482.72s |  and the machine name.
+482.72s - 484.78s |  So we see that this is a Jenkins runner.
+484.78s - 485.82s |  It's a self-hosted runner
+485.82s - 489.20s |  attached to their public repository in the default group,
+489.20s - 490.46s |  and this is one of the runners
+490.46s - 491.96s |  that we ended up compromising.
+492.94s - 495.46s |  All right, remember that default approval requirement?
+495.46s - 498.02s |  Well, for certain repositories that are very busy,
+498.02s - 499.62s |  you can often determine that
+499.62s - 501.10s |  just using contextual analysis,
+501.10s - 501.94s |  and let me tell you,
+501.94s - 503.54s |  PyTorch was very busy.
+503.54s - 505.54s |  So what you look for is a pull request
+505.54s - 507.02s |  submitted by a previous contributor
+507.02s - 508.70s |  that's from a fork pull request.
+508.70s - 510.50s |  You check that the workflow run
+510.50s - 512.30s |  associated with it was not approved,
+512.30s - 515.88s |  and that it ran on the pull request trigger.
+515.88s - 517.10s |  When all these things come together,
+517.10s - 519.50s |  it's very likely that the default approval requirements
+519.50s - 520.34s |  are in place.
+521.66s - 524.62s |  GitHub warns against attaching self-hosted runners
+524.62s - 526.70s |  to public repositories for obvious reasons,
+526.70s - 528.98s |  but they don't make their documentation
+528.98s - 529.82s |  and their warnings obvious,
+529.82s - 530.98s |  and you kind of have to go out of your way.
+531.66s - 533.58s |  Part of the reason we think that so many repos
+533.58s - 535.14s |  publicly use self-hosted runners
+535.14s - 537.82s |  is because they don't end up seeing this documentation.
+537.82s - 538.78s |  In this next slide,
+538.78s - 540.34s |  we'll just walk through what it looks like
+540.34s - 542.06s |  to register a self-hosted runner
+542.06s - 545.46s |  and see what documentation you come across as a developer.
+546.42s - 548.06s |  So in my GitHub repository,
+548.06s - 549.48s |  I'm going to actions panel.
+549.48s - 551.14s |  I'm trying to register a self-hosted runner,
+551.14s - 553.34s |  but first I'm gonna look through their documentation
+553.34s - 554.58s |  because I'm a good developer,
+554.58s - 556.08s |  and I click on these links.
+556.08s - 557.58s |  I don't see anything security related,
+557.58s - 558.78s |  so I click on this other link,
+558.78s - 560.90s |  and we get to a lot of GitHub
+561.70s - 562.86s |  self-hosted runner documentation.
+562.86s - 566.46s |  We learn about auto-scaling, usage limits.
+566.46s - 568.22s |  I think it lists architecture stuff,
+568.22s - 570.70s |  and then every API that the runner's going to use
+570.70s - 571.98s |  in its lifetime,
+571.98s - 574.62s |  and then way down here at the bottom,
+574.62s - 576.42s |  it talks about self-hosted runner security,
+576.42s - 579.20s |  and so GitHub does clearly say
+579.20s - 581.46s |  they don't recommend using self-hosted GitHub runners
+581.46s - 582.86s |  on public repositories,
+582.86s - 584.90s |  and they have other articles out there too
+584.90s - 586.98s |  elaborating on this,
+586.98s - 589.74s |  but the point we want to drive is
+589.74s - 590.86s |  it's not obvious.
+590.86s - 591.70s |  So chances are,
+591.70s - 593.30s |  if you're just registering a self-hosted runner
+593.30s - 594.50s |  to a public repo,
+594.50s - 597.58s |  you're not going to come across this documentation.
+597.58s - 598.74s |  All right, the first step
+598.74s - 600.90s |  was to infiltrate the contributor list.
+600.90s - 602.78s |  This is what's important to take advantage
+602.78s - 604.54s |  of those default approval settings.
+605.46s - 606.98s |  To infiltrate the contributor list,
+606.98s - 608.24s |  if you've been following our blogs at all,
+608.24s - 609.82s |  we always call the grammar police.
+609.82s - 612.36s |  So the grammar police is me and Adnan.
+612.36s - 613.32s |  We show up,
+613.32s - 615.18s |  and we run all of their markdown files
+615.18s - 616.34s |  through Grammarly.
+616.34s - 618.22s |  Again, fixing a typo here
+618.22s - 619.70s |  and finding a grammatical error
+619.70s - 620.70s |  doesn't matter at all.
+620.70s - 622.72s |  To become a contributor,
+622.72s - 624.30s |  we also could make a legitimate,
+624.30s - 625.82s |  substantial code contribution
+625.82s - 627.62s |  to the PyTorch repository,
+627.62s - 630.00s |  but that's a lot of work.
+630.00s - 632.10s |  So what we do instead is we notice
+632.10s - 634.26s |  resolve was in the past tense,
+634.26s - 635.66s |  and it should have been in the present tense.
+635.66s - 637.46s |  So we fixed that for them,
+637.46s - 639.58s |  and we submitted a pull request,
+639.58s - 640.46s |  and a few days later,
+640.46s - 642.42s |  it got merged by the maintainers,
+642.42s - 644.52s |  and then we were now officially contributors,
+644.52s - 646.26s |  which is not a security boundary, right?
+646.26s - 647.80s |  And this is the same process we did
+647.80s - 649.40s |  with all of our exploits.
+649.40s - 651.32s |  All right, so this is where the hacking starts.
+651.32s - 653.16s |  So the step, phase two,
+653.16s - 654.92s |  was to install command and control
+654.92s - 657.08s |  on those non-ephemeral self-hosted runners
+657.08s - 658.40s |  attached to PyTorch.
+658.40s - 659.92s |  To do this, we leverage something
+659.92s - 662.04s |  we like to call runner-on-runner.
+662.04s - 663.10s |  In a nutshell, what that is,
+663.10s - 665.40s |  is we install another self-hosted runner
+665.40s - 667.00s |  on their self-hosted runner.
+667.00s - 669.52s |  This has the benefit of sending all traffic
+669.52s - 672.00s |  to the same domains and IP addresses
+672.00s - 674.04s |  that the original self-hosted runner uses.
+674.04s - 676.58s |  So if there is any EDR or monitoring software
+676.58s - 677.82s |  on that runner, it's very likely
+677.82s - 679.72s |  that we'll fly right under the radar.
+679.72s - 681.12s |  Oh yeah, so remember that default?
+681.12s - 683.70s |  This is where those defaults lead to an actual compromise.
+683.70s - 687.02s |  To do this, we just modified the workflow in our fork
+687.02s - 689.40s |  and had it just install our C2.
+690.54s - 693.70s |  The second runner is attached to our private C2 repository,
+693.70s - 695.80s |  so we can task it to execute commands.
+695.80s - 697.86s |  It's essentially a web shell.
+697.86s - 699.10s |  Using this web shell,
+699.10s - 701.54s |  we're able to look around the file system
+701.54s - 703.16s |  and learn about the host,
+703.16s - 705.98s |  and all of this is in preparation for phase three.
+707.10s - 709.18s |  Phase three is the most important phase
+709.18s - 711.42s |  of all of our CICD compromise.
+711.42s - 714.26s |  So the great secret heist,
+714.26s - 716.06s |  self-hosted runner post-exploitation,
+716.06s - 718.66s |  is how you go from trivial RCE
+718.66s - 720.02s |  to complete supply chain attack.
+720.02s - 721.42s |  And when we started our research,
+721.42s - 723.38s |  we submitted some reports and we saw some reports
+723.38s - 725.54s |  where researchers would get code execution
+725.54s - 727.66s |  on self-hosted runners, and then they'd say,
+727.66s - 729.46s |  hey, and by the way, you can probably do
+729.46s - 732.02s |  all these theoretical post-exploitation stuff.
+732.02s - 734.86s |  And orgs just didn't care at all.
+734.86s - 737.06s |  They should care if you're executing code on the runners,
+737.06s - 739.86s |  but it's kind of what they're supposed to do anyway,
+739.86s - 741.98s |  and so they didn't realize the actual impact
+741.98s - 744.58s |  of these attacks unless you go and demonstrate it.
+744.58s - 747.22s |  So that is what we did.
+747.22s - 749.34s |  All right, so to understand how we were able
+749.34s - 750.58s |  to achieve some of this impact,
+750.58s - 752.02s |  I want to make sure everyone understands
+752.02s - 753.46s |  the magical GitHub token.
+753.46s - 755.50s |  So this is a token that is used
+755.50s - 757.38s |  by all GitHub Actions workflows
+757.38s - 760.74s |  to authenticate to GitHub for API or Git operations,
+760.74s - 763.82s |  and it's an OAuth bearer token that has multiple scopes.
+763.82s - 765.42s |  Some of these scopes can be read or write,
+765.42s - 767.82s |  and they're configured at the repository,
+767.82s - 769.54s |  organization level, or specified
+769.54s - 772.10s |  within each specific workflow file.
+772.10s - 775.26s |  So it's very important to know that these tokens
+775.26s - 777.74s |  are only valid for the duration of each job
+777.74s - 778.66s |  within a workflow.
+778.66s - 781.62s |  As soon as that job concludes, the token is no longer valid.
+781.62s - 784.78s |  So to conduct some of the post-exploitation attacks here,
+784.78s - 788.18s |  we need to work around this limitation.
+788.18s - 790.98s |  So let's see how PyTorch, at the time,
+790.98s - 794.54s |  used or privileged the GitHub token.
+794.54s - 797.62s |  Okay, so this GitHub token has all the right permissions.
+797.62s - 801.58s |  This means we have a lot of options to play with
+801.58s - 803.26s |  for some of our post-exploitation,
+803.26s - 805.74s |  and also, this runner right here is the same one
+805.74s - 807.06s |  that we now have C2 on.
+808.90s - 811.66s |  So when a workflow uses the Actions checkout step
+811.66s - 814.18s |  or some other steps, the GitHub token is stored
+814.18s - 816.48s |  on the self-hosted runner's file system,
+816.48s - 817.82s |  which we have compromised.
+817.82s - 819.74s |  So the problem is that GitHub tokens
+819.78s - 822.74s |  from fork PRs only have read permissions.
+822.74s - 825.34s |  So if we tried to take the GitHub token
+825.34s - 828.58s |  from the fork PR we used to actually implant the runners,
+828.58s - 829.90s |  it's pretty much useless to us.
+829.90s - 832.18s |  So the solution is we persist on the runner,
+832.18s - 835.38s |  and then we capture a token from a future workflow.
+835.38s - 836.90s |  This is the setup we typically see.
+836.90s - 838.78s |  We have the workflow from our fork PR,
+838.78s - 840.26s |  no access to secrets,
+840.26s - 843.58s |  and a GitHub token with only read permissions.
+843.58s - 847.18s |  Then we have a workflow from the base repository.
+847.18s - 849.90s |  This workflow does have access to secrets,
+849.90s - 851.62s |  and the GitHub token has write permissions.
+851.62s - 855.46s |  Notice how they both execute on the same self-hosted runner.
+855.46s - 857.42s |  So this is the reason that persistent,
+857.42s - 859.66s |  non-ephemeral self-hosted runners are so bad, right?
+859.66s - 862.54s |  If the runner's ephemeral and we implant it,
+862.54s - 865.34s |  doesn't give us much access beyond secrets
+865.34s - 867.02s |  on the file system or something like that.
+867.02s - 868.98s |  If it's persistent and long-lived,
+868.98s - 871.06s |  then it will execute future workflows.
+871.06s - 873.14s |  So we implant the runner,
+873.14s - 874.94s |  then we wait for future workflows
+874.94s - 877.02s |  from the base repo to execute on the runner.
+877.86s - 879.18s |  This is why we need to install persistence
+879.18s - 881.38s |  rather than just showing code execution.
+881.38s - 883.14s |  And then we compromise the GitHub token
+883.14s - 886.46s |  and any GitHub secrets used by subsequent workflows.
+886.46s - 889.14s |  So in the PyTorch attack, you can see here,
+889.14s - 891.42s |  this was our C2 repository.
+891.42s - 894.14s |  So we were executing code on their self-hosted runners,
+894.14s - 895.70s |  and we waited for a future workflow
+895.70s - 897.82s |  to execute from the base repo.
+897.82s - 900.70s |  And then we just print out the git config file at runtime.
+900.70s - 903.90s |  So this base64 encoded token is that GitHub token
+903.90s - 904.94s |  that we were just talking about.
+904.94s - 906.74s |  So we compromise that GitHub token.
+907.42s - 908.26s |  And again, we could only use it
+908.26s - 910.22s |  for the duration of the build,
+910.22s - 912.82s |  but some of these jobs lasted a long time,
+912.82s - 914.62s |  so we were able to use it for a while.
+914.62s - 916.06s |  All right, one of the first things we did
+916.06s - 917.22s |  after obtaining the GitHub token,
+917.22s - 919.06s |  which had actions write access,
+919.06s - 921.78s |  is we used it to delete the workflow run logs.
+921.78s - 923.34s |  Because if we got caught,
+923.34s - 925.58s |  then we likely wouldn't be able to show impact
+925.58s - 926.94s |  in order for Meta's triage team
+926.94s - 929.18s |  to understand the severity of the submission.
+930.54s - 931.86s |  One of the most direct ways
+931.86s - 933.50s |  to demonstrate impact with a GitHub token
+933.50s - 935.50s |  is by modifying GitHub releases.
+935.54s - 937.54s |  So GitHub releases is just one way
+937.54s - 940.22s |  for a user to download a release
+940.22s - 942.26s |  of an application from a repository.
+942.26s - 944.42s |  What typically will happen is
+944.42s - 945.82s |  you can upload GitHub releases,
+945.82s - 948.70s |  so PyTorch uploads releases to their GitHub releases page.
+948.70s - 950.22s |  And then if you wanna download PyTorch,
+950.22s - 951.66s |  one of the ways you can do that
+951.66s - 954.74s |  is by going to GitHub releases and downloading it there.
+954.74s - 956.66s |  Depending on the permissions of the GitHub token,
+956.66s - 960.82s |  it can allow you to modify releases and release assets.
+960.82s - 963.96s |  So you could potentially backdoor a release asset,
+963.96s - 965.92s |  upload it, and then everyone who downloads
+965.92s - 968.76s |  and uses that asset will be running your malicious code.
+970.00s - 973.24s |  We did not want to upload any backdoored assets.
+973.24s - 975.32s |  We're trying to identify supply chain attacks,
+975.32s - 976.52s |  not actually execute them.
+976.52s - 978.84s |  So instead of tampering with assets,
+978.84s - 980.52s |  we just tampered with the release name.
+980.52s - 983.72s |  So we sent this curl request using the GitHub API,
+983.72s - 985.32s |  and it uses the compromised GitHub token
+985.32s - 988.72s |  just to add my name to the end of the release.
+988.72s - 990.52s |  So after we sent that request,
+990.52s - 993.32s |  you can see the latest PyTorch release at the time
+993.32s - 995.20s |  was now signed by yours truly.
+995.20s - 997.52s |  And all we did here was just take a screenshot
+997.52s - 998.72s |  and then revert it right away.
+998.72s - 1001.24s |  Obviously we didn't want this being seen by a lot of people,
+1001.24s - 1002.84s |  but this was our POC to show
+1002.84s - 1006.32s |  that we could tamper with GitHub releases if we wanted to.
+1006.32s - 1007.44s |  A problem that we've encountered
+1007.44s - 1008.56s |  with GitHub release tampering
+1008.56s - 1010.70s |  is organizations have came back to us
+1010.70s - 1011.88s |  and legitimately said,
+1011.88s - 1015.02s |  well, no one really uses our GitHub releases.
+1015.02s - 1018.10s |  And obviously that shouldn't be the case,
+1018.10s - 1020.28s |  but to demonstrate further impact,
+1020.28s - 1022.56s |  we wanted to look at GitHub secrets.
+1022.56s - 1025.84s |  GitHub secrets are the crown jewels of any repo
+1025.84s - 1027.12s |  that uses GitHub actions.
+1027.12s - 1029.56s |  A lot of the times they're overprivileged,
+1029.56s - 1032.04s |  and they can provide lateral movement opportunities
+1032.04s - 1033.76s |  beyond the GitHub repository.
+1033.76s - 1037.88s |  So we were back to being Charlie from It's Always Sunny,
+1037.88s - 1039.08s |  and we were searching through
+1039.08s - 1041.24s |  all of those PyTorch workflows again,
+1041.24s - 1043.00s |  trying to see where GitHub secrets were used
+1043.00s - 1044.48s |  and see if we could compromise them.
+1044.48s - 1046.24s |  Here, you can see that they're using
+1046.24s - 1047.60s |  some personal access tokens,
+1047.60s - 1048.80s |  which are always super interesting.
+1048.80s - 1050.38s |  They're using AWS keys,
+1050.38s - 1051.96s |  and there were a bunch of other secrets
+1052.48s - 1053.76s |  used by the PyTorch repository.
+1053.76s - 1055.64s |  And before we go any further,
+1055.64s - 1057.60s |  I want to quickly recap how we got here.
+1057.60s - 1060.78s |  So remembering back to the grammar police,
+1060.78s - 1062.50s |  we came, we fixed the typo,
+1062.50s - 1064.02s |  that typo got merged,
+1064.02s - 1066.40s |  that made us a contributor to the repository,
+1066.40s - 1067.80s |  which was using the default setting
+1067.80s - 1069.96s |  so we could execute arbitrary workflows.
+1069.96s - 1072.20s |  We used that access to execute a workflow
+1072.20s - 1074.84s |  that implanted three of their self-hosted runners.
+1074.84s - 1076.60s |  Then we stole this GitHub token
+1076.60s - 1080.24s |  from a future workflow executing on that runner,
+1080.24s - 1082.24s |  and now we're going to try to use this GitHub token
+1082.24s - 1084.60s |  to exfiltrate GitHub secrets.
+1084.60s - 1086.96s |  All right, one problem that we had to work around
+1086.96s - 1089.58s |  is that the workflows that had the GitHub secrets
+1089.58s - 1090.92s |  that we wanted to take
+1090.92s - 1092.92s |  didn't actually run on the self-hosted runners
+1092.92s - 1094.12s |  that we were now sitting on.
+1094.12s - 1097.04s |  So the solution here was to use the GitHub token
+1097.04s - 1099.40s |  to conduct pipeline privilege escalation
+1099.40s - 1102.76s |  and get arbitrary code execution within those workflows
+1102.76s - 1105.24s |  so we could get those very nice secrets.
+1106.36s - 1108.60s |  Another problem is GitHub tokens
+1108.60s - 1110.20s |  aren't allowed to modify files
+1110.20s - 1112.80s |  in the .github-workflows directory.
+1112.80s - 1115.20s |  That seems like a kind of random restriction by GitHub,
+1115.20s - 1117.48s |  but it's actually implemented a few years ago
+1117.48s - 1119.68s |  to prevent these exact attacks.
+1119.68s - 1121.10s |  So they want to stop attackers
+1121.10s - 1123.08s |  from doing what we're trying to do right now,
+1123.08s - 1124.92s |  and so you can't just make a new branch,
+1124.92s - 1126.72s |  modify a workflow to exfiltrate secrets,
+1126.72s - 1128.70s |  and then you're done.
+1128.70s - 1130.96s |  The solution here is you need to find a workflow
+1130.96s - 1133.38s |  that uses the GitHub secrets you're interested in
+1133.38s - 1135.34s |  that executes code from outside
+1135.34s - 1137.48s |  of this .github-workflows directory.
+1137.48s - 1139.80s |  So this was our path here.
+1139.80s - 1142.48s |  If you look back at PyTorch's weekly.yaml workflow
+1142.48s - 1146.72s |  at the time, you can see it does two interesting things.
+1146.72s - 1148.48s |  One of them is that it calls this
+1148.48s - 1151.32s |  underscore update commit hash .yaml workflow.
+1151.32s - 1154.76s |  The other is that it uses these update bot tokens
+1154.76s - 1157.08s |  and PyTorch bot tokens, which based on context,
+1157.08s - 1159.80s |  we were pretty sure were GitHub personal access tokens.
+1159.80s - 1162.56s |  So let's look at update commit hash .yaml.
+1163.76s - 1166.88s |  This workflow is still in the restricted workflows directory
+1166.88s - 1170.44s |  so we can't modify this workflow with the GitHub token,
+1170.44s - 1174.24s |  but it calls update commit hashes .py,
+1174.24s - 1176.64s |  which is in the .github-scripts directory,
+1176.64s - 1179.40s |  so it's not in the restricted workflow directory.
+1179.40s - 1180.92s |  All right, so all we need to do now
+1180.92s - 1184.08s |  is use the GitHub token to make a new feature branch
+1184.08s - 1187.84s |  and modify that script, and we know that the workflow
+1187.84s - 1189.68s |  that calls it runs on a certain event
+1189.68s - 1191.24s |  so we can take advantage of it.
+1192.72s - 1194.76s |  The modification that we introduced was quite simple.
+1194.76s - 1197.04s |  We saved off the tokens that it received
+1197.04s - 1198.80s |  via environment variables to files,
+1198.80s - 1201.48s |  and then we used our public key to encrypt them
+1201.48s - 1203.36s |  and print them to the build logs.
+1203.36s - 1205.24s |  This would prevent any other attackers
+1205.24s - 1208.52s |  from getting those secrets while we were conducting our POC.
+1209.72s - 1210.80s |  Okay, so what did we actually do?
+1210.80s - 1213.76s |  We used the GitHub token to create a new branch.
+1213.76s - 1215.48s |  Then on the new branch, we added our payload
+1215.48s - 1218.12s |  to update commit hashes .py script.
+1218.12s - 1220.24s |  Then we used the GitHub token to trigger our payload
+1220.24s - 1222.12s |  via a workflow dispatch event.
+1222.12s - 1224.96s |  This is because the token had actions write privileges,
+1224.96s - 1226.96s |  and then we could retrieve the encrypted secrets
+1226.96s - 1229.16s |  from the build logs, cancel the workflow,
+1229.16s - 1231.76s |  delete the workflow logs, and actually decrypt the secrets.
+1231.76s - 1234.96s |  So at the time when we were doing this operation,
+1234.96s - 1237.44s |  I was absolutely terrified that I was gonna forget
+1237.44s - 1240.24s |  to take a screenshot, so instead of taking screenshots,
+1240.24s - 1241.68s |  I just screen-recorded the whole thing,
+1241.68s - 1243.52s |  so I have like an eight-hour screen recording
+1243.52s - 1245.40s |  of all this stuff from PyTorch,
+1245.40s - 1248.20s |  and I condensed some of it into a video on the next slide
+1248.20s - 1251.32s |  just showing the GitHub personal access token exfiltration,
+1251.32s - 1253.12s |  so we'll walk you all through that.
+1254.24s - 1256.56s |  Here we have our run-on-runner C2,
+1256.56s - 1259.44s |  and we're gonna navigate to our command output,
+1259.44s - 1263.32s |  and we're just gonna get the base64-encoded GitHub token.
+1263.32s - 1265.60s |  This is from a future workflow that was executing
+1265.60s - 1267.08s |  on one of the compromised runners.
+1267.08s - 1270.04s |  So we're gonna base64 decode that token,
+1270.04s - 1271.92s |  and you can see it's just an authorization header
+1271.92s - 1273.52s |  within the GitHub token.
+1273.52s - 1275.60s |  Use the token to clone the repository,
+1275.60s - 1278.64s |  and then we made a new branch in the PyTorch repository.
+1278.64s - 1281.96s |  So within our new branch, we're going to modify
+1281.96s - 1283.72s |  that Python script that we identified
+1283.72s - 1285.20s |  as an injection point.
+1285.20s - 1288.12s |  Here with my really poor Vim skills,
+1288.12s - 1289.48s |  I'm gonna paste our new payload
+1289.48s - 1291.20s |  to exfiltrate those secrets,
+1291.20s - 1293.76s |  and then once the payload is set,
+1293.76s - 1295.68s |  we're gonna actually commit this to the repository
+1295.68s - 1297.68s |  because the token has contents right.
+1297.68s - 1299.36s |  So we committed to the repo.
+1299.36s - 1301.32s |  Now we're gonna use a curl request
+1301.32s - 1304.04s |  just to trigger this workflow from our branch
+1304.04s - 1305.88s |  which has the injected code in it,
+1305.88s - 1307.16s |  and then we're looking at
+1307.16s - 1308.72s |  the actual PyTorch repository now
+1308.72s - 1310.48s |  where we just triggered a workflow,
+1310.48s - 1315.16s |  and we're gonna see two base64-encoded encrypted blobs.
+1315.16s - 1316.64s |  So we're gonna scroll down,
+1316.64s - 1317.96s |  and we're gonna get these blobs
+1317.96s - 1319.72s |  which is the output of our commands,
+1319.72s - 1323.60s |  and then we're gonna go to this other terminal
+1323.60s - 1324.92s |  and decrypt them.
+1324.92s - 1327.04s |  So first, we're just gonna base64 decode them,
+1327.04s - 1328.68s |  and then we're gonna save them to a file,
+1328.68s - 1330.76s |  and we're gonna use our private key locally
+1330.76s - 1332.52s |  to actually decrypt them and get the token.
+1332.52s - 1335.80s |  So once you see some output that starts
+1335.84s - 1337.64s |  with G-H-P underscore,
+1337.64s - 1339.24s |  those are the personal access tokens,
+1339.24s - 1342.96s |  and we're gonna take them and run them through Gato
+1342.96s - 1345.20s |  which will do a bunch of automated enumeration
+1345.20s - 1346.88s |  using the GitHub APIs,
+1346.88s - 1349.72s |  and then Gato will tell us who the owners are,
+1349.72s - 1350.80s |  what they have access to,
+1350.80s - 1352.88s |  and what the potential impact is
+1352.88s - 1356.00s |  because if they just had read access to the repository,
+1356.00s - 1357.96s |  there's not a real risk here to PyTorch.
+1357.96s - 1361.16s |  If they have other more sensitive privileges,
+1361.16s - 1362.40s |  then it could be bad.
+1362.40s - 1364.20s |  So here we're running them through Gato.
+1364.24s - 1365.40s |  You can see one of the users
+1365.40s - 1367.00s |  is the PyTorch update bot user,
+1367.00s - 1369.08s |  the other is the PyTorch bot user,
+1369.08s - 1371.24s |  and they're both PyTorch organization members.
+1371.24s - 1373.20s |  The tokens have repo scope,
+1373.20s - 1375.12s |  so we can use this now to interact
+1375.12s - 1376.88s |  with the PyTorch repository directly.
+1376.88s - 1378.52s |  These are long-lived credentials,
+1378.52s - 1380.68s |  and they had access to 93 repos
+1380.68s - 1382.40s |  within the PyTorch organization,
+1382.40s - 1383.60s |  a lot of which were private
+1383.60s - 1385.08s |  and did not have branch protection,
+1385.08s - 1387.36s |  so you could have done whatever you wanted to them,
+1387.36s - 1391.48s |  and there's a lot of paths here to supply chain compromise.
+1391.48s - 1392.96s |  All right, that was a lot, right?
+1392.96s - 1395.04s |  Okay, so what can we do?
+1395.04s - 1396.80s |  So we have those two tokens,
+1396.80s - 1398.52s |  so we can use them by themselves
+1398.52s - 1400.64s |  to simply introduce code into the main branch.
+1400.64s - 1401.96s |  One creates a pull request
+1401.96s - 1403.68s |  and have the other one approve and merge it.
+1403.68s - 1405.60s |  Boom, supply chain compromise.
+1405.60s - 1408.20s |  Another form would be to backdoor a dependency
+1408.20s - 1409.60s |  within the PyTorch organization
+1409.60s - 1412.16s |  that's used by the primary PyTorch repo,
+1412.16s - 1413.84s |  and that could be a more subtle way
+1413.84s - 1417.04s |  to obtain that same final impact.
+1417.04s - 1419.04s |  And finally, there's even more clever ways,
+1419.04s - 1422.56s |  like smuggling malicious code into an in-progress feature
+1423.00s - 1424.20s |  that a developer is working on
+1424.20s - 1425.36s |  and then have that merged in.
+1425.36s - 1427.96s |  So really, there's too many paths to count
+1427.96s - 1430.88s |  for how this could impact end users of PyTorch.
+1432.60s - 1434.92s |  If you want to see even more impact
+1434.92s - 1436.88s |  and you're not really into GitHub,
+1436.88s - 1438.24s |  this section is for you.
+1438.24s - 1440.36s |  So if you noticed a few slides ago
+1440.36s - 1441.52s |  when we were looking at their secrets,
+1441.52s - 1444.04s |  we saw that they also had AWS keys.
+1444.04s - 1446.72s |  We conducted a very similar attack
+1446.72s - 1448.12s |  to the one we just showed, right,
+1448.12s - 1449.84s |  where we do that kind of workflow hopping
+1449.84s - 1452.04s |  and injection and triggering with the GitHub token.
+1452.04s - 1454.80s |  We repeated that process to grab their AWS keys.
+1454.80s - 1456.24s |  And the reason we wanted to do this
+1456.24s - 1458.48s |  was if you don't understand GitHub,
+1458.48s - 1460.84s |  it can sometimes be hard to even see
+1460.84s - 1464.76s |  why code contributions to the main branch of a repository
+1464.76s - 1465.76s |  could be impactful.
+1465.76s - 1469.04s |  But everyone understands AWS and AWS releases.
+1469.04s - 1470.52s |  So we grabbed these keys,
+1470.52s - 1472.86s |  then we used the AWS CLI to authenticate,
+1472.86s - 1475.64s |  and we confirmed that we were the PyTorch bot user.
+1475.64s - 1477.48s |  So we didn't want to poke around too much,
+1477.48s - 1480.68s |  but we did some basic AWS S3LS commands
+1480.68s - 1483.36s |  and saw that this user had a lot of privileges.
+1483.36s - 1485.16s |  We confirmed through the workflow logs
+1485.16s - 1488.08s |  that they could actually write to these S3 buckets.
+1488.08s - 1491.08s |  And one weird thing that we weren't really expecting to see
+1491.08s - 1494.56s |  was there were PyTorch releases in these S3 buckets.
+1494.56s - 1498.16s |  So at the time, honestly, I didn't think too much of it
+1498.16s - 1500.12s |  because I was kind of freaked out with the access we had
+1500.12s - 1502.28s |  and wanted to submit the report right away.
+1502.28s - 1503.12s |  I think, like we said,
+1503.12s - 1505.72s |  this was hour eight or nine at this point,
+1505.72s - 1507.20s |  and I just wanted to get the report in.
+1507.20s - 1509.36s |  So I didn't really pay attention to these releases.
+1509.36s - 1511.56s |  And then we were rehearsing like a week ago
+1511.56s - 1513.40s |  and we were talking and I was like,
+1513.40s - 1516.12s |  why were these releases in these S3 buckets?
+1516.12s - 1517.96s |  Like what system was pulling releases from here?
+1517.96s - 1521.24s |  So I went to the PyTorch website
+1521.24s - 1525.32s |  and just going to PyTorch.org or PyTorch.com,
+1525.32s - 1526.68s |  whatever it is, you can scroll down
+1526.68s - 1528.60s |  and you can see when they instruct users
+1528.60s - 1531.00s |  to install, download and install PyTorch,
+1531.00s - 1532.76s |  if you're using PIP or whatever,
+1532.76s - 1536.96s |  you're using this download dot, what is it?
+1536.96s - 1538.92s |  Download.pytorch.org URL.
+1539.44s - 1541.36s |  So a lot of the releases were coming from this URL.
+1541.36s - 1544.84s |  So we went to this URL in a new tab
+1544.84s - 1548.20s |  and we're just looking at the request and response headers
+1548.20s - 1551.16s |  and sure enough, in the headers,
+1551.16s - 1553.60s |  they confirmed that these were actually pulling releases
+1553.60s - 1555.80s |  from these S3 buckets
+1555.80s - 1560.68s |  and the layout of the release assets on that website
+1560.68s - 1563.04s |  were identical to the layout in the S3 buckets.
+1563.04s - 1565.52s |  So basically with those AWS keys,
+1565.52s - 1567.92s |  we could have uploaded our own PyTorch releases
+1567.92s - 1572.92s |  to these S3 buckets and then anyone who downloads PyTorch
+1573.16s - 1575.24s |  by following the instructions from the website
+1575.24s - 1576.40s |  is going to be downloading
+1576.40s - 1578.48s |  and potentially executing our malicious code.
+1578.48s - 1581.56s |  So this is that kind of SolarWinds style supply chain attack
+1581.56s - 1585.64s |  for anyone that uses PyTorch in the future.
+1585.64s - 1587.64s |  Okay, that was a lot.
+1587.64s - 1588.96s |  We just did a lot.
+1588.96s - 1590.10s |  This is what it looks like
+1590.10s - 1592.30s |  put into a nice little red team diagram
+1592.30s - 1595.72s |  and if anyone got here late or fell asleep,
+1595.72s - 1596.68s |  we'll do a quick recap.
+1596.72s - 1599.20s |  So we started by opening a typo fix PR
+1599.20s - 1601.20s |  in the PyTorch repository.
+1601.20s - 1604.20s |  That PR got merged and then we were a contributor
+1604.20s - 1606.38s |  so we submitted a malicious pull request
+1606.38s - 1609.04s |  that installed our runner on runner C2
+1609.04s - 1612.08s |  on three different self-hosted GitHub runners.
+1612.08s - 1613.12s |  From one of these runners,
+1613.12s - 1615.88s |  we stole a GitHub token from a future build
+1615.88s - 1617.28s |  and we used that to do a bunch of stuff.
+1617.28s - 1619.16s |  First, we just modified that release
+1619.16s - 1622.40s |  by updating the release title with my name and reverting.
+1622.40s - 1624.40s |  Then we created a feature branch
+1624.40s - 1626.08s |  in the PyTorch repository
+1626.08s - 1628.20s |  and we triggered additional workflows
+1628.20s - 1630.26s |  using that workflow dispatch event
+1630.26s - 1631.64s |  injecting through the scripts
+1631.64s - 1635.12s |  that were outside of the restricted workflows directory.
+1635.12s - 1637.24s |  Through this process, we stole some secrets.
+1637.24s - 1639.64s |  We stole the PyTorch bot AWS keys
+1639.64s - 1642.08s |  and then we stole two GitHub personal access tokens
+1642.08s - 1644.00s |  used by PyTorch bot users.
+1644.00s - 1645.24s |  There were a bunch more secrets in there
+1645.24s - 1648.08s |  but we didn't think there was any need
+1648.08s - 1650.52s |  for additional demonstration of impact.
+1650.52s - 1651.64s |  Using the AWS keys,
+1651.64s - 1655.02s |  we could upload new PyTorch releases to this S3 bucket.
+1655.02s - 1656.66s |  Obviously, we did not do that.
+1656.66s - 1659.14s |  Then using the GitHub personal access tokens,
+1659.14s - 1661.34s |  we could have modified PyTorch dependencies.
+1661.34s - 1662.68s |  We could have used them in conjunction
+1662.68s - 1665.70s |  to commit and then approve merges to main
+1665.70s - 1668.00s |  and done a lot of other bad stuff.
+1668.00s - 1669.66s |  All of this goes to say, at the end of the day,
+1669.66s - 1672.48s |  there were a lot of supply chain compromised paths here
+1672.48s - 1677.22s |  which would have affected most people using PyTorch
+1677.22s - 1679.02s |  both currently and in the future.
+1680.42s - 1683.52s |  You would think that this amount of demonstration of impact
+1683.52s - 1685.40s |  would be enough to convince PyTorch
+1685.40s - 1689.08s |  to immediately and urgently apply fixes
+1689.08s - 1692.64s |  and well, we'll let the disclosure timeline
+1692.64s - 1693.52s |  speak for itself.
+1693.52s - 1697.40s |  So we submitted this issue in August 2023
+1697.40s - 1698.68s |  to Metabug Bounty.
+1700.04s - 1704.38s |  A month later, Meta said there is no update to provide.
+1704.38s - 1705.48s |  Two months later,
+1705.48s - 1708.16s |  Meta said they consider the issue mitigated.
+1708.16s - 1710.54s |  I was suspicious so I went back in
+1710.54s - 1713.22s |  and just executed some code,
+1713.22s - 1715.10s |  some shell commands on the runners.
+1715.10s - 1716.22s |  I didn't do the full attack
+1716.22s - 1718.58s |  but anyone could still compromise their runners,
+1718.58s - 1721.34s |  any contributor and based on the workflow logs and stuff,
+1721.34s - 1723.34s |  I don't think their configurations were still secure
+1723.34s - 1724.78s |  so we responded saying,
+1724.78s - 1727.44s |  hey, the issue is not fully mitigated, here's some proof.
+1727.44s - 1731.78s |  Then another two months went by
+1731.78s - 1733.24s |  with really no word from Meta
+1733.24s - 1736.22s |  and we sent a strongly worded email
+1736.22s - 1738.54s |  expressing concerns on the remediation
+1738.54s - 1740.06s |  that has been implemented
+1740.06s - 1741.18s |  which led to some back and forth
+1741.18s - 1743.26s |  and then December 15th,
+1743.26s - 1745.34s |  Meta applied some other fixes
+1745.34s - 1747.10s |  which seemed to be sufficient
+1747.10s - 1748.06s |  and then they offered a call
+1748.06s - 1749.78s |  to discuss the remediation in depth.
+1749.78s - 1752.14s |  And so we actually ended up meeting
+1752.14s - 1753.42s |  two of the PyTorch maintainers
+1753.42s - 1755.80s |  and they were very concerned about these issues,
+1755.80s - 1757.58s |  they were on top of it
+1757.58s - 1759.54s |  and they also expressed concern
+1759.54s - 1761.66s |  at the potential gaps in remediation.
+1761.66s - 1764.58s |  So I'm not totally sure where the disconnect was
+1764.58s - 1767.18s |  but it worried us that PyTorch
+1767.18s - 1771.49s |  was potentially vulnerable for this long.
+1771.49s - 1773.93s |  This attack took a lot of hands-on keyboard,
+1773.93s - 1776.49s |  workflow modification, command and control,
+1776.49s - 1777.33s |  all that stuff
+1777.33s - 1779.97s |  and so it kind of prompted us to say,
+1779.97s - 1783.85s |  hmm, is there an easier way to automate a lot of this?
+1783.85s - 1785.45s |  All right, well, now there is.
+1785.45s - 1787.85s |  So with a tool that I've open sourced this week
+1787.85s - 1788.89s |  called GatoX,
+1788.89s - 1791.09s |  it actually automates that self-holstered
+1791.09s - 1793.15s |  runner takeover process.
+1793.15s - 1794.81s |  So now instead of all that work
+1794.81s - 1796.49s |  that you saw John have to do,
+1796.49s - 1797.49s |  which all you have to do
+1797.49s - 1799.21s |  is you fix a typo, okay,
+1799.21s - 1800.37s |  and you become a contributor,
+1800.37s - 1801.65s |  then you run GatoX
+1801.65s - 1803.85s |  and then one of two things happens, okay?
+1803.85s - 1804.85s |  You either get a shell
+1804.85s - 1806.93s |  and you're on top of the world as hacker man
+1806.93s - 1808.83s |  or you learn that approval is required
+1808.83s - 1811.71s |  and then you're sad because you didn't get to hack anything.
+1811.71s - 1814.41s |  So let's walk through a quick video demo
+1814.41s - 1815.81s |  of how GatoX works
+1815.81s - 1818.77s |  to automate this self-holstered runner takeover process.
+1818.77s - 1821.45s |  So first I use it to enumerate a runner, okay?
+1821.45s - 1822.35s |  It's non-ephemeral.
+1822.35s - 1824.37s |  So now I'm gonna go ahead and fix a typo
+1824.37s - 1826.65s |  in this test repository here.
+1826.65s - 1828.81s |  So I go ahead and fix a typo
+1828.81s - 1830.09s |  and make that commit.
+1831.17s - 1832.45s |  So after I make the commit,
+1832.45s - 1835.41s |  I'm going to go ahead and create a pull request.
+1835.41s - 1836.97s |  So I check that I fixed the typo
+1836.97s - 1839.25s |  and I make a quick typo fix PR
+1839.25s - 1841.01s |  and now that's merged in.
+1841.01s - 1843.53s |  So after that's merged in with my attacker account,
+1843.53s - 1845.51s |  I'm gonna go ahead and delete the fork.
+1845.51s - 1847.49s |  So because GatoX will create a new fork
+1847.49s - 1850.21s |  to throw the payload at the repository.
+1850.21s - 1851.89s |  So I'm gonna quickly go ahead
+1851.89s - 1853.93s |  and do the web flow to delete the fork
+1853.93s - 1855.49s |  and I hit confirm.
+1855.49s - 1857.37s |  All right, now I'm gonna run GatoX.
+1857.37s - 1859.21s |  So here I've just configured it
+1859.21s - 1860.53s |  to deploy a runner on runner
+1860.53s - 1863.65s |  on a Linux x86 64-bit runner.
+1863.65s - 1866.11s |  So it's gonna go ahead and create the payload
+1866.11s - 1868.25s |  within a gist and ask for confirmation
+1868.25s - 1870.25s |  because the next steps are overt.
+1870.25s - 1872.57s |  So I'm gonna type confirm and hit enter.
+1872.57s - 1874.69s |  So as soon as I do that,
+1874.69s - 1876.43s |  it's gonna create a draft pull request
+1876.43s - 1878.85s |  which is going to deploy that runner on runner payload
+1878.85s - 1882.07s |  onto that self-holstered runner via fork PR.
+1882.07s - 1883.91s |  So it's gonna take a second
+1883.91s - 1885.45s |  because it's now pulling for that runner
+1885.45s - 1886.29s |  to connect to GitHub
+1886.29s - 1888.13s |  and then check back into that repository.
+1888.13s - 1889.17s |  So as soon as it does that,
+1889.17s - 1892.93s |  it will drop into a nice and very convenient shell.
+1892.93s - 1896.25s |  Okay, now I'm just gonna test this with uname-a
+1896.25s - 1897.37s |  and when I hit enter,
+1897.37s - 1899.13s |  what's happening under the hood
+1899.13s - 1901.97s |  is that GatoX is issuing a workflow dispatch event
+1901.97s - 1904.45s |  to that workflow in the C2 repository
+1904.45s - 1905.89s |  which is going to run code
+1905.89s - 1908.85s |  on that malicious self-holstered runner
+1908.85s - 1910.79s |  and you can see that output there.
+1910.79s - 1913.33s |  All right, so now you know the techniques
+1913.33s - 1915.81s |  and now since I've open sourced it, you have a tool.
+1915.83s - 1917.05s |  And another thing I wanna point out
+1917.05s - 1920.13s |  is that finding CICD misconfigurations
+1920.13s - 1923.01s |  in open source repositories can be a very thankless job
+1923.01s - 1925.29s |  because you submit a report, they fix a bug
+1925.29s - 1926.49s |  and you don't even get a CVE.
+1926.49s - 1928.25s |  So there's not really a lot of motivation for people.
+1928.25s - 1931.69s |  So what I've done with GatoX is that on its wiki,
+1931.69s - 1933.01s |  I've created a little hall of fame.
+1933.01s - 1935.73s |  So if you use GatoX to find a pwn request,
+1935.73s - 1937.85s |  injection or self-holstered runner vulnerability
+1937.85s - 1940.71s |  in open source project and the maintainers fix it,
+1940.71s - 1941.55s |  then just make an issue
+1941.55s - 1944.17s |  and I'll add your name to the wiki to get some credit.
+1944.17s - 1945.69s |  Just make sure it's actually fixed
+1946.53s - 1947.37s |  because we don't want the hall of fame
+1947.37s - 1948.19s |  to be the hall of O days
+1948.19s - 1951.64s |  as much as some people might like that.
+1951.64s - 1954.20s |  Okay, so we showed all of the technical TTPs
+1954.20s - 1956.48s |  we use during our PyTorch attack,
+1956.48s - 1957.92s |  but there are a bunch of other stuff
+1957.92s - 1959.68s |  we've used on other targets.
+1959.68s - 1962.44s |  And so we wanna take these next few minutes
+1962.44s - 1964.84s |  to honor the diehard CICD nerds
+1964.84s - 1967.28s |  who are here to learn all of the TTPs possible.
+1967.28s - 1969.48s |  So we're gonna run through this pretty quickly,
+1969.48s - 1971.08s |  but all the slides will be up there online
+1971.08s - 1972.72s |  so you can check it out after.
+1972.72s - 1974.32s |  All right, so one thing you can do
+1974.32s - 1975.68s |  after getting persistence on a runner
+1975.68s - 1977.92s |  is a solo run style build compromise.
+1977.92s - 1980.52s |  So you get the persistence
+1980.52s - 1983.66s |  and then you just have to modify scripts
+1983.66s - 1986.22s |  for the build or source code after it's checked out.
+1986.22s - 1987.28s |  And once you do that,
+1987.28s - 1990.16s |  the final build artifacts from that run
+1990.16s - 1991.30s |  are going to be poisoned,
+1991.30s - 1993.08s |  but it's not gonna be linked back
+1993.08s - 1994.04s |  to the original source code.
+1994.04s - 1995.36s |  So it's a very stealthy way
+1995.36s - 1997.76s |  to conduct a supply chain attack.
+1997.76s - 2000.18s |  And here's another way that you could take
+2000.18s - 2002.48s |  GitHub release asset tampering a little further.
+2002.48s - 2004.72s |  So if you have that context write token,
+2004.72s - 2007.68s |  then all you have to do to tamper with releases on assets
+2007.68s - 2010.12s |  is use the API to delete the old asset
+2010.12s - 2011.92s |  and then upload a new one with a post request
+2011.92s - 2013.16s |  right on top of it.
+2013.16s - 2015.76s |  And the indicator of compromise here
+2015.76s - 2017.68s |  is just going to be the timestamp
+2017.68s - 2020.80s |  when a user is looking at it through the web interface.
+2020.80s - 2022.34s |  So it's not very obvious.
+2022.34s - 2025.24s |  And if you wanna see a tale of a bug bounty gone wrong
+2025.24s - 2027.36s |  and a program acting in some pretty bad faith,
+2027.36s - 2030.36s |  go check out my blog post on my report to the ASTAR network,
+2030.36s - 2040.17s |  which is a tiny polka dot parachain.
+2040.17s - 2042.93s |  All right, another technique you can add to your arsenal
+2042.93s - 2045.17s |  is something called a post checkout hook.
+2045.17s - 2049.01s |  So what happens when a subsequent workflow
+2049.01s - 2051.25s |  that you need to get secrets from or token from
+2051.25s - 2053.81s |  runs only very infrequently?
+2053.81s - 2056.69s |  Well, you need something that can have these qualities.
+2056.69s - 2059.11s |  It needs, you need to be able to extend the build time.
+2059.11s - 2061.51s |  You also don't wanna break how the workflow works
+2061.51s - 2063.79s |  to inform someone that something's going wrong.
+2063.79s - 2065.13s |  And you also wanna get notified
+2065.13s - 2067.65s |  because you don't wanna be pressing F5 for two weeks.
+2067.69s - 2071.37s |  Well, a quick solution here is to place a script like this
+2071.37s - 2073.93s |  into the git hooks directory of the repository
+2073.93s - 2075.73s |  in the original self-hosted runner.
+2075.73s - 2079.29s |  This example here will just take that git config file
+2079.29s - 2081.89s |  and code it and then send it off to your XFIL URL
+2081.89s - 2083.25s |  and then sleep for 15 minutes.
+2083.25s - 2084.93s |  So this is gonna give you 15 minutes
+2084.93s - 2086.57s |  to take advantage of that GitHub token
+2086.57s - 2089.57s |  to perform post exploitation actions.
+2089.57s - 2092.61s |  All right, before we dive into other TTPs,
+2092.61s - 2095.17s |  it's important to remember how self-hosted runner takeover
+2095.17s - 2096.61s |  falls in within the landscape
+2096.61s - 2099.23s |  of broader GitHub actions attack techniques.
+2099.23s - 2101.97s |  So there's another type of attack called bone requests
+2101.97s - 2105.41s |  where you basically get execution
+2105.41s - 2107.01s |  within a privileged workflow.
+2107.01s - 2108.93s |  That's the same thing that happens with runner takeover.
+2108.93s - 2111.05s |  From there, there's different
+2111.05s - 2112.61s |  post exploitation techniques you can use.
+2112.61s - 2114.25s |  So you can steal secrets,
+2114.25s - 2116.25s |  you could get the actions runtime token,
+2116.25s - 2118.81s |  which has some interesting attacks with cache poisoning,
+2118.81s - 2120.57s |  as well as OIDC abuse,
+2120.57s - 2123.65s |  which I think the talk right after us in this track
+2123.65s - 2125.09s |  actually goes into a lot more detail there.
+2125.93s - 2126.77s |  So kinda cool.
+2126.77s - 2129.09s |  And then there's just too many different attacks
+2129.09s - 2129.93s |  to talk about.
+2129.93s - 2132.35s |  There's so many ways to achieve great impact.
+2133.25s - 2134.73s |  We talked about some of the permissions
+2134.73s - 2135.77s |  of the GitHub token today,
+2135.77s - 2138.09s |  but there's a lot of other dangerous permissions out there.
+2138.09s - 2139.81s |  So some of them don't pose a risk,
+2139.81s - 2141.93s |  but others like contents right and actions right
+2141.93s - 2143.93s |  obviously pose a significant risk.
+2143.93s - 2146.13s |  So other permissions we have identified
+2146.13s - 2148.37s |  as dangerous and actually abused during our attacks
+2148.37s - 2151.45s |  are pages right, pull requests right, and packages right.
+2151.45s - 2152.89s |  And there's a lot of good documentation online
+2152.89s - 2156.17s |  if you wanna learn more about what these actually do.
+2156.17s - 2158.13s |  If you have just actions right and contents right,
+2158.13s - 2159.81s |  you can create feature branches,
+2159.81s - 2161.69s |  modify files, execute in workflows,
+2161.69s - 2164.33s |  and then issue dispatches events to steal secrets.
+2164.33s - 2165.25s |  If that looks familiar,
+2165.25s - 2168.33s |  it's because that's exactly what we did during PyTorch.
+2168.33s - 2170.65s |  All right, what if you have a workflow
+2170.65s - 2171.49s |  that looks like this?
+2171.49s - 2172.79s |  It runs on workflow dispatch,
+2172.79s - 2174.33s |  but then uses some of that input
+2174.33s - 2176.01s |  in a GitHub script or run step.
+2176.01s - 2179.73s |  Well, this lets you do good old 90s style code injection.
+2179.73s - 2181.45s |  And I'm gonna walk you through how this process works.
+2181.45s - 2183.77s |  And you only need a GitHub token actions right
+2183.77s - 2185.53s |  to make this hop.
+2185.53s - 2189.33s |  So here you can see that the input from the dispatch event
+2189.33s - 2190.61s |  has org and repository.
+2190.61s - 2192.13s |  And within that script step,
+2192.13s - 2195.13s |  repository is used by GitHub context expression.
+2195.13s - 2197.65s |  So that's going to be our injection point there.
+2197.65s - 2198.77s |  See that arrow.
+2198.77s - 2201.01s |  So here's an example payload thrown
+2201.01s - 2203.65s |  with a simple request script in Python.
+2203.65s - 2206.41s |  The first thing here is to close out the script
+2206.41s - 2208.49s |  because we don't want a syntax error or have it to crash
+2208.49s - 2210.17s |  because we still need the code to finish
+2210.17s - 2213.29s |  in order for us to get our payload execution.
+2213.29s - 2215.97s |  The next thing, and this is where the actual payload is,
+2215.97s - 2219.33s |  is a JavaScript injection payload
+2219.33s - 2224.33s |  that essentially will pull code from a C2 URL
+2224.45s - 2225.73s |  and pipe it to bash.
+2225.73s - 2228.01s |  So then you can just have arbitrary code there
+2228.01s - 2230.07s |  and get execution in that workflow,
+2230.07s - 2231.45s |  get the token, get the secrets.
+2231.45s - 2237.89s |  And then from there, do more post exploitation.
+2237.89s - 2239.63s |  If you only have contents right,
+2239.63s - 2241.63s |  there's still a lot of bad stuff you can do.
+2241.63s - 2244.39s |  You can modify non-protected branches a lot of times,
+2244.39s - 2246.87s |  which actually could end up in releases.
+2246.87s - 2248.39s |  You can modify releases directly
+2248.39s - 2250.33s |  like we did when we signed my name.
+2250.33s - 2251.47s |  You can modify tags,
+2251.47s - 2253.95s |  which a lot of times reusable actions are referenced by tags
+2253.95s - 2256.75s |  so that could open up some fun possibilities.
+2256.75s - 2259.11s |  And then you can also issue repository dispatch events
+2259.11s - 2260.45s |  to execute workflows.
+2261.71s - 2263.35s |  All right, here's a really unique way
+2263.35s - 2266.07s |  to take advantage of contents right.
+2266.07s - 2269.43s |  All right, so one way is if you want to get execution
+2269.43s - 2271.91s |  on a workflow that only runs on the push trigger,
+2271.91s - 2274.75s |  you can add code to that,
+2274.75s - 2277.35s |  a feature branch that modifies a script
+2277.35s - 2279.15s |  that's called by that workflow.
+2279.15s - 2281.21s |  And the next time the developer will push changes,
+2281.21s - 2283.47s |  now you have arbitrary code execution
+2283.47s - 2284.99s |  within the context of that workflow.
+2284.99s - 2287.47s |  And then you can jump further from there.
+2287.47s - 2289.81s |  Another way is instead of targeting the workflows,
+2289.81s - 2291.11s |  why not target the developer?
+2291.11s - 2293.23s |  So you could modify a unit test
+2293.23s - 2296.95s |  within a feature branch that a developer is working on
+2296.95s - 2298.91s |  and add an info stealer payload.
+2299.59s - 2301.15s |  Then when the workflow runs,
+2301.15s - 2302.43s |  the dev accounts compromised
+2302.43s - 2304.21s |  and often in organizations,
+2304.21s - 2306.51s |  dev compromise can be game over.
+2306.51s - 2309.35s |  Another way is if you have these two permissions
+2309.35s - 2310.19s |  for the token,
+2310.19s - 2311.99s |  you can get code modification
+2311.99s - 2313.99s |  in the protected default branch.
+2313.99s - 2315.61s |  So there's some preconditions here.
+2315.61s - 2317.45s |  The repository has to have the setting
+2317.45s - 2320.63s |  to allow get of actions to approve and merge pull requests.
+2320.63s - 2323.51s |  There can be at most one reviewer required
+2323.51s - 2326.33s |  for that pull request approval rule.
+2326.33s - 2329.85s |  And there cannot be any code owner protection rule sets
+2329.85s - 2331.73s |  enabled and enforced.
+2331.73s - 2333.25s |  When all of these are together,
+2333.25s - 2335.17s |  you can have attack like this.
+2335.17s - 2337.61s |  Attacker gets the GitHub token.
+2337.61s - 2339.77s |  They use their account to create a fork pull request
+2339.77s - 2341.13s |  with malicious changes.
+2341.13s - 2343.17s |  And then they approve that pull request
+2343.17s - 2346.45s |  with that capture token and merge that pull request.
+2346.45s - 2350.99s |  That leads to a good old supply chain compromise.
+2350.99s - 2352.47s |  Now, if you're on a runner,
+2352.47s - 2355.19s |  it's possible to steal the GitHub actions runtime token
+2355.19s - 2356.43s |  from a future workflow.
+2356.43s - 2358.51s |  This is where you'll have some attack bats
+2358.51s - 2360.27s |  for GitHub actions cache poisoning.
+2360.27s - 2362.43s |  And I have a blog post on my website
+2362.43s - 2364.43s |  that goes into the details of that.
+2364.43s - 2367.77s |  And if there's a organization level runner group
+2367.77s - 2371.39s |  that shares that also private repositories are using,
+2371.39s - 2373.71s |  then there's bats to jump to private repositories
+2373.71s - 2374.81s |  and other runner groups.
+2374.81s - 2377.65s |  And it just kind of blows those attack bats wide open.
+2378.87s - 2381.83s |  Okay, that's the end of some of the more advanced TTPs.
+2381.83s - 2384.31s |  If you're the type of person who likes big mind maps
+2384.31s - 2385.99s |  to tell you exactly what to do,
+2386.51s - 2388.71s |  I made one and I put it on my GitHub a few days ago.
+2388.71s - 2389.91s |  So you can go check that out.
+2389.91s - 2391.71s |  Obviously this is not comprehensive,
+2391.71s - 2394.63s |  but if you're trying to get into GitHub actions exploitation
+2394.63s - 2396.99s |  and you have read or write access to a repo,
+2396.99s - 2399.71s |  but don't really know what to look for or what to do next,
+2399.71s - 2400.55s |  check this out.
+2400.55s - 2403.19s |  It should be able to give you some good guidance.
+2403.19s - 2405.21s |  In our opinion, GitHub can do a few things better.
+2405.21s - 2406.77s |  They can increase warnings and awareness.
+2406.77s - 2410.15s |  So if you try to attach a selfless runner to a public repo,
+2410.15s - 2412.15s |  it'd be great if there were big red letters saying,
+2412.15s - 2413.43s |  be careful, this is dangerous.
+2413.43s - 2415.47s |  They can also improve their secure defaults.
+2415.47s - 2417.99s |  Like we talked about with the workflow approval requirements
+2417.99s - 2421.03s |  and then they could implement granular approval requirements
+2421.03s - 2423.63s |  so that maintainers don't need to select
+2423.63s - 2426.99s |  between three options, all of which have broad privileges
+2426.99s - 2429.39s |  and probably will hurt developer workflows
+2429.39s - 2430.43s |  one way or the other.
+2431.51s - 2432.99s |  If you're trying to defend your organization
+2432.99s - 2435.55s |  from these attacks, start with the easy stuff.
+2435.55s - 2438.55s |  Please change this radio button so that you require approval
+2438.55s - 2440.75s |  for all outside collaborators.
+2440.75s - 2442.61s |  We use the GitHub token extensively
+2442.61s - 2444.05s |  in almost all of our attacks.
+2444.05s - 2445.85s |  Set it to read only.
+2445.85s - 2448.45s |  That will stop a lot of post-exploitation opportunities.
+2448.45s - 2450.89s |  And then force your devs to use
+2450.89s - 2452.37s |  fine-grain personal access tokens.
+2452.37s - 2455.55s |  We hate discovering fine-grain tokens
+2455.55s - 2458.49s |  on red team engagements because they only give you access
+2458.49s - 2459.45s |  to one repository.
+2459.45s - 2462.01s |  If we find a personal access token, that's classic.
+2462.01s - 2463.09s |  We can do a lot of stuff.
+2463.09s - 2466.01s |  If it's fine-grain, sometimes that's the end of the road.
+2466.95s - 2470.07s |  All right, there's also ways to secure yourself more
+2470.07s - 2472.79s |  by making sure that your self-hosted runners are ephemeral.
+2472.79s - 2474.39s |  So GitHub maintains something
+2474.39s - 2475.65s |  called Actions Runner Controller,
+2475.65s - 2478.51s |  which allows you to automatically spin up and spin down
+2478.51s - 2480.63s |  self-hosted runners using Kubernetes.
+2480.63s - 2483.23s |  Also, a lot of cloud providers have auto-scaling groups
+2483.23s - 2485.43s |  that can be linked with self-hosted runners
+2485.43s - 2487.99s |  and have that also be done automatically.
+2487.99s - 2490.11s |  And finally, there's a lot of third parties
+2490.11s - 2493.53s |  that offer turnkey drop-in replacements
+2493.53s - 2496.23s |  for GitHub runners that are also ephemeral
+2496.23s - 2499.11s |  if you don't want to use just the GitHub-hosted runners.
+2499.11s - 2501.95s |  And one thing that's important to remember here
+2501.95s - 2504.63s |  is that ephemeral means the environment
+2504.63s - 2506.65s |  that the runner is in also has to be ephemeral.
+2506.65s - 2508.39s |  So if there's an ephemeral runner,
+2508.39s - 2511.23s |  but it's using a non-ephemeral file share,
+2511.23s - 2514.35s |  then attacker can simply jump to other workflows
+2514.35s - 2516.43s |  by saving certain files off.
+2516.43s - 2519.07s |  So it's important to really consider the entirety
+2519.07s - 2522.91s |  of that environment when it comes to build agent security.
+2524.07s - 2526.83s |  All right, so another way is by using GitHub's feature
+2526.83s - 2528.41s |  for runner group pinning.
+2528.45s - 2531.53s |  So GitHub has a feature where if you have a runner group,
+2531.53s - 2534.09s |  you can actually pin it to a specific workflow
+2534.09s - 2537.01s |  or even a specific SHA or reference of a workflow.
+2537.01s - 2539.93s |  So with this, you have a lot of different options
+2539.93s - 2542.41s |  to restrict which workflows can even use the runner.
+2542.41s - 2544.37s |  And all of this has the ultimate effect
+2544.37s - 2546.69s |  of protecting your most privileged runners.
+2547.63s - 2550.29s |  We want to end our talk today by emphasizing
+2550.29s - 2553.37s |  that this talk and this research is not about PyTorch.
+2553.37s - 2555.55s |  So we have some key takeaways here.
+2555.55s - 2558.17s |  If you've been zoning out, lock in for this last slide.
+2558.81s - 2561.13s |  What we did to PyTorch, we've been able to do
+2561.13s - 2563.93s |  to a lot of advanced, mature organizations
+2563.93s - 2565.37s |  because of this lack of awareness
+2565.37s - 2566.81s |  around CICD agent security.
+2566.81s - 2569.69s |  So I think we submitted over 20 high and critical
+2569.69s - 2570.97s |  bug bounty submissions.
+2570.97s - 2572.45s |  Among them were critical vulnerabilities
+2572.45s - 2575.89s |  in GitHub Actions, Microsoft, PyTorch, TensorFlow,
+2575.89s - 2579.59s |  ASTAR, HydroGX, ByteDance, and a lot more
+2579.59s - 2582.13s |  that we're not allowed to talk about.
+2582.13s - 2585.21s |  Additionally, if you think that public CICD security is bad,
+2585.21s - 2588.33s |  internal CICD security is a nightmare.
+2588.33s - 2592.27s |  Almost not every red team engagement I've been on,
+2592.27s - 2594.25s |  but a lot of red team engagements were able
+2594.25s - 2596.37s |  to get access to a CICD platform
+2596.37s - 2598.93s |  and then escalate privileges and use it to reach objective.
+2598.93s - 2601.05s |  It's almost become the new ADCS for us
+2601.05s - 2603.11s |  where internally everyone's vulnerable
+2603.11s - 2605.47s |  and compromising these CICD platforms
+2605.47s - 2607.65s |  can give you extensive privileges.
+2608.57s - 2609.77s |  Finally, what we need everyone to do
+2609.77s - 2611.27s |  is go learn about these attacks
+2611.27s - 2612.81s |  to protect your org from compromise.
+2612.81s - 2615.09s |  The main issue we see is just this lack of awareness.
+2615.61s - 2617.63s |  If devs, architects, execs, and everyone
+2617.63s - 2619.09s |  is learning about these attacks,
+2619.09s - 2620.59s |  they'll be able to implement controls
+2620.59s - 2622.57s |  that hopefully protect their organization
+2622.57s - 2625.41s |  from the next critical supply chain attack.
+2625.41s - 2627.09s |  All right, the moral of the story here
+2627.09s - 2629.69s |  is learn about this stuff and don't let this be you.
+2633.06s - 2634.48s |  All right, so we want to start off
+2634.48s - 2636.94s |  by thanking all of the bug bounty triage teams
+2636.94s - 2638.52s |  that handled some of the reports
+2638.52s - 2640.94s |  and handled them well and applied solid mitigations
+2640.94s - 2642.26s |  to their products.
+2642.26s - 2643.90s |  We'd like to thank everyone who showed out today.
+2643.90s - 2645.14s |  Thank you so much for watching us
+2645.14s - 2646.34s |  and helping us raise awareness
+2647.06s - 2648.26s |  and for everyone watching online.
+2648.26s - 2649.34s |  Thank you.
+2649.34s - 2651.38s |  We'd like to thank DEF CON for giving us this platform.
+2651.38s - 2652.94s |  We wanted to speak here for a long time,
+2652.94s - 2654.66s |  so this has been really fun.
+2654.66s - 2655.96s |  Please, we don't have time for questions,
+2655.96s - 2658.50s |  but come find us after if you want to talk more.
+2658.50s - 2659.50s |  Thank you, everybody.
+2659.50s - 2660.34s |  All right.

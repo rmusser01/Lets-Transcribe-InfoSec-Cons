@@ -1,0 +1,46 @@
+## Introduction
+- Presented by Andy Robbins and Jonas Bülow Knudsen
+- Talk covers ADCS attack path identification, analysis, and execution using BloodHound
+- Also covers visualizing and auditing the ADCS LDAP hierarchy, and practical remediation strategies
+
+## ADCS Attack Path Identification, Analysis, and Execution
+### Escalation 1
+- Allows a principle in Active Directory to impersonate any other principle
+- Alice can ask the Enterprise CA to issue a certificate valid for authentication, with the user principal name (UPN) of another user (e.g., Bob, a domain admin) in the Subject Alternative Name (SAN) field
+- The CA will check security descriptors to determine if Alice has the necessary permissions
+- If allowed, the CA will issue the certificate to Alice, which she can then use to get a TGT as Bob, effectively impersonating him
+- This privilege escalation primitive is common but can be labor-intensive and error-prone to identify manually
+- BloodHound can be used to find paths to this escalation privilege
+
+### Escalation 3
+- Abuse of enrollment agent permissions
+- Alice can request an enrollment agent certificate, which allows her to enroll on behalf of other principals
+- She can then request a certificate as Bob and impersonate him
+- BloodHound can identify and abuse this attack path as well
+
+### Escalation 5
+- LDAP object manipulation
+- Exploits the interconnection between ADCS and Active Directory, and the default LDAP hierarchy
+- Extremely complex with many variations, making it hard to find and identify
+- Can enable escalation from domain admin to enterprise admin due to behavior with the configuration naming context and replication in the forest
+- Can emerge from a combination of existing privileges and missing configurations
+- BloodHound can help identify and visualize the relationships between objects involved in Escalation 5
+
+### Escalation 13
+- Abuse of OID group links
+- Alice has enrollment rights on a custom certificate template with an issuance policy field set to an Enterprise Admin's policy
+- When she authenticates using this certificate, she gets a Kerberos ticket with membership in the Enterprise Admins group, despite not being a member
+- BloodHound can identify this escalation path and provide details on the relevant objects and permissions
+
+## Visualizing and Auditing the ADCS LDAP Hierarchy
+- BloodHound provides visualizations and queries to simplify the auditing process and help create better reports
+- Pre-built queries can identify principles with ADCS escalation privileges, enrollment rights on published ESC1 certificate templates, CA administrators and managers, etc.
+- The PKI hierarchy view can be used to audit permissions on relevant objects and identify potential issues
+- The API documentation provides information on automating these queries and processes
+
+## Practical Remediation Strategies
+- Focus on identifying and fixing issues before they can be exploited
+- GT queries can be used to find non-tier 0 principles with ADCS escalation edges and generic all permissions on ADCS objects
+- Escalation 1 can be mitigated by limiting enrollment rights on certificate templates to tier 0 principles or removing EQs that allow for domain authentication
+- Enrollment agent restrictions can be used to grant specific permissions to help desk or IT support staff while preventing escalation to tier 0 accounts
+- Care should be taken when following vendor guides to avoid unintended consequences and security risks

@@ -1,0 +1,509 @@
+{
+  "webpage_url": "https://www.youtube.com/watch?v=I1RqhGGRmHY",
+  "title": "DEF CON 32 - Your AI Assistant has a Big Mouth:  A New Side Channel Attack - Yisroel Mirsky",
+  "description": "AI assistants like ChatGPT are changing how we interact with technology. But what if someone could read your confidential chats? Imagine awkwardly asking your AI about a strange rash, or to edit an email, only to have that conversation exposed to someone on the net. In this talk we'll unveil a novel side-channel vulnerability in popular AI assistants and demonstrate how it can be used to read encrypted messages sent from AI Assistants.\n\nBefore our disclosure, major players like OpenAI, Microsoft, Cloudflare, Quora, and Notion were at risk. We'll reveal the technical details of this exploit and show real-world examples of intercepted conversations. This talk isn't just about the problem \u2013 learn how to identify this vulnerability in other AI assistants as well! We'll dissect network traffic, discuss attack models, and explore the far-reaching consequences of this discovery.",
+  "channel_url": "https://www.youtube.com/channel/UC6Om9kAkl32dWlDSNlDS9Iw",
+  "duration": 2398,
+  "channel": "DEFCONConference",
+  "uploader": "DEFCONConference",
+  "upload_date": "20241016"
+}
+
+0.37s - 6.13s | This text was transcribed using whisper model: large-v2
+
+ Hello DEF CON! Thank you so much for being here. It's like the second-to-last
+6.13s - 10.93s |  talk. There's a great turnout. I'm very honored to be here. My name is Yusriel
+10.93s - 16.05s |  Emerski. I'm a Zuckerman Faculty Scholar at Ben-Gurion University and head of the
+16.05s - 21.09s |  Offensive AI Research Lab there. And with me here today are my brilliant graduate
+21.09s - 24.57s |  students who will be coming up on stage also to present. They did all the hard
+24.57s - 30.13s |  work. There's Daniel Eisenstein and Roy Weiss in collaboration with Guy Amit
+30.13s - 36.53s |  who couldn't make it. Okay, so today we're going to talk about a new side-channel
+36.53s - 41.61s |  attack against AI assistants that enables adversaries to read encrypted
+41.61s - 50.65s |  response traffic, such as responses from chat GPT. Okay, so I'm not going to go
+50.65s - 53.69s |  into, you know, what are AI assistants. You guys all know this very well. You have
+53.69s - 59.05s |  OpenAI's chat GPT, you have Google's Gemini, you have Microsoft Copilot, and
+59.05s - 63.89s |  the list goes on and on. And these AI assistants are integrated throughout
+63.89s - 68.25s |  industry in all different kinds of use cases. What's more interesting to me is
+68.25s - 73.65s |  the use cases of the personal level, right? A lot of users are using these AI
+73.65s - 79.09s |  assistants, such as chat GPT, to get personal advice. So, for example, you may
+79.09s - 83.45s |  ask it some medical questions, like, why do I have a rash on my back, right? And
+83.45s - 86.93s |  chat GPT will get back to you and say, oh, I'm sorry to hear you have a
+86.93s - 91.33s |  rash on your back. Let me give some tips how to take care of that. Or maybe
+91.33s - 96.29s |  you may ask chat GPT for some relationship advice. What are the signs
+96.29s - 102.21s |  I'm having, my wife is having an affair, right? And get some good tips on there. Or
+102.21s - 105.29s |  maybe you're getting into hacking and you're gonna ask chat GPT how to get
+105.29s - 110.29s |  into your neighbor's Wi-Fi, right? Lots of good use cases. Or my favorite, a lot of
+110.29s - 115.25s |  people are using chat GPT to edit their documents. They'll take whole documents
+115.25s - 120.17s |  or emails, dump it into chat GPT and say, hey, make it better. Or, you know, finish
+120.17s - 124.13s |  this paragraph, or what have you. And these are all very good and legitimate
+124.13s - 128.17s |  use cases. We're actually very productive for our society to help us, you know,
+128.17s - 133.65s |  progress and automate things. But the problem is that what happens if these
+133.65s - 138.41s |  chats aren't actually private? What happens if somebody could read these
+138.45s - 144.17s |  chats beyond, for example, OpenAI? Right, so this would be a huge breach in
+144.17s - 152.09s |  privacy. So, in truth, we know they're encrypted, right? So, you know, OpenAI is
+152.09s - 157.05s |  encrypting all the traffic going between the client and the servers. But is that
+157.05s - 162.49s |  enough? You know, maybe a little foreshadowing. So, let me go back to the
+162.49s - 167.17s |  beginning of this story here. So, several months ago, you know, late at night, I was
+167.17s - 172.17s |  using chat GPT for very important stuff, such as trying to figure out, you know,
+172.17s - 177.01s |  what would the world be like if the entire, every country had ninjas, but
+177.01s - 183.45s |  Japan had the worst ninjas, right? So, as I'm looking at the text glide across the
+183.45s - 188.01s |  screen and looking at this very insightful and thoughtful response, it
+188.01s - 194.25s |  kind of hits me. Wait a second. Could it possibly be that OpenAI is sending
+194.29s - 200.25s |  every single word as a separate packet? And could it be that every single packet
+200.25s - 208.01s |  has no padding, so I can count the number of characters in each of these words? Hmm.
+208.01s - 213.45s |  So, I open up Wireshark, and sure enough, what do I see? For every single word
+213.45s - 218.53s |  that's being sent from the AI assistant, I see another packet, and the size of
+218.53s - 223.41s |  that packet increases. And if I take the Delta between these packets, I know
+223.53s - 228.25s |  exactly how many characters in every single word. And I could use this, for
+228.25s - 234.73s |  example, to try and guess what those words are and potentially learn or
+234.73s - 241.05s |  identify what is being said in those responses. Now, before I go on to explain
+241.05s - 244.21s |  how we figured out what those words are, I need to take a little bit of a
+244.21s - 248.89s |  technical aside and clarify something. That what chat GPT and all these
+248.89s - 253.05s |  different AI services are sending are not exactly words, but rather something
+253.05s - 259.97s |  called tokens. What tokens are, are basically the basic building block of AI
+259.97s - 265.29s |  language models. When you give text to a language model, it's going to first parse
+265.29s - 269.69s |  it down into these tokens, and then each token goes to the model, and the model
+269.69s - 275.69s |  generates text using these tokens as well. So, in general, these tokens more or less
+275.69s - 279.97s |  correlate directly to words, but there are some cases where these tokens won't.
+280.13s - 284.53s |  So, for example, here, Lama's tokenizer will split the word cream into two
+284.53s - 290.61s |  separate tokens. But what's important to note is that although there's not a
+290.61s - 295.41s |  direct correlation from token to word, these tokenizers are public information.
+295.41s - 299.89s |  It doesn't matter if it's open AIs, if it's metas, you can go through the entire
+299.89s - 304.25s |  list, you can get the tokenizer, you can learn the exact mappings. So, for all
+304.25s - 307.65s |  intensive purposes, these are words, and we're trying to guess what these words
+307.65s - 317.47s |  are. So, what's the threat model? So, the victim types some private chat into his
+317.47s - 323.95s |  web browser, hits enter, and that encrypted text goes across the wire. Now,
+323.95s - 326.27s |  we're not gonna be able to figure out what that prompt was, because that's just
+326.27s - 331.27s |  one big block of encrypted text. But what happens after that is the AI assistant
+331.27s - 336.59s |  starts responding token by token by token back, and we can count exactly how
+336.59s - 339.71s |  many characters are in each of these tokens. And once again, if we can guess
+339.71s - 346.15s |  what those words are, then boom, we know exactly what the response was. So, why do
+346.15s - 349.99s |  we care? I mean, I can't figure out what the prompt was, I can't figure out what
+349.99s - 356.79s |  the exact question was, but it turns out that a lot of information is
+356.79s - 361.55s |  leaked by the response itself. So, imagine I read one of the responses off the
+361.55s - 366.39s |  network that somebody was receiving, and it said, I'm sorry to hear that you have
+366.39s - 371.23s |  a rash, right? I think it's pretty clear we know exactly what that user was
+371.23s - 377.75s |  asking for. So, basically this boils down to a big Wheel of Fortune game, right,
+377.75s - 382.63s |  where I have to start guessing what those words are. And this can be a
+382.63s - 385.75s |  particularly challenging problem, because, you know, there's many different ways you
+385.75s - 390.11s |  can solve this puzzle. But it gets even more challenging when you think about
+390.11s - 394.19s |  real responses from these AI assistants, right? They're not just one sentence, they
+394.19s - 398.39s |  typically hold paragraphs with hundreds of words. So, how do we solve this
+398.39s - 404.31s |  problem? So, we turn to the age-old solution, which is AI, and we look towards
+404.31s - 409.15s |  a task which is very popular, which is language translation, right? But here,
+409.15s - 414.59s |  instead of going from a language such as French to English, we're gonna go from
+414.59s - 420.83s |  token length sequences to plain text English. And what we'll do is we'll train
+420.83s - 427.07s |  an AI with lots and lots of examples of these token lengths to real English, and
+427.07s - 432.67s |  we'll be able to translate them very effectively. In our case, we used a
+432.67s - 437.99s |  state-of-the-art model called a Large Language Model, or LLM, and this is the
+437.99s - 443.23s |  exact same technology that's being used in AI assistants such as ChatGPT. I'm
+443.23s - 446.63s |  not gonna go too much into detail how it works, leave that for other YouTube
+446.63s - 450.91s |  videos. Alright, so what's the entire attack end-to-end? How does it look like?
+450.91s - 454.03s |  So, the attacker is looking through the network, looking for responses from a
+454.03s - 458.59s |  particular AI service such as ChatGPT, sees the traffic going across the
+458.59s - 463.19s |  network, and records down the token length sequence from those packets. It
+463.19s - 467.75s |  then passes that token length sequence to his trained model, which has seen lots
+467.75s - 471.87s |  and lots of examples, and it predicts what it thinks the original plain text
+471.87s - 478.91s |  was. So, there's something else we can do to make this even better. So, if we just,
+478.91s - 484.11s |  you know, give our model random arbitrary text, it's gonna do so-so. It's not gonna
+484.11s - 486.75s |  do so great, because as I said, you know, there's lots of ways we can solve that
+486.75s - 492.39s |  puzzle. But as it turns out, AI assistants have a very specific style of speaking,
+492.39s - 495.63s |  right? They're not just gonna respond with some arbitrary sentence, they
+495.63s - 499.23s |  typically start with something like, oh sure, yeah, I can give you a recipe for
+499.23s - 503.99s |  tomato soup, right? So, there's a certain style that's intrinsically in those
+503.99s - 508.75s |  responses. So, what I can do is, if I'm, let's say I'm trying to target Microsoft
+508.75s - 514.59s |  Copilot, I can send lots and lots of prompts to Microsoft Copilot and build a
+514.59s - 520.11s |  huge data set of responses. And those responses capture the style of that
+520.11s - 525.11s |  particular AI service. And once I have that, I can fine-tune my model on that,
+525.11s - 530.07s |  I'll get much, much better results. And as it turns out, I can get something
+530.07s - 535.15s |  around 55% attack success rate. So, more than half of the responses that we
+535.15s - 540.87s |  receive, if we see in the encrypted traffic, we can decipher. Okay, so let's
+540.87s - 545.63s |  look at some examples. So, on the screen here is the first sentences that we're
+545.63s - 550.23s |  trying to decipher. The first line is the original text that is being sent from
+550.27s - 555.39s |  the AI assistant. And the second line is our prediction. So, sometimes you can see
+555.39s - 559.27s |  in the first example there, we get it right on the first go. And sometimes we
+559.27s - 565.15s |  make some mistakes. So, for example, in the bottom there, the original response
+565.15s - 570.03s |  was, yes, there are several important legal considerations that couples should
+570.03s - 575.91s |  be aware of when considering a divorce. And then, if we look at the inferred
+575.99s - 581.91s |  response, we got, yes, there are several potential legal considerations that
+581.91s - 585.59s |  someone should be aware of when considering a divorce. So, even though we
+585.59s - 590.19s |  had some mistakes in the words, we're still, it's very, very clear what was the
+590.19s - 598.35s |  topic that the user was trying to ask the AI assistant. And then, if we move
+598.35s - 603.11s |  over to entire paragraphs, we get something around a 35% attack success
+603.11s - 608.07s |  rate, which is also very significant, considering how hard it is to try and
+608.07s - 613.27s |  guess what all these words are. And since we're using AI models, this isn't a
+613.27s - 616.99s |  perfect science. You know, we're using a lot of heuristics here. So, we sometimes
+616.99s - 621.79s |  get it wrong. So, here's some fails. So, in the ground truth, it was something
+621.79s - 624.59s |  like, I would like to suggest some following strategies for team leaders to
+624.59s - 628.79s |  balance the needs of individual team members with the needs of the team as a
+628.79s - 634.03s |  whole. And we inferred it as, I would suggest the following strategies, so far
+634.03s - 639.07s |  so good, but then for film studios to balance the needs of production, so on
+639.07s - 642.39s |  and so forth. Something that's completely unrelated. And sometimes it gets even
+642.39s - 646.27s |  worse, right? So, here's a case where the response has something to do with apple
+646.27s - 650.39s |  cider, and we thought it had to do with coral bleaching. Okay, so it's not a
+650.39s - 653.99s |  perfect science, but what's interesting to note is that because we're using
+653.99s - 657.99s |  machine learning model, the model also gives us a confidence score. How
+657.99s - 663.59s |  confident it is that this prediction is correct, right? So, what we can do is we can
+663.59s - 666.99s |  look, and we're trying to attack a particular, you know, token-linked
+666.99s - 670.11s |  sequence that we see in the network. We can try to look at the confidence of the
+670.11s - 676.89s |  model and say whether or not we should trust this inference or not. Alright, so
+676.89s - 683.61s |  how common is this vulnerability? So, you know, around the time of our disclosure,
+683.61s - 688.89s |  or prior to our disclosure around February 2024, nearly every major AI
+688.89s - 693.33s |  vendor out there had this vulnerability. And, you know, when you start wondering
+693.33s - 697.37s |  why is that the case? How do they overlook the seemingly obvious side
+697.37s - 702.45s |  channel? And there's a few reasons that might come to mind. First, you know, they
+702.45s - 705.65s |  might, perhaps they didn't think that token links the same as word links, so
+705.65s - 709.65s |  maybe there was just a simple blunder. Or maybe they thought there's no way that
+709.65s - 713.93s |  an adversary can guess entire paragraphs of text. That's just too hard of a
+713.93s - 717.85s |  problem. But what I think is more likely the case is that it has something to do
+717.85s - 722.65s |  with the big AI gold rush, right? There's so many industries that are jumping on
+722.65s - 726.97s |  the AI chatbot idea and throwing it into services willy-nilly, and they don't
+726.97s - 729.93s |  really think about security by design. They're saying, you know, the text is
+729.93s - 735.33s |  encrypted, not a big deal, let's move on, right? So this is probably more likely
+735.33s - 741.13s |  what happened there until they, of course, patched it after the fact. So why are
+741.13s - 745.73s |  they even sending, you know, text to streaming, or token streaming across the
+745.73s - 750.97s |  network? Why don't they just send as one big batch, right? So for example, Google's
+750.97s - 755.81s |  Gemini does this already. When you get a response from Google Gemini, it's not
+755.81s - 759.57s |  sending a token, token, token, it sends as one big block, and therefore they're not
+759.57s - 762.57s |  vulnerable to the side channel attack. So why aren't the other vendors doing this?
+762.57s - 767.37s |  So there's a simple answer for that, and the answer is that, you know, these AI
+767.37s - 771.93s |  models are actually incredibly complex, and it takes a lot of effort to execute
+771.97s - 775.97s |  them. So instead of having the user wait there for, you know, a good, you know, 30
+775.97s - 780.21s |  seconds for this loading screen to go by to get their response, it makes perfect
+780.21s - 785.13s |  sense to send those words or tokens one at a time in real time, so they can read
+785.13s - 791.61s |  it as it's being generated. All right, so to recap so far, what we've accomplished
+791.61s - 796.09s |  here is that we've discovered a novel side channel attack, which we call the
+796.09s - 801.29s |  token length side channel, and we found it's common in LLM services all over. And
+801.29s - 807.77s |  we've also found a way to exploit that side channel to read the hidden
+807.77s - 813.05s |  information behind it directly using AI, and improve that performance using a
+813.05s - 819.58s |  known plaintext attack. Okay, so for the rest of this talk, we're going to get
+819.58s - 823.10s |  down into the nitty-gritty details, and first we're going to talk about how we
+823.10s - 829.02s |  identified response traffic inside network traffic, and how we then extract
+829.02s - 832.94s |  the token length sequences from there, and after that we'll talk a little bit
+832.94s - 838.54s |  about how we train AI models, and our specific RAI model, and finally we'll end
+838.54s - 841.90s |  off with some demos, defenses, and we'll talk about some bug bounties that we got
+841.90s - 846.02s |  along the way. So with that I'm going to hand it off to Daniel, who's going to
+846.02s - 857.62s |  take it from here. Thanks Israel. So let's jump to the nitty-gritty details. So we
+857.62s - 861.18s |  will talk about how to find the sign channel, and how to extract the token
+861.18s - 869.77s |  length sequence. So the first thing we'll have to do is to capture the traffic
+869.81s - 874.17s |  containing the response from the assistant. So we'll need to be positioned
+874.17s - 879.69s |  between the victim and the assistant. Or we can be in the same local network as
+879.69s - 885.73s |  the victim, for example sitting in the same cafe using WiFi. So we collected a lot
+885.73s - 890.61s |  of traffic, and not all of it containing our response data from the AI assistant.
+890.61s - 894.81s |  So we'll need to filter the traffic. We can do that by filtering by the IP
+894.81s - 900.35s |  address of the assistant. Uh that information can be collected by OSINT, or by
+900.35s - 905.09s |  connecting as a legitimate client to the assistant server for through different times
+905.09s - 911.13s |  a day, from different locations, and making our own data set of those IP addresses, and
+911.13s - 918.01s |  basically filtering by those. Also what we can do is filter by the protocol. So every uh
+918.01s - 923.31s |  vendor is using different protocol. For example ChetGPT is using quick protocol, so we
+923.31s - 929.45s |  would like to search for UDP packets that are coming from port 443. And again, every
+929.45s - 934.39s |  vendor is using different protocol, so we'll need to account for that. And also there is a
+934.39s - 939.09s |  slight problem because it will add us more complexity when we will try to extract the token
+939.09s - 944.43s |  length uh sequence, because again, every protocol looks differently on the wire, and it
+944.43s - 952.45s |  has its own metadata. So we captured the traffic, we filtered out most of the traffic
+952.45s - 957.25s |  that don't contain our tokens, we have the traffic that contains the response from the
+957.25s - 964.72s |  assistant, let's extract the token length sequence. So our objective is to find the token
+964.72s - 970.16s |  lengths. We need to remember that the traffic is encrypted, so we can't really see where are
+970.16s - 976.16s |  the tokens, and what packets contain them. But what we can see is the bandwidth patterns,
+976.16s - 994.34s |  basically the packet sizes. I'm sorry. So we found that there is two main ways that the
+994.34s - 999.78s |  vendors are using to send their tokens. The first way is base plus next token. Basically
+999.78s - 1005.88s |  each token is sent in a separate packet by itself, so we can infer the size of the token by
+1005.88s - 1011.72s |  just analyzing the size of the packet. The second way is token accumulation. Basically the
+1011.72s - 1017.16s |  tokens accumulate. We are sending each time the token with all of the tokens that were
+1017.16s - 1022.84s |  previously sent, so the packets are increasing in size. In the next slides we'll talk more
+1022.84s - 1028.74s |  about token accumulation, because this is the way uh that Microsoft and OpenAI are using, so
+1028.74s - 1033.74s |  basically our tar- main target was JGPT, so we'll talk about this more. So to simplify the
+1036.02s - 1042.18s |  problem, we'll first try to identify which uh messages, which packets are containing the
+1042.18s - 1047.20s |  response. So to simplify it, let's try to find the start and the end. So again we can analyze
+1047.56s - 1052.56s |  the bandwidth patterns and we found out that at the beginning, at the end of the response, we
+1055.50s - 1060.84s |  saw uh bumps like increases in the packet sizes. That's because at the beginning you have
+1060.84s - 1065.94s |  this all of those handshakes and establishing of the new channel and at the end you have
+1065.94s - 1071.58s |  those uh communication of the end of the response. So you have those increases and we can
+1071.60s - 1077.28s |  basically find the start and the end. Between those two points, the start and the end, we'll
+1077.28s - 1084.13s |  try to search for this incremental pattern, the red line that you see. The packets that
+1084.13s - 1089.77s |  follow this trend contain our tokens, but sometimes we have packets that don't follow this
+1089.77s - 1095.51s |  trend. Those are sometimes control packets that do not have our tokens, so we'll filter those
+1095.51s - 1102.51s |  out and we will be left after that filtering with a nice and smooth incremental pattern from
+1102.53s - 1107.53s |  which we can extract our token links by calculating the delta as Israel said. So it sounds
+1110.87s - 1115.87s |  pretty simple and some would say even easy and too good to be true and in reality it's really
+1118.21s - 1124.35s |  the case so we have more challenges. The first challenge is message size limits and the
+1124.35s - 1129.61s |  second one is message buffering uh that will cause message groupings. So let's talk about
+1129.65s - 1135.63s |  that. Message size limits. In the internet we have this thing called MTU, Maximum
+1135.63s - 1140.97s |  Transmission Units. Basically a maximum size that the packet can have and if we go above this
+1140.97s - 1145.97s |  value we we can be fragmented on the IP layer. And what we found is ChetGPT over QUIC has even
+1148.91s - 1153.91s |  a lower maximum size uh of 1,200 bytes. And as you remember ChetGPT is accumulating its
+1153.91s - 1158.93s |  tokens so at certain point it will reach this maximum size. So what will happen is basically
+1163.83s - 1169.93s |  that the payload will overflow to the next packet. So now we have two packets that are sending
+1169.93s - 1175.33s |  this token because our payload is just too big. And what will happen is basically the sort of
+1175.33s - 1181.47s |  pattern that you see now and also as the conversation grows and goes deeper and deeper and
+1181.47s - 1186.05s |  makes it more and more long we basically can also overflow to the third and fourth and fifth
+1186.05s - 1191.59s |  packet and at the filtering phase we'll need to account for that because we don't want to
+1191.59s - 1199.12s |  throw those packets they contain our tokens. Another challenge is that the busyness of the
+1199.12s - 1205.40s |  network will cause uh basically buffering that will cause our groupings. What does it mean?
+1205.40s - 1212.40s |  So when the network is busy and lots of clients are connecting to the assistant servers and
+1212.40s - 1217.40s |  many chat with ChetGPT what happens is that the servers tend to buffer their responses. And
+1219.68s - 1226.44s |  what it looks for the user is that basically he has a small freezes that he sees and for us
+1226.44s - 1231.42s |  what it looks like is that some packets will contain more than one token, more than one new
+1231.42s - 1236.42s |  token. So uh basically this new packet will be double the size of the original trend and what
+1237.18s - 1242.18s |  we can infer from that size is the size uh is the sum of those uh tokens that are contained
+1246.02s - 1251.02s |  in the packets. But what we cannot infer is the size of each individual token. And this
+1253.36s - 1259.64s |  problem will be overcome in the next uh phase which uh Roy will talk about uh with uh
+1259.64s - 1264.64s |  exploitation with AI. So we will worry about that later. You probably wonder how the
+1266.48s - 1271.68s |  we find all of this out. So we basically reverse engineer the traffic. We connected as a
+1271.68s - 1276.52s |  legitimate client to the assistant servers. We got the SSL key, the encryption key between our
+1276.52s - 1281.70s |  computer and the assistant server. Uh we plug this into Wireshark and we were able to watch the
+1281.70s - 1288.20s |  decrypted traffic, learn it like analyze the metadata and make rules to extract the token
+1288.20s - 1296.06s |  length sequence from the encrypted traffic. So to sum this up, we capture the traffic, we
+1296.08s - 1301.56s |  filter the traffic and then we extracted the token length sequence. And now we would like to
+1301.56s - 1308.10s |  translate those token length sequence to plain text English and that's what Roy will talk about
+1308.10s - 1316.43s |  next in the next part, exploitation with AI. Right. Thank you Daniel. Um let's indeed talk about
+1318.67s - 1323.87s |  how to exploit the side channel using uh a machine learning. But don't worry I'm not a typical
+1323.89s - 1329.73s |  machine learning guy, we'll keep it simple. So the first step in training a machine learning
+1329.73s - 1335.47s |  model is to basically gather a data set. We need to have a data set which will contain inputs
+1335.47s - 1341.15s |  and outputs. Then we train the model by feeding him examples of the inputs and what the output
+1341.15s - 1346.15s |  should look like. Training an LLM is no different. So in our case, the attacker will first gather a
+1346.51s - 1351.51s |  huge corpus of text. He will transform the text into token length sequences and then pass them
+1354.95s - 1361.09s |  to the model. We hope that the outputs of the model, if not exact, will have the same similar
+1361.09s - 1366.09s |  semantic meaning. Alright, so now begs the question, how do you how do you even use the model?
+1367.09s - 1372.09s |  When uh um LLM output you uh gives you a response and output, each time you get it a bit
+1376.73s - 1382.59s |  differently. As Israel said, each time with the output you get a confidence score. Then you can
+1382.59s - 1389.17s |  basically uh prompt the model many times and so the outputs based on the confidence score and
+1389.17s - 1394.17s |  most often the most confident output will have um will be the closest to the real thing. So
+1396.67s - 1403.05s |  that sounds really simple and uh fun and that's what we did. We took the AI system response,
+1403.05s - 1408.05s |  transformed it into token length sequence, passed it to our trained uh model and it failed
+1410.09s - 1415.09s |  miserably. Well the problem was too hard, even for an LLM. But we still had a glimpse of hope
+1418.07s - 1423.07s |  because although the semantic meaning uh similarity was nowhere uh to be found, the model
+1423.29s - 1428.29s |  still learned the high level structures such as list structure. So we started to look around
+1431.97s - 1436.97s |  on ways to improve our approach. Um we noticed a really interesting phenomena about AI system
+1439.47s - 1444.47s |  responses. The first sentence almost always holds the essence of the entire response. The first
+1446.17s - 1451.17s |  sentence is like a an introduction to the coming paragraph. Learning from history, we took
+1453.55s - 1460.41s |  the hard problem and divided it into smaller problems to deal with each at a time. Because uh
+1460.41s - 1466.23s |  the first sentence is really unique, we first tackled it and tried to solve it and then all of
+1466.23s - 1471.73s |  the others because if you think about it, if we crack down the first sentence, we will win. We
+1471.73s - 1476.73s |  could because we could build upon that with a preserved topic in mind. But wait, hold on.
+1476.87s - 1481.87s |  Isn't the traffic encrypted? What do we even have in the end? Token length sequence. How are we
+1484.97s - 1489.97s |  able to divide it into segments of sentences? Well, most tokenizers encode punctuation marks as
+1493.41s - 1498.41s |  a separate token. This means that almost always a token length of one is a punctuation mark. So
+1500.53s - 1505.53s |  this means we can basically look at the token length sequence, search for one and divide it.
+1506.83s - 1513.13s |  But um we want to avoid false positives. For example, too short of a sentence because comma at
+1513.13s - 1518.83s |  the start. So we apply the simple heuristic that uh basically says we won't divide it if the
+1518.83s - 1525.41s |  sentence is too short. All right, with this idea, because the first sentence is really unique, we
+1525.41s - 1530.41s |  train the model only on first sentences, meaning its data set contain only first sentences. Uh and
+1530.47s - 1535.47s |  we train another model for all of the other sentences to further help the second model try to
+1538.65s - 1545.05s |  figure out what is the right topic. We took the output which was generated by the first
+1545.05s - 1551.89s |  sentence and then passed it as part of the input to the next model. And then uh with other
+1551.89s - 1556.89s |  generations we did the same and uh just like that, we we have preserved the context in mind when
+1557.05s - 1562.05s |  generating the entire paragraph one by one. All right, um this approach is nice and we got 10%
+1567.23s - 1574.19s |  attack success rate, but it's not enough. Uh we are at DEF CON after all. So uh there is one
+1574.19s - 1582.39s |  more thing that could help us improve. As we said, AI assistant responses are not just random
+1582.41s - 1588.45s |  Wikipedia pages. They are not random text. This may uh they have predictive predictable style
+1588.45s - 1594.63s |  and low response diversity. This means that we can use it to our advantage and relate to this
+1594.63s - 1602.68s |  problem as a known plain text attack. AI assistant responses have predictable style, they have
+1602.68s - 1607.68s |  warnings, templates, they follow safeguards and structure. This means that if we will train a
+1607.96s - 1612.96s |  model on those responses, the model will be able to learn those patterns and it it will make
+1616.74s - 1621.74s |  our life easier. Also, as we can see here, many different prompts that talk about the same
+1624.48s - 1631.38s |  rather topic will have the same response. This means that a a model which is trained on AI
+1631.42s - 1636.42s |  system responses will be able to generalize to many different prompts. So, to summarize, the
+1639.26s - 1644.26s |  entire process is first collecting a data set of prompts. Then we will pass it to our target
+1647.20s - 1652.20s |  model like JGPT4. Then we will collect the responses, transform them into token length
+1654.74s - 1659.74s |  sequences and train the model as we saw. This combined approach yield in huge amount of
+1661.38s - 1666.38s |  boost of performance. This plot compares uh the uh performance of the combined approach, the
+1668.92s - 1675.56s |  green one, the blue one which is uh training the model on random text and the red one which is
+1675.56s - 1682.00s |  plainly asking JGPT please help me solve this side channel. And we can see uh that all of the
+1682.00s - 1687.98s |  examples to the right of the vertical line are considered successes and the green one was much
+1688.02s - 1695.02s |  better than all of the other approaches. And the numbers we as as we said before we got about 55%
+1695.02s - 1701.60s |  attack success rate on first sentences and 38 on entire paragraphs. We have also encountered a
+1701.60s - 1706.60s |  really interesting phenomena. Different topics were susceptible uh than others. In our example
+1710.90s - 1716.58s |  a mental health and financial status were much more susceptible than for example sex sexual
+1716.58s - 1721.58s |  health. This is mainly to the fact that those topics were much more common in the data set.
+1724.56s - 1729.66s |  This means that we've we've if we have an attacker with a specific goal in mind he can train his
+1729.66s - 1736.64s |  own model on those subtopics and get better results. Alright so what about the network noise
+1736.64s - 1741.64s |  and traffic and all of the stuff Daniel said? Um when we have high network uh traffic we get
+1742.64s - 1749.34s |  grouping and buffering. So we first wanted to evaluate how much groupings were actually there.
+1749.34s - 1754.34s |  We ran a 24 hour experiment against open AI JGPT and we measured the amount of groupings we got
+1758.22s - 1765.22s |  in each hour of the day. As expected in the day there were much more groupings than in the night.
+1765.22s - 1770.22s |  But as we will see it is manageable. To solve this challenge we took our training process and
+1772.98s - 1779.46s |  our data set and just applied random groupings on the token length sequences. Then as we can
+1779.46s - 1784.46s |  see in the first row we still got 35% attack success rate on first sentences which is really nice
+1786.90s - 1792.84s |  because the it is way more challenging. Also when looking around on different uh susceptible
+1792.86s - 1797.86s |  vendors we found out that open AI API transmitted their messages as paired tokens. Meaning each
+1800.20s - 1805.20s |  packet holded two tokens. Okay this is more challenging but we wanted to evaluate if we can
+1808.44s - 1813.44s |  break it and award more and get more reward. So uh we took our training process and applied uh
+1816.58s - 1822.82s |  random uh not random sorry and we applied pairing uh pairing on the tokens. Meaning we
+1822.86s - 1828.50s |  took the token lengths and just paired them. We still got 17% attack success rate on first
+1828.50s - 1833.50s |  sentences with this approach. Alright so after I've yucked you out with theory let's talk business.
+1838.22s - 1843.22s |  So um as we all know training an LLM from scratch is really hard. It takes a month of computer
+1847.42s - 1852.52s |  time and millions of dollars in hardware and energy. We didn't have to go through such
+1853.36s - 1857.86s |  hustle, rather we used a common technique called fine tuning which means we took a trained
+1857.86s - 1862.86s |  model and further trained it on our own translation task. We took a model called T5 which
+1865.84s - 1868.84s |  was trained-
+1868.84s - 1869.84s |  announcement.
+1869.84s - 1874.39s |  We have a small disruption.
+1874.39s - 1875.39s |  Sorry.
+1875.39s - 1876.39s |  Attention down code hackers.
+1876.39s - 1877.39s |  Halls 2 and 4 are now closed.
+1877.39s - 1878.39s |  Heavy equipment will begin operation soon.
+1878.39s - 1879.39s |  All humans need to vacate the premises before they become trapped and are forced to become
+1879.39s - 1880.39s |  goons for eternity.
+1880.39s - 1881.39s |  Villages and contests have now closed.
+1881.39s - 1882.39s |  All hacking of the planet must be done elsewhere.
+1882.39s - 1883.39s |  Please join us for the contest closing ceremonies in chapters 1 and 2.
+1884.17s - 1885.17s |  Attention down code hackers.
+1885.17s - 1912.17s |  You must vacate the hall before you become impaled by a forklift.
+1914.41s - 1917.49s |  OK, good day to you too.
+1917.49s - 1920.13s |  So let's recap.
+1920.13s - 1922.65s |  Our model was based on the T5 model,
+1922.65s - 1925.09s |  which is trained by Google.
+1925.09s - 1929.05s |  And it is publicly available.
+1929.05s - 1931.49s |  We also didn't have to go through the hassle
+1931.49s - 1933.33s |  of gathering our own data set.
+1933.33s - 1934.93s |  Rather, we used an open source one
+1934.93s - 1937.61s |  called UltraChat, which basically contains dialogues
+1937.61s - 1939.53s |  with GPT-4.
+1939.53s - 1945.29s |  We also used Hugging Face as our framework trainer,
+1945.29s - 1948.77s |  which makes the technicalities of training a model much
+1948.77s - 1951.97s |  easier, even for a guy like me.
+1951.97s - 1956.69s |  OK, our model was trained for two days of compute time.
+1956.69s - 1960.73s |  And if we have an attacker with no GPU in hand,
+1960.73s - 1963.61s |  he can use Azure, for example, for only $200,
+1963.61s - 1965.77s |  which is fairly affordable.
+1965.77s - 1968.81s |  So let's see some demos.
+1968.81s - 1976.45s |  In this case, we have the victim, Microsoft Copilot.
+1976.45s - 1978.77s |  He asked the random question of, what
+1978.77s - 1981.33s |  are some of the latest developments in machine
+1981.33s - 1983.93s |  learning and AI that could revolutionize the health
+1983.93s - 1984.85s |  industry?
+1984.85s - 1989.29s |  Besides him, the attacker eavesdropped the entire traffic.
+1989.29s - 1992.65s |  He collects traffic using Wireshark.
+1992.65s - 1996.13s |  And after collecting for a bit of time,
+1996.13s - 1998.57s |  he will try to filter the traffic.
+1998.57s - 2002.01s |  As Daniel said, one of the common techniques to filter
+2002.01s - 2004.09s |  is based on the IP.
+2004.09s - 2008.93s |  So the attacker does just that.
+2008.93s - 2012.81s |  And in this case, the attacker manually
+2012.81s - 2014.97s |  figures out where the start is.
+2014.97s - 2016.73s |  Well, of course, the traffic is encrypted,
+2016.73s - 2021.13s |  so you just need to do it by hand and by eye.
+2021.13s - 2024.85s |  And after figuring out where the start is,
+2024.85s - 2027.09s |  the attacker will put inside the tool
+2027.09s - 2032.01s |  the token length, excuse me, the packet sizes.
+2032.01s - 2034.69s |  Then the tool will calculate the deltas
+2034.69s - 2037.05s |  between the packet sizes.
+2037.05s - 2039.77s |  And we will have a token length sequence.
+2039.77s - 2042.49s |  Then basically, the tool will pass it to the model
+2042.49s - 2045.93s |  to try to generate the ground truth.
+2045.93s - 2052.13s |  And as we will see in a bit, hold on.
+2052.13s - 2054.13s |  Yes, we got the token length.
+2054.13s - 2056.81s |  And now the model thinks.
+2056.81s - 2058.49s |  Actually, really fast.
+2058.49s - 2060.21s |  And all right.
+2060.21s - 2063.33s |  So it will be, it will zoom out in a bit.
+2063.33s - 2066.17s |  We basically got the same rather topic.
+2066.17s - 2068.41s |  Several recent advancements in machine learning
+2068.41s - 2070.01s |  and artificial intelligence.
+2070.01s - 2074.21s |  That could be a game-changing tool, yada, yada.
+2074.21s - 2076.33s |  All right, so for the public use,
+2076.33s - 2079.45s |  we've deployed a full plug-and-play tool
+2079.45s - 2083.37s |  on GitHub called GPTKeylogger.
+2083.37s - 2087.61s |  The tool has two main models, the attacker model
+2087.61s - 2088.69s |  and the trainer model.
+2088.69s - 2090.65s |  I will elaborate them in a bit.
+2090.65s - 2094.89s |  And our model is also publicly available.
+2094.89s - 2100.85s |  And it is trained on JGPT-4 responses from February 2024.
+2100.85s - 2102.41s |  The first model, the attack model,
+2102.41s - 2107.01s |  is for you guys to try attack different vendors.
+2107.01s - 2110.81s |  It can receive as input packet lengths, as we saw in the demo,
+2110.81s - 2113.01s |  token lengths, which is straightforward,
+2113.05s - 2114.17s |  and the original text.
+2114.17s - 2117.97s |  The tool will basically tokenize the text,
+2117.97s - 2120.17s |  calculate the token length sequence,
+2120.17s - 2122.41s |  and try to predict.
+2122.41s - 2126.57s |  And you can use it with this simple command.
+2126.57s - 2129.05s |  If you want to target a different vendor
+2129.05s - 2132.81s |  with a different back-end LLM, you should train your own model.
+2132.81s - 2134.73s |  Because every LLM works differently.
+2134.73s - 2138.05s |  And our model is based on GPT-4 responses.
+2138.05s - 2142.25s |  So if you want to target a model like Llama,
+2142.25s - 2143.29s |  you should train.
+2143.29s - 2148.09s |  And we offer this for you to make life much more easier
+2148.09s - 2149.69s |  with those commands.
+2149.69s - 2151.61s |  Also, the configuration file is also
+2151.61s - 2155.81s |  available in the GitHub page, which is nice.
+2155.81s - 2159.89s |  And all right, so let's talk some defenses.
+2159.89s - 2161.81s |  We have contacted all of the vendors
+2161.81s - 2166.33s |  that we found vulnerable up to February 8 this year.
+2166.33s - 2168.89s |  All of the major vendors were really responsive.
+2168.89s - 2171.77s |  And they patched the problem really quickly.
+2171.77s - 2175.25s |  Until March 1, and we came public
+2175.25s - 2179.53s |  with this vulnerability on Ars Technica
+2179.53s - 2182.61s |  on the 14th of March this year.
+2182.61s - 2186.97s |  Out of the vendors, those five had bug bounty programs,
+2186.97s - 2191.53s |  which awarded us a small reward, which was really nice.
+2191.53s - 2194.89s |  All right, so although this side channel is really
+2194.89s - 2197.61s |  difficult to exploit, as we saw, the defenses
+2197.61s - 2199.25s |  are really easy to make.
+2199.25s - 2202.21s |  After consulting with the engineers
+2202.21s - 2204.69s |  of the different vendors, we came up
+2204.69s - 2207.49s |  with three solutions.
+2207.49s - 2211.49s |  Random padding to the packets, padding to the nearest value,
+2211.49s - 2215.49s |  like nearest 100 size, or applying more buffering.
+2215.49s - 2218.73s |  Here is the mapping between the different vendors
+2218.73s - 2221.41s |  and the deployed defenses.
+2221.41s - 2226.01s |  When diving a bit deeper, OpenAI basically
+2226.01s - 2230.09s |  did padding to the nearest, to the closest 32 value
+2230.09s - 2234.49s |  by adding a pad field on the transmitted JSON.
+2234.49s - 2238.69s |  And as we can see on Wireshark, the size is a line.
+2238.69s - 2243.65s |  And CloudFlare, for example, deployed random padding.
+2243.65s - 2247.49s |  And we can see that the sizes are all messed up.
+2247.49s - 2251.21s |  All right, let's wrap things up.
+2251.21s - 2253.05s |  So what did we discover?
+2253.05s - 2256.05s |  We have identified a new side channel vulnerability
+2256.05s - 2257.85s |  based on token lengths.
+2257.85s - 2260.49s |  This is significant because, as we saw,
+2260.49s - 2265.37s |  it impacts multiple vendors exposing sensitive information
+2265.37s - 2268.17s |  through their AI systems.
+2268.17s - 2272.93s |  This work has shown how to break a side channel used
+2272.93s - 2274.77s |  with generative AI.
+2274.77s - 2278.13s |  And it is the first work to do so.
+2278.13s - 2281.33s |  While some vendors have patched this vulnerability,
+2281.33s - 2285.41s |  there is still a real concern about how new AI services
+2285.41s - 2288.81s |  will handle this issue.
+2288.81s - 2290.65s |  Now on to the key takeaways.
+2290.65s - 2295.33s |  First off, it is crucial to use encryption schemes correctly.
+2295.33s - 2297.49s |  This has repeated itself throughout history,
+2297.49s - 2301.53s |  time and after time, and yet leading
+2301.53s - 2305.05s |  to multiple side channels and cracking of encryptions.
+2305.05s - 2308.33s |  Similarly, in modern times, even subtle details,
+2308.33s - 2311.73s |  like token lengths, can leak sensitive data
+2311.73s - 2314.09s |  if not properly protected.
+2314.09s - 2317.13s |  AI services are no exception to this rule.
+2317.13s - 2319.37s |  They must be designed and implemented
+2319.37s - 2321.77s |  up to the highest security measures
+2321.77s - 2324.41s |  as any other software domains.
+2324.41s - 2326.69s |  Remember, AI is your friend.
+2326.69s - 2329.77s |  It is a powerful tool both for offensive and defensive
+2329.77s - 2330.81s |  applications.
+2330.81s - 2334.13s |  We should harness its potential to identify and mitigate
+2334.13s - 2335.41s |  vulnerabilities.
+2335.41s - 2338.05s |  What seemed impossible is now possible
+2338.05s - 2341.09s |  thanks to advancements in AI.
+2341.09s - 2344.65s |  Finally, our discovery raises an important question.
+2344.65s - 2347.69s |  What other side channels are vulnerable?
+2347.69s - 2350.01s |  We encourage the community to explore and secure
+2350.01s - 2352.17s |  these potential weak points.
+2352.17s - 2354.69s |  To sum it up, we have joined throughout the process
+2354.69s - 2357.37s |  of identifying, exploiting, and defending
+2357.37s - 2359.25s |  against this new side channel.
+2359.25s - 2361.65s |  This research highlights the importance
+2361.65s - 2366.13s |  of considering even the smallest details in data transmission
+2366.13s - 2367.85s |  within AI systems.
+2367.85s - 2370.93s |  I hope this inspires you to think creatively
+2370.93s - 2375.01s |  about both offensive and defensive capabilities of AI
+2375.01s - 2377.61s |  in cybersecurity.
+2377.61s - 2380.09s |  Thank you all for your attention.
+2380.09s - 2382.97s |  Check out our tool, GPTKeylogger, and our labs page
+2382.97s - 2385.89s |  when we update on more research.
+2385.89s - 2389.97s |  Stay secure, stay curious, and enjoy the rest short bit
+2389.97s - 2391.73s |  of DEF CON.
+2391.73s - 2392.17s |  Thank you.
+2392.17s - 2393.89s |  Thank you.

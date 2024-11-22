@@ -1,0 +1,65 @@
+**Introduction**
+- Presenter: Andrew Bellini
+- Background: Electrical engineering, content creator at TCM Security, course and certification creator
+- Goal: Provide a methodology, tools, and knowledge to find vulnerabilities in commercial IoT devices
+
+**Getting Started**
+- **Device Selection**:
+  - Cheaper devices are better when starting out:
+    - Generally reflect the level of security and hardware protection
+    - Less concern about damaging/bricking the device
+  - Suggested devices: cheap routers and smart cameras
+  - Alternative: dumpster diving for discarded devices
+
+**Building a Toolkit**
+- **Rules**:
+  - Don't break the bank
+  - Follow the 80-20 rule: 20% of tools will do 80% of the work
+- **Suggested Tools**:
+  - Digital multimeter: measures voltage, current, resistance, etc. (~$5)
+  - UART/SPI/I2C/JTAG/SWD to USB adapter: connects device to computer (~$2)
+  - Flash programmer: reads/writes flash memory (~$10)
+
+**Locating, Using, and Abusing Hardware Interfaces**
+- **UART (Universal Asynchronous Receiver-Transmitter)**:
+  - Common debug interface in IoT devices
+  - Two lines: one for receiving (RX), one for transmitting (TX)
+  - No clock: sends data asynchronously
+  - Can be used to:
+    - View device logging
+    - Gain a shell, especially in embedded Linux devices
+    - Access the bootloader
+- **Identifying UART**:
+  - Look for TX and RX pins close to the processor
+  - Use a multimeter to measure voltage fluctuations during boot
+  - Connect to a computer using a UART to USB adapter, crossing TX and RX lines
+- **Getting a Shell**:
+  - Use `screen` on Linux to connect to the UART
+  - Default baud rate is often 115200
+  - No authentication is usually required, but a shell is not necessary to view logging
+
+**Acquiring Firmware**
+- **Methods**:
+  - Download from vendor website (cheap devices often lack update mechanisms)
+  - Use TFTP if a UART shell is available
+  - Dump directly from flash memory using a flash programmer
+- **Checking for Encryption**:
+  - Use `binwalk` to recursively search for and extract known file types
+  - Encrypted firmware is possible but uncommon in cheap devices
+
+**Analyzing and Reverse Engineering Firmware**
+- **Firmware Structure**:
+  - Bootloader: brings up the device and loads the kernel
+  - Linux kernel: manages device functionality
+  - Root file system: contains binaries, scripts, configuration files, etc.
+  - Writable data partition: stores user-configured data, e.g., passwords, pre-shared keys
+- **Initial Analysis**:
+  - Use `find` and `strings` to search for configuration files, scripts, and interesting strings
+  - Review boot logs for version information, partition details, etc.
+  - Examine RC scripts in `/etc/init.d/` to understand device functionality
+- **Reverse Engineering Binaries and Libraries**:
+  - Start with custom binaries and libraries unique to the device
+  - Interact with the device and trace logging to underlying functions and binaries
+  - Look for unsafe practices, e.g., system calls, unsafe C functions (`memcpy`, `strcpy`, etc.)
+  - User input that ends up in an unvalidated system call or unsafe C function is a potential vulnerability
+  - Further research is required to confirm and exploit vulnerabilities, e.g., buffer overflows

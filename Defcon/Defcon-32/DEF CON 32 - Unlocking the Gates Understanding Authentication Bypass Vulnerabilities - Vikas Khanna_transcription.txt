@@ -1,0 +1,269 @@
+{
+  "webpage_url": "https://www.youtube.com/watch?v=gg5zsWyZJ90",
+  "title": "DEF CON 32 - Unlocking the Gates: Understanding Authentication Bypass Vulnerabilities - Vikas Khanna",
+  "description": "Industrial VPN gateways play a crucial role in operational technology by enabling secure remote access to systems within industrial networks. However, their importance goes hand in hand with increased security risks, as their architecture makes them lucrative targets for threat actors. Over the years, we have seen such devices being used in various industrial environments, which underlines their widespread use in critical infrastructures.\n\nThis talk is about a security analysis of a widely used industrial remote access solution. We will dive deep into and expose various vulnerabilities. This includes rooting the device, bypassing hardware-based security mechanisms such as the use of a hardware security module, and reverse engineering software and firmware. Ultimately, we will show how various identified vulnerabilities allowed us to hijack remote access sessions, creating significant security risks.",
+  "channel_url": "https://www.youtube.com/channel/UC6Om9kAkl32dWlDSNlDS9Iw",
+  "duration": 1831,
+  "channel": "DEFCONConference",
+  "uploader": "DEFCONConference",
+  "upload_date": "20241016"
+}
+
+0.00s - 10.82s | This text was transcribed using whisper model: large-v2
+
+ It is my pleasure to introduce Vikas to the stage. Let's give him a round of applause.
+10.82s - 19.82s |  Hello. I hope you can hear me. Thanks for the warm welcome. So welcome to the talk and
+19.82s - 25.58s |  I hope you are having a good time so far. So my topic for today is authentication bypass
+25.58s - 33.02s |  and account takeovers. So this talk is for people who are in pentesting, who are doing
+33.02s - 38.58s |  red teaming activities and who are in bug bounty hunting. Other than that, if you are
+38.58s - 45.76s |  a student or new to this field, this is for you as well. So I hope you will enjoy it.
+45.76s - 51.16s |  All right. So the agenda for today's talk is I have divided it in three different phases.
+51.16s - 56.64s |  First is introduction. I will discuss about what authentication is, why it's so crucial
+56.64s - 63.92s |  and what are the different modules where you can look for such bugs. The phase two is techniques
+63.92s - 72.04s |  and vulnerabilities which I personally use to take over the accounts and bypass the authentications
+72.04s - 77.08s |  during my entire career. I mean, I have eight years of experience and I have used these
+77.08s - 82.36s |  techniques during the pentesting activities, red teaming activities and bug bounty hunting.
+82.36s - 89.44s |  The third phase is I identified account takeover or authentication bypass in Apple. I will
+89.44s - 98.82s |  disclose that. A little bit about myself. My name is Vikas Khanna. I am technical specialist
+98.82s - 107.54s |  at Privasec. My key focus is on AppSec, web applications, API security. Whenever I'm not
+107.54s - 114.70s |  working on my professional stuff, I am bit active on bug bounty hunting. I got acknowledgments
+114.70s - 120.34s |  from companies like Google, Microsoft, Apple and many more. Other than that, I have contributed
+120.38s - 129.38s |  to the community. I have contributed to OWASP, WSTG and OWASP www community. Other than that,
+129.38s - 136.38s |  I have a few CVs from Oracle and IBM for reporting them issues in their enterprise products.
+138.26s - 143.98s |  So what is authentication? Basically authentication is a process to verify a user or a system
+143.98s - 150.02s |  that they are what they are claiming to be by verifying their credentials in terms of
+150.02s - 157.02s |  their user names, password, digital signatures and many more things. Authentication is very
+157.58s - 163.94s |  crucial. For example, there are post login modules which are having sensitive information,
+163.94s - 170.94s |  your PIIs and information which not everybody should be able to see without, you know, logging
+171.02s - 177.38s |  into the application. So that is why authentication is very crucial. Okay, so whenever we are
+177.38s - 184.38s |  hunting for authentication bypass and account takeovers, these are the abusable vectors
+186.76s - 192.82s |  or functionalities where you can focus on. Basically I have identified issues in these
+192.82s - 199.74s |  features, these functionalities but this bug is not limited to these features only. I mean
+199.74s - 208.69s |  you can explore but this is based on my experience. Okay, real time abuse vectors like vulnerabilities
+209.45s - 215.45s |  and techniques which you can use basically to take over the accounts and bypass the authentications.
+215.45s - 221.21s |  Alright, first vulnerability is session puzzling. What is session puzzling? Session puzzling
+221.21s - 228.21s |  is like whenever you have extra permissions on your session ID. For example, you are in
+230.37s - 237.37s |  pre-login stage and for some modules or some activities you got a session ID and that session
+237.69s - 244.01s |  ID is misconfigured and having a permission, over permission which you can use to access
+244.01s - 249.13s |  the post-login modules as well. Basically it's in pre-login stage but you can access
+249.13s - 257.68s |  post-login modules as well. Alright, so the example for this is forgot password functionality.
+257.68s - 263.00s |  How forgot password functionality works? Like there is a forgot password module, you can
+263.00s - 268.76s |  enter your email ID, application will redirect you to another page where application will
+268.76s - 275.76s |  ask you for OTPs or maybe security questions and if you provide OTP, correct OTP or correct
+276.32s - 281.72s |  security questions answer, application will redirect you to another page where you can
+281.72s - 286.64s |  enter the new password and change the password. But for the second page where application
+286.64s - 292.36s |  is asking for security questions answer or OTP, application have created a session which
+292.36s - 298.28s |  is linked with your email ID which you provided on the first page. But that if the application
+298.28s - 303.96s |  is misconfigured and that session variable, session ID is having over permissions, you
+303.96s - 310.36s |  can without entering the security answer or OTP, you can access the post-login modules
+310.36s - 316.20s |  by just using that particular session ID because it is activated globally. So this issue I
+316.20s - 324.61s |  have identified in Apple and I will show in the later slides. Alright, other vulnerability
+324.61s - 331.61s |  is session fixation. As name suggests that in this vulnerability you can fix the session
+332.69s - 339.45s |  in pre-login stage. Basically the pre-login and post-login session variables value will
+339.45s - 345.73s |  remain same. It will be just the state of the session token which will become active
+345.73s - 352.73s |  or de-active. Alright, so there are two ways we can use this vulnerability. One is we can
+355.13s - 362.13s |  whenever your victim is in the remote location, so how you can leverage that? So if you are
+363.61s - 370.61s |  able to get the session ID in URL in pre-login stage, what you can do, you can copy that
+371.49s - 377.45s |  and send it to your victims. Alright, whenever your victim will click on that link, since
+377.45s - 383.77s |  the link belongs to the legitimate application, victim will click on that and will enter the
+383.81s - 390.81s |  credentials. When victim will enter the credentials, the session ID will become in an active state.
+390.81s - 394.65s |  Since you are the one, you are the attacker, you have that session ID, you can use it on
+394.65s - 399.85s |  your machine and you can login into the victim's account directly. You don't have to enter
+399.85s - 406.35s |  the passwords. So that's how you can bypass the authentication and take over the accounts.
+406.35s - 412.81s |  This is when your victim is remote. The other thing is whenever let's say you are working
+412.81s - 418.69s |  on a shared machine. There is a machine which is shared by multiple users. So what you can
+418.69s - 425.05s |  do, you can go to that machine, you can copy the cookies. Since pre-login and post-login
+425.05s - 429.65s |  cookie will be same, you can just copy that and whenever your victim will login to that
+429.65s - 434.29s |  particular application, you can use that cookie and you can bypass the authentication by using
+434.29s - 443.24s |  victim's account. Alright, the other is access control checks. IDRs, IDRs are best friends.
+444.92s - 450.96s |  We can use that to perform a number of activities and one of them is account takeovers and authentication
+450.96s - 456.16s |  bypasses. So how you can take over the accounts? For example, application performing some sort
+456.16s - 461.48s |  of sensitive activities like change password, update profiles by just checking the user's
+461.48s - 468.32s |  ID. Sometimes it's in even hidden parameters. You can use tools like client-side proxy tool
+468.32s - 474.96s |  like Bob suit and you can just modify the user ID and if the application is vulnerable,
+474.96s - 481.08s |  you will be able to take over the accounts of your victims. The other is privilege escalations.
+481.08s - 486.88s |  Let's say if you are performing grey box assessments as a pen tester. So you will be aware with
+486.88s - 493.88s |  admin level modules as well and non-privileged user or non-admin users modules as well. So
+494.48s - 499.44s |  you can login into the least privileged user account and you can try to access the admin
+499.44s - 504.76s |  account and if the application is vulnerable to access controls and privilege escalations,
+504.76s - 511.28s |  you can access the admin level modules. Alright, depending on the application's functionality,
+511.28s - 517.08s |  let's say there could be a number of you know, sensitive modules where you can play with
+517.08s - 522.64s |  maybe let's say there is an admin module where you can see the number of users. You can deactivate
+522.64s - 527.88s |  their accounts. You can change their passwords. You can block them. You know, you can depending
+527.88s - 532.04s |  on the application's functionality, you can do a number of things. Other thing is forced
+532.04s - 539.04s |  browsing. Forced browsing is something when you are forcefully trying to access post-authentication
+539.14s - 545.76s |  modules by just hitting them without providing any credentials. If there is access control
+545.76s - 551.48s |  bug, you will be able to access the post-login modules as well. And let's say there are configuration
+551.72s - 557.16s |  files which are not linked with the application but are still present in the server. So you
+557.16s - 562.36s |  can access those configuration files and you know, it will share, it will disclose a lot
+562.36s - 569.16s |  of sensitive information depending on what kind of configuration file is there. Alright,
+569.16s - 576.16s |  next is password reset link hijacking or poisoning by using host header injection. So let me
+577.16s - 582.24s |  explain what is host header injection and how it works first. Then we will dig into
+582.24s - 587.88s |  the how we can abuse it. So whenever you are hitting an application, application verify
+587.88s - 594.88s |  okay what's the value of host header, it's origin and accordingly application will fetch
+595.56s - 602.92s |  the responses from that particular application server and assign to you the resources. So
+603.04s - 609.36s |  whenever you are having redirection 301, 302, you can use host header vulnerability. You
+609.36s - 613.88s |  can change the host header's value and you can check the location header if your host
+613.88s - 619.52s |  header's value is getting reflected into the location header in the response itself. How
+619.52s - 624.48s |  you can use it to take over the accounts. So for example, there is a forgot password
+624.48s - 629.00s |  functionality you can go there, you can enter your victim's email ID, you can capture the
+629.04s - 635.40s |  request by using bobsuit and you can change the host value to the domain which you can
+635.40s - 642.40s |  control. Alright, so here 0xnoob is for example my domain, I'm a attacker. Alright, so I can
+644.08s - 649.12s |  enter my victim's email ID, I can capture the request and I can change the host header
+649.12s - 654.48s |  value to 0xnoob. So what application will do? How forgot password functionality works?
+654.48s - 659.20s |  Application will send you a reset token link to your email ID, you can click on that and
+659.20s - 663.92s |  update the password. But here since you have updated the host header value, application
+663.92s - 670.92s |  server will send a password reset link to your email ID with the password reset token
+671.40s - 678.40s |  but the URL which will be embedded will be 0xnoob or the domain which you will provide.
+679.40s - 686.40s |  Alright, so since it is coming from the legitimate application server, victim will click on the
+686.84s - 691.80s |  link, you can use it in red teaming activities, you can try it on pen testing, bug bounty
+691.80s - 698.80s |  hunting. Victim will click on that particular link and you can go to your server logs and
+699.64s - 706.20s |  you can capture the, you can grab the reset token. Since it's still in the active state
+706.20s - 711.44s |  because victim haven't used it on legitimate application yet. So you can go to the legitimate
+711.44s - 717.60s |  application and embed that particular token and that's how you can take over the accounts
+717.60s - 722.48s |  because a token is still in active state. You can enter the credentials and you can
+722.48s - 730.92s |  change the credentials of your victim. That's how you can take over the accounts. JS files,
+730.92s - 736.84s |  a lot of people usually don't get into the JS files, they don't bother about it. But
+736.88s - 743.88s |  JS files are something which are very crucial and sometimes it's having some sort of sensitive
+743.88s - 749.44s |  stuff, funny stuff, I mean depending on, you know, what sort of stuff is that. So you can
+749.44s - 758.58s |  find API keys, you can find credentials, you can even find the sensitive API end points.
+758.78s - 775.26s |  PHP type juggling, give me a moment. So type juggling is a feature of PHP. What does it
+776.02s - 783.02s |  means? So it's a functionality of PHP where you don't have to define the data types, PHP
+784.62s - 791.62s |  will do it for you. PHP will, whenever PHP will perform any operations or comparisons
+791.98s - 797.18s |  on the variables or parameters, PHP will convert the data type accordingly and perform the
+797.18s - 804.18s |  action. For example, the first parameter is number one, which is a string, 10 is in double
+804.78s - 811.22s |  quotes. The second parameter is number two, which is five, which is integer. And in third
+811.22s - 816.62s |  parameter we are performing operation, additional operation. Okay, so whenever we are performing
+816.62s - 823.62s |  addition, PHP will convert string, which is 10, to an integer and will perform the addition
+823.86s - 830.86s |  operation. So the result will be 15, 10 plus 5 is 15. So the other thing is comparison.
+834.94s - 841.94s |  Whenever PHP will perform a comparison by using two times equals to, so what PHP will
+842.62s - 848.26s |  do, first parameter here is integer, second is string. So the second parameter's value
+848.26s - 854.70s |  is 10 ABC, which is a string. Whenever you will perform a comparison operation here,
+854.70s - 861.70s |  PHP will convert that string 10 ABC to 10, which will become integer. And then PHP will
+862.70s - 868.94s |  perform the action accordingly. So 10 is equal to 10, so the result will be equals. How we
+868.94s - 875.94s |  can leverage it to take over the accounts? Alright, so let's say there is a value of
+877.30s - 884.30s |  parameter, which is, which don't have the integer. So if you will convert that string
+885.10s - 891.34s |  with the integer, PHP will convert that string to zero and then it will compare with the
+891.38s - 898.38s |  user's provided input. So for example, the admin's password is not having integer value,
+899.58s - 906.58s |  having a string only. So as an attacker, you can mention zero in the password. PHP will
+906.58s - 911.94s |  compare it with admin password. Admin password is a string. PHP will convert admin's password
+911.94s - 918.62s |  to zero and zero is equal to zero will become a true statement. That's how you can bypass
+918.62s - 925.62s |  the authentication. But there is a prerequisite. It should be JSON or serialized object. Then
+928.34s - 937.72s |  only you will be able to perform this attack. CSRF, let's say if in the application CSRF
+937.72s - 943.16s |  tokens are missing and there is no CSRF protection. And there is a module where you can update
+943.16s - 949.08s |  the mobile number, email ID, you can craft a HTML page and send it to your victim if
+949.08s - 956.08s |  that victim is logged in into their account, you can literally update their mobile numbers
+956.12s - 961.20s |  and email address. Once you will be able to do that, you can request for forward password,
+961.20s - 966.16s |  you know, by entering the email or password with email or mobile number, which you have
+966.16s - 973.16s |  mentioned during the HTML page creation, then you can take over the accounts because application
+974.16s - 980.16s |  will send the OTPs or password reset links to your phone number and email ID, which belongs
+980.16s - 985.96s |  to the user's, the victim's account. Let's say if there is a forward password functionality
+985.96s - 991.12s |  where application is not asking for old passwords and application is vulnerable to CSRF, you
+991.12s - 995.52s |  can just craft a request and send to, you know, your victim and you will be able to
+995.52s - 1001.96s |  change the password. From there you can take over the accounts. HTTP parameter pollution.
+1001.96s - 1008.64s |  It's a vulnerability where you can mention multiple parameters with the same name, but
+1008.64s - 1014.04s |  the values will be different and the application will perform the action on the basis of that.
+1014.04s - 1021.04s |  So let's say there is a forward password functionality, all right? And you can mention maybe you can
+1021.48s - 1028.48s |  use that one parameter for twice, for two times, and mention the victim's email ID plus
+1028.96s - 1034.60s |  your own email ID. So if the application is vulnerable, application will send password
+1034.60s - 1041.60s |  reset token to both the email IDs, but it will be activated for one account only, depending
+1041.80s - 1047.64s |  on how application is, you know, doing that. Maybe it is validating the first parameter
+1047.64s - 1051.96s |  or second parameter. That you have to figure out. It depends on different applications.
+1051.96s - 1057.84s |  I mean, so accordingly, let's say if it is, let's say whenever you will receive that link,
+1057.84s - 1062.72s |  you can just go to application and you can just change the password of your victim and
+1062.72s - 1067.60s |  you can take over the account. You can try this on reset password, update password, wherever
+1067.60s - 1076.23s |  you are receiving OTPs, you can try that vulnerability. Authentication bypasses by using response
+1076.35s - 1083.35s |  manipulation. So a few applications are validating the previous response and then perform the
+1084.35s - 1091.35s |  next action, all right? So let's say the response is on the basis of true or false. If you have
+1094.87s - 1101.87s |  provided the right credentials, application is throwing you the true response, okay? And
+1102.31s - 1107.35s |  if you have provided the wrong credentials, application will throw the false response.
+1107.35s - 1113.07s |  So you can change that to true and you can perform the next action. You can bypass it.
+1113.35s - 1119.35s |  Similarly, you can manipulate the status codes. If application is throwing 400 or something
+1119.35s - 1125.99s |  for wrong credentials and throwing 200, okay, for right credentials, you can try to manipulate
+1125.99s - 1135.90s |  that. Two-factor authentication or OTP, you can break that. How? So whenever you are performing
+1138.34s - 1145.10s |  pen testing specially, you can use these things. You can check for the integrity validation
+1145.10s - 1151.86s |  of OTPs. For example, I can send OTP to my mobile number and send OTP to my victim's
+1151.86s - 1158.86s |  mobile number. So these two OTPs are in active state now because neither I used nor my victim
+1161.18s - 1166.66s |  used it for now. So what can I do? Since both the OTPs are in active state, I can check
+1166.66s - 1173.58s |  the integrity. I can try my OTP on my victim's account just to validate that application
+1173.58s - 1181.04s |  is checking the integrity of the OTP or not. And trust me, it's still working. Reusability
+1181.04s - 1188.04s |  of OTPs, you can try to reuse the OTPs. And the third one is I found it in one of the
+1189.12s - 1196.12s |  most popular banks. So they were disclosing the OTPs in the responses. So I mean, go for
+1197.12s - 1204.12s |  it, check for responses as well. Master OTPs, I found it in one of the net banking application.
+1207.60s - 1213.68s |  The master OTP was six times zeros. So you can log into any account by using six times
+1213.68s - 1222.54s |  zero. I mean, you can try for other stuff also. So go for it. All right, brute force.
+1223.18s - 1230.18s |  So whenever we are thinking about brute force, we are trying to brute force the passwords.
+1230.30s - 1237.06s |  We can try another way as well by using password spraying attack. We can brute force the emails
+1237.06s - 1242.46s |  by using one password. We have one password and we can try that on multiple users. We
+1242.46s - 1246.58s |  can try to brute force in that way as well. So whenever you are performing red teaming
+1246.58s - 1251.54s |  activities or bug hunting or something, you just need one account to perform your actions.
+1251.54s - 1258.18s |  So this will be very handy. Try to check if there are rate limiting controls are enabled
+1258.18s - 1265.18s |  or not. Other than that, sometimes application is blocking your IP address whenever you are
+1265.82s - 1271.98s |  performing brute force attacks. So you can hop on different, you know, IP addresses.
+1271.98s - 1277.26s |  You can change your IP addresses depending on how application is blocking it. Maybe after
+1277.26s - 1283.54s |  15 requests or 50 requests and just before, let's say application is blocking IP after
+1283.54s - 1289.86s |  every 50 requests, you know, within maybe some sort of time foundation. So you can change
+1289.86s - 1297.63s |  on, you can change your IP on 49th attempt. Accordingly, you can try that. You can send
+1297.63s - 1304.63s |  multiple credentials in request to validate that, I mean, it is working or not. There
+1304.87s - 1311.87s |  is a very, very good lab of web security academy. Please check that. Default credentials, if
+1313.35s - 1320.35s |  you are, okay, this is very, very handy in red teaming activities. So, I mean, almost
+1320.55s - 1326.71s |  every organisation is using enterprise products. Go for it. Check for the default credentials.
+1326.71s - 1333.71s |  I mean, it's still working. I usually find that. Wordpress, it is one of the most popular
+1335.11s - 1342.11s |  CMS. So there is a so-called feature in Wordpress where you can use author parameter just to
+1343.91s - 1350.51s |  verify that what's the username of one. I mean, let's say if you will enter the author's
+1350.51s - 1355.03s |  value one, it will show you the first user of that particular application. If you will
+1355.03s - 1359.75s |  change it to two, it will show you the second user of that particular application. It will
+1359.75s - 1364.31s |  show you the username. It will show you the posts which are done by that user. It will,
+1364.31s - 1369.19s |  it might show you the comments as well. So accordingly, you can, you know, enumerate
+1369.19s - 1376.19s |  user's information. And whenever you are performing WP scan, don't perform directly from the,
+1376.83s - 1383.71s |  you know, without using API keys. Please use API key. You can go to WP scan website. You
+1383.71s - 1389.95s |  can get API key. It's free of cost. And by using that particular API key, if you will
+1390.27s - 1397.45s |  perform the WP scan, the results will be definitely different. In secure logout management, whenever
+1397.45s - 1403.77s |  you are working on pen testing, check for these things, especially for banking applications.
+1403.77s - 1408.77s |  For example, reuse of session. Check if you can reuse that particular session. Login to
+1408.77s - 1415.17s |  the application, logout from the application. Check if you can still use the old sessions.
+1415.17s - 1420.85s |  Close the browser for the sensitive applications. Whenever you are closing the browser, it should,
+1420.85s - 1425.81s |  you know, dissolve the entire session at the server side. Let's say if there is a net
+1425.81s - 1430.41s |  banking application and you are closing the browser, whenever you are again accessing
+1430.41s - 1435.69s |  the application by using new tab, it shouldn't work. I mean, application should ask you for
+1435.69s - 1441.77s |  the login. Session should bound to IP address for sensitive applications. For example, as
+1441.77s - 1448.77s |  an attacker, if I am able to get the session of my victim, okay, but if let's say that
+1448.77s - 1457.43s |  is bound to their IP address only, I won't be able to use that. Check for it. All right.
+1458.31s - 1465.19s |  So tips for red teamers and pen testers. Go to pastebin whenever you are performing red
+1465.19s - 1472.19s |  teaming activities. Go to pastebin. Pastebin have a lot of sensitive stuff. DHash, go for
+1472.35s - 1477.83s |  DHash. I mean, you can find the passwords of your victims. Open bug bounty. So this
+1477.83s - 1483.71s |  website is very handy. I use it multiple times and it helped me a lot. So you can find
+1483.71s - 1490.71s |  a lot of vulnerabilities which are identified by other attackers. All right. And they have
+1491.91s - 1498.91s |  disclosed those vulnerabilities publicly because the vendor is not entertaining them. All right.
+1499.91s - 1510.24s |  So you can use those vulnerabilities. My first bug, I found it in Apple. I found account
+1511.52s - 1517.16s |  takeover or authentication bypass basically. I will call it as authentication bypass. So
+1517.16s - 1529.44s |  that was my first bug in Apple. So this was session puzzling which I explained in the
+1530.44s - 1537.44s |  earlier stage. So I was able to get the session variable which was active for post-login modules
+1539.20s - 1546.20s |  as well in the pre-login stage. So here I am on login page. I'm trying. Okay. Application
+1549.88s - 1556.24s |  is redirecting me to the login page only. Okay. There is a story behind that. So the
+1556.28s - 1563.28s |  domain name is InstaVision.Apple.com. If I will go to that domain directly, it will redirect
+1563.76s - 1570.40s |  me to the SSO of Apple. Based on my understanding, it is a bit secure. I haven't tested that
+1570.40s - 1577.40s |  to be honest. But yeah, based on my understanding, it is secure. So then I did some sort of Google
+1578.80s - 1584.00s |  docking and I got to know that there is a subdirectory with a random string folder name
+1584.04s - 1594.21s |  and there is a login module there. So I tried to hunt here. I removed the login page. Application
+1595.57s - 1604.42s |  is redirecting me to login again. Here it is. So application is asking me for a username
+1605.34s - 1620.12s |  and email address. I provided a fake username and fake email ID. Okay. I got an error that
+1620.92s - 1627.92s |  please try again. But for this particular thing, when application was throwing me an
+1632.76s - 1639.00s |  error, application created a session which belongs to my email ID and they have activated
+1639.00s - 1650.36s |  it for the entire application and which was linked to the admin module. Now I tried to
+1650.36s - 1666.06s |  remove the login and try to access the subdirectory. Boom. Thank you. So here I was able to download
+1668.54s - 1675.54s |  the confidential details. I have blurred a few contents because of sensitive information.
+1676.30s - 1696.55s |  So yeah, I was able to download as well. Okay. Let's discuss if you have any questions. Please.
+1704.78s - 1711.78s |  So WBSCAN, if you will use it without API key, it will definitely will give you results.
+1713.18s - 1719.50s |  But with API keys, I use it in some sort of CTS and even during my red teaming activities,
+1719.50s - 1726.22s |  it will give you extra privileges, extra features to use that. So by using that extra privileges,
+1726.22s - 1734.94s |  you can get more information. Sorry? No, no, no. You can go to WBSCAN website and you can
+1735.38s - 1743.52s |  create a custom key for yourself only. So that will be linked with your account. Yeah,
+1743.52s - 1759.93s |  please. Sorry? Yeah. It is there. Yeah. No. So we were not discussing about traditional
+1759.93s - 1763.69s |  brute forces. We were discussing about how you can, you know, if there is still there
+1763.69s - 1768.53s |  is brute force protection, how you can bypass it. So we were discussing about bypasses.
+1768.53s - 1802.98s |  Please. Obviously, I'm still exploring that particular things. So yeah. But yeah, valid
+1802.98s - 1811.62s |  question. I mean, I look into it. I'll definitely look into it. Thank you so much. Excuse me.
+1811.98s - 1818.98s |  Last thing. I'm still working on authentication bypasses stuff. And if someone from you guys
+1818.98s - 1823.54s |  is working on authentication bypasses, feel free to reach out to me. I will be more than
+1823.54s - 1827.22s |  happy to collaborate and, you know, work more on it. Thank you so much.

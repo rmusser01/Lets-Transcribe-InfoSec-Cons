@@ -1,0 +1,685 @@
+{
+  "webpage_url": "https://www.youtube.com/watch?v=RgCI3GOXLr0",
+  "title": "DEF CON 32 - Breaking network crypto in popular Chinese keyboard apps - Jeffrey Knockel, Mona Wang",
+  "description": "People who don\u2019t type Chinese might be surprised to learn that popular Chinese Input Method Editor (IME) keyboards can act as keyloggers; they transmit your keystrokes over the Internet to enable \u201ccloud-based\u201d support features to improve character prediction when typing.\n\nEveryone might be surprised to learn that these keyloggers, which were already collecting everything you type into your device, were doing it insecurely.\n\nIn this talk, we will describe how we systematically exploited every single popular Chinese IME keyboard vendor\u2019s home-rolled network encryption protocol. Namely, we show how any network eavesdropper can read the keystrokes of what users of these vendors\u2019 keyboards are typing. The affected keyboards include the three most popular Chinese IME keyboards, Sogou IME, Baidu IME, and iFlytek IME, collectively used by almost 800 million users, as well as default and pre-installed keyboards on basically every popular Android mobile device except for Huawei\u2019s. We also discuss how we got here, re-affirm the age-old adage, \u201cDon\u2019t roll your own crypto!\u201d, and call on hackers around the world to help us move towards HTTPS everywhere in understudied app ecosystems.",
+  "channel_url": "https://www.youtube.com/channel/UC6Om9kAkl32dWlDSNlDS9Iw",
+  "duration": 2914,
+  "channel": "DEFCONConference",
+  "uploader": "DEFCONConference",
+  "upload_date": "20241016"
+}
+
+0.88s - 7.58s | This text was transcribed using whisper model: large-v2
+
+ And with that, I hand the podium, the stage, and the mics off to you both.
+7.58s - 10.92s |  Hello.
+10.92s - 14.72s |  Thanks for showing up to DEF CON on a Sunday morning.
+14.72s - 15.76s |  I'm Jeff.
+15.76s - 17.08s |  This is Mona.
+17.08s - 24.00s |  Our talk will eventually be about how certain state actors probably knew what almost every
+24.00s - 28.00s |  Chinese speaker in the world was typing at any time.
+28.00s - 32.92s |  But before we get there, we first have a little background we have to do.
+32.92s - 33.92s |  What's a Chinese keyboard?
+34.44s - 40.08s |  Well, it's something that has a Chinese IME, or input method editor, built into it.
+40.08s - 44.36s |  If you're like me, though, you probably are only familiar with keyboards like this.
+44.36s - 48.54s |  There's just enough buttons for all the letters in your alphabet, so typing in your language
+48.54s - 50.96s |  is actually pretty easy.
+50.96s - 55.60s |  But if you've ever had to use a device like this, you might know what the problem is.
+55.60s - 61.68s |  There's fewer buttons than letters in your language, and so typing can be frustrating
+61.68s - 62.96s |  or difficult.
+63.00s - 66.96s |  You might have to mash the number until you get the letter you want.
+66.96s - 74.76s |  But when we were using these devices, we saw also more intelligent, more predictive methods
+74.76s - 78.92s |  of typing being developed.
+78.92s - 81.96s |  Chinese has over 10,000 characters.
+81.96s - 85.00s |  In this slide, you can see the top 1,000 right there.
+85.00s - 86.80s |  So how do we type that?
+86.80s - 90.96s |  Well, we build a keyboard with 1,000 keys, of course.
+90.96s - 94.12s |  No, this, of course, is not practical.
+94.12s - 100.00s |  And so just like we saw before, we have a variety of methods of inputting Chinese.
+100.00s - 102.12s |  The one on the left here is the most popular one.
+102.12s - 104.56s |  This is called pinyin input.
+104.56s - 107.28s |  You input Chinese characters using letters.
+107.28s - 108.28s |  You do that phonetically.
+108.28s - 112.96s |  The one in the middle, you're doing it using the number pad.
+112.96s - 115.16s |  And then on the one on the right, you just draw them.
+115.16s - 119.28s |  Although if you use this method, hopefully you're a better drawer than I am.
+119.28s - 123.12s |  The one on the left, though, is the one that we'll be focusing on in this talk.
+123.12s - 127.80s |  This is the pinyin method of input.
+127.80s - 134.44s |  So the keyboards that we'll be looking at, these are apps that are built into your phone.
+134.44s - 140.16s |  And the Chinese ones in particular use what's called cloud-based prediction.
+140.16s - 146.12s |  And even if we don't speak Chinese, we know how frustrating it is when we're using a keyboard,
+146.12s - 150.16s |  the autocorrect and autosuggestions that we get from it.
+150.16s - 154.68s |  With Chinese, since you have this additional layer of abstraction, trying to predict the
+154.68s - 159.76s |  character even that you want, typing that in can be especially difficult.
+159.76s - 170.12s |  So we can imagine how to implement these predictions, they want to implement some kind of very computationally
+170.12s - 174.12s |  expensive computation in the cloud.
+174.12s - 184.76s |  And so they want to save, you know, computation on your possibly battery-powered mobile device.
+184.76s - 190.56s |  But another reason why you want to do this over the cloud is potentially to protect your
+190.56s - 192.52s |  intellectual property.
+192.52s - 198.40s |  So a little bit of a while ago, Google got in trouble for stealing SoGo keyboard's prediction
+198.40s - 199.40s |  dictionary.
+199.68s - 207.27s |  We'll be hearing more about SoGo in just a little bit.
+207.27s - 213.99s |  So the keyboards that we looked at are these are immensely popular apps.
+213.99s - 220.11s |  Many of them have active user bases that are almost twice the population of the United
+220.11s - 221.35s |  States.
+221.35s - 224.87s |  These are the top three developers that we looked at.
+224.87s - 229.35s |  And even if you haven't installed the apps, there's a good chance that if you're buying
+229.35s - 234.31s |  your phone in China, one of these apps comes preinstalled and it's just what you get with
+234.31s - 236.59s |  your phone.
+236.59s - 242.07s |  So you might be asking, so these are cloud-based keyboards, I'm sending all my keystrokes over
+242.07s - 249.31s |  the network to a server, and then I'm getting these predictions back over the network.
+249.31s - 252.39s |  Aren't these essentially just key loggers?
+252.39s - 256.83s |  The answer is yes, they are key loggers.
+256.83s - 260.55s |  But our talk actually isn't about how they're key loggers.
+260.55s - 265.63s |  Our talk is actually about something that's much worse than that.
+265.63s - 272.27s |  So the way that these apps transmit your keystrokes over the network, it turns out, and we'll
+272.27s - 279.35s |  see this later, it's done using proprietary cryptography that's wholly insufficient for
+279.35s - 282.51s |  protecting your keystrokes to network eavesdroppers.
+282.51s - 287.93s |  And so, you know, should you be concerned that you're transmitting your keystrokes over
+287.93s - 294.19s |  the network to a server that's run by a large technology company that's located in China?
+294.19s - 295.19s |  Yes.
+295.19s - 301.24s |  But our talk is actually about something that's even worse than that.
+301.24s - 304.34s |  So to be precise, here's our threat model.
+304.34s - 307.74s |  One of our attacks, the first attack we'll be talking about, the one on Sogo, requires
+307.74s - 309.82s |  an active network adversary.
+309.82s - 315.26s |  That just means that they have to send network requests to decrypt your keystrokes.
+315.26s - 321.86s |  The primary downside to that is that someone might observe that you're doing this attack
+321.86s - 323.46s |  if they're looking for it.
+323.46s - 329.86s |  All the other attacks, though, they just require a completely passive network adversary who
+329.86s - 338.38s |  just can silently collect all of your keystrokes and decrypt them whenever they please.
+338.46s - 345.42s |  So this could be someone in the room, it could be your ISP, the server's ISP, every network
+345.42s - 350.52s |  in between, also every state actor in between.
+350.52s - 353.50s |  And we know this because of the Snowden revelations.
+353.50s - 360.02s |  We know about the X-Keysquare program, they have, you know, it's set up all over the globe
+360.02s - 366.34s |  collecting network traffic and we don't know a lot about this program from the slides that
+366.34s - 372.06s |  were leaked, but we do know that as one of the examples of an app that they have targeted,
+372.06s - 378.02s |  it was a Chinese app, it did have insufficient network cryptography and they did exploit
+378.02s - 384.88s |  that to write an X-Keysquare plugin that allowed them to collect data that this app transmitted
+384.88s - 387.22s |  from users all over the globe.
+387.22s - 390.78s |  And what's the difference between this app and the apps that we're looking at?
+390.78s - 396.58s |  Well ours just has data that's even more interesting.
+396.58s - 400.14s |  Will using a VPN save you?
+400.14s - 401.14s |  Probably not.
+401.14s - 404.86s |  That just means that your VPN operator can read everything that you type and if I were
+404.86s - 409.70s |  a VPN operator looking to make a little bit of extra money, on the side, wouldn't it be
+409.70s - 416.46s |  useful to know what all of my customers are typing all the time?
+416.46s - 421.26s |  We're also not in this talk going to be talking about how clever our attacks are.
+421.26s - 425.74s |  The problem is actually going to be how easy our attacks are to pull off.
+425.74s - 429.02s |  Although I would like to think that some of our attacks are pretty cool.
+429.02s - 432.58s |  So here's a summary of the keyboards that we looked at.
+432.58s - 436.26s |  These are those three top developers.
+436.26s - 444.54s |  At least one of their keyboards had a vulnerability that made it vulnerable to network eavesdroppers.
+444.54s - 447.22s |  And here are the phone manufacturers.
+447.22s - 455.58s |  And all but one had a keyboard pre-installed that was vulnerable.
+455.58s - 458.50s |  The exception was Huawei and what made Huawei so special?
+458.50s - 463.18s |  Well they had their own proprietary keyboard used by default.
+463.18s - 467.58s |  And what did they do to protect their network transmissions?
+467.58s - 471.94s |  Well they just simply used TLS and in fact that will be the standard that we use in this
+471.94s - 478.86s |  talk whether your app is using TLS or at least something as good as TLS, that's the standard
+478.86s - 481.90s |  that we'll be using.
+481.90s - 484.34s |  So keyboard cryptography part one.
+484.34s - 485.70s |  So go.
+485.70s - 488.86s |  They call their encryption system the encrypt wall.
+488.86s - 490.74s |  Will it be as great as the great wall?
+490.74s - 492.46s |  Spoiler warning, no.
+492.46s - 495.50s |  We look at this across three different platforms, though.
+495.50s - 498.38s |  The first one that we looked at was Windows.
+498.38s - 502.10s |  You can see here what it looks like to use this inside of a VM.
+502.10s - 505.46s |  I'm typing Ni Hao, which is just hello in Chinese.
+505.46s - 509.50s |  But it can also mean other things, too, depending on what other characters I'm attending.
+509.50s - 512.42s |  And so you can see different suggestions here.
+512.42s - 514.14s |  There's only one problem, though.
+514.14s - 519.10s |  As I'm typing, packets are being sent over the network.
+519.10s - 524.58s |  And for those of you close enough to the monitors to see, you can see these are HTTP requests
+524.58s - 531.94s |  being made in the clear, but it's not completely trivial to eavesdrop on this traffic because
+531.94s - 537.86s |  if we look on the lower left, we can see some things that have pretty high entropy.
+537.86s - 539.50s |  Let's zoom in on those.
+539.50s - 541.94s |  There's five post parameters here.
+541.94s - 547.74s |  One is the AES key, one is the IV, and then some tunneled parameters, the URL, GET params
+547.74s - 550.34s |  and POST params.
+550.34s - 552.78s |  And they're actually all encrypted.
+552.78s - 554.98s |  The AES key is encrypted with an RSA key.
+554.98s - 556.94s |  Oddly, the IV is, too.
+556.94s - 560.86s |  That's not required.
+560.86s - 565.62s |  But they do it and actually does make our attack a little bit more difficult.
+565.62s - 572.18s |  And then U, G, and P are encrypted with the AES key K and the IV.
+572.18s - 577.58s |  So if you were to sort of home roll your own asymmetric cryptographic system, it might
+577.58s - 579.98s |  actually kind of look like this.
+579.98s - 583.34s |  What's the problem with home rolling your own cryptographic system?
+583.34s - 586.70s |  Well, it probably has vulnerabilities.
+586.70s - 591.90s |  And in fact, we found this one is vulnerable to something called a CBC padding oracle attack.
+591.90s - 592.90s |  This is an attack.
+592.90s - 595.78s |  This was first discovered 20 years ago.
+595.78s - 600.66s |  But we'll see a few new twists in our presentation here.
+600.66s - 601.66s |  How does this attack work?
+601.66s - 606.14s |  Well, it means that the SOGO server has something called a padding oracle.
+606.14s - 610.46s |  And that means that we get a unique response from the server.
+610.46s - 617.74s |  In the case of SOGO, a unique HTTP response code corresponding to whether the padding
+617.74s - 620.30s |  of our cryptography is good or bad.
+620.30s - 629.34s |  And for those who aren't familiar, for asymmetric cryptography, it's common to use padding
+629.34s - 637.02s |  because most of the cipher modes require your message to be divisible by the block size.
+637.02s - 641.42s |  And so if your message isn't, you have to put in padding bytes to signal that they're
+641.42s - 642.42s |  padding bytes.
+642.42s - 647.34s |  And so if you only have one byte to go, you put in 1, 1.
+647.70s - 651.18s |  If you have two to go, two twos, and so on.
+651.18s - 655.06s |  If you have zero, you need to signal that somehow, and so you do that with 1616s in
+655.06s - 661.82s |  the case of AES, which is a 16 byte block cipher.
+661.82s - 666.02s |  So a quick refresher on how CBC mode works.
+666.02s - 670.70s |  It's kind of complicated, but let's just zoom in on one thing here on the right.
+670.70s - 672.98s |  We have...
+672.98s - 676.78s |  You can see where those arrows are sort of intersecting with that big XOR symbol.
+676.78s - 683.34s |  We have the penultimate cipher text XORed with the output of the ultimate block cipher
+683.34s - 686.70s |  decryption is equal to the ultimate plain text.
+686.70s - 689.70s |  How did I know what side of the equal sign to put these things on?
+689.70s - 696.22s |  It actually turns out it doesn't matter, because with XOR algebra, X XORed with X equals zero,
+696.22s - 700.90s |  and so you can start with an equation like number 1, you can XOR both sides of the plain
+700.90s - 703.22s |  text, end up with 2, and so on.
+703.22s - 707.26s |  So you can just kind of shuffle anything around the equal sign however you want.
+707.26s - 712.16s |  It's like addition, except you don't have to keep track of the sign.
+712.16s - 718.46s |  So we can take the equation that we have at the top, and recall that we have this padding
+718.46s - 722.86s |  oracle that will tell us when our padding is correct.
+722.86s - 726.90s |  Well the first padding that we want to guess, because it's the easiest, is the one that
+726.90s - 728.42s |  ends in a 1.
+728.42s - 736.10s |  And so we try to find a byte, and we can modify the cipher text that we're sending
+736.10s - 740.54s |  to the server, and so we're trying to find a byte B such that when we XOR it with the
+740.54s - 745.28s |  output of the decryption of the block cipher, we get the value 1.
+745.28s - 750.64s |  And so we try all possible bytes until we find which byte that is, and then we can rearrange
+750.64s - 755.62s |  the equation like this and plug it back in, just doing some XOR algebra, and then we can
+755.62s - 761.34s |  find that the final byte of the plain text is equal to the final byte of the penultimate
+761.34s - 765.74s |  cipher text, XORed with B, XORed with 1.
+765.74s - 770.90s |  Those are all things that we know, and so we've just found a byte of the plain text.
+770.90s - 775.78s |  Using some bit twiddling, we can change the 1 to a 2, and then we find the byte that corresponds
+775.78s - 783.86s |  to 2, and we just keep repeating this process until we've found each byte of the plain text,
+783.86s - 789.10s |  and then each block of the message.
+789.10s - 797.94s |  There's only one problem when we did this, the IV was encrypted, and if you look at this
+797.94s - 805.82s |  figure here, since when you're decrypting the first block, there's no cipher text that
+805.82s - 811.58s |  precedes it, and so this is the role of the IV in this case, but we didn't know the IV,
+811.58s - 815.94s |  and it was actually quite important that we know this, because the plain text was Zlib
+815.94s - 823.62s |  compressed, and so the Zlib dictionary was there, and it was really important for decompressing
+823.62s - 831.74s |  this message that we revealed this first plain text block, but there was a little trick that
+831.74s - 834.50s |  we could do.
+834.50s - 842.22s |  We knew that one of those fields that we wanted to decrypt, U, was predictable during typing,
+842.22s - 849.30s |  in fact when you're typing, it always sends your keystrokes to the same API end point,
+849.30s - 859.06s |  and so we knew what this was, and so we modified our attack like this, using the, we basically
+859.06s - 865.78s |  did the attack per normal, which yielded, instead of the plain text, the plain text
+865.78s - 874.54s |  XORed with the IV, well we knew what the plain text was, so we can XOR that into it, and
+874.54s - 885.26s |  then we get the IV, and then once we know the IV, then we can get UGP per normal.
+885.26s - 892.18s |  So this worked, we decrypted and decompressed the message, and you can see exactly what
+892.18s - 895.18s |  I was typing.
+895.18s - 903.86s |  Sogo for Android was similar, the IV was not encrypted this time, which made things easier,
+903.86s - 909.32s |  but there were also all these additional parameters in their home world cryptography, so we saw
+909.32s - 915.56s |  on this new AES key R, and it was being XORed with K, which was previously being used as
+915.56s - 922.36s |  an AES key, and then there's some other parameters here, SC and F, these were encrypted with
+922.36s - 930.56s |  R and a hard-coded IV, SCO Doris Carlos, I don't know what this is a reference to, but
+930.56s - 935.92s |  if anyone else does, I'd be curious to know after the talk, and then after that encryption
+935.92s - 940.70s |  is performed, those are also XORed with K.
+940.70s - 943.98s |  So this is how this differs from what we saw earlier.
+943.98s - 952.76s |  We have this new key being XORed into it, and then we also have this hard-coded IV.
+952.76s - 959.22s |  So our AES key, K in this case is 256 bits, which is why if we look here, we're splitting
+959.22s - 966.56s |  it in half, we have this K1 for the first block, K2, K1, K2, that's how they implemented
+966.56s - 968.40s |  it.
+968.40s - 974.80s |  So we only had one problem, though.
+974.80s - 981.20s |  Using the padding oracle tag, we could decrypt P2, P3, and so on per normal, but we actually
+981.20s - 984.82s |  had a problem with P1 again, but we actually were able to use it as a very similar trick
+984.82s - 987.20s |  to recover it.
+987.20s - 990.92s |  Turns out in this case, S was predictable, it was just a version of SOGO that you're
+990.92s - 996.60s |  using, and even if it weren't guessable, it was actually sent in the clear as one of the
+996.60s - 1006.40s |  HTTP headers of the post request that was sent in the clear, and so you wouldn't even
+1006.40s - 1007.40s |  have to guess it.
+1007.40s - 1009.76s |  They're already telling it to you.
+1009.76s - 1015.60s |  So since S is predictable, we do a similar attack, and then we get K2 XORed with S, and
+1015.60s - 1023.28s |  so if we know S, now we know K2, and once we know K2, we can recover E, we can recover
+1023.28s - 1024.28s |  F.
+1024.48s - 1028.80s |  We can also recover the second half of R2 as well, because that was transmitted as KXORed
+1028.80s - 1033.36s |  with R, and so this is actually kind of crazy if you think about it, because normally with
+1033.36s - 1036.92s |  a padding oracle tag, you just recover the plain text, but in this case, we were actually
+1036.92s - 1042.56s |  able to recover the second halves of both of these AES keys as well.
+1042.56s - 1046.16s |  And you know, and look at the damage here.
+1046.16s - 1051.26s |  So you can see what I'm typing, but you can also see the app that I'm typing it into.
+1051.26s - 1059.06s |  So if you were collecting these messages globally, you know, what sorts of apps would
+1059.06s - 1061.98s |  you want to filter out, because they'd be the most interesting?
+1061.98s - 1066.18s |  They might be healthcare apps, dating apps.
+1066.18s - 1067.18s |  Are you using Signal?
+1067.18s - 1071.82s |  Well, it doesn't matter that your messages are end-to-end encrypted if all of your keystrokes
+1071.82s - 1083.18s |  are being transmitted using insufficient cryptography that a network eavesdropper can reveal.
+1083.18s - 1093.40s |  So for iOS, this one was especially bad, because they initialized the random number generator
+1093.40s - 1101.14s |  that they used to generate the key and the IV immediately before generating each of them,
+1101.14s - 1104.46s |  and they do that with the current Unix time in seconds.
+1104.46s - 1109.70s |  So if you can, you might be able to see the problem here.
+1109.70s - 1116.90s |  If you know the time, you know the key and the IV, but there's actually another problem
+1116.90s - 1124.90s |  here too, because they received the random number generator before the IV, so chances
+1124.90s - 1131.86s |  are the IV will be exactly the same as the key, and the IV is transmitted in the plane,
+1131.86s - 1136.78s |  in the clear anyways, and so they're basically translating, they're basically transmitting
+1136.86s - 1140.70s |  their key in the clear, or are they?
+1140.70s - 1147.30s |  Turns out, for whatever reason, on iOS, they wrapped all of this insanity in TLS.
+1147.30s - 1149.14s |  Has it always been this way?
+1149.14s - 1150.14s |  Probably not.
+1150.14s - 1154.46s |  There's probably a lot of historical data out there that's been collected on iOS users'
+1154.46s - 1161.44s |  traffic, but at least at the time we did our analysis, it was wrapped in TLS.
+1161.44s - 1164.58s |  So Keyword Cryptography Part 2, iFlytec.
+1164.58s - 1168.06s |  And we looked at this on three different platforms.
+1168.06s - 1171.58s |  So here's what it looks like on Android when you're typing.
+1171.58s - 1177.14s |  Again we're seeing these same problematic HTTP post requests being made.
+1177.14s - 1182.98s |  If you're close enough, you can see in the lower right some high entropy looking traffic.
+1182.98s - 1187.10s |  So what's going on here?
+1187.10s - 1191.50s |  They also send the time in milliseconds.
+1191.50s - 1197.90s |  Once the Unix epoch, this will unfortunately be relevant later.
+1197.90s - 1207.02s |  So we reverse engineered the app and we saw that this traffic was encrypted using DES
+1207.02s - 1214.38s |  in ECV mode, okay, not off to a great start, and they were doing this using this key K.
+1214.38s - 1216.94s |  So how is K derived?
+1216.94s - 1222.94s |  Well, you know, we reverse engineered this and we found out actually it was just the
+1222.94s - 1231.22s |  time in milliseconds with some bit twiddling and then just printed out as a hex string
+1231.22s - 1235.82s |  and then that was taken and used directly as the DES key.
+1235.82s - 1242.54s |  And again, this is problematic because if you know the time, you know the key, and even
+1242.54s - 1247.86s |  if you didn't know the time, well, they tell you anyways, so you don't even need to own
+1247.86s - 1250.40s |  a clock.
+1250.40s - 1254.40s |  And again, we see the same sort of problematic stuff, and this can be collected completely
+1254.40s - 1255.96s |  passively.
+1255.96s - 1262.80s |  You don't have to send any network requests, you just scoop it up silently and no one will
+1262.80s - 1267.52s |  ever be the wiser that this is even happening.
+1267.52s - 1273.92s |  I fly tech for iOS and Windows, exact same problems, but in this case, for whatever reason,
+1273.92s - 1280.39s |  these ones were wrapped in TLS at least by the time that we looked at it.
+1280.39s - 1288.23s |  Keyboard cryptography part 3, Baidu, we again looked at this across a few different platforms.
+1288.23s - 1294.59s |  First one we looked at was Samsung, okay, well, this is a little bit new.
+1294.59s - 1303.03s |  No problematic HTTP requests, it's being sent in the clear, but we see UDP, it looks fairly
+1303.03s - 1305.03s |  high entropy.
+1305.03s - 1308.67s |  So let's see if this encryption is any good.
+1308.67s - 1316.03s |  We reverse engineered it, and what we found was that they randomly generate an AES key
+1316.03s - 1324.79s |  K1, they generate an AES key K2, they AES encrypt K1 with K2, they encrypt the message
+1324.79s - 1329.03s |  with K1, then they transmit encrypted K1 and encrypted message.
+1329.03s - 1331.39s |  Okay, a few things here.
+1331.39s - 1336.43s |  Why am I putting AES in scare quotes on my slides, and why am I putting the word generate
+1336.43s - 1342.07s |  on my slides, and how does the recipient know K2?
+1342.07s - 1347.43s |  Well, we reverse engineered the app, we found it was generated according to the following
+1347.43s - 1348.43s |  function.
+1348.43s - 1353.11s |  If you look closely, though, this function has a pretty big problem.
+1353.71s - 1362.59s |  It only has, it's only input is a Boolean, and so this AES key is effectively a hard
+1362.59s - 1365.87s |  coded AES key, and what is the problem with that?
+1365.87s - 1371.43s |  Well, AES is a symmetric encryption algorithm, meaning the same key that's used to encrypt
+1371.43s - 1373.01s |  is used to decrypt.
+1373.01s - 1378.95s |  So if I reverse engineer your app, and I find the AES key that you're using to encrypt all
+1378.95s - 1384.55s |  of your app's traffic, well, I can use that exact same key to decrypt all of your app's
+1384.55s - 1387.29s |  traffic.
+1387.29s - 1389.39s |  Why did I put AES in scare quotes?
+1389.39s - 1395.59s |  Well, it turns out they modified the AES algorithm, they added some additional permutations, so
+1395.59s - 1405.95s |  I had to reimplement the AES bug for bug the way that they did in order to do the attack.
+1405.95s - 1409.91s |  Did this make the app more secure?
+1409.91s - 1410.91s |  No.
+1410.91s - 1414.51s |  Did it make me frustrated and angry?
+1414.51s - 1415.51s |  Yes.
+1415.51s - 1423.13s |  But security through obscurity doesn't work, and making me angry just makes me more motivated.
+1423.13s - 1431.09s |  So again, what I'm typing and the app that I'm typing it into, this can be all collected
+1431.09s - 1432.77s |  passively.
+1432.77s - 1437.25s |  These are apps used by hundreds of millions of people.
+1437.25s - 1443.57s |  The one for Windows, very similar, mostly just cosmetic differences.
+1443.57s - 1448.81s |  They had a different modified version of AES.
+1448.81s - 1454.89s |  Instead of additional permutations, though, this one just had one few around.
+1454.89s - 1456.77s |  Did this make the app more secure?
+1456.77s - 1457.77s |  No.
+1457.77s - 1463.53s |  In fact, removing one of the rounds actually makes it less secure.
+1463.53s - 1469.13s |  And again, you can see what I'm typing and the app in which I'm typing it into.
+1469.13s - 1474.61s |  This can be passively decrypted.
+1474.61s - 1479.97s |  Next we looked at Baidu for Android and iOS, and we found that by then, they were already
+1479.97s - 1484.85s |  using an updated protocol, and with that, I will hand the mic over to Mona.
+1484.85s - 1490.35s |  All right, thanks, Jeff.
+1490.35s - 1494.05s |  So on Android and iOS, they were using an upgraded protocol.
+1494.05s - 1499.79s |  It was not trivially broken, but it was still bad, so let's talk about this one.
+1499.79s - 1505.79s |  Another note I'll make is that when we reported these issues, instead of using TLS, Baidu
+1505.79s - 1513.79s |  decided to upgrade all of their apps to use this protocol, so keep that in mind.
+1513.79s - 1516.55s |  First thing we do, open it up in Wireshark.
+1516.55s - 1520.39s |  Much of the same, it's also using UDP.
+1520.39s - 1526.43s |  The eagle-eyed among you might notice that the first byte this time is 04, whereas the
+1526.43s - 1532.67s |  previous ones, it was 03, and that's how we guessed we're dealing with an upgraded protocol.
+1532.67s - 1536.63s |  So let's look into that high-entropy data.
+1536.63s - 1544.19s |  Again, we have yet another bespoke quote-unquote AES version.
+1544.19s - 1552.83s |  This time, the thing they did is they modified AES counter mode, so in regular counter mode,
+1552.83s - 1559.67s |  the XOR actually occurs after the encryption, so you have the encryption of the initialisation
+1559.67s - 1566.87s |  vector with the key, and then the result of that is XORed with the plain text, and then
+1566.87s - 1572.87s |  in counter mode, of course, then you increment the IV by one for each ciphertext block.
+1572.87s - 1579.43s |  In this case, Baidu was XORing the IV and the plain text before encryption, and this
+1579.43s - 1581.67s |  has some implications.
+1581.67s - 1588.35s |  In particular, it fails to have this property called cryptographic diffusion, and this property
+1588.35s - 1592.63s |  is one where if you change one bit of the plain text, ideally, at least half of the
+1592.63s - 1596.05s |  bits in the ciphertext should also change.
+1596.05s - 1602.59s |  This did not happen, you know, if you are XORing the IV and the plain text, if you increment
+1602.59s - 1607.67s |  the plain text, or if you increment the IV, results to the same thing, so then the same
+1607.67s - 1613.47s |  thing is being fed into the encryption algorithm, so you get the same ciphertext.
+1613.47s - 1618.21s |  Another thing I will note is that they were actually using the same key and IV.
+1618.21s - 1623.27s |  This makes the encryption deterministic, so all of the same plain text would encrypt to
+1623.27s - 1625.03s |  the same ciphertext.
+1625.03s - 1629.55s |  If you're sniffing someone's Baidu IME traffic and you see the same ciphertext twice, you
+1629.55s - 1633.99s |  might know that they typed the same thing into the device twice or something like that,
+1633.99s - 1636.67s |  so that's also bad.
+1636.67s - 1642.35s |  Generally they weren't using static key AES, which is great, you know, the bar is on the
+1642.35s - 1643.35s |  ground.
+1643.35s - 1645.11s |  They were using static Diffie-Hellman.
+1645.11s - 1650.07s |  What that means is they were pinning a public server key in the app.
+1650.07s - 1655.59s |  Each time you opened the keyboard, it would generate a client public private key pair,
+1655.59s - 1660.91s |  they would encrypt it with a shared secret generated using Diffie-Hellman, and it would
+1660.91s - 1666.03s |  send that ciphertext along with the client public key that they generated.
+1666.03s - 1672.71s |  So all good, not trivially decryptable, but far from the standard that we have today,
+1672.71s - 1673.71s |  which is TLS.
+1673.71s - 1679.59s |  You know, as we mentioned, it's deterministic, so it's not secure, you know, the crypto term
+1679.59s - 1683.23s |  is against chosen plain text attacks.
+1683.23s - 1689.03s |  You don't have cryptographic diffusion, so it might be susceptible to more complex cryptanalysis.
+1689.03s - 1690.55s |  There's no forward secrecy.
+1690.55s - 1693.47s |  As I mentioned, there's a single static server key.
+1693.47s - 1700.15s |  If I were to find the static private key associated with that public key, I could crack every
+1700.15s - 1705.79s |  single thing that anyone ever typed into Baidu IME if I had those logs.
+1705.79s - 1710.31s |  So that makes that private key extremely high value.
+1710.31s - 1717.47s |  Lack of message integrity, there was no cryptographic integrity whatsoever, it was just a CRC32 checksum,
+1717.47s - 1720.79s |  which is trivially forgeable.
+1720.79s - 1722.43s |  So all of these things are bad.
+1722.43s - 1727.27s |  We reported to Baidu, and as I mentioned, they said we looked into it, we're going to
+1727.27s - 1729.59s |  keep using it.
+1729.59s - 1730.75s |  Thanks for your report.
+1730.75s - 1738.67s |  So I would like to emphasize that this cryptographic protocol is being used to protect the keystrokes
+1738.67s - 1742.59s |  of up to maybe 600 million people.
+1742.59s - 1746.83s |  If you are a cryptographer with expertise in cryptanalysis, I highly recommend taking
+1746.83s - 1747.83s |  a look.
+1747.83s - 1750.85s |  I believe our keystrokes deserve at least TLS.
+1750.85s - 1753.19s |  So just a note there.
+1753.19s - 1754.19s |  Okay.
+1754.19s - 1755.19s |  Part four.
+1755.19s - 1756.19s |  Samsung IME.
+1756.19s - 1761.55s |  So in this particular case, we're looking at Samsung, the default keyboard on Samsung
+1761.55s - 1764.11s |  devices sold in the Chinese market.
+1764.11s - 1768.03s |  So on Chinese ROMs, you'll notice there's this option here.
+1768.03s - 1771.11s |  It says suggest rare words.
+1771.11s - 1776.39s |  So if you turn that on, it'll send all your keystrokes over the internet.
+1776.39s - 1781.03s |  This one is easy, because it does it just in plain text, there's no encryption.
+1781.03s - 1785.83s |  So you open up Wireshark, you can see exactly what you typed, like, Ni Hao, can you read
+1785.83s - 1786.83s |  this?
+1786.83s - 1788.71s |  They didn't even try.
+1788.71s - 1792.87s |  And this generated a lot of discussion in our research team, which is, does it count
+1792.87s - 1797.67s |  as cryptography if there is no cryptography?
+1797.83s - 1800.95s |  So I'll pass this to the reader.
+1800.95s - 1804.59s |  In this talk, we kind of focused on the surveillance use case, right?
+1804.59s - 1808.53s |  So we want to be reading what people are typing into their phones.
+1808.53s - 1813.99s |  But I will also note that all of our attacks can be applied to modifying data on the wire.
+1813.99s - 1818.19s |  There are no cryptographic integrity checks whatsoever on any of these.
+1818.19s - 1825.39s |  So you can just reencrypt the data using these fancy schemes to the server or to the client.
+1825.39s - 1829.83s |  So for instance, you can make it look like someone is typing something into their keyboard
+1829.83s - 1831.87s |  that they actually didn't type.
+1831.87s - 1837.27s |  Or on the converse, you can make the server suggest, you know, suggestions that it didn't
+1837.27s - 1838.43s |  mean to suggest.
+1838.43s - 1841.83s |  So this is all quite bad.
+1841.83s - 1843.31s |  We reported all of these issues.
+1843.31s - 1848.33s |  And so our first report was also the most fun, because we got a really passive aggressive
+1848.33s - 1850.71s |  response from Tencent the first time.
+1850.71s - 1856.19s |  They said, we look forward to your next more exciting report.
+1856.19s - 1857.19s |  Thanks for the report.
+1857.19s - 1858.19s |  There's no issue.
+1858.19s - 1862.43s |  But then within 24 hours, they actually followed up and were like, sorry, that was a mistake.
+1862.43s - 1864.15s |  We're taking it very seriously.
+1864.15s - 1866.71s |  And they actually fixed the issue extremely quickly.
+1866.71s - 1868.75s |  I will say props to Tencent.
+1868.75s - 1873.49s |  I think they fixed it within a few days and then had a release out within a few weeks.
+1873.49s - 1874.71s |  So they fixed it.
+1874.71s - 1879.47s |  They took it seriously and fixed it, I think, as fast as they possibly could have for such
+1879.47s - 1882.59s |  a large app.
+1882.59s - 1889.43s |  Calling back to the chart we had earlier, after our disclosures, the ecosystem looked
+1889.43s - 1890.43s |  more like this.
+1890.43s - 1894.19s |  Tencent and iFlytek basically switched to TLS almost immediately.
+1894.19s - 1899.55s |  Baidu, like I mentioned, switched to that fancy weird protocol that we talked about
+1899.55s - 1900.55s |  earlier.
+1900.55s - 1905.37s |  It got an exclamation point because of all the privacy issues we pointed out.
+1905.37s - 1912.49s |  And similarly, we reported also to all of the mobile device manufacturers that we studied.
+1912.49s - 1913.93s |  This is what it looked like before.
+1913.93s - 1919.83s |  I will also note, actually, we did this study after we did the initial reports to Sogo.
+1919.83s - 1926.37s |  So it's possible that those, like, Sogo checks were also trivially decryptable before we
+1926.37s - 1927.37s |  did the study.
+1927.37s - 1929.63s |  But they updated it.
+1929.63s - 1936.63s |  Like Jeff mentioned, Huawei and Vivo had rolled their own keyboards and they were using TLS,
+1936.63s - 1939.59s |  so they also got checkmarks.
+1939.59s - 1942.19s |  After we reported these issues, this is what it looked like.
+1942.19s - 1946.99s |  Again, Sogo, iFlytek, Samsung immediately switched to TLS.
+1946.99s - 1950.43s |  Baidu upgraded to their bespoke thing.
+1950.43s - 1957.59s |  And Baidu on Honor, actually, there was no update mechanism on the phone for the keyboard.
+1957.59s - 1962.95s |  So all these other devices, you could go into, like, the native app store on the phone
+1962.95s - 1964.47s |  and update the keyboard.
+1964.47s - 1966.31s |  This was not possible on the Honor device.
+1966.31s - 1968.47s |  We even updated the operating system.
+1968.47s - 1969.47s |  Didn't get any updates.
+1969.47s - 1975.79s |  So if you're using Honor device or know anyone who is, tell them to install a new keyboard.
+1975.79s - 1978.11s |  It's bad.
+1978.11s - 1985.11s |  So we just talked about how, like, hundreds of millions of people, maybe billions of people's
+1985.11s - 1988.59s |  keystrokes were encrypted insufficiently.
+1988.59s - 1996.67s |  We talked about this terrifying network ecosystem where shitty proprietary craftography is the norm.
+1996.67s - 2002.51s |  What if I told you we're not done yet and we need your help?
+2002.51s - 2003.51s |  Quick quiz break.
+2003.51s - 2007.75s |  What do you guys think were the most popular apps in 2023?
+2007.75s - 2010.79s |  Just shout them out and I'll repeat the ones.
+2010.79s - 2011.79s |  WeChat.
+2011.79s - 2012.79s |  Yeah.
+2012.79s - 2013.79s |  TikTok.
+2013.79s - 2014.79s |  What's up?
+2014.79s - 2015.79s |  Google.
+2015.79s - 2016.79s |  Yeah.
+2016.79s - 2019.48s |  Okay.
+2019.48s - 2022.80s |  We did pretty good, you know?
+2022.80s - 2024.28s |  So I heard QQ as well.
+2024.28s - 2029.12s |  So here is the answer according to this random website I got the data from.
+2029.12s - 2035.28s |  And the reason I pulled this data up is I sort of want to make a point where when non-Chinese
+2035.28s - 2041.88s |  speakers talk about the global Internet, usually, you know, they actually mean the global Internet
+2041.88s - 2043.20s |  outside of China.
+2043.20s - 2046.84s |  And so, you know, I just Googled top apps 2023.
+2046.84s - 2051.76s |  This first article that pulled up, there was this sentence on it.
+2051.76s - 2059.92s |  It said Instagram was the most downloaded app globally in 2023 with 696 million downloads.
+2059.92s - 2063.62s |  Then you, like, scroll down in the same article, it's like, oh, WeChat has, like, a billion
+2063.62s - 2065.64s |  downloads or something.
+2065.64s - 2069.16s |  So clearly they're making the same omission, right?
+2069.16s - 2075.40s |  What they meant is Instagram was the most downloaded app globally outside of China.
+2075.40s - 2079.96s |  And maybe we do this in practice because the Chinese Internet developed very independently
+2079.96s - 2085.20s |  from the rest of the global Internet for, you know, like, censorship or, like, sanctions,
+2085.20s - 2086.44s |  various reasons.
+2086.44s - 2090.88s |  But I want to note that this bias exists also in the security community, especially the
+2090.88s - 2093.32s |  English-speaking security community.
+2093.32s - 2099.12s |  So you talk to anyone, it's widely accepted that TLS is universal now, right?
+2099.12s - 2106.72s |  It's incredible that we're loading 80% of web pages on Firefox over HTTPS thanks to
+2106.72s - 2111.00s |  a lot of the efforts of the people in this room, in this community.
+2111.00s - 2112.00s |  It's incredible.
+2112.00s - 2116.68s |  But I would add that asterisk outside of China.
+2116.68s - 2124.80s |  So how many of these are exclusively using HTTPS, TLS, QUIC, standard encryption to encrypt
+2124.80s - 2126.52s |  the network traffic?
+2126.52s - 2130.20s |  And the answer is we did this research.
+2130.20s - 2131.96s |  This is what it looks like.
+2131.96s - 2136.48s |  Note that all of the apps developed outside of China, it is true they are exclusively
+2136.48s - 2140.04s |  using HTTPS, TLS, QUIC to encrypt their traffic.
+2140.04s - 2143.64s |  It doesn't look the same for apps developed inside of China.
+2143.64s - 2147.28s |  But they're also not just sending everything in plain text.
+2147.28s - 2149.64s |  That would be even more wild.
+2149.64s - 2156.28s |  A lot of them are using proprietary cryptography like the ones we just talked about earlier
+2157.04s - 2158.04s |  in this talk.
+2158.04s - 2163.76s |  I hope this fills you with the same sense of terror and dread that it filled me with.
+2163.76s - 2164.76s |  This is bad.
+2164.76s - 2168.44s |  You shouldn't be rolling your own crypto.
+2168.44s - 2171.92s |  But I want to make the point because this is a systemic issue.
+2171.92s - 2175.52s |  This is not just, you know, keyboard apps or like WeChat.
+2175.52s - 2180.00s |  Like researchers have mostly been conducting these one-off studies analyzing proprietary
+2180.00s - 2183.00s |  cryptography in individual apps.
+2183.00s - 2186.16s |  But we need to measure this systematically.
+2186.16s - 2188.56s |  So we've started designing this pipeline.
+2188.56s - 2192.80s |  And this is just what I do when I open an app for the first time to look at its network
+2192.80s - 2193.80s |  crypto.
+2193.80s - 2197.88s |  We're going to try to run this pipeline on like thousands of applications.
+2197.88s - 2199.72s |  We started with 100.
+2199.72s - 2204.32s |  So we just download them, install them on either like an emulated phone or a rooted
+2204.32s - 2207.36s |  phone, simulate user behavior.
+2207.36s - 2211.60s |  Right now our robot just clicks randomly on the screen and accepts permission dialogues.
+2211.60s - 2214.12s |  Seems to work fine.
+2214.12s - 2220.40s |  Simulate the non-TLS traffic from the collected TLS or collected network traffic.
+2220.40s - 2222.04s |  Then we run it through some entropy analysis.
+2222.04s - 2228.08s |  So we mentioned earlier the way that we visually identify something that might be custom cryptography
+2228.08s - 2230.64s |  is, you know, high entropy.
+2230.64s - 2235.56s |  Is the payload aligned with standard AES or DES block sizes?
+2235.56s - 2238.80s |  All of those are signs.
+2238.80s - 2239.80s |  So yeah.
+2239.80s - 2243.28s |  Like I mentioned, we ran this on like 100 apps.
+2243.44s - 2245.00s |  Pretty bad.
+2245.00s - 2251.80s |  So on Google Play store, top 45 apps, 91% of them exclusively using standard encryption,
+2251.80s - 2255.44s |  quick TLS, HTTPS to transmit data.
+2255.44s - 2258.20s |  Things don't look so good on the Baidu app store.
+2258.20s - 2263.00s |  Only two of them were using standard encryption exclusively.
+2263.00s - 2269.60s |  Over half of them were using some bespoke looking cryptography.
+2269.60s - 2271.24s |  That's really bad.
+2271.24s - 2278.60s |  So clearly this message, like don't roll your own crypto, has been lost in translation.
+2278.60s - 2283.36s |  These are not� like these are very large companies, very well resourced with a lot
+2283.36s - 2289.24s |  of influence, a lot of users and a lot of money rolling their own crypto to their own
+2289.24s - 2293.68s |  detriment and to their own user's detriment.
+2293.68s - 2298.24s |  When we describe this research, often the first question we get is like a misunderstanding,
+2298.24s - 2299.80s |  which is are these backdoors?
+2300.36s - 2303.24s |  And the answer is no.
+2303.24s - 2313.56s |  Like Jeff mentioned before, we have evidence of the NSA leveraging bad proprietary cryptography
+2313.56s - 2317.88s |  to ingest data about users into their mass surveillance database.
+2317.88s - 2324.11s |  So it's not a backdoor if you're just giving the data to the NSA.
+2324.11s - 2325.87s |  So why is this happening?
+2325.87s - 2327.51s |  I don't have a good answer.
+2327.51s - 2330.03s |  Here are some hypotheses.
+2330.03s - 2333.03s |  Happy to talk to folks if you have ideas.
+2333.03s - 2340.27s |  Many of these applications became massively popular before TLS, SSL was the de facto standard
+2340.27s - 2342.51s |  for encryption.
+2342.51s - 2345.11s |  Back then the CA ecosystem was a mess.
+2345.11s - 2349.27s |  The NSA had presumably maybe backdoored an elliptic curve.
+2349.27s - 2356.75s |  So maybe you're not as trusting of what's going on in terms of like standardized encryption.
+2356.75s - 2366.39s |  Another note is that in the Chinese ecosystem, generally client code, server endpoints and
+2366.39s - 2370.39s |  stuff like that is heavily protected as intellectual property.
+2370.39s - 2376.11s |  So if anyone has spent some time reverse engineering Chinese apps, you might know that they are
+2376.11s - 2380.71s |  often more heavily obfuscated than their non-Chinese counterparts.
+2380.71s - 2386.63s |  So one idea is this sort of bespoke custom cryptography is a way to prevent like third
+2386.63s - 2393.91s |  party interoperability with scraping or competitors trying to leverage their, you know, server
+2393.91s - 2394.91s |  endpoints.
+2394.91s - 2396.43s |  It's not a good way to do that.
+2396.43s - 2402.79s |  You should still use TLS, but that's just one thought on maybe why this is happening.
+2402.79s - 2408.63s |  Honestly, frankly, I don't really care about this question as much as I care about fixing
+2408.63s - 2413.35s |  it, which is how do we stop it from being this bad?
+2413.35s - 2421.31s |  It's honestly the worst that we found these massive vulnerabilities this late into the
+2421.31s - 2422.99s |  game in like 2024.
+2422.99s - 2427.29s |  These apps have been used by so many people for so long.
+2427.29s - 2432.15s |  Why are we not paying more attention to these massively popular but understudied apps?
+2432.15s - 2436.07s |  Any one of you guys who looked at this traffic in Wireshark would have known that there is
+2436.07s - 2437.83s |  a problem.
+2437.83s - 2441.35s |  So we need to be looking at these problems.
+2441.35s - 2442.79s |  We need to report these problems.
+2442.79s - 2448.51s |  So many of them, many of these companies did switch to TLS when we reported these vulnerabilities.
+2448.51s - 2449.51s |  Some did not.
+2449.51s - 2453.59s |  We need to continue engaging with them, put pressure on them to design better products.
+2453.59s - 2459.88s |  Our keystrokes deserve at least TLS.
+2459.88s - 2464.32s |  And finally, like I mentioned, you know, this is a systemic problem.
+2464.32s - 2470.52s |  It's not just one crypto SDK being used everywhere that's encrypting things poorly.
+2470.52s - 2475.08s |  Each of these companies is developing their own bespoke cryptography and sending it over
+2475.08s - 2477.00s |  HTTP.
+2477.00s - 2483.00s |  Can platforms, app store enforcement, operating system, impose restrictions on the nature
+2483.00s - 2484.80s |  of apps' network access?
+2484.80s - 2491.92s |  And one example I give is on iOS, actually, there's like an option you can tick that makes
+2491.92s - 2493.92s |  all your network traffic like sandbox.
+2493.92s - 2496.24s |  So your keyboard can't access the internet.
+2496.24s - 2498.16s |  Seems like a good thing.
+2498.16s - 2500.60s |  Maybe something could be possible for Android.
+2500.60s - 2501.92s |  Maybe you have other ideas.
+2501.92s - 2503.16s |  Let us know.
+2503.16s - 2506.04s |  And then finally, don't rule your own crypto.
+2506.04s - 2507.76s |  We got to spread this message.
+2507.76s - 2508.76s |  It's never worked.
+2508.76s - 2513.36s |  It still isn't working as our, you know, work has shown.
+2513.36s - 2514.36s |  Yeah.
+2514.36s - 2515.36s |  Why?
+2515.36s - 2516.36s |  Why?
+2516.36s - 2517.36s |  Why is this?
+2517.36s - 2518.36s |  It's 2024.
+2518.36s - 2519.36s |  Why is this still happening?
+2519.36s - 2520.36s |  That's it.
+2521.36s - 2532.32s |  I really appreciate both your perspectives and thank you for all your research.
+2532.32s - 2536.80s |  If anybody has any questions, these microphones really help everybody hear it.
+2536.80s - 2543.33s |  Do you think some of the reason why they're not ruling their own crypto is because of
+2543.33s - 2552.37s |  the reliance on the SM algorithms and like we don't trust the NSA, they don't trust their
+2552.37s - 2553.37s |  government?
+2553.37s - 2556.37s |  I think that's probably why.
+2561.56s - 2565.40s |  Uh, I think that would make sense, but we also know at this point, you know, it's been
+2565.40s - 2572.60s |  a long time and actually the C insert CC, which is, I think, a think tank, uh, in China
+2572.60s - 2575.12s |  that like does cybersecurity stuff.
+2575.12s - 2578.72s |  I think they do stuff with a great wall as well as a great firewall.
+2578.72s - 2583.88s |  Um, they actually released reports, um, occasionally being like, Hey, why aren't these banking
+2583.88s - 2585.38s |  apps using HTTPS?
+2585.38s - 2588.56s |  So like they want to use HTTPS.
+2588.56s - 2589.56s |  Yeah.
+2590.56s - 2595.76s |  Uh, you mentioned that for some reason, some of the iOS apps were using TLS while the other
+2595.76s - 2596.76s |  ones weren't.
+2596.76s - 2602.28s |  Um, this is because, uh, Apple has something called app transport security that's been
+2602.28s - 2607.92s |  enforced in iOS since like iOS 9.0 and 2015.
+2607.92s - 2612.52s |  And uh, you can't make an iOS app that makes network traffic that doesn't go over TLS.
+2612.52s - 2617.00s |  So I think they probably switched to that because they had to.
+2617.00s - 2619.40s |  I don't know if that's exactly right.
+2619.40s - 2625.48s |  So if you're using the C sockets API, I don't think they can enforce it then, right?
+2625.48s - 2628.44s |  Oh, is it just through their like fetch API or whatever?
+2628.44s - 2629.44s |  Right.
+2629.44s - 2632.88s |  My understanding is that it's only through the high level APIs that that's enforced.
+2632.88s - 2638.24s |  And Android also has a similar policy now as well, but again, it has the same restriction
+2638.24s - 2639.72s |  only through the high level APIs.
+2639.72s - 2640.72s |  Makes sense.
+2640.72s - 2641.72s |  Yeah.
+2641.72s - 2648.24s |  It's actually quite common that they use, um, the C sockets API because, um, they, they
+2648.24s - 2649.92s |  write this code to be portable.
+2649.92s - 2654.44s |  And so it ends up just being a bunch of code that's linked with like lib curl or something
+2654.44s - 2655.44s |  like that.
+2655.44s - 2658.44s |  And so it's, it's more common than you would think.
+2658.44s - 2659.44s |  Yep.
+2659.44s - 2667.36s |  By doing iOS as an example, they were just using like raw UDP through the sockets API.
+2667.36s - 2672.48s |  So, um, uh, so goo alerts make up the preponderance of our Zeke detections.
+2672.48s - 2677.12s |  Um, is there, and, but there are various stripes, like there's probably a half a dozen of them
+2677.12s - 2678.12s |  that we see regularly.
+2678.44s - 2683.68s |  Are there, are there certain patterns that we should look for that are indicative of
+2683.68s - 2685.12s |  more nefarious behavior?
+2685.12s - 2690.64s |  Like like is there stages of attack that is just like indicative of sort of somebody testing
+2690.64s - 2694.48s |  something or something that's actually gonna, you know, hurt one of our users?
+2694.48s - 2698.12s |  We see actual bad things happening to them.
+2698.12s - 2704.08s |  So if I understand your question, um, you would probably be in the best position to
+2704.08s - 2709.08s |  detect the attack if you were, um, on so go side or one of the networks there.
+2711.48s - 2716.48s |  Um, if you're, if you're looking to protect users on, um, your network, you probably wouldn't
+2718.68s - 2723.52s |  see the attack unless someone on, on your network just happened to be, uh, doing the
+2723.52s - 2724.52s |  attack.
+2724.52s - 2727.92s |  But, uh, does that address your question?
+2727.92s - 2728.92s |  No, it does.
+2728.92s - 2732.84s |  It just, we always question whether or not there's different stages of things you see
+2732.88s - 2733.88s |  in the Zeke data.
+2733.88s - 2736.72s |  And some of them are just indicative of like the first stage of the attack, which you can
+2736.72s - 2739.68s |  ignore, like weird DNS requests.
+2739.68s - 2744.04s |  Some of them are more, you know, indicative of actual bad things happening.
+2744.04s - 2749.60s |  So I was just curious if you could like, if there was a late, you know, a noob's way to
+2749.60s - 2751.84s |  tell if somebody is really in trouble.
+2751.84s - 2752.84s |  Yeah.
+2752.84s - 2753.84s |  Unfortunately not.
+2753.84s - 2757.92s |  And, you know, and as we said too, um, so go is the only one that you have any chance
+2757.92s - 2758.92s |  of detecting.
+2758.92s - 2763.68s |  The others, of course, um, those, those can be just passively collected and decrypted.
+2763.68s - 2766.60s |  And so just no hope there, unfortunately.
+2766.60s - 2767.88s |  Thank you.
+2767.88s - 2773.24s |  And to clarify on the SOGA one, you actually don't need to be a man in the middle, uh,
+2773.24s - 2774.24s |  active attacker.
+2774.24s - 2777.08s |  I know when people say active attack often, that's what you need.
+2777.08s - 2778.60s |  You just need like network access.
+2778.60s - 2783.76s |  So you can be doing, you can be like pinging the padding Oracle on a different network.
+2783.76s - 2794.75s |  Um, have you done analysis of American keyboards?
+2794.75s - 2799.07s |  Which ones do you find have been, uh, the most secure?
+2799.07s - 2804.59s |  Um, so we actually did because we were like, maybe this is just happening all the time.
+2804.59s - 2812.39s |  And, uh, and it generally, it looks like, so I think we just tested Google, the Android
+2812.39s - 2817.27s |  default and the Apple default, and we didn't see any network traffic, um, unless you were
+2817.87s - 2822.07s |  like using like Jiffy or something, you know, like those things that, um, fetch images,
+2822.07s - 2826.47s |  uh, from the internet, but individual keystroke presses didn't do anything or it didn't send
+2826.47s - 2827.47s |  any network traffic.
+2827.47s - 2833.07s |  Again, I mentioned that option on iOS you can tick that prevents your keyboard, um,
+2833.07s - 2835.39s |  from making network requests.
+2835.39s - 2845.89s |  And so you can turn that on if you're on iOS and you're worried about this.
+2845.89s - 2850.13s |  Is it possible the reason why they're doing all this, because it really doesn't matter
+2850.29s - 2855.29s |  because the Chinese government has to have access to all their information anyway.
+2855.29s - 2860.53s |  So why go through all of this when they have to see it anyway?
+2860.53s - 2867.05s |  Yeah, I mean, that, that's a great question to ask because, um, but, but here's, here's
+2867.05s - 2872.65s |  the problem though, um, it gives everyone else access to, and that's, and, and that's
+2872.65s - 2873.65s |  undesirable.
+2873.65s - 2878.85s |  You know, the Chinese government wouldn't want, um, NSA and other five eyes and other
+2878.89s - 2882.33s |  state actors to have access to what everyone is typing either.
+2882.89s - 2887.25s |  Um, and so, you know, I, I, I think your question is sort of similar to the, is this a
+2887.25s - 2888.37s |  backdoor question?
+2888.89s - 2892.45s |  Um, and I think it has sort of an analogous answer.
+2894.50s - 2899.14s |  All right, everyone, give Jeffrey and Mona a huge round of applause.
+2910.49s - 2911.93s |  These are for you both.

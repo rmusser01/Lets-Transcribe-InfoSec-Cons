@@ -1,0 +1,1041 @@
+{
+  "webpage_url": "https://www.youtube.com/watch?v=hBGkmpBD20o",
+  "title": "BlueHat 2024: S01: The two sides of UnOAuthorized",
+  "description": "The two sides of UnOAuthorized Presented by Eric Woodruff from Semperis and Cameron Vincent from Microsoft.\n\nAbstract: For customers of Microsoft 365 and Azure, obtaining the role of Global Administrator (GA) is every attacker's dream \u2013 it is the Domain Administrator of the cloud. This makes Global Administrator every organization's nightmare of being owned by a threat group or hacker. \n\nLuckily, well-defined role-based access control and a strict application consent model can severely limit who gets their fingers on Global Administrator \u2013 or does it?\n\nThis talk walks through the UnOAuthorized discovery that resulted in privilege elevation to Global Administrator in Entra ID, among some other unexpected privileged actions.\n\nPart conversation about the research background, part exploration of application permissions in Entra ID, this talk will walk through the entire path to privilege elevation step-by-step, as well as defense and detection of abuse.\n\nWe will not just look at the research perspective, as this talk will explore the case through the lens of MSRC, in both the research on their end after the case was submitted, and the cascading impact this case has had on identity security in Entra.\"",
+  "channel_url": "https://www.youtube.com/channel/UCKmzq2lAhDxLy36KtvVWpaQ",
+  "duration": 2409,
+  "channel": "Microsoft Security Response Center (MSRC)",
+  "uploader": "Microsoft Security Response Center (MSRC)",
+  "upload_date": "20241108"
+}
+
+0.00s - 4.08s | This text was transcribed using whisper model: large-v2
+
+ So this is the two sides of an unauthorized.
+4.08s - 9.04s |  And so actually, I presented some of this at Black Hat.
+9.04s - 11.28s |  And at that time, I got to meet Cam,
+11.28s - 14.68s |  who found out he sort of worked the case from the MSRC
+14.68s - 15.60s |  side of things.
+15.60s - 19.28s |  So if you've seen or watched some of this research before,
+19.28s - 21.48s |  read the blog or whatnot, I think
+21.48s - 24.72s |  today is going to be special in that I'm not
+24.72s - 27.16s |  going to be inferring things about the Microsoft
+27.16s - 30.64s |  side of stuff, because I don't work for Microsoft anymore.
+30.64s - 32.92s |  And Cam's going to present on that.
+32.92s - 34.92s |  But for those less familiar with the research,
+34.92s - 37.36s |  I kind of led up to the case and everything.
+37.36s - 40.00s |  We're going to jump through that first.
+40.00s - 42.08s |  So again, I'm Eric Woodruff.
+42.08s - 46.04s |  I'm currently a senior security researcher at Sempris.
+46.04s - 47.40s |  And I have a blue background.
+47.40s - 50.56s |  I was actually joking earlier that I didn't really
+50.56s - 53.44s |  know I was in security up until, well,
+53.44s - 56.00s |  past three, four years or whatnot.
+56.00s - 58.40s |  I was just an identity guy sort of managing
+58.40s - 60.76s |  AD, Azure AD, all that stuff.
+60.76s - 62.88s |  And I was always on the blue side.
+62.88s - 64.80s |  So security research wasn't really my thing
+64.80s - 66.60s |  up until more recently.
+66.60s - 69.60s |  And I don't know if you want to say anything else about yourself,
+69.60s - 71.12s |  Cam, here before we jump in.
+71.12s - 71.60s |  Sure.
+71.60s - 73.44s |  I'll just hop up really quickly.
+73.44s - 75.04s |  Ryan did an amazing intro on me.
+75.04s - 76.52s |  But yeah, my name's Cameron Vincent.
+76.52s - 80.08s |  So as she did mention, I used to do bug bounty hunting.
+80.08s - 82.80s |  I did that full time, started in 2016.
+82.80s - 84.84s |  So I started submitting bugs to Microsoft
+84.84s - 87.68s |  in 2016, which is almost 10 years from now,
+87.68s - 90.64s |  which is crazy to even think about.
+90.64s - 93.20s |  And I'm even up here collabing with an external researcher.
+93.20s - 94.48s |  So who would have thought?
+94.48s - 96.84s |  And I work on the vulnerability and mitigations team.
+96.84s - 99.48s |  So we're the team that deals with all incoming security
+99.48s - 100.24s |  reports.
+100.24s - 101.96s |  So when Eric was submitting his research,
+101.96s - 104.76s |  we're the team that kind of reviews it, decides on severity,
+104.76s - 107.32s |  helps the teams reproduce it, stuff like that.
+107.32s - 109.00s |  So I'm going to pass it back off to Eric.
+109.00s - 112.68s |  And I'll step up here later.
+112.72s - 114.72s |  So as far as the agenda, just quickly, basically,
+114.72s - 117.24s |  we have these two sides to unauthorized,
+117.24s - 119.96s |  sort of in the name of the session here.
+119.96s - 122.40s |  So we're just going to look at the background of things,
+122.40s - 124.60s |  level set some knowledge for those less familiar
+124.60s - 127.12s |  with applications, and service principles,
+127.12s - 128.32s |  and multi-tenant apps.
+128.32s - 130.16s |  We'll look at the research and the findings.
+130.16s - 132.04s |  Then I'll pass it off to my buddy Cam,
+132.04s - 134.48s |  here, who will talk about the MSRC response,
+134.48s - 138.68s |  as well as diving a bit deeper into the other side
+138.68s - 141.80s |  of unauthorized.
+141.80s - 147.36s |  So getting into the research, and in particular,
+147.36s - 149.28s |  the background on the research here.
+149.28s - 153.36s |  So I'd say external to Microsoft,
+153.36s - 155.16s |  application service principles are
+155.16s - 156.56s |  a thing that a lot of enterprises,
+156.56s - 159.56s |  defenders, blue teamers, they don't really understand.
+159.56s - 162.88s |  And it's also a great place for attackers to live.
+162.88s - 166.50s |  But research on this stuff isn't new.
+166.50s - 168.08s |  There's a lot of different researchers
+168.08s - 170.92s |  out there that have written about all this.
+170.92s - 173.32s |  And in particular, back in 2019,
+173.32s - 177.24s |  Dirk Jan, who a lot of people may be familiar with,
+177.24s - 179.48s |  actually wrote this article based on research
+179.48s - 184.60s |  into Microsoft applications and abusing permissions that,
+184.60s - 188.68s |  light's changing there, service principles and whatnot.
+188.68s - 190.52s |  And actually, at the time when he wrote this,
+190.52s - 192.42s |  I worked at Microsoft, and I was very much
+192.42s - 196.60s |  in the Microsoft bubble, where I wasn't familiar with the work,
+196.60s - 200.36s |  but I was delivering Azure AD on-demand assessments.
+200.36s - 201.60s |  And what I thought was interesting
+201.60s - 203.52s |  is there was actually an indicator in there
+203.52s - 206.64s |  that looked for credentials on service principles.
+206.64s - 208.84s |  And I kind of always tucked that thought in my head,
+208.84s - 211.30s |  because I thought it was an interesting thing to look for.
+211.30s - 212.92s |  But again, wasn't a researcher, sort
+212.92s - 214.82s |  of working in enterprises, defender stuff,
+214.82s - 218.12s |  didn't really care so much about diving
+218.12s - 221.96s |  into that piece of things.
+221.96s - 224.04s |  And we'll kind of touch on that story a bit more
+224.04s - 224.84s |  as I get into this.
+224.84s - 227.48s |  But just want to sort of level set some knowledge here
+227.48s - 232.08s |  for setting the stage for the finding and the research here.
+232.08s - 234.84s |  So it is important to understand that the application
+234.84s - 238.56s |  administrator role is required, or it's
+238.56s - 242.64s |  a prerequisite for the vulnerability or the finding
+242.64s - 243.56s |  that we had here.
+243.56s - 245.60s |  And to just walk through things, if you
+245.60s - 249.61s |  have your intra-tenant, I think I've
+249.61s - 252.37s |  got to get closer to the computer there.
+252.37s - 253.99s |  So you have your intra-tenant, and you
+253.99s - 256.73s |  have a user assigned the application administrator
+256.73s - 259.13s |  role or the cloud app admin role.
+259.13s - 261.81s |  And effectively, this user role exists,
+261.81s - 264.21s |  or the app admin role exists, for managing
+264.21s - 267.77s |  the lifecycle of applications, SAML, OpenID,
+267.77s - 271.01s |  Connect applications integrated with your intra-tenant.
+271.01s - 272.37s |  But this stuff is like swim lanes,
+272.37s - 274.85s |  that if you go to do something, like say,
+274.85s - 278.37s |  manage other roles, like adding users to global admin role,
+278.37s - 280.53s |  you're going to get blocked by intra,
+280.53s - 282.65s |  saying that no, you're not supposed to do that,
+282.65s - 284.89s |  because role management isn't a thing
+284.89s - 287.87s |  that app admins are allowed to do.
+287.87s - 290.27s |  And I'll just say, when I'm talking about the app admin
+290.27s - 292.31s |  role, I'm also including cloud app admin role,
+292.31s - 294.07s |  but that gets very wordy to say both.
+294.07s - 296.43s |  So just whenever you hear app admin role,
+296.43s - 300.52s |  we're actually talking about either.
+300.52s - 303.32s |  So also, I want to set the stage here
+303.32s - 306.20s |  regarding applications or service principles
+306.20s - 308.68s |  in your Microsoft Cloud estate.
+308.68s - 310.72s |  So if you've been around the block for a while,
+310.72s - 312.20s |  and hopefully Microsoft people are
+312.20s - 315.60s |  familiar with this, the services control panel on Windows.
+315.60s - 318.16s |  And as a consumer of using a Windows device,
+318.16s - 319.92s |  you don't really care necessarily
+319.92s - 321.16s |  what's running or what's not.
+321.16s - 323.64s |  You just know this stuff should be doing the stuff it's
+323.64s - 327.52s |  supposed to do, and then you can use your Windows device.
+327.52s - 329.12s |  And the cloud is very similar.
+329.12s - 331.92s |  And there's some services that run up in your Microsoft
+331.92s - 334.04s |  estate that you might be familiar with,
+334.04s - 337.00s |  like Exchange Online, SharePoint Online.
+337.00s - 340.44s |  There's other service principles here for Azure Portal,
+340.44s - 342.52s |  and Keeble, and stuff like that.
+342.52s - 344.32s |  But there's actually hundreds and hundreds
+344.32s - 346.44s |  of other service principles from Microsoft.
+346.48s - 347.84s |  Again, depending on whether you're
+347.84s - 350.12s |  M365, or Azure, or all of the above,
+350.12s - 351.60s |  whatever you're consuming, there's
+351.60s - 354.20s |  going to be service principles very likely for these things.
+354.20s - 356.32s |  But again, as a consumer, it's like,
+356.32s - 357.56s |  who cares about the stuff?
+357.56s - 359.88s |  It's just as long as things are working the way
+359.88s - 360.76s |  they're supposed to.
+360.76s - 364.72s |  That's all we care about.
+364.72s - 366.92s |  And diving a bit further into these applications
+366.92s - 368.72s |  and just understanding some of the mechanics
+368.72s - 371.04s |  behind how they function.
+371.04s - 373.80s |  So we're going to talk about multi-tenant applications.
+373.80s - 375.92s |  And so if we have our publisher tenant here,
+375.92s - 377.72s |  so we'll sort of role play here and pretend
+377.88s - 381.16s |  I'm an ISV, and I'm publishing some piece of software.
+381.16s - 384.84s |  So I have my publisher tenant, and I create my app
+384.84s - 390.64s |  registration, and I give it some application name.
+390.64s - 392.80s |  And then I also am going to have a client ID.
+392.80s - 397.84s |  Wow, this clicker is very un- I'm just
+397.84s - 399.68s |  going to actually jump down here.
+399.68s - 403.16s |  And I'm going to have a client ID that's
+403.16s - 406.64s |  globally unique across all Azure tenants that
+406.64s - 408.28s |  may consume my application.
+408.32s - 411.12s |  I'm going to have some application permissions here.
+411.12s - 412.92s |  And these are going to be whatever I define
+412.92s - 415.00s |  as required by my app.
+415.00s - 416.96s |  So I'm the software developer, and here I'm
+416.96s - 419.08s |  saying I need user read-write-all,
+419.08s - 422.72s |  directory read-write-all, and group read-all for whatever
+422.72s - 424.88s |  it is my app's supposed to do to function.
+424.88s - 426.76s |  And then I assign some credentials to this.
+426.76s - 428.72s |  It can either be a secret, which is effectively
+428.72s - 435.89s |  a password for an application, or an asymmetric key pair.
+435.89s - 437.85s |  And so then I go build my application.
+437.85s - 440.61s |  It doesn't matter if it's in Azure, AWS,
+440.61s - 443.13s |  where it's running on-prem, AKS.
+443.13s - 445.97s |  But there's essentially a relationship to this application
+445.97s - 447.61s |  that when it needs to consume things
+447.61s - 449.29s |  in the sort of enter world of things,
+449.29s - 451.69s |  I'm going to give it a client ID, a tenant ID,
+451.69s - 452.69s |  and those credentials.
+452.69s - 456.13s |  And then it can go authenticate to enter tenants.
+456.13s - 458.21s |  But as a developer, I need customers.
+458.21s - 460.01s |  I'm not going to be in business very long.
+460.01s - 462.29s |  So a customer comes along, and sort of high level
+462.29s - 465.13s |  here, where the global admin shows up and performs
+465.13s - 467.29s |  an admin consent grant, where they effectively
+467.29s - 468.73s |  go to the application, and they're
+468.73s - 470.85s |  going to get a pop-up that says, hey,
+470.85s - 473.17s |  this app wants to have these permissions in your tenant.
+473.17s - 476.61s |  And you hit Yes, and you perform that admin consent.
+476.61s - 478.97s |  And now we're going to have this service principle created
+478.97s - 480.01s |  in our tenant.
+480.01s - 482.09s |  And as we can see here in the service principle,
+482.09s - 484.33s |  it's going to have that same sort of application name
+484.33s - 485.85s |  that I defined as the developer.
+485.85s - 488.41s |  And more importantly, these application permissions,
+488.41s - 491.09s |  where the TLDR on it is I've agreed
+491.09s - 493.89s |  to let this application do whatever the developer says
+493.89s - 497.61s |  they need to do within my tenant.
+497.61s - 499.05s |  So we have that relationship here
+499.05s - 502.29s |  between the service principle and app registration.
+502.29s - 504.49s |  But then we have Graph API show up,
+504.49s - 506.81s |  generally the preferred way to interact
+506.81s - 511.81s |  with Entra and the Microsoft 365 world of things.
+511.81s - 514.81s |  And so this application can authenticate to the tenant.
+514.81s - 516.81s |  And as long as the authentication functions,
+516.81s - 518.97s |  we're going to get an access token back.
+518.97s - 521.49s |  And then we're going to pass that access token off to Graph.
+521.49s - 523.33s |  And again, as long as everything's good here,
+523.33s - 526.09s |  we're going to be able to do stuff where stuff is,
+526.09s - 531.19s |  whatever, again, is defined by the application developer.
+531.19s - 534.03s |  So Microsoft multi-tenant applications,
+534.03s - 535.71s |  your Microsoft applications, they
+535.71s - 538.71s |  function in a very similar way.
+538.71s - 542.19s |  So in this example here, we have device registration service.
+542.19s - 546.25s |  And so in theory, we're going to have device registration
+546.25s - 548.53s |  service as a service principle in our tenant.
+548.53s - 551.47s |  And if this needed to do something against Graph,
+551.47s - 553.95s |  this could also authenticate to the tenant,
+553.95s - 557.31s |  get an access token back, and pass this along
+557.31s - 560.71s |  to Microsoft Graph, and be able to do whatever stuff is,
+560.71s - 563.59s |  except the stuff this time is what Microsoft would have
+563.59s - 571.92s |  defined within the app registration for the app.
+571.92s - 574.16s |  And no, I'll just say from a research perspective
+574.16s - 577.32s |  that my focus was on Graph API.
+577.32s - 581.80s |  But there are other APIs, deprecated Azure AD, Graph API,
+581.80s - 585.52s |  and some less known APIs out there, whatnot.
+585.52s - 589.36s |  But the focus was on Graph here.
+589.36s - 592.80s |  So getting a bit deeper into the research,
+592.80s - 595.40s |  I was curious about impersonating
+595.40s - 597.28s |  Microsoft applications.
+597.28s - 598.88s |  But really, what I'm saying is I want
+598.88s - 602.20s |  to act as a service principle for those multi-tenant apps,
+602.20s - 603.72s |  borrowing their identity.
+603.72s - 607.52s |  The same stuff, again, that Dirk-Jan was interested in,
+607.52s - 609.36s |  and others, again, have poked around
+609.36s - 611.76s |  for the past many years.
+611.76s - 616.00s |  Some of this isn't necessarily mind-blowing research, per se.
+616.00s - 618.76s |  But just to look at it again, the interesting bit
+618.76s - 621.40s |  here is that on that customer tenant,
+621.40s - 623.72s |  we can assign a credential to that service principle.
+623.72s - 628.52s |  And this is the key thing here, where now Microsoft has
+628.52s - 630.48s |  and knows their credential on their side.
+630.48s - 634.20s |  And now I also have a credential that I manage and know
+634.20s - 636.72s |  on my side on that service principle.
+636.72s - 639.08s |  So we bring our impersonating application along.
+639.08s - 641.64s |  And in this case, again, I was just
+641.64s - 645.76s |  using PowerShell with Microsoft Graph SDK modules.
+645.76s - 648.28s |  And we feed our client ID, tenant ID,
+648.28s - 649.60s |  and those credentials to that.
+649.60s - 652.76s |  And if we're impersonating device registration service
+652.76s - 656.44s |  here, we can authenticate to our tenant with that credential,
+656.44s - 659.24s |  get an access token back, or we could anyways,
+659.24s - 661.00s |  and pass that along to Graph.
+661.00s - 662.92s |  And again, be able to do the same stuff
+662.92s - 666.20s |  that Microsoft may have defined within the app registration
+666.20s - 668.60s |  there.
+668.60s - 671.72s |  So this may seem a bit reiterative.
+671.72s - 673.84s |  But what I was researching really
+673.84s - 677.96s |  was based on using the OAuth 2 client credential grant flow.
+677.96s - 679.42s |  And so to just kind of look at what
+679.42s - 681.56s |  that flow looks like, a bit abstracted
+681.56s - 683.92s |  from that last diagram, but effectively,
+683.92s - 686.72s |  the application requests an access token from Entra ID.
+686.72s - 689.20s |  And with the client ID and the credential,
+689.20s - 690.92s |  as long as that OAuth works OK, we're
+690.92s - 693.72s |  going to get an access token back from Entra.
+693.72s - 696.48s |  We pass that access token off to Graph.
+696.48s - 698.88s |  On the back end, Microsoft validates
+698.88s - 700.40s |  that the access token is valid.
+700.40s - 703.52s |  And then we'll get the data back for whatever our request was.
+703.52s - 704.68s |  It's a REST API.
+704.68s - 707.56s |  So we're going to be doing a GET if we want data,
+707.56s - 709.60s |  or a POST if we're writing something new,
+709.60s - 713.38s |  or usually a patch if we're updating things out there.
+713.38s - 715.96s |  And a few things to note here is that in a client credential
+715.96s - 718.76s |  grant flow, the default scope is the only scope
+718.76s - 720.90s |  permitted by Microsoft Graph.
+720.90s - 723.28s |  And I say this because there's other research out there
+723.28s - 725.68s |  that looks at trying to influence
+725.68s - 727.52s |  scopes, or permissions, and stuff like that.
+727.52s - 730.04s |  And that wasn't really my intent.
+730.04s - 732.60s |  And you may say, well, what is the dot default scope?
+732.60s - 735.68s |  So the dot default scope is the application permissions
+735.68s - 737.32s |  defined in the app registration.
+737.32s - 739.64s |  So if we go back to that app registration,
+739.64s - 741.96s |  whatever the developer defined as the permissions,
+741.96s - 743.64s |  that is the default scope.
+743.64s - 746.52s |  If you look at the OAuth 2.0 spec right out there,
+746.52s - 748.64s |  scope is the term for permission.
+748.64s - 750.40s |  So if you see scope permissions, it's
+750.40s - 753.76s |  all sort of one and the same here.
+753.76s - 756.48s |  But the default scope does not indicate additional permissions
+756.48s - 758.52s |  provided by other authorization systems.
+758.52s - 760.12s |  And I won't really touch on this one
+760.12s - 762.72s |  too much because that's going to be Cam's deal here.
+762.72s - 766.24s |  But it's a bit foreshadowing.
+766.24s - 769.32s |  So the theory here, again, we're talking about the applications
+769.32s - 771.96s |  we want to see that we can actually impersonate.
+771.96s - 773.84s |  Right back in the day, there was like hundreds
+773.84s - 775.20s |  that you could potentially impersonate
+775.20s - 776.62s |  that the list was whittled down.
+776.62s - 779.16s |  But things are always changing and evolving in the cloud.
+779.16s - 781.72s |  So just curious to poke at things here.
+781.72s - 786.52s |  And again, very simple, pretty lazy sort of scripting here.
+786.52s - 788.56s |  These are actual snippets from what I was doing
+788.56s - 791.40s |  is just getting all the Azure AD service principles.
+791.40s - 794.44s |  And we can actually search by Microsoft's tenant ID
+794.44s - 798.52s |  because this is an attribute on all service principles,
+798.52s - 801.76s |  well, for any service principle out there.
+801.76s - 804.84s |  And then we get that list of all of our Microsoft service
+804.84s - 806.12s |  principles in our tenant.
+806.12s - 807.72s |  And just running this through a foreach
+807.72s - 809.22s |  where we're basically using, and I
+809.22s - 811.48s |  was using the Azure AD Graph PowerShell module
+811.48s - 814.36s |  because it was, at the time, easier to work with,
+814.36s - 816.48s |  adding new credentials onto that,
+816.48s - 818.44s |  and then just basically very poorly dumping it
+818.44s - 821.56s |  into a CSV out here just so I could reuse
+821.56s - 824.72s |  those credentials later on.
+824.72s - 827.28s |  And earlier, I was mentioning all those service principles
+827.28s - 827.80s |  that exist.
+827.80s - 831.72s |  So in this test tenant, there was 573 service principles
+831.72s - 834.72s |  for Microsoft multi-tenant applications.
+834.72s - 836.18s |  I've worked in other organizations
+836.18s - 838.42s |  where there's been as few as 200.
+838.42s - 840.02s |  I've seen 800-plus.
+840.02s - 842.02s |  It all depends on what you're consuming.
+842.02s - 843.86s |  But just having those lists doesn't actually
+843.86s - 846.30s |  mean that you can use the OAuth 2 client credential grant
+846.30s - 848.22s |  flow with it.
+848.22s - 849.74s |  So taking that same list and, again,
+849.74s - 852.22s |  just pumping it through another relatively simple foreach
+852.22s - 854.14s |  here in PowerShell, and we're just
+854.14s - 858.70s |  stuffing those credentials into a PowerShell cred object.
+858.70s - 860.86s |  And then we're going to connect to Microsoft Graph.
+860.86s - 863.54s |  And while we were looking for these using Microsoft's tenant
+863.58s - 866.38s |  ID, here we're actually targeting our tenant
+866.38s - 868.58s |  for connecting to Graph.
+868.58s - 870.26s |  And then I was just dumping the context
+870.26s - 874.90s |  or the content of get-mg-context out to a text file.
+874.90s - 876.86s |  I wasn't sure what I was going to find,
+876.86s - 879.82s |  but sort of at first just wanting to see the output
+879.82s - 881.50s |  and being able to search through it.
+881.50s - 883.90s |  Again, very simple, just in that text file.
+883.90s - 887.78s |  And we'll talk about that get-mg-context shortly here.
+887.78s - 889.36s |  And then just disconnecting from Graph
+889.36s - 893.46s |  and iterating through all those different service principles.
+893.46s - 895.66s |  So out of this list of the 573, we
+895.66s - 899.94s |  found nine applications that support or supported
+899.94s - 903.86s |  the OAuth 2 client credential grant flow here.
+903.86s - 906.10s |  But then it's also looking for the scopes.
+906.10s - 908.14s |  The scopes themselves, if there are no scopes,
+908.14s - 910.54s |  or maybe there's only read scopes,
+910.54s - 913.86s |  I'm curious, how could I maybe gain persistence or elevate
+913.86s - 916.34s |  privilege or do something a bit malicious here?
+916.34s - 919.34s |  So initially, I was looking for things that had write scopes,
+919.34s - 922.34s |  because those are going to let us change things or update
+922.34s - 924.54s |  things within Entro.
+924.54s - 926.86s |  And did find that there's four service principles that
+926.86s - 929.18s |  allowed some write scopes here, but these actually
+929.18s - 931.54s |  aren't really that interesting when you dig into them,
+931.54s - 933.82s |  as far as what they actually permit.
+933.82s - 936.18s |  A rights management service had a few read scopes,
+936.18s - 939.52s |  but there were no write scopes assigned to it.
+939.52s - 940.90s |  And then also, when we're looking
+940.90s - 944.22s |  at the scopes or permissions for these last four applications,
+944.22s - 945.58s |  there were no scopes whatsoever.
+945.58s - 948.18s |  So from an OAuth perspective, in my mind,
+948.18s - 949.82s |  the sort of rabbit hole I'm going down
+949.82s - 953.10s |  is that I should get a 403 sort of unauthorized error
+953.10s - 958.42s |  if I try to go do something as these service principles.
+958.42s - 961.70s |  But so this is where I said, let's try privilege things
+961.70s - 962.62s |  anyways.
+962.62s - 965.58s |  And so I built this list of these privilege tests,
+965.58s - 968.22s |  disabling a regular and privileged user,
+968.22s - 970.78s |  changing a user privilege user's password,
+970.78s - 973.66s |  managing role assignments, creating a user,
+973.66s - 976.78s |  deleting a user, deleting a privileged user,
+976.78s - 979.34s |  permanently deleting a privileged user,
+979.34s - 981.58s |  because at first, users are just soft deleted,
+981.58s - 983.82s |  creating a group eligible for role assignment,
+983.82s - 985.30s |  creating an administrative unit.
+985.30s - 987.66s |  Maybe it's like, hey, if I could create an AU
+987.66s - 989.26s |  and then move users into it, maybe
+989.26s - 992.26s |  I can influence them that way, and managing role assigned
+992.26s - 993.10s |  group membership.
+993.10s - 994.38s |  So just from that blue perspective,
+994.38s - 997.26s |  trying to think, well, what are ways that you could potentially
+997.26s - 1000.38s |  influence objects in an entrotenant?
+1000.38s - 1001.78s |  So obviously, there were findings
+1001.78s - 1004.10s |  where I probably wouldn't be here standing with Cameron
+1004.10s - 1006.10s |  to talk about this stuff.
+1006.10s - 1007.78s |  And so going back to this diagram
+1007.78s - 1009.98s |  here, where we are looking at the app admin
+1009.98s - 1011.94s |  and not being able to manage roles,
+1011.94s - 1013.98s |  we'll look at how we could actually get
+1013.98s - 1015.34s |  to global administrators.
+1015.34s - 1017.42s |  So just going to quickly walk through this.
+1017.42s - 1019.82s |  And if it's hard to see, all this stuff is also out there.
+1019.82s - 1022.26s |  I don't know if Blue Hat gives out slides or whatnot,
+1022.26s - 1024.58s |  but this content is available.
+1024.58s - 1027.86s |  So as we talk through it, if it's hard to see,
+1027.86s - 1029.98s |  you can get a hold of this after.
+1029.98s - 1032.94s |  So again, here, we're just targeting device registration
+1032.94s - 1035.82s |  service as our service principle.
+1035.82s - 1038.26s |  And then, actually, we're just grabbing
+1038.26s - 1040.82s |  or we're assigning new credentials to that service
+1040.82s - 1041.46s |  principle.
+1041.46s - 1043.12s |  And I had actually hoped to record this,
+1043.12s - 1044.94s |  but Microsoft sort of fixed this too quick,
+1044.94s - 1047.86s |  so I just have screenshots, unfortunately.
+1047.86s - 1049.62s |  So once we have those credentials assigned
+1049.62s - 1051.46s |  to the service principle, we're, again, just
+1051.46s - 1054.22s |  stuffing them into a PowerShell credential object here,
+1054.22s - 1058.34s |  and then connecting to Microsoft Graph in our tenant.
+1058.34s - 1060.98s |  So once we're connected, and here's that getMgContext,
+1060.98s - 1063.16s |  this will give us information about, essentially,
+1063.16s - 1065.26s |  our session with Microsoft Graph.
+1065.26s - 1067.82s |  So in particular here, we are appearing
+1067.82s - 1071.26s |  as device registration service, as far as the Microsoft
+1071.26s - 1072.98s |  world of things is concerned.
+1072.98s - 1077.34s |  And we can see, again, that we don't have any scopes here.
+1077.34s - 1079.80s |  So I did have some read access, and some of these steps
+1079.80s - 1082.30s |  you could have gone through with a different user or whatnot.
+1082.30s - 1084.42s |  But since this worked as device registration service,
+1084.42s - 1085.66s |  I said, well, I'll just sort of try
+1085.66s - 1087.42s |  to go through the whole flow here.
+1087.42s - 1090.10s |  So I could run getMgDirectoryRole and get
+1090.10s - 1091.50s |  all of our roles available.
+1091.50s - 1093.94s |  And again, I'm targeting global administrator,
+1093.94s - 1097.14s |  just because that's kind of keys to the kingdom.
+1097.14s - 1100.82s |  And then we can get all the roles assigned to that.
+1100.82s - 1102.74s |  So right here, we see that I have
+1102.74s - 1107.73s |  two users that have global admin.
+1107.73s - 1110.65s |  And at this point, Megan Bowen's sort of my target user here.
+1110.65s - 1112.93s |  So I just getMgUser for Megan Bowen,
+1112.93s - 1115.25s |  because I'm just really interested in her object ID.
+1115.25s - 1117.25s |  And at this point, we're just splatting this stuff
+1117.25s - 1118.85s |  into an array here that we're going
+1118.85s - 1121.69s |  to use to try to assign role membership.
+1121.69s - 1125.33s |  So I've got the role definition ID for global admin,
+1125.33s - 1127.73s |  her object ID, and then the directory scope
+1127.73s - 1133.89s |  is root, because you can't assign GA to anything but that.
+1133.89s - 1138.53s |  And here's sort of the big, but maybe not so big feeling
+1138.53s - 1139.77s |  moment.
+1139.77s - 1142.41s |  New MG role management directory role assignment.
+1142.41s - 1146.01s |  Run this command, and actually get output here.
+1146.01s - 1147.97s |  So at this point, I'm like, hey, right now, no,
+1147.97s - 1150.17s |  because this is a test environment, a test tenant.
+1150.17s - 1150.97s |  Maybe it's a dump.
+1150.97s - 1154.45s |  Maybe I have something set up in who knows what.
+1154.45s - 1156.57s |  So I try this in a few other tenants
+1156.57s - 1158.65s |  and keep getting these same results,
+1158.65s - 1161.15s |  where effectively now, as device registration service,
+1161.15s - 1164.73s |  I'm able to manage roles within Entra.
+1164.73s - 1167.17s |  And again, running that getMgContext,
+1167.17s - 1171.09s |  we see that I'm still operating as device registration service,
+1171.09s - 1174.17s |  and I still have no scopes available.
+1174.17s - 1176.53s |  And also found that, so afterwards here,
+1176.53s - 1179.21s |  again, we're just running getMgDirectoryRoleMember.
+1179.21s - 1181.53s |  Right now, we can see that Megan Bowen is, in fact,
+1181.53s - 1183.29s |  a global administrator.
+1183.29s - 1187.85s |  And I was able to do that with just my app admin role.
+1187.85s - 1190.49s |  And again, we could just go out to our Entra audit logs
+1190.49s - 1193.65s |  here and see add member to role, successful
+1193.65s - 1196.57s |  for global administrator for device registration
+1196.57s - 1199.33s |  service as the actor here.
+1199.33s - 1201.21s |  And you could also remove GAs.
+1201.21s - 1203.17s |  So in this example, again, we're just removing
+1203.17s - 1205.21s |  one of the other existing GAs.
+1205.21s - 1208.49s |  So we had the full ability to sort of both add and remove
+1208.49s - 1212.29s |  anyone from the global administrator role.
+1212.29s - 1214.05s |  And so for the findings here, we found
+1214.05s - 1217.53s |  that device registration service allowed for privileged role
+1217.53s - 1219.85s |  membership management.
+1219.85s - 1223.17s |  Viva Engage, known as Yammer formally,
+1223.17s - 1226.69s |  that allowed us to delete and permanently delete users,
+1226.69s - 1229.05s |  including privileged users.
+1229.05s - 1231.05s |  And rights management services, interestingly,
+1231.05s - 1233.37s |  if you abuse that one, allow you to create users.
+1233.37s - 1235.21s |  You can do anything really special with them,
+1235.21s - 1237.41s |  but you were allowed to create sort of as many users
+1237.69s - 1241.29s |  as you wanted, aside from your quota.
+1241.29s - 1244.81s |  And yeah, and I think that passes it off to you,
+1244.81s - 1247.37s |  Cam, to talk about the response.
+1247.37s - 1247.89s |  Cool.
+1247.89s - 1251.17s |  So I don't know if we're having technical difficulties
+1251.17s - 1252.13s |  with the clicker.
+1252.13s - 1253.89s |  I think it's just, I mean, it's just
+1253.89s - 1257.21s |  like the distancy feeling thing, if you're getting, I don't know.
+1257.21s - 1258.49s |  I'll give it a shot.
+1258.49s - 1260.77s |  Well, yours had way more clicky features.
+1260.77s - 1261.45s |  Mine does not.
+1261.45s - 1263.21s |  So I'll see how it goes.
+1263.21s - 1267.33s |  But OK, first of all, can we all give a round of applause
+1267.33s - 1273.34s |  for Eric?
+1273.34s - 1274.66s |  So thank you.
+1274.66s - 1277.78s |  I'm not really one for pre-end-of-presentation
+1277.78s - 1281.82s |  applauses, but at MSRC, we truly, really
+1281.82s - 1283.14s |  do value our researchers.
+1283.14s - 1285.10s |  Like, we truly, really do.
+1285.10s - 1287.74s |  And Eric was one of our top researchers for the year.
+1287.74s - 1289.46s |  His research was really impactful.
+1289.46s - 1291.26s |  And he's been amazing to work with overall.
+1291.26s - 1293.18s |  So thank you for doing that.
+1293.18s - 1295.34s |  So as mentioned earlier, my name's Cameron Vincent.
+1295.34s - 1296.50s |  I work on the VNM team.
+1296.50s - 1298.58s |  So we deal with all incoming cases
+1298.58s - 1300.70s |  from external researchers like Eric himself.
+1300.70s - 1302.08s |  I used to be a bug bounty hunter,
+1302.08s - 1304.58s |  so I know what it's like to be on that side as well.
+1304.58s - 1307.06s |  And this side of the talk is I'm going to go over two things.
+1307.06s - 1309.62s |  So the first thing is I'm going to go over the MSRC process
+1309.62s - 1311.06s |  side a little bit and kind of talk
+1311.06s - 1313.66s |  about how we assign severity to cases, timeline,
+1313.66s - 1314.74s |  you know, stuff like that.
+1314.74s - 1316.24s |  And then the second side of this is
+1316.24s - 1318.82s |  I'm going to go over the internal technical details
+1318.82s - 1320.54s |  a little bit and go over what was going on
+1320.54s - 1324.74s |  in the background in regards to what Eric had reported to us.
+1324.74s - 1325.26s |  OK, good.
+1325.26s - 1326.74s |  So the clicker works for me at the moment.
+1326.74s - 1329.50s |  OK, so first things up, MSRC VNM process.
+1329.54s - 1331.70s |  So the first thing I want to talk about
+1331.70s - 1334.58s |  is when a case comes into us, analysis of it
+1334.58s - 1336.42s |  begins almost immediately.
+1336.42s - 1338.22s |  And let me kind of clarify what this means.
+1338.22s - 1340.38s |  So we get a lot of cases, right?
+1340.38s - 1342.58s |  We have a lot of cases to review.
+1342.58s - 1345.06s |  And the VNM engineers need to decide priority
+1345.06s - 1347.10s |  when it comes to reviewing those cases.
+1347.10s - 1349.30s |  So for example, let's say you send in a case, right?
+1349.30s - 1350.58s |  And the POC is really good.
+1350.58s - 1351.78s |  The write-up is really good.
+1351.78s - 1352.50s |  There's a video.
+1352.50s - 1353.62s |  You're a really well-known finder,
+1353.62s - 1356.30s |  and it's really straightforward what you're sending to us.
+1356.30s - 1359.02s |  I've seen cases like that get reviewed within a few hours.
+1359.06s - 1360.34s |  But let's say you submit something to us
+1360.34s - 1361.58s |  that isn't really clear.
+1361.58s - 1363.70s |  It's not really clear what the impact is
+1363.70s - 1365.50s |  or the security issue that you're reporting.
+1365.50s - 1367.30s |  That will be pushed down the priority list,
+1367.30s - 1368.74s |  because obviously if there's another case
+1368.74s - 1369.98s |  that's a lot more clear
+1369.98s - 1372.10s |  and it's really detailing what's going on,
+1372.10s - 1373.74s |  that is going to be looked at much quicker
+1373.74s - 1375.30s |  than one that isn't really clear.
+1375.98s - 1380.38s |  Now, most cases we are aiming to get reviewed in about five days.
+1380.38s - 1382.70s |  And I want to say that is crazy to say.
+1382.70s - 1385.94s |  And the reason is because I was submitting bugs back in 2016.
+1386.46s - 1388.74s |  The program has changed a lot.
+1388.74s - 1390.66s |  It has changed a lot since then.
+1390.66s - 1392.02s |  So I'm very proud to be up here
+1392.02s - 1395.06s |  and say that this is a number that we are trying to achieve.
+1395.06s - 1398.22s |  But some cases are a little bit more complicated
+1398.22s - 1400.22s |  and require a little bit of extra time.
+1400.22s - 1402.94s |  So sometimes we need to reach out to the engineering team,
+1402.94s - 1403.94s |  right, to ask them questions,
+1403.94s - 1405.82s |  or sometimes we need to reach out to the finder
+1405.82s - 1407.22s |  and ask them questions.
+1407.22s - 1409.10s |  So Eric's research, for example,
+1409.10s - 1410.46s |  is one of these examples
+1410.46s - 1412.46s |  that required a little bit of extra time.
+1413.42s - 1416.46s |  So let me go over timeline stuff a little bit.
+1416.46s - 1419.66s |  So around January, I think it says here, 17th,
+1420.34s - 1422.54s |  MSRC began investigating Eric's submission.
+1422.54s - 1424.50s |  So he submitted it around that time.
+1424.50s - 1426.78s |  And within a few days, we had an initial severity
+1426.78s - 1429.62s |  of important elevation of privilege assigned to it.
+1429.62s - 1432.26s |  So when Eric first submitted this,
+1432.26s - 1434.50s |  he submitted it kind of as like one case,
+1434.50s - 1435.98s |  and it was a really nice doc write-up,
+1435.98s - 1437.90s |  and it was really clear what was going on.
+1437.90s - 1439.42s |  And the VNM engineer at the time
+1439.42s - 1441.70s |  who was assessing the case assigned it.
+1441.70s - 1442.62s |  There's different rankings.
+1442.62s - 1444.58s |  There's low, moderate, important, and critical.
+1444.58s - 1446.86s |  So it was given an important elevation of privilege,
+1446.86s - 1448.34s |  you know, ranking due to the fact
+1448.34s - 1450.42s |  that you needed to be an application admin.
+1450.42s - 1452.46s |  Obviously, if it was non-admin to global admin,
+1452.46s - 1453.94s |  that would reach a critical ranking.
+1453.94s - 1456.38s |  But that's kind of like how we do our review process.
+1456.38s - 1458.70s |  And at the time, we then assigned it to a team.
+1458.70s - 1459.94s |  And then a few days later,
+1459.94s - 1462.42s |  it was determined that each service
+1462.42s - 1464.38s |  needed to own the fix for this.
+1464.38s - 1467.22s |  So how that works is, when he first submitted it,
+1467.22s - 1468.58s |  it was given one case, right?
+1468.58s - 1470.02s |  So every time you submit an issue to us,
+1470.02s - 1472.78s |  you get a case ID assigned to your submission.
+1472.78s - 1473.78s |  And when he first submitted it,
+1473.78s - 1476.14s |  it was originally one case ID,
+1476.14s - 1478.66s |  and then we ranked it important elevation of privilege.
+1478.66s - 1479.82s |  But then we decided, okay,
+1479.82s - 1481.66s |  each service actually needs to own this fix,
+1481.66s - 1483.42s |  so we will open child cases.
+1483.42s - 1485.82s |  So at this point, multiple cases were then opened.
+1485.82s - 1487.86s |  So one case was assigned to Viva Engage.
+1487.86s - 1488.86s |  Another case was assigned
+1488.86s - 1490.54s |  to the Microsoft Rights Management Service.
+1490.54s - 1491.74s |  And another case was assigned
+1491.74s - 1493.86s |  to the Device Registration Service.
+1493.86s - 1497.20s |  Now, this is a lot of work, okay?
+1497.20s - 1501.14s |  When this happens, meetings, emails, calls,
+1501.34s - 1503.02s |  you gotta have discussions with the teams
+1503.02s - 1504.86s |  to tell them kinda like what the issue is.
+1504.86s - 1506.30s |  You need to go over it with them.
+1506.30s - 1507.42s |  You need to explain to them like,
+1507.42s - 1508.62s |  okay, how can we fix this?
+1508.62s - 1509.98s |  What's the best possible route for this?
+1509.98s - 1511.98s |  And security can be hard sometimes, right?
+1511.98s - 1512.90s |  It really is what it is.
+1512.90s - 1513.78s |  It can be hard.
+1513.78s - 1515.42s |  And the reason for that especially
+1515.42s - 1518.02s |  is because you do not wanna just,
+1518.02s - 1518.86s |  there are a lot of times
+1518.86s - 1521.10s |  where we could push a fix out like that.
+1521.10s - 1523.66s |  But sometimes quality is actually really important.
+1523.66s - 1524.62s |  You want it done right,
+1524.62s - 1526.44s |  and you want it done right the first time.
+1526.44s - 1528.78s |  You don't wanna push out a fix that's kind of okay,
+1528.78s - 1530.94s |  and then you just get multiple bypasses sent to you.
+1531.70s - 1533.02s |  So a lot of these calls and meetings and everything
+1533.02s - 1534.34s |  to discuss this type of issue
+1534.34s - 1536.10s |  with all these different service owners,
+1536.10s - 1538.02s |  this is a long process.
+1538.02s - 1541.56s |  So as I'm, me and a few others,
+1541.56s - 1543.32s |  we were in a lot of these calls discussing the issue,
+1543.32s - 1546.26s |  and we were then beginning to talk about the fix process.
+1546.26s - 1549.66s |  And the reason this took a little bit more time
+1549.66s - 1552.22s |  is because this was not a one blanket type of fix.
+1552.22s - 1553.06s |  So remember as I said,
+1553.06s - 1554.66s |  when Eric first submitted his case,
+1554.66s - 1555.66s |  we assigned it to one team
+1555.66s - 1557.16s |  because we thought it originally was.
+1557.16s - 1558.46s |  We then talked to that one team,
+1558.46s - 1559.30s |  and then they determined,
+1559.30s - 1560.62s |  okay, we actually need to reach out
+1560.62s - 1562.32s |  to all these app owners and services
+1562.32s - 1563.90s |  because this is not a one blanket type of fix.
+1563.90s - 1565.60s |  And trust me, I wish it was.
+1565.60s - 1566.98s |  I wish there was a wand.
+1566.98s - 1569.58s |  I could wave and everything just gets fixed like that,
+1569.58s - 1570.98s |  but that is not always the case.
+1570.98s - 1572.68s |  So security can be hard sometimes.
+1572.68s - 1574.06s |  You want the fix done right,
+1574.06s - 1576.66s |  and you want it done right the first time.
+1576.66s - 1579.18s |  Now, let me go over why this was not
+1579.18s - 1581.02s |  a one blanket type of fix.
+1581.02s - 1582.62s |  So if you remember from Eric's,
+1582.62s - 1583.88s |  when he was presenting,
+1583.88s - 1585.58s |  the idea was you would add a credential
+1585.58s - 1588.34s |  to a first party service principal, okay?
+1588.34s - 1590.94s |  Adding a credential to a first party service principal
+1590.94s - 1593.90s |  like VivaEngage or the device registration service,
+1593.90s - 1596.98s |  that does not actually directly correlate
+1596.98s - 1599.06s |  to a security vulnerability.
+1599.06s - 1600.58s |  The reason for that is because
+1600.58s - 1602.46s |  there are some by design scenarios
+1602.46s - 1603.74s |  to allow that behavior,
+1603.74s - 1605.90s |  like whether you're doing certain testing
+1605.90s - 1607.94s |  or on prem setups or hybrid deployments,
+1607.94s - 1609.42s |  stuff like that.
+1609.42s - 1612.34s |  And the reason this is so critical
+1612.34s - 1615.02s |  is because when Eric was first submitting this,
+1615.02s - 1617.98s |  this was what made it not a one blanket type of fix
+1618.62s - 1620.18s |  because we had to reach out to each team
+1620.18s - 1622.42s |  because we didn't want to break anything, right?
+1622.42s - 1623.50s |  You wanted it done right.
+1623.50s - 1625.26s |  You know, as I said, security can be hard sometimes.
+1625.26s - 1626.46s |  You want that fix done right,
+1626.46s - 1628.02s |  and you want it done right the first time.
+1628.02s - 1630.14s |  We could have issued the fix immediately,
+1630.14s - 1631.94s |  but obviously it is important
+1631.94s - 1633.28s |  that everything is done right.
+1633.28s - 1634.70s |  So we had to reach out to all these teams
+1634.70s - 1635.98s |  to kind of go over this.
+1635.98s - 1639.88s |  Now, Eric's side of it actually showing
+1639.88s - 1641.70s |  the elevation of privilege issue
+1641.70s - 1643.86s |  made it a valid security vulnerability
+1643.86s - 1645.82s |  in the eyes of MSRC.
+1645.82s - 1648.62s |  And I want to speak on this really briefly.
+1648.62s - 1650.30s |  So obviously there's really straightforward
+1650.30s - 1651.54s |  security vulnerabilities out there,
+1651.54s - 1653.94s |  like cross-site scripting or SQL injection.
+1653.94s - 1655.94s |  And whenever you find something like that,
+1655.94s - 1656.78s |  it's really straightforward.
+1656.78s - 1658.42s |  You know, you submit the POC, send it in,
+1658.42s - 1659.96s |  and we'll walk on a fix, right?
+1659.96s - 1662.56s |  But sometimes, even back when I was researching,
+1662.56s - 1664.74s |  I would find something, but I would say to myself,
+1664.74s - 1666.30s |  is this actually a security issue
+1666.30s - 1667.68s |  or is this just the design?
+1667.68s - 1668.94s |  And I wouldn't submit it.
+1668.94s - 1672.00s |  If you truly think something is a security issue,
+1672.00s - 1673.18s |  submit it to us.
+1673.18s - 1675.78s |  Because one thing the VNM engineers will ask themselves
+1676.62s - 1678.26s |  is, okay, maybe this is by design,
+1678.26s - 1679.70s |  but is it a good design?
+1679.70s - 1681.42s |  So as I just mentioned, adding a credential
+1681.42s - 1682.90s |  to a first-party service principle
+1682.90s - 1685.50s |  did not correlate directly to a security issue.
+1685.50s - 1687.06s |  But after Eric showed the elevation
+1687.06s - 1688.38s |  of privilege angle to it,
+1688.38s - 1689.94s |  the VNM engineers said, okay,
+1689.94s - 1691.58s |  an application admin being able to escalate
+1691.58s - 1693.78s |  to global admin, that is an important EOP
+1693.78s - 1695.34s |  and that is something that needs to be fixed
+1695.34s - 1697.58s |  and that design needs to be improved.
+1697.58s - 1700.18s |  So as a result of that, what we did was is
+1700.18s - 1702.06s |  to originally kind of address it was,
+1702.06s - 1704.70s |  the fix was to only allow global admins
+1704.70s - 1707.62s |  to add credentials to first-party service principles.
+1707.62s - 1708.66s |  So obviously at that case,
+1708.66s - 1710.66s |  the EOP angle is kind of moot, right?
+1710.66s - 1713.30s |  Like his angle is you would be an application admin,
+1713.30s - 1715.26s |  add a credential to the first-party service principle
+1715.26s - 1716.80s |  and then you could escalate to global admin.
+1716.80s - 1719.22s |  So we stopped the ability for application admins to do that.
+1719.22s - 1721.22s |  You needed to be a global admin now.
+1721.22s - 1722.82s |  And obviously if you're global admin,
+1722.82s - 1725.02s |  as he said, keys to the kingdom,
+1725.02s - 1727.06s |  there's really no EOP anymore to it.
+1727.06s - 1729.26s |  You've already taken over the entire tenant.
+1729.26s - 1732.38s |  So that is kind of like the point I do wanna make is,
+1732.38s - 1734.58s |  if you really do think you have an issue,
+1735.42s - 1736.26s |  even though it may look by design,
+1736.26s - 1737.46s |  still submit it and we will take a look.
+1737.46s - 1740.70s |  And if we agree with you, we will fight for you.
+1740.70s - 1743.58s |  Okay, so that's a little bit about the process side
+1743.58s - 1746.02s |  and kind of going over like how the cases were managed.
+1746.02s - 1748.04s |  I'm gonna kind of go over the internal technical side
+1748.04s - 1749.98s |  a little bit about what was going on.
+1749.98s - 1752.30s |  So the biggest thing I'm gonna kind of repeat here
+1752.30s - 1755.86s |  a little bit is OAuth scopes and claims and tokens
+1755.86s - 1758.74s |  do not always tell the full story, okay?
+1758.74s - 1760.50s |  Something that you always need to be aware of
+1760.50s - 1763.86s |  is that there can always be other authorization systems
+1763.86s - 1766.34s |  or models that are in play in the background.
+1766.34s - 1768.18s |  And we say this numerous times in our docs.
+1768.18s - 1769.70s |  This is all from like different,
+1769.70s - 1771.90s |  like these are snippets from different docs.
+1771.90s - 1773.98s |  And like if you look at the bottom one, for example,
+1773.98s - 1775.50s |  it'll say like the roles, wids,
+1775.50s - 1776.94s |  or any of those types of claims.
+1776.94s - 1779.30s |  Those are not an exhaustive list
+1779.30s - 1782.02s |  of what a user can or cannot have access to.
+1782.02s - 1784.48s |  So let me kind of give you an example here.
+1784.48s - 1786.38s |  So this is Alex W, okay?
+1786.38s - 1789.56s |  And he's Alex W at M365X companies,
+1789.56s - 1791.52s |  a very happy employee it looks like.
+1791.52s - 1794.00s |  And if you look at Alex's account,
+1794.00s - 1796.44s |  he's a member of multiple groups, right?
+1796.44s - 1798.80s |  And we're only gonna focus on that bottom,
+1798.80s - 1800.18s |  the second from the bottom group,
+1800.18s - 1801.88s |  the one that's called subscription group.
+1801.88s - 1803.36s |  And I can barely see it here
+1803.36s - 1804.50s |  because the text is super small,
+1804.50s - 1805.80s |  but I believe the object ID on that
+1805.80s - 1807.88s |  was like 0C3 or something like that.
+1807.88s - 1809.68s |  But obviously if you look at that,
+1809.68s - 1811.24s |  this is what it looks like.
+1811.24s - 1813.70s |  These are the groups that he is a member of, right?
+1813.70s - 1816.52s |  And if we were to look at the scopes and claims
+1816.52s - 1818.80s |  for Alex's account, if you look closely at this,
+1818.80s - 1821.08s |  you'll see like it shows his name and IP address
+1821.64s - 1822.48s |  and stuff like that.
+1822.48s - 1823.48s |  And it shows the group's claims.
+1823.48s - 1825.32s |  You can see that object ID
+1825.32s - 1827.16s |  for that subscription group he's in.
+1827.16s - 1828.72s |  But if we look closely, for example,
+1828.72s - 1830.48s |  there's no like WIDS claim, right?
+1830.48s - 1832.04s |  And for those that do not know,
+1832.04s - 1833.46s |  I'll go over this really briefly.
+1833.46s - 1835.80s |  Different claims equal different meanings.
+1835.80s - 1838.78s |  So the WIDS claim, that means that is what
+1838.78s - 1842.26s |  the Entra AD built-in roles a user is assigned, okay?
+1842.26s - 1844.80s |  So let's say someone is assigned a global admin role.
+1844.80s - 1846.16s |  You would see a WIDS claim
+1846.16s - 1849.04s |  and you would see the ID of the global admin role, okay?
+1849.04s - 1850.10s |  Or the group's claim.
+1850.10s - 1851.48s |  This one is really self-explanatory.
+1851.48s - 1853.72s |  This is just the groups they are a part of.
+1853.72s - 1856.52s |  So if we go back, actually,
+1856.52s - 1857.96s |  I'm gonna go back a couple slides
+1857.96s - 1859.28s |  because I'm just gonna reiterate
+1859.28s - 1860.96s |  what that one slide is about to say.
+1860.96s - 1863.96s |  But if we look closely at this token for Alex's account,
+1863.96s - 1865.64s |  we see he's in a group, right?
+1865.64s - 1866.74s |  That subscription group.
+1866.74s - 1868.78s |  But if you look at the bottom, I hope you can see it,
+1868.78s - 1871.08s |  there is no WIDS claim present, right?
+1871.08s - 1873.32s |  So remember that WIDS claim is the assigned
+1873.32s - 1875.94s |  built-in Entra AD roles that Alex is assigned.
+1875.94s - 1877.00s |  But there's no WIDS claim present.
+1877.00s - 1878.96s |  So a lot of you or a lot of individuals
+1878.96s - 1879.88s |  may look at that and go,
+1879.88s - 1882.90s |  okay, so Alex has no admin permissions assigned to him.
+1882.90s - 1884.52s |  There is no WIDS claim present.
+1884.52s - 1885.96s |  And I've already said that, but yeah.
+1885.96s - 1887.48s |  So at that point, you may think,
+1887.48s - 1889.04s |  okay, he's in this group,
+1889.04s - 1890.60s |  but he has no admin permissions assigned to him.
+1890.60s - 1894.48s |  But let's take a closer look, actually, at Alex's account.
+1894.48s - 1898.32s |  So as I mentioned, he is a member of subscription group
+1898.32s - 1900.32s |  with that object ID 0C3.
+1900.32s - 1903.82s |  Now in Azure AD, Entra AD, since we renamed it,
+1903.82s - 1907.14s |  you can assign admin roles to groups.
+1907.14s - 1910.78s |  You can also create custom roles in Entra AD as well.
+1910.78s - 1912.06s |  So when you create a custom role,
+1912.06s - 1913.10s |  you can kind of like assign
+1913.10s - 1914.80s |  your own custom permissions to it.
+1914.80s - 1916.62s |  So this group that Alex is in,
+1916.62s - 1919.12s |  it is assigned a custom role in the tenant.
+1919.12s - 1922.02s |  And that custom role is called test 000.
+1922.02s - 1924.94s |  And that custom admin role has additional permissions.
+1924.94s - 1927.42s |  Since Alex is a member of that group,
+1927.42s - 1931.10s |  he is inheriting the permissions that that group has.
+1931.10s - 1933.74s |  So what this technically means is,
+1934.62s - 1936.92s |  Alex has way more permissions in the tenant
+1936.92s - 1938.26s |  than that token is showing.
+1938.26s - 1941.10s |  So as I just mentioned, OAuth scopes and claims
+1941.10s - 1942.06s |  that you're reading in tokens
+1942.06s - 1944.18s |  are not always going to tell the full story.
+1944.18s - 1947.10s |  There can always be separate authorization systems
+1947.10s - 1948.22s |  and models in the background
+1948.22s - 1949.90s |  that you always need to be aware of.
+1949.90s - 1952.78s |  A resource can be doing many different things.
+1952.78s - 1955.58s |  So in this diagram here kind of gives you an overview
+1955.58s - 1956.58s |  of how it all looks.
+1956.58s - 1958.70s |  So on the top left, we have subscription group.
+1958.70s - 1962.26s |  And on the bottom, the admin assigned this custom admin role
+1962.26s - 1964.66s |  to the group that Alex is in.
+1964.66s - 1967.10s |  Alex is added as a member of subscription group.
+1967.10s - 1969.68s |  And then he inherits that custom admin role
+1969.68s - 1971.66s |  since he's a member of that group as well.
+1971.66s - 1974.06s |  And the reason that is not appearing in the WIDS claim
+1974.06s - 1976.06s |  is because that is not a built-in role.
+1976.06s - 1977.54s |  That is just a custom role
+1977.54s - 1979.20s |  that an admin created in the tenant.
+1979.20s - 1981.30s |  And that is all admins, global admins at least,
+1981.30s - 1983.08s |  are allowed to do that.
+1983.08s - 1985.66s |  Another interesting thing is in the tenant,
+1985.66s - 1987.54s |  the subscription group that Alex is in,
+1987.54s - 1990.16s |  it's also assigned full ownership access
+1990.16s - 1991.98s |  over Azure subscription one.
+1992.66s - 1993.50s |  So for those that do not know,
+1993.50s - 1995.26s |  you can deploy subscriptions in an Azure tenant.
+1995.26s - 1997.06s |  And from there, you can deploy virtual machines,
+1997.06s - 1998.74s |  storage accounts, all that stuff.
+1998.74s - 2002.94s |  Alex is also a full owner of that as well
+2002.94s - 2004.10s |  because the group he is in
+2004.10s - 2005.82s |  is assigned ownership of that as well.
+2005.82s - 2009.58s |  So if you were just basing all the access that Alex has
+2009.58s - 2011.94s |  over the claims and scopes in the token,
+2011.94s - 2013.82s |  that is not a full story
+2013.82s - 2015.74s |  because obviously there are other Office 3 models at play
+2015.74s - 2018.10s |  and Alex has more permissions than that is showing.
+2018.10s - 2021.54s |  So it's, as I said, it is not an exhaustive list, right?
+2022.22s - 2023.06s |  The OAuth scopes and claims and tokens
+2023.06s - 2024.50s |  are not an exhaustive list.
+2024.50s - 2026.02s |  A user can have more access
+2026.02s - 2027.74s |  since there can always be those separate models
+2027.74s - 2029.02s |  in the background.
+2029.02s - 2031.58s |  Eric's research showcasing
+2031.58s - 2033.22s |  those first party service principles,
+2033.22s - 2034.54s |  having those additional permissions
+2034.54s - 2036.18s |  were due to separate Office 3 systems
+2036.18s - 2037.70s |  and models in the background that we have.
+2037.70s - 2040.38s |  So this is something that you always need to be aware of
+2040.38s - 2042.82s |  is that there are always separate authorization models
+2042.82s - 2045.64s |  that can be at play here.
+2045.64s - 2047.10s |  And I'll pass it back to you.
+2048.18s - 2049.98s |  And I believe the clicker is working.
+2049.98s - 2051.82s |  So let's, yeah.
+2051.82s - 2053.26s |  All right.
+2053.26s - 2055.82s |  So I think the interesting part of things here,
+2055.82s - 2057.58s |  and if this does cooperate with me,
+2057.58s - 2060.14s |  is sort of this extra side of things
+2060.14s - 2062.58s |  with securing workload identities.
+2062.58s - 2065.38s |  And I feel like sometimes blue is boring
+2065.38s - 2068.30s |  at security conferences or whatnot.
+2068.30s - 2070.86s |  But after giving the talk at Black Hat,
+2070.86s - 2073.14s |  I'd say that one of the things I've been asked a lot
+2073.14s - 2077.78s |  around this is if this impacted third party applications
+2077.78s - 2079.90s |  and you'd kind of get in discussions with people a lot
+2079.90s - 2082.78s |  around how like, here we go, right?
+2082.78s - 2085.90s |  So can these findings impact third party applications?
+2085.90s - 2087.30s |  And again, the answer is no
+2087.30s - 2090.58s |  because with the authorization model here in play,
+2090.58s - 2092.54s |  that allowed these bits of findings
+2092.54s - 2094.78s |  with something specific to Microsoft
+2094.78s - 2096.50s |  and Microsoft applications.
+2097.66s - 2099.74s |  But then sort of talking with folks
+2099.74s - 2101.70s |  and bringing up the point that organizations
+2101.70s - 2104.54s |  can in fact create risky scenarios
+2104.54s - 2106.18s |  that mimic these findings, right?
+2106.18s - 2107.82s |  And this is again, one of those things
+2107.82s - 2109.34s |  that you talk to a lot of enterprises,
+2109.34s - 2112.18s |  they don't have a good grasp on workload, right?
+2112.18s - 2114.50s |  Non-human, machine identities,
+2114.50s - 2116.38s |  whatever you wanna call this stuff, right?
+2116.38s - 2119.98s |  This whole realm of within the proliferation
+2119.98s - 2123.54s |  of non-human identities out there is huge in the cloud.
+2123.54s - 2126.90s |  And I think a lot of organizations struggle with this stuff.
+2126.90s - 2130.14s |  And so it's a great way to really help educate people
+2130.14s - 2133.18s |  and help whether you're an ISV or a consultant
+2133.18s - 2134.66s |  or you work in an enterprise, right?
+2134.66s - 2137.54s |  Understand what you need to do to protect applications
+2137.54s - 2139.14s |  that have high privileges.
+2139.14s - 2140.46s |  And in particular,
+2140.46s - 2142.54s |  when we're talking about application permissions,
+2142.54s - 2143.78s |  again, just wanna touch on, right?
+2143.78s - 2147.06s |  From that sort of mimicking these findings, right?
+2147.06s - 2150.18s |  That you can abuse role management read-write directory
+2150.18s - 2153.22s |  because effectively if you have your service principle here,
+2153.22s - 2154.06s |  right?
+2154.06s - 2155.58s |  And it has role management read-write directory
+2155.58s - 2157.58s |  assigned to it as a permission, right?
+2157.58s - 2160.64s |  It is able to actually manage roles in, right?
+2160.64s - 2161.48s |  Your enter a tenant.
+2161.48s - 2163.10s |  So you can add or remove anyone
+2163.10s - 2164.90s |  to any sort of role out here.
+2164.90s - 2168.24s |  And yeah, it's basically, right?
+2168.24s - 2170.94s |  A privileged role administrator as, right?
+2170.94s - 2172.18s |  An application.
+2173.42s - 2175.26s |  And also when we're looking at app role assignment
+2175.26s - 2176.54s |  read-write all, right?
+2176.54s - 2179.74s |  This permission, again, is a bit of a step away here
+2179.74s - 2182.70s |  because this in itself doesn't allow role management.
+2182.70s - 2184.46s |  But if you have your service principle
+2184.46s - 2186.70s |  with app role assignment read-write all, right?
+2186.70s - 2189.46s |  It can then assign other permissions, right?
+2189.46s - 2191.60s |  So this is something that the TLDR is like,
+2191.60s - 2195.20s |  it bypasses that admin consent grant piece of things
+2195.20s - 2197.64s |  or maybe, you know, not say bypass,
+2197.64s - 2199.72s |  but it allows you to assign other permissions.
+2199.72s - 2200.88s |  So it can go give itself
+2200.88s - 2202.76s |  or any other service principle, right?
+2202.76s - 2204.72s |  Role management read-write directory.
+2204.72s - 2206.00s |  And then at that point, again,
+2206.00s - 2208.16s |  that application or whatever it's touching, right?
+2208.16s - 2210.64s |  Can add or remove users to roles.
+2210.64s - 2212.68s |  And I think, you know, this is important.
+2212.68s - 2213.84s |  I'll step back here a second
+2213.84s - 2217.12s |  because, you know, starting to see a bigger ecosystem
+2217.12s - 2219.80s |  of like M365 backup and restore
+2219.80s - 2222.00s |  and all these things and the ITDR space
+2222.00s - 2223.24s |  protecting identities.
+2223.24s - 2224.92s |  And you'll find a lot of applications
+2224.92s - 2227.20s |  that will want these sort of roles.
+2227.20s - 2228.40s |  You may argue like, right,
+2228.40s - 2229.98s |  whether the developer or the app
+2229.98s - 2232.44s |  or the company that's producing it actually needs it.
+2232.44s - 2233.78s |  But you'll see this a lot, right?
+2233.78s - 2235.36s |  And I think orgs are deploying these things
+2235.36s - 2237.74s |  and not realizing, right, that it's a great way
+2237.74s - 2239.56s |  that someone could, you know,
+2239.56s - 2243.16s |  potentially do something naughty on their tenant there.
+2243.16s - 2244.28s |  Right, and just high level, right,
+2244.28s - 2246.64s |  in talking with people about protecting these things,
+2246.64s - 2248.70s |  right, really stress the developers, right,
+2248.70s - 2251.26s |  to use app instance property lock, right,
+2251.26s - 2253.46s |  where effectively here, if you have your entrant tenant
+2253.46s - 2256.82s |  and someone with, you know, a role here
+2256.82s - 2260.46s |  that can manage secrets on service principles, right,
+2260.46s - 2262.60s |  that if you have that third-party SaaS app
+2262.60s - 2265.90s |  that has app instance property lock on those credentials.
+2266.78s - 2272.58s |  Oop, man, I am just, here we go.
+2273.50s - 2275.98s |  My animations are killing me here.
+2275.98s - 2279.38s |  Right, that it's actually going to block the ability
+2279.38s - 2280.82s |  to manage those credentials.
+2280.82s - 2284.02s |  It's my replacement for wishing I had a whiteboard.
+2284.02s - 2285.62s |  Yep.
+2285.62s - 2289.00s |  And also, right, talking about workload identity premium,
+2289.00s - 2291.72s |  which I know it can be a hot topic, sort of,
+2291.72s - 2294.72s |  in the, you know, world of things as to, right,
+2294.72s - 2296.54s |  that it's an additional cost.
+2296.54s - 2299.90s |  But I would say one benefit with workload identity premium
+2299.90s - 2302.10s |  is that, right, it can be only used, really,
+2302.10s - 2304.86s |  on those highly privileged applications
+2304.86s - 2305.70s |  that you might have, right?
+2305.70s - 2307.74s |  So if you have thousands of service principles,
+2307.74s - 2310.62s |  it doesn't mean you have to buy this for, right,
+2310.62s - 2312.10s |  all thousand of them.
+2312.10s - 2314.58s |  But again, just covering workload identity premium here,
+2314.58s - 2316.58s |  right, where you have your entrant tenant, right,
+2316.58s - 2318.86s |  effectively it gives you conditional access, right,
+2318.86s - 2321.18s |  for your workload identities, right?
+2321.18s - 2324.30s |  And now, so primarily here it's in a location evaluation,
+2324.30s - 2326.26s |  right, so we define our trusted network
+2326.26s - 2328.70s |  and we have our application or service principle here,
+2328.70s - 2331.20s |  right, and it's going to do its things, right,
+2331.20s - 2333.22s |  and conditional access is going to let it in.
+2333.22s - 2335.68s |  And I know from, like, a zero-trust perspective, right,
+2335.68s - 2337.30s |  trusted networks isn't like, you know,
+2337.30s - 2338.84s |  the end-all, be-all for things,
+2338.84s - 2340.48s |  but it's really the best we can do, right,
+2340.48s - 2343.56s |  from a, you know, non-human identity perspective out there,
+2343.56s - 2345.40s |  at least right now, right?
+2345.40s - 2347.08s |  And then we have our untrusted network,
+2347.08s - 2348.60s |  our unknown network come along, right,
+2348.60s - 2351.00s |  and these creds maybe were found out in, you know,
+2351.00s - 2354.56s |  GitHub repo or, right, I got fired and I stole them
+2354.56s - 2356.78s |  because I hate where I work and, right,
+2356.78s - 2359.44s |  then I go to authenticate as this application, right,
+2359.44s - 2361.24s |  and conditional access afterwards
+2361.24s - 2362.96s |  is going to block my access.
+2362.96s - 2363.80s |  But here's the thing, right,
+2363.80s - 2365.36s |  identity protection coming in here
+2366.04s - 2367.68s |  also does some interesting things, right,
+2367.68s - 2368.92s |  because ultimately that feeds
+2368.92s - 2370.88s |  into that whole risk detection bit,
+2370.88s - 2373.52s |  so even then if these credentials become compromised,
+2373.52s - 2375.56s |  right, in your trusted network, right,
+2375.56s - 2378.60s |  there is still the ability to block access
+2378.60s - 2380.04s |  from that third-party sales app.
+2380.04s - 2382.28s |  So, you know, I definitely look at this
+2382.28s - 2383.84s |  as one of those times when we can take
+2383.84s - 2385.76s |  sort of the research, you know,
+2385.76s - 2387.04s |  the conversations about this
+2387.04s - 2388.78s |  and really try to get organizations
+2388.78s - 2391.84s |  to secure their service principles out there, right,
+2391.84s - 2393.56s |  because definitely think from what I've seen,
+2393.72s - 2396.80s |  it's a place that attackers are definitely gonna move.
+2396.80s - 2399.68s |  And with that, just, you know,
+2399.68s - 2402.54s |  give Cam a round of applause here as well, folks.
+2402.54s - 2403.54s |  And thank you.

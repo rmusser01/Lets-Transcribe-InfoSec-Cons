@@ -1,0 +1,571 @@
+{
+  "webpage_url": "https://www.youtube.com/watch?v=GPODCSvZMyM",
+  "title": "DEF CON 32 - Open Sesame: how vulnerable is your stuff in electronic lockers -Dennis Giese, braelynn",
+  "description": "Physical security is often overlooked in many organizational threat models. An increasing amount of physical security devices with smart components are being introduced to the market with widespread adoption. This creates an enticing attack surface for physical red teams.\n\nLockers and cabinets equipped with electronic smart locks can be found in many places such as offices, factories, hospitals, labs, and gyms. With remote and hybrid work increasing in popularity, shared use office setups becoming the default. Co-working spaces in offices are now commonplace with lockers being installed for employee device storage. People generally trust that their belongings will be secure in these lockers and entrust the locks with sensitive information, like their personal PIN.\n\nIs there a more stealthy way to get into lockers that don't involve using a crowbar?\n\nIn this talk we will analyze the vulnerabilities affecting locks manufactured by the \"global leader in keyless lock solutions,\" Digilock and Schulte-Schlagbaum AG (SAG). Both companies have been in the physical security industry for many decades. What went wrong in the development of these devices and how can these vulnerabilities be fixed? We will also discuss several other vendors operating in this space and compare findings.\n\nWe will demonstrate practical physical and side-channel attacks targeting locks that accept a standard PIN and RFID. Learn why it is poor practice to reuse the same secret PIN for lockers and safes and devices such as mobile phones and laptops (especially if they are stored inside the lockers).",
+  "channel_url": "https://www.youtube.com/channel/UC6Om9kAkl32dWlDSNlDS9Iw",
+  "duration": 2408,
+  "channel": "DEFCONConference",
+  "uploader": "DEFCONConference",
+  "upload_date": "20241016"
+}
+
+2.22s - 7.54s | This text was transcribed using whisper model: large-v2
+
+ Hello DEF CON! Thank you for being here on a Saturday morning. I know everyone was
+7.54s - 13.14s |  partying yesterday until 5 a.m. probably, so I'm glad that you're here. So yeah, now
+13.14s - 18.10s |  we're talking about our talk, Open CSAM or how secure is your stuff in your
+18.10s - 21.14s |  lockers? And this is the main question, basically, which we will talk through the
+21.14s - 26.10s |  talk. As you might have heard, there have been some issues with the talk in the
+26.10s - 32.06s |  past, so I will address it later. So before we start with the topic, let me
+32.06s - 36.70s |  introduce myself real quick. So I'm Dennis, I'm a security researcher or also
+36.70s - 41.34s |  a hardware hacker, and I basically am interested in wireless and embedded
+41.34s - 44.58s |  security and privacy. So I take a look at all kind of interesting devices which
+44.58s - 50.18s |  are around me. Primarily this is vacuum robots, but I generally like look at all
+50.18s - 54.98s |  kind of things. That's why I call myself also a vacuum robot and IoT collector, so
+54.98s - 60.14s |  I have probably way over 600-700 devices and, you know, 60 or 70 vacuum robots by
+60.14s - 65.66s |  now. So my main goal typically is to root vacuum robots, but, you know, again I
+65.66s - 68.46s |  look at all the other things. And if you're interested in vacuum robots, by the
+68.46s - 72.50s |  way, I have a website which documents all the, you know, hardware and
+72.50s - 80.78s |  everything. Yeah, one thing which is kind of new in the slides, so I have been a
+80.78s - 84.78s |  target of a seasoned assistant at DEF CON, so I think this is like a, you know,
+84.78s - 89.14s |  interesting thing. Which, by the way, was withdrawn as today in the morning or at
+89.14s - 98.21s |  night, so yeah. And now we would like to introduce Braylyn. Cool. Hi, I am Braylyn.
+98.21s - 102.41s |  I hack things for the Leviathan Security Group during the day, but I'm here
+102.41s - 105.73s |  representing myself as an independent security researcher, and this talk does
+105.73s - 110.93s |  not reflect their views. My general focus has been application security and APIs,
+110.93s - 116.93s |  but I've started hardware hacking for fun, looking at things like robots,
+117.05s - 122.85s |  cameras, and smart locks. And this is my first DEF CON talk, and I was also named
+122.85s - 134.41s |  in the C synthesis, so that's pretty fun. All right, so let's talk about some
+134.41s - 137.65s |  previous work. So this is not necessarily the first lock which we took a look at.
+137.65s - 142.05s |  Like exactly 10 years ago, well a little bit more than 10 years ago, I was working
+142.05s - 145.73s |  on a group which looked at Siemens and Foss door locks, and we published a paper
+145.73s - 150.93s |  about that. Also some while ago I was taking a look at Schlage electronic
+150.93s - 154.01s |  locks, which you find especially in America, like, you know, in government
+154.01s - 160.77s |  buildings, universities. So what are the goals of this talk? Well, first we want
+160.77s - 164.41s |  to give you some overview of the reverse engineering of digilock and SAG locks.
+164.41s - 169.65s |  We want to tell you something about vulnerabilities, and we want to show you
+169.65s - 173.13s |  some ideas and methods how you can extract typically firmware and
+173.13s - 177.77s |  configurations from that kind of devices. One thing which is the most important
+177.77s - 182.25s |  part of this talk is basically we want to raise awareness about pin numbers. As
+182.25s - 186.37s |  a general side note, we use digilock and SAG as an example, and we are not
+186.37s - 189.49s |  claiming that they are more or less secure than other companies. We're kind of
+189.49s - 193.09s |  just unlucky that they're one of the market leaders and that they build good
+193.09s - 197.53s |  products. So yeah, so we basically have chosen them because we have a good
+197.53s - 200.61s |  reputation, they have a quality of products, we just might have made some
+200.61s - 205.49s |  mistakes. We reported the things also to the vendors, and digilock is actively
+205.49s - 209.65s |  working on fixing the issues, and I will tell, give you some information later on
+209.65s - 215.93s |  that. So about this talk, it's basically a continuation of my Nulcon talk
+215.93s - 222.21s |  at Nulcon Berlin 24. The focus, and this is the important part, on offline locks
+222.21s - 225.37s |  which are managed. So if there's like a master key or something, if you think of
+225.37s - 230.49s |  a gym or, you know, master keyed systems. And we do not cover a couple things. For
+230.49s - 233.41s |  example, we do not cover management software, we do not cover
+233.41s - 237.17s |  reprovisioning, so how to, you know, factory reset the lock. We also don't
+237.17s - 241.13s |  talk about physical attacks using magnets or destructive attacks like
+241.13s - 246.13s |  drilling, you know, decapping, all other kinds of things. And later on, we have
+246.13s - 251.17s |  included a statement of digilock in regard to their cease and desist.
+251.17s - 257.01s |  Alright, so what is our motivation here? So generally, back then when I was, you
+257.01s - 261.89s |  know, looking at locks, I realized quite quickly that hacking locks is not that,
+262.41s - 267.25s |  you know, new. There's a lot of people who were hacking like high security locks, so
+267.25s - 270.29s |  a lot of researchers were kind of focusing on that, especially like safe locks,
+270.29s - 275.09s |  because there's probably very important stuff in there. A lot of research has
+275.09s - 279.29s |  been put into side channel attacks, you know, safes contain expensive things, and
+279.29s - 284.53s |  the impact is like very high if they're insecure. The general problem is for, you
+284.53s - 287.77s |  know, manufacturers or for even companies who have this kind of devices, it's very
+287.81s - 292.21s |  hard to defend against physical attacks and highly motivated attackers. So if I'm an
+292.21s - 295.53s |  attacker, if I have unlimited time and money, then I will get into whatever it
+295.53s - 300.49s |  is. In regard to consumer devices, it's slightly different. So consumer locks,
+300.49s - 304.81s |  safes, and cabinets are known to be bad, and there's mechanical flaws, there's
+304.81s - 308.53s |  trivial bypasses, you know, using magnets and other things, and there's insecure
+308.53s - 313.05s |  software. And I have an example here from one of my favorite YouTubers, a lock
+313.05s - 316.85s |  picking lawyer, where he has like a, you know, gun safe kind of thing where you
+316.85s - 322.13s |  put the gun in, and you just pry open the plastic handle, and you can just pull
+322.13s - 327.05s |  the gun out, you don't care about the lock. So, you know, sometimes you don't
+327.05s - 332.21s |  need to even attack locks, you know, there's other ways around that. Okay, so
+332.21s - 336.29s |  how did we start with this particular research? So I was at Northeastern
+336.29s - 340.77s |  University like around 2018, and they introduced lockers in the labs. And one
+340.77s - 344.17s |  of the idea was like, you know, you can put your stuff in, and you just choose
+344.17s - 347.37s |  your own pen, lock it, and, you know, if you come back, you unlock it again, and
+347.37s - 351.37s |  the next one can use it. But also when we were traveling around, we saw like these
+351.37s - 355.65s |  locks in many, many co-working spaces, banks, airports, hotels, gyms, so we were
+355.65s - 359.37s |  literally everywhere. At some point, you develop an eye for like interesting
+359.37s - 364.29s |  things around you. And one thing which we figured out very quickly is
+364.29s - 367.81s |  there's only a few widely used vendors which are out there, so there's like, you
+367.81s - 370.57s |  know, the groups like in the US in particular, like the DigiLock, or like
+370.89s - 375.93s |  in Europe, SAG, there's some very limited kind of vendors out there. And these kind
+375.93s - 379.09s |  of locks, they stay for a very, very long time in use, because why would you change
+379.09s - 383.01s |  gym lock like, you know, after five years or after four years or whatever? So these
+383.01s - 386.25s |  things typically stay in use like for 10 years, 20 years, until they're broken
+386.25s - 392.21s |  basically. Okay, the question is now why do we hack cabinet lockers or lockers
+392.21s - 396.49s |  generally and not safes? Well, lockers and cabinets are basically everywhere, and
+396.49s - 399.97s |  they're used in public spaces or spaces which are accessible to the public or
+400.09s - 403.65s |  shared workspaces. And there might be many reasons why you want to hack them.
+403.65s - 406.85s |  For example, you forgot your pin, you lost your key, or you do a red team
+406.85s - 410.93s |  penetration test. Also, you know, sometimes the audit locks are not super
+410.93s - 415.93s |  correct, so you want to, you know, correct them. And they might contain a lot of
+415.93s - 418.93s |  interesting stuff, and including our own. And this is like what I want to say is
+418.93s - 421.49s |  like, I mean, one of the reasons why we do the research is because we're kind of
+421.49s - 425.33s |  slightly annoyed because our stuff is also that kind of lockers, so this is one
+425.33s - 428.73s |  big motivation from us. So what kind of things do you might store there?
+429.13s - 432.89s |  Well, you might store your backpack, laptop, employee ID, phone, keys, money,
+432.89s - 440.37s |  credit cards, USB sticks, important documents, your bitcoins, or candy. So the
+440.37s - 444.81s |  question is, well, did you use the same pin which you use to lock the locker also
+444.81s - 454.06s |  for your phone, notebook, or credit card? Quick survey, who has a friend that does
+454.18s - 462.18s |  this? Who reuses their pins? No, you're not supposed to admit that.
+462.18s - 464.98s |  To be fair, I mean, in the beginning, before I was doing the research, I caught
+464.98s - 468.30s |  myself using the same pin all over again. So that, you know, it gets a little bit
+468.30s - 472.74s |  complicated. Anyway, so what kind of attack ideas do we have and how do we do
+472.74s - 477.18s |  it? So what are we looking for generally in this kind of devices? Well, we try to
+477.18s - 480.78s |  extract somehow the firmware, because firmware can give us like some secret
+480.78s - 484.98s |  backdoors or bugs. It helps us to understand functionality, and it can
+484.98s - 488.74s |  allow also an attacker to create, you know, custom firmware. You know, like
+488.74s - 493.98s |  basically declouding or n-certification of smart locks. The other thing is, which
+493.98s - 498.34s |  is obviously the crown jewels here, is the interesting data in terms of like key
+498.34s - 503.58s |  IDs, user pins, RFID IDs, or log files. And the other thing, if you do
+503.58s - 507.50s |  lockpicking, you know it, you try to find like any easy way to bypass things and
+507.50s - 512.94s |  to open locks. So our idea, and this is like why we want to kind of stress on
+512.94s - 516.26s |  that, it's not necessary, but we want to steal your stuff. But we don't want to
+516.26s - 519.78s |  steal your stuff anyway, but I mean, theoretically as attackers. But lateral
+519.78s - 524.26s |  movement, and that's the core idea of our talk. So how do we do it? So we have, in
+524.26s - 528.66s |  this particular example, three cabinets. Basically one of them is open, two of them
+528.66s - 531.78s |  are locked. One is locked with a pin, the other one is locked with an RFID. And so
+531.78s - 535.14s |  what we do is, like, we try to extract a manager key from the locker which is
+535.14s - 538.62s |  open. As soon as we have the manager key, this is like a key which you use to kind
+538.62s - 541.58s |  of unlock the locker, to audit things in there, so that there's nothing, you know,
+541.58s - 546.38s |  like the Defcon hotel, it's like sketchy things, your flipper. And you can lock it
+546.38s - 550.50s |  again without resetting the pin. So by having this manager key, what we can do
+550.50s - 557.38s |  is basically we can unlock other lockers, and we can extract from the lockers, like
+557.38s - 561.26s |  with the pin, we can extract the user pin. At the same time, we can obviously
+561.26s - 564.50s |  access whatever is in the locker. So if you have a laptop in there, and if you
+564.50s - 568.34s |  have your phone in there, well, we might be able to use the pin which you use to
+568.34s - 572.62s |  lock the locker to, you know, unlock that. But it gets even more interesting, because
+572.62s - 578.50s |  well, we can also extract the RFID, you know, ID or secret, in some cases, from a
+578.50s - 582.46s |  lock which was used to lock the locker with an RFID or employee badge. And then
+582.46s - 585.66s |  we can go to an interesting door, like a server room or something, and can use that
+585.66s - 590.62s |  to unlock that. Especially SAG, they use test fire encryption, so they store the
+590.62s - 595.62s |  keys, which gets very, very interesting here. All right, so how do you get that
+595.62s - 600.10s |  kind of locks? What's the logistics behind that? The problem is, if you do that
+600.10s - 603.78s |  kind of research, you need to invest a lot of time and money, and experiments
+603.78s - 607.74s |  typically require multiple devices. And you obviously cannot use someone else's
+607.74s - 611.46s |  property, because there might be one or two bricks in the process of, like,
+611.46s - 616.46s |  reverse engineering that. These locks are also expensive, so typically you pay
+616.50s - 621.10s |  between, like, more than $100 for a lock, and more than $50 for a key, or, like, way
+621.10s - 625.78s |  more than $50. We will talk about that later. But the good thing was, for us,
+625.78s - 630.02s |  there's surplus on eBay. And it's a little mean, but COVID kind of helped us a little
+630.02s - 633.30s |  bit, because a lot of gyms kind of got bankrupt, so they kind of offset their
+633.30s - 637.46s |  locks and other things on eBay. And we got a lot of, like, cheap provisioned locks,
+637.46s - 640.10s |  so locks which were already provisioned through some manager key or programming
+640.10s - 644.74s |  key, which we were able to play around with. And the other thing is, especially
+644.74s - 647.90s |  in Germany, we got a lot of locks from failed projects. Basically, we have been,
+647.90s - 651.02s |  like, a big, like, kind of gym, which kind of, you know, didn't happen. So we had,
+651.02s - 653.94s |  like, stacks and stacks of these locks, and we kind of sell them on eBay for a
+653.94s - 659.18s |  cheap price. So we spent probably more than $1,000 or $2,000 on buying random
+659.18s - 665.14s |  locks, which we don't even have so many lockers for. So, as mentioned, I mean, we
+665.14s - 669.74s |  were going on a shopping tour on eBay, and, you know, bought, like, a lot of locks.
+669.74s - 673.78s |  So let's talk about the DigiLock ecosystem, and this is, like, our first
+673.78s - 678.76s |  candidate for which devices we looked at. So DigiLock itself, we're, like, a
+678.76s - 682.54s |  brand of Security People Inc., which is US-based, and they are in the industry for a
+682.54s - 685.10s |  very, very long time. So they're very experienced, especially also with
+685.10s - 688.74s |  mechanical locks. They call themselves the global leader in keyless lock
+688.74s - 692.14s |  solutions, and they have many different bands of locks. So they have connected
+692.14s - 694.94s |  locks, which we're not talking about. We have offline locks. We have mechanical
+694.94s - 699.22s |  locks. And as access media, you can use, like, RFIDs, the pins, key fobs,
+699.22s - 703.26s |  smartphones with the newest generation. And you might see them under different
+703.26s - 707.50s |  brands. For example, DigiLock, Nex, Numeris, so there's different ones. If you take a
+707.50s - 710.14s |  look at their website, I mean, they kind of say, like, they're literally in all the
+710.14s - 714.18s |  industries, which is, like, I mean, that's the reason why we kind of saw them in the
+714.18s - 717.58s |  first place, because we're, like, in education, in gyms, in some professional
+717.58s - 721.78s |  sports organizations, so we're literally everywhere. The way how you can typically
+721.78s - 727.14s |  identify them is, this is some examples right now, by the three-pin connector,
+727.14s - 730.78s |  which we use, like, which is very specific for DigiLock. Other lock vendors use
+730.78s - 733.42s |  slightly different kind of connectors, but this is, like, a thing, if you see
+733.42s - 737.18s |  that, it's kind of, like, you know, kind of know what it is. If you take a look at
+737.18s - 740.80s |  the lock hardware itself, the good thing for us is that they use more or less the
+740.80s - 745.50s |  same or very similar hardware, so they use a similar type of MCU. So if you're
+745.50s - 748.66s |  kind of familiar with one of them, you kind of know how the arrows work in a way.
+748.66s - 753.62s |  So this makes it also a great kind of thing for us as reverse engineers. And
+753.62s - 757.34s |  they didn't have tamper switches, so if you just assemble one, then there's
+757.34s - 760.46s |  nothing which triggers, which is, by the way, very, very normal for, like, you know,
+760.46s - 764.78s |  kind of low security or middle security locks. Only safe locks have, like, some
+764.78s - 768.38s |  tamper switches and other things. The lock state is controlled by the latch,
+768.38s - 770.86s |  which is kind of interesting for us, and we'll kind of talk about that later.
+770.86s - 775.02s |  And because we have so much experience with mechanical locks, we added a lot of
+775.02s - 778.58s |  mechanical protections against physical attacks. So, for example, you cannot use,
+778.58s - 782.22s |  like, bypassing things. We tried a couple things with needles, so there's no way to
+782.22s - 786.46s |  kind of, you know, bypass things. So we did a very good job there. The features
+786.50s - 790.42s |  which you get per lock are kind of dependent on the brand. So some of them
+790.42s - 794.18s |  support audit locks, so you can basically record who opened or locked the locker.
+794.18s - 799.50s |  And they have assigned and shared locker functionality, which means sometimes you
+799.50s - 803.90s |  can give an employee just one locker and only that person can use it, or you
+803.90s - 807.98s |  have a scenario like in the gym. If you take a look closer at the hardware, one
+807.98s - 811.18s |  thing which is kind of great for us is all of them have a PIC programming
+811.18s - 815.62s |  interface exposed. Many of them have EEPROM. We have obviously an MCU. We have a
+815.62s - 820.22s |  connection to the inside unit, which kind of contains the latch and the motor,
+820.22s - 824.98s |  and it gets all the power from there. We have a piezo for the sound. And the most
+824.98s - 828.90s |  interesting thing for us was the interface. As you see, we soldered
+828.90s - 834.22s |  some wires to that to kind of intercept that, which is basically one wire.
+834.22s - 838.38s |  Hardware-wise, if you take a closer look at the microcontrollers, we use most of
+838.38s - 842.26s |  the time PIC18 controllers, but sometimes, especially newer models,
+842.26s - 847.70s |  we use PIC24s. We have EEPROM for audit locks and for credential storage in some
+847.70s - 853.10s |  of them devices. And if you have a device which supports RFIDs, you have an ST
+853.10s - 859.06s |  kind of controller for NFCs, or the newer ones have a logic IC, which is
+859.06s - 863.78s |  also an HSM. And from what they told us, basically in new generations of
+863.78s - 867.74s |  these locks, we use the HSM to store some kind of secrets, which we can
+867.74s - 872.10s |  confirm because it's not on eBay right now, so I need to wait until it shows up
+872.10s - 878.30s |  on eBay. So if you look inside at the locker hardware, the thing which
+878.30s - 881.18s |  works for me, as someone who's doing physical security for quite a while, is
+881.18s - 884.94s |  it's extremely well built and engineered. And what I mentioned
+884.94s - 887.82s |  before is that the inside lock kind of defines if it's locked and unlocked. You
+887.82s - 891.50s |  have some read contacts, which are kind of sensing if the latch is
+891.50s - 896.90s |  locked or not locked. There's also different variants of the lock,
+896.90s - 901.02s |  like where everything is just in the front, and we have, again, read contacts,
+901.02s - 905.10s |  which kind of detect a couple things. But all of the locks have some kind of
+905.10s - 910.70s |  debug pins. So let's talk about the keys. So there's a bunch of keys, and you see
+910.70s - 914.86s |  we have a stack of them because we were going on shopping trips. The most
+914.86s - 918.66s |  important one is the yellow key, which is the programming key. Only one of them
+918.66s - 922.46s |  exists in the locking system. This is basically the main provisioning key. It
+922.46s - 925.66s |  allows you to add manager keys, to remove them, to overwrite the lock, so if you
+925.66s - 930.22s |  need to open the lock. It also is used to power deadlocks, so if the battery is
+930.22s - 933.34s |  empty, you can use it to power jump it. And it has some additional
+933.34s - 936.22s |  functions like cloning functionality, audits, and some other
+936.22s - 941.26s |  things. Another key which is important is the black key, which is the manager key.
+941.26s - 944.54s |  And this is basically, typically, your administrator or whatever has it to
+944.54s - 948.62s |  kind of, you know, you forgot your pin, to open the locker so that you can get
+948.62s - 953.50s |  your stuff, or to kind of check if you have a flipper in there, a legal flipper
+953.50s - 957.18s |  in there. So this is kind of things which it's used for. And one thing which is
+957.18s - 960.06s |  very, very special for Digilock, and this is like kind of, I think, one very
+960.06s - 963.98s |  important feature for a lot of people, is the so-called ADA key, which is in blue.
+963.98s - 969.30s |  And ADA means Americans with Disabilities Act. So this key allows you
+969.30s - 974.78s |  basically, for people who cannot enter a pin physically, you just tap the key fob,
+974.78s - 980.82s |  and it will kind of act as a pin, or as a key. Yeah. So if you take a look closer
+980.82s - 984.18s |  into these keys, well, all of them are kind of the same. So programming the
+984.18s - 986.46s |  manager keys, by the way, have exactly the same hardware, just the case is
+986.46s - 991.70s |  different, but price-wise, they are very different. They have a battery in there,
+991.70s - 995.50s |  they have a PIC-18, and they have, again, very nice for us, a PIC programming
+995.50s - 1001.60s |  interface. The ADA key is basically an I button, which will be, later, we will use
+1001.60s - 1006.54s |  for some things. There's one special key, which we're not going too deep into it,
+1006.54s - 1010.38s |  it's a so-called data key, and what it does is, basically, it connects over USB
+1010.38s - 1014.06s |  to a tablet, and you can basically use it as a programming or manager key, you can
+1014.06s - 1017.18s |  have, you know, audit logs, you can pull things, you can clone logs, and some other
+1017.18s - 1020.82s |  things. So this is like an additional thing, which I think they have in their
+1020.82s - 1025.70s |  fifth generation or something. It's a little more expensive, but it doesn't
+1025.70s - 1031.72s |  matter for us. All right, so what is the key communication between, the
+1031.72s - 1035.06s |  communication between lock and key? And the thing here is, which you probably
+1035.06s - 1038.90s |  figured out very quickly already, is OneWire. And OneWire, by the way, is a
+1038.90s - 1041.62s |  very standard protocol. You find it in a lot of alarm systems, you find it, like,
+1041.66s - 1045.22s |  if you go to a restaurant, for to unlock the cash register, and some other things,
+1045.22s - 1049.86s |  it's a, you know, it's a very standard kind of thing, which makes it great to be
+1049.86s - 1052.70s |  intercepted with a logic analyzer. So there's some tools out there which you
+1052.70s - 1057.30s |  can use to kind of basically decode the stream. They use the read ROM command to
+1057.30s - 1062.62s |  kind of, you know, ask the key for, like, its ID, and the key returns eight bytes
+1062.62s - 1067.34s |  of ID to the lock, and this is, like, basically authentication. And the key
+1067.38s - 1072.10s |  types are identified basically by the first byte of the ID. One thing which is,
+1072.10s - 1075.26s |  like, important if you want to do side-channel attacks or timing attacks, the
+1075.26s - 1079.50s |  bus resets after every transaction. In our talk at Nulcon, we kind of described
+1079.50s - 1083.58s |  how, you know, you potentially could do side-channels. One key thing to take away
+1083.58s - 1087.42s |  here is we don't use any crypto, so we kind of rely on whatever security
+1087.42s - 1094.46s |  guarantees OneWire has. All right, I want to give a quick rundown of PIC MCUs
+1094.58s - 1098.42s |  because it's kind of important to understand what's going on here. So PICs
+1098.42s - 1103.10s |  generally are microcontrollers by microchip. They are very common in locks, so
+1103.10s - 1106.18s |  literally everyone is using them. Siemens of us use them, Schlage use them,
+1106.18s - 1112.10s |  Kitlock uses them, so everyone uses them. And they are ideal because they are
+1112.10s - 1115.42s |  low-power and ideal for battery operations. There's two flavors which we
+1115.42s - 1119.62s |  see for DigiLock in particular, or for other locks. It's a PIC18, which is
+1119.62s - 1124.90s |  an 8-bit MCU, which was released back in 2000, and a PIC24, which has a 16-bit
+1124.90s - 1131.26s |  MCU, which has no EEPROM data on board. So basically, you can flash the firmware
+1131.26s - 1135.14s |  onto it, but you need to store your data somewhere else. Okay, so this is an
+1135.14s - 1141.26s |  example of a random PIC18. So we have some SRAM, we have flash, we have EEPROM,
+1141.26s - 1145.70s |  as mentioned, and they have support for some protections. For example, you can
+1145.70s - 1148.46s |  enable code protection, you can enable write protection, and there's also like a
+1148.46s - 1152.42s |  thing which is called external block table read. And on the right, you can see
+1152.42s - 1157.34s |  it's like consisting of multiple blocks, and at the bottom is like the EEPROM part.
+1157.34s - 1161.82s |  So let's talk about the code protection. Speaking of which, code protection is, I
+1161.82s - 1166.06s |  think, a very PIC-specific term. If you work with other processors, you might
+1166.06s - 1170.14s |  know it as readout protection. And the basic idea is we have here an example
+1170.14s - 1173.78s |  lock, which is not an example lock, just an example chip, where the first two
+1173.78s - 1177.46s |  blocks are protected, the data is protected, and if you connect our
+1177.46s - 1181.06s |  programmer to it, what will happen is we will get, for the blocks which are
+1181.06s - 1186.86s |  protected, all zeros, but the blocks which are not protected, we get data back. So
+1186.86s - 1190.48s |  write protection, similar thing. The first two blocks are protected, the last one is
+1190.48s - 1195.02s |  protected. If you try to write with our programmer something to that, the
+1195.02s - 1199.66s |  writes will fail for them, but the other blocks are programmed. Speaking of
+1199.66s - 1205.58s |  security of these chips, these MCUs, they offer basically only basic protection
+1205.58s - 1209.34s |  against attacks, so there's many attacks which exist for these chips, even if
+1209.34s - 1215.02s |  protections are enabled. There's optical laser attacks back in 2002, there's UV
+1215.02s - 1219.10s |  erasure attacks, there's glitching, there's like overwriting of individual
+1219.10s - 1222.98s |  blocks, so there's a lot of attacks out there. So a lot of people kind of
+1222.98s - 1228.06s |  already figured out how to break these chips. Okay, let's talk about
+1228.06s - 1234.10s |  the attacks. So our naive approach was like, hey, what happens if you just
+1234.10s - 1237.30s |  connect a debugger and we do some magic with power and other things, it's not as
+1237.30s - 1243.70s |  terrible as it seems, and we try to dump the MCU. We had the luck that we exposed
+1243.70s - 1249.26s |  the data pins, both for the locks and the keys, and one thing which we found is
+1249.26s - 1252.30s |  basically that the protection settings which we did on the locks were very
+1252.30s - 1257.54s |  inconsistent. So what do we mean with that? So typically, as mentioned, if readout
+1257.54s - 1261.22s |  protection is enabled, you get all zeros back, like on the right
+1261.22s - 1265.90s |  side. And one thing which we saw very quickly is that we didn't have the right
+1265.90s - 1270.02s |  protection enabled, which is by itself not really an issue. But the bigger thing
+1270.02s - 1273.38s |  was that if you use an external EEPROM, like an external chip, but it's not
+1273.38s - 1277.22s |  encrypted, so you can dump it basically. And this is basically the result which
+1277.22s - 1280.66s |  we had for the manager keys, for the data keys, and everything. One
+1280.66s - 1285.30s |  thing which you will see is for most locks which use more modern
+1285.30s - 1290.34s |  chips, they are not protecting the code, and all of them are not protecting the
+1290.34s - 1294.14s |  EEPROM, which is in the case of some of them doesn't matter too much, but for
+1294.14s - 1302.58s |  especially the locks, it matters a lot. So what are we doing? So for unprotected
+1302.58s - 1306.74s |  devices which don't have any code protection enabled, we can just dump the
+1306.74s - 1310.26s |  the code memory and the EEPROM directly. So we need a programmer, we need some
+1310.26s - 1313.06s |  other hardware, but generally if you work with embedded systems, you
+1313.06s - 1316.14s |  know how to do that. For partially protected devices, it gets a little bit
+1316.14s - 1319.34s |  more tricky. So this is an example for a lock which had the first three blocks
+1319.34s - 1324.46s |  protected, but the code was creeping into the fourth one which was not
+1324.46s - 1329.66s |  protected. So what we were doing is we can dump the fourth block and you can
+1329.66s - 1334.50s |  put a custom dumper into that block which hopefully gets hit by some code
+1334.50s - 1339.38s |  or branch link, and then we can dump the other ones. There's some other methods
+1339.38s - 1341.90s |  out there, but because we kind of cash-strapped and don't want to spend
+1341.90s - 1344.98s |  too much time on buying more locks of the same kind of thing and
+1344.98s - 1348.34s |  hoping that it's the same firmware, this is basically one of the
+1348.34s - 1353.26s |  things you can do. Otherwise you can just access the EEPROM data directly, so
+1353.26s - 1358.10s |  it's the same as the other ones. We described this attack at NuCon in the
+1358.10s - 1361.42s |  talk, so if you're interested in that, but it's a very generic attack, it's kind of
+1361.42s - 1366.78s |  well-known for quite a while. So basically the firmware extraction can
+1366.78s - 1371.14s |  be successful for all the locks, so we can get back the firmware. You can
+1371.14s - 1374.10s |  analyze the firmware, you can modify it if you want, you can basically load it
+1374.26s - 1379.02s |  into GDRAW because it has big support. There's no real signatures, integrity
+1379.02s - 1382.74s |  checks, which is kind of normal for that kind of thing, and the methods are well
+1382.74s - 1387.98s |  established. But the thing for us is we don't necessarily need to
+1387.98s - 1390.62s |  even look at the firmware if you have the data, so that's just a thing.
+1390.62s - 1394.54s |  So let's talk about the EEPROM contents, because that's where the cron jewels are.
+1394.54s - 1398.74s |  One thing is it requires quite a while and a lot of trial and error to
+1398.74s - 1401.62s |  figure out which data fields are for what, especially if you have only
+1401.66s - 1404.22s |  provisioned locks and you don't have clean locks which are provisioned,
+1404.22s - 1408.34s |  you kind of see what the differences are. And the data fields also differ
+1408.34s - 1411.62s |  slightly between lock generations and between lock types, so this is not
+1411.62s - 1414.90s |  accurate for other locks, it's just one example for an older fourth
+1414.90s - 1418.78s |  generation lock. But what we see typically is we have a partial
+1418.78s - 1422.66s |  programming ID, we see the amount of manager keys, we see what kind of
+1422.66s - 1428.86s |  manager key is provisioned on that, we see if a pin was set, ADA key ID,
+1428.98s - 1435.98s |  or RFID UID, so if you tap the RFID. And there's also failed pin counter,
+1435.98s - 1438.66s |  and for older locks, bad things might happen if you run over that.
+1438.66s - 1445.06s |  Just don't. As a general observation, some locks don't wipe the user pin
+1445.06s - 1449.58s |  or the key after it had been unlocked by the user, and some, especially
+1449.58s - 1452.14s |  newer versions do, so at some point I think we figured out there's a problem
+1452.14s - 1454.30s |  and we kind of fixed that.
+1454.30s - 1457.02s |  All right, so let's talk about emulation and cloning keys.
+1457.34s - 1462.54s |  And this kind of thing applies to both RFIDs and keys, so we only need
+1462.54s - 1467.66s |  the ID basically to clone the key, and we cannot extract from the key
+1467.66s - 1472.18s |  or the flash depending on what kind of media we have. And we can emulate
+1472.18s - 1477.94s |  it with an Arduino, with a Flipper Zero, or in case of RFIDs with a Proxmark.
+1477.94s - 1481.02s |  The thing is it looks a little bit easy, but you have to kind of build
+1481.02s - 1484.98s |  like a custom PCB which does a couple things to kind of wake up the lock
+1484.98s - 1487.90s |  in a particular way, so it's not as trivial as you can do it right now.
+1487.90s - 1490.70s |  You need to kind of put some effort into that, so don't go home and just
+1490.70s - 1493.22s |  program an Arduino. It won't work.
+1493.22s - 1496.66s |  All right, what kind of other ideas could you have if you want to attack them?
+1496.66s - 1499.78s |  Well, you could try to brute force pins and keys, which works for older locks
+1499.78s - 1503.26s |  very well, but for newer locks not so much. You can do side-channel attacks,
+1503.26s - 1505.82s |  which works for all of them as far as we know, but it's very complicated,
+1505.82s - 1509.66s |  takes like days. You can clone the lock configuration by one wire if you have
+1509.66s - 1514.38s |  a valid key, and you can try to modify the contents of EEPROMs.
+1514.38s - 1517.74s |  Also, you could think of like building a malicious firmware.
+1517.74s - 1521.94s |  We thought about that, but I mean, it's not really necessary to do.
+1521.94s - 1524.66s |  If you're interested in the first two attacks, you can take a look at the
+1524.66s - 1529.86s |  slides at NuCon. Now probably one of the reasons why you guys are here is the
+1529.86s - 1534.06s |  cease and desist incident. So our talk was basically meant to be on Friday
+1534.06s - 1539.46s |  at 11 a.m., and the day before at 2 p.m., we basically got an email,
+1539.46s - 1542.42s |  cease and desist, which kind of came to a couple of things, like copyright act,
+1542.42s - 1546.78s |  Defend Trade Secrets Act, you know, obviously other things like the Computer
+1546.78s - 1551.46s |  Fraud and Abuse Act and the DMCA. And the interesting thing here is,
+1551.46s - 1556.66s |  and I want to especially thank Corey to kind of connect us so quickly,
+1556.66s - 1561.42s |  who's sitting in the front. Thank you. By 3.30, basically slightly more than an
+1561.42s - 1564.82s |  hour later, we were sitting already in a hotel room and talking to lawyers from the
+1564.82s - 1570.30s |  EFF and also from Kurt, and we were basically figuring out what was going on.
+1570.30s - 1573.66s |  And so to kind of, because it was very short notice, we kind of moved the talk
+1573.66s - 1576.62s |  from Friday to Sunday. We probably could have given the talk on Friday,
+1576.62s - 1580.46s |  but we decided like, okay, it might be worth to kind of figure out what's going on.
+1580.46s - 1583.62s |  On Saturday, so yesterday, we had a phone call in both of everyone.
+1583.62s - 1587.42s |  We kind of exchanged views. We kind of resolved our differences.
+1587.42s - 1590.18s |  And in that call, we kind of pulled the cease and desist back.
+1590.18s - 1593.18s |  And officially today, shortly after midnight, we got like the withdrawal
+1593.18s - 1597.70s |  in writing for the cease and desist. One thing which I want to quickly say is
+1597.90s - 1600.78s |  there's like a kind of official response from DigiLog.
+1600.78s - 1603.50s |  They kind of acknowledged that we communicated with them prior to DEF CON.
+1603.50s - 1607.94s |  We gave them the slides even, which was maybe a mistake, maybe not.
+1607.94s - 1611.94s |  They promised to do some improvements. For example, they want to enable code
+1611.94s - 1615.70s |  protection on their logs. For the data blocks, they want to enable
+1615.70s - 1619.98s |  for the firmware. They want to encrypt somehow the
+1619.98s - 1625.18s |  communication between the keys and the log so that you cannot clone the UID
+1625.18s - 1629.02s |  anymore, and they want to encrypt EEPROM data if it's external.
+1629.02s - 1633.30s |  They also told us that in over 32 years, we'd had no reported security incidents
+1633.30s - 1636.46s |  due to a hacked log, which I think, I believe.
+1636.46s - 1642.14s |  And they're also very committed to the security solution for their customers.
+1642.14s - 1645.30s |  And I put their full statement, which they sent us, on slide 70.
+1645.30s - 1649.06s |  So if you look later on the slides, you'll find it in the back.
+1649.06s - 1652.42s |  All right, that's all for DigiLog. Let's move on with the next company
+1652.46s - 1656.90s |  and Brayden.
+1656.90s - 1661.58s |  Cool. So let's shift gears and talk about a couple of other brands that we took
+1661.58s - 1667.94s |  a look at as far as logger locks go. The first one being Schulte Schlagbaum AG.
+1667.94s - 1672.54s |  So this is a German company. They've been in business since 1833,
+1672.54s - 1676.46s |  so quite an old company. These are more widely used in Europe
+1676.46s - 1679.78s |  and Germany. They produce both mechanic and electronic
+1679.78s - 1682.42s |  logger locks. We took a look at the brand called
+1682.42s - 1688.98s |  Safotronic. They also produce door locks, but we didn't take a look at those.
+1688.98s - 1692.82s |  We think they might be on the same platform, but we're not entirely sure.
+1692.82s - 1700.02s |  So the electronic locks accept both PIN and RFIDs or RFID plus PINs as access
+1700.02s - 1704.30s |  mediums, and they do provide audit log support.
+1704.30s - 1709.90s |  So let's talk about the LS series of locks. These are based on the STM32 MCU,
+1709.90s - 1714.18s |  and they also have SPI EEPROM. As for security, we found that SWD
+1714.18s - 1719.30s |  and debugging was not disabled, and their EEPROM is not encrypted.
+1719.30s - 1724.10s |  And we noticed a lack of physical tamper switches in the locks.
+1724.10s - 1729.10s |  So as you can see, these are PCBs for three different locks.
+1729.10s - 1735.02s |  We think that they tried to save money by using the same design for nearly a decade.
+1735.02s - 1738.86s |  They use the same PCB, but they leave ICs unpopulated.
+1738.86s - 1745.22s |  So if you buy a lock that has PIN support, you'll get an MCU for the keypad and a
+1745.22s - 1752.10s |  different MCU for RFID, and you'll get both for the RFID and PIN-supported locks.
+1752.10s - 1757.46s |  We also noted a difference in SPI EEPROM sizes.
+1757.46s - 1765.58s |  Okay, so let's talk about the management keys for some of the RFID SAG locks.
+1765.58s - 1771.90s |  So their RFID locks support MyFair Classic, MyFair DeskFire, and some ISO-compatible tags.
+1771.90s - 1776.38s |  For the higher-end locks, there are special RFID keys that are required for programming.
+1776.38s - 1781.70s |  There's a master key 1 and 2. Those are used for unlocking and relocking lockers.
+1781.70s - 1786.30s |  There's also a data RFID tag for data transport, if you need to, like,
+1786.30s - 1791.58s |  pull audit logs off of certain locks. There's also, like, a physical communicator device,
+1791.58s - 1795.82s |  which is, like, an advanced handheld programmer, but we didn't take a look at that.
+1795.82s - 1802.86s |  We tried to procure a set of these programming keys, but they were $1,400 for eight MyFair
+1802.86s - 1810.74s |  Classic tags, so we didn't think it was worth the money, so we didn't take a look at those.
+1810.74s - 1816.98s |  So just a quick overview on how we dumped EEPROM contents, just using an SOIC clip.
+1816.98s - 1823.22s |  We were able to interface with the EEPROM and dump the context, as you can see in the hex file.
+1823.22s - 1828.98s |  We were able to pull the master pin and the user set pin, so this is just totally unencrypted
+1828.98s - 1835.54s |  EEPROM with pins that are available for anyone who can read it to see it.
+1835.54s - 1839.06s |  We also found that there are audit logs on the EEPROM as well.
+1839.06s - 1845.66s |  There are 500 entries, including a timestamp and a status code, with the status code 50
+1845.66s - 1851.62s |  allowing you to see used pins and the RFID UIDs that have been used, so the last 500
+1851.62s - 1856.18s |  you can see, yeah, all of that.
+1856.18s - 1858.14s |  So how did we extract firmware?
+1858.14s - 1864.50s |  We noticed on the PCB there was solder mask covering the SWD, like, copper pads, so we
+1864.50s - 1869.98s |  scratched that off and we were able to interface with it and connect to SWD, and that allowed
+1869.98s - 1874.94s |  us to see that the devs didn't set the read protection byte.
+1874.94s - 1880.20s |  And as such, we were able to get the full firmware from these locks.
+1880.20s - 1884.36s |  So there are a couple of physical flaws on these locks.
+1884.36s - 1889.20s |  We noticed that the motor power wires and potentially debug pins are accessible from
+1889.20s - 1894.68s |  outside of the lock through, like, a clipped plastic cover.
+1894.68s - 1904.64s |  So there's just a huge gap, as you can see, the power wires to the actual, like, motor.
+1904.64s - 1909.52s |  And yeah, as you can see on the right, we were able to fit a whole card under there,
+1909.52s - 1917.08s |  so that might allow us to tamper with the lock motor and do some physical hacking there.
+1917.08s - 1923.32s |  So we'll talk about a couple of other manufacturers now, one of them being Compex Security Company.
+1923.32s - 1928.44s |  This is a U.S. company founded in 1903, so again, another pretty old company.
+1928.44s - 1930.64s |  We took a look at the regulator series.
+1930.64s - 1936.64s |  These use the PIC-16 MCU, and these locks accept user pins, technician pins, master
+1936.64s - 1941.88s |  pins, and there is some audit logging support for some models.
+1941.88s - 1946.44s |  As for security, we found that code data and write protection were enabled on all these
+1946.44s - 1949.24s |  locks, so that's good for them, but not very fun for us.
+1949.24s - 1954.56s |  So we kind of moved on, but we took a look at their documentation and saw what they were
+1954.56s - 1960.72s |  using for a programming slash audit tool, an Excel spreadsheet.
+1960.72s - 1965.28s |  I don't know what kind of Excel macro hell is happening here.
+1965.28s - 1969.96s |  I'm glad I'm not the person who has to maintain this and write this, but if it works for them,
+1969.96s - 1973.56s |  I'm happy for them.
+1973.56s - 1975.64s |  So next we'll talk about Kitlock.
+1975.64s - 1978.54s |  This is a sub-brand of CodeLocks.
+1978.54s - 1981.84s |  This is a U.K.-based company founded in 1991.
+1981.84s - 1988.96s |  This also uses the PIC-16 MCU and again accepts user pins, technician pins, and master pins,
+1988.96s - 1994.96s |  and again, they had code data and write protection enabled, so good for them, not fun for us.
+1994.96s - 2001.72s |  So for good measure, we took a look at a couple of no-name RFID locks from Amazon and eBay.
+2001.72s - 2004.44s |  These are just like $20 locks, super cheap.
+2004.44s - 2009.68s |  We took them apart and found that they had EEPROM and some kind of mystery MCU.
+2009.68s - 2015.08s |  If you like mystery MCUs and know what this is, let us know.
+2015.08s - 2023.84s |  Obviously, you can't really have many expectations of security on these cheap devices, so there's
+2023.84s - 2031.12s |  no encryption, no protection, and plain text RFID UIDs are just there for anyone to read it.
+2031.20s - 2038.80s |  Okay, so we're going to do a quick demo now to show how you can hack some of these locks.
+2038.80s - 2044.12s |  All right, due to the season, we will change the demo slightly, so usually we were kind
+2044.12s - 2048.84s |  of thinking of doing a whole rundown of how we can extract manager keys and other things.
+2048.84s - 2053.20s |  What I would do instead is I would showcase our custom PCB, which we built ourselves and
+2053.20s - 2055.44s |  took us some time to develop it.
+2055.44s - 2059.44s |  What it basically does is it emulates the same function as a manager key, so I will
+2059.44s - 2060.44s |  just show you.
+2060.44s - 2064.84s |  I locked all the lockers from DigiLock in this case, and I will just kind of show how
+2064.84s - 2067.76s |  I can hopefully open them again.
+2067.76s - 2068.76s |  Yeah.
+2068.76s - 2075.92s |  Okay, just like a quick example of a theoretical scenario, so we're going to assume that the
+2075.92s - 2084.00s |  attacker has access to any open locker or cabinet with the tools, the microchip picket
+2084.00s - 2088.64s |  three debugger, a Phillips screwdriver, and an Arduino and or flipper.
+2088.64s - 2099.92s |  We're using the flipper here, so our criminal has already set the key onto the flipper,
+2099.92s - 2104.95s |  and we are able to access the locks.
+2104.95s - 2110.95s |  Yeah, so to be fair, we put a lot of effort into figuring it out already, so this is like
+2110.95s - 2115.77s |  basically if you got access to a lock, you somehow extracted that, you built that kind
+2115.77s - 2116.77s |  of tool.
+2116.77s - 2121.29s |  It's a magic back side which we don't show.
+2121.29s - 2123.33s |  The attack will work very quickly after that.
+2123.33s - 2126.77s |  Now the obvious thing is if you want to extract secrets from these locks, you need to kind
+2126.77s - 2129.05s |  of disassemble them, so you need a screwdriver.
+2129.05s - 2131.81s |  The locks which are kind of just having the front part are super annoying because you
+2131.81s - 2137.97s |  need a very special key to unscrew them, but generally, to open and relock them again without
+2137.97s - 2142.49s |  resetting the original pin, that's basically all you need, but this might take you some
+2142.49s - 2143.49s |  time to do.
+2143.49s - 2144.49s |  All right.
+2144.49s - 2149.29s |  So with that, for that, let's go to the conclusion.
+2149.29s - 2150.45s |  Okay.
+2150.45s - 2157.45s |  In summary, we were able to extract firmware and keys from these brands of locks, so access
+2157.45s - 2163.49s |  to one lock can give you access to all locks in one system or one location.
+2163.49s - 2169.87s |  Cloning and emulating keys is possible, and these attacks don't require complicated tools
+2169.87s - 2172.37s |  and are sometimes cheap unless you're using the flipper.
+2172.37s - 2174.81s |  It's a little bit more expensive, but...
+2174.81s - 2178.29s |  So how secure is your stuff in electronic lockers?
+2178.29s - 2183.13s |  Not super secure, but we need to be fair because these locks are not being sold as high-security
+2183.13s - 2184.37s |  devices.
+2184.37s - 2187.65s |  They're not promising, like, military-grade security or anything.
+2187.65s - 2190.93s |  These are just standard-use locks.
+2190.93s - 2193.49s |  So how can we fix this?
+2193.49s - 2197.37s |  Of course, we would recommend a security-by-design approach from the beginning.
+2197.37s - 2201.85s |  So enable all security features and always expect physical attacks when you're producing
+2201.85s - 2203.69s |  locks.
+2203.69s - 2207.13s |  Encrypt your secrets, store them in a secure way.
+2207.13s - 2211.29s |  So the best solution for vulnerable locks would be to have firmware updates for all
+2211.29s - 2216.73s |  of them, but depending on the age of the locks, this might not be possible, and it's...
+2216.73s - 2217.73s |  We...
+2217.73s - 2220.03s |  In our opinion, it seems unfixable.
+2220.03s - 2224.47s |  So the workaround could be to use a programmer to enable code protection, but this only works
+2224.55s - 2228.67s |  if data is stored on the MCU and not on an external EEPROM chip.
+2228.67s - 2235.31s |  So this task is kind of complicated for an average and non-tech-savvy user, so it's not
+2235.31s - 2237.15s |  a reasonable expectation.
+2237.15s - 2241.45s |  So the likely solution would be to buy new locks or just ignore the problem and hope
+2241.45s - 2245.15s |  it goes away.
+2245.15s - 2247.43s |  So takeaway lessons.
+2247.43s - 2252.87s |  Please don't reuse your important pins for lockers, like, public-use lockers.
+2252.87s - 2257.11s |  Again, don't reuse your pins for your debit cards, your phone.
+2257.11s - 2258.11s |  Use separate things.
+2258.11s - 2259.11s |  Use, like...
+2259.11s - 2263.75s |  We're all using separate passwords now for everything, I hope.
+2263.75s - 2269.15s |  So treat your pin like a password, and never loan out your electronic keys, and always
+2269.15s - 2274.95s |  be aware of security limitations of devices, and you cannot trust audit logs of these devices
+2274.95s - 2277.27s |  because they can be tampered with.
+2277.27s - 2281.95s |  So even experienced and big companies make mistakes, and developing stuff is way harder
+2282.03s - 2288.47s |  than breaking it in 90% of cases, so be nice to developers.
+2288.47s - 2291.11s |  It's hard when people are attacking your stuff.
+2291.11s - 2295.19s |  And always remember there might be interesting cyber-physical systems around you.
+2295.19s - 2298.05s |  So don't forget the human factor.
+2298.05s - 2302.67s |  Can you just ask nicely for the manager key?
+2302.67s - 2304.27s |  So final notes.
+2304.27s - 2306.63s |  Please don't break into lockers you don't own.
+2306.63s - 2312.87s |  I know these systems are in a lot of places, hotels and such, but please don't.
+2312.87s - 2316.91s |  Anything with these locks can also permanently break them, which is kind of the standard
+2316.91s - 2318.71s |  expectation when you're hardware hacking.
+2318.71s - 2321.27s |  You can always break things quite easily.
+2321.27s - 2322.27s |  Be careful.
+2322.27s - 2325.97s |  There are more attacks that we haven't covered here.
+2325.97s - 2331.47s |  And other companies and products are possibly vulnerable too, and just because they claim
+2331.47s - 2337.11s |  that they've never been hacked doesn't mean they're unhackable, of course.
+2337.11s - 2338.11s |  And yeah.
+2338.11s - 2339.11s |  Thanks, all.
+2339.39s - 2340.39s |  Cool.
+2345.69s - 2350.49s |  So I would like to also give special thanks to Cori, who kind of connected us with Dolores,
+2350.49s - 2356.89s |  to Tara, who did that too, to our console, Hannah and Kurt, and to Andrew, and everyone
+2356.89s - 2357.89s |  at EFF.
+2357.89s - 2364.93s |  And this kind of gave me, again, a motivation to definitely donate a lot of money to EFF.
+2364.93s - 2370.51s |  One maybe side story is that Braylon was at B-Sides before this event and was getting
+2370.51s - 2374.11s |  a membership for EFF and was kind of joking, like, oh, we might need you tomorrow.
+2374.11s - 2379.67s |  And lo and behold, literally one day after that, on her birthday, of all the facts, both
+2379.67s - 2381.59s |  of us got a cease and desist letter.
+2381.59s - 2384.51s |  So if you have questions, we might be still around here.
+2384.51s - 2388.15s |  Otherwise, feel free to contact us.
+2388.15s - 2390.55s |  And thank you very much for being here.
+2390.55s - 2391.83s |  Right.
+2391.83s - 2395.43s |  So yeah, if you also want to read the statement, it will be in the slides.
+2395.43s - 2398.83s |  And I hope we will find a solution also to kind of fix the older locks.
+2398.83s - 2402.07s |  So there's probably a way we will figure it out together.
+2402.07s - 2402.27s |  Thank you.

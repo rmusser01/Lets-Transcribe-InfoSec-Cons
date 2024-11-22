@@ -1,0 +1,880 @@
+{
+  "webpage_url": "local:1731861233:b708239a:DEF CON 32 - DCGVR - The Sand Castle - The State of the MacOS Sandbox by JBO.mp4",
+  "title": "DEF CON 32 - DCGVR - The Sand Castle - The State of the MacOS Sandbox by JBO.mp4",
+  "description": "Local file",
+  "channel_url": null,
+  "duration": null,
+  "channel": null,
+  "uploader": null,
+  "upload_date": null
+}
+
+2.77s - 13.37s | This text was transcribed using whisper model: large-v2
+
+ Okay, I'd like to introduce our next speaker, JBO, is from DC 9723 in Tel Aviv, Israel.
+13.37s - 19.65s |  Jonathan Bar-Orr, JBO, is presenting the Sandcastle, the state of a macOS sandbox through the lens
+19.65s - 20.65s |  of Office macros.
+20.65s - 26.05s |  Now, for those who don't know, JBO is a regular speaker here, and his presentations are usually
+26.05s - 31.05s |  very, very good, so I'd like to welcome you here, JBO.
+31.05s - 38.01s |  The macOS sandbox is a powerful tool for application security and hardened macOS Office to a point
+38.01s - 45.45s |  where they're not widely used as an entry vector, or are they?
+45.45s - 52.37s |  In this talk, we will dive into sandbox escape mechanisms on macOS, as well as present a
+52.37s - 56.85s |  few techniques for potential generic sandbox escapes.
+56.85s - 62.89s |  Now, John Bar-Orr, JBO, is a principal security researcher at Microsoft, working as the Microsoft
+62.89s - 66.49s |  Defender research architect for cross-platform.
+66.49s - 72.77s |  Jonathan has rich experience in vulnerability research, exploitation, cryptanalysis, and
+72.77s - 78.73s |  offensive security in general, so we welcome you, JBO, and take it away.
+78.73s - 80.37s |  Thank you, and thank you for having me.
+80.37s - 81.45s |  It's a real pleasure.
+81.45s - 89.85s |  And I couldn't make it to DEF CON physically this year, so I'm grateful for the opportunity.
+89.85s - 91.73s |  With that, let's get started, I guess.
+91.73s - 98.41s |  I got the introduction already, so not a lot of other stuff.
+98.41s - 101.89s |  I would say that I work at Microsoft.
+101.89s - 103.05s |  I think it was mentioned.
+103.05s - 108.21s |  I'm a security research architect at Microsoft.
+108.21s - 113.33s |  I focus on Linux, macOS, iOS, Android, routers, cameras, Chrome OS, so interestingly, things
+113.33s - 116.65s |  that normally do not run Windows.
+116.65s - 122.77s |  One other thing that I can say is that I'm in charge of internal offensive security for
+122.77s - 126.89s |  Defender, and that includes simulating attacks, tampering attempts, and continuous red teaming.
+126.89s - 134.53s |  And you can feel free to follow me on Twitter or Excel, or however it's called, I post once
+134.53s - 136.65s |  in a while.
+136.65s - 139.25s |  So a bit of motivation about Office macros.
+139.25s - 144.21s |  In Windows, Office macros are basically a very common method of gaining initial entry
+144.21s - 145.21s |  vector.
+145.21s - 153.41s |  In Windows, you have something called Defender Application Guard, or UpGuard for short.
+153.41s - 155.29s |  And it's actually getting deprecated.
+155.29s - 164.89s |  But the idea, which was a very good idea, is to basically spin up another virtual machine
+164.89s - 169.21s |  right next to your host that would present the document there.
+169.21s - 172.53s |  So any attacks that happen, happen on that virtual machine.
+172.53s - 178.97s |  But that's no longer relevant because A, it's getting deprecated, and B, it's only in Windows.
+178.97s - 182.57s |  In macOS, however, I mean, you don't have that kind of technology.
+182.57s - 188.97s |  And what happens really is that apps, generally in Office in particular, is heavily sandboxed
+188.97s - 191.33s |  by something called the macOS Sandbox.
+191.33s - 195.73s |  And there is this question on how much are Office macros used as an entry vector these
+195.73s - 198.09s |  days, right?
+198.09s - 202.01s |  So that's the question that we'd like to answer today.
+202.01s - 206.85s |  A bit about the macOS Sandbox, if you guys are not familiar, it's a set of customizable
+206.85s - 213.65s |  rules that are enforced on macOS apps, basically things like, oh, can my app access the network?
+213.65s - 217.27s |  Or what kind of files does an app have access to?
+217.27s - 219.37s |  Or can an app print the document?
+219.37s - 220.89s |  And so on and so forth.
+221.45s - 224.49s |  And it's well-documented by Apple.
+224.49s - 231.05s |  And interestingly, to publish in the Apple App Store, your app must have sandboxing rules.
+231.05s - 239.09s |  So that's something that is a very Apple-esque thing to do, to force developers into security.
+239.09s - 243.97s |  And obviously, if you have a process that runs inside an app, the child processes of
+243.97s - 248.85s |  that process are also sandboxed, because otherwise, what's the point, right, to create the child
+248.85s - 254.01s |  process, and if it's not sandboxed, then game over.
+254.01s - 257.97s |  And you can view the macOS Sandbox with the code sign utility.
+257.97s - 262.33s |  I hope that you guys are able to see the screen well.
+262.33s - 267.53s |  The idea is that you don't have to remember anything here, but this is basically the Microsoft
+267.53s - 268.53s |  Word app.
+268.53s - 273.97s |  And in the Word app, you can start seeing all the entitlements that the app has.
+273.97s - 281.17s |  And some of them are basically the sandbox profiles that the app has.
+281.17s - 282.61s |  And this is where our journey begins.
+282.61s - 286.53s |  We'll start with some historical data, and then I'll show my original research.
+286.53s - 294.87s |  So the Office sandbox rules in the past basically have this kind of sandbox rule.
+294.87s - 300.09s |  And you can see, you don't have to understand the syntax or the dialect here, but it basically
+300.09s - 304.97s |  says you can allow all file reads and all file writes on everything that is a regular
+304.97s - 310.77s |  file that starts with, that adheres to this regular expression, which basically starts
+310.77s - 314.49s |  with a tilde and then a dollar sign, right?
+314.49s - 316.17s |  That's basically what it says.
+316.17s - 319.57s |  And if you remember from Windows, whenever you double-click the document, it would show
+319.57s - 325.93s |  you some sort of like a weird tilde, dollar, whatever, .docx, for instance.
+325.93s - 332.11s |  And apparently, Microsoft Office uses that to cache some data about the document.
+332.11s - 337.61s |  So basically, when Microsoft decided to start Office for Mac, they decided to move that
+337.61s - 338.61s |  functionality.
+338.61s - 343.97s |  But it basically means that you have to allow writing to those kind of files.
+343.97s - 349.45s |  So that's kind of in 2018, basically.
+349.45s - 358.13s |  It was found by Adam Chester, I believe, from MBSec, that you can drop this POC.plist
+358.13s - 363.53s |  that starts with a tilde and then a dollar sign to a library, a launch agent.
+363.53s - 367.97s |  And this, if you're unfamiliar with Mac, this basically registers a launch agent, which
+367.97s - 371.89s |  is kind of like a service, but not really.
+371.89s - 375.99s |  And basically, the idea is that those launch agents are unsandboxed, right?
+376.03s - 382.35s |  So it's like writing to the registry, if you will, if you're coming from a Windows background.
+382.35s - 385.71s |  So that's a very logical sandbox escape.
+385.71s - 392.23s |  It's the only sandbox escape that is very Office-specific.
+392.23s - 394.19s |  And it's still worth mentioning.
+394.19s - 399.19s |  So basically, that was the idea.
+399.19s - 404.69s |  Launch agents, as I said, is a persistence mechanism on macOS as well.
+404.69s - 409.65s |  And it's launched by launchd, which is the number one process, literally PID equals 1,
+409.65s - 411.21s |  which is not sandboxed.
+411.21s - 412.79s |  And this is how the attack looks like.
+412.79s - 420.09s |  So you have word dumping, let's say, with a word macro, tilde dollar POC.plist.
+420.09s - 426.09s |  And then launchd, which is the launch daemon, kind of reads that plist from the launch agent's
+426.09s - 428.29s |  directory and then launches it, right?
+428.29s - 431.69s |  Then you can do whatever you want here.
+431.69s - 437.21s |  And the conclusion here, and that's the main takeaway, is that making unsandboxed processes,
+437.21s - 443.09s |  execute child processes, is a good idea for attackers if you want to escape the sandbox.
+443.09s - 447.05s |  So that was the attack in 2018.
+447.05s - 448.73s |  The fix was a Microsoft fix.
+448.73s - 453.41s |  It's not an Apple fix because this was specifically in the sandboxing rules.
+453.41s - 456.25s |  It's basically very easy.
+456.25s - 463.65s |  It says, you can read or write files that have this regex, just as before, but you will
+463.65s - 471.33s |  deny all of the file reads and file writes, file writes in particular, sorry, that either
+471.33s - 476.53s |  start in the home directory library launch agents, that's number one, and number two
+476.53s - 483.81s |  is library application scripts, which is another directory that could be abused.
+483.81s - 486.29s |  We will talk about that later, so keep that in mind.
+486.29s - 494.13s |  But basically, the library launch agents drop is now denied by the sandbox.
+494.13s - 496.85s |  So that's like a one-off kind of fix.
+496.85s - 498.69s |  It's not a deep fix.
+498.69s - 503.39s |  It basically says, oh, no more launch agents for you.
+503.39s - 511.25s |  So the next couple of sandbox escapes that I will mention, again, our history shows us,
+511.25s - 515.77s |  we're going to bypass with IPC, with inter-process communications.
+515.77s - 520.69s |  And in this case, we're going to use archives.
+520.69s - 528.29s |  The launchd process that I mentioned before, this guy, the one that runs the plist file,
+528.29s - 533.73s |  it controls launch agents and launch daemons, which is another type of kind of like a service
+533.73s - 535.09s |  in macOS.
+535.09s - 538.93s |  It basically controls many other things in macOS, and when I say many other things, I
+538.93s - 542.13s |  mean mostly everything.
+542.13s - 548.29s |  And one other thing that launchd controls is launching apps when you double-click something.
+548.29s - 553.65s |  And this feature is known as launch services, and you can double-click or just run the user
+553.65s - 558.97s |  bin open command, which will basically open the default thing.
+558.97s - 565.01s |  And it also opens, like, for instance, if you do open on an HTTP, it will open your
+565.01s - 570.25s |  default browser, or if you open on a text file, it knows the association between text
+570.25s - 575.25s |  file and the default app, and it will show you the, it will open the right app for you.
+575.25s - 579.29s |  So that's kind of like the functionality of launch services.
+579.29s - 581.21s |  It's able to launch apps.
+581.21s - 585.17s |  And launchd will only launch apps that are already installed, obviously, right?
+585.17s - 589.89s |  You can't just, like, you can't just say, hey, run this process.
+589.89s - 591.69s |  It has to be an app.
+591.69s - 595.01s |  And there is a difference between apps and processes in macOS.
+595.01s - 602.21s |  Basically an app is a directory structure that will also have an executable in it, right?
+602.21s - 605.45s |  So it has to be a specific directory structure.
+605.45s - 612.13s |  And there is this question of what apps are already installed and can run code.
+612.13s - 616.05s |  And we have an app called Terminal.
+616.05s - 621.33s |  The Terminal app basically is the one that runs ZSH or Bash, if you will, but ZSH is
+621.49s - 623.61s |  the default one in macOS.
+623.61s - 627.93s |  And it will run a file called .zshenv.
+627.93s - 633.37s |  If you drop .zshenv to the home directory, it will just run whatever commands that are
+633.37s - 634.37s |  in there.
+634.37s - 640.89s |  The issue is that you can't write .zshenv file, because you have file name restrictions.
+640.89s - 644.01s |  You have to start with a tilde and then a dollar sign.
+644.01s - 651.45s |  And then it was found by MadHevBat, and I'm sorry that I butcher his name, to use something
+651.45s - 653.37s |  called the Archive Utility.
+653.37s - 655.61s |  The Archive Utility is another app.
+655.61s - 659.69s |  And interestingly enough, it's the default app that opens archives.
+659.69s - 663.45s |  Interestingly it automatically extracts files in the same directory as the archive.
+663.45s - 665.73s |  No questions asked.
+665.73s - 668.13s |  No user interaction by default.
+668.13s - 669.77s |  So that's awesome.
+669.77s - 671.09s |  And that's the exploit.
+671.09s - 676.89s |  You basically drop a tilde dollar POC.zip in the user's home folder, and that contains
+676.89s - 679.33s |  the malicious .zshenv file.
+679.33s - 684.13s |  If you remember, we can drop any file that starts with a tilde dollar sign.
+684.13s - 689.45s |  And then basically you trigger the open command to extract, to basically simulate a double
+689.45s - 691.65s |  click on this zip file.
+691.65s - 697.17s |  Because of that, the Archive Utility, which is not sandboxed because it's run by LaunchD,
+697.17s - 701.89s |  will extract the zip file and create the .zshenv file.
+701.89s - 708.29s |  And then you can just trigger terminal to automatically run commands from .zshenv.
+708.29s - 710.05s |  So this is how it looks like.
+710.05s - 711.05s |  You have Word.
+711.05s - 713.45s |  It will dump the zip file.
+713.45s - 715.81s |  You can do that because the file name is OK.
+715.81s - 722.17s |  The file name itself, the file itself, the contents are attacker controlled completely.
+722.17s - 727.21s |  So the attacker can prepare a zip file with this name that contains a .zshenv file with
+727.21s - 730.13s |  malicious commands in them.
+730.13s - 733.41s |  Word will use the inter-process communication to LaunchD.
+733.41s - 740.05s |  I didn't mention that, but the open command that is used by the exploit here basically
+740.05s - 746.73s |  uses XPC, which is kind of like a weird IPC in macOS, to tell LaunchD, hey, please open
+746.73s - 748.33s |  this zip file.
+748.33s - 752.33s |  LaunchD says, OK, zip files are associated with the Archive Utility.
+752.33s - 757.57s |  Archive Utility is now unsandboxed and will extract the POC.zip file.
+757.57s - 760.05s |  It will extract the .zshenv file.
+760.05s - 764.73s |  Again, because it's not sandboxed, it can do so and write arbitrary files.
+764.73s - 769.45s |  And then Word uses one more time to talk to LaunchD to open terminal.
+769.45s - 774.01s |  Terminal when it starts will read the .zshenv file and run arbitrary commands.
+774.01s - 777.49s |  So that's the exploit for 2020.
+777.49s - 784.09s |  This, unlike the first exploit that we've seen, this is an Apple issue, right?
+784.09s - 788.77s |  And what Apple has done basically is to fix the Archive Utility.
+788.77s - 794.09s |  The Archive Utility will extract to the user's Downloads folder instead of the Home folder
+794.09s - 796.45s |  if it's coming from a sandboxed app.
+796.45s - 800.81s |  You can still probably use that for some sideloading or something.
+800.81s - 806.25s |  But given how hardened macOS has become, I don't know if it's realistic.
+806.25s - 809.97s |  But you can still use this functionality.
+809.97s - 810.97s |  So that's the first thing.
+810.97s - 816.93s |  The other thing that let's keep in our minds is that dumped files from sandbox apps, from
+816.93s - 825.57s |  Word specifically, will have the com.apple.quarantine.extended.attribute attached for identification purposes.
+825.57s - 828.61s |  This is not an extended attribute talk.
+828.61s - 835.21s |  But basically, imagine it as if it's a metadata that is kept on the file system associated
+835.21s - 837.21s |  with the file that is dropped.
+837.21s - 842.17s |  And if you are familiar with this extended attribute, so yes, this is the same extended
+842.17s - 846.77s |  attribute that is used by Apple's Gatekeeper to enforce certain things.
+846.77s - 853.85s |  It makes a lot of sense because you don't want a sandbox app to drop another app, for
+853.85s - 854.85s |  instance.
+854.85s - 859.53s |  The other thing that I will mention is that you can't exploit terminal-based sandbox escapes
+859.53s - 864.95s |  because Terminal now refuses to run anything that has com.apple.quarantine.
+865.69s - 867.83s |  So that's just another thing.
+867.83s - 873.69s |  In 2021, PerceptionPoint found the following idea.
+873.69s - 878.59s |  Sandbox apps can basically write to their own special container directory.
+878.59s - 884.43s |  Every sandbox app has a special container directory that they can write arbitrary contents
+884.43s - 885.43s |  to.
+885.43s - 886.43s |  It's a special directory.
+886.43s - 892.47s |  You can't write outside of that directory unless it's allowed by the sandboxing rules.
+892.47s - 895.83s |  But the sandboxing rules do not apply to this container directory.
+895.83s - 900.31s |  It's completely unrestricted for all means and purposes.
+900.31s - 903.95s |  So the idea is that you can use the open command.
+903.95s - 908.07s |  And the open command has specific features.
+908.07s - 910.47s |  One of them is a dash-dash env.
+910.47s - 912.19s |  And it controls environment variables.
+912.19s - 919.51s |  You can basically tell launchd, hey, start this app, but with this environment variable
+919.51s - 920.51s |  in mind.
+920.55s - 926.27s |  You can set arbitrary environment variables, and that gives a lot of power to an attacker.
+926.27s - 931.47s |  The idea is to basically dump a .zsh env file, just like before.
+931.47s - 936.91s |  You dump it in your own container directory, which you can write to because it's your own
+936.91s - 937.91s |  container directory.
+937.91s - 939.67s |  You can write whatever you want there.
+939.67s - 946.43s |  And then basically tell launchd, hey, start the terminal app.
+946.43s - 951.79s |  But the home directory for the terminal app is now my own container directory.
+951.79s - 957.95s |  Because of that, terminal will start and will look for zsh env file in the home directory.
+957.95s - 964.75s |  Because the home directory is spoofed, basically it will run the .zsh env file, and that's
+964.75s - 965.87s |  game over.
+965.87s - 967.71s |  So this is how it looks like.
+967.71s - 974.63s |  Word dumps the .zsh env file to the container directory, which it can do.
+974.63s - 982.63s |  It will use xpc to talk to launchd to start terminal with a spoofed home directory, which
+982.63s - 984.63s |  is the container directory.
+984.63s - 991.67s |  Terminal starts, looks for a .zsh env file in the home directory, which, again, is spoofed,
+991.67s - 993.83s |  and will basically run this file.
+993.83s - 996.37s |  So that was a very cool sandbox escape.
+996.37s - 1000.63s |  Everything is very logical, very reliable.
+1000.63s - 1005.23s |  Terminal fixed that in the terminal app now.
+1005.23s - 1008.07s |  The terminal app locks certain environment variables now.
+1008.07s - 1012.91s |  It basically does not allow home to be overridden, even by launchd.
+1012.91s - 1018.19s |  And there is one more honorable mention from 2022 by Wojciech Regula that abused something
+1018.19s - 1026.39s |  very similar, another variable called os install environment to do something very similar.
+1026.39s - 1027.39s |  So that's the first thing.
+1027.39s - 1032.63s |  The second thing is that terminal now refuses to run quarantine script files as well.
+1032.63s - 1035.07s |  So that's the fix.
+1035.07s - 1039.43s |  Now this is my own discovery from 2022.
+1039.43s - 1045.15s |  Back in the day, Python came preinstalled as an app, and terminal refuses to run files
+1045.15s - 1048.51s |  with com.apple.quarantine extended attribute.
+1048.51s - 1053.73s |  That includes csh, banf, sh, and Python also refuses to run that.
+1053.73s - 1059.27s |  So if you had a Python file, you could drop it from Word, but it won't help you that much
+1059.27s - 1064.81s |  because you can't have Python run it because of this extended attribute.
+1064.81s - 1070.17s |  Also terminal, if you remember, a part of this fix, they locked the home directory,
+1070.17s - 1077.61s |  the OS environment, the home environment variable, the OS install environment variable, and also
+1077.61s - 1083.01s |  the Python startup environment variable, which you could have abused, perhaps.
+1083.01s - 1089.05s |  And then I was looking at other interesting flags to the open command.
+1089.05s - 1096.69s |  And there I found the stdin flag to the open utility.
+1096.69s - 1101.79s |  And what it will do, it will launch the application with the standard input connected to a path.
+1101.79s - 1105.01s |  So it's kind of like a neat way to override the standard input.
+1105.01s - 1110.57s |  Instead of being your keyboard, you can just say, hey, the standard input is this file.
+1110.57s - 1112.77s |  And then the sandbox escape is kind of trivial.
+1112.77s - 1115.45s |  You can write a tilde dollar poc.py.
+1115.45s - 1122.45s |  And instead of having Python executed directly, you can supply it as the standard input to Python.
+1122.45s - 1127.61s |  It doesn't matter that it has the extended attribute, the quarantine extended attribute,
+1127.61s - 1134.05s |  because you can still read the file from Python and treat it as the standard input.
+1134.05s - 1135.81s |  So this is how the exploit looks like.
+1135.81s - 1136.73s |  Very simple.
+1136.73s - 1139.81s |  You dump a poc.py just like that.
+1139.81s - 1144.45s |  You use xpc to talk to launchd, which will run Python,
+1144.45s - 1149.13s |  which will read the poc.py as the standard input and basically run it.
+1149.13s - 1152.09s |  So the most simple exploit ever.
+1152.09s - 1154.45s |  And that was like two years ago.
+1154.45s - 1157.41s |  This was the history lesson that we had.
+1157.41s - 1160.29s |  The current state in 2024, the current state
+1160.29s - 1164.81s |  is that launch services, everything is super duper hardened now.
+1164.81s - 1168.87s |  Launch services checks the xpc client for sandboxing rules.
+1168.87s - 1172.67s |  And this means that the entire idea of using open,
+1172.67s - 1176.95s |  just like we've done three or four times already in this talk,
+1176.95s - 1179.07s |  all of those tricks are essentially dead.
+1179.07s - 1182.75s |  You won't be able to use that as far as I've tried.
+1182.75s - 1187.07s |  And look, you can't really abuse that anymore.
+1187.07s - 1188.83s |  That's issue number one.
+1188.83s - 1191.63s |  That's the biggest issue.
+1191.63s - 1194.51s |  Other issues are that Python isn't pre-installed anymore.
+1194.51s - 1196.71s |  So that kind of sucks for attackers.
+1196.71s - 1198.27s |  I like Python.
+1198.27s - 1202.59s |  Regimers can't rely only on interarchitecture between 2022
+1202.59s - 1205.15s |  and 2024.
+1205.15s - 1209.75s |  ARM is, I guess, the main focus of Apple,
+1209.75s - 1214.19s |  even though they still support Intel quite a lot.
+1214.19s - 1216.47s |  So you need to know where you land.
+1216.47s - 1218.71s |  But there is a thing called universal binaries
+1218.71s - 1220.87s |  if you want to attack a box.
+1220.87s - 1224.07s |  And there is another thing called hardened runtime.
+1224.07s - 1226.95s |  Hardened runtime, I won't go into lots of details,
+1226.95s - 1228.99s |  but it basically means that injections
+1228.99s - 1232.35s |  are very, very, very, very challenging.
+1232.35s - 1236.11s |  Most of the apps that you'll find
+1236.11s - 1239.23s |  have hardened runtime and launch constraints
+1239.23s - 1242.47s |  and other things that will really not allow
+1242.47s - 1245.39s |  you to do a lot as an attacker.
+1245.39s - 1247.23s |  So again, there is this question.
+1247.23s - 1248.63s |  Are VBA macros?
+1248.63s - 1252.19s |  Are malicious office documents still a thing in macOS?
+1252.19s - 1256.11s |  So I asked around, and this is February 9th.
+1256.11s - 1258.55s |  I asked around February this year,
+1258.55s - 1260.51s |  and it seems like not so much.
+1260.51s - 1262.67s |  The last thing I've seen was Max Tiller
+1262.67s - 1266.23s |  abusing my own vulnerability, the one from 2022,
+1266.23s - 1268.75s |  which kind of like, I guess, an honor,
+1268.75s - 1273.51s |  but also sucks to realize that you've kind of helped
+1273.51s - 1275.55s |  with a vulnerability disclosure.
+1275.55s - 1278.67s |  By the way, every vulnerability that I disclose
+1278.67s - 1281.87s |  is a responsible disclosure, and it will drop zero days.
+1281.87s - 1283.43s |  So what I'm going to talk about today
+1283.43s - 1285.39s |  is also disclosed to Apple.
+1285.39s - 1289.91s |  So don't run and code your sandbox escapes immediately
+1289.91s - 1291.07s |  after this talk.
+1291.07s - 1299.75s |  So that kind of sucks to know that Max Tiller stole my exploit.
+1299.75s - 1305.47s |  And then Greg here pointed out to the exploit itself,
+1305.47s - 1308.67s |  it's basically the POC that I had from 2022.
+1308.67s - 1310.43s |  So they didn't even change the POC.
+1310.43s - 1312.63s |  That kind of sucks.
+1312.63s - 1315.95s |  Anyway, so when you start something fresh,
+1315.95s - 1318.11s |  you're like, OK, let's look at Office,
+1318.11s - 1322.43s |  because people still need to run their macros, right?
+1322.43s - 1325.79s |  Macros are not created on Office for attackers.
+1325.79s - 1328.91s |  They're created for legitimate business purposes.
+1328.91s - 1331.31s |  I know that it's hard to believe, but that's the case.
+1331.31s - 1336.03s |  And it does say in the Microsoft website, interestingly,
+1336.03s - 1337.19s |  I know that it sounds funny.
+1337.19s - 1339.07s |  I am a Microsoft employee, but sometimes it's
+1339.07s - 1340.71s |  easier to read the public documents
+1340.71s - 1344.47s |  rather than reading the code or scouring
+1344.47s - 1346.87s |  for some internal documentation.
+1346.87s - 1351.75s |  And it's very interesting to see that the public documentation
+1351.75s - 1355.99s |  says that Office 2016 and above for Mac is sandboxed.
+1355.99s - 1359.19s |  And it says that unlike, I'll read it here,
+1359.19s - 1365.99s |  unlike previous Office apps that support VBA, VBA and the Mac
+1365.99s - 1369.11s |  Office Mac app is totally sandboxed.
+1369.11s - 1373.27s |  The sandboxing restricts apps from accessing resources
+1373.27s - 1375.23s |  outside of the app container.
+1375.23s - 1376.99s |  The app container is the fancy directory
+1376.99s - 1379.71s |  that I was talking about three slides ago.
+1379.71s - 1383.87s |  And this affects add-ins as well as the VBA itself.
+1383.87s - 1387.63s |  And the idea is that they've added a new VBA command
+1387.63s - 1391.07s |  specifically for Mac for Office 2016 and above.
+1391.07s - 1392.15s |  And these are the commands.
+1392.15s - 1394.67s |  I'll call them two and a half commands, because one of them
+1394.67s - 1398.55s |  is basically just basically gives you the Office version,
+1398.55s - 1401.43s |  doesn't do much for attackers.
+1401.43s - 1403.83s |  It's helpful for developers, obviously.
+1403.83s - 1405.87s |  And those two commands are grant access
+1405.87s - 1408.39s |  to multiple files, which sounds very interesting,
+1408.39s - 1412.27s |  and Apple script task, which sounds even more interesting.
+1412.27s - 1414.91s |  So we will assess both of them and try
+1414.91s - 1418.87s |  to understand what could be done by attackers.
+1418.87s - 1420.95s |  First of all, code execution is what we want.
+1420.95s - 1423.99s |  And the most direct approach is usually the right thing.
+1423.99s - 1429.35s |  Apple script task basically calls an external Apple script script.
+1429.35s - 1432.79s |  Now, Apple script is kind of like, in my opinion, so don't quote it.
+1432.79s - 1434.15s |  Well, do quote me.
+1434.15s - 1438.23s |  It's kind of like an abomination of script languages, in my opinion.
+1438.23s - 1440.11s |  It's very annoying.
+1440.11s - 1441.35s |  I dislike the syntax.
+1441.35s - 1444.23s |  But it is a thing on Mac OS and iOS.
+1444.23s - 1449.35s |  You can use Apple scripts basically as a scripting language.
+1449.35s - 1451.27s |  And it is still there.
+1451.27s - 1455.35s |  In Mac, it's there by default.
+1455.35s - 1461.87s |  So Office has allowed to run an arbitrary Apple script from VBA,
+1461.87s - 1463.47s |  from VB macros.
+1463.47s - 1473.59s |  And the idea is that you call this Apple script task command or function,
+1473.59s - 1477.55s |  and you give an Apple script file name, and the handler,
+1477.55s - 1482.63s |  and stuff like that, it will basically run it outside the sandbox.
+1482.63s - 1484.95s |  And interestingly, that script file must
+1484.95s - 1488.35s |  be under the home directory launch application scripts bundle ID.
+1488.35s - 1494.07s |  Bundle ID is like com.microsoft.word for Word, for instance.
+1494.07s - 1497.23s |  And if you remember from slide number five or six,
+1497.23s - 1500.27s |  I don't remember by heart, where I mentioned
+1500.27s - 1507.79s |  that when Microsoft fixed the Office sandboxing rules,
+1507.79s - 1512.11s |  they didn't just fix the launch agents to be prohibited.
+1512.11s - 1515.27s |  They also added this directory right here.
+1515.27s - 1516.83s |  And now you can see why.
+1516.83s - 1519.43s |  If you have a malicious VBA macro, the obvious thing
+1519.43s - 1523.83s |  that the macro could have done is to drop something here and then
+1523.83s - 1526.59s |  basically execute it with this feature.
+1526.59s - 1528.79s |  And now attackers can't do it.
+1528.79s - 1533.59s |  The only thing that I did mention that I did want to look for
+1533.59s - 1538.83s |  is directory traversal, like creating symlinks or doing
+1538.83s - 1541.51s |  dot dot slash or something like that in the file name.
+1541.51s - 1544.23s |  None of them work, so that's very good.
+1544.23s - 1545.59s |  Well, it's bad for attackers.
+1545.59s - 1546.59s |  It's good for Microsoft.
+1546.59s - 1550.87s |  So yay and nay at the same time.
+1550.87s - 1554.47s |  The basic idea is that I did not find a very obvious way
+1554.47s - 1557.03s |  to abuse this for a sandbox escape.
+1557.03s - 1561.31s |  And as you remember from before, this
+1561.31s - 1563.99s |  is the fix that Microsoft have done.
+1563.99s - 1566.99s |  And you can see here the application scripts directory.
+1566.99s - 1568.95s |  So there you go.
+1568.95s - 1572.47s |  Let's move on to grant access to multiple files.
+1572.47s - 1574.47s |  You can use grant access to multiple files
+1574.47s - 1578.51s |  to write a .dshn file even.
+1578.51s - 1582.39s |  Because, again, this allows you to write arbitrary files,
+1582.39s - 1586.75s |  you can call this grant access to multiple files with an array.
+1587.75s - 1593.11s |  In this case, it's an array of one element,
+1593.11s - 1600.75s |  which is the user's home directory,
+1600.75s - 1604.59s |  and then .dshn with arbitrary contents.
+1604.59s - 1606.27s |  You call grant access to multiple files,
+1606.27s - 1608.91s |  and basically it will grant you access there.
+1608.91s - 1611.15s |  So this looks pretty promising.
+1611.15s - 1613.95s |  You can basically use that to escape the sandbox
+1613.99s - 1618.11s |  and have a malicious office macro.
+1618.11s - 1621.27s |  But of course, because this is a secure API,
+1621.27s - 1623.19s |  it will pop up this thing.
+1623.19s - 1626.59s |  So this is how it looks like the first time that you try.
+1626.59s - 1628.95s |  You basically have to click Select,
+1628.95s - 1630.71s |  and then select the directory.
+1630.71s - 1635.67s |  You click Grant Access, and then the file could be written.
+1635.67s - 1642.91s |  So that's a very convoluted way of getting a malicious office
+1642.95s - 1644.67s |  macro to do something malicious.
+1644.67s - 1647.35s |  But it could be done for a very unsuspecting user.
+1647.35s - 1649.95s |  But it has to be a very unsuspecting user.
+1649.95s - 1653.27s |  Interestingly, if you deny, if you do cancel,
+1653.27s - 1655.91s |  and you call this thing one more time,
+1655.91s - 1657.59s |  it will just pop up again.
+1657.59s - 1660.43s |  So one thing that an attacker could do
+1660.43s - 1662.39s |  is basically do it in a loop.
+1662.39s - 1666.15s |  Until it's approved, you can just do it forever
+1666.15s - 1668.87s |  until the user says, you know what, fuck it,
+1668.87s - 1671.91s |  and then click Select, and then approves.
+1671.91s - 1676.19s |  So that's something that an attacker could do even today.
+1676.19s - 1678.59s |  But interestingly enough, after you grant access
+1678.59s - 1681.31s |  for the first time, second time just works.
+1681.31s - 1682.75s |  Even after restarting the app, you
+1682.75s - 1686.47s |  can restart to the computer.
+1686.47s - 1688.15s |  And that tells me a lot.
+1688.15s - 1690.83s |  It tells me that there is a persistent user choice.
+1690.83s - 1694.55s |  The user choice, the idea that the user granted access,
+1694.55s - 1696.51s |  is saved persistently.
+1696.51s - 1698.75s |  And I was like, OK, where is it saved?
+1698.75s - 1700.11s |  And I found where it's saved.
+1700.11s - 1703.63s |  And interestingly enough, it's saved under the container
+1703.63s - 1705.67s |  directory for Word.
+1705.67s - 1708.83s |  If you remember from 10 slides ago,
+1708.83s - 1711.75s |  you can write and read arbitrary files there.
+1711.75s - 1715.35s |  This directory is free for all, even from the Office macro.
+1715.35s - 1718.75s |  So it's very interesting that this file, this com.microsoft.word
+1718.75s - 1723.71s |  securebookmarks.plist, actually contains the user choice that
+1723.71s - 1726.27s |  says, hey, you know what, you can write arbitrary files
+1726.27s - 1729.59s |  to this path right here.
+1729.59s - 1732.99s |  PLList files are just configuration files for Mac,
+1732.99s - 1735.83s |  if you're unfamiliar with them.
+1735.83s - 1740.19s |  And you use plutil to print out the data there.
+1740.19s - 1742.15s |  So this is very interesting.
+1742.15s - 1744.75s |  And there is this question on whether I could actually
+1744.75s - 1748.87s |  abuse the fact that I have free access from within the VBA
+1748.87s - 1751.47s |  macro to this PLList file.
+1751.47s - 1754.83s |  This is what we're going to find out in the next 20-something
+1754.83s - 1756.71s |  minutes.
+1756.71s - 1759.47s |  So the first thing that we can do always
+1759.55s - 1760.75s |  is read the file.
+1760.75s - 1764.47s |  Because the file is in the container directory,
+1764.47s - 1767.83s |  we can arbitrarily read and write to it.
+1767.83s - 1769.43s |  It's a binary PLList file.
+1769.43s - 1774.75s |  PLList files, as I said, are configuration files.
+1774.75s - 1777.39s |  And they come in 2 and 1 half shapes, I guess,
+1777.39s - 1778.39s |  or three shapes.
+1778.39s - 1781.35s |  And one of them is a binary format.
+1781.35s - 1783.55s |  So parsing it kind of sucks, even though you
+1783.55s - 1786.39s |  can do it from within VBA.
+1786.39s - 1790.95s |  And I didn't go to a lot of length.
+1790.95s - 1794.79s |  I just wanted to POC that allows me to read and understand
+1794.79s - 1798.19s |  whether a specific path has been approved or not.
+1798.19s - 1801.63s |  So what I've done is to just do some forensics.
+1801.63s - 1805.83s |  I understood that strings seem to be ANSI Pascal strings.
+1805.83s - 1807.59s |  So first byte is the length.
+1807.59s - 1811.87s |  And then there is the string length itself.
+1811.87s - 1814.63s |  And VBA script can check the directory
+1814.63s - 1818.51s |  if the directory is approved by simply reading the file.
+1818.51s - 1821.11s |  So if you don't want to spam the user with this kind of like,
+1821.11s - 1823.63s |  hey, grant me access right now and being all suspicious,
+1823.63s - 1826.51s |  you can be very stealthy and say something like,
+1826.51s - 1830.67s |  OK, can I just create this .zsh end file
+1830.67s - 1833.39s |  without popping up this thing?
+1833.39s - 1834.43s |  So this is how you do it.
+1834.43s - 1838.07s |  You basically read the PLList file.
+1838.07s - 1839.47s |  This is where it is.
+1839.47s - 1846.95s |  And you can basically read this PLList file in binary format
+1846.95s - 1851.07s |  and then basically look for the right string in it.
+1851.07s - 1853.55s |  And this is the implementation.
+1853.55s - 1854.47s |  I know that it's ugly.
+1854.47s - 1859.23s |  It's not my fault that VBA is not a very friendly language.
+1859.23s - 1861.59s |  But this is how it could be done by an attacker.
+1861.59s - 1863.19s |  So an attacker could basically, if this
+1863.19s - 1865.83s |  is a document that is being opened millions of times
+1865.83s - 1868.19s |  or by many people, can basically
+1868.19s - 1872.23s |  run the script forever and ever and ever on every machine.
+1872.23s - 1873.87s |  And in every opportunity, you can just
+1873.87s - 1876.79s |  ask if it just so happens that someone allowed access
+1876.79s - 1880.99s |  to this directory, and if so, escape the sandbox.
+1880.99s - 1883.03s |  So this is how a script could be stealthy.
+1883.03s - 1885.47s |  But you have to wait for someone to do something.
+1885.47s - 1887.51s |  So it's not a real vulnerability.
+1887.51s - 1890.51s |  It's an abuse of a feature, I would say.
+1890.51s - 1893.99s |  The writing to files is the most interesting part.
+1894.23s - 1896.99s |  If I could write to this PLList file
+1896.99s - 1899.99s |  and basically add arbitrary values to it,
+1899.99s - 1905.07s |  I win, because that means that I can approve any path
+1905.07s - 1907.75s |  that I like without any user interaction,
+1907.75s - 1910.27s |  without this interaction right here.
+1910.27s - 1913.35s |  So that's kind of where I'm aiming.
+1913.35s - 1915.83s |  Interestingly, it looks like it's signed.
+1915.83s - 1920.03s |  You see this bookmark data key actually
+1920.03s - 1923.35s |  contains some signature information in it.
+1923.35s - 1929.31s |  There is a date, and there is a UUID, like a unique ID there.
+1929.31s - 1930.27s |  But I did try.
+1930.27s - 1932.87s |  And naively modifying the keys or values
+1932.87s - 1934.67s |  there end up being ignored by Office
+1934.67s - 1938.67s |  and still creating this thing rather than silently just
+1938.67s - 1940.91s |  approving, just like we've done before.
+1940.91s - 1942.75s |  So there is the question, how is it signed?
+1942.75s - 1946.91s |  And can we calculate the key ourselves?
+1946.91s - 1951.55s |  So before we start, we have to talk about how apps work
+1951.55s - 1954.71s |  in macOS and how you really select files.
+1954.71s - 1957.23s |  If you ever opened Word or anything like that,
+1957.23s - 1959.31s |  you can just click File Open.
+1959.31s - 1963.19s |  And magically, you can just get access to arbitrary files.
+1963.19s - 1966.91s |  But how do you get that access if Word is sandboxed?
+1966.91s - 1971.95s |  No one, you know, when I first learned about the macOS
+1971.95s - 1975.63s |  Sandbox, I had this very same question.
+1975.63s - 1980.19s |  How can apps actually get, sandboxed apps,
+1980.19s - 1982.79s |  get access to arbitrary files that normally they
+1982.79s - 1985.39s |  do not have access to?
+1985.39s - 1988.39s |  And what really happens is that, unlike Windows or Linux,
+1988.39s - 1990.51s |  we're basically opening.
+1990.51s - 1993.55s |  In Windows, it's more clear because you have a dialog box.
+1993.55s - 1996.99s |  Usually, if you have an app in Windows and you click File
+1996.99s - 2001.83s |  Open, the dialog box will run in the same process context.
+2001.83s - 2004.55s |  In macOS, it's not like that at all.
+2004.55s - 2007.23s |  What happens really is that the Sandbox app typically
+2007.23s - 2009.03s |  gains access to the specific files
+2009.03s - 2012.67s |  if a user selects those files using a different process
+2012.67s - 2014.95s |  called macOS OpenDialog.
+2014.95s - 2017.27s |  So whenever you want to open a file,
+2017.27s - 2021.31s |  it actually does an IPC, an inter-process communication,
+2021.31s - 2026.11s |  to another service called the Open and Save Panel service.
+2026.11s - 2027.83s |  And this service is unsandboxed.
+2027.83s - 2030.95s |  It has full access to the files.
+2030.95s - 2036.87s |  And it basically grants the access to the files with IPC.
+2036.87s - 2040.79s |  So it's really interesting, the different design
+2040.79s - 2043.47s |  between traditional OSes that you guys
+2043.47s - 2045.83s |  might be familiar with, Windows and Linux,
+2045.83s - 2050.39s |  where basically you open a file because you open a file.
+2050.39s - 2052.35s |  But in Mac, it's a bit different.
+2052.35s - 2057.43s |  You have to basically pass the ability to open a file
+2057.43s - 2058.95s |  to a different app.
+2058.95s - 2062.63s |  In Linux, there is something quite similar in which you
+2062.63s - 2067.11s |  can pass file descriptors over a Unix domain socket.
+2067.11s - 2069.35s |  But this is not a Linux doc.
+2069.35s - 2072.79s |  So that's what really happens when you select a file.
+2072.79s - 2077.23s |  And there is something that we have
+2077.23s - 2079.15s |  to have the right terminology.
+2079.15s - 2082.31s |  A Sandbox extension, that's the terminology,
+2082.31s - 2084.43s |  is a token that is created by the kernel
+2084.43s - 2086.79s |  and grants the process possessing it
+2086.79s - 2090.23s |  the ability to access certain resources, such as files.
+2090.27s - 2093.07s |  So in our case, what happens is that the open dialogue,
+2093.07s - 2095.67s |  the service, asks the kernel, hey,
+2095.67s - 2098.23s |  please create a token for this specific file,
+2098.23s - 2100.67s |  and then transfer that token to Office.
+2100.67s - 2106.31s |  And then there is this API that is called Sandbox extension
+2106.31s - 2106.87s |  issue file.
+2106.87s - 2109.47s |  You can just call it directly, even
+2109.47s - 2111.87s |  though there are high-level APIs to do
+2111.87s - 2113.67s |  that kind of functionality.
+2113.67s - 2116.07s |  This is how it looks like when you select the file.
+2116.07s - 2118.95s |  So you basically say, hey, I want to open the file.
+2119.31s - 2121.99s |  By the way, unrelated to what we've seen so far,
+2121.99s - 2124.43s |  this is just how you open a file in Word.
+2124.43s - 2126.71s |  So when you open a file in Word on Mac,
+2126.71s - 2130.35s |  it will create an IPC to the open dialogue
+2130.35s - 2132.87s |  service, which is on Sandbox.
+2132.87s - 2137.07s |  This thing will access the file and ask the kernel, hey,
+2137.07s - 2140.27s |  please create a read-write token to this file right here,
+2140.27s - 2141.95s |  let's say 10 quark.
+2141.95s - 2144.91s |  Kernel basically creates this token.
+2144.91s - 2147.91s |  The token is then transferred to the open dialogue service
+2147.91s - 2151.95s |  and then over IPC to the Word app.
+2151.95s - 2157.55s |  And then the Word uses the token to access the file.
+2157.55s - 2161.27s |  The token itself is composed of several fields.
+2161.27s - 2167.87s |  And most interestingly, it has an HMAC SHA-256 authentication.
+2167.87s - 2170.67s |  The key is generated in each boot
+2170.67s - 2173.95s |  by Sandbox.kxt, which is a kernel extension.
+2173.95s - 2176.83s |  So the kernel itself generates a key
+2176.83s - 2179.71s |  to sign this token right here.
+2179.71s - 2181.43s |  There are other interesting fields
+2181.43s - 2184.19s |  there, including volume, inode, and other file system
+2184.19s - 2185.79s |  related file information.
+2185.79s - 2188.75s |  The file path is obviously there in the token.
+2188.75s - 2190.03s |  And the capability.
+2190.03s - 2192.67s |  Capability, for instance, is capability
+2192.67s - 2194.27s |  to read and write, for instance.
+2194.27s - 2196.11s |  This is what we care about.
+2196.11s - 2198.31s |  So the conclusions are the following.
+2198.31s - 2201.91s |  A process can't fake a token because of the signature,
+2201.91s - 2204.87s |  because of the authentication.
+2204.87s - 2207.71s |  And the other conclusion is that a token
+2207.71s - 2210.67s |  can't persist between reboots because the key is generated
+2210.67s - 2213.43s |  in each boot by Sandbox.kxt.
+2213.43s - 2218.79s |  If you save, let's say, this token for later use,
+2218.79s - 2220.83s |  after a reboot, it will be invalidated.
+2220.83s - 2223.79s |  The key is no longer the same key.
+2223.79s - 2226.51s |  So because of that, what happens?
+2226.51s - 2229.71s |  Well, before that, there is another thing
+2229.71s - 2231.75s |  called security-scoped URLs.
+2231.75s - 2237.99s |  And this is simply like a token serialization in an NSURL.
+2237.99s - 2239.35s |  It's not very interesting.
+2239.35s - 2244.51s |  What I'm trying to say here is that there is an upper-level
+2244.51s - 2250.19s |  API to use this thing, to use the Sandbox extension issue
+2250.19s - 2251.51s |  file.
+2251.51s - 2256.71s |  So you can use the entire Next Step higher-level API.
+2256.71s - 2259.99s |  That's the entire thing.
+2260.15s - 2261.95s |  The idea is that once you have a token,
+2261.95s - 2263.95s |  you can just tell the kernel, hey, you know what?
+2263.95s - 2264.55s |  I have a token.
+2264.55s - 2265.67s |  Please let me pass.
+2265.67s - 2268.71s |  That's the entire idea here.
+2268.71s - 2272.23s |  And then this is where things get interesting.
+2272.23s - 2274.39s |  This is what Word and other apps use.
+2274.39s - 2276.63s |  It's called security-scoped bookmarks.
+2276.63s - 2278.55s |  And the idea is that sometimes we
+2278.55s - 2281.11s |  want to persistently save the access token,
+2281.11s - 2283.31s |  even between reboots.
+2283.31s - 2285.07s |  You can't naively use the token as-is,
+2285.07s - 2289.91s |  because the HMAC 256 will be invalidated.
+2289.91s - 2291.51s |  That's the reboot.
+2291.51s - 2294.03s |  And what you do is to talk to another service,
+2294.03s - 2297.43s |  another unsandboxed service, called ScopedBookmarkAgent.
+2297.43s - 2299.39s |  And this guy will create a normal token,
+2299.39s - 2302.43s |  but also calculate something called the security cookie.
+2302.43s - 2307.95s |  And that cookie is saved with a pass persistently.
+2307.95s - 2311.15s |  So this is how you basically save the access token.
+2311.15s - 2313.15s |  And whenever you want to use the token, what
+2313.15s - 2315.43s |  happens when you have a request?
+2315.43s - 2318.51s |  You check in the persistent storage
+2318.51s - 2320.95s |  for the security cookie.
+2320.95s - 2324.27s |  If the cookie exists and valid, you create a token
+2324.27s - 2325.51s |  and provide it to the app.
+2325.51s - 2331.15s |  Basically, use the API that does not survive reboots.
+2331.15s - 2334.71s |  If the cookie doesn't exist, you use the open dialog.
+2334.71s - 2336.79s |  Now, I know this sounds very convoluted,
+2336.79s - 2339.67s |  so I prepared, again, this graph.
+2339.67s - 2342.59s |  What happens is Word says, hey, I
+2342.59s - 2344.99s |  want read-write access to TempQuack,
+2344.99s - 2348.79s |  and talks to the ScopedBookmarkAgent.
+2348.79s - 2352.87s |  This agent basically will get the plist.
+2352.87s - 2354.35s |  It's not done exactly that way.
+2354.35s - 2357.91s |  The plist is actually maintained by Word, but whatever.
+2357.91s - 2361.31s |  And asks, hey, is TempQuack approved for read-write
+2361.31s - 2362.35s |  with a valid cookie?
+2362.35s - 2365.23s |  If the answer is yes, it will basically talk to the kernel.
+2365.23s - 2367.91s |  It will get read-write access just the way
+2367.91s - 2371.51s |  that we've done before, and pass this token to Word.
+2371.51s - 2374.91s |  Now, Word has access to TempQuack.
+2374.91s - 2377.99s |  If we don't have access to the cookie,
+2377.99s - 2381.91s |  if we don't have a valid cookie, or if we don't have an entry
+2381.91s - 2384.15s |  for TempQuack, I mean, what happens
+2384.15s - 2387.63s |  is that you have to talk to the open dialog service, which
+2387.63s - 2391.99s |  will present the open dialog and asks you
+2391.99s - 2394.75s |  to grant access, which is something that the Red Teamer
+2394.75s - 2396.23s |  doesn't want to have.
+2396.23s - 2398.91s |  And then the token is passed to Word.
+2398.91s - 2401.63s |  And you can also save data later.
+2401.63s - 2407.43s |  A scoped bookmark agent can save the data for later
+2407.43s - 2410.11s |  in the plist file for persistence.
+2410.11s - 2413.11s |  So how do you sign a bookmark?
+2413.11s - 2416.87s |  How is this bookmark, this thing in the plist,
+2416.87s - 2419.07s |  how is this signed?
+2419.07s - 2421.39s |  There are two types of bookmarks, actually.
+2421.39s - 2423.69s |  But we'll only talk about Apps scoped bookmarks,
+2423.69s - 2426.51s |  because I didn't find any documents scoped bookmarks.
+2426.51s - 2429.59s |  Perhaps it's a feature that is not used a lot.
+2429.59s - 2431.95s |  So Apps scoped bookmarks basically
+2431.95s - 2433.71s |  calculate a crypto key.
+2433.71s - 2438.87s |  That crypto key is HMAC-256, the secret key,
+2438.87s - 2441.43s |  signing the app bundle.
+2441.43s - 2443.83s |  In our case, it's Chrome, Microsoft, Word.
+2443.83s - 2446.23s |  Now, the crypto key is used later
+2446.23s - 2447.83s |  to sign the bookmark data.
+2447.83s - 2449.91s |  That's the bookmark cookie.
+2449.91s - 2454.83s |  So what do we know from inside the sandbox app
+2454.83s - 2457.13s |  that's as an attacker, switching hats
+2457.13s - 2459.73s |  from an engineer that understands this thing
+2459.73s - 2464.05s |  to a hacker or to an attacker?
+2464.05s - 2465.53s |  We know the bundle identifier.
+2465.53s - 2467.97s |  We know Chrome.Microsoft.Word.
+2467.97s - 2469.69s |  And all we need is the secret key.
+2469.69s - 2473.21s |  If I know the secret key, I can calculate the crypto key.
+2473.21s - 2474.93s |  And if I know the crypto key, I can
+2474.93s - 2478.53s |  create arbitrary bookmark data and add it to the plist
+2478.53s - 2482.81s |  in order to gain arbitrary access to arbitrary files.
+2482.81s - 2484.17s |  That's the idea.
+2484.17s - 2488.05s |  The secret key, however, this guy right here,
+2488.05s - 2490.73s |  comes from the keychain.
+2490.73s - 2493.09s |  Now, if you're unfamiliar with a keychain,
+2493.09s - 2497.13s |  keychain is basically like a password manager that
+2497.13s - 2499.29s |  is there by default on Mac OS.
+2499.29s - 2501.93s |  It's being used for various things
+2501.93s - 2504.65s |  to basically store secrets.
+2504.65s - 2507.41s |  Now, this is the name of the secret key.
+2507.41s - 2511.61s |  The secret key is called com.applescodebookmarksagent.xpc.
+2511.61s - 2515.29s |  And this is not a keychain talk,
+2515.29s - 2518.13s |  but basically every entry in the keychain
+2518.13s - 2521.41s |  has an ACL, an access control list.
+2521.41s - 2524.57s |  And in this case, the access control list
+2524.57s - 2527.53s |  for this secret key specifically mentions
+2527.53s - 2535.01s |  that the only apps that have the access to the key,
+2535.01s - 2537.89s |  to the secret key, is this code bookmark agent,
+2537.89s - 2539.61s |  which is not surprising.
+2539.61s - 2544.09s |  It means that if I'm an attacker and running inside a Word
+2544.09s - 2547.97s |  macro, I don't have access to this item.
+2547.97s - 2550.05s |  So it looks like we're kind of lost.
+2550.05s - 2552.97s |  This is how things look like.
+2552.97s - 2560.29s |  Really, the complete thing is that in order
+2560.29s - 2563.09s |  to sign this token, everything is done just
+2563.09s - 2564.41s |  like we've done before.
+2564.41s - 2567.45s |  But whenever the token is created,
+2567.45s - 2569.85s |  the code bookmark agent reads the secret data
+2569.85s - 2573.25s |  from the keychain and then calculates the crypto key,
+2573.25s - 2574.33s |  calculates the cookie.
+2574.33s - 2578.17s |  And this is what's really being saved inside the playlist file.
+2578.17s - 2582.33s |  So just to mention how the signing looks like.
+2582.33s - 2585.69s |  And there is this question of what can we do, right?
+2585.69s - 2588.33s |  And I thought about it for a few days.
+2588.33s - 2591.65s |  And then I realized that the ACL, the access control list,
+2591.65s - 2596.89s |  the thing that we saw, sorry, the thing that we saw here,
+2596.89s - 2599.25s |  actually dictates who can read the key.
+2599.25s - 2601.85s |  But I don't really need to read the key.
+2601.85s - 2603.89s |  I just need to decide on the key.
+2603.89s - 2607.17s |  And this is the vulnerability that I disclosed to Apple.
+2607.17s - 2608.69s |  The idea is that the ACL dictates
+2608.69s - 2611.89s |  you can't read the password, but I can just add one.
+2611.89s - 2619.61s |  So you can create from within even a sandboxed app,
+2619.61s - 2622.09s |  you can basically delete the previous key
+2622.09s - 2623.49s |  and decide on a new one.
+2623.49s - 2626.33s |  So I delete the previous one, decide on a new one.
+2626.33s - 2627.21s |  This is the password.
+2627.21s - 2630.13s |  You can see AAA, BC, so on.
+2630.13s - 2635.87s |  And more interestingly, I added the big A here, dash big A.
+2635.87s - 2638.93s |  And this flag actually says that the access control
+2638.93s - 2642.33s |  list is allowing everyone to access the key.
+2642.33s - 2643.69s |  So that's kind of like a win.
+2643.69s - 2646.89s |  It basically means that I invalidated
+2646.89s - 2652.73s |  all of the previous persistent user choices.
+2652.73s - 2656.89s |  So there is some impact on the user experience in the future.
+2656.89s - 2660.01s |  But basically, now that I know I control the secret key,
+2660.01s - 2663.93s |  so I know what that is, and I allow everyone to access it,
+2663.93s - 2666.21s |  including this code bookmark agent,
+2666.21s - 2669.17s |  it basically means that it could be used.
+2669.17s - 2672.85s |  So how does my generic sandbox escape look like?
+2672.85s - 2675.01s |  You delete the old key from the keychain.
+2675.01s - 2677.41s |  You create a new key from the keychain with the password
+2677.41s - 2678.89s |  that we control.
+2678.89s - 2681.37s |  You can basically do that because it's not
+2681.41s - 2684.13s |  enforced by the keychain ACL.
+2684.13s - 2685.85s |  Now that you control the password,
+2685.85s - 2687.77s |  you calculate the crypto key for an app,
+2687.77s - 2689.89s |  let's say com.microsoft.org.
+2689.89s - 2691.21s |  Now that you know the crypto key,
+2691.21s - 2694.29s |  you artificially sign new items in the security bookmark
+2694.29s - 2696.01s |  playlist.
+2696.01s - 2700.17s |  Now, basically, you call the API before they grant access
+2700.17s - 2703.09s |  to multiple files, which will use this code bookmark
+2703.09s - 2706.21s |  agent, which will read the same thing that we
+2706.21s - 2708.81s |  added before the same playlist.
+2708.81s - 2711.49s |  We'll use the same key that we controlled
+2711.49s - 2713.49s |  to validate that the entry is correct
+2713.49s - 2717.41s |  and get us access to write to .zshn.
+2717.41s - 2720.65s |  And then I dump that zshn file, and now I
+2720.65s - 2723.25s |  wait for terminal or something to trigger.
+2723.25s - 2725.05s |  Or I can do whatever I want.
+2725.05s - 2729.77s |  I can even create a launch agent that way, same idea.
+2729.77s - 2732.69s |  So that's the generic sandbox escape that I had.
+2732.69s - 2736.09s |  Interestingly, exploitation, by the way, took me a long time.
+2736.09s - 2739.17s |  There are some very fine details
+2739.17s - 2741.65s |  that you have to come up with when you artificially
+2741.65s - 2742.93s |  sign new items.
+2742.93s - 2745.61s |  But interestingly, I got stuck here.
+2745.61s - 2748.69s |  I still got the scope bookmark agents
+2748.69s - 2752.65s |  to not respect my new password.
+2752.65s - 2754.21s |  And the thing that I discovered is
+2754.21s - 2759.57s |  that it doesn't ask for the secret key
+2759.57s - 2761.17s |  every time from the keychain.
+2761.17s - 2763.45s |  It actually just asks one time and then
+2763.45s - 2765.13s |  keeps it in memory with the understanding
+2765.13s - 2766.13s |  that it won't change.
+2766.13s - 2767.93s |  It's a long-term key.
+2767.93s - 2772.61s |  So what I ended up doing is that I have to either kill it
+2772.61s - 2774.13s |  or wait for a reboot.
+2774.13s - 2776.21s |  I did not find an easy way to kill it
+2776.21s - 2782.21s |  from within the sandbox app.
+2782.21s - 2784.97s |  So the exploit becomes even much, much harder.
+2784.97s - 2787.69s |  You have to maintain state between reboots.
+2787.69s - 2790.69s |  This is the actual sandbox escape that does work.
+2790.69s - 2792.89s |  You basically check for a state file.
+2793.57s - 2794.33s |  Sorry.
+2794.33s - 2798.29s |  If the state file doesn't exist or the process
+2798.29s - 2800.89s |  ID of this code bookmark agent is the same thing,
+2800.89s - 2803.65s |  it basically means that we didn't have a reboot.
+2803.65s - 2805.05s |  So what you're doing, the macro is
+2805.05s - 2807.41s |  to delete the old key from the keychain,
+2807.41s - 2809.69s |  create a new key with a password that we control,
+2809.69s - 2812.77s |  just like we've done before, recalculate the crypto key,
+2812.77s - 2817.69s |  and create a new state file and wait for a reboot.
+2817.69s - 2820.33s |  If this thing does not apply, it basically
+2820.37s - 2823.17s |  means that we experienced a reboot.
+2823.17s - 2826.09s |  And what we can do is artificially assign new items.
+2826.09s - 2831.13s |  We know that this code bookmark agent fetched the correct key.
+2831.13s - 2835.53s |  And what we do now is to do what we've done before.
+2835.53s - 2837.81s |  So this is the generic sandbox escape
+2837.81s - 2842.09s |  that I have, which is very convoluted but does work.
+2842.09s - 2845.53s |  One thing to keep in mind is that the issue with the ACL
+2845.53s - 2848.61s |  that I mentioned, the fact that the ACL does not
+2848.61s - 2851.81s |  prevent you from deleting and creating a new password,
+2851.81s - 2855.29s |  opens up other techniques that are not vulnerabilities per se.
+2855.29s - 2859.89s |  For example, if you're using any Chromium-based browser,
+2859.89s - 2864.57s |  let's say Chrome, for fun, the cookies and everything
+2864.57s - 2867.21s |  that you use are basically encrypted.
+2867.21s - 2870.49s |  And they're encrypted with a key that is saved in the keychain.
+2870.49s - 2874.17s |  And only Chrome, in my example, can open them.
+2874.17s - 2877.21s |  So one of the things that you can do as an attacker
+2877.21s - 2880.17s |  is delete that key from the keychain.
+2880.17s - 2881.69s |  Define your own key.
+2881.69s - 2884.13s |  It will invalidate all the cookies from Chrome.
+2884.13s - 2886.09s |  So there is a user experience.
+2886.09s - 2887.89s |  But from that point on, as an attacker,
+2887.89s - 2892.05s |  you can just wait for cookies to be written to disk.
+2892.05s - 2895.29s |  And you can decrypt them because you control the password.
+2895.29s - 2897.65s |  So that's a bigger issue.
+2897.65s - 2900.29s |  And retimers can use that ability
+2900.29s - 2905.13s |  to wreak havoc or gain any secret information that
+2905.13s - 2908.89s |  normally you could not get.
+2908.89s - 2911.77s |  Some conclusions, I don't know if we have time for questions.
+2911.77s - 2914.81s |  But some conclusions, the attacker strategies
+2914.81s - 2918.13s |  that I found for malicious Office macros are the following.
+2918.13s - 2920.17s |  You can either nag the user until the permissions
+2920.17s - 2923.17s |  are approved, my favorite, I guess.
+2923.17s - 2926.33s |  You can be stealthy and check for permissions
+2926.33s - 2929.57s |  and then drop the .zshn file.
+2929.57s - 2931.73s |  Or you can rely on a very complex exploit
+2931.73s - 2933.49s |  that relies on a reboot, which is
+2933.49s - 2938.17s |  what I described in the previous 10 slides or so.
+2938.17s - 2941.13s |  Apple makes sandbox escapes really challenging,
+2941.13s - 2945.17s |  even though I know that there has been a Black Hat talk just
+2945.17s - 2948.21s |  a few days ago about some newfound sandbox escapes.
+2948.21s - 2949.81s |  So you should check it out.
+2949.81s - 2953.77s |  I did not follow up completely on that.
+2953.77s - 2958.13s |  But it is getting harder and harder to escape the sandbox.
+2958.13s - 2961.53s |  And Office VBA macros are kind of safe, if you think about it.
+2961.53s - 2964.09s |  Because these are very convoluted things.
+2964.09s - 2966.85s |  So they're kind of safe, but kind of not, but kind of are.
+2966.85s - 2970.69s |  And you get to choose whether you feel safe or not.
+2970.69s - 2973.53s |  With that, thank you so, so, so much for listening
+2973.53s - 2975.09s |  and for tuning in.
+2975.09s - 2978.35s |  Thank you.
+2978.35s - 2980.31s |  And I don't know if we have time for questions.
+2980.31s - 2983.15s |  If there are, I'll try to answer them.
+2983.15s - 2986.27s |  I guess we do have time for questions.
+2986.27s - 2988.67s |  Yeah.
+2988.67s - 2991.11s |  If there are any questions, you can write them in the chats.
+2991.99s - 2995.63s |  I see that there are some.
+2995.63s - 2998.31s |  I don't see anything that's written in the chat that
+2998.31s - 2999.27s |  looks like a question.
+2999.27s - 3004.12s |  So hooray.
+3004.12s - 3007.00s |  OK, you can feel free to reach out after.
+3007.00s - 3008.76s |  I will be answering questions.
+3008.76s - 3013.12s |  I will not be giving exploitation code.
+3013.12s - 3016.76s |  But besides that, you're free to ask me whatever you want.
+3016.76s - 3018.96s |  Thank you so, so much.

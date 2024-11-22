@@ -1,0 +1,532 @@
+{
+  "webpage_url": "https://www.youtube.com/watch?v=QXa29AJqdRc",
+  "title": "DEF CON 32 - Reverse Engineering MicroPython Frozen Modules  - Wesley McGrew",
+  "description": "MicroPython is a firmware environment for quickly developing and deploying software onto microcontroller systems. It is used in a variety of industrial and scientific applications, as well as (most importantly) in some DEF CON #badgelife projects. It's easy to learn and use for rapid prototyping.\n\nFor hackers interested in reverse engineering compiled or obfuscated MicroPython code, there are some obstacles. MicroPython is an implementation of CPython, not a port, so it has its own compiled bytecode language that existing reverse engineering tools aren't designed to parse. Also, modules can be \"frozen\", compiled directly into the microcontroller firmware, and may be difficult to locate and parse when microcontroller firmware is extracted and analyzed.\n\nIn this talk, Wesley will walk the audience through the process of identifying \"frozen\"/compiled modules in a firmware image without debug symbols using the Ghidra disassembler. The relevant module, string, object, and raw code data structures will be detailed, so that everything required to rebuild a non-frozen module can recovered. Once a compiled module is reconstructed, Wesley will present a detailed example of reading and understanding MicroPython compiled bytecode, for the purpose of reverse engineering the purpose and implementation of the module.",
+  "channel_url": "https://www.youtube.com/channel/UC6Om9kAkl32dWlDSNlDS9Iw",
+  "duration": 2602,
+  "channel": "DEFCONConference",
+  "uploader": "DEFCONConference",
+  "upload_date": "20241016"
+}
+
+0.91s - 6.71s | This text was transcribed using whisper model: large-v2
+
+ Thank you for showing up everybody. I appreciate this. I know that I'm on opposite of Pony Awards
+6.71s - 10.31s |  So if you're here for Pony Awards, you're in the right place
+10.91s - 13.11s |  So this is a reverse engineering
+13.99s - 20.95s |  MicroPython frozen modules. My name is Wesley McGrew. I'm senior cyber fellow with Martin Federal and
+22.07s - 24.99s |  This is talk is going to be a lot of fun for
+25.71s - 29.39s |  Those of you who like to hack on badge life stuff a lot of badge life
+30.31s - 32.31s |  Badges use this
+33.11s - 35.11s |  Python interpreter and
+36.11s - 37.87s |  we're able to
+37.87s - 40.95s |  Pick out some things that perhaps you wouldn't have otherwise
+41.79s - 46.41s |  So the agenda for the talk we're going to be
+47.67s - 51.07s |  We're going to introduce what micro Python is for those of you not familiar
+51.07s - 54.93s |  I'm pretty sure most of you know about Python in general
+55.39s - 60.71s |  we're going to look at micro Python firmware on the Raspberry Pi Pico, so
+61.63s - 68.43s |  It's available for a lot of different microcontrollers, but Pico is probably the easiest for you to set up experimentation in your lab with
+69.15s - 71.15s |  we're going to build a
+71.95s - 73.95s |  Hello world
+74.07s - 75.75s |  module for it and
+75.75s - 81.55s |  We're going to compile it down into bytecode and then we're going to freeze it into the micro Python firmware itself
+81.71s - 87.95s |  So that it's harder for somebody to extract we're going to talk about that freezing process and why it's there
+88.95s - 90.95s |  We're going to have a hands-on example of
+91.63s - 98.27s |  Reconstructing that module from a compiled firmware. We're going to do it with symbols and without symbols, so
+99.03s - 103.55s |  Show you how to do it in an environment where somebody's trying to actively keep you from doing it
+104.31s - 110.67s |  We're going to do some analysis of that extracted module and come to some conclusions about what this means for reverse engineering it
+111.11s - 117.81s |  So micro Python is an implementation of Python 3 for microcontrollers
+117.81s - 124.21s |  And it's very interesting in that it's not a straight port of CPython CPython is the Python
+124.33s - 130.73s |  You're familiar with on your desktop system where or it's a compiled. It's an interpreter running
+131.49s - 133.13s |  bytecode
+133.13s - 136.01s |  based off of the Python code that you write and
+138.09s - 142.89s |  Micro Python completely just re-implements it from scratch and and I'm not
+143.41s - 147.53s |  There's probably reasons for doing that instead of starting from CPython
+148.61s - 154.21s |  Microcontrollers have limited resources and so things are optimized for that kind of environment
+155.53s - 159.17s |  There's a subset of Python standard libraries in there. There's not
+159.93s - 165.29s |  Libraries for some of the standard library stuff that doesn't make sense on microcontroller, but there's also some additional
+166.05s - 167.93s |  micro Python
+167.93s - 175.09s |  Only libraries there just for working with microcontroller hardware primarily like GPIO like turn pin one on
+175.85s - 177.85s |  Pull it low that sort of thing
+178.25s - 181.01s |  There is a rebel so a command line
+181.41s - 186.17s |  You're used to a Python where you can just start typing Python code and have it execute and sort of
+186.29s - 188.29s |  Play around with the Python environment
+188.29s - 194.45s |  You can do that with micro Python if you have a serial terminal on your microcontroller like you do with a Pico
+196.21s - 203.29s |  The use cases for it you don't I don't see it in anything that you can just like go to Lowe's and buy for home
+203.45s - 210.69s |  Automation, but you do see it in scientific application industrial applications you see it
+211.01s - 218.01s |  in badges and so like the last year's snacky badge at least use micro Python and
+219.25s - 223.49s |  specifically the frozen modules are used by a lot of folks to
+224.17s - 228.09s |  Have code cooked into the firmware itself. That's not in a
+229.25s - 231.25s |  module file on the file system
+232.25s - 239.53s |  It's really nice. So what I'm presenting here is not a mistake made with micro Python. It's just a reverse engineering talk
+239.53s - 244.61s |  There's no vulnerability here as my micro Python is concerned. I like it
+244.61s - 249.73s |  It's really easy to create a prototype of an embedded device with micro Python
+250.33s - 253.85s |  And so you have three choices for your code you can have
+254.53s - 259.71s |  Plain text that's on a small file system. That's in the emulated in part of your flash memory
+260.59s - 264.23s |  You can and you can read and write to that file system through the REPL
+265.15s - 266.83s |  you can
+266.83s - 275.07s |  have pre compiled byte code modules and we'll talk about the structure of those but then you can also take those pre compiled modules and
+275.75s - 282.35s |  Cook them into the file into the micro Python firmware at build time and that removes a lot of the metadata that makes it
+282.35s - 284.35s |  easy to find those modules and
+284.87s - 289.15s |  Disassemble them right there. There's tools for working with the other portions of this
+289.19s - 292.59s |  There's no tools for going back from a frozen module
+292.59s - 298.47s |  and so in badge life a lot of CTFs that use badges will hold secrets and
+298.63s - 304.29s |  Keys and code that they don't want you to see as part of the CTF inside those frozen modules
+305.75s - 312.11s |  The feature is there for efficiency. So the feature is there so that you're not wasting additional memory loading
+312.43s - 314.43s |  Dot PI or loading of the dot
+314.99s - 320.07s |  MPY file into memory and doing things when it's already in memory because it's on the flash
+320.55s - 326.35s |  So it saves memory. It's convenient. You don't have to do any additional loads. It's already there
+327.39s - 329.39s |  but it's being
+329.43s - 331.43s |  abused misused for
+332.07s - 335.71s |  obfuscating and hiding code and secrets inside of these binaries and
+337.03s - 339.03s |  We've got some quotes
+339.43s - 342.63s |  Here that from random forums and stuff you probably can't read them
+343.07s - 347.59s |  They're small. I just grabbed a bunch of them and threw them up. But the gist of all these quotes is
+348.51s - 356.11s |  People are asking. Well, if I've got a password for a system, how do I keep that away from my users or I've got a key
+356.11s - 358.91s |  I've got a secret that I don't want them to read my code
+359.55s - 361.51s |  their concerns are
+361.51s - 366.87s |  Making this obfuscated and people were responding to them on these forums of like, you know
+366.87s - 370.11s |  It's not perfect and everybody acknowledges that this isn't perfect and it's not perfect
+370.11s - 374.51s |  but you can make it harder to get it that stuff by cooking it into a
+374.79s - 380.13s |  Frozen module because nobody has the tools to disassemble it. And so let's make something to disassemble it
+381.99s - 385.99s |  It's a layer of protection for some folks, but it's really just an obfuscation
+387.19s - 391.15s |  The first thing that you have to do to get this thing working is to get a firmware image
+391.39s - 397.31s |  So that's out of scope for this talk and it's tricky depending on the module depending on your microcontroller
+397.31s - 399.47s |  You might not be able to get a flash image easy
+399.51s - 405.03s |  that's a whole talk on you know glitching and things like that, but since we're using Pico's as the
+405.99s - 409.27s |  Pico as the dev environment here we can
+410.23s - 413.19s |  We can just use the standard Pico tools for this demonstration
+413.91s - 416.19s |  If you're following at home with a Pico
+416.75s - 421.31s |  You use the Pico tool info and it'll tell you about the
+421.83s - 424.19s |  About the firmware of an a connected Pico
+424.35s - 429.35s |  but it actually makes it a little too easy as you can see from the output here from the output you have a list of
+429.35s - 431.15s |  frozen modules here and
+431.15s - 434.35s |  You know, well, that's that seems dumb seems like a really short talk
+434.99s - 438.83s |  and what that's from is from Pico's Pico has
+439.43s - 444.79s |  binary information quote-unquote binary information in the firmware image and
+445.15s - 450.63s |  It can be read with Pico tool it can be in code it's encoded by MicroPython
+451.51s - 455.11s |  firmware can specify in MicroPython that it's going to
+456.19s - 460.59s |  include additional fields in that Pico tool or in that binary information and
+461.99s - 465.55s |  MicroPython does this with simply a list of the frozen modules and
+466.15s - 468.15s |  So again, that seems real easy
+468.43s - 473.55s |  you can look at how to parse that from a tool that comes with MicroPython that
+473.95s - 481.47s |  We're going to be using a lot here mpy tool this is used for freezing modules for inspecting mpy files
+483.07s - 488.87s |  There's some stuff in there for how it encodes that that information and
+489.91s - 496.15s |  So since this is too easy as a starting point, I mean, it's too easy because you can strip this out
+496.15s - 501.95s |  It's not necessary for the operation of the firmware, right? So other platforms
+502.95s - 508.87s |  Other micro controls may not even have this sort of field this sort of binary information in the firmware
+509.95s - 512.23s |  It's not used by MicroPython itself
+512.47s - 517.75s |  So we can evade this analysis by commenting out the code in the freezing tool
+518.19s - 522.39s |  That generates that list right and so to make it harder on ourselves, right?
+522.39s - 528.07s |  Because we imagine the next step after we start ripping this stuff out people are going to start obfuscating this part
+528.67s - 535.67s |  So we can rip this out and not have those frozen modules listed if you can get to a serial console
+535.99s - 542.15s |  REPL, you can also do help modules and list them out. That is probably something that needs to be in there
+542.15s - 547.35s |  I don't know if you could patch out an evasion from our countermeasure against that
+547.63s - 554.15s |  But that's but it's not always the case that you're going to be able to easily get the REPL on on a microcontroller
+554.83s - 564.10s |  So for our example, we're going to have the the minimum viable Python module here a hello world that we're going to
+564.90s - 566.46s |  demonstrate in
+566.46s - 572.26s |  in plain text, we're going to demonstrate it as a compiled bytecode file on the file system and
+573.06s - 579.46s |  Then finally as a frozen module compiled into MicroPython and look at what that looks like in the binary
+580.46s - 587.82s |  Plain text is simple. You simply use the MP remote tool to upload it into the file system on the microcontroller
+587.82s - 592.86s |  There's a small very small file system that it stores those things in
+593.42s - 596.94s |  You can list files on it and you import and go
+598.74s - 603.56s |  You can use the mpy cross compiler to compile
+604.04s - 610.12s |  Your hello world dot py into an mpy into py file and you wind up with the hex dump
+610.12s - 613.52s |  Are you from one up of a file that has the following hex representation?
+613.52s - 616.88s |  And so you can kind of see in there used to see our strings
+617.12s - 621.32s |  You can see some bytecode in there. And so you're like, okay, this is a thing
+622.40s - 625.92s |  This immediate doesn't immediately look to you to be very useful
+626.04s - 632.80s |  but the mpy tool can work with this forward format very well and you can upload it into the file system and
+633.08s - 635.76s |  And use it. And so if you find one on a file system
+636.44s - 639.72s |  Use mpy tool to to tinker around with it
+640.48s - 641.96s |  as a
+641.96s - 648.76s |  Frozen module you can take that mpy and rebuild the microcontroller or firmware from scratch
+648.76s - 655.48s |  You can rebuild MicroPython from scratch including that mpy that you created it brings it in it kind of
+656.24s - 660.64s |  It brings it in as a set of C structures and we'll talk about that in a little bit
+660.64s - 666.08s |  But basically it's hard to go back after you've frozen it into the firmware. It's harder to pull it back
+666.08s - 671.36s |  It's not just a file on the file system anymore, but you can use it as a Python module just fine
+671.92s - 682.70s |  So what can we learn from an mpy file because our goal eventually here is going to be to take that
+683.42s - 685.42s |  Frozen module extract it from the firmware
+686.06s - 690.54s |  Recreate the mpy so that we can parse it the mpy tool creates
+691.30s - 698.90s |  Of the frozen module from the mpy and so the mpy tool that PI code has a lot of
+700.30s - 707.62s |  Algorithms and data structures in it for generating this and so it does not generate the the binary that's going to be in the firmware
+707.62s - 710.30s |  Directly it generates a set of C code
+710.90s - 714.50s |  That's going to get statically linked into the MicroPython firmware
+714.86s - 716.02s |  So
+716.02s - 721.10s |  And it's less coded and it's just like a whole lot of data structure a whole lot of struts, right?
+721.10s - 726.54s |  And those trucks are going to get compiled in and they're going to get arranged by the compiler into memory in
+726.78s - 731.18s |  Various places that are not immediately obvious to you from just reading the code
+732.02s - 739.22s |  The same tool can be used to dump info about an mpy file with a disassemble flag. So it does have a built-in disassembler
+740.22s - 745.46s |  This is the only disassembler you get with MicroPython and it's only pulling from mpy file
+745.46s - 750.58s |  so if we get code out of the binary, we're going to need to disassemble it with this tool and
+751.22s - 757.66s |  By the way, the byte code for MicroPython is not the same byte code as CPython
+758.42s - 761.90s |  It's definitely not the same opcodes. It's many of the same
+762.86s - 766.26s |  it's many of the same opcodes with different different values and
+767.14s - 776.02s |  Not all of the same opcodes, right so it's a from-scratch implementation if we don't or disassemble
+776.54s - 781.74s |  mpy file using the mpy tool we get three main
+782.26s - 789.50s |  Things out of we get a string table a module a string table an object table and a set of code
+790.74s - 794.58s |  What you're looking at here is the string table and I'm going to talk to you about this this
+795.34s - 798.10s |  Interned string format that they have here
+799.98s - 801.34s |  For the code
+801.34s - 808.38s |  There's two pieces of code if you remember we had a module that defined we defined a module and then we've defined a go
+808.46s - 811.18s |  function in it or a hello world function in it and
+812.18s - 814.18s |  So you're gonna have two functions
+814.94s - 818.46s |  That have byte code. The first one is going to be a constructor and
+819.14s - 821.02s |  The next one's gonna be your go function
+821.02s - 823.02s |  It actually repeats hello world
+823.06s - 828.98s |  Every five seconds and you can see the the byte code in these and it's a stack based language
+829.10s - 837.30s |  Basically, you're you're you're constantly loading things out of different data structures putting them on the stack calling other functions
+837.62s - 841.14s |  Pushing and popping and looping around and throwing things like that
+841.14s - 848.06s |  And so again, if you read up on how a Python byte code works, it would make sense to you
+848.46s - 853.02s |  But it's not exactly the same so you can't use like the body of Python
+853.26s - 856.50s |  Disassembly tools on this are debugging tools for this
+858.54s - 862.66s |  There's a really nice colored output hex dump that you can get with mpy tool
+863.10s - 868.66s |  That will sort of tell you what the different parts of that hex dump mean and what what what they are what they have what?
+868.66s - 871.66s |  They're about that'll help us when we're trying to recreate one of these
+873.62s - 875.62s |  so
+875.62s - 880.70s |  If we can rebuild an mpy of a frozen module out of information we extract from firmware
+880.70s - 884.14s |  We've got something we you can use to get some work done with it
+884.58s - 890.62s |  It'll take some Mario work, but it's not and because it's not there in the contiguous belt binary blob. It's structures
+890.62s - 894.14s |  We've got a walk, right? We got to find them in memory and walk them
+895.58s - 900.62s |  We have to understand string interning we need to look at the pipe byte code briefly
+900.62s - 903.26s |  It does not a I'm gonna be a byte code class or anything
+904.42s - 909.38s |  But also another tool that we can use is we can build a version of micro Python
+909.50s - 915.10s |  That's the Unix port quote-unquote Unix port it you can build it for Windows Linux or whatever
+915.46s - 918.86s |  But it's basically a desktop version of micro Python
+919.54s - 925.78s |  That you can that you can build and load mpy files into run them analyze them and do things to where you're not just
+925.98s - 929.74s |  Restricted to working on the microcontroller itself when you're doing your reverse engineering
+931.34s - 933.34s |  So first off
+933.70s - 936.06s |  How are storing our string constants?
+936.46s - 943.90s |  We're doing what's called string interning and so this is something that you do on very limited memory
+944.22s - 951.22s |  Environments where you want to avoid having the same constant string in memory more than once, right?
+951.34s - 953.18s |  You don't want to have
+953.18s - 958.98s |  main or something like or some other common string 50 different times in your memory if your
+959.26s - 964.30s |  Memory is in on the order of megabytes or kilobytes or something like that, right? And so
+965.30s - 971.98s |  My group I micro Python calls these Q strings for unique for unique cook strings
+973.02s - 974.02s |  and
+974.02s - 981.98s |  Basically Q string values the way you refer to them is is into an index into a linked list of pools of these strings
+981.98s - 988.90s |  Right, and so if you're wanting to refer to hello cruel world, or you're wanting to refer to
+990.06s - 991.38s |  the the
+991.90s - 994.30s |  Open tag module closed tag
+995.30s - 1000.46s |  String you're never going to refer to it as a pointer or you'll get a pointer to it
+1000.46s - 1007.42s |  but you're going to refer to it as and pass it around as an index into these links link pools and
+1008.22s - 1009.22s |  So there's a link
+1009.22s - 1015.86s |  There's a set of static ones that are in the make Q string data dot py that's used in the build process of micro Python
+1016.74s - 1023.42s |  And those are constant across all your builds of micro Python and then past that in the next pool
+1023.70s - 1029.10s |  It's going to be stuff that's varies between each build depending on which frozen modules you include
+1029.62s - 1038.63s |  So if you use mpy tool to create frozen code generated from your mpy file
+1039.47s - 1044.87s |  It's going to create a strings a string data structure. And so first you've got an enum that has
+1045.43s - 1049.03s |  basically, you know, that's going to compile down to one two, three four, basically a
+1050.15s - 1053.39s |  Indexing hello cruel world go. Hello world pie
+1053.91s - 1056.59s |  Sleep time all those sorts of things
+1056.83s - 1062.47s |  Then you're going to have hashes for them like a simple one byte hash and then a link for each of them
+1063.27s - 1069.47s |  Those are going to be placed into pools. And so on the right hand side there you see the frozen constant pool
+1070.47s - 1075.23s |  That has has those five strings represented in there
+1075.51s - 1078.51s |  there's also going to be a link to the previous pool and
+1079.39s - 1082.23s |  also a previous pool size, so
+1082.91s - 1084.19s |  your
+1084.19s - 1086.19s |  Q-string indexes are
+1086.43s - 1090.61s |  Global they're globally unique and so you have to look at that previous pool size
+1090.87s - 1093.91s |  To know where the indexes start for this pool
+1093.91s - 1095.51s |  All the pools are linked together
+1095.51s - 1103.67s |  The first constant pool starts at zero and it goes to however many constants there are and then the frozen pool if it's next
+1103.99s - 1107.71s |  Starts at that number plus 1 plus 2 plus 3 plus 4 plus 5
+1108.39s - 1112.69s |  so
+1112.69s - 1116.77s |  And so this is another this is the the Q string table data
+1117.73s - 1123.89s |  Here. So now you've got those these defined constants for these and so this is how you refer to
+1124.37s - 1128.41s |  The Q strings that you have these are all your indexes defined as constants
+1128.93s - 1138.69s |  So the question is how do we find the compiled module and a compiled firmware now if you're lucky they built it with symbols, right?
+1138.89s - 1143.33s |  But we're not going to assume we're lucky here. We're going to assume they stripped out that binary information
+1143.33s - 1151.01s |  we're going to assume that they stripped out the the symbols and so for me, whatever whenever I see somebody in
+1151.85s - 1155.17s |  Compiled code that I'm reverse engineering and they're using
+1155.81s - 1160.53s |  An open source module like if in malware if they're using open SSL or they're using
+1161.85s - 1167.77s |  Something similar. I'll try to build a copy of that SSL library myself of
+1168.29s - 1173.61s |  Alma if as close of a version as I can get and as close to the same options as I can figure for theirs
+1173.85s - 1180.37s |  So that I can then use that as sort of a Rosetta Stone for their module that doesn't have symbols, right?
+1180.69s - 1184.77s |  Because there's data structures that I want to walk through there. And so that
+1185.41s - 1187.57s |  one of the best things that you can do is
+1189.73s - 1194.81s |  Build a debug build of micro Python that has a frozen module in it
+1194.81s - 1198.61s |  not necessary you don't have their frozen module, but it has a frozen module in it and
+1199.21s - 1202.17s |  Use that to get your bearings in the binary, right?
+1203.05s - 1209.61s |  Have it loaded the same address and all that sort of thing and then you can have two copies of G drop one side by side
+1210.53s - 1217.50s |  And use one to figure out where the data structures are in the other and so in the debug build
+1217.86s - 1223.86s |  It's called mp frozen names. The mp frozen names is a list of the frozen modules on the system in
+1226.34s - 1228.34s |  your in your
+1230.82s - 1237.98s |  Debug build you also have the frozen modules themselves mp frozen mpy content. So you've got
+1238.98s - 1241.82s |  There's a lot of sort of built-in frozen modules
+1242.62s - 1246.54s |  You'll see like if you have an Adafruit circuit Python
+1247.46s - 1250.36s |  Device circuit Python is based on micro Python
+1250.82s - 1255.02s |  So circuit Python devices will have other frozen modules in them
+1255.02s - 1258.34s |  And you may not necessarily have the source code to them and they'll be in this list
+1258.34s - 1265.34s |  I think Lego makes a device that has a microcontroller in it that has
+1265.74s - 1270.82s |  Micro Python or circuit Python on it and they also have some of their own closed source libraries
+1271.02s - 1275.46s |  That are that are in this as well. And so this is easy mode, right?
+1275.46s - 1278.98s |  So we found the list of names of modules we found
+1279.54s - 1281.54s |  pointers to the modules themselves
+1281.70s - 1286.98s |  But we don't have the names of frozen names and frozen mpy
+1287.42s - 1289.82s |  Content in our stripped binary
+1289.82s - 1297.10s |  So we have a stripped binary that we copied from a micro controller or we got from an over-the-air update or something like that
+1297.62s - 1300.98s |  We've got to find them in a non debug build, right?
+1300.98s - 1305.50s |  And so the way we can find them if we if we can ever get to the same things
+1305.62s - 1312.98s |  Then we can start using those C data structures from the C files that these things that from the source code of micro Python
+1312.98s - 1319.38s |  The source code of other frozen modules. We can start using those to sort of walk it and figure out what's different
+1319.94s - 1321.94s |  But we've got to find those data structures first
+1323.10s - 1329.06s |  the easiest way to find these two data structures in a non debug build is to
+1329.06s - 1332.78s |  Is to one of the easiest ways for this is to just eyeball it
+1333.02s - 1339.16s |  You can search for dot PI and just find sort of the list of constants that have dot PI
+1340.34s - 1346.38s |  Especially if you know the other frozen modules and the other frozen modules are consistent with the standard micro Python ones
+1346.62s - 1353.22s |  You can compare that list and then whatever is additional on there are other additional frozen micro Python modules
+1354.10s - 1356.10s |  another a little bit more
+1357.58s - 1363.06s |  Resilient way of finding that that doesn't depend on you just sort of eyeballing a binary which I don't mind doing all day
+1363.06s - 1364.98s |  But y'all might
+1364.98s - 1367.70s |  Is to find it as a code reference
+1367.70s - 1374.22s |  and so there's a function that uses that list called MP fine frozen module and
+1374.70s - 1382.46s |  Chances are it's going to build in roughly the same location in your debug build as in your is in your stripped build
+1383.06s - 1387.74s |  Or you can just search for the code right here. So you have this move load
+1389.10s - 1393.18s |  Stroke this move load store combination here using this
+1393.82s - 1397.46s |  Address that address is the address to the MP frozen names
+1398.10s - 1406.51s |  To find the frozen module content, there's all there you can't really eyeball it because it's all binary content
+1407.07s - 1412.03s |  But there's indirect reference in in that same in that same function
+1412.03s - 1419.19s |  So if you find those frozen names eyeballing them, you can do a cross reference in gedra to walk back to where
+1419.71s - 1427.47s |  MP fine frozen module is and say, okay that matches up with the debug build now later on in that function
+1427.51s - 1432.35s |  There's a bit of code that looks like this. This is a reference to the frozen mpy content
+1432.35s - 1437.03s |  And so now we have pointers to our mod to the to the base data structures of our modules
+1437.03s - 1440.59s |  So from here, it should be fairly simple work
+1440.59s - 1443.19s |  Just sort of working through those structures and pulling it out
+1443.19s - 1448.99s |  And what we want to do is we want to recreate the hex of that original mpy file
+1449.27s - 1452.15s |  So that the rest of the work can be done with mpy tool
+1452.63s - 1462.33s |  The header for the mpy file is is a gonna be the same usually you can just take that from any of them
+1462.33s - 1467.25s |  And it's not super important as long as you get something that it passes the checks and it goes
+1467.77s - 1469.77s |  starts with magic letter M
+1470.45s - 1472.93s |  Goes with a major micropython version
+1474.41s - 1478.25s |  You want to have you can have so there's a flag in there for or
+1479.13s - 1483.81s |  And you can have it per function whether it's native or non-native byte code
+1483.81s - 1485.81s |  so you can have
+1486.21s - 1488.13s |  you can have
+1488.13s - 1492.13s |  mpy module where the actual code of a function is
+1493.01s - 1496.13s |  native say arm or MIPS or whatever or
+1497.33s - 1500.57s |  Byte you like not byte code machine code, right?
+1501.05s - 1506.65s |  Now for my money that would be a lot easier because I can just if I get a pointer to that
+1506.85s - 1512.93s |  Like gaedra will will decom disassemble and decompile that for me and I'm and I'm off to the races
+1512.93s - 1514.77s |  I don't have to interpret byte code
+1514.77s - 1520.21s |  so we're going with what I think is the harder example is if it's actual Python byte code there and
+1523.01s - 1524.65s |  then
+1524.65s - 1526.65s |  There's a data type that
+1527.09s - 1535.05s |  comes up frequently in this called a variably in a variably encoded unsigned integer of V u int and
+1535.49s - 1539.73s |  This mean I don't know. Maybe this is more common in microcontrollers than I know
+1540.17s - 1543.93s |  but but I had to take a close look at this and basically a
+1544.45s - 1545.85s |  This is a
+1545.85s - 1547.85s |  variable length integer
+1548.49s - 1552.41s |  that for each byte the lower seven bits is
+1553.05s - 1556.57s |  Is part of the integer and if there are more bits?
+1557.05s - 1560.57s |  Then the eighth bit is set and so if the eighth bit is set then you know
+1560.57s - 1560.97s |  Okay
+1560.97s - 1566.01s |  I got to read another seven bits from the next byte and so on and so forth and it can be
+1566.25s - 1570.57s |  Arbitrarily long right and have a represent an arbitrarily large number
+1570.97s - 1573.45s |  However much makes sense on your microcontroller
+1573.45s - 1579.45s |  And so this is a data type that that micro Python uses in a lot of its data structures
+1579.45s - 1582.97s |  And it can be a little bit of a mind bender to work with
+1583.53s - 1587.31s |  so in
+1587.31s - 1593.55s |  The hello world dot mpy we have a number of the the intern strings that we want to have in there
+1594.23s - 1596.23s |  And we'll see in there
+1596.31s - 1603.31s |  We only we only store the actual string data for strings that aren't already in the constant pool
+1603.59s - 1608.03s |  So if something's already built into micro Python, we don't redefine that string
+1608.03s - 1612.43s |  We just make a reference to it. And so when we're creating our mpy file, we have to be
+1613.27s - 1618.67s |  Mindful of which which strings are new essentially which strings are what pool they come from?
+1619.19s - 1625.82s |  So frozen module cue strings get mixed together in
+1626.34s - 1629.40s |  In a in a in a mpq string
+1630.02s - 1631.90s |  Frozen constant pool, right?
+1631.90s - 1637.54s |  And so that's one of a few different pools in there that are all in a linked list
+1637.82s - 1642.16s |  Where across the linked list there's unique indexes for each string, right?
+1642.74s - 1644.74s |  so
+1645.10s - 1647.02s |  So to find
+1647.02s - 1649.02s |  to find that pool
+1649.94s - 1654.86s |  The easiest thing to do is to go through if you can find the main function
+1654.86s - 1658.86s |  Which you'd have here new to reverse engineering may be the the tough part
+1658.90s - 1664.50s |  But if you can kind of trace through the very beginnings of execution of that binary if you can find main
+1665.70s - 1670.70s |  There's MP in it and then cue string in it and in the first four instructions in there
+1670.70s - 1674.54s |  There is a reference to the cue string frozen constant pool
+1675.06s - 1681.30s |  You can search for a string that you know as part of that module like if you've just run strings on the binary
+1681.42s - 1687.02s |  You'll have seen some of it and you can just do cross for cross references back from that if you really want to
+1687.58s - 1694.44s |  So so if we're gonna parse these pools, we got to look at the data type for it
+1694.44s - 1699.88s |  So a pool has a previous pointer to the previous pool in this linked list of pools
+1700.60s - 1704.72s |  you can move backwards in the pools, but not forwards and so
+1705.48s - 1707.48s |  That's why that first
+1707.68s - 1714.28s |  Those first instructions in that cue string and then refer to the frozen constant pool because that's going to be the last one probably
+1715.28s - 1720.68s |  There's a total previous length that you use to figure out where the indexes start in this pool
+1721.92s - 1725.32s |  There's a few other fields that don't make a whole lot of difference
+1725.32s - 1729.64s |  But at the end you have a list of hash values for the strings
+1730.20s - 1734.80s |  You have a list of lengths for the strings and then you have a list of the data, right?
+1734.80s - 1738.36s |  And so the string data is just going to be every string can take catenated together
+1739.20s - 1743.28s |  solidly with nothing in between because that lengths field in the previous
+1744.04s - 1749.04s |  The previous pointer or that that list will tell you the lengths of each of them
+1749.04s - 1753.04s |  So you have to parse both of those arrays together to figure out
+1754.24s - 1755.96s |  What each string is?
+1755.96s - 1760.26s |  so with
+1760.30s - 1767.78s |  The previous pool is the previous pool to the frozen pool is the mpq string constant pool the total previous length
+1768.06s - 1770.06s |  in our example is
+1770.10s - 1771.62s |  3c2
+1771.62s - 1776.90s |  So that's where the indexes start for the frozen modules. So any cue string index
+1777.94s - 1780.86s |  Greater than is so any cue string greater than
+1781.58s - 1786.66s |  962 is going to be in our frozen pool, which means that when we recreate our mpy
+1786.90s - 1789.42s |  We're gonna have to include that data into our mpy
+1790.30s - 1794.02s |  Anything less than that. We can just include the number and not re encode the string
+1794.02s - 1803.25s |  And so there's our list of indexes. And so there's a constant string cue string table data
+1804.09s - 1810.41s |  For hello world that you can locate through there and that's the indexes. And so that first one
+1811.81s - 1814.41s |  That first one since it's greater than 962
+1815.01s - 1822.13s |  We're gonna have to encode that string. Hello world py into our mpy file, but 7 which is just like the open tag module
+1822.77s - 1828.65s |  Closed tag is already in the micropython binary. So we just include 7 and we don't re encode it
+1829.41s - 1832.41s |  And so this is how it looks when we re encode it
+1833.25s - 1839.89s |  This is so we've already written the header, which is those first handful of bytes. The highlighted portion is the string table
+1840.89s - 1848.85s |  There's a view in where basically it defines whether or not it's a static entry or one that's defined in this mpy
+1848.85s - 1851.09s |  So are we providing it an index?
+1851.09s - 1859.40s |  Are we providing it a new string and then the string follows and that's why you see in that dump you see
+1859.96s - 1864.48s |  The string data for the new strings, but not the built-in strings
+1865.08s - 1874.79s |  So the next thing that you have to do is to build the object table
+1874.79s - 1881.71s |  Now this is a more complex data structure and as especially as you get further from hello world
+1882.31s - 1887.47s |  This is going to get more and more complicated it the more they're gonna the more they're using
+1888.47s - 1895.59s |  Python objects the the the harder this parts going to become but you can like follow through and
+1895.91s - 1897.91s |  And recreate these as well
+1898.07s - 1904.43s |  Copy really what you can do is you can copy these almost straight out of memory and put them into your binary
+1904.43s - 1907.35s |  And it'll just work without you necessarily having to understand them at first
+1907.75s - 1914.75s |  Then once you get this thing fully recreated you can load it into that Unix micro Python interpreter and
+1915.59s - 1926.82s |  and start probing those objects from the REPL, which is much easier and then finally the bytecode so
+1928.50s - 1934.86s |  There's a format that for this code that we have to generate if you look in mpytool.py's code
+1935.06s - 1937.30s |  There's a function called read raw code
+1937.66s - 1943.06s |  That sort of hints to you as to how we need to build this bytecode so that it can read it
+1945.18s - 1949.26s |  So the pointer to the code is the third field of that module and so you see
+1949.54s - 1951.82s |  the frozen module hello world there
+1951.82s - 1955.22s |  And you see the Q string table the object table
+1955.22s - 1961.70s |  And then you see the pointer to the first element of code and that's for the prototype function for this object
+1962.18s - 1963.62s |  right and
+1963.62s - 1964.82s |  so
+1964.82s - 1967.30s |  each each function each
+1968.06s - 1971.54s |  Sorry each piece of bytecode can have children so
+1972.86s - 1977.34s |  the prototype for this module is going to have a child of
+1977.90s - 1980.90s |  the go function that's inside of this module and
+1981.34s - 1987.42s |  So it's going to contiguous or continuously rather or parse these elements of code
+1987.66s - 1989.82s |  see whether they have children or not and
+1990.54s - 1995.82s |  Recursively follow down and once you've part parsed everything that doesn't have children
+1995.82s - 2000.58s |  then you can walk back up that recursion and you've parsed all the bytecode out and
+2001.50s - 2004.30s |  so on the left there you see the bytecode for
+2005.30s - 2006.46s |  for the
+2006.46s - 2012.66s |  For the constructor and on the right you see the bytecode for the go function which prints
+2012.66s - 2017.94s |  Hello world in a loop basically and so one is the child of the other essentially
+2018.38s - 2030.14s |  So reconstructing this there are V u ints for the kind the length and whether or not the code has children
+2030.14s - 2032.38s |  So when we're putting this into our mpy binary
+2032.38s - 2036.38s |  It needs to know how to reconstruct this into memory in a useful way for the interpreter
+2036.38s - 2041.54s |  And so it's using those V u ints to to do this and so there's a kind
+2041.86s - 2048.62s |  whether it's bytecode or native code again these things can be compiled down to where it's native arm code for a function and
+2049.02s - 2052.10s |  Like I said, if that's the case if you see something code like that
+2052.34s - 2059.34s |  Just just drop your cursor and Ghidra or Idapro on that hit disassemble and you're off to the races, right?
+2059.34s - 2062.58s |  You can you can read what it's doing a little bit easier
+2062.74s - 2068.42s |  But if it's not it's just if it's bytecode Ghidra doesn't have a decoder for this unless you want to write one
+2068.42s - 2070.42s |  I didn't want to
+2070.78s - 2072.78s |  Kara back there probably will oh
+2073.46s - 2075.46s |  and
+2076.18s - 2081.18s |  But uh, but if you don't want to write a module to interpret this bytecode
+2082.18s - 2087.50s |  You're good. You're gonna be left to pulling it out and dropping it in this file. So the mpy tool can do this for us
+2088.26s - 2092.98s |  The third the third bit or is there a child for this block or not?
+2092.98s - 2096.94s |  Right, and so that makes it recursively go through and read more code
+2097.58s - 2103.06s |  So the one big problem with this and I wanted to write a tool
+2103.38s - 2106.54s |  That would just sort of walk through a binary and do this
+2107.58s - 2113.06s |  but it's actually tricky to do because the length of the code is not
+2114.38s - 2116.06s |  Referenced anywhere, right?
+2116.06s - 2120.42s |  The length of the code is defined by the fact that the code never exists
+2120.50s - 2124.54s |  Never steps outside of it the the bounds of its memory locations
+2124.88s - 2125.98s |  So there's no length
+2125.98s - 2132.46s |  it just starts execution there and it'll just keep going as long as there's code and as long as it doesn't return and as long as
+2132.82s - 2138.26s |  Looping around it'll just sort of loop in that space. So there's no defined length for it, but which I don't know
+2138.26s - 2139.62s |  Maybe you can figure out a problem there
+2139.62s - 2141.70s |  Maybe you could exploit that in some way
+2141.94s - 2147.50s |  But there's no length and so it's hard in an automated fashion without parsing the bytecode to know the length
+2147.70s - 2154.06s |  Of it and so you may have to eyeball that part of it or parse the bytecode yourself kind of trial and error
+2155.14s - 2159.14s |  each block of code is followed recursively by its own children and
+2160.10s - 2163.42s |  And so here you see in the first screenshot
+2163.42s - 2169.66s |  we're encoding those integers and then plopping in the bytecode for the
+2170.18s - 2174.98s |  for the for the constructor mod for the constructor for the module and
+2175.58s - 2178.90s |  then next since it has a child of the go function and
+2179.62s - 2182.18s |  It goes and we go and parse that out
+2182.18s - 2187.30s |  We put the V u ints for it in there and then we put the bytecode in for the go function
+2188.22s - 2193.18s |  Once you think you've created and at this point like if you take these slides and you go back
+2193.42s - 2201.10s |  You'll see that this is bit for bit identical to the original mpy file for the for the hello world dot mpy
+2202.70s - 2209.06s |  We can use my Unix port to examine this we can so we can load up the Unix port of micro Python
+2209.62s - 2214.58s |  Import that mpy file start looking at the object start looking at the modules
+2214.86s - 2219.70s |  Do the dict function to see what functions are available in there. We can call them
+2221.06s - 2224.14s |  There is a there is a tracing tool in
+2224.94s - 2228.38s |  Or actually, this is not the this the tracing tools in the next slide
+2228.94s - 2232.44s |  This is another example that you can just sort of eyeball on your own
+2233.22s - 2235.10s |  of a
+2235.10s - 2241.70s |  this this code right here will make a little light show on all the GPIO pins of a
+2242.22s - 2246.02s |  of a Pico basically just starts strobing all the the
+2247.02s - 2252.02s |  GPIO in a pattern if you have a dev board that has LEDs on all the pins
+2252.22s - 2254.22s |  It'll do a little neat thing for you
+2254.86s - 2256.70s |  That's the code that
+2256.70s - 2258.30s |  this is the
+2258.30s - 2261.94s |  This is the code that does this but since it's doing GPIO
+2263.38s - 2268.74s |  It won't work on the Unix micro Python because it's doing like the pin function and stuff like that
+2268.74s - 2272.66s |  You don't have GPIO on the Unix version of micro of micro Python
+2272.86s - 2276.82s |  So what you need to do is like if if the code you pull out
+2277.58s - 2279.58s |  Uses a function that's not there
+2279.58s - 2282.42s |  You're gonna have to implement some sort of stand stand in there
+2282.42s - 2286.22s |  And so then you can run it in the Unix port as long as you have those functions available
+2286.70s - 2292.93s |  you can build micro Python with sys set trace where you get a trace of
+2294.09s - 2297.69s |  Execution. It's not quite what you'd expect. It's not a very detailed trace
+2297.69s - 2302.05s |  It basically tells you which portion of the bytecode is executing
+2302.65s - 2308.53s |  In a very in a very non-granular fashion. It just basically tells you which function is executing when
+2308.97s - 2316.01s |  But you have to build you have to define this when you're building your micro Python binary or your micro Python Unix port
+2318.74s - 2320.06s |  the
+2320.06s - 2327.66s |  The bytecode itself. This is the hello world bytecode. Basically, you're loading a global object of print the print function
+2327.82s - 2335.42s |  You're loading the hello cruel world string you're calling the function you pop the string off the top of the stack
+2335.66s - 2341.10s |  You load the global time module you load the method sleep from it you load
+2341.62s - 2347.62s |  Some constant integer of five because you want to wait for five seconds you sleep for five seconds by calling the method
+2347.94s - 2354.18s |  You pop the top off of that and then you jump back 17 bytes and then you loop around and you do it again
+2354.18s - 2358.18s |  And so that's the length. That's the very basics of the language here
+2360.54s - 2362.30s |  If you want to learn
+2362.30s - 2368.18s |  This bytecode if you really want to take the time to step through bytecode of this and not just sort of interactively do it
+2368.70s - 2372.70s |  you'll want to read through the mpy tool opcode class and
+2373.58s - 2378.70s |  Also an in class in terms of like the class definition not like a class that you sit down and learn
+2379.38s - 2386.88s |  There's a VM dot C and micro Python that has like the VM interpreter for this bytecode in there that you can read as well
+2387.14s - 2389.14s |  This is not compatible with CPython
+2389.70s - 2396.50s |  But it but familiarity with that would help if you if you read through some Python bytecode tutorials, you'll understand what this is going
+2400.31s - 2406.55s |  Conclusions on this I'd really rather be reversing compiled C than this like like using micro Python and like
+2407.31s - 2413.43s |  Like like creating bytecode out of your functions and stuff. It's probably a almost a better
+2414.39s - 2417.43s |  obfuscation of your code than like
+2418.11s - 2421.95s |  Compiling a C firmware for your for your microcontroller
+2421.95s - 2424.75s |  It's just annoying right to try to read through this
+2424.95s - 2431.19s |  Yourself if you're if you're more used to reading arm assembly if you're more used to reading decompiled C
+2432.71s - 2434.71s |  It's doable though, right
+2434.99s - 2440.59s |  And if you're if you're really wanting to mess around with with with a device that does this it's doable
+2442.51s - 2445.47s |  These frozen modules are a great way to like
+2446.07s - 2453.19s |  Include project specific stuff like like really the last stage of your development and deployment of a micro Python firmware
+2453.23s - 2457.63s |  Should be to put as many of your modules into this form as possible
+2457.83s - 2460.75s |  Because it's just going to save memory and execution time
+2461.15s - 2464.71s |  This is not a way to hide or obfuscate code or secrets though
+2465.99s - 2472.71s |  Don't use it for that. Especially now that this talk is out and in this room of people know how to do it, right? So
+2473.47s - 2479.31s |  Doing don't use this to go screw around with other people's CTFs and ways that ruin the fun for other people
+2479.51s - 2484.27s |  But if you if you're like me and you're fun, you make your own fun, right?
+2484.55s - 2489.19s |  You don't really follow the rules on the CTF you guys just play around with it not even score any points
+2489.31s - 2491.31s |  This this is fun for that
+2492.63s - 2496.35s |  It's it's only as well protected as access to your firmware
+2497.79s - 2500.99s |  And so if you can dump from flash if you can dump from the ripple
+2501.51s - 2505.87s |  If you can grab over the air updates for things you can get at this stuff
+2505.91s - 2511.47s |  So it's not a layer of protection and you could probably automate this extraction process
+2511.47s - 2516.37s |  But it's a bit tricky to figure out the lengths of some of that some of those data structures, too
+2517.47s - 2518.83s |  so
+2518.83s - 2523.59s |  one thing that that that you should do if you are
+2524.19s - 2530.95s |  interested in this sort of stuff if you like the idea of learning how to use Ghidra to step through the
+2531.51s - 2537.47s |  To step through all these data structures if you want to learn how to sort of navigate around code and Ghidra
+2538.03s - 2541.99s |  There's a great book from no starch press called the Ghidra book
+2542.95s - 2544.79s |  appropriately named
+2544.79s - 2551.83s |  By Karen ants and Chris Eagle and Karen answers in our audience here right now and I've been she's been giving me the eye
+2552.39s - 2554.23s |  to mention this
+2554.23s - 2555.91s |  the whole time
+2555.91s - 2561.55s |  She's actually gonna be at the no starch booth this afternoon doing a book signing. I want to say
+2562.07s - 2563.43s |  330
+2563.43s - 2570.19s |  330 she's gonna be at the at the booth over there. No starch doing book signing go buy that book and get her autograph and
+2571.03s - 2577.75s |  And and she knows everything about micro Python frozen modules as well as divert any questions about this talk to her
+2578.23s - 2580.23s |  So no
+2580.35s - 2585.15s |  Ask ask me the things and so with that I'm gonna close this off
+2585.59s - 2591.59s |  I appreciate y'all coming to this instead of pony awards. However poor of a choice that might have been
+2592.63s - 2595.55s |  And I look forward to interacting with y'all
+2596.27s - 2598.27s |  Thank you

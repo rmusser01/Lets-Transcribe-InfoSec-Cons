@@ -1,0 +1,125 @@
+{
+  "webpage_url": "https://www.youtube.com/watch?v=8e1vRFpP72w",
+  "title": "DEF CON 32 - Inside Dash Cam Custom Protocols and Discovered 0days  -  Hyo Jin Lee & Hanryeol Park",
+  "description": "In recent years, the use of dash cams has surged, making them an essential component of modern vehicles. To enhance user convenience, many dash cams are now equipped with network connectivity. This growth in the dash cam market has heightened the importance of vehicle and personal data security. However, network-connected dash cams pose potential security risks to their availability and key functionalities. In this presentation, we will comprehensively analyze dash cams from various countries, including South Korea, the USA, Germany, and China, as well as built-in dash cams. During our analysis, we discovered numerous zero-day vulnerabilities (such as OS Command Injection, Logical Bugs, and insufficient authentication) that pose significant security threats. Vulnerabilities were primarily found during the dash cam boot process, configuration changes, and communications via custom protocols.\n\nWe will detail the dash cam analysis process in the following sequence:\n\n[Analysis Process]\nAcquiring firmware through official websites or apps\nExtracting the file system to analyze the initial boot logic\nAnalyzing the boot logic to identify vulnerabilities or debugging ports to gain shell access\nUtilizing the obtained shell for remote debugging of the main system\nInterestingly, our analysis of 10 different dash cams revealed that 4 devices used the same OEM board from a common manufacturer. These 4 devices shared similar vulnerabilities, and exploiting a vulnerability found in one device allowed us to successfully exploit all of them. Our research uncovered common security vulnerabilities across multiple dash cams, and we will discuss measures to prevent these vulnerabilities. We will particularly focus on analyzing the custom protocols used by dash cams and the security risks associated with them. This presentation aims to raise awareness of potential security threats in dash cams and encourage manufacturers to produce more secure products. We hope to drive industry standards and best practices to ensure the safety and security of these increasingly critical devices. By sharing our findings, we aim to highlight the importance of dash cam security and provide insights that can lead to more secure designs and implementations.",
+  "channel_url": "https://www.youtube.com/channel/UC6Om9kAkl32dWlDSNlDS9Iw",
+  "duration": 1163,
+  "channel": "DEFCONConference",
+  "uploader": "DEFCONConference",
+  "upload_date": "20241016"
+}
+
+0.00s - 15.00s | This text was transcribed using whisper model: large-v2
+
+ Hello everyone. Thank you for attending this presentation. This is my first time presenting in English, so I appreciate your understanding if there are any mistakes. Today, we will discuss the topic Inside Dash Cam.
+15.00s - 30.34s |  Thank you. Before we begin, let's introduce ourselves. I am Hyojin Lee, and the other speaker is Hanyeol Park. We are researchers at Xi'an, the XIoT security convergence company.
+30.34s - 42.20s |  We have been conducting research and development on automated XIoT firmware SECA solutions and are continuously advancing our work.
+42.20s - 55.20s |  Our agenda for today is as follows. First, we will provide an overview of dash cams, including market size, reasons for choosing this topic, and general information about dash cams.
+55.20s - 71.38s |  Following that, we will explain the methods used to analyze dash cams. And then, we will describe the features of dash cams and explore potential zero-day scenarios that may arise from these features.
+71.38s - 77.38s |  Finally, we will propose future countermeasures and wrap up the presentation.
+77.38s - 83.38s |  Let's begin by providing some preliminary information about dash cams.
+83.38s - 107.10s |  Several dash cam vendors, such as Mobidian, Blackview, Nextbase, and HL Mando. The global dash cam market was valued at $4.03 billion in 2023. Experts project a compound annual growth rate of 9.6% from 2024 to 2030.
+108.10s - 125.10s |  Unlike in the past, when only SD cards were used, most modern dash cams now use networks for connectivity and are controlled via dedicated apps. This convenience has played a significant role in contributing to the dash cam market's growth.
+125.10s - 146.92s |  However, this technological advancement introduces new security threats. Despite this, only three CVEs have been reported in the past three years. To raise awareness about dash cam security and contribute to a safer market, we have chosen this topic.
+147.92s - 161.92s |  It looks delicious, right? We analyzed a total of nine dash cams. Four from Korea, one from China, and four built-in models. Here are the features we discovered by type.
+161.92s - 176.92s |  Korean dash cams generally provide firmware downloads on their official websites and some offer cloud services. Chinese dash cam also offers firmware downloads on their official websites, and we found 10 at port open.
+177.92s - 195.92s |  Built-in dash cams typically do not provide firmware downloads on their official websites and use the RTSP protocol. Many of built-in dash cams are OEM devices, which means they are manufactured by one company and sold under another company's brand.
+196.92s - 208.92s |  For OEM devices, if a vulnerability is discovered in one device, it can potentially affect devices, highlighting the critical importance of implementing robust security measures.
+211.20s - 226.20s |  Dash cam connectivity can be categorized into three types, connecting via Bluetooth and dash cam Wi-Fi, connecting through a phone's hotspot, and communicating via the cloud. We'll explore these categories in detail on the next slide.
+227.20s - 243.20s |  First, the app connects to the dash cam via Bluetooth. Then, the dash cam activates AP mode. Once the app connects to the dash cam's Wi-Fi, communication between the app and the dash cam is established.
+244.20s - 265.54s |  By configuring the phone's hotspot to align with the dash cam's Wi-Fi settings and activating the hotspot, the dash cam can establish and communicate through it. In cloud communication, the dash cam's AP mode remains activated and no need Bluetooth connection.
+266.54s - 283.54s |  Begin by connecting to the dash cam's Wi-Fi, then translate the router's SSID and password to connect the dash cam to the internet and enable cloud functionality. Communication between the app and the dash cam is managed through the cloud.
+284.54s - 306.18s |  Now, let's review the method we employed to analyze the dash cams. Before beginning the analysis, it's essential to obtain the firmware. This is crucial for tasks such as decompiling code, analyzing the file system, and understanding the boot logic.
+307.18s - 323.68s |  There are four primary methods to obtain firmware. The first method is to download it from the official website. The second method involves using debugging ports such as UART or JTAG.
+324.68s - 341.05s |  During our analysis, we found the UART port as illustrated in the picture, soldered connecting cables, and accessed the shell. Here are the statistics for UART shells found in the analyzed devices.
+341.05s - 351.05s |  Out of nine devices, five had UART shells and four of these allowed shell access without a password. One of these four had a custom shell.
+352.05s - 363.03s |  Using the debugging shell obtained earlier, you can copy the firmware to an SD card, connect the SD card to a laptop, and extract the firmware.
+364.03s - 379.38s |  All the analyzed dash cams have firmware upgrade functionality. The third method involves analyzing this functionality to either obtain the firmware download URL or capture package to get the latest firmware.
+380.38s - 398.91s |  The final method involves extracting firmware from APK files. Many recent dash cams come with dedicated apps. By installing the app and accessing the ADB shell, you can find firmware-related APK files in the app's installation directory.
+399.91s - 413.61s |  Extracting and decompressing these files can provide access to the firmware. Most of the analyzed dash cams allowed us to obtain firmware from their official websites.
+414.61s - 419.61s |  We successfully retrieved firmware for all devices and none of the firmware was encrypted.
+420.61s - 434.14s |  The next step is to extract the file system from the obtained firmware. Tools such as binoc and 7zip can be used for this purpose as illustrated in the picture.
+435.14s - 449.46s |  The second step in the analysis process is port scanning. Using the nmap tool, we can identify open ports on the dash cam, analyze services, and discover potential security vulnerabilities.
+449.46s - 461.46s |  For instance, if port 21 is open, we might attempt an FTP connection. Similarly, if port 80 is open, it suggests the presence of a web service.
+462.46s - 476.46s |  Here are the statistics for open ports on the analyzed devices. Among the well-known ports, FTP, Telnet, DNS, HTTP, RPC, and RTSP ports were frequently open.
+477.46s - 494.46s |  The third step in the analysis process is analyzing boot logic. We examine files in etc-init-daemon, etc-rc-local, and system-daemon configuration files to identify and analyze the scripts executed during boot.
+495.46s - 511.46s |  For example, the picture shows the rcs file in etc-init-daemon, which runs all files starting with s in etc-init-daemon. We analyze the code of all s files to understand the boot logic.
+512.46s - 526.46s |  Next, we access the shell obtained via UART, JTAG, or other vulnerabilities. By using the ps command, we can identify running processes and understand how service operations and main binaries.
+527.46s - 542.46s |  The nested command helps us identify open ports and the binaries using those ports. This information provides valuable insights into the current state of the system and the services that are running.
+543.46s - 548.46s |  Now, he will discuss the process of debugging the main binary.
+553.84s - 558.84s |  Hi, I'm Hanyeol Park. I'll continue the presentation by discussing the next topic.
+558.84s - 565.84s |  For convenience, tools such as gdb and bgbox can be stored in the sd card directory for easy access.
+567.84s - 576.84s |  We decompile the main binary and track the vulnerable functions such as system, beopen, string copy, get, and scanf for code analysis.
+577.84s - 584.84s |  Using our R&D solution, gIoT, we work to quickly and easily visualize and analyze the vulnerabilities.
+585.84s - 593.63s |  Using the UART shell, we proceed with debugging by utilizing the gdb binary stored on the sd card.
+594.63s - 600.63s |  The example code is a script that gets the PID of the running main binary and executes gdb.
+602.63s - 606.63s |  Running this script connects directly to gdb for debugging.
+607.63s - 613.63s |  This allows us to analyze the main binary's behavior in real time and debug any vulnerabilities.
+614.63s - 623.10s |  During debugging, the watchdog timer, which detects system unresponsiveness, often causes the device to reboot.
+625.10s - 629.10s |  We tried many things, but it was quite challenging to bypass the watchdog.
+631.10s - 637.10s |  Even though we made it, we managed to crack it in three cases, and we'd like to share those with you.
+638.10s - 645.06s |  In the first case, the initial script executed at boot contained a function to stop the watchdog.
+645.06s - 649.06s |  We used this function to execute the corresponding command.
+650.06s - 659.06s |  For instance, writing the value 1A3A to test register stops the watchdog, allowing us to dynamically debug the main binary with gdb.
+660.06s - 668.06s |  In the second case, we repeatedly pressed Ctrl-G during boot to interrupt the boot script.
+669.06s - 674.06s |  Then, we executed the code to disable the watchdog and resume the script,
+674.06s - 678.06s |  enabling dynamic debugging of the binary with gdb.
+679.06s - 685.56s |  In the third case, we entered the boot loader and modified the boot arguments.
+686.56s - 691.56s |  By repeatedly pressing Esc and F1, we accessed the boot loader.
+693.56s - 700.56s |  In the boot arguments, we modified the init value from linux.hash to bin.sh and added the value no-watchdog.
+700.56s - 707.56s |  After that, we manually executed the initial scripts line-by-line and used gdb to debug the main binary.
+708.56s - 721.88s |  Protocol analysis capturing the analyzing communication packets between the app and the dashcam, or analyzing APK code and dashcam binary code.
+722.88s - 732.88s |  Among the analyzed devices, six used custom protocols, four had web interfaces, two supported cloud services, and three used APKs.
+732.88s - 736.88s |  Two supported cloud services, and one used encrypted communication.
+738.88s - 744.88s |  For encrypted communication, we can use Frida to hook the app and inspect plain text packets.
+745.88s - 754.92s |  Among the analyzed dashcams, here are the custom protocol formats for four devices.
+756.92s - 760.92s |  Custom protocol formats are mainly divided into HEX and JSON formats.
+761.92s - 773.92s |  Bvendor's request format is in HEX, consisting of four bytes for dummy data, two bytes for the command number, two bytes for command number, and four or more bytes for the parameters.
+774.92s - 780.92s |  In this example, since there are no parameters, four bytes of data are sent to represent null values.
+781.92s - 791.92s |  Mvendor's request format consists of four bytes of command number, four bytes for packet length, four bytes for command number, and four or more bytes for the parameters.
+792.92s - 797.92s |  In this example, the parameter is sent as cmd equals set semicolon.
+798.92s - 805.94s |  Next, tvendor's request format is in JSON and consists of three keys.
+806.94s - 813.94s |  A token generated at the session start, a command number labeled message underscore ID, and a parameter labeled param.
+814.94s - 821.41s |  Hvendor's request format is similar to tvendor's, but has slight differences.
+822.41s - 832.41s |  It consists of a token incremented by one from the previous request token, a command number labeled message ID, and a parameter labeled param.
+833.41s - 842.41s |  Each vendor's custom protocol format has a unique structure, and analyzing these formats helps us understand the communication content.
+843.41s - 846.69s |  Now, we will discuss zero-day scenarios.
+847.69s - 851.93s |  Dash cams have the following features.
+852.93s - 858.93s |  They use SD cards for video storage, and employ the RTSP protocol for live view functionality.
+859.93s - 866.93s |  They offer settings for Wi-Fi, ADAS, GPS, firmware updates, and communication via custom protocols.
+867.93s - 873.93s |  Let's explore which vulnerabilities associated with these features in the next slide.
+874.93s - 881.91s |  The use of SD card is associated with the shell script execution vulnerabilities.
+882.91s - 884.91s |  Let's explore this scenario.
+884.91s - 889.91s |  The boot script includes code that executes test shell from the SD card path.
+890.91s - 899.91s |  An attacker can create a test shell file on the SD card with a script using a Telethemon binary to open a Teleth connection.
+900.91s - 911.91s |  When the SD card is inserted into the dash cam and the device is booted, the boot script runs test shell, which enables Teleth access and allows the attacker to gain a shell.
+911.91s - 921.96s |  The live view feature provided through the RTSP protocol is associated with the stack buffer overflow vulnerabilities.
+922.96s - 930.96s |  An attacker crafts an RTSP request for live view and hooks the app library to modify the RTSP header data.
+931.96s - 941.96s |  If the dash cam does not properly check the request length when receiving data, a stack buffer overflow can occur, and potentially altering the PC register.
+942.96s - 950.96s |  By gathering gadgets for the buffer overflow attack and performing gadget chaining, the attacker can exploit this vulnerability to gain a shell.
+951.96s - 961.68s |  The settings for Wi-Fi, ADAS, GPS, and other features can lead to OS command injection vulnerabilities.
+962.68s - 971.68s |  When sending device configuration package, an attacker can manipulate the data using a proxy tool with backticks and dollar parentheses.
+971.68s - 981.68s |  If the dash cam does not validate special characters and uses this data as parameters for system functions, OS command injection can occur.
+982.68s - 985.68s |  This can allow the attacker to take control of the system.
+986.68s - 995.82s |  The feature of app and dash cam communication via custom protocols can lead to improper authentication vulnerabilities.
+995.82s - 1000.82s |  Capturing a packet requesting the file list from the app shows the data in hex format.
+1001.82s - 1017.82s |  The packet consists of 4 bytes representing the command number for the file list request, followed by 4 bytes for the packet length, another 4 bytes for the command number, and finally 4 bytes for the parameter, which is null in this case.
+1018.82s - 1028.87s |  By replicating the same packet and sending it to the dash cam, the response will yield the file list.
+1033.33s - 1040.33s |  After capturing the SD card format packet, you can perform a replay attack to execute the function.
+1041.33s - 1047.33s |  Additionally, all functions can be accessed without authentication, and you can try a replay attack.
+1051.08s - 1053.08s |  Finally, let's move on to the conclusion.
+1053.08s - 1060.58s |  Across the 9 analyzed dash cams, we discovered 8 types of CWEs.
+1061.58s - 1068.75s |  Based on these findings, we have outlined our recommendations and future work.
+1069.75s - 1072.75s |  First, we need to remove script execution code.
+1073.75s - 1078.75s |  Remove script execution code from the SD card path used for developer testing.
+1079.75s - 1082.75s |  Second, enhance communication security.
+1082.75s - 1087.75s |  Add authentication and verification processes during communication.
+1088.75s - 1090.75s |  Third, input validation.
+1091.75s - 1098.75s |  Implement thorough input validation for special characters and length values to prevent security vulnerabilities.
+1099.75s - 1110.63s |  In closing, throughout this presentation, we aim to raise awareness about the potential security threats associated with dash cams.
+1110.63s - 1120.63s |  We hope to encourage dash cam manufacturers to develop more secure products, ultimately leading to safer and more reliable devices for consumers.
+1121.63s - 1130.63s |  Due to our limited ability to provide prompt answers, we are unable to open the floor for real-time Q&A during this presentation.
+1131.63s - 1139.63s |  However, please use the QR code displayed above to contact our company or send an email with your inquiries.
+1140.63s - 1144.63s |  We are committed to provide detailed responses to your questions.
+1145.63s - 1153.67s |  We extend our gratitude to the IoT Village team for giving us this opportunity to present.
+1154.67s - 1156.67s |  Thank you for listening to our presentation.

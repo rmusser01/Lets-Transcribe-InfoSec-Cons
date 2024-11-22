@@ -1,0 +1,443 @@
+{
+  "webpage_url": "https://www.youtube.com/watch?v=mFJ-NUnFBac",
+  "title": "DEF CON 32 - Abusing Windows Hello Without a Severed Hand  - Ceri Coburn, Dirk jan Mollema",
+  "description": "Windows Hello is touted by Microsoft as the modern de facto authentication scheme on Windows platforms, supporting authentication and encryption backed by biometrics. In a world that is quickly accelerating towards a passwordless existence, what new threats do we face in this complex landscape? We will take a deep dive into the inner working of Windows Hello. Via the release of a new tool, it will be demonstrated how an attacker on a fully compromised Windows host can leverage secrets backed by Windows Hello biometrics without needing the biometric data that protects them. We will also show how the hardware protections of Windows Hello and its accompanying Primary Refresh Tokens can be defeated, making it possible to use Windows Hello for identity persistency and PRT stealing, in some cases even without Administrator access on the host.",
+  "channel_url": "https://www.youtube.com/channel/UC6Om9kAkl32dWlDSNlDS9Iw",
+  "duration": 2518,
+  "channel": "DEFCONConference",
+  "uploader": "DEFCONConference",
+  "upload_date": "20241102"
+}
+
+0.11s - 12.71s | This text was transcribed using whisper model: large-v2
+
+ We're going to start by introducing Kerry and Dirk, abusing Windows Hello without a
+12.71s - 22.66s |  severed hand. Give a good hand for Kerry and Dirk.
+22.66s - 29.98s |  Good afternoon everyone. So my name's Kerry. I'm from Wales in the United Kingdom. So my
+29.98s - 36.62s |  background is in software development. I was in that world for around 18 years within
+36.62s - 45.36s |  the DRM and security solution space. And back in 2019 to this very DEF CON week, I switched
+45.36s - 51.94s |  over to cyber security and joined Pentest Partners. So I've been dedicated to red teaming
+51.94s - 56.76s |  and offensive security for the last three years and have spoken at DEF CON last year
+56.76s - 63.88s |  and various besides events as well. And I I am authored several tools on GitHub, um
+63.88s - 69.34s |  mostly on the offensive security side, uh but one or two on the uh defensive side as
+69.34s - 77.76s |  well. Hi, so I'm Dirk. I'm just gonna put this down here. Yeah. We're gonna leave that
+77.76s - 83.72s |  one there where it is. Um so I'm Dirk Jan. Um second time DEF CON. Um I've given a talk
+83.72s - 89.80s |  uh at quite a few conferences. I started at making uh Active Directory tools. Slowly
+89.80s - 95.26s |  switched to the Azure AD space which is now called Entra. Um I have a blog. I have a Twitter
+95.26s - 100.50s |  account. But mainly excited to to be here. Um and show you our latest research on uh
+100.50s - 106.84s |  Windows 11. So show you all the first parts and then I'll come in later and we'll uh uh
+106.84s - 113.40s |  basically talk you through all the nice things things that we did in the past couple months.
+113.50s - 119.28s |  So uh as Dirk Jan said, the talk is in two halves. So the first half is a focus on abusing
+119.28s - 124.02s |  Windows Hello from a privileged perspective. Uh so we'll go into sort of Windows Hello
+124.02s - 129.38s |  containers, protectors, and keys. Uh I'll do a quick tool demonstration of the tool
+129.38s - 133.96s |  that was released as part of this research. And then we switch to sort of attacks that
+133.96s - 142.16s |  you can do uh from a an unprivileged perspective which which Dirk Jan will be doing then. So
+142.16s - 148.24s |  what is Windows Hello? It's Microsoft's passwordless technology. Uh it's it's the ethos
+148.24s - 153.88s |  behind it is sort of two key pairs that are generated uh when they're enrolled either for
+153.88s - 158.88s |  the operating system when you log in. Uh it can also be used for pass keys and even third
+158.88s - 166.22s |  party applications can enroll uh Windows Hello key pairs. So in terms of the differences
+166.22s - 170.96s |  between Windows Hello and Windows Hello for Business, there aren't any in a in a technical
+170.96s - 175.94s |  sense. The only difference is that uh Windows Hello for Business is a focus on certificate
+175.94s - 181.54s |  based authentication to Active Directory whereas um Windows Hello is more sort of consumer
+181.54s - 190.77s |  market. So we'll start with key storage providers. Uh so Windows has got a common API for dealing
+190.77s - 196.29s |  with cryptographic operations and they are called key storage providers. So some examples
+196.29s - 202.25s |  of the ones that have existed for many years uh there's the software key storage provider.
+202.25s - 207.73s |  So as the name suggests, the keys for this particular provider are all generated in software.
+207.73s - 212.33s |  So if you do have system level access to an operating system, it means that you can you
+212.33s - 217.57s |  know exfiltrate these keys. Then you've got the newer uh platform key storage provider
+217.57s - 223.95s |  uh and this is for uh machines that have TPM. And the Microsoft SmartCard key storage provider
+223.95s - 230.55s |  which obviously is for storing uh private keys on SmartCard. So the KSPs they they design
+230.55s - 236.43s |  for general uh crypt cryptographic operations or encryption, sign in, key agreement, that
+236.43s - 243.07s |  sort of thing. And Windows Hello is no different. They've they've implemented a KSP called uh
+243.07s - 249.07s |  the passport key storage provider. So the passport key storage provider is split into
+249.07s - 255.27s |  sort of two privileged services. You've got the NGC service which is where the applications
+255.27s - 260.95s |  communicate with over an RPC interface. And then the NGC service will communicate with
+260.95s - 266.63s |  the NGC controller service. Now this particular service um is tasked with storing all the
+266.63s - 272.67s |  metadata associated with any enrolled Windows Hello keys. And that metadata is stored within
+272.67s - 279.47s |  local app data, Microsoft NGC for the local service account. And you do need system level
+279.51s - 289.10s |  privileges to access that particular folder. So the KSP for sorry the passport key storage
+289.10s - 294.24s |  provider is essentially a proxy actually for the exit existing key storage providers that I
+294.24s - 299.34s |  just talked about. So it doesn't actually implement any of the uh public private key
+299.34s - 304.22s |  operations itself within the passport key storage provider. It essentially proxies it and
+304.22s - 309.22s |  offloads it to the KSPs. Now each um user is enrolled within a container folder. Uh so
+312.92s - 317.70s |  it's a GUID there that you see on the right hand side image. So every user has their own unique
+317.70s - 323.10s |  container folder. And within the containers then you have a collection of protectors and the
+323.10s - 329.54s |  key metadata and various bits and pieces like that. So breaking down into containers
+329.54s - 335.98s |  themselves. So they're all all all the metadata is split across these dot files. Um generally
+335.98s - 341.08s |  most of them are are unicode strings within them. So as an example there you can see one dot
+341.08s - 346.08s |  dot contains the user security ID. Um seven dot dot contains the backing key storage
+348.48s - 353.78s |  provider for for this particular container which is either TPM backed or or software
+353.78s - 359.96s |  depending on if a TPM exists or not. And then you got nine dot dot which stores the Azure
+359.96s - 364.96s |  recovery key which we'll get into that uh a little later on. So protectors. These are your
+365.12s - 370.12s |  Windows Hello authentication methods. Um so more commonly the bio protector which would be
+373.26s - 379.36s |  your face or your fingerprint uh method of authentication. And of course you got the usual
+379.36s - 384.84s |  pin that you enroll with Windows Hello as well. And those protectors they have a file called
+384.84s - 391.42s |  fifteen dot dot. And this is where um a set of intermediate pins are encrypted. Now these
+391.98s - 396.78s |  intermediate pins are the same across all protectors. But of course they are encrypted
+396.78s - 402.16s |  differently depending on what protector was being used. And the intermediate pin is split
+402.16s - 408.16s |  across a signing pin, a decrypt pin, and what I believe to be an external pin which again we'll
+408.16s - 414.84s |  touch on that in a bit. Now there are five known protectors. Um and each of these gets a a
+414.84s - 420.50s |  folder within the uh the container folder itself. And the the folder name is actually based
+420.52s - 426.42s |  on the ID. So number one is the pin protector. Number two is the bio protector which covers
+426.42s - 433.14s |  both face and fingerprint. And then you got the number three is the Azure recovery protector.
+433.14s - 437.40s |  I'd never seen references to number four. They don't seem to be in the symbols for Microsoft.
+437.40s - 441.94s |  So not quite sure what happened there. So they skipped straight to five which was the pre-boot
+441.94s - 447.68s |  protector. And then you've got uh number six which is a companion device protector. But that
+447.70s - 452.70s |  was deprecated in Windows 10 uh version 2004. So we start off with the pin protector. So the
+455.50s - 462.14s |  pin protector can be both alphanumeric and numeric. But by default um it's it's numeric only.
+462.14s - 467.54s |  So you have to actually click a checkbox to say that you want want it to be alphanumeric. Uh but
+467.54s - 474.26s |  if it is numeric um inside seven dot dot it actually stores the pin length. And this is how
+474.30s - 478.24s |  or this is why that once you've got the the correct pin when you're logging in with Windows
+478.24s - 483.44s |  Hello it will automatically uh log you in without pressing enter. And it it knows that based on
+483.44s - 489.12s |  the pin length that is stored. Uh one dot dot again just contains the back end key storage
+489.12s - 494.92s |  provider that's used for encrypting the protector. And then in a when it's using the software
+494.92s - 501.60s |  KSP two dot dot contains the uh the software key storage provider key ID that was used for
+501.60s - 506.60s |  protecting the biometric data. So Teal from the insecurity dot B website that you've done an
+509.18s - 514.82s |  excellent blog on this and I do highly recommend you take uh a read of it. So this is the
+514.82s - 519.82s |  process of how the pin protector is decrypted uh during the a software based approach. So that
+521.96s - 526.96s |  area in red there you see is is DPAPING encrypted blob. Um there are sort of articles on the
+527.22s - 532.22s |  web already uh that cover the internals of DPAPING. Uh but what basically happens is the user
+535.60s - 540.60s |  enters in a pin that goes through a PBKDF2 key derivation function uh along with certain the
+543.38s - 548.88s |  salt and the rounds that comes from um the CNG key that gets stored as part of the software
+548.88s - 553.88s |  KSP. And that eventually will return you a a private key and a separate RSA private key that is
+554.88s - 559.88s |  actually used for decrypting the intermediate pins inside 15 dot dot. So moving on to TPM based
+563.78s - 569.46s |  decryption it as you can see it's a lot simpler. There's no key derivation function going on or
+569.46s - 574.70s |  anything like that like the software version. Uh all that happens is the the pin is entered it
+574.70s - 579.70s |  gets converted to hex and that's what's used to unseal um the 15 dot dot uh intermediate pins.
+580.70s - 585.70s |  So the two dot dot is no longer present in that scenario and that's because there is a fixed key
+588.24s - 594.99s |  ID that it uses every time so it doesn't generate anyone. So what type of abuses can we do with the
+594.99s - 599.99s |  pin protector? So when it's TPM backed it's actually fairly robust um the biggest risk I would
+601.93s - 606.93s |  say is four digit pins can probably be brute forced within around 70 days um based on the
+607.75s - 613.99s |  anti-hammering technology within the TPM it basically slows down any brute forcing. So a four
+613.99s - 619.47s |  digit pin would take about 70 days. But if we move over to a software backed pin that's when you
+619.47s - 624.47s |  start to get in trouble. So there's a hashcat hash that already exists within hashcat that you can
+626.21s - 632.41s |  generate a windows hello based um hash but because we now know the lengths of the pin as well we
+632.43s - 638.01s |  can make a targeted mask attack when you're decrypting it and with a de a decent uh or modest
+638.01s - 644.27s |  rig I should say eight digits can be cracked within seconds uh and up to 11 digits you can still
+644.27s - 651.01s |  do within uh within days. Uh and thanks to the windows hello to uh hashcat project for that
+651.01s - 657.05s |  inspiration. So moving on to the bio protector. So one thing you will notice on the bio
+657.07s - 662.83s |  protector with that red section at the top right there is no input from the user and that uh that
+662.83s - 668.05s |  includes any of the biometric readers and that's because the biometric protector is not actually
+668.05s - 673.05s |  protected by my biometrics at all. It's actually protected by the system DPAPI key um which means
+675.65s - 680.89s |  that once you've got a system level compromise uh you can basically reverse those three
+680.93s - 688.03s |  intermediate pins and bypass um the biometrics all together. So that the encryption for this is
+688.03s - 693.97s |  based on the windows vault credentials. Again I won't go into too much detail of um you know the
+693.97s - 699.05s |  vault the windows vault and how them credentials are protected. Lots of articles already out
+699.05s - 705.53s |  there um but what basically happens is you decrypt the uh the secret within the windows vault
+705.53s - 712.07s |  that gives you an AES key that is then used for decrypting the 15 dot dot which gets you the
+712.07s - 717.07s |  three intermediate pins once again. So onto the recovery protector. So you'll only see this uh
+719.21s - 724.21s |  under windows hello for business scenarios. Uh and if the tenant is enabled um the recovery
+726.75s - 732.79s |  capability it allows users to reset their pin without destroying all the enrolled windows hello
+732.79s - 738.53s |  keys. If you reset the pin without the recovery protector in place basically any enrolled uh key
+738.53s - 743.77s |  path through windows hello will then be destroyed and you'd have to start start from you know from
+743.77s - 749.73s |  the start again. So how does the recovery protector work? So the three intermediate pins are
+749.73s - 756.75s |  first protected with the system DPAPI key and then a a public key is fetched from cred dot
+756.75s - 761.75s |  microsoft dot com forward slash get encryption key and that encrypted DPAPI blob is then
+763.39s - 769.29s |  encrypted once again. Um but for some reason Microsoft decided to store the encrypted blob
+769.29s - 774.29s |  inside the top level container folders nine dot dot dot and not inside the protector folder. So
+776.03s - 783.30s |  again I don't know why they've done that. So the reverse process of getting at the intermediate
+783.32s - 788.50s |  pins with the recovery protector. There's a post call that goes to cred dot microsoft dot com
+788.50s - 793.50s |  forward slash unprotect secret and the access token for that does require both the NGCMF and the MFA
+795.74s - 802.04s |  claim. So that what that basically means is when you're going through the uh the reset process you
+802.04s - 807.48s |  have to authenticate to enter but you also have to go through the the process of doing your MFA
+807.50s - 813.68s |  otherwise you can't decrypt the blob. Um that's got it's own client ID specific for the
+813.68s - 818.68s |  Microsoft pin. Uh the again fifteen dot dot contains the uh intermediate pins. Four dot dot
+821.34s - 827.06s |  contains the AES IB that's used to decrypt it. Now there is a nine dot dot inside the
+827.06s - 832.30s |  protector folder but I don't really know what the what what's in that folder. Again they
+832.32s - 840.60s |  shifted the uh the contents of the encrypted data in nine dot dot within the container folder. So
+840.60s - 846.12s |  here's an example of the the decrypting process for this particular protector. You'll see the
+846.12s - 851.92s |  protected secret there on the left. Um and then that that's the response you get from the
+851.92s - 856.52s |  Microsoft server on the right. And those with the BDI will notice that that base sixty four
+856.52s - 863.30s |  encoded data looks like the the DPAPI common header that you get. Um and then the system
+863.32s - 868.42s |  DPAPI key is used to decrypt that secret you get back. Which gives you the three same
+868.42s - 874.96s |  intermediate pins. So the preboot protector I haven't done a lot of research in this area yet
+874.96s - 880.80s |  and I believe it's for scenarios where you're going from BitLocker straight to desktop so that
+880.80s - 886.18s |  you don't need to enter in your pin. And the most likely scenario is the fifteen dot dot is
+886.18s - 891.82s |  gonna be protected by BitLocker. Um but there's more research needed in that area. And then
+891.84s - 896.84s |  companion device protector was originally intended for IOT device scenarios. Uh an opaque blob in
+899.40s - 904.88s |  the documentation um is sent to the IOT but what I believe is that opaque blob is the
+904.88s - 910.52s |  intermediate pins and that companion device protector is designed to encrypt it. But no real
+910.52s - 915.52s |  research needed in this area because it's been deprecated and I've never seen it in real life.
+915.56s - 920.56s |  So a quick protector recap. So protectors encrypt three intermediate pins. They're all the
+922.34s - 928.70s |  same pins across all the protectors. Uh now the inputs to the protectors do differ depending on
+928.70s - 934.88s |  what the protector type is. Bio protectors don't actually need biometrics to decrypt them. And
+934.88s - 940.26s |  the pin protector is actually extremely vulnerable when there's no TPM present. So what is
+940.26s - 946.04s |  the purpose of these intermediate pins? Well they are designed to unlock the actual enrolled
+946.04s - 951.34s |  keys within Windows Hello. So once you have access to these intermediate pins, you can forget
+951.34s - 957.12s |  all the protectors. You no longer need them. The pins stay constant for the duration of that
+957.12s - 963.12s |  container. So there's four types of keys that I've come across so far. So the vault key is
+963.12s - 968.12s |  used um uh uses the decrypt pin. Um the only scenario I've seen that used is uh the consume
+970.30s - 975.64s |  a scenario where the local account password is encrypted and then it reverses that then and
+975.64s - 980.28s |  gets the decrypted password once the pin is entered. But it doesn't get used in Hello for
+980.28s - 986.08s |  Business scenarios. Now the enter pin uh the enter key is enrolled during Windows Hello for
+986.08s - 992.58s |  Business and that uses the sign pin. And if you're enrolling for passkey enabled websites or
+992.58s - 998.92s |  Fido based websites um that also uses the sign pin. And then this is what I call the external
+998.96s - 1005.26s |  pin. And the external pin only seems to be used with third party applications. So an example of
+1005.26s - 1011.70s |  this is the key that gets enrolled uh for OctaFastPass. To use that particular key uh you
+1011.70s - 1019.93s |  use the external pin. So once again the keys do leverage uh or proxy the the encryption and
+1019.93s - 1024.71s |  decryption or the signing operations to a backing key storage provider. And that will either be
+1024.71s - 1030.75s |  software or TPM. Which means if it is it is in software you can actually extract the Windows
+1030.75s - 1036.49s |  Hello key and and take them away and and use them off the device. Uh the the keys also have
+1036.49s - 1042.69s |  metadata files and there are some common metadata files across all the key types. But then
+1042.69s - 1047.69s |  some of the keys have specific dat files for that particular key. So as I mentioned the vault key
+1048.05s - 1054.89s |  is used for recovering the plain text password of a local account. But that's only under the
+1054.89s - 1060.63s |  Windows Hello scenario. Not not Hello for Business. And again Teal from InSecurity has
+1060.63s - 1066.37s |  covered that in detail. So I do recommend you take a look at that blog. So moving on to the
+1066.37s - 1071.37s |  passkey enrolled keys. So 7.dat contains CBOR encoded data. Now I've never come across this
+1071.69s - 1076.69s |  encoding format before so a good shout out to Ace Bond who managed to spot that on Twitter um or
+1080.33s - 1085.63s |  X whatever you're calling it these days. Um and then once I checked what CBOR is used for of
+1085.63s - 1090.51s |  course it was WebAuthn. So that that that's what gave me the hint um that it's used for
+1090.51s - 1095.51s |  passkeys. And then inside um right so so onto the CBOR encoded data that which is inside 7.dat
+1095.99s - 1100.99s |  that contains the relay party ID the user ID username or display name. But one other important
+1105.77s - 1111.43s |  aspect to WebAuthn is the credential ID. But they don't actually store that because it that's
+1111.43s - 1116.45s |  actually a sha256 hash of the public key itself which is you see that green area there uh in the
+1117.71s - 1122.71s |  middle picture. And then 11.dat for the ones that do know um a little about WebAuthn. During
+1122.71s - 1127.71s |  the attestation uh during the login process of WebAuthn it has a sign count that gets
+1129.55s - 1134.55s |  incremented every time. And the relay party backend generally will check that sign count to
+1135.39s - 1140.39s |  make sure it's incrementing as expected. So what sort of abuses can we do with passkey? So
+1142.57s - 1147.57s |  navigatorcredentials.get is the main function within browsers that um allow you to do an
+1148.57s - 1153.57s |  assertion with WebAuthn. So we you can actually hijack that particular function and then proxy
+1156.07s - 1161.07s |  the assertion request back to a a compromised host. So that way then you'll be able to use those
+1161.35s - 1166.35s |  WebAuthn enrolled certificates and log in to um WebAuthn bit websites. And because we can use
+1169.45s - 1174.63s |  the key directly without the need of Windows hello we can fake the user presence and return
+1174.65s - 1179.65s |  that assertion back to the relaying party and log in. So on to the enter key. So this is enrolled
+1181.73s - 1186.83s |  during Windows hello for business enrollment. Um lots of research already in this area
+1186.83s - 1191.83s |  including including Dirk Jan's great work. Uh but basically um you allow site you use this key
+1193.87s - 1198.87s |  to sign the uh the PRTs that are used for requesting a credential to uh enter. Um there are
+1199.59s - 1204.59s |  uh features where you can then get the TGT or the cloud TGT and authenticate to active directory
+1207.57s - 1212.57s |  locally. And again this particular um key pair uses the sign in pin from the the intermediate
+1213.91s - 1218.91s |  pins. And the key name which is inside one dot dot is made up of the uh tenant ID on the on the
+1220.45s - 1225.45s |  user ID. So on to enter key abuse. Um so we can now with this research you can directly use
+1229.13s - 1234.13s |  the uh Windows hello enrolled keys along with the um the transport key to request a new PRT on a
+1236.03s - 1241.03s |  compromised device. So you no longer need to try and extract the PRT from Mimikatz. Uh and one
+1242.37s - 1247.37s |  other aspect that's come from this research um is the return of of Dirk Jan's CV that um he
+1249.25s - 1254.25s |  reported to Microsoft for the um key derivation function version one where you can take the
+1255.23s - 1260.23s |  random context and the derived key and then use it away from uh the device uh to sign uh new new
+1262.81s - 1267.81s |  PRTs. So we we did report this to Microsoft which obviously they did say they have fixed it with
+1269.49s - 1274.49s |  the release of um key derivation version two. Um but as as they did come back and said they've
+1277.49s - 1282.49s |  also uh deprecated it as well and they said it will be deprecated uh during um August of this
+1283.07s - 1288.07s |  year. And we that we mean that we tested this half an hour ago and it still worked so.
+1292.65s - 1296.71s |  Okay so a quick introduction to the tool itself that came out of this. The tool is called
+1296.71s - 1301.69s |  Shamai and the reason it's called Shamai is that's Welsh for hello which is where I come from.
+1301.69s - 1307.69s |  Um so the features of the software allow you to enumerate all the Windows hello keys that are
+1307.69s - 1312.93s |  enrolled on the device and that's across all the users. Any keys that are used in the software
+1312.93s - 1318.01s |  back key storage provider you can dump and extract and then use them away from the device. It
+1318.01s - 1323.01s |  also dumps the um you know the hashcat hash that you can then try to crack offline. It has the
+1325.31s - 1330.31s |  PRT authentication module so that you can you can do the enter based abuse. A web authen
+1332.15s - 1337.15s |  proxy module which is the the browser functionality. Um and I will get to uh introduce
+1337.69s - 1342.69s |  you to the integrating Octa Fastpass eventually. Just haven't quite got there yet. So uh a
+1343.97s - 1348.97s |  quick demonstration. Let's see if it's gonna work. So what you see here is uh on the machine on
+1351.43s - 1355.05s |  your right. So there's two virtual machines here. So the machine on your right is your
+1355.05s - 1360.15s |  compromise machine running the Shamai tool. And the machine on the left is the attacker
+1360.15s - 1365.15s |  machine um that is looking to sort of abuse that Windows hello base key. So we set up
+1369.74s - 1374.74s |  the key to be listening. Just get the IP address for the compromise machine. So we go back to
+1379.09s - 1384.03s |  um the attack machine. It's just gonna create a new incognito window to show new no cache
+1384.03s - 1389.03s |  credentials. Stick in the um the compromised host address. And then once you hit save that
+1391.47s - 1396.61s |  will enumerate all the enrolled web authent keys. So you can see Amazon, GitHub, web
+1396.61s - 1402.61s |  authent.io. So you click on GitHub. That will take us to GitHub. We go to the sign in option.
+1402.61s - 1418.30s |  We use the sign in with the pass key support. Proxies it across and you're logged in.
+1418.30s - 1422.90s |  Alright thank you. Um so this tooling is something you can do when you have like full level
+1422.90s - 1427.28s |  access to uh to a computer. Uh so if you're a system on a device and you can steal these kind
+1427.28s - 1431.98s |  of things. We use it remotely at Citra. Um and at this point we're also gonna take a step
+1431.98s - 1436.72s |  back. Uh because Kerry was mostly talking about system level access. Um there's also a lot
+1436.74s - 1441.08s |  of things that we can do if we have regular user access. So all of these scenarios that we're
+1441.08s - 1446.96s |  gonna cover uh are basically relevant uh if you have like a uh uh some mower beacon running
+1446.96s - 1451.56s |  on the device in the user session if they left their device unlocked at Citra. Um and we're
+1451.56s - 1456.56s |  mostly gonna cover uh like how this works with uh Entra or the former uh Azure AD. Um and
+1458.20s - 1461.80s |  I'm gonna assume a few things here. So I'm gonna assume that you're all familiar with
+1461.80s - 1465.70s |  primary refresh tokens because if I have to explain all of this then uh we're definitely
+1465.70s - 1469.80s |  gonna run out of time. Uh so we are gonna talk about primary refresh tokens and especially
+1469.80s - 1474.60s |  how these are used with Windows Hello for Business. Um so primary refresh tokens they are
+1474.60s - 1478.74s |  just single sign on tokens. So you can sign into anything that's cloud connected with them.
+1478.74s - 1483.64s |  Um now Windows requests these basically by sending a specific request to the token
+1483.64s - 1488.38s |  endpoint in Entra. Um and then it's sending a JSON web token and the reason that it's sending
+1488.38s - 1493.58s |  such a JSON web token is that these JSON web tokens are essentially signed with the uh
+1493.60s - 1498.94s |  certificate of the device. So Entra uh can see that this request comes from a legit device
+1498.94s - 1504.04s |  that is already known to Entra um and that we uh that we know that's a trusted device in
+1504.04s - 1509.92s |  our tenants. Um and this will also result in the primary refresh token keys being tied back
+1509.92s - 1514.76s |  to our device, being tied to the TPM if we have one so it's all basically end to end uh
+1514.76s - 1521.66s |  secured. Um if we are using um Windows Hello keys then uh we will see a specific payload.
+1521.68s - 1525.72s |  So if you use like regular username password authentication it's gonna send username
+1525.72s - 1529.98s |  password to request a PRT. Uh but if we were to use Windows Hello it's actually signing some
+1529.98s - 1535.06s |  data with these Windows Hello private keys. Um so if we look at this payload we see a
+1535.06s - 1540.76s |  couple of interesting fields and the most uh interesting here uh for our attack is this
+1540.76s - 1545.24s |  nonce value. So this is something that you'll see with a lot of Entra operations that there's
+1545.24s - 1549.70s |  always a nonce involved. Uh and the whole reason for this is that these nonces are
+1549.72s - 1554.52s |  essentially time bounds. So the presence of this nonce which will expire after five
+1554.52s - 1559.92s |  minutes means that um after five minutes I cannot just replay this request and get a token
+1559.92s - 1563.70s |  again because then I would need to get a new nonce. And especially if it's tied to
+1563.70s - 1567.70s |  hardware that means that we actually need to have hardware uh access to the hardware of
+1567.70s - 1572.40s |  that device to create the signature and that we cannot just like copy it offline and send
+1572.40s - 1578.14s |  it from elsewhere. Um we also see the username that we're authenticating to and uh we
+1578.18s - 1582.26s |  also see the assertion field. And this is actually another JSON web token. So we have a
+1582.26s - 1588.02s |  JSON web token inside a JSON web token. And this is the assertion. And this assertion is
+1588.02s - 1592.30s |  actually signed with the private key from Windows Hello for Business uh that we also saw
+1592.30s - 1596.24s |  earlier on the operating system. Uh so this is a JSON web token that is signed with a
+1596.24s - 1601.44s |  specific uh with this this private RSA key. There's a specific key uh derivation algorithm
+1601.44s - 1606.54s |  going on here. Um and in the payload we see a couple of fields. So we see the uh the
+1606.54s - 1611.42s |  issuer which is the the username. Uh we see the audience. It's our tenant ID. Uh and we
+1611.42s - 1617.26s |  also see some uh time stamps where it was issued again against replay attacks. Um so there
+1617.26s - 1621.10s |  were a few things wrong with this which is also why I said that this is the old version
+1621.10s - 1627.50s |  essentially. Um but the problem is that uh this assertion is generated with our Windows
+1627.50s - 1632.50s |  Hello for Business key. And it turns out that if we want to use this Windows Hello key
+1632.50s - 1639.18s |  from the user session then we can just politely ask the operating system to sign it for us.
+1639.18s - 1644.92s |  Um because it turns out that uh basically if we call the uh passwords key storage provider
+1644.92s - 1650.42s |  then we don't need to enter any pins. We don't need to enter uh or prompt the user to approve
+1650.42s - 1654.92s |  anything because the keys are essentially cached in your session after you already signed
+1654.92s - 1660.10s |  in with Windows Hello for Business. So if you sign in on a website and you use Windows
+1660.10s - 1663.64s |  Hello for Business to sign in, you'll see a pin pop up. Um I'm not sure why that's there
+1663.64s - 1667.78s |  because the key is already in your session. Uh the intermediate pins already cached in your
+1667.78s - 1672.94s |  session. So if we just ask the operating system nicely to sign this assertion, it will do so
+1672.94s - 1678.08s |  for us uh without requiring any admin rights whatsoever. Um we do have to use the native
+1678.08s - 1683.32s |  encrypt methods because uh C-Sharp doesn't expose these um or doesn't expose these methods
+1683.32s - 1688.80s |  by itself. Uh the software RSA provider only accepts software keys, not TPM based keys. Um
+1688.80s - 1694.80s |  but we can basically generate this assertion ourselves. So I wrote a very um well slightly
+1694.80s - 1699.78s |  straightforward PowerShell script um and basically if you just run this it will grab the key
+1699.78s - 1703.68s |  from the key store, it will open the backing private key and the password uh key storage
+1703.68s - 1708.68s |  provider and simply generate the uh signature. Um and this signature we can then use for
+1711.18s - 1717.36s |  authentication purposes. Now if you look at this assertion uh there is essentially a small
+1717.36s - 1723.50s |  issue. And we saw that in the uh the basically the overlaying uh JSON web token there was a
+1723.50s - 1729.04s |  nonce. But here there's no nonce. There's just a timestamp. And the timestamp is a input that
+1729.04s - 1734.98s |  we control as an attacker. So if I can ask Windows to just sign anything, I can also change
+1734.98s - 1739.38s |  this timestamp to be anything. So normally of course this timestamp will prevent me from
+1739.38s - 1744.18s |  using this after it has expired. But if I can change it, I can just put it in a timestamp like
+1744.18s - 1750.02s |  in the future. Um or whatever. I can put it like 5 minutes from now, 10 minutes from now. Um
+1750.02s - 1754.72s |  but since it's simply also a time range, so it starts with like when it was issued and when it
+1754.72s - 1760.40s |  expired. Um and it turned out that there's actually no limits on how big this range can be.
+1760.40s - 1766.26s |  Um so this I'm essentially calling the golden assertion. Uh so if you would have access to a
+1766.26s - 1770.88s |  user session, then you could just generate this assertion with some simple PowerShell codes.
+1770.88s - 1774.48s |  Um and the timestamp you could just make it as wide as you want it. So I could just say this was
+1774.48s - 1779.42s |  issued like a few years ago. It's valid for the next 15 years. Um and then that assertion could
+1779.42s - 1784.06s |  be used at any point in time. Cause there was no nonce in there that uh expired. So we could
+1784.06s - 1789.20s |  use this assertion to also authenticate in the in the future. Um however there's one little
+1789.20s - 1794.20s |  problem. That is that the uh PRT that we get after this, it is basically tied to the uh private
+1794.70s - 1800.60s |  key of the device. It will link be linked with the transport key and it will also be only
+1800.60s - 1806.14s |  accessible by the TPM. So even if we can use this assertion, if we there would be a requirement
+1806.14s - 1810.62s |  to use it with the same device, it would still be linked to that device uh on which we maybe no
+1810.62s - 1816.02s |  longer have a session. So sounds like an issue. Um but it turns out that it's actually not an
+1816.02s - 1821.56s |  issue because you can also use this assertion on a different device. Um and I was really
+1821.58s - 1826.36s |  surprised with this. I didn't know exactly why that was necessary. Um but it turns out that
+1826.36s - 1831.36s |  this is needed because you can also use basically Windows Hello keys remotely over RDP. So if
+1833.90s - 1838.84s |  you have a device with Windows Hello uh you can use remote desktop to authenticate to some
+1838.84s - 1844.28s |  other device. Um and it's basically gonna use the user certificates uh plus the Windows Hello
+1844.28s - 1850.38s |  for Business private key to also get you a primary refresh token on that other device. So
+1850.38s - 1853.70s |  then you don't have to enter any other credentials anymore and you can just use your
+1853.70s - 1858.28s |  passwordless Windows Hello for Business keys uh to also authenticate on that uh on that
+1858.28s - 1863.28s |  other device. Um but it's interesting because our device probably has a TPM. But the other
+1864.86s - 1870.02s |  device doesn't necessarily need to have a TPM. So if we RDP to a device that doesn't have a
+1870.02s - 1875.36s |  TPM, then it will still use our Windows Hello for Business key which is protected by the TPM
+1875.38s - 1881.76s |  on our laptop. Um but it's the resulting PRT is actually not gonna be hardware protected. So
+1881.76s - 1887.32s |  that means that if I have this machine on the left hand side where um we see that they're the
+1887.32s - 1892.60s |  key is protected by the platform uh crypto provider so it's TPM backed. Uh we cannot just
+1892.60s - 1898.20s |  extract that uh unless we have like some weird downgrades. Um but if you RDP them to the
+1898.20s - 1902.58s |  system on the right, then you see that there I can just simply run Mimikatz. I can extract
+1902.60s - 1907.24s |  the PRT and this PRT is backed by the Windows Hello for Business key on our very much
+1907.24s - 1913.44s |  lockdown device. So even if your device is very well protected, if you RDP to a device
+1913.44s - 1918.38s |  that's not, so if you like uh RDP to a virtual machine running somewhere in Azure, uh without
+1918.38s - 1922.92s |  a TPM uh that is Android joined or hybrid joined or some other device that doesn't have a
+1922.92s - 1928.52s |  TPM for some reason, uh you are essentially exposing your uh credentials because this
+1928.54s - 1932.74s |  primary first token is a single sign on token for your account and it's also Windows Hello
+1932.74s - 1938.34s |  for Business based so it meets like MFA policies, uh strong MFA policies even um so it's
+1938.34s - 1944.78s |  quite a risk basically. And there's no way to limit uh you from RDPing to um non-TPM
+1944.78s - 1951.12s |  devices. Um so this is an issue by itself as well but we can also use this knowledge to
+1951.12s - 1956.56s |  basically work around the limitations. So if we take our golden assertion um we just
+1956.60s - 1961.04s |  generate a uh assertion that's going to be valid for the next 10 years and we can use it
+1961.04s - 1965.58s |  with any other device in the tenant at any point in time. So you can just register like a
+1965.58s - 1970.72s |  rogue device, maybe you compromise a different device, you can just use those keys to sign
+1970.72s - 1976.32s |  the outer JSON web token and this inner JSON web token is already signed based on the uh
+1976.32s - 1980.66s |  Windows Hello for Business keys. Um and as you can see here in the expiry, uh it is going
+1980.66s - 1985.66s |  to be valid till somewhere 2026 um but I could have put anything there basically. Um so
+1987.16s - 1993.10s |  this was reported to Microsoft because this sounded like a uh vulnerability. So after this
+1993.10s - 1997.90s |  they uh changed it a little bit. So if you look at the new uh assertion then you'll see that
+1997.90s - 2002.94s |  there is actually a nonce in there which means that this inner assertion is now also tied to
+2002.94s - 2009.08s |  the validity of this nonce uh which is gonna be uh 5 minutes. So basically it's now also
+2009.08s - 2013.48s |  restricted to 5 minutes and after that we cannot use this assertion anymore because the
+2013.48s - 2017.38s |  nonce will have expired. We would have to get a new nonce which means that we need to
+2017.38s - 2022.72s |  calculate a new signature which means we once again need to have access to the private key.
+2022.72s - 2028.46s |  So this was fixed um well actually fixed in July last year. Uh so Windows at that point
+2028.46s - 2034.20s |  included the nonce. Um however the problem with this is that even if Windows is doing this
+2034.20s - 2038.80s |  new behavior um as long as you don't enforce this then the whole control is basically
+2038.80s - 2045.80s |  useless. So it was actually quite um interesting as well I would say. Um because in July
+2045.80s - 2051.38s |  Microsoft put out these CVEs uh one for Entra, one for ADFS because ADFS has many of the
+2051.38s - 2057.58s |  same mechanisms. Um and they made a very descriptive this uh very extensive description of
+2057.58s - 2062.42s |  this attack. Basically calling like the golden assertion, you can make an assertion, use it
+2062.42s - 2067.06s |  on a different device. So they're kind of spoiling my talk a little bit. Um but the
+2067.06s - 2072.60s |  interesting part was that they only enforced this server side in like May this year. Because
+2072.60s - 2076.46s |  if you enforce this before everyone patched then the old protocol's not going to work and
+2076.46s - 2081.74s |  all the devices are going to break. So they put the description online um like in July and
+2081.74s - 2086.40s |  they only enforced it uh in May so in all the time in between anyone could have done this
+2086.40s - 2091.48s |  based on the description uh maybe based on reversing the protocol. Um but since May is now
+2091.48s - 2095.92s |  fixed and because it's the cloud it's basically fixed everywhere. So you can no longer make
+2095.92s - 2102.18s |  this golden assertion so as much as I like the name um it's not really relevant anymore. Um
+2102.18s - 2107.12s |  however there is some remaining things that we can do with this. Because effectively this
+2107.12s - 2111.42s |  limits our attack to this five minute window because our knowledge is valid for five
+2111.42s - 2117.44s |  minutes um so we can do it for the next five minutes but not anymore after that. Um but it
+2117.44s - 2123.44s |  doesn't always really matter because uh we can still request a new PRT on a different
+2123.44s - 2129.80s |  device within those five minutes. So then as if that device is not a does not have a TPM
+2129.80s - 2136.18s |  then uh we can use it get a PRT that's also not tied to a TPM. Um so you can still do this
+2136.18s - 2141.84s |  you can just not do it until infinity um but you can still do it within the five minutes.
+2141.84s - 2146.92s |  And as soon as we request this primary first token it's going to be valid for the next 90
+2146.92s - 2153.02s |  days. We can use it for single sign on to anything that we want. Um and we can even use this
+2153.04s - 2157.08s |  to provision new Windows Hello for business keys because it's counts as doing
+2157.08s - 2161.74s |  multi-factor authentication. We can use this to provision new FIDO keys basically making
+2161.74s - 2167.42s |  our uh takeover of this account complete. Um and this is not mitigated by any of the uh
+2167.42s - 2172.36s |  current measures out there. So even if you have like the all the new uh features like
+2172.36s - 2177.82s |  virtualization based security, LSA, PPL, uh Windows Hello extended session security,
+2177.86s - 2182.86s |  TPMs, um secure core PCs, secure AI, whatever. Um this is basically still possible. So just to
+2186.60s - 2191.48s |  see this in action um here I'm again running my PowerShell script. It's generating the
+2191.48s - 2196.84s |  assertion. Um it is now including a non so it's not going to be valid forever. Um and we
+2196.84s - 2202.42s |  can keep be basically copy that assertion to my different hosts. Um here I have RoadTX
+2202.42s - 2207.76s |  as part of RoadTools that I'm running and I'm requesting a new uh primary first token
+2207.76s - 2213.10s |  based on the hello assertion um with a rogue device that I registered. Um which in this
+2213.10s - 2217.38s |  case is a fake device. Could also be like a virtual machine or something. Um and you see
+2217.38s - 2222.14s |  that I get a primary first token. I also get a plain text session key so there's no TPM
+2222.14s - 2227.38s |  here. There's no um additional hardware protection and I can also use this to uh sign
+2227.38s - 2232.18s |  into anything um and it's going to be valid for ninety days or until somebody notices this
+2232.18s - 2238.22s |  and uh revokes it. And if we look at the tokens that we uh receive then we see that these
+2238.22s - 2243.82s |  tokens have the RSA plus MFA claim which means that uh this is actually a token that was
+2243.82s - 2248.16s |  backed by a Windows Hello for Business passwordless authentication. Um which means it
+2248.16s - 2253.36s |  will also comply with uh policies that require like phishing resistant multi-factor
+2253.36s - 2258.48s |  authentication. Um this also complies with token protection policies. Basically all the um
+2258.48s - 2265.02s |  advanced stuff that is uh that's currently out there. Um so basically this all hinges on
+2265.02s - 2270.72s |  that fake device. There are some things that you can do to mitigate this. Um basically your
+2270.72s - 2275.46s |  strongest control would be device compliance because if we provision a fake device it's not
+2275.46s - 2280.64s |  going to be an Intune, it's not going to end up being compliant. Um of course there's also
+2280.64s - 2284.74s |  things around that so if we do have a device that we can get compliant we can do the same
+2284.76s - 2290.64s |  thing it's just more hurdles that you can throw up um to prevent people from doing this. Um
+2290.64s - 2295.48s |  you can also monitor for this so uh you can see like if somebody registers a new device and
+2295.48s - 2299.38s |  then uses that to authenticate with the existing Windows Hello for Business key from a
+2299.38s - 2305.12s |  different device. Might be a little bit suspicious. Um you can also restrict who can join or
+2305.12s - 2309.80s |  register new devices so then you can limit the attacker to using existing devices. Doesn't
+2309.80s - 2315.50s |  fully mitigate it but it does restrict it a little bit. Um and ideally also uh you
+2315.50s - 2320.60s |  wouldn't have any uh host in your network that you uh allow people to RDP to that don't
+2320.60s - 2325.84s |  have a TPM because if you do RDP to a system without a TPM uh you are essentially exposing
+2325.84s - 2333.62s |  these uh credentials. And there's also some endpoints protections. Yes going back to sort
+2333.62s - 2338.40s |  of the the container scenario uh the endpoint mitigation is that you can use for the abuse
+2338.40s - 2343.40s |  that we've demonstrated use Windows Hello ESS which is uh Windows Hello's newer
+2343.40s - 2348.94s |  technology. Um failing that physical keys are always better than sort of the embedded
+2348.94s - 2354.14s |  enrollment Windows Hello enrollment methods. If you don't have a TPM don't use Windows
+2354.14s - 2360.58s |  Hello. Um but you can also create um detections based on access to the metadata files
+2360.58s - 2366.88s |  within the containers. Uh realistically NGC controller services is the only process that
+2366.90s - 2372.88s |  should be reading or or writing to those files. So if you find that any other process might be
+2372.88s - 2377.88s |  reading or writing those files you can create alerts around that um access. So what the
+2380.52s - 2387.42s |  hell is Windows ESS to start with? Um so it was launched in circa 2020 and it's a feature
+2387.42s - 2392.40s |  that's needed in the hardware itself. And it's part of Microsoft's secure core capable
+2392.42s - 2398.92s |  machines. Now I've tested a lot of endpoint devices and I'm still not seeing a great deal of
+2398.92s - 2405.26s |  these in the wild. Uh and the main thing that you need is that the SDEV and SDCP tables
+2405.26s - 2411.84s |  within ACPI. And that's to do with secure devices that can be accessed via um either the
+2411.84s - 2418.28s |  face camera or the or the fingerprint. So I don't know why there's not a huge deal of uh of
+2418.30s - 2423.84s |  these devices um out there. Uh I do know a lot of the newer surface devices have this
+2423.84s - 2428.84s |  capability. Um and what and what actually happens when you have ESS enabled is the first 20
+2432.28s - 2437.38s |  minutes of this talk you can completely throw out the window because they've rewritten all the
+2437.38s - 2442.38s |  container um structure. So it's all in in in JSON. Um all the containers are in one single
+2442.60s - 2447.60s |  JSON file. Same with the protectors as well. And you'll notice new processes that are running.
+2451.04s - 2456.04s |  So you'll have a bio ISO dot EXE and an NGC ISO dot EXE. They are running inside um trustlets
+2459.74s - 2466.02s |  within VTL1 which is the same place where LSAS uh the isolated LSAS runs as well. Now I
+2466.02s - 2471.02s |  haven't gone beyond that so maybe I'll be back next year to DEF CON or don't know. So uh
+2473.06s - 2479.60s |  so it's uh the next thing on my list is to look at uh Windows Hello ESS. So I just want to
+2479.60s - 2483.90s |  give a shout out to all these awesome people that was um you know all these blogs that were
+2483.90s - 2489.60s |  also referenced uh during this research. I know Dirk Yarn uh is not going to appreciate this
+2489.60s - 2494.68s |  but uh realistically he should be on it uh uh there as well but he didn't want to be on there
+2494.68s - 2502.21s |  so there you go. So there's the two tools. You've got the Shimaian road tools and the
+2502.61s - 2509.45s |  Shimaian will be live soon enough and I'll I'll I'll tweet once it's all live. It's still
+2509.45s - 2514.45s |  private at the moment but Dirk Yarn's road tools is is already available. Thanks for listening.

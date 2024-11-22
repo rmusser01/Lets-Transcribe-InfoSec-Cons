@@ -1,0 +1,289 @@
+{
+  "webpage_url": "https://www.youtube.com/watch?v=0FfTWEP79k4",
+  "title": "DEF CON 32 - Hacking Corporate Banking for Fun and Profit - niks, Charles Waterhouse",
+  "description": "I conducted thorough research on a corporate banking software widely utilized by numerous banks globally. This research was conducted during a bug bounty program for a leading bank in middle east, which employs this software. By examining their marketing brochures, we identified the third party company responsible for its development and after looking at their client we found out, their software is utilized by 60-70% of banks worldwide.\n\nIn this talk i will explain how did i recon corporate banking application from extracting interesting endpoints and methods. Further used them to find attack surface. Furthermore, I will delve into the methods used to uncover critical vulnerabilities within their application, including SQL injections, bypassing access control mechanisms etc.",
+  "channel_url": "https://www.youtube.com/channel/UC6Om9kAkl32dWlDSNlDS9Iw",
+  "duration": 1272,
+  "channel": "DEFCONConference",
+  "uploader": "DEFCONConference",
+  "upload_date": "20241016"
+}
+
+0.00s - 6.24s | This text was transcribed using whisper model: large-v2
+
+ Alright, I would like you all to give me a put your hands together and welcome to the stage our next presenters
+7.00s - 9.00s |  Nick's and
+9.96s - 11.96s |  Charlie I am so sorry
+17.34s - 24.10s |  Hey, yeah, so today we are talking about hacking corporate banking for fun and profit so
+26.34s - 30.46s |  Introducing myself, I'm a full-time bug bounty hunter for for SNAK
+31.18s - 37.38s |  I also recognized in 2021 as and as one of their liaison hacker and
+38.50s - 40.50s |  I will sorry
+40.58s - 42.02s |  Okay
+42.02s - 46.02s |  I'm also I'm also founder of besides and about and
+47.18s - 50.14s |  I am advisor at risk profiler dot IO
+51.66s - 53.58s |  Hey guys, my name is Charlie waterhouse
+53.58s - 59.62s |  I am a security analyst and was on the back side of this helping triage these phones as they came in and we kind of
+59.62s - 66.06s |  Work together to go a little further and figure out some stuff on this. I have spent non-traditional and pin testing background
+66.06s - 73.22s |  I spent 22 years as an airline flight attendant international manager and speaker and translator in the meantime, though
+73.22s - 77.94s |  I've also done over 2,400 engagements based on a wasp and reviewed about
+78.50s - 83.34s |  25 30,000 reports from a lot some of you guys out here that have seen me on the back end of that
+83.78s - 87.78s |  I work with a lot of our large corporate clients to help them understand the flaws
+88.30s - 94.34s |  And as I like to say translate the geek side to non-geek so that the guys who would not technical understand what we're looking at
+96.30s - 99.54s |  So to start we're gonna give you guys a little bit about this
+100.66s - 106.22s |  During the bounty hunt on this we were kind of looking at this was a private program for a large large bank
+107.14s - 112.78s |  And the scope was our corporate banking application. This is the back end where they're doing transfers and setting up stuff
+113.90s - 115.74s |  after exploring a bit
+115.74s - 121.02s |  We found that there was a third-party application that was running and claim to be used by 60% of the bank
+121.02s - 123.46s |  So this was like, okay now we can start digging a little more
+123.90s - 130.45s |  The program has three roles. We have a maker verifier and checker the maker initiates a transaction
+130.73s - 133.29s |  The checker ensures everything's in place and ready to go
+133.65s - 137.77s |  Verifier is the final checkbox and so the app has corporate groups
+137.77s - 143.17s |  Each was managed by different branches and they're all separate not linked to each other recognized by GCIF now
+143.53s - 146.25s |  One of the things we found out from my end when we started looking
+146.85s - 154.01s |  Louder louder always. Okay. So when we started looking we found that the GCIF is actually kind of a unique thing
+154.01s - 159.65s |  I we started poking around. This is a Google patent for linking your bank accounts together
+159.93s - 162.37s |  So let's say that you have a large corporate bank
+162.37s - 166.45s |  You have a loan that's for your house for your car for your bank for your credit cards
+166.53s - 172.61s |  They're all linked you through your GCIF. So it's your universal identifier across different divisions within the same bank
+173.29s - 176.25s |  so let's keep that in mind when we're going through this and
+177.17s - 180.49s |  Next slide so we can see what each role looks like with the maker
+180.93s - 185.53s |  The verifier and the authorizer these are pretty standard and look pretty similar
+186.13s - 187.77s |  So at this point
+187.77s - 189.77s |  Nix you want to take it over where you were at on this?
+191.29s - 192.81s |  Yeah, so
+192.81s - 194.81s |  So client has given some
+195.25s - 200.65s |  SLA's when they are going to fix all these vulnerabilities. So starting from critical
+201.25s - 205.45s |  Which which is which has been given that they will fix in like 15 days
+206.89s - 209.77s |  High up to 30 days medium up to 90 days
+209.77s - 218.48s |  But they they never followed it and they fix all the vulnerabilities after one year. So
+221.24s - 227.52s |  So getting to know the application it's using servlets kind of a single-page app which we tend to kind of go in how much there
+228.56s - 230.76s |  The maker role has administration
+231.32s - 237.16s |  Application module on it and so we're kind of noted that and that each role has custom permissions
+237.64s - 239.64s |  But the maker role does have that admin
+240.16s - 242.64s |  But it doesn't have all the admin purposes permissions
+243.64s - 245.64s |  There's a servlet path for the front office
+246.04s - 248.04s |  That we see here and the admin path
+248.32s - 254.00s |  what we kind of want to focus on though is these widget IDs and the event IDs because these are going to come critical as
+254.00s - 256.36s |  We go through and we're going to use them through those
+256.64s - 263.28s |  Modifiers several pages with keywords that we saw with that event ID and then we had the modifiers to go in with it
+263.28s - 268.36s |  And then the front office was in the web portal spot and input validation was required to get in
+271.80s - 277.80s |  So there was there was two sides of it this application one is a front-end and the other is the back-end
+278.16s - 282.24s |  Back-end is not really a back-end, but they have given custom permissions on it
+283.24s - 290.08s |  It is kind of very large application, so they haven't provided much much of like
+290.80s - 292.80s |  permissions on it
+292.80s - 294.48s |  so
+294.48s - 300.08s |  So when there was a demo, sorry, so so I started recon on the application
+300.08s - 306.50s |  I found that they are running a third-party application and this third-party application was a
+307.20s - 310.56s |  demo only so I couldn't find much information available on the
+310.80s - 313.00s |  And I don't want to call them and
+313.84s - 316.24s |  Have a demo setup for myself
+316.96s - 321.76s |  So I go ahead and decided to review their JavaScript files
+323.00s - 325.00s |  JavaScript so basically
+325.00s - 332.12s |  This application has two event IDs as to two parameters event IDs and widget widget IDs
+332.52s - 339.00s |  So what I did I and and there was there was one more parameter GC GC
+339.00s - 345.68s |  If which Charlie just explains that is used to I need I identify the bank customer all across the world
+345.88s - 347.88s |  so what I did I
+348.04s - 350.04s |  used a graphic script to
+350.56s - 357.00s |  Figure out all the event IDs because what happened is if you want to serve any functionality in this application
+357.00s - 359.00s |  You have to change the event IDs
+359.64s - 362.12s |  in the in the parameter and you will get
+363.00s - 366.34s |  If you if you have access to that particular functionality you will
+367.34s - 370.18s |  Able to load it. So what I did I just
+371.18s - 373.38s |  grab all the event IDs
+373.94s - 375.94s |  through through a graphic script and
+377.62s - 383.58s |  And and each there was like common.js file, but
+384.10s - 389.46s |  In each page you load the event IDs you will get a new
+390.86s - 394.70s |  JavaScript file and it has a it will contain a new
+395.38s - 400.98s |  Event IDs for next for maybe for the next functionalities. So
+401.82s - 403.66s |  so this is like
+403.66s - 409.58s |  this is like a few event IDs that I found from just just to start from and
+410.02s - 417.22s |  After I after I go load these event IDs in the application. I found like more than
+417.90s - 419.26s |  500
+419.26s - 421.26s |  modules running on this application
+422.10s - 424.65s |  so
+425.09s - 427.33s |  Starting from the our first findings
+428.01s - 429.17s |  so
+429.17s - 431.17s |  It's an acceleration from
+431.29s - 436.69s |  Authorizer to admin role. So what they are doing that the maker role has admin button
+436.69s - 442.17s |  So when when I click the admin button, it will redirect me to the admin admin panel of it
+442.21s - 446.45s |  But the admin panel also do not have much permissions available
+446.81s - 450.37s |  Just a couple of couple of modules are loading
+450.57s - 455.09s |  So what so when I click click the click that
+455.73s - 463.33s |  admin role what I found that they are generating they are basically checking that if this role has
+463.77s - 466.85s |  dual dual code dual role available on their
+467.41s - 469.25s |  on their
+469.25s - 471.09s |  on their
+471.09s - 475.77s |  Privilege, I mean on their like like if I go through authorizer
+475.77s - 481.93s |  It will check that if if this role has dual permissions available or not
+482.25s - 487.69s |  if dual permissions are available, it will assign that admin panel to me, so
+488.85s - 493.05s |  what I did I just load this URL from from the
+494.09s - 496.25s |  from the authorizer role and
+497.05s - 502.93s |  It will allow me access to the admin panel, but there was no module was loading
+502.93s - 507.65s |  There was just they were just maybe just hiding the modules
+509.05s - 513.05s |  From the admin application. So what I did I just use the event IDs
+513.61s - 520.25s |  Put the event IDs in in the parameter and try to load try to load different modules
+521.21s - 523.21s |  from this generated
+524.25s - 530.17s |  Administration from the authorizer role, so I did it one by one from the
+531.17s - 533.37s |  Starting from the user list report, so
+534.93s - 536.93s |  When I when I load the event IDs
+537.21s - 540.37s |  I found that the page is
+541.77s - 547.57s |  Template page is loading and while clicking on submit. I was able to access all their
+548.25s - 550.89s |  user from the from an authorizer role
+552.37s - 553.73s |  So
+553.73s - 559.49s |  Using those event IDs and there are some frames URLs as well. So the frame see wires are connecting
+560.33s - 562.77s |  connecting to the event IDs only so
+565.65s - 572.01s |  Whatever you load even the even the frames or event IDs you will get the same information and
+573.21s - 577.33s |  Just by loading one by one event IDs. You will actually able to
+577.93s - 587.47s |  Access all of their admin panel from an authorizer or verifier role. So it was just hiding hiding the hiding the
+588.47s - 594.79s |  Modules not actually authorizing the user for that particular role
+595.79s - 596.99s |  so
+596.99s - 599.91s |  This is the this is the second finding. I found like
+600.79s - 603.87s |  This is again. I'm I was using
+606.11s - 608.11s |  Event IDs to load up
+608.55s - 610.47s |  to load a particular
+610.47s - 613.51s |  particular function, so what I did I
+614.39s - 618.79s |  Using this GS link finder I caught up with a particular page
+619.51s - 625.83s |  limit setup main page dot GSP and when I load this page, I was actually able to
+626.71s - 628.19s |  get a
+628.19s - 629.95s |  get a
+629.95s - 633.67s |  Get a page where I was able to set up their
+634.83s - 636.47s |  customers
+636.47s - 642.83s |  Whatever whatever withdrawal or whatever daily limit they want to set for each customer. So
+643.51s - 645.15s |  I can set it for
+645.15s - 649.75s |  They are all customers as well. So once I click and
+650.59s - 652.59s |  approve this
+653.23s - 655.23s |  They just simply
+655.31s - 658.45s |  Set up their limit to all the all the customers they have
+666.36s - 670.92s |  Yeah last minute prep, sorry guys, it's to mean it's supposed to be a very surprised cat there
+672.48s - 676.30s |  So, yeah, so
+676.66s - 680.62s |  So when when I so there was another under part of this
+681.30s - 688.14s |  This functionality that I didn't didn't tell you that when you once you submit the submit the
+689.66s - 692.18s |  Submit any request it will actually go to the
+692.78s - 698.78s |  Go to as authorizer. So you have to authorize that request in order to get it approved. So
+699.54s - 703.10s |  So these IDs are these event IDs are quite simple
+703.10s - 708.38s |  so as you say as you can see if you want to leave any page or modify any page or
+709.10s - 714.46s |  Authorize any page you just have to modify a simple value like view modify or
+714.98s - 721.46s |  and just just have to just have to alter those values to set set this up and
+722.86s - 724.86s |  once once you load this
+725.46s - 727.46s |  let's say you modify something and
+727.98s - 733.42s |  You end up in authorization page and you just have to modify the auth ID and
+733.70s - 739.18s |  Once you are once you go to the auth ID you will you will have to do I mean they display
+739.78s - 746.70s |  The value you just modified you just have to authorize that value to have it set up for all the users
+747.26s - 749.26s |  so
+749.74s - 751.62s |  So
+751.62s - 754.78s |  Since I since I modified a value from here
+755.06s - 761.18s |  I just modify I just go to the authorization page and there was a request pending that
+762.06s - 763.22s |  that
+763.22s - 768.78s |  This this particular thing is modified. You just have to authorize it or unauthorized unauthorized
+768.78s - 773.46s |  so just for since since it it was client application, and I don't want to
+774.46s - 775.94s |  impact it much
+775.94s - 781.74s |  so I just use the unauthorized button to simply reject the request which I just
+782.10s - 789.78s |  Sent for modification since it was for all the customers. So just just for a safer side. Maybe they are using a
+790.42s - 791.78s |  broad
+791.78s - 793.02s |  behind
+793.02s - 796.62s |  And showing us this is a staging environment only
+798.54s - 805.22s |  So so from from from authorized page, I just click on the authorizer ID which was
+805.78s - 808.26s |  which was which I just modified and
+809.10s - 810.70s |  On this page
+810.70s - 812.70s |  There was two two things
+812.70s - 819.10s |  Authorize reject you if you if you authorize it will set up for all the cost all the all their customers if you reject
+819.10s - 823.94s |  It will instantly reject and do not modify the those limits to all the customers
+824.44s - 828.02s |  So I just rejected it and and simply got rejected
+829.06s - 830.22s |  so
+830.22s - 832.22s |  in the finding three the
+832.34s - 835.14s |  It was a customer onboarding ID or
+835.90s - 839.06s |  Again it was it was through the event IDs only and
+839.94s - 843.74s |  I found an interesting event IDs from the from the JS that
+844.74s - 848.62s |  customer set of view page, so I thought I thought I
+849.26s - 853.58s |  Might I might be able to I might be able to set up the customer
+854.34s - 859.50s |  customers information from this page, so what I did I just go to the
+859.54s - 861.94s |  So what I did I just go to the
+862.98s - 869.06s |  servlet and I modified the event IDs to customer set it set up view main page and
+869.70s - 871.54s |  what I and
+871.54s - 873.54s |  there was and
+873.54s - 877.38s |  When when I loaded it was actually loading that customers
+878.82s - 880.82s |  customers in information and
+882.42s - 884.82s |  There was there was one more button that is
+885.18s - 892.26s |  Action if you if you want to modify modify or thrice or something you can use action or either you can just mode
+892.26s - 894.46s |  do you just put the value in the
+895.18s - 900.90s |  Event IDs itself so once you once you get once you got the event
+901.22s - 906.02s |  once you got the that customer did you you just have to click on it and
+907.86s - 909.58s |  And
+909.62s - 914.66s |  You can you can modify whatever the group name or you can even
+915.98s - 917.98s |  remove the remove the
+918.58s - 922.74s |  corporate ID from from that particular customer so once you remove the
+923.42s - 928.66s |  corporate ID that from that customer actually all their accounts could get unlinked and
+929.94s - 936.78s |  They they're even their customers do not have do not able to access their account informations
+937.34s - 943.20s |  so
+943.20s - 949.88s |  Well, well, so again once I once I submit this request I have to authorize this
+950.20s - 952.20s |  so I just modified the
+953.00s - 956.40s |  Event ID to auth page and once I go there
+956.40s - 963.00s |  I just have to authorize or reject this in order to approve it for that dot that particular customer
+963.36s - 966.83s |  so while while while
+967.51s - 971.79s |  While doing this all of all of this. I also found found that
+972.79s - 977.55s |  The customer setup page was also vulnerable to accesses
+977.67s - 982.47s |  so what I did I just put the put the access payload in their
+983.51s - 985.51s |  their
+985.79s - 987.43s |  Relationship manager
+987.43s - 989.07s |  name and
+989.07s - 993.87s |  Whenever they see the relationship manager name on their bank
+994.87s - 996.19s |  bank
+996.19s - 1000.59s |  Account the the accesses payload will pop up and I can
+1001.11s - 1004.75s |  able to grab their cookies just from just straight from their
+1005.43s - 1006.59s |  their
+1006.59s - 1008.59s |  bank bank account
+1008.75s - 1013.53s |  so
+1014.53s - 1016.53s |  So the as I said
+1016.53s - 1023.37s |  There was a there was two side of this application one is for the front front office and one is the back office
+1023.77s - 1025.77s |  the front office
+1025.81s - 1032.13s |  Contains the widget widget servlet and the back of back office contains
+1033.37s - 1035.37s |  contains the
+1035.81s - 1038.33s |  Another another servlet, so
+1039.73s - 1045.05s |  So what I did I just I just sort all the widget controller and
+1045.57s - 1047.81s |  try I start fudging for
+1048.81s - 1051.97s |  SQL SQL injection vulnerabilities, but I found that
+1052.97s - 1056.61s |  There was one parameter that is called the DIR
+1056.81s - 1061.45s |  It was giving me 500 internal server error while supplying a single single code
+1061.57s - 1063.45s |  so I
+1063.45s - 1067.45s |  So I thought I mean there was a change in response
+1067.45s - 1071.05s |  So I thought let's try some Boolean and blind conditions
+1071.21s - 1077.17s |  so when I try when I started fuzzing for Boolean and blind based I found that
+1078.01s - 1084.77s |  There was a Boolean based blind is working and the database is Oracle and I
+1085.37s - 1091.89s |  I just I just use a SQL map to dump all their all their databases and I
+1092.09s - 1095.81s |  Was able to fuzz I was able to get all of their
+1096.85s - 1099.09s |  all of their database systems
+1101.52s - 1103.16s |  so
+1103.16s - 1110.40s |  Since since I was able to since I was able to escalate the escalate the authorizer or very very fire rolled in the
+1110.80s - 1114.56s |  admin panel, so I just used an authorizer role and
+1115.52s - 1121.20s |  I tried to weave the customer customer we've set a customer set of view page and
+1121.68s - 1127.80s |  I found that the customer name and content customer and customer underscore name was vulnerable to
+1128.40s - 1130.40s |  again Boolean based blind and
+1131.08s - 1133.52s |  What I do I just went ahead and
+1134.88s - 1141.32s |  Started started the SQL map on it and I was able to dump all their DB again
+1142.96s - 1148.40s |  So I got like I said like this was fun and profit
+1148.40s - 1153.04s |  So I got all the fun and I got all of profits as well
+1155.16s - 1156.44s |  So
+1156.44s - 1160.64s |  So later after an year they come and they said that
+1162.28s - 1164.40s |  We have fixed all the issues
+1164.52s - 1171.04s |  so what they did they just removed the corporate admin power module from the application and they think that it's
+1171.48s - 1173.48s |  fixed from their side and
+1173.76s - 1180.76s |  on the on the on the front end they they come after another one year and they put the
+1181.24s - 1182.76s |  cloud fear
+1182.76s - 1189.75s |  Across their application and they think that it's fixed again. So that's
+1190.95s - 1196.55s |  Yeah, so looking at it from my end from the triage in you have to ask what the clients always ask us
+1196.55s - 1202.43s |  What what it's matter if you come in you do a cross-site scripting you pop a alert that just says one
+1203.07s - 1208.27s |  The CEO is gonna go. Okay, what we had to kind of go in and explain to him is not only do we
+1208.99s - 1213.99s |  Manage to have almost full admin access from any role across your system
+1214.23s - 1218.91s |  we managed to also dump your entire SQL database and showed them a row in a column that we pulled and
+1219.31s - 1225.15s |  So we can also take care of that and then in addition anybody who has a relationship manager listed
+1225.15s - 1228.79s |  I can now get their creds. That's all his high-value clients
+1229.51s - 1233.75s |  When we see these relationship managers in our banking app, imagine that just stole your ID
+1234.35s - 1236.83s |  That's where they start coming in and they go. Oh
+1237.83s - 1242.63s |  And yeah, that's when you want to be that guy going this is what I found you
+1243.15s - 1245.95s |  And so getting their attention with this when they see it
+1245.95s - 1250.83s |  They were paying a lot of attention once they saw clearly what the impact was that basically
+1251.39s - 1253.39s |  Nix ran roughshod over him
+1253.95s - 1258.39s |  So yeah, that's kind of what we're looking at with bad session management
+1258.87s - 1260.07s |  so
+1260.07s - 1262.07s |  Anything else add next?
+1262.07s - 1267.91s |  That's all for a month. All right. Thank you guys. Hopefully this was kind of informative and you guys learned something

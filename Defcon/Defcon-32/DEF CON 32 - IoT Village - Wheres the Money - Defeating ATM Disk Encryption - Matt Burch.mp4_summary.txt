@@ -1,0 +1,97 @@
+**Introduction**
+- **Matt Burch**: an independent security researcher with a passion for IoT and hardware devices.
+- **Talk Topic**: "Where's the Money? Defeating ATM Disk Encryption"
+
+**The ATM Industry**
+- Consists of **consumer** and **financial class systems**:
+  - **Consumer devices**: standard ATMs found at grocers and gas stations, often lacking enterprise security controls.
+  - **Financial class systems**: enterprise ATMs found at banks, with enhanced security features.
+
+**ATM Construction**
+- **Two hemispheres**: the "top hat" containing PC peripherals and the "vault" holding cash cassettes.
+- **Physical security controls vary**: the vault has stronger protections, including multi-factor authentication and heavy steel construction.
+- **Top hat vulnerabilities**: thin steel, vent holes, default tubular locks, and plastic components that facilitate malicious entry.
+
+**Common ATM Attacks**
+- **Black box devices**: intercept communications to manipulate fund dispensing.
+- **Card skimmers**: steal card information.
+- **Destructive attacks**: RAM raiding, where ATMs are ripped out or stolen using heavy equipment.
+- **Less common attacks**: explosive-derived attacks, more prevalent internationally due to plastic-based currency.
+
+**The ATM Landscape**
+- **Thousands of ATMs** hold large sums of cash, attracting organized crime despite the need for physical access.
+- **Logical infrastructure deficiencies**: unauthenticated APIs, local admin execution, and default accounts contribute to security risks.
+- **ATM network**: a private connection required for saving money from the bank, with access controlled by a gatekeeper.
+
+**Diebold Nixdorf's Dynamic Security Suite**
+- **Proprietary software** with multi-vendor certification, granting access to the ATM network.
+- **Represented a significant market share** in 2015 and partnered with major financial institutions in the US gaming industry.
+
+**Dynamic Security Protections**
+- **Default protections**: USB filtering, firewall policy, delegated access, and **partial** disk encryption.
+- **Linux partition**: identified as Super's Chaff, linked to a game called Worm's Armageddon and a cryptographic spinoff, CryptoPro.
+
+**Pre-Boot Authentication Process**
+- **Dual boot cycle**: UEFI boots a Linux partition, performs disk manipulation, then boots Windows with auto logon.
+- **Integrity checks**: modifications to certain files or directories result in errors, with one error providing more detailed information.
+- **Validation process**: about 253 elements are validated on the disk, but there are over 11,000 files, leaving room for exploitation.
+
+**Phase One and Two of Authentication**
+- **Phase one**: UEFI validates 253 elements, then Linux is bootstrapped, scanning an additional 2,500 files to unlock the TPM.
+- **Phase two**: initiated from Root's profile, after SysV architecture and RC initialization scripts are executed.
+
+**Linux Architecture and Mount Points**
+- **Temporary file system mount points**: give a pseudo read-only perspective of the disk by populating from tar archives.
+- **Limited attack surface**: most files are validated, but etsy init tab is overlooked, providing an initial foothold for code execution.
+
+**Jackpot an ATM**
+- **Clone the RC initialization process** to a safe directory, patch global variables, inject proof of concept, and execute a new run level.
+- **Demo**: a virtualized file system receives a pre-boot authentication error, but code execution and a callback are achieved after modifications.
+- **Windows partition remains encrypted**, but SuperSheep's Mount Winpart can decrypt it using the TPM recovered disk encryption key.
+
+**Timeline and Vulnerability Remediation**
+- **Vulnerabilities observed in version 18.X** and confirmed/remediated quickly.
+- **Diebold Mixdorf moved to a new versioning system** for minor updates, but the attack surface remained in version 3.0.
+- **Phase one now validates Etsy and NetApp**, preventing redirection of code execution.
+- **PBA integrity process reduced to 56 elements**, but Diebold did not consider this a vulnerability due to IMO protections.
+
+**Integrity Process and IMO Protections**
+- **IMO** (Integrity Measurement Architecture): validates signatures of binaries and appends them as extended attributes.
+- **IMO does not validate script interpretation**: allowing authorized binaries to execute interpreted scripts, like Root's profile script.
+
+**Service Release 9 and Mountfs Initialization Script**
+- **Delete call in mountfs initialization script**: removes etsy mtab, preventing the use of etsy as a staging directory.
+- **Workaround**: move fstab to mtab, then fstab is deleted before the mount command, restoring persistence to Root's home directory.
+- **Demo**: shows how to move fstab, patch the offline disk, and gain code execution after Root logs in.
+
+**Service Release 10 and Mount Logic**
+- **Mount is a critical command**: used to build temporary file systems, but fails if executed against a previously used mount point.
+- **Workaround**: flatten the file system and redirect root, var, and temp to root, making the mount points invalid and regaining persistence.
+- **Demo**: shows how to redirect file locations, move mountfs to proc, and gain code execution after Linux kernel powers on.
+
+**Service Release 12 and Mountfs Initialization Script Updates**
+- **Additional delete calls in mountfs initialization script**: remove opportunities for symlinks or redirection of execution.
+- **Workaround**: use mount to stop the architecture from mounting by flattening the file system and redirecting root, var, and temp to root.
+- **Demo**: shows how to redirect file locations, flatten the file system, and gain code execution after Root logs in.
+
+**Service Release 15 and Phase One Integrity Check**
+- **Null sum values added to phase one integrity check**: validating critical mount points to be empty before booting Linux.
+- **Limited opportunities for disk modification**: need to find a new staging directory by identifying directory structures created after Linux kernel initialization.
+- **Solution**: move critical mount points to a new staging location and link through a transversal point like dev block.
+- **Demo**: shows how to create new staging directories, move mountfs to proc, and gain code execution and a callback shell.
+
+**Service Release 16 and Symlink Validation**
+- **Symlink validation added to phase one integrity check**: broken symlinks produce a pre-boot authentication failure.
+- **Mitigation strategies from previous releases are removed**: creating an opportunity to regain persistence to Root's home directory.
+- **Solution**: establish a tree of empty directories or broken symlinks, which don't produce hash sum values, then redirect to a new staging directory.
+- **Demo**: shows how to create a new staging directory, redirect to a transversal point, and gain code execution and a callback shell.
+
+**Service Release 17 and File Attributes**
+- **File attributes don't change a file's hash sum**: removing execute permission from a file keeps the same hash sum.
+- **Solution**: remove execute permission from IMA to disable signature verification and execute any desired code.
+- **Demo**: shows how to disable execute permission from IMA, gain code execution, and receive a callback shell.
+
+**Conclusion and Mitigation Strategies**
+- **Patch ATM software** to the latest version for each major version.
+- **Dynamic Security Suite updates**: full encryption of the Linux partition and a security check to prevent TPM disk encryption key handover.
+- **Secondary actions**: monitor for malicious top hat entry, disable USB ports, and ensure the hard drive can't be easily removed.

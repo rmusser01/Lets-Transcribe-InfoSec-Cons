@@ -1,0 +1,496 @@
+{
+  "webpage_url": "https://www.youtube.com/watch?v=4cx0RUV7i0s",
+  "title": "DEF CON 32 - Unsaflok: Hacking millions of hotel locks - Lennert Wouters, Ian Carroll",
+  "description": "Electronic hotel locks have been in use for over three decades, and have become an integral part of the hospitality sector. Las Vegas has over 150.000 hotel rooms, many of which use an RFID based electronic lock for access control. Most hotel guests rely on these locks to safeguard personal belongings and to protect their personal safety. However, some of these long-deployed locks have never been publicly scrutinized by the research community.\n\nThis presentation covers the discovery of vulnerabilities affecting three million dormakaba Saflok locks. The Saflok system relied on a proprietary key derivation function for its MIFARE Classic cards and a proprietary encryption algorithm for the card contents. Reverse engineering the Saflok system allowed us to forge valid keycards. After reading a single, low privilege, guest card we are able to create a pair of forged key cards that allow us to deactivate the deadbolt and open any room at the property.\n\nWe reported these vulnerabilities to dormakaba in September of 2022, as part of this presentation we will discuss the responsible disclosure and mitigation processes. Additionally, we will demonstrate how you can determine if your own hotel room has been patched to help ensure your personal safety.\n\nMy Arduino can beat up your hotel room lock - Onity locks - Cody Brocious - Blackhat 2012\nGhost In The Locks: Owning Electronic Locks Without Leaving A Trace - Vingcard locks - Tomi Tuominen and Timo Hirvonen - HITBGSEC 2018",
+  "channel_url": "https://www.youtube.com/channel/UC6Om9kAkl32dWlDSNlDS9Iw",
+  "duration": 2492,
+  "channel": "DEFCONConference",
+  "uploader": "DEFCONConference",
+  "upload_date": "20241016"
+}
+
+2.35s - 7.43s | This text was transcribed using whisper model: large-v2
+
+ Thanks everyone. Welcome to our talk titled Unsaflock, Unlocking Millions of
+7.43s - 12.71s |  Hotel Locks. I'm Lennart, I'm a hardware security researcher at the KU Leuven
+12.71s - 17.11s |  University in Belgium. I typically do research related to voltage glitching
+17.11s - 23.03s |  and other hardware attacks. I'm Ian, I'm an application security researcher. I was
+23.03s - 26.45s |  formerly at the red team at Robin Hood and now I run a point search engine
+26.45s - 34.09s |  called C-SERA. We got sued by Air Canada. So as you can probably tell from the
+34.09s - 39.25s |  first slide, neither of us is really working on locks or RFID stuff all of the
+39.25s - 43.81s |  time. So when we started working on this it was all relatively new to us. And the
+43.81s - 49.57s |  reason we started looking at these locks is that a group of us got invited to
+49.57s - 53.61s |  hack some Las Vegas hotels back in 2022 and they were running a bug bounty
+53.61s - 57.77s |  program. And one of the elements of the hotel room that was in scope were the
+57.77s - 62.05s |  hotel locks. And that's how we got nerd sniped and started looking at these
+62.05s - 66.53s |  hotel locks. Now it wasn't just Ian and me, there were more people involved and
+66.53s - 75.44s |  some of them are sitting here on the on the first row. So thanks everyone. So
+75.44s - 82.12s |  here's some related research of other researchers. So back in 2012,
+82.12s - 87.76s |  C-SERA looked at the Onity locks and she found that there is a programming part
+87.76s - 91.28s |  on the outside of the door. And if you plug into this you can actually start
+91.28s - 97.28s |  reading memory of the lock itself. And if you analyze this memory you can extract
+97.28s - 101.24s |  the side code. And this side code is enough to send an unlock command to the
+101.24s - 106.36s |  door and then open it up. Back then C-SERA immediately published all of the
+106.36s - 110.00s |  details of the attack. And this resulted in some people making their own devices,
+110.00s - 115.52s |  going to hotels, opening all of the doors, stealing TVs and so on. There's a very
+115.52s - 120.28s |  nice Wired article about this sort of hacking spree that some people went on.
+120.28s - 127.48s |  It's well worth the read I would say. Then six years later in 2018 there was
+127.48s - 131.64s |  an attack on the VIN card system by Essa Abloy. This was an attack by
+131.64s - 135.36s |  researchers from F-Secure and they figured out that if you can read one
+135.36s - 140.56s |  card from the hotel that they can make a master key and then open every door in
+140.56s - 145.48s |  the hotel essentially. In this case F-Secure worked with Essa Abloy on a fix.
+145.48s - 149.76s |  And this also meant that the talk didn't include a lot of technical details. And
+149.76s - 153.96s |  this is something where we want to strike a balance. So instead of
+153.96s - 158.00s |  publishing all of the details immediately we went to a long responsible
+158.00s - 162.08s |  disclosure process. And now we are sharing some of the details of what we
+162.08s - 169.68s |  found. So this talk is about Dormakabos Saflock. It was introduced in 1988 by
+169.72s - 173.52s |  Computerized Security Systems. Back then it was a mag stripe lock and then they
+173.52s - 178.04s |  became RFID locks. It has kind of a weird corporate history. Computerized
+178.04s - 182.80s |  Security Systems was acquired by Kava in 2006. And then in 2015 two companies
+182.80s - 189.24s |  called Dorma and Kava merged and now it's called Dormakaba. Saflock is used
+189.24s - 194.36s |  on three million doors in 13,000 hotels in 131 countries. So this is one of the
+194.36s - 198.92s |  biggest brands of hotel locks. It's important to talk about the architecture
+198.92s - 203.20s |  before we start. So these locks are usually entirely offline. So there's the
+203.20s - 206.88s |  front desk server and the front desk computers have a connection. But they're
+206.88s - 210.44s |  not connected to the actual hotel locks. And so the front desk will write the key
+210.44s - 214.76s |  card that contains the information of what doors it should open. And then the
+214.76s - 218.40s |  locks make the decisions entirely themselves. They don't contact any server
+218.40s - 222.68s |  or anything. But in the case of when the lock needs to be upgraded or if you need
+222.68s - 226.72s |  to see the access history there's this unit called the HH6. And you can plug
+226.72s - 230.56s |  into a USB port on the bottom of the lock to use this. So generally that's the
+230.56s - 236.20s |  only connection these locks have. In some places especially in large Vegas hotels
+236.20s - 239.98s |  they use a kind of a semi-online architecture. So in this case the
+239.98s - 243.20s |  hallways have Zigbee coordinators in them. And this allows the front desk to
+243.20s - 247.52s |  kind of see the audit log. It still doesn't make it an online system. The key
+247.52s - 251.44s |  cards are still read by the lock and the lock determines if it opens or not. But
+251.44s - 256.32s |  afterwards it tells the front desk, hey this key opened this lock. This might be
+256.32s - 259.84s |  beneficial for hotels because you can kind of detect what keys are being used.
+259.84s - 268.92s |  So when we were starting out we needed a hotel to do our research on. We don't own
+268.92s - 273.08s |  a hotel so we had to build one ourselves. And that first meant acquiring the
+273.08s - 277.64s |  system 6000 software. As with any software this is software you can find
+277.64s - 283.24s |  on some places on the internet. The other thing you need is an RFID encoder. So
+283.24s - 288.48s |  this is the device that the front desk will use to encode a new key card. Back
+288.48s - 294.64s |  in 2022 these were very expensive on eBay. $600 to just get one. Now thanks to
+294.64s - 298.20s |  our research these have really come down in price. So now you can find them for
+298.20s - 308.14s |  $45 online. So the reason they are much cheaper these days is they all have to
+308.14s - 311.22s |  be replaced. So all of the hotels are essentially selling their old encoders
+311.22s - 316.30s |  online. So another thing you need are my fair classic 1k cards. These are very
+316.30s - 321.78s |  common, very cheap. You can find them everywhere. And optionally if you want to
+321.78s - 327.02s |  actually open some doors you can also buy on eBay some door locks or a HH6
+327.02s - 331.38s |  programmer if you want to play with one of those. So now that we have all of the
+331.38s - 335.22s |  elements for our hotel we have to set it up. So we start by installing the
+335.22s - 340.10s |  software. If you open the manual, the installation manual, the first step it
+340.10s - 344.06s |  tells you is to disable all of the Windows security features and then you're
+344.06s - 348.94s |  good to start running the installer. Once you've installed the software you copy
+349.06s - 352.98s |  over a GDB database file to the installation directory and then you can
+352.98s - 358.94s |  start the software. This database file is very useful to us. It's a Firebird
+358.94s - 363.58s |  database file. It has a default username and password on there. And so you can
+363.58s - 367.34s |  start reading all of the elements in the database. So this contains
+367.34s - 371.66s |  configuration data for your specific hotel but also all of the cards that
+371.66s - 375.94s |  were created by the hotel software. So this means that if you create a card you
+375.94s - 379.50s |  can go look in the database and look at all the different fields that are
+379.50s - 385.58s |  encoded on the card. Now as I said back in 2022 real encoders were very
+385.58s - 391.58s |  expensive but we figured out that this system used to support just commercial
+391.58s - 396.38s |  RFID reader writers at some point. So that means that you can go into the
+396.38s - 400.70s |  Firebird database and you can set the hide legacy encoders flag to zero and
+401.18s - 405.98s |  now you can use a cheap off-the-shelf encoder essentially. So that this is
+405.98s - 414.22s |  what we used back in 2012. So about the handheld programmer. So as I
+414.22s - 417.98s |  mentioned before all of these blocks have a mini USB port on the bottom of it
+417.98s - 421.02s |  and obviously that struck our interest pretty quickly because it's you know
+421.02s - 428.02s |  behind and it's in the hallway. So we bought the HH6 off of eBay and we tried
+428.02s - 431.66s |  to use it in a lock at first and we hit an issue where it detected it was being
+431.66s - 434.94s |  used at the wrong property. And so we were like okay there's some kind of
+434.94s - 438.86s |  authentication here. But then we quickly realized that if we just change the
+438.86s - 441.90s |  property ID in our database to the property we were staying at it would
+441.90s - 446.70s |  start working. And so there's a lot of interesting features in here and we
+446.70s - 450.06s |  didn't use it too much in our attack but the main interesting thing is you can
+450.06s - 454.10s |  actually interrogate these locks and you can view every entry and every exit to
+454.10s - 457.90s |  the room. So for example you can even see you know when housekeeping entered
+457.90s - 461.82s |  your room. You can see when they left. You can see the previous guests. You can
+461.82s - 465.14s |  see when they were coming and going. And if you know the property ID you can
+465.14s - 469.34s |  actually do this to any door on any hotel. It was also useful for our
+469.34s - 473.14s |  purposes. It will tell you why I refused to open the door. So for a long time we
+473.14s - 475.58s |  were making fake key cards and we couldn't figure out why it wasn't
+475.58s - 478.90s |  opening. But the HH6 will actually tell you hey this is why your key card
+478.90s - 486.08s |  didn't work. So it was very useful for our purposes. So the next step was to
+486.08s - 490.68s |  reverse engineer the system 6000 software. The software consists out of
+490.68s - 494.80s |  some Delphi executables which are very annoying to reverse engineer. But
+494.80s - 499.20s |  luckily there are also some .NET binaries in there and those are very
+499.20s - 502.76s |  easy to reverse engineer. We can simply decompile them and look at the code in
+502.76s - 507.32s |  .wik. Now we had a few goals for reverse engineering the system. We wanted to
+507.32s - 512.52s |  understand how the my fair sector keys are derived. How the data stored on the
+512.52s - 517.28s |  card is encrypted. And then once the data is decrypted what is actually the
+517.28s - 522.64s |  meaning of the different fields of this data. So first a quick introduction to
+522.64s - 527.00s |  MyFairClassic. Most of the Cephalog deployments use MyFairClassic 1k cards.
+527.00s - 532.92s |  These 1k cards have 16 sectors each containing four 16 byte blocks. So they
+532.92s - 538.40s |  are essentially just storing data. Block 0 is special. It's the manufacturer block.
+538.44s - 544.16s |  It contains the UID and the manufacturer data. And then the last block of every
+544.16s - 548.68s |  sector contains the keys. So the keys that you need to authenticate and to
+548.68s - 554.20s |  read the data on the cards. Every sector has two keys associated to it. Key A and
+554.20s - 559.96s |  key B. And then essentially the access conditions indicate what actions you
+559.96s - 565.08s |  are allowed to perform with either of these keys. Now if you look specifically
+565.48s - 570.00s |  at the Cephalog cards. And in the case of the Cephalog system all of the
+570.00s - 575.08s |  interesting data is stored in sector 0. And the key to read that sector is
+575.08s - 580.36s |  derived from the UID. So all of the keys marked in orange on the slide are unique
+580.36s - 584.72s |  for every key card. So they always change. But they are derived from the UID. Which
+584.72s - 590.08s |  is not a very secure way of implementing this. The key for sector 1 is the same on
+590.08s - 593.64s |  every Cephalog card across all of the deployments. And that means that if you
+593.72s - 597.68s |  read one of these cards and you see this key. Then you immediately know it's a
+597.68s - 604.56s |  Cephalog system. So the key derivation function. To read the data from the card
+604.60s - 608.84s |  we need the keys to authenticate to this sector. There's a few ways you can get
+608.84s - 613.68s |  those keys. You can use a Poxmark tree. Run HFMF autophone. And it will
+613.68s - 618.04s |  immediately spit out all of the keys for you. The other way to do it is to
+618.04s - 621.92s |  actually reverse engineer the key derivation function. And it turns out
+621.96s - 626.24s |  that back in 2022 multiple people had already done this. They had
+626.24s - 630.32s |  reverse engineered the KDF. But they hadn't published it. So at the time we
+630.32s - 634.76s |  had to reverse engineer it ourselves. In the meantime someone has published the
+634.76s - 639.48s |  KDF. And now it's also implemented in the Poxmark tree project and in the
+639.48s - 646.48s |  Flipper 0. It's maybe interesting to know that knowing the KDF is not
+646.48s - 650.76s |  strictly necessary for our attack. And that's because there are cryptographic
+650.76s - 657.10s |  attacks on the MyFair Classic cards. So reverse engineering the KDF. We
+657.10s - 662.30s |  figured out that the Cephalog card encoder DLL contains a Kaba get secured
+662.30s - 667.54s |  keys function which implements this KDF. Initially we weren't 100 percent sure
+667.54s - 670.74s |  that this is the correct function we wanted to reverse engineer. So we we
+670.74s - 674.78s |  made a simple Python wrapper that uses the DLL. And then we could feed in some
+674.78s - 679.58s |  new IDs and check if the response was the same key as what we were seeing in
+679.58s - 683.30s |  the Poxmark project essentially. And then later on when we were sure this was
+683.30s - 687.34s |  the correct function we translated it to Python so that we had our own library
+687.34s - 693.33s |  for it. So now we have a pretty good way of reading the data on the MyFair card.
+693.33s - 696.73s |  But of course our goal is not just to clone it. We want to modify what rooms
+696.73s - 701.05s |  the key can open. And so we learned that really the only data that matters is the
+701.05s - 705.21s |  16 bytes on block 1 which kind of tells lock which doors the lock can open. And
+705.21s - 709.85s |  then the first byte on block 2 is a checksum of the first block. And so we
+709.85s - 713.17s |  wanted to figure out it looked like the data was encrypted on the sector because
+713.17s - 716.89s |  we didn't really see anything meaningful in it. And we found this encrypt card and
+716.89s - 721.05s |  decrypt card function in the Firebird services DLL. And so using that we
+721.05s - 724.65s |  discovered that the data on the card was actually encrypted using just a
+724.65s - 728.87s |  substitution table. And we unfortunately also learned that that substitution
+728.87s - 733.61s |  table is the same for every Saflock hotel. So every Saflock installation has
+733.61s - 739.92s |  the keys to decrypt and encrypt every Saflock card. And so now we know how to
+739.96s - 744.20s |  decrypt it. And now we want to start changing what the fields are. But we had
+744.20s - 746.72s |  to decrypt the data but we still didn't really know what the 16 bytes
+746.72s - 750.60s |  represented. Luckily in the same DLL we found a function that we didn't think
+750.60s - 755.16s |  was actually being used. But it basically assembled the 16 bytes for an emergency
+755.16s - 758.56s |  card. And so we kind of took a look at this function and saw you know what
+758.56s - 762.96s |  fields is it writing to on sector 1. And we were able to kind of work from there.
+762.96s - 766.36s |  Work backwards and say OK these bytes are the expiration. These bytes are the
+766.36s - 770.44s |  room number. Stuff like that. And being able to create cards was also very
+770.44s - 773.48s |  useful. We had our fake hotel so we created some cards and we were able to
+773.48s - 777.12s |  decrypt that data. And see you know through this field's line with what we
+777.12s - 781.52s |  expected. And so slowly byte by byte we figured out what the data was starting
+781.52s - 789.94s |  to mean. So this is the full card data format for the Saflock systems. It is in
+789.94s - 793.18s |  alphabetical order. So if you want to reproduce it you will have to figure out
+793.18s - 797.42s |  the correct order of the fields. There's a few logical fields in here. There's the
+797.46s - 802.10s |  card creation date. So this is like up to the second when the card was created at
+802.10s - 806.94s |  the front desk. There are card levels indicating if this is a guest key, a
+806.94s - 811.38s |  master key or an emergency key. There's quite a few of these levels. There's a
+811.38s - 816.06s |  few different types of cards but we'll get into those later on. There's a
+816.06s - 820.46s |  deadbolt override bit which sounds very interesting obviously. And then there's a
+820.46s - 825.74s |  few more fields. So the lock ID is an interesting one. This is just a numerical
+825.82s - 830.66s |  indicator in a database linking a specific, linking to a specific lock. So
+830.66s - 834.74s |  you can't simply figure out what the lock ID is for a specific room number.
+834.74s - 839.66s |  But if you know the lock ID for your room number you can sort of guess what
+839.66s - 845.18s |  the room next door has as a lock ID. The other thing that we need to know to make
+845.18s - 850.46s |  cards for every deployment is the property ID. So this is a 12-bit number
+850.46s - 854.54s |  that is supposed to be different for every hotel. And to make a card for a
+854.54s - 858.78s |  hotel you need to know this property ID. And finally there's a sequence and
+858.78s - 862.82s |  combination field. And this was by far the most annoying field in this entire
+862.82s - 869.78s |  data format. And it took us quite a while to figure out how to work around this. So
+869.78s - 875.30s |  as I mentioned before, multiple card levels and card types. Most of the keys
+875.30s - 879.94s |  you will get when you check into a hotel will have lower levels. So guest keys,
+879.94s - 884.50s |  connector keys, suite keys and so on. And they typically only open a single room
+884.50s - 889.10s |  in the property. Then there's more special cards like housekeeping keys
+889.10s - 893.98s |  that typically open a range of rooms. So maybe a floor or a specific tower in the
+893.98s - 898.06s |  hotel. And then finally we get to the interesting ones like the emergency key.
+898.06s - 902.90s |  And the emergency key is interesting because since it's used for emergencies
+902.90s - 907.22s |  it also overrides the deadbolt. So if someone inside of the room flips the
+907.22s - 910.82s |  deadbolt and someone taps an emergency key on the card it will allow them to
+910.86s - 914.58s |  override this deadbolt. I think it's important to realize if you're staying in
+914.58s - 920.18s |  a hotel the deadbolt is just software controlled. Two more interesting key
+920.18s - 923.86s |  levels are the programming, primary programming key and secondary programming
+923.86s - 928.34s |  key. And we think the idea here is that you would tap one of these cards to a
+928.34s - 935.77s |  lock before you can actually reprogram the lock with an H86 programmer. So as
+935.77s - 939.01s |  Leonard said we spent quite a lot of time on the sequence and combination
+939.01s - 942.05s |  because we knew what every field meant but we couldn't figure out the valid
+942.05s - 946.25s |  sequence combination for a lock. So each lock has its own combination value
+946.25s - 951.21s |  between 0 and 4095. And as Leonard said you can kind of guess what lock IDs are
+951.21s - 954.77s |  but guessing the combination is very painful. And there's also a sequence
+954.77s - 957.89s |  number and so this is used just as you check in and check out each guest gets
+957.89s - 961.13s |  their own sequence number. So for example if someone checks in after you they'll
+961.13s - 964.79s |  tap their sequence number and that will invalidate all the previous ones. So that
+964.79s - 968.05s |  prevents you know two people from having a valid key to the same room as that
+968.05s - 971.73s |  would be pretty bad. And the field is just the sequence encrypted and
+971.73s - 975.81s |  combined with a combination. And as I said this is really the only field that
+975.81s - 981.41s |  gave us any trouble in making a valid guess key. At first we tried to brute
+981.41s - 986.25s |  force the field. Leonard tapped the Proxmark about 4,000 times trying to
+986.25s - 991.97s |  guess what the valid sequence number was. This doesn't work. I don't suggest it. The
+991.97s - 995.65s |  lock does detect that you're trying to just guess key cards and it kind of
+995.65s - 1001.33s |  shuts itself down. It's also very physically strenuous and annoying. Later
+1001.33s - 1004.73s |  kind of the crux of our discovery it was that we found that because these
+1004.73s - 1007.73s |  locks are offline they sometimes have to be re-sequenced if they become
+1007.73s - 1012.25s |  desynchronized with the front desk. And what a re-sequencing card does is it
+1012.25s - 1015.21s |  just simply tells lock hey this is your new sequence and this is your new
+1015.21s - 1018.21s |  combination. And that's perfect for us because those were the only two fields
+1018.21s - 1022.41s |  we didn't know. So we were able to create a key card that simply re-sequenced as a
+1022.41s - 1025.77s |  lock and tells it hey this is your new secret value and that's the only one you
+1025.77s - 1031.56s |  need to create a forged key card. So now we have all the elements to make a full
+1031.56s - 1036.12s |  attack. So the idea is that you would start by obtaining any card from the
+1036.12s - 1040.44s |  hotel just to get the property ID. This can be your own card, this can be an
+1040.44s - 1044.92s |  expired card, can be a card you found on the floor from the Express checkout box
+1044.92s - 1049.80s |  or simply one you bought from eBay. So once you have the property ID we can
+1049.80s - 1055.12s |  start forging keys. So we forge a re-sequencing key card for a privileged
+1055.12s - 1060.08s |  level. So emergency or grandmaster. And the reason for picking emergency is that
+1060.08s - 1064.52s |  it works on all of the doors so you don't have to guess a lock ID anymore.
+1064.52s - 1069.92s |  Then you walk up to a door, you tap your re-sequencing key card, it re-sequences
+1069.92s - 1073.28s |  the lock and then you have your second key card that is an opening key for the
+1073.28s - 1078.00s |  same level and it will open the door. And the nice thing is you make this pair of
+1078.00s - 1081.84s |  cards once for every property and you can now walk around and open every
+1081.84s - 1094.59s |  single door in the hotel. So of course we also implemented this as a full
+1094.63s - 1099.15s |  proof-of-concept attack. At this point we had already written a PySaflock module.
+1099.15s - 1102.75s |  So it's a Python module that supports doing the key derivation function,
+1102.75s - 1107.59s |  decrypting the card data, deserializing it into the different fields. Then we can
+1107.59s - 1112.39s |  change fields, re-encrypt it or re-serialize it, re-encrypt it and then write it
+1112.39s - 1116.11s |  back to a card. And instead of implementing all of this within the
+1116.11s - 1119.95s |  Proxmark codebase, since we already had the Python script, we sort of made
+1119.95s - 1124.43s |  simple wrapper functions that call Proxmark codes to read and write stuff
+1124.43s - 1131.07s |  to a card. Then obviously these days we have to implement the same thing on a
+1131.07s - 1136.47s |  Flipper 0. This was relatively straightforward. You can make an NFC
+1136.47s - 1140.11s |  supported card plugin and that essentially has to implement three
+1140.11s - 1144.47s |  functions. So the first function is verify and that's essentially a function
+1144.47s - 1148.83s |  that tries to verify if the card you tapped is a Saflock card. As I mentioned
+1148.83s - 1153.31s |  earlier, sector 1 has a default key and you can use that default key to detect
+1153.31s - 1158.19s |  if the card is a Saflock card. Now that you should have a Saflock card, you go to
+1158.19s - 1162.83s |  the read function. The read function derives the key, so implements the KDF
+1162.83s - 1167.95s |  and then reads the relevant data blocks. Now that you have those data blocks, you
+1167.95s - 1172.91s |  can decrypt them, parse out the data and then from there generate, re-sequence an
+1172.91s - 1178.67s |  emergency card that gets stored on the Flipper's file system. Before anyone asks,
+1178.67s - 1184.15s |  we're not releasing this plugin, but there is a KDF plugin available on
+1184.15s - 1187.75s |  GitHub that someone else made and you can actually use that plugin to check
+1187.75s - 1195.72s |  if you're staying at a Saflock hotel. So as I mentioned previously, we actually
+1195.72s - 1200.96s |  found this at DEF CON two years ago and it was a very long disclosure process. So
+1200.96s - 1204.80s |  in August we kind of found, you know, the decryption key and we were able to read
+1204.80s - 1207.92s |  and write to the card, but we didn't actually figure out the re-sequencing
+1208.08s - 1212.96s |  until a month later. Finally, we were able to figure that out and we
+1212.96s - 1217.36s |  created a complete proof of concept. Unfortunately, Dorma Kava didn't have any
+1217.36s - 1222.84s |  disclosure process and so I had to message their CISO on LinkedIn. Luckily,
+1222.84s - 1226.32s |  he actually took it seriously and responded quickly and they actually have
+1226.32s - 1231.80s |  a VDP now, I think, which is great. We had our first meeting with them in October
+1231.80s - 1236.50s |  and from there I think we had at least 13 meetings with Dorma Kava talking
+1236.50s - 1240.46s |  about the vulnerability and how they were going to fix it. As I mentioned, it's
+1240.46s - 1244.58s |  three million hotel locks and I don't think they were fully ready to do that
+1244.58s - 1250.24s |  upgrade for a while and it was quite a painful change. But in November 2023, they
+1250.24s - 1254.62s |  upgraded the first hotels to resolve the vulnerability, which was great. And then,
+1254.62s - 1259.50s |  as you may have seen, in March of 2024 we did a limited disclosure of saying, you
+1259.50s - 1262.06s |  know, these hotel locks have a vulnerability but, you know, we're not
+1262.06s - 1266.34s |  gonna say exactly what it is. At the time we published it, 36% of
+1266.34s - 1271.14s |  the locks have been upgraded. Today is our DEF CON talk. They only told us the
+1271.14s - 1273.90s |  majority of the locks have been updated. We don't have a specific percentage
+1273.90s - 1278.34s |  anymore. And they said nearly all Las Vegas properties are in the process of
+1278.34s - 1283.22s |  being mitigated or have been mitigated, more or less.
+1284.74s - 1289.54s |  Remediation. They added a new enhanced security mode and this is to their
+1289.54s - 1293.90s |  Ambiance software. So we mostly looked at system 6000. That's kind of deprecated
+1293.90s - 1297.14s |  now. There is a fix for it but it's not as good as the enhanced
+1297.14s - 1302.06s |  security mode. The new enhanced security mode has a new KDF. It encrypts the card
+1302.06s - 1307.22s |  data using AES, which is much better than a hard-coded substitution cipher. And it
+1307.22s - 1310.74s |  also uses MyFair Ultralight C. So even if you're able to decrypt the card data,
+1310.74s - 1313.62s |  it's still hard to actually write it to the card because you don't know the card
+1313.62s - 1318.06s |  keys. And as I mentioned previously, they also replaced all of the encoders and so
+1318.06s - 1321.30s |  there's a new encoder for making the keys that also has a secure element
+1321.30s - 1328.25s |  inside of it. So a lot of people ask us why did it take so long to fix these
+1328.25s - 1332.21s |  hotel locks? Why did it take two years? And it turns out that the main issue are
+1332.21s - 1336.29s |  the integrations. So of course first, Tomacabra had to come up with a fix for
+1336.29s - 1340.49s |  their own hotel locks. But then if you start thinking about especially big Las
+1340.49s - 1344.49s |  Vegas properties, they have so many integrations with the hotel locks. So
+1344.49s - 1349.45s |  maybe you use the kiosk to check in. You've used the elevators. There's payment
+1349.45s - 1353.97s |  solutions in some hotels. And some hotels even have towel machines. And so
+1353.97s - 1358.01s |  when a hotel decides to upgrade their hotel locks, all of these systems have to
+1358.01s - 1361.05s |  be upgraded as well. And that typically means that they have to contact the
+1361.05s - 1364.69s |  manufacturers of these systems. And so you can imagine this takes a long time.
+1364.69s - 1370.13s |  Most of the locks have to be updated manually. That means that someone has to
+1370.13s - 1373.05s |  walk up to the door and hold the programmer in front of the lock for two
+1373.05s - 1378.73s |  minutes. Three million locks times two minutes is a lot of minutes. So that's it
+1378.73s - 1384.61s |  takes a long time. Then additionally you have to convince property owners to
+1384.61s - 1388.05s |  perform this update. And that's also one of the reasons we had this limited
+1388.05s - 1391.85s |  disclosure initially. To make hotel owners aware of the vulnerability and
+1391.85s - 1397.09s |  give them some extra time to implement a fix. We were told that at the peak of
+1397.09s - 1402.33s |  deploying this fix, Tomacabra was resolving 500 properties per week.
+1402.33s - 1408.88s |  Another thing that has changed now in the new update is that the standard guest
+1409.00s - 1413.76s |  cards will be using ultralight C. And one of the reasons people are making the
+1413.76s - 1417.48s |  switch over to ultralight C now is that the cost of ultralight C cards has come
+1417.48s - 1423.48s |  down a lot over the last few years. So if we talk about card cost, we found a few
+1423.48s - 1432.32s |  statistics online. So on average a hotel is occupied 65%. An average stay at a
+1432.32s - 1437.76s |  hotel takes 1.8 nights. The average number of cards that gets made per stay
+1437.76s - 1444.00s |  is 2. And only 25% of all cards are returned when you check out. Now if we
+1444.00s - 1448.08s |  think about big Las Vegas properties that have between 3,000 and 7,000 rooms,
+1448.08s - 1453.04s |  then you can imagine they make a lot of cards. So if we do a bit of simple math
+1453.04s - 1461.84s |  then we end up with a hotel with 5,000 rooms having roughly 660,000 stays per
+1461.84s - 1466.76s |  year. That means that around 1.3 million cards are made at one of these big
+1466.76s - 1472.60s |  properties of which only 300,000 are being returned after stays. So that means
+1472.60s - 1478.16s |  that a hotel needs to buy roughly 1 million cards per year. If you assume 10
+1478.16s - 1483.44s |  cents per card that's $100,000 just in RFID cards. Now if you think about a
+1483.44s - 1488.64s |  MyFair Classic card which is very cheap and maybe those were 10 cents, if an
+1488.64s - 1494.00s |  ultralight C card a few years back was 20 cents then that would mean $200,000
+1494.24s - 1498.16s |  in cards. And that's the reason you still find a lot of MyFair Classic cards
+1498.16s - 1503.80s |  around. But luckily prices have been coming down also because there's more of
+1503.80s - 1508.08s |  these systems asking for ultralight C cards. And so they've become cheap enough
+1508.08s - 1514.42s |  to the point where hotels are now using ultralight C. So I guess most of the
+1514.42s - 1517.70s |  people in this room are staying at a hotel this week. So how can you tell if
+1517.70s - 1523.02s |  the hotel you're staying at is using Saflock and if it's fixed or not? It's
+1523.02s - 1527.42s |  relatively easy to see if a hotel is using Saflock. Typically you can only
+1527.42s - 1531.18s |  tell when you're checking in. If you look over the counter you can see the
+1531.18s - 1536.26s |  encoders. So we have two pictures of encoders on the slide here. The leftmost
+1536.26s - 1541.62s |  one is an old encoder. It's thicker, it's bigger. And the one on the right is a
+1541.62s - 1546.82s |  new one. Now if you see the old one you know it's a vulnerable system. If you see
+1546.82s - 1551.18s |  the new one it could be a fixed system or it can be a system that is in the
+1551.18s - 1556.90s |  progress of being mitigated to the new solution. You can also quickly recognize
+1556.90s - 1562.10s |  the locks that are used in these systems. So the small black puck type lock with
+1562.10s - 1567.82s |  the S going to it is very common here. And those are Saflock locks. So if you
+1567.82s - 1573.18s |  see those you know it's a Saflock system. Then the next thing you can do is you
+1573.18s - 1578.02s |  get a card from when checking in. You can tell if it's a Mifer Classic or an
+1578.02s - 1583.26s |  Oatail HC card. So then you use your your favorite RFID tool which we all
+1583.26s - 1587.82s |  know is the Flipper Zero with Iceman firmware. Or you use an Android phone
+1587.82s - 1591.34s |  with the NFC tag info app and that allows you to tell what type of card it
+1591.34s - 1596.74s |  is. So if it's a Mifer Classic card then you know that the system is still
+1596.74s - 1601.54s |  vulnerable to this attack. Or it's not a Saflock deployment so you have to
+1601.54s - 1607.94s |  really do all three of the steps. So how to protect yourself in Oatail. You see
+1607.94s - 1612.46s |  it's Saflock. You see it's Mifer Classic. Well you're probably screwed. But
+1612.46s - 1617.82s |  there's some things you can buy. There's a door bolt deadbolt velcro
+1617.82s - 1620.46s |  strap and that kind of holds the deadbolt closed. And so that kind of
+1620.46s - 1624.20s |  prevents it from opening externally. You can also get under door wedges which
+1624.20s - 1626.98s |  kind of drill themselves into the carpet and prevent the door from opening.
+1626.98s - 1630.22s |  Obviously there's a gun of hacks but they could be good if you travel a lot.
+1630.22s - 1634.38s |  And Deviant has some great videos about hotel security as well. And just in
+1634.42s - 1638.06s |  general even if you're not staying in a Saflock hotel you know maybe next year
+1638.06s - 1644.98s |  there'll be more vulnerabilities. So that's it. Summary. Reading a single card
+1644.98s - 1649.10s |  at a hotel allows us to open any door at the property if it's vulnerable. The
+1649.10s - 1654.06s |  system has been in use since 1988. You'd say hey they didn't have Mifer Classic
+1654.06s - 1657.50s |  back then and it's true. But they did the same thing for MagStripe cards. So
+1657.50s - 1661.62s |  unfortunately the system has been vulnerable since before Leonard and I
+1661.62s - 1668.66s |  were even born. And you know many aspects of these systems still haven't
+1668.66s - 1672.18s |  been looked at. Once we found a way to you know make these master keys we
+1672.18s - 1675.98s |  didn't really care about the rest of it. But there's a wide scope. The locks have
+1675.98s - 1680.58s |  USB ports. The you know there's many many aspects to these systems and more
+1680.58s - 1684.78s |  vulnerabilities likely exist somewhere. Luckily the cost of the secure cards
+1684.78s - 1688.70s |  have come down a lot. Ultralight C, Deathfire, stuff like that. Obviously it's
+1688.70s - 1692.54s |  a lot better than using Mifer Classic which has been broken forever. And
+1692.54s - 1695.54s |  overall even though we had to message them on LinkedIn at first we did have a
+1695.54s - 1698.86s |  positive experience working with Dorma Kava. They didn't take it seriously and
+1698.86s - 1705.46s |  they didn't sue me. So that's always great. It's time for a demo.
+1708.10s - 1727.76s |  Okay we have two demos. Are we gonna attempt to show two demos? So for the
+1727.76s - 1737.16s |  first demo we'll be using the Proxmark 3. I have a few RFID cards here. One of
+1737.16s - 1745.74s |  them says valid. As you can tell it opens the lock. Now if someone is staying
+1745.74s - 1750.38s |  inside of the room and they have the deadbolt on then this card no longer
+1750.38s - 1760.30s |  works. So that's a normal behavior of regular guest cards. The second card I
+1760.30s - 1769.79s |  have says expired or invalid and that card obviously doesn't work. So we assume
+1769.79s - 1773.79s |  that this is the card the attacker finds in the hallway or it's maybe the
+1773.79s - 1779.59s |  card to their room. And finally I have the the two attacker cards labeled one
+1779.59s - 1783.59s |  and two. And just to show you that I'm not cheating for the demo I'll tap these
+1783.59s - 1792.79s |  to the lock and show that the lock doesn't open. Okay so now we'll start by
+1792.79s - 1803.78s |  reading the expired or the invalid card with the Proxmark. So what we do here is
+1803.78s - 1808.06s |  we take the UID that we read from the card. We derive the key for the sectors.
+1808.06s - 1813.18s |  We read the data from the card. We decrypt it. We deserialize it. And here
+1813.18s - 1816.86s |  we're printing a few of the fields that are stored on the card. So you can see
+1816.86s - 1821.18s |  this is a level one card. So it's a regular guest key. It was made for the
+1821.18s - 1825.54s |  for the lead room. And you can also see that the card was created in 1990. And
+1825.54s - 1829.06s |  that means the card is expired and that's why it no longer works on this
+1829.06s - 1834.46s |  lock. Now what we really need from this card is the property ID. And using this
+1834.50s - 1841.77s |  property ID we can now start making new cards. So I'll first reprogram the first
+1841.77s - 1852.00s |  card. So what we're making now is an emergency level re-sequence card. So
+1852.00s - 1859.52s |  that's the re-sequencing key. And the next key we make is an opening key. And
+1859.52s - 1866.50s |  now we're ready to break into hotel rooms. I'm gonna assume the person that's
+1866.50s - 1869.42s |  staying in this room has a deadbolt turned on and then we'll start carrying
+1869.42s - 1877.86s |  out the attack. So the first key re-sequences the lock and essentially
+1877.86s - 1897.84s |  enables the second card. And like I mentioned before you can use these two
+1897.84s - 1901.60s |  cards over and over again in the same property and open all of the all of the
+1901.60s - 1906.20s |  doors. Now the second demo is essentially the same thing but using the
+1906.20s - 1913.74s |  flipper zero. I hope it's visible on the screen. But the idea is that whatever I'm
+1913.74s - 1916.58s |  doing here on the flipper is the same thing as you see on the screen over
+1916.58s - 1924.50s |  there. So essentially we just go into the NFC menu. I'm using the expired card
+1924.50s - 1939.87s |  again. So I'll read the expired card. It tells us it's a Zephyr card. We can
+1939.87s - 1944.03s |  again see that the card level, the property ID, the lock ID and that this
+1944.03s - 1949.51s |  card was created in the 1990s. And in the background what this flipper app has
+1949.51s - 1955.35s |  done is it has automatically created two extra cards. So this first entry is a
+1955.35s - 1959.79s |  copy of the card we just read. And then the second one is the re-sequencing key.
+1959.79s - 1972.49s |  So we can start emulating this one. So now now the lock has been re-sequenced.
+1972.49s - 1983.03s |  We go back into the menu. We take our opening key. We emulate it. And it opens
+1983.03s - 1996.30s |  the lock. So thanks everyone for coming to the talk. If anyone has questions we'll
+1996.30s - 2014.49s |  try to answer them. I'm too short for this. Hello. Um is that the Iceman firmware
+2014.67s - 2019.67s |  up there? Yeah it's a special beta release. Alright. Ok actual question. Um you know
+2023.37s - 2028.55s |  considering what you said about like the you know the software from Dormakaba uh do
+2028.55s - 2032.55s |  you think the responsibility lies on Dormakaba or like the hotels for how long it's
+2032.55s - 2036.69s |  taking them to upgrade their systems? Thinking about like the the logging and even
+2036.69s - 2043.54s |  like the encryption method used for their cards? It's a good question. Um we also
+2043.58s - 2048.82s |  don't know entirely how Dormakaba is handling the like resolving or doing the the
+2048.82s - 2053.82s |  updates. How much of it hotels have to pay. How much Dormakaba pays and so on. Um I
+2054.52s - 2058.60s |  think that the logging stuff is more an idea we came up with ourselves. Like our idea
+2058.60s - 2063.70s |  was if if the front desk can can see logs of who's entering the rooms and so on. Then
+2063.70s - 2068.14s |  in theory it shouldn't be too difficult to check if someone is using a re-sequencing
+2068.14s - 2071.78s |  card for example. And you could have some alerts triggered when something like that
+2071.82s - 2076.92s |  happens. Ok and then Ian um you know I heard you were a degenerate gambler. Are you up or
+2076.92s - 2081.92s |  down? No I think I'm even now. Are you? Hell yeah. Ooh what's going on? Uh thank you so
+2088.77s - 2093.45s |  much for talking about the disclosure process and explaining all the other factors that
+2093.45s - 2098.15s |  weigh on timelines and things like that. Uh it's really important for all the researchers
+2098.15s - 2101.95s |  to understand that and I think it's wonderful. Did you find the process of working with
+2101.95s - 2106.15s |  them to be smooth the whole time? Or did was it like smooth with an executive and then
+2106.15s - 2112.75s |  like lawyers? Like how did that go? Uh they did ask us to sign an NDA at first but we
+2112.75s - 2119.07s |  said no. And from there it was pretty good. Uh I think obviously it was I think one of
+2119.07s - 2123.17s |  their first times you know going through this process. And so you know we just had to set
+2123.17s - 2127.43s |  our our expectations of like you know we're eventually going to disclose this and it needs
+2127.43s - 2131.57s |  to be fixed. And I think once once we all understood that it was it was ok. They were
+2132.09s - 2136.73s |  they never threatened to sue us or anything. Uh so it was never hostile at all. Cool. We're
+2136.73s - 2141.41s |  really proud of you. Thank you guys. I'll just add that I think for them it was very new.
+2141.41s - 2148.65s |  And thanks. Um and like the picture you see in this slide is actually um a video set that
+2148.65s - 2153.95s |  they had at their facilities. And on the website on unsafelock.com we have a small video
+2153.95s - 2160.66s |  showing the attack and that video was actually shot at the facility from Dormakabu. Thank
+2160.68s - 2166.82s |  you to them for that. Um did you say that the substitution table was the same for every
+2166.82s - 2173.46s |  property? So you said they replaced that with AES? Um in the enhanced mode it uses AES. Um I
+2173.46s - 2178.10s |  think they made if you're still using the old system 6000 my understanding is it's no longer
+2178.10s - 2182.94s |  a substitution table. I don't know if it uses AES or um but it's it's something that's
+2182.94s - 2186.58s |  specific to each hotel at least which is better than what they had before. That was my
+2186.60s - 2191.14s |  question. Are the keys now specific to each property like or do you know one way or the
+2191.14s - 2199.17s |  other? That's our understanding. Yeah. Fingers crossed. Alright thank you. Hi. Um so you
+2199.17s - 2205.11s |  mentioned when you re-sequence a lock um it invalidates all of the existing cards with I'm
+2205.11s - 2210.41s |  assuming lower sequence numbers. Does that also happen with the emergency card that you
+2210.41s - 2217.77s |  re-sequence the lock with? So I I think you were asking about invalidating older cards and
+2217.79s - 2223.33s |  sequence numbers right? Yeah. Yeah. Um so the idea or at least the way we think it works is if
+2223.33s - 2227.67s |  you check in at the hotel the sequence gets incremented and once a lock sees a higher
+2227.67s - 2232.87s |  sequence number it stop accept stops accepting older sequence numbers. And the same thing
+2232.87s - 2237.65s |  is probably true for emergency cards. Uh but since our first card sort of re-sequences the
+2237.65s - 2242.31s |  lock and tells it this is now your sequence number we can then use our our lock. So the
+2242.39s - 2249.43s |  re-sequencing cards can have any sequence number you want. So then the older cards that
+2249.43s - 2254.87s |  worked on the lock before that will get invalidated as a result? I couldn't get it. So I
+2254.87s - 2258.95s |  think you're asking if we do our attack do the guest key cards get invalidated? Yeah. So the
+2258.95s - 2263.01s |  sequence is specific to each level so in our attack we're doing the emergency key cards so it
+2263.01s - 2267.55s |  would break the emergency key cards for the hotel but the guest keys would be unaffected. Um
+2268.23s - 2279.20s |  Gotcha. Thank you. Is it possible to brute force the property ID so then you wouldn't need
+2279.20s - 2284.90s |  another key from the same hotel? Um we could speculate that there's a way to do it. I don't
+2284.90s - 2288.30s |  know if I would do it via brute forcing because it is pretty painful like you have to
+2288.30s - 2293.54s |  physically move the device you know across the lock each time. Um but as I said like the USB
+2293.54s - 2297.62s |  port seemed pretty interesting to us and there may be a way to like get that info from it. Uh
+2297.66s - 2305.50s |  we just didn't look at that surface at all really so. Thanks. Two questions um one are you
+2305.50s - 2313.94s |  staying at Resort World? Two is Resort World a Safelock co- hotel? I'm sorry I couldn't hear
+2313.94s - 2322.58s |  the question. The second one was uh is Resort World a Safelock hotel? Yeah I. We've we've
+2322.58s - 2326.42s |  both stayed at Resort World and uh we believe it's been fixed there. I believe all the cards
+2326.42s - 2336.44s |  are ultralight C there so. So for the uh legacy encoder that uh Dormakaba is replacing um it
+2336.44s - 2341.30s |  appears that that can also write ultralight C. So do you know why they replaced that
+2341.30s - 2346.84s |  encoder? I'm sorry I think the mic is a little low so I'm having trouble hearing the
+2346.84s - 2350.92s |  question sorry. Sorry I was saying um so for the legacy encoder that Dormakaba is
+2350.92s - 2355.88s |  replacing it appears that with the system 6000 software it can also read and write the
+2355.88s - 2360.92s |  ultralight C cards. So do you know like what additional security they got by replacing it?
+2362.12s - 2367.08s |  Um they told us that they added a secure element to the new encoder um we didn't we didn't look
+2367.08s - 2371.96s |  and they didn't tell us on exactly how that's used um but I think that was part of the reason
+2371.96s - 2376.20s |  um I'm not sure if the old encoders support ultralight C or not as well. I'm not sure.
+2377.64s - 2383.00s |  I think the older system supported other cards not just Minecraft Classic I think they had
+2383.00s - 2387.64s |  even support for ultralight for a while and just no one really seemed to use it like all of the
+2387.64s - 2395.59s |  software deployments we've seen were Minecraft Classic. Thank you awesome talk. Hi I've read
+2395.59s - 2401.59s |  my photos card and it's not my fair but it's ST chip do you know if it's valuable or not?
+2403.11s - 2409.27s |  ST chip? It's quite difficult to understand the questions up here but. I have a card with ST chip
+2409.27s - 2415.59s |  not my fair. Did you look at those? I haven't looked at any hotels that had ST chips in them
+2415.59s - 2423.43s |  but maybe Iceman knows about this specific card for a moment. I don't know sorry. Okay thank you.
+2432.50s - 2437.54s |  Now he's gonna heckle us. Hi I'm Iceman I have a question to you.
+2440.26s - 2444.66s |  Uh no the ST card is not vulnerable in that sense yes it's true but
+2444.66s - 2452.42s |  Jen Benjamin Dupree did some work with it. Awesome fucking research I'm in awe by it.
+2453.30s - 2466.92s |  It's amazing. I bow to the gods of RD hacking but to be honest it was Minecraft Classic and
+2466.92s - 2471.64s |  you did do have .NET so I think that's cheating I thought you would done more hardware.
+2473.00s - 2478.04s |  With that said give them a well-rounded applause for us they are fucking amazing.
+2478.44s - 2488.81s |  I guess that's it. All right thank you so much appreciate it.

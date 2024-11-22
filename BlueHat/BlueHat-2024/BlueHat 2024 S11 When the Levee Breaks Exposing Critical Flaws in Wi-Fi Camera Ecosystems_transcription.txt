@@ -1,0 +1,979 @@
+{
+  "webpage_url": "https://www.youtube.com/watch?v=FRW7g_SHC8Q",
+  "title": "BlueHat 2024: S11: When the Levee Breaks: Exposing Critical Flaws in Wi-Fi Camera Ecosystems",
+  "description": "BlueHat 2024: Session 11: When the Levee Breaks: Exposing Critical Flaws in Wi-Fi Camera Ecosystems Presented by Mark Mager and Eric Forte from Elastic\n\nAbstract: Wi-Fi security cameras are affordable, easy to use, and extremely convenient. They can be found in hundreds of millions of households across the world and are remotely accessible from anywhere via the Internet. An unfortunate byproduct of the industry-wide push to manufacture and distribute these IoT devices to the masses as quickly as possible is that they tend to suffer from inherently flawed security models. These cameras require constant connectivity to insecure cloud platforms and facilitate remote user access through vulnerable peer to peer protocols designed to circumvent secure network configurations.\n\nThrough extensive reverse engineering and vulnerability research over the past few months, we discovered several critical hardware and software vulnerabilities affecting millions of devices connected to a prominent IoT platform. Along with highlighting our process and key successes from this effort, we will provide details on how endemic these types of flaws are throughout the broader Wi-Fi camera industry along with countermeasures users can take to limit potential exposure and reduce their attack surface.",
+  "channel_url": "https://www.youtube.com/channel/UCKmzq2lAhDxLy36KtvVWpaQ",
+  "duration": 2651,
+  "channel": "Microsoft Security Response Center (MSRC)",
+  "uploader": "Microsoft Security Response Center (MSRC)",
+  "upload_date": "20241108"
+}
+
+0.00s - 1.00s | This text was transcribed using whisper model: large-v2
+
+ Welcome, everyone.
+1.00s - 3.36s |  Today, we are going to be discussing critical flaws
+3.36s - 5.68s |  in Wi-Fi camera ecosystems.
+5.68s - 6.76s |  My name is Mark Mager.
+6.76s - 9.12s |  I'm a senior manager of security research at Elastic,
+9.12s - 11.24s |  and my background is primarily in malware research
+11.24s - 13.48s |  and reverse engineering.
+13.48s - 14.44s |  Oh, that's working now.
+14.44s - 16.76s |  OK, so quick show of hands here, who
+16.76s - 20.80s |  has a Wi-Fi camera installed in their home right now?
+20.80s - 21.60s |  OK, all right.
+21.60s - 25.08s |  So we've got a good amount, maybe almost half.
+25.08s - 27.28s |  If you're a little bit less familiar with what
+27.28s - 31.28s |  these cameras entail, the main takeaways
+31.28s - 34.28s |  are that they are extremely cheap.
+34.28s - 39.08s |  You can find some online at Amazon for up to $10,
+39.08s - 40.64s |  maybe even cheaper.
+40.64s - 43.60s |  And they're literally everywhere within the world, right?
+43.60s - 45.60s |  There are market research estimates
+45.60s - 50.96s |  that place them in at least 150 million homes across the world.
+50.96s - 55.24s |  So they're very, very difficult to escape, right?
+55.24s - 56.98s |  And they're extremely cheap.
+56.98s - 59.90s |  And in terms of operation, they require constant connectivity
+59.90s - 63.74s |  to the internet, to the vendor cloud platforms,
+63.74s - 67.30s |  and they allow users to remotely access and control
+67.30s - 71.22s |  these cameras through their own either mobile or desktop
+71.22s - 73.90s |  applications.
+73.90s - 75.70s |  Now, unfortunately, one of the other things
+75.70s - 77.14s |  you might know about Wi-Fi cameras
+77.14s - 80.86s |  is that they're extremely vulnerable to a multitude
+80.86s - 82.62s |  of different types of attacks.
+82.62s - 87.50s |  And as by evidence here from these four separate stories
+87.50s - 90.18s |  published within the media for the past few years, right,
+90.18s - 94.98s |  there's no shortage of stories from victims
+94.98s - 98.02s |  of these types of attacks from concerned users.
+98.02s - 100.82s |  So ultimately, what we wanted to dig
+100.82s - 102.50s |  into with this type of research is
+102.50s - 104.46s |  we wanted to figure out a little bit more
+104.46s - 108.02s |  along the lines of how are the attackers actually getting in?
+108.02s - 110.38s |  Because with these types of news stories
+110.38s - 116.42s |  that go viral and are seen in more mainstream non-techie
+116.42s - 118.54s |  sort of publications, ultimately,
+118.54s - 120.42s |  what we're trying to figure out is
+120.42s - 124.82s |  technical details in terms of what is actually happening.
+124.82s - 127.02s |  So for our research initially, we
+127.02s - 128.98s |  wanted to focus very specifically
+128.98s - 130.82s |  on a small subset of vendors.
+130.82s - 134.34s |  So in our case, whether or not you've heard of them,
+134.34s - 136.82s |  we chose two vendors, the first one
+136.82s - 142.14s |  being Wansview, which is a relatively successful,
+142.14s - 145.46s |  I would say, IoT vendor that sells security camera
+145.46s - 149.50s |  products through online retailers, including Amazon,
+149.50s - 153.94s |  and then AJCloud, which is more of a background operator that
+153.94s - 156.34s |  provides the firmware for these cameras
+156.34s - 160.14s |  along with the cloud platform that the cameras are
+160.14s - 163.41s |  required to connect to.
+163.41s - 165.61s |  When it comes to Wi-Fi cameras, there's
+165.61s - 169.37s |  three attack vectors we typically look at.
+169.37s - 172.89s |  To back things up, there's three primary components
+172.89s - 174.53s |  in a Wi-Fi camera ecosystem.
+174.53s - 178.49s |  There is the camera itself, there's a cloud platform,
+178.49s - 182.73s |  and then there is the user application.
+182.73s - 185.61s |  So when you extrapolate that out to attack vectors,
+185.61s - 187.29s |  we have the user application, whether it's
+187.29s - 189.01s |  the mobile or the desktop version,
+189.01s - 191.65s |  the cloud platform that connects everything together,
+191.65s - 195.57s |  and then the actual firmware operating within the device.
+195.57s - 198.49s |  So as part of our research, we needed
+198.49s - 200.81s |  to explore all three of these vectors
+200.81s - 203.77s |  extensively in order to get a better idea of what are
+203.77s - 205.97s |  the flaws within the ecosystem.
+205.97s - 208.25s |  And Eric is going to be focusing initially
+208.25s - 213.72s |  on the hardware reconnaissance side of things.
+213.72s - 215.12s |  Hello, everybody.
+215.12s - 216.72s |  So hi, I'm Eric Forte.
+216.72s - 219.24s |  I'm a security researcher engineer at Elastic,
+219.24s - 221.32s |  and I'm part of the threat research and detection
+221.32s - 222.40s |  engineering team.
+222.40s - 224.20s |  So what Mark had mentioned, we're
+224.20s - 226.50s |  going to take a look at the hardware reconnaissance
+226.50s - 228.12s |  to see what we can do with these cameras.
+228.12s - 231.44s |  Again, we want to have a good lay of the land
+231.44s - 234.48s |  with the application, the cloud interface,
+234.48s - 237.24s |  as well as the hardware to get an idea of what we're
+237.24s - 240.20s |  dealing with for the whole ecosystem of these cameras
+240.20s - 241.56s |  and IoT devices.
+241.56s - 243.24s |  So to start with our hardware recon,
+243.24s - 245.00s |  we first have to get set up.
+245.00s - 247.28s |  And so there are a number of different ways to do this,
+247.28s - 249.68s |  just sort of walking through what we did.
+249.68s - 252.20s |  We wanted to use a clean slate for another machine,
+252.20s - 253.60s |  so we grabbed a Raspberry Pi.
+253.60s - 255.40s |  Quite frankly, pretty much any computer
+255.40s - 257.64s |  will do with your laptop, et cetera.
+257.92s - 261.20s |  But we wanted to have clean slate, so we used that.
+261.20s - 262.96s |  You'll also need a logic analyzer,
+262.96s - 264.80s |  at least if you're, say, following along
+264.80s - 266.28s |  with what we're doing here.
+266.28s - 268.84s |  Because depending on the device that you have,
+268.84s - 272.40s |  you may need to do things like probe access ports
+272.40s - 277.06s |  to see whether or not a protocol is being used on certain pins
+277.06s - 278.72s |  that you find.
+278.72s - 280.38s |  If you don't have pins, that's going
+280.38s - 281.72s |  to be the subject for another talk about how
+281.72s - 283.36s |  to do the extraction that way.
+283.36s - 286.38s |  But just know that we'll be talking more about how
+286.38s - 290.22s |  we use these in a minute, some level of teardown tools,
+290.22s - 292.38s |  and then some form of way of connecting
+292.38s - 294.06s |  to whatever it is you found.
+294.06s - 296.14s |  And our cameras had an SD card slot,
+296.14s - 299.38s |  so of course we're going to grab an SD card for good measure.
+299.38s - 303.74s |  So before we get into the actual hardware teardown
+303.74s - 305.30s |  and that sort of element, I just want
+305.30s - 308.34s |  to look at some publicly available information
+308.34s - 311.10s |  about the chip that we're using with this camera.
+311.10s - 315.26s |  And so in this case, for the WandsView Q5 camera,
+315.26s - 320.26s |  we're using an Xburst T31 SoC, which is primarily
+320.26s - 322.22s |  a MIPS processor, and that's what we're focusing
+322.22s - 323.42s |  on for this part of the talk.
+323.42s - 326.02s |  There is a RISC-V coprocessor that
+326.02s - 328.46s |  is interesting in its own right, but not particularly
+328.46s - 329.46s |  applicable here.
+329.46s - 331.66s |  But there's three things I want to draw your attention
+331.66s - 333.18s |  to with this diagram.
+333.18s - 336.50s |  And the first being at sort of the bottom section of it,
+336.50s - 339.76s |  there is a I squared C or a UART bus.
+339.76s - 341.18s |  So this immediately should give us
+341.18s - 342.46s |  some indication of something that we
+342.46s - 344.30s |  want to look for in the hardware teardown,
+344.30s - 346.44s |  is whether or not this is implemented in such a way
+346.44s - 347.78s |  that we can access it.
+347.78s - 349.70s |  I mean, can we access it easily?
+349.70s - 351.26s |  Then two other elements.
+351.26s - 353.78s |  First, in the green on your right,
+353.78s - 356.02s |  there's the secure boot block there.
+356.02s - 358.98s |  And so that may throw a wrench in some of our plans
+358.98s - 360.42s |  depending on what kind of access,
+360.42s - 362.90s |  but that's something that we want to keep in mind.
+362.90s - 366.66s |  There's also a hardware watchdog on the upper left
+366.66s - 368.78s |  that also may get in the way.
+368.78s - 371.54s |  And so just things to remember from this diagram,
+371.54s - 373.86s |  we're going to touch more on that in a minute.
+373.86s - 375.82s |  But first, we're going to tear down the camera,
+375.82s - 377.62s |  see what we can find on the chip.
+377.62s - 380.62s |  And one of the first things that we found that stood out to us
+380.62s - 382.58s |  was this four-pin connector shown
+382.58s - 386.58s |  on the right, which was possibly a UART connection.
+386.58s - 389.64s |  So we connected our logic analyzer to confirm.
+389.64s - 392.48s |  And so we can see there the voltage output.
+392.48s - 396.14s |  And when trying to parse it, it is indeed UART
+396.14s - 397.62s |  and at a default baud rate.
+397.62s - 399.58s |  So we're going to go ahead and connect to it.
+399.58s - 402.78s |  And fortunately for us, as soon as we connect to it,
+402.78s - 404.50s |  turn on the camera, we see that we're
+404.50s - 407.42s |  presented with a nice U-boot interface there.
+407.42s - 411.26s |  And so if you're not familiar, U-boot is a bootloader.
+411.26s - 413.10s |  You can interrupt the bootloader and then
+413.10s - 414.58s |  potentially start to do things.
+414.58s - 417.26s |  But then this is where that secure boot block
+417.26s - 418.30s |  comes into play.
+418.30s - 421.14s |  Unfortunately, even though the chip supports secure boot,
+421.14s - 423.06s |  the vendor didn't implement it here.
+423.06s - 426.26s |  So we can go ahead and start changing environment variables,
+426.26s - 428.18s |  configuration, et cetera, which then makes
+428.18s - 430.62s |  getting root effectively trivial.
+430.62s - 433.20s |  And so in our case for this camera in particular,
+433.20s - 437.70s |  all you had to do was change the variables as shown here,
+437.70s - 440.78s |  just to say the argument to init has been bashed
+440.78s - 442.46s |  to boot into single user mode.
+442.46s - 444.26s |  Other cameras that we've also looked at,
+444.26s - 445.62s |  just as part of broader research,
+445.62s - 447.38s |  there are other different ways of getting
+447.38s - 449.66s |  in that are a little bit more complicated.
+449.66s - 452.10s |  But ultimately, this is a common trend
+452.10s - 454.58s |  and certainly was so with this camera.
+454.58s - 458.22s |  So once we're in, we have a read-only root partition.
+458.22s - 460.10s |  Or sorry, we have read-only access
+460.10s - 462.98s |  as root, which is the nature of single user mode.
+462.98s - 465.30s |  And so now we need to establish some form of persistence
+465.30s - 467.14s |  to continue our reconnaissance.
+467.14s - 471.18s |  So we ultimately want to have as minimal modification
+471.18s - 473.30s |  as necessary to do this, to preserve
+473.30s - 475.34s |  the integrity of our testing.
+475.34s - 477.54s |  But there are two routes that we could go down.
+477.54s - 479.82s |  We could go down the no user route, where
+479.82s - 482.66s |  we're going to try and just live off
+482.66s - 485.34s |  the land of what's there to change the environment such
+485.94s - 488.30s |  for whatever we need to do later on, which we'll
+488.30s - 489.50s |  talk about more in a minute.
+489.50s - 492.02s |  Or we could use the existing user route.
+492.02s - 494.26s |  Generally speaking, with IoT devices,
+494.26s - 497.58s |  you really want to limit the existing users that you have
+497.58s - 501.02s |  to not have a login shell unless it's absolutely necessary.
+501.02s - 503.30s |  Unfortunately, again, this vendor didn't do that.
+503.30s - 504.46s |  There is an existing user.
+504.46s - 508.22s |  So you can pull the Etsy password, decrypt the hashes,
+508.22s - 510.46s |  and then directly log in as that user.
+510.46s - 512.78s |  For the take of this discussion and this presentation,
+512.78s - 514.10s |  we didn't go that route.
+514.42s - 516.58s |  So just to illustrate the other ways
+516.58s - 518.86s |  that you could go about doing this.
+518.86s - 521.86s |  So the nature of Linux systems, which you may or may not,
+521.86s - 524.70s |  say, be familiar with, but you largely
+524.70s - 528.34s |  need some level of read write in order for the system to operate.
+528.34s - 529.66s |  That's not entirely true.
+529.66s - 531.10s |  But generally speaking, somewhere
+531.10s - 532.76s |  along the line for a useful system,
+532.76s - 534.22s |  you're probably going to need that.
+534.22s - 537.38s |  And in this case, the IoT vendor solved the problem
+537.38s - 539.10s |  with TempFS partitions.
+539.10s - 542.10s |  But unfortunately, you could arbitrarily
+542.10s - 545.18s |  create new TempFS partitions and mount whatever directories
+545.18s - 547.30s |  you would like, and then make all those directories
+547.30s - 550.30s |  read write as well, even, say, from single user mode.
+550.30s - 552.38s |  Nothing, say, preventing you from doing that.
+552.38s - 553.18s |  And so in this case, what we're just
+553.18s - 554.80s |  showing here on the right with some of the commands
+554.80s - 556.34s |  we're running is just the ability
+556.34s - 560.74s |  to modify Etsy such that it is read write.
+560.74s - 563.14s |  And then we can go ahead and change settings and things
+563.14s - 564.18s |  like that.
+564.18s - 566.94s |  So we're effectively now at a setup point
+566.94s - 570.80s |  where we can make minimal modifications or obviously
+570.80s - 573.80s |  extensive modifications if we want to where we can continue
+573.80s - 575.20s |  on with our reconnaissance.
+575.20s - 577.40s |  So we went ahead, pulled the firmware over the serial
+577.40s - 579.20s |  connection, pulled some log data too,
+579.20s - 582.84s |  just illustrating one way that you can do that.
+582.84s - 584.56s |  But then we continued our reconnaissance.
+584.56s - 588.36s |  So now we have the firmware and the hardware set up there.
+588.36s - 589.52s |  So we continued.
+589.52s - 592.52s |  And so we did some active local reconnaissance,
+592.52s - 594.20s |  passively monitoring network traffic,
+594.20s - 596.04s |  trying to man-in-the-middle communications
+596.04s - 598.08s |  between the camera and the app, ultimately
+598.08s - 601.12s |  having very little success at a surface level.
+601.12s - 605.60s |  So we also tried to look at the APKs, the iOS and Android
+605.60s - 609.04s |  APKs for their companion apps and say,
+609.04s - 611.24s |  fortunately, they were heavily obfuscated,
+611.24s - 612.56s |  likely with ProGuard.
+612.56s - 615.24s |  And so this was fairly difficult to debug.
+615.24s - 618.40s |  But the Windows app was a little bit of a different story.
+618.40s - 622.44s |  I'm going to pass it over to Mark to talk about that.
+622.44s - 626.44s |  All right, so yeah, when we ran into a significant amount
+626.44s - 631.64s |  of difficulties on the Android side in terms of debugging,
+631.64s - 632.76s |  reverse engineering, and our attempts
+632.76s - 634.44s |  to man-in-the-middle traffic, right,
+634.44s - 635.84s |  we needed to find an alternative.
+635.84s - 637.80s |  And the Windows app that WandsView
+637.80s - 640.72s |  provides on their support downloads page
+640.72s - 644.14s |  definitely gave us a great window into what
+644.14s - 646.20s |  we couldn't previously see.
+646.20s - 648.92s |  So they offer a Windows 7 and Windows 10 version.
+648.92s - 650.80s |  We downloaded and installed the Windows 7 version
+650.80s - 654.00s |  because we thought maybe that'd be a little less secure.
+654.00s - 658.48s |  And when we actually fired it up and ran it
+658.48s - 661.32s |  within our environment, as you can kind of see here,
+661.32s - 664.00s |  it offers a very basic set of features, right?
+664.00s - 666.68s |  You can access the video and audio feeds as expected.
+666.68s - 668.20s |  And you can pan and tilt the cameras.
+668.20s - 669.88s |  That's about it, right?
+669.88s - 672.60s |  The whole purpose of these desktop apps
+672.60s - 676.20s |  is really just to provide very basic operation to users.
+676.20s - 679.80s |  And they're not meant to be replacements
+679.80s - 683.20s |  for the mobile apps, which are much, much more
+683.20s - 685.68s |  richly featured.
+685.68s - 688.72s |  So one of the biggest takeaways that we
+688.72s - 691.28s |  had from installing the Windows app
+691.28s - 693.24s |  and testing it out in our environment
+693.24s - 697.08s |  is that it tends to generate a very verbose log
+697.08s - 702.88s |  file, which contains several log messages that are very
+702.88s - 706.56s |  explicitly logging the POST requests and POST response
+706.56s - 710.84s |  data that occurs throughout the sign-in process, right,
+710.88s - 713.20s |  which we had no sort of introspection
+713.20s - 715.32s |  into before through our efforts to man
+715.32s - 718.48s |  in the middle of the traffic, both on the camera side
+718.48s - 720.80s |  and on the mobile app side previously.
+720.80s - 723.72s |  So this already gave us so much more info
+723.72s - 725.32s |  than we previously had.
+725.32s - 728.84s |  So ultimately, we wanted to dig into this a little bit more,
+728.84s - 729.36s |  right?
+729.36s - 731.44s |  There's no need to man-in-the-middle anything.
+731.44s - 733.56s |  We just have the data already in the clear.
+733.56s - 737.92s |  So kind of looking at some of the more juicy nuggets
+737.92s - 741.12s |  that came out of digging into the POST responses, what
+741.12s - 743.88s |  we can see here is that the device ID is
+743.88s - 747.68s |  one of the primary things which is used as a identifier
+747.68s - 750.68s |  for these cameras.
+750.68s - 755.28s |  And the device IDs are 16-character alphanumeric
+755.28s - 758.12s |  strings, which are unique to each device.
+758.12s - 760.08s |  They can be found either on the back
+760.08s - 764.76s |  or on the bottom of these devices.
+764.76s - 766.80s |  And this will be a recurring theme.
+766.80s - 769.16s |  We'll definitely get to that again in a little bit.
+769.16s - 772.20s |  But we can also see the actual firmware version that's
+772.20s - 776.52s |  installed on the device itself, along with a link
+776.52s - 780.24s |  to a snapshot, which is publicly accessible,
+780.24s - 783.16s |  mind you, coming from that camera.
+783.16s - 788.04s |  So in this instance, that is a picture of my kitchen
+788.04s - 790.20s |  from late April when we were starting out
+790.20s - 791.44s |  some of this research, right?
+791.44s - 795.20s |  And that's still publicly accessible to this day.
+795.20s - 799.20s |  Furthermore, there's network configuration information
+799.20s - 801.20s |  that also gets stored within the cloud platform,
+801.20s - 804.08s |  as you can see here, the SSID and the wireless MAC
+804.08s - 806.04s |  address for the camera.
+806.04s - 808.92s |  And then we even have a link directly
+808.92s - 811.28s |  to the new firmware version that the camera is supposed
+811.28s - 815.24s |  to upgrade to the next time a upgrade is initiated
+815.24s - 817.08s |  through the mobile app.
+817.08s - 820.68s |  So we have access to quite a bit of data already.
+820.68s - 823.24s |  And we can essentially go through the logs
+823.24s - 828.36s |  and map out all of the data that AJ Cloud exposes
+828.36s - 830.40s |  through their platform unintentionally
+830.40s - 832.28s |  because of these debug logs, right?
+832.28s - 834.20s |  But ultimately, certainly there's
+834.20s - 837.32s |  some very significant privacy concerns
+837.32s - 838.96s |  that we can raise right here.
+838.96s - 840.52s |  But ultimately, we want to figure out
+840.52s - 844.64s |  how we can use this data and this visibility
+844.64s - 847.24s |  into the sign-in process in order
+847.24s - 850.40s |  to carry out something more from an attacker's perspective,
+850.40s - 851.28s |  right?
+851.28s - 853.04s |  So ultimately, what we wanted to do
+853.04s - 854.88s |  is, as the device ID is highlighted here
+854.88s - 857.28s |  and I mentioned before, what we wanted to figure out
+857.28s - 860.28s |  is a way that we could manipulate the device
+860.28s - 862.88s |  ID during this process so that we could actually
+862.88s - 865.24s |  access the same types of metadata
+865.24s - 868.76s |  for any device which is not tied to the account
+868.76s - 870.44s |  that we're signing into, right?
+870.44s - 875.28s |  And then additionally, if we can access the actual cameras
+875.28s - 878.16s |  themselves and control them as well,
+878.16s - 879.88s |  that would be an added bonus.
+879.92s - 881.88s |  So we set out to do that.
+881.88s - 888.72s |  And we looked for the substrings relating
+888.72s - 891.40s |  to this device configuration post request, which
+891.40s - 893.76s |  I've highlighted in the screenshot above,
+893.76s - 897.80s |  and used that as an initial way to search
+897.80s - 900.88s |  within the disassembly of the Windows app
+900.88s - 906.16s |  in order to get a better idea of potentially where the device
+906.16s - 909.88s |  ID is first incorporated into an outbound post request.
+909.88s - 912.92s |  Because if we can manipulate the data there,
+912.92s - 915.44s |  then hopefully that'll give us insight
+915.44s - 918.40s |  into how this is all connected together.
+918.40s - 921.76s |  So to reference the mobile app once again
+921.76s - 925.44s |  on the Android side of things, luckily, we
+925.44s - 927.20s |  didn't run into any sort of obfuscation
+927.20s - 928.04s |  with the Windows app.
+928.04s - 934.54s |  It's all completely has no signs of any sort of obfuscation.
+934.54s - 936.06s |  So we're really lucky there.
+936.10s - 938.50s |  That certainly helped aid any sort of reverse engineering
+938.50s - 941.10s |  that we needed to do.
+941.10s - 945.06s |  So when we backed up a little bit from the substring,
+945.06s - 947.66s |  which we found relating to the post request,
+947.66s - 950.74s |  ultimately, we found a good spot in the disassembly
+950.74s - 954.94s |  for that function where the device ID is first referenced.
+954.94s - 958.62s |  And before, it's copied from another section within memory
+958.62s - 961.66s |  into the post request as a new parameter, right?
+961.66s - 967.74s |  So once we located this specific point in the disassembly,
+967.74s - 971.02s |  what we wanted to do is basically a few things, right?
+971.02s - 975.94s |  We want to set a breakpoint on this specific line.
+975.94s - 978.38s |  And then we want to actually brute force
+978.38s - 981.30s |  go within process memory and swap out any references
+981.30s - 983.90s |  to the original device ID and swap them out
+983.90s - 988.38s |  with the device ID of another device that's
+988.38s - 991.10s |  not tied to our own account, right?
+991.10s - 994.42s |  And then once we've done all that and covered all the process memory,
+994.42s - 996.62s |  then we'll resume execution as normal.
+996.62s - 999.06s |  And then hopefully, we'll see something happen, right?
+999.06s - 1001.10s |  So we wrote up a quick POC script to automate
+1001.10s - 1006.84s |  this process, which we'll now demo.
+1006.84s - 1008.72s |  Let's see if it does something.
+1008.72s - 1009.52s |  OK, all right.
+1009.52s - 1012.52s |  So there's three separate sign-ins we're going to be doing here.
+1012.52s - 1016.08s |  First is into the account that has the camera, which ultimately
+1016.08s - 1017.72s |  we want to target later on.
+1017.72s - 1020.48s |  There's me at my desk waving to you.
+1020.48s - 1024.44s |  And we can see that we can pan and tilt the camera.
+1024.44s - 1027.88s |  So a very basic operation established through the Windows app, right?
+1027.88s - 1029.56s |  Now, we have a second account, which is
+1029.56s - 1032.08s |  mapped to a completely different device, which
+1032.08s - 1034.92s |  has a very obscured view of nothing.
+1034.92s - 1036.04s |  I think it's my kitchen.
+1036.04s - 1038.92s |  But we can see that this is a completely separate account, right?
+1038.92s - 1045.36s |  Now, we have this command line here where we're deleting the debug log.
+1045.36s - 1048.48s |  And then we are invoking our exploit script,
+1048.48s - 1052.08s |  which will swap out the device ID of the blurred camera
+1052.60s - 1058.44s |  with the camera that's tied to the first account that we showed.
+1058.44s - 1064.00s |  And so even though we've logged into the second account,
+1064.00s - 1071.68s |  we can demonstrate that we have full access to the original device.
+1071.68s - 1075.36s |  And furthermore, we can grep through the debug log
+1075.36s - 1078.28s |  a little bit to just see how that transition actually
+1078.28s - 1079.56s |  happened in real time, right?
+1079.56s - 1084.20s |  So we start out with references to the device ID, which
+1084.20s - 1086.68s |  is actually mapped to this account.
+1086.68s - 1089.28s |  And then later on, we can see that there
+1089.28s - 1093.20s |  is a plethora of additional requests and more information and log
+1093.20s - 1100.32s |  messages which get generated that are tied to the target device, the device
+1100.32s - 1102.64s |  that we wanted to swap out with.
+1102.64s - 1106.00s |  So ultimately, right, we are able to access
+1106.00s - 1109.96s |  all the metadata for this device, everything
+1109.96s - 1113.00s |  that's stored within AJ Cloud Platform that's tied to it.
+1113.00s - 1116.08s |  And we have full remote access and control of it
+1116.08s - 1122.49s |  through the Windows app.
+1122.49s - 1125.05s |  So Mark just sort of walked through what we were able to find just
+1125.05s - 1127.01s |  at that initial access level.
+1127.01s - 1129.29s |  And so right now, it's already quite concerning, right?
+1129.29s - 1133.89s |  We have remote access to any camera that we know the appropriate ID for.
+1133.89s - 1136.05s |  So just taking a step back for a reminder,
+1136.05s - 1139.29s |  sort of our initial access, we did some static reverse engineering
+1139.29s - 1143.21s |  of the firmware, did some packet capture, some analysis of log files,
+1143.21s - 1146.41s |  and then, of course, looking at the camera physically, right,
+1146.41s - 1149.85s |  and doing teardowns, then looking at its physical output.
+1149.85s - 1153.73s |  But this is the first step sort of in evaluating the ecosystem, right,
+1153.73s - 1156.41s |  because it's both the camera manufacturer, it's Wansu,
+1156.41s - 1159.73s |  the cloud applications, the people who wrote the apps, et cetera.
+1159.73s - 1163.05s |  So now we're going to take a look at what we can do with more advanced access.
+1163.05s - 1166.01s |  And so to set that up, we're going to look
+1166.01s - 1168.69s |  at how we can get some live logging output from the camera, what
+1168.73s - 1171.69s |  we can do with that, and then also setting up at a debugger.
+1171.69s - 1174.73s |  In an ideal world, we'd also like to have emulation as well.
+1174.73s - 1176.93s |  In our case, we're not going to necessarily talk about that,
+1176.93s - 1178.61s |  and we're just going to focus on these two.
+1178.61s - 1183.69s |  But these are just some things that are very helpful for you in advanced access.
+1183.69s - 1187.53s |  So first of all, for the live log output, this was, in effect,
+1187.53s - 1191.81s |  fairly trivial because what is also fairly common for IoT vendors,
+1191.81s - 1195.45s |  especially when they don't harden their systems,
+1195.45s - 1198.13s |  is to have some sort of exposed serial port that
+1198.13s - 1202.49s |  does print the de-message logs from your kernel
+1202.49s - 1205.45s |  or whatever applications you may be writing to de-message.
+1205.45s - 1207.93s |  And in this case, we sort of already innately
+1207.93s - 1212.37s |  had that simply by connecting to the serial output from the camera.
+1212.37s - 1216.61s |  And so you can see just a quick snapshot there of some of that log output.
+1216.61s - 1219.49s |  But now we start to run into some of the countermeasures.
+1219.49s - 1223.37s |  And so when we want to debug the app, so we first
+1223.37s - 1225.57s |  have to identify, before I get into that,
+1225.57s - 1230.85s |  we need to identify where the initialization point for the binary
+1230.85s - 1235.25s |  that is going to kick off all of the communication between the app,
+1235.25s - 1237.37s |  the cloud platform, and then the camera.
+1237.37s - 1242.17s |  And so the camera starts it locally using this init app binary,
+1242.17s - 1243.57s |  which we're able to find.
+1243.57s - 1247.01s |  And so this init app binary has some safeguards
+1247.01s - 1248.97s |  to try and make sure that it's running properly.
+1248.97s - 1251.93s |  So first off, it has a kernel-level watchdog.
+1251.93s - 1254.01s |  Now, this is different than the hardware watchdog.
+1254.01s - 1256.77s |  This is the software implementation at a kernel level for it.
+1256.77s - 1259.77s |  However, and it could have been used with the hardware watchdog.
+1259.77s - 1261.93s |  It was not in this case, which would have made
+1261.93s - 1264.45s |  defeating it significantly harder.
+1264.45s - 1266.21s |  But we'll get to that part in a minute.
+1266.21s - 1268.49s |  But this watchdog functions by whenever
+1268.49s - 1272.45s |  you have a thread that writes a character to the watchdog,
+1272.45s - 1275.57s |  you can think of the watchdog as having either been fed
+1275.57s - 1280.13s |  or having been just provided its notification that what it should
+1280.17s - 1282.65s |  be looking for is indeed happening correctly.
+1282.65s - 1284.81s |  If this watchdog is not written to,
+1284.81s - 1286.61s |  it will forcibly reboot the camera
+1286.61s - 1289.61s |  after a certain time window has occurred.
+1289.61s - 1293.61s |  So additionally, a init app is wrapped
+1293.61s - 1296.45s |  within a daemon bash script, which
+1296.45s - 1299.53s |  is, in effect, a way to try and catch situations
+1299.53s - 1302.05s |  where a thread of a init app goes wrong,
+1302.05s - 1305.01s |  but maybe the core thread that's telling the watchdog that things
+1305.01s - 1306.57s |  are OK is still going.
+1306.57s - 1310.57s |  And so if something goes wrong, if it maybe dies,
+1310.57s - 1312.73s |  runs out of memory, something along those lines,
+1312.73s - 1316.29s |  the daemon bash script then would go and restart it again.
+1316.29s - 1318.33s |  And so these are, say, two things that are trying
+1318.33s - 1319.81s |  to keep this up and running.
+1319.81s - 1321.97s |  So now how do we go about dealing with it?
+1321.97s - 1324.49s |  Well, there's a lot of different ways to do it.
+1324.49s - 1327.21s |  But ultimately, you need to send keep alive messages
+1327.21s - 1331.73s |  to the watchdog and hijack the watchdog from a init app
+1331.73s - 1333.37s |  in such a way where a init app won't
+1333.37s - 1335.13s |  be mad that it now can't necessarily
+1335.13s - 1336.25s |  get to the watchdog.
+1336.25s - 1339.69s |  So what we ultimately did, and what
+1339.69s - 1341.81s |  we're going to talk to in this presentation,
+1341.81s - 1344.41s |  is using the magic close feature of a watchdog.
+1344.41s - 1347.77s |  And so typically, when you have a watchdog,
+1347.77s - 1350.53s |  you need a way to close it in such a way that
+1350.53s - 1353.49s |  doesn't tell it that a critical error has happened.
+1353.49s - 1357.01s |  And so the way the Linux kernel gets around that,
+1357.01s - 1360.49s |  at least in this specific case, is
+1360.49s - 1362.25s |  by using the magic close feature.
+1362.25s - 1364.95s |  And so this is an excerpt from the driver API
+1364.95s - 1367.95s |  from the Linux 2.4.18 kernel.
+1367.95s - 1370.35s |  This is not limited to just this kernel.
+1370.35s - 1373.19s |  But this is the one that, say, discusses its implementation
+1373.19s - 1374.99s |  in a more verbose language.
+1374.99s - 1376.75s |  And effectively, this magic close
+1376.75s - 1380.59s |  is write a capital V character to the watchdog.
+1380.59s - 1383.43s |  And now it is sort of put to sleep, if you will.
+1383.43s - 1385.27s |  It can be immediately reactivated.
+1385.27s - 1391.71s |  But it will initially, anyway, turn off its force reboot.
+1391.71s - 1393.71s |  So now that we have that, now that we can kind of
+1393.75s - 1396.95s |  get to a clean state with init app,
+1396.95s - 1399.99s |  we have to then say, OK, well, let's try and see
+1399.99s - 1401.15s |  what we can do to debug it.
+1401.15s - 1403.95s |  And so this sort of follows a very typical workflow.
+1403.95s - 1405.95s |  But first, we needed to make sure
+1405.95s - 1409.67s |  that we could compile arbitrary binary for the device.
+1409.67s - 1413.31s |  And so we find, in this case, that it is a little Indian MIPS
+1413.31s - 1414.21s |  processor.
+1414.21s - 1416.99s |  So we just try, you know, write hello world, compile that,
+1416.99s - 1417.87s |  see if that works.
+1417.87s - 1418.35s |  Great.
+1418.35s - 1420.23s |  So now we have at least some indication
+1420.23s - 1423.55s |  that it's not a proprietary implementation
+1423.89s - 1425.27s |  of the architecture.
+1425.27s - 1429.39s |  And so with that, we can then start setting up a debugger.
+1429.39s - 1430.95s |  In this case, we're using GDB.
+1430.95s - 1432.75s |  One of the nice features of GDB is
+1432.75s - 1435.87s |  you can set up a server separate from the client.
+1435.87s - 1438.03s |  And so instead of trying to run the debugger native
+1438.03s - 1440.47s |  on the camera, we're using a server,
+1440.47s - 1442.47s |  which is going to send that information back
+1442.47s - 1444.63s |  to our client on our Raspberry Pi.
+1444.63s - 1447.67s |  Fortunately, we were able to use a pre-built GDB server.
+1447.67s - 1451.35s |  But many of you, if you've done, say, hardware RE before,
+1451.35s - 1453.87s |  you may have had to go and build it from source and things
+1453.87s - 1454.39s |  like that.
+1454.39s - 1457.23s |  We were fortunate in that that wasn't necessary in this case,
+1457.23s - 1459.79s |  although we were able to do that as well.
+1459.79s - 1463.35s |  Then you need to use the multi-architecture GDB,
+1463.35s - 1465.71s |  connect to it, and then you can start debugging.
+1465.71s - 1467.71s |  Another thing you may want to do, though, again,
+1467.71s - 1470.03s |  because a NIT app will still call the watchdog,
+1470.03s - 1472.71s |  is overwrite the watchdog calls in a NIT app.
+1472.71s - 1475.59s |  Again, just overwriting their function calls
+1475.59s - 1477.03s |  so it's not going to happen.
+1477.03s - 1479.03s |  And so just to kind of put it all together so you
+1479.03s - 1480.19s |  can see what that looks like, we're
+1480.23s - 1483.23s |  just going to run through a quick demo of what
+1483.23s - 1483.99s |  that looks like.
+1483.99s - 1485.91s |  And so first, right turn on the camera,
+1485.91s - 1491.15s |  boot into single user mode by just modifying the uboot flags,
+1491.15s - 1493.11s |  or rather, environment variables.
+1493.11s - 1495.03s |  We need to do some level of initialization
+1495.03s - 1499.51s |  because when we do that, when we change the initialization
+1499.51s - 1501.39s |  script to go into a single user mode,
+1501.39s - 1504.03s |  we needed to then go and add some
+1504.03s - 1506.61s |  of the original initialization that would have normally
+1506.61s - 1509.79s |  been done on reboot, then trigger sort of a normal setup.
+1509.79s - 1510.99s |  And so it's using a NITD.
+1510.99s - 1513.71s |  That's not necessarily important for our purposes.
+1513.71s - 1515.87s |  But then we can kill the main processes.
+1515.87s - 1519.11s |  Just we have a little script to disable the watchdog,
+1519.11s - 1521.43s |  based off of what we were showing earlier,
+1521.43s - 1524.07s |  and then start the main NIT app with the debugger.
+1524.07s - 1526.79s |  And then we can start really looking at what we can do here
+1526.79s - 1527.71s |  with the software.
+1527.71s - 1529.79s |  All the binary and stuff that we're talking about
+1529.79s - 1531.19s |  is open source.
+1531.19s - 1533.67s |  And so you can go to our camera hacks repo,
+1533.67s - 1535.59s |  which we'll put up too at the end of the link,
+1535.59s - 1537.13s |  so that you could, if you would like
+1537.13s - 1539.71s |  to play around with any of this, can also
+1539.71s - 1541.11s |  try it yourself.
+1541.11s - 1544.71s |  And so with that, we're going to go ahead
+1544.71s - 1547.23s |  and take a look at what Mark was able to find
+1547.23s - 1550.03s |  with some of the network traffic.
+1550.03s - 1551.75s |  Yeah, so going back to the Windows app,
+1551.75s - 1553.87s |  we wanted to dig deeper into the network comms
+1553.87s - 1555.67s |  a little bit beyond the sign-in process,
+1555.67s - 1558.39s |  because we fully understood that through the visibility
+1558.39s - 1560.55s |  into the POST requests and POST responses.
+1560.55s - 1563.59s |  So once we looked at it a little bit deeper,
+1563.59s - 1566.11s |  we saw quite a bit of UDP traffic
+1566.11s - 1568.27s |  that was being both transmitted and received
+1568.27s - 1572.23s |  from a multitude of IP and port pairings.
+1572.23s - 1574.75s |  And while Wireshark initially didn't
+1574.75s - 1577.15s |  detect that this was anything in particular,
+1577.15s - 1580.91s |  just recognizes it obviously as UDP,
+1580.91s - 1585.47s |  what we kind of mapped it to, at least from past experience,
+1585.47s - 1587.95s |  is that this was very reminiscent
+1587.95s - 1592.11s |  of a particular IoT device peer-to-peer protocol known
+1592.11s - 1595.39s |  as PPPP, which was detailed pretty extensively
+1595.39s - 1598.23s |  by Paul Mirapici at DEF CON four years ago.
+1598.23s - 1601.11s |  So we went out and located a Wireshark dissector
+1601.11s - 1603.43s |  for this particular protocol, loaded it up,
+1603.43s - 1606.27s |  and ran it against the same packet trace that we just saw.
+1606.27s - 1608.59s |  And lo and behold, it's the exact same protocol
+1608.59s - 1610.35s |  we were dealing with, and it turns out
+1610.35s - 1615.27s |  the messages are all recognized and well-formatted.
+1615.27s - 1617.79s |  So if you're not familiar with that protocol at all,
+1617.79s - 1620.43s |  there's a few key takeaways you'll want to remember.
+1620.43s - 1623.43s |  It's designed basically to provide users
+1623.47s - 1626.19s |  with remote access to the devices
+1626.19s - 1630.35s |  through circumventing NAT or any firewall restrictions,
+1630.35s - 1632.75s |  any sort of network security configurations
+1632.75s - 1635.23s |  through UDP hole punching in a manner
+1635.23s - 1636.87s |  similar to the STUN protocol,
+1636.87s - 1638.39s |  if you're all familiar with that.
+1638.39s - 1641.35s |  But basically, this protocol
+1641.35s - 1643.71s |  is not very publicly documented.
+1643.71s - 1646.11s |  We couldn't find any sort of official public documentation
+1646.11s - 1649.43s |  to this day, but it is used by several IoT vendors
+1649.43s - 1652.19s |  operating within the space and is operating
+1652.19s - 1654.35s |  on tens of millions of devices.
+1654.35s - 1656.31s |  So if you want to know a little bit more about it,
+1656.31s - 1657.75s |  definitely check out Paul's site,
+1657.75s - 1659.87s |  hack.camera, for more information.
+1660.99s - 1664.07s |  So in order to get a better idea
+1664.07s - 1666.79s |  of how peer-to-peer comes into play
+1666.79s - 1671.79s |  in basically hooking up the application to the camera,
+1672.55s - 1674.95s |  we needed to dig into things a little bit more, right?
+1674.95s - 1676.75s |  We needed to spend a little bit more time
+1676.75s - 1678.51s |  reverse engineering the Windows app,
+1678.51s - 1680.59s |  and then we wanted to dig deeper
+1680.59s - 1682.71s |  into the network traffic analysis side of things.
+1682.71s - 1686.95s |  So in order to dig into that a little bit more,
+1686.95s - 1691.15s |  what we needed to do was follow the traffic
+1691.15s - 1695.07s |  in terms of figuring out how a P2P connection
+1695.07s - 1696.19s |  is established in the first place.
+1696.19s - 1699.63s |  So what happens is that a 4-byte hello packet
+1699.63s - 1701.59s |  is initially sent from the client
+1701.59s - 1703.43s |  to a public-facing peer-to-peer server,
+1703.43s - 1706.35s |  specifically on UDP port 60722.
+1707.35s - 1709.11s |  The server will act back
+1709.15s - 1711.59s |  if it is in fact a peer-to-peer server,
+1711.59s - 1715.27s |  and then the client will follow up with a message
+1715.27s - 1719.15s |  asking if it knows about a specific device ID.
+1719.15s - 1722.43s |  If it knows about it, it will act back, the server will,
+1722.43s - 1725.59s |  and then follow up with a punch-to message
+1725.59s - 1729.31s |  that supplies an IP and port combo
+1729.31s - 1732.05s |  that the client will then need to connect to.
+1733.07s - 1736.95s |  The client will then initiate another message,
+1736.99s - 1741.99s |  a punch packet to the camera at the IP and the port
+1742.23s - 1745.39s |  that we were just provided from the peer-to-peer server.
+1745.39s - 1747.19s |  The camera will respond in kind,
+1747.19s - 1750.39s |  saying that, yes, you can connect to the device.
+1750.39s - 1753.11s |  And then if everything goes according to plan,
+1753.11s - 1754.35s |  the camera will respond
+1754.35s - 1756.03s |  that the peer-to-peer connection is now ready,
+1756.03s - 1757.87s |  so now the client and the camera
+1757.87s - 1761.35s |  can communicate bilaterally at this point.
+1761.35s - 1762.23s |  So this is great,
+1762.23s - 1764.27s |  but what can we really do with this, right?
+1764.27s - 1767.55s |  So once the connection is fully established,
+1767.55s - 1770.87s |  at this point, primarily the traffic you'll be seeing
+1770.87s - 1774.55s |  is going from the client to the camera
+1774.55s - 1778.77s |  in the form of message DRW, or device read-write commands.
+1778.77s - 1781.03s |  And in this particular example,
+1781.03s - 1784.95s |  what I've highlighted is a command
+1784.95s - 1788.71s |  for the camera to pan counterclockwise, right?
+1788.71s - 1793.11s |  And this is one of the few rare chances we have
+1793.11s - 1795.99s |  in order to observe how input is processed
+1795.99s - 1800.43s |  from the client to the streaming firmware logs,
+1800.43s - 1803.03s |  which Eric just mentioned we have access to now,
+1803.03s - 1805.69s |  and the network packet capture
+1805.69s - 1808.31s |  in order to see the command transmitted over the wire.
+1808.31s - 1810.27s |  And then ultimately we can confirm it
+1810.27s - 1813.07s |  with the physical output
+1813.07s - 1815.27s |  of the camera panning counterclockwise, right?
+1815.27s - 1818.71s |  So we can kind of do a very basic sort of time analysis
+1818.71s - 1821.43s |  to figure out when we sent the initial command
+1821.43s - 1826.27s |  to when it's interpreted by the firmware itself,
+1826.27s - 1828.55s |  and then obviously the camera pans.
+1828.55s - 1831.67s |  So the line we have highlighted here in this screenshot
+1831.67s - 1833.27s |  is one of the few log messages
+1833.27s - 1835.67s |  which are generated during this period of time.
+1835.67s - 1837.39s |  And we can see very explicit references
+1837.39s - 1840.55s |  to both P2P and pan-tilt-zoom.
+1840.55s - 1843.27s |  And so this gives us already a good idea
+1843.27s - 1846.71s |  of where we would be looking within the camera firmware
+1846.71s - 1849.93s |  in order to essentially use as a breadcrumb
+1850.09s - 1852.17s |  to enable us to find the code section
+1852.17s - 1856.65s |  where message DRW packets are parsed.
+1856.65s - 1858.89s |  And hopefully that would give us an idea
+1858.89s - 1861.05s |  of essentially where more
+1861.05s - 1863.85s |  of the firmware functionality resides.
+1863.85s - 1865.65s |  And lo and behold, yeah,
+1865.65s - 1869.49s |  easily we're able to locate where that message is generated.
+1869.49s - 1872.41s |  We're able to furthermore see that
+1872.41s - 1875.89s |  in order to actually pan or tilt the camera,
+1875.89s - 1878.05s |  a separate library function is invoked
+1878.05s - 1881.21s |  to carry that out and interface directly with the hardware.
+1881.21s - 1883.97s |  And then backing things up a little bit further from that,
+1883.97s - 1886.05s |  we're able to confirm that in fact,
+1886.05s - 1889.93s |  yes, we were operating within one function
+1889.93s - 1894.93s |  which handles parsing all of these message DRW packets.
+1894.93s - 1897.17s |  And so with that,
+1897.17s - 1899.13s |  we were able to get a much better idea
+1899.13s - 1901.17s |  of the full extent of the commands
+1901.17s - 1904.61s |  that were supported by the firmware.
+1904.61s - 1906.53s |  And we'll now demonstrate for you
+1906.53s - 1911.94s |  the peer-to-peer client that we built up.
+1911.94s - 1913.38s |  Okay, so right here,
+1913.38s - 1915.80s |  we have the client operating on the left side in the shell.
+1915.80s - 1917.54s |  We actually have another camera
+1917.54s - 1919.82s |  that's pointed at the camera that we'll be manipulating.
+1919.82s - 1922.58s |  And we have Wireshark right down here,
+1922.58s - 1924.90s |  which is capturing all of the...
+1926.54s - 1928.70s |  Oh, well, maybe you didn't hear that very loudly,
+1928.70s - 1932.18s |  but that was transmitting a sound clip of my voice
+1932.18s - 1934.26s |  that I previously recorded.
+1934.26s - 1939.14s |  Now you can see that the camera is panning counterclockwise
+1939.94s - 1943.30s |  and now we're able to send in another message
+1943.30s - 1947.14s |  to tell the camera to pan clockwise now.
+1947.14s - 1950.52s |  And then we can send another message to have it pan again.
+1951.68s - 1954.78s |  And then we can also tell it to stop as well
+1954.78s - 1955.94s |  at any point in time.
+1955.94s - 1959.06s |  So we can also tilt the camera up and down
+1959.06s - 1966.24s |  as we'll see here.
+1966.24s - 1967.32s |  And there it goes down.
+1967.32s - 1968.60s |  And as you can see there,
+1968.60s - 1971.20s |  the SD card was exposed very briefly.
+1971.20s - 1975.02s |  And then we also have the cruise mode,
+1975.02s - 1978.64s |  which basically just oscillates the camera back and forth
+1978.64s - 1986.68s |  and kind of just resets itself a little bit.
+1986.68s - 1987.86s |  And then last but not least,
+1987.86s - 1990.20s |  we actually have a command that we kind of crafted ourself,
+1990.20s - 1991.52s |  which sends a packet,
+1991.52s - 1996.16s |  which will in fact crash the camera and force it to reboot.
+1996.16s - 1999.68s |  So as you can see in the packet capture,
+1999.68s - 2002.56s |  we stop sending any sort of packets beyond that.
+2002.56s - 2004.40s |  We're not receiving anything furthermore
+2004.44s - 2006.92s |  from the camera itself,
+2006.92s - 2009.52s |  but now it's going back into cruise mode
+2009.52s - 2011.04s |  and then it's kind of back to originally
+2011.04s - 2011.96s |  where it started from.
+2011.96s - 2014.22s |  So yeah, that's all great,
+2014.22s - 2018.20s |  but ultimately what we can see is that
+2018.20s - 2022.32s |  all of that was without any sort of authentication, right?
+2022.32s - 2024.68s |  There's no encryption anywhere to be seen
+2024.68s - 2027.32s |  and none of this requires any sort of auth, right?
+2027.32s - 2031.64s |  Anyone on the internet can do what we just did, right?
+2031.64s - 2033.76s |  But ultimately what we wanted to do
+2034.12s - 2035.88s |  is take things a little bit of a step further
+2035.88s - 2038.48s |  and figure out how to carry out some more impactful attacks
+2038.48s - 2041.56s |  beyond obviously pressing privacy concerns.
+2041.56s - 2044.48s |  So we wanted to figure out more of the extent
+2044.48s - 2046.84s |  of the message DRW commands
+2046.84s - 2048.92s |  and find out if there's any other esoteric commands
+2048.92s - 2050.36s |  that maybe we overlooked
+2050.36s - 2052.68s |  when focusing on more of the panning and tilting
+2052.68s - 2054.72s |  and very basic operation.
+2054.72s - 2058.44s |  So what we eventually really focused our time on
+2058.44s - 2060.90s |  was a command that we found,
+2060.90s - 2065.50s |  which is highlighted on the basic screenshots
+2065.50s - 2066.34s |  that we see here,
+2066.34s - 2069.46s |  but ultimately what this command does
+2069.46s - 2072.10s |  is it's used to modify an INI file,
+2072.10s - 2075.52s |  which is represented in the screenshot down on the left.
+2075.52s - 2078.10s |  And within that INI file,
+2078.10s - 2081.58s |  it contains device configuration data,
+2081.58s - 2083.48s |  most notably the serial number,
+2083.48s - 2085.74s |  or you might recognize that as the device ID
+2085.74s - 2088.02s |  as we've referenced several times before.
+2088.06s - 2092.02s |  And so, right, the purpose of this command
+2092.02s - 2097.02s |  is to allow the serial number, the device ID,
+2098.58s - 2102.58s |  to be overwritten with basically arbitrary input
+2102.58s - 2105.62s |  that you would pass through this particular message, right?
+2105.62s - 2108.34s |  So ultimately what we theorize
+2108.34s - 2110.90s |  is that if we manipulate the serial number
+2110.90s - 2113.42s |  in such a way that it changes it to a value
+2113.42s - 2117.02s |  that the AJ Cloud Platform is not going to recognize
+2117.66s - 2120.46s |  when the camera attempts to beacon home,
+2120.46s - 2122.94s |  hopefully that would disrupt the communications,
+2122.94s - 2124.78s |  maybe even potentially break the device.
+2124.78s - 2127.22s |  So what we ended up doing is we tested this out
+2127.22s - 2129.58s |  against Eric's modified WAN2EQ5
+2129.58s - 2132.50s |  and we recorded the results, as we'll see here.
+2133.78s - 2136.98s |  So we have the client on the left.
+2136.98s - 2139.62s |  On the right here, we just zoom into the INI files
+2139.62s - 2140.70s |  we've just saw before.
+2140.70s - 2142.92s |  We have the serial number there.
+2142.92s - 2146.38s |  The INI file has not been modified in a meaningful way.
+2146.38s - 2149.30s |  We are attempting initially here
+2149.30s - 2151.78s |  just to establish a connection over peer-to-peer
+2151.78s - 2152.74s |  with the camera.
+2152.74s - 2154.86s |  It takes a little bit of time to go through.
+2154.86s - 2158.22s |  The camera log messages that we're seeing on the right,
+2158.22s - 2160.38s |  none of those really are of any sort of importance
+2160.38s - 2161.22s |  at this point.
+2161.22s - 2162.74s |  It's more just kind of background noise
+2162.74s - 2165.50s |  that we can kind of just look through,
+2165.50s - 2167.42s |  but ultimately nothing we're concerned with, right?
+2167.42s - 2172.06s |  So now we have a connection that is fully active.
+2172.06s - 2176.22s |  We still see some messages kind of going on the side
+2177.22s - 2178.70s |  with the firmware logs.
+2178.70s - 2181.02s |  And then we just sent a command
+2181.02s - 2184.98s |  which will handle overriding the INI file.
+2184.98s - 2189.04s |  And so we send a few packets as part of this command.
+2189.04s - 2191.54s |  And ultimately what we'll see
+2191.54s - 2194.14s |  is that we cat the contents of that INI file
+2194.14s - 2196.42s |  and we can see that the model vendor and serial number
+2196.42s - 2197.98s |  have all been changed to garbage data
+2197.98s - 2201.50s |  that we ended up passing along within our command.
+2201.50s - 2205.50s |  And we send the same crash reboot command
+2205.58s - 2208.50s |  that we'd previously demonstrated before,
+2208.50s - 2212.90s |  and we can see the device rebooting in real time, right?
+2212.90s - 2216.18s |  So there's a lot of log messages
+2216.18s - 2218.42s |  that are generated as part of this,
+2218.42s - 2222.58s |  but ultimately we'll zoom in on what happens here
+2222.58s - 2225.74s |  once it gets much further along in the process.
+2225.74s - 2227.96s |  And what we ultimately wanna see
+2227.96s - 2231.98s |  is whether or not the changes we made to that INI file,
+2231.98s - 2235.12s |  if those in fact persisted across reboot,
+2235.74s - 2240.28s |  and we'll see if this ends up impacting the initial beacons
+2240.28s - 2241.88s |  back to the AJ Cloud Platform
+2241.88s - 2248.61s |  that the cameras required to carry out.
+2248.61s - 2250.71s |  And so, yeah, still generating a lot of noise,
+2250.71s - 2252.25s |  but as we zoom in, we can see
+2252.25s - 2254.77s |  that there's a lot of curl commands that are being issued.
+2254.77s - 2257.05s |  And as you can kind of see,
+2257.05s - 2260.77s |  yes, a lot of that data looks pretty familiar.
+2260.77s - 2265.55s |  And ultimately when those curl requests are initiated,
+2265.55s - 2267.73s |  the AJ Cloud Platform has no idea what to do with them
+2267.77s - 2270.53s |  because they're not well-structured device IDs.
+2270.53s - 2272.41s |  And as we can see here,
+2272.41s - 2275.89s |  the INI file has been effectively overwritten,
+2275.89s - 2277.69s |  our changes persisted,
+2277.69s - 2282.25s |  and essentially at this point, the device is fully bricked
+2282.25s - 2284.69s |  and there is no way to actually restore
+2284.69s - 2286.53s |  the original contents of the INI file
+2286.53s - 2289.77s |  unless you have access like we did
+2289.77s - 2291.49s |  to our particular camera, right?
+2291.49s - 2293.09s |  If you carried out this type of attack
+2293.09s - 2295.21s |  against any stock camera right now,
+2295.21s - 2298.17s |  there is no way to essentially restore it
+2298.17s - 2301.85s |  because device firmware upgrades and things like that
+2301.85s - 2304.47s |  or flashing the device and all that,
+2304.47s - 2307.09s |  it'll just get you back to a,
+2307.09s - 2309.97s |  it'll upgrade the firmware or whatever you need to,
+2309.97s - 2313.21s |  but it's ultimately not gonna touch that INI file.
+2313.21s - 2315.61s |  So yeah, this is a pretty effective way
+2315.61s - 2318.13s |  of taking these devices permanently offline.
+2321.25s - 2322.25s |  So quickly just getting
+2322.25s - 2324.45s |  into some further attack scenarios here.
+2324.49s - 2328.41s |  So real quick recap, right?
+2328.41s - 2331.05s |  So we established that we have arbitrary write access
+2331.05s - 2333.53s |  to this INI file with no authentication.
+2333.53s - 2337.53s |  And so that alone, right, that can be a bit of a problem,
+2337.53s - 2340.01s |  but it doesn't necessarily stop there, right?
+2340.01s - 2342.53s |  Because it does, you can brick the cameras that way, right?
+2342.53s - 2345.17s |  But the string copy that's being invoked
+2345.17s - 2347.53s |  from the message DRW buffer
+2347.53s - 2351.25s |  can take 512 kilobytes into global variables.
+2351.25s - 2354.57s |  And these globals lack any length restriction imposed
+2354.57s - 2358.33s |  on the extracted strings intended for that INI file.
+2358.33s - 2362.09s |  So post exploitation can be further facilitated
+2362.09s - 2363.85s |  from tools already on the box,
+2363.85s - 2366.65s |  such as potentially some reverse TTY connections
+2366.65s - 2368.17s |  and things like that from there
+2368.17s - 2371.23s |  to pivot laterally, persist, et cetera.
+2371.23s - 2373.57s |  So what can we do about this, right?
+2373.57s - 2376.27s |  Because this is sort of the nature of these IoT systems.
+2376.27s - 2377.65s |  There's flaws along the way
+2377.65s - 2380.09s |  with the whole ecosystem that we've seen.
+2380.09s - 2383.85s |  So if you have to have them on your network,
+2383.85s - 2385.41s |  you're really gonna wanna isolate them
+2385.41s - 2386.45s |  from the rest of your network.
+2386.45s - 2387.57s |  Maybe using a subnet,
+2387.57s - 2389.33s |  sort of like we heard a little bit earlier,
+2389.33s - 2390.93s |  but ultimately at the end of the day,
+2390.93s - 2393.35s |  your cameras will remain vulnerable to attacks.
+2393.35s - 2394.33s |  And on top of that,
+2394.33s - 2396.13s |  the data stored in the cloud system, right?
+2396.13s - 2399.33s |  So it's not just the camera will also remain at risk
+2399.33s - 2401.33s |  because it's again, dependent on the vendor
+2401.33s - 2403.85s |  to implement their cloud security protocols
+2403.85s - 2406.01s |  in a viable way.
+2406.01s - 2408.49s |  So you could restrict the outbound
+2408.49s - 2410.13s |  and inbound network communications,
+2410.13s - 2411.67s |  but this often can get in the way
+2411.67s - 2413.33s |  of the functionality of the devices.
+2413.33s - 2416.57s |  Again, these are kind of built for accessibility in mind,
+2416.57s - 2419.13s |  rather than security.
+2419.13s - 2421.61s |  If you want to, if you say you're a sysadmin
+2421.61s - 2422.45s |  and you were like, no,
+2422.45s - 2424.61s |  I don't want any of these on my network, period.
+2424.61s - 2425.93s |  So this is a little intro
+2425.93s - 2429.25s |  of how you might be going about stopping them from working.
+2429.25s - 2433.33s |  So blocking UDP on 60,722
+2433.33s - 2435.57s |  would prevent the transmission of these message hello
+2435.57s - 2439.89s |  and message hello acknowledge PPPP protocol messages,
+2439.89s - 2441.81s |  which would effectively prevent the establishment
+2441.81s - 2443.01s |  of these connections
+2443.01s - 2446.57s |  and stop these cameras from operating in that way.
+2446.57s - 2448.27s |  You could also look to see if the cameras
+2448.27s - 2450.69s |  were already on your network in the first place
+2450.69s - 2453.49s |  by looking for the UDP packets on that port
+2453.49s - 2455.13s |  beginning with the byte F1.
+2456.91s - 2459.45s |  But regardless say of which camp,
+2459.45s - 2461.41s |  say you would fall into with that,
+2461.41s - 2463.97s |  the general impact of these problems
+2463.97s - 2466.73s |  includes that over 1 million devices directly
+2466.73s - 2468.09s |  are affected by these firmware
+2468.09s - 2470.17s |  and platform vulnerabilities that we've discovered.
+2470.17s - 2471.65s |  And all of the camera products,
+2471.65s - 2473.77s |  which operate on the AJ cloud firmware
+2473.77s - 2476.49s |  and connect to the AJ cloud platform are affected,
+2476.49s - 2480.03s |  including that we have demonstrated attacks
+2480.03s - 2482.09s |  against 15 different camera products
+2482.09s - 2484.65s |  from affected vendors, including Wandsview,
+2484.65s - 2486.61s |  Galileo and Sonata.
+2486.61s - 2489.01s |  And so again, on top of just that,
+2489.01s - 2491.77s |  just the peer-to-peer protocol that we're discussing
+2491.77s - 2493.29s |  still remains in active use, right?
+2493.61s - 2494.85s |  So that means no authentication
+2494.85s - 2496.37s |  based on the nature of this firmware
+2496.37s - 2498.81s |  and they're vulnerable to similar attacks.
+2498.81s - 2500.41s |  And so this isn't necessarily
+2500.41s - 2502.85s |  just restricted to IOT devices either, right?
+2502.85s - 2505.75s |  You could use this protocol in other systems too,
+2505.75s - 2507.63s |  but again, just for our talk, right,
+2507.63s - 2510.83s |  where we're focusing on how it is used in IOT.
+2511.69s - 2514.53s |  So there are alternative platforms, right?
+2514.53s - 2515.85s |  So not just AJ cloud, right?
+2515.85s - 2518.73s |  We have Azure, AWS, Google cloud, et cetera,
+2518.73s - 2521.37s |  and they have offerings that comply
+2521.37s - 2524.35s |  with international standards, data protection regulations.
+2524.35s - 2527.03s |  They have detailed vulnerability disclosure policies,
+2527.03s - 2529.13s |  bug bounty programs, et cetera,
+2529.13s - 2531.09s |  and not relying on peer-to-peer servers
+2531.09s - 2533.53s |  that can come up effectively ad hoc.
+2533.53s - 2535.85s |  They have centralized communications
+2535.85s - 2538.25s |  and quite a bit more security around that.
+2538.25s - 2541.13s |  So wrapping up just some key takeaways, right?
+2541.13s - 2542.81s |  So within this ecosystem,
+2542.81s - 2544.97s |  we're kind of looking at a scenario
+2544.97s - 2547.57s |  as sort of our title when the levy breaks
+2547.57s - 2549.53s |  where everything goes wrong, right?
+2549.53s - 2552.01s |  From the camera, firmware, to the app,
+2552.01s - 2553.41s |  to the cloud platform.
+2553.41s - 2555.33s |  So we have critical vulnerabilities there.
+2555.33s - 2557.61s |  We also have protocols that in of themselves
+2557.61s - 2559.05s |  have critical vulnerabilities.
+2559.05s - 2562.09s |  And largely, there are a number of reasons for this,
+2562.09s - 2563.57s |  but it's ultimately the decision
+2563.57s - 2566.41s |  of providing accessibility at the cost of security.
+2566.41s - 2569.97s |  And unfortunately, this is somewhat sort of analogous
+2569.97s - 2572.13s |  just to the nature of IOT in general, right?
+2572.13s - 2575.13s |  Because just to take another real quick example,
+2575.13s - 2578.89s |  the ring doorbell cameras you may be familiar with,
+2578.89s - 2580.53s |  they have known vulnerabilities
+2580.53s - 2582.33s |  which can denial of service them.
+2582.33s - 2584.53s |  They've been around for the past two years.
+2584.53s - 2587.21s |  However, the rest of the ecosystem
+2587.21s - 2589.65s |  can still make them function in sort of a usable way.
+2589.65s - 2591.45s |  But the problem with the cameras
+2591.45s - 2593.97s |  is you can't exactly expect all of your users
+2593.97s - 2598.09s |  to go use certificate pinning for their Wi-Fi access, right?
+2598.09s - 2600.37s |  That's not something that you can reliably do.
+2600.37s - 2604.09s |  So these problems will sort of persist.
+2604.09s - 2605.97s |  Additionally, so that sort of gets
+2605.97s - 2608.45s |  to the limited ability to mitigate it, right?
+2608.45s - 2610.61s |  So again, when you're looking at these devices,
+2610.61s - 2613.29s |  you have to take into account the entire ecosystem
+2613.29s - 2615.01s |  and where these things can go wrong.
+2615.01s - 2617.65s |  Mitigate where you can because your operating environment,
+2617.65s - 2619.49s |  especially on the device itself, might
+2619.49s - 2621.53s |  be limited in what you can do.
+2621.53s - 2624.05s |  And so with that, I just want to thank you very much
+2624.05s - 2626.73s |  for listening to our talk and then, say,
+2626.73s - 2628.45s |  inviting us out to be here.
+2628.45s - 2630.65s |  And so you can find a lot of our code, documentation,
+2630.65s - 2633.89s |  et cetera, at elastic slash camera hacks on GitHub.
+2633.89s - 2636.77s |  And of course, feel free to follow us.
+2636.77s - 2638.57s |  And special thanks to some of the folks
+2638.57s - 2641.41s |  listed there for helping us with our research.
+2641.41s - 2643.69s |  And so again, thank you very much.
+2643.69s - 2646.85s |  And have a great rest of your time here at Blue Hat.

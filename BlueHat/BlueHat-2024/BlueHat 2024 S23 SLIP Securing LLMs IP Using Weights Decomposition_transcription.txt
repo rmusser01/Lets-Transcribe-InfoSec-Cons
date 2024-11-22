@@ -1,0 +1,618 @@
+{
+  "webpage_url": "https://www.youtube.com/watch?v=CEZYfTanQFk",
+  "title": "BlueHat 2024: S23: SLIP: Securing LLMs IP Using Weights Decomposition",
+  "description": "BlueHat 2024: Session 23: SLIP: Securing LLMs IP Using Weights Decomposition Presented by Adam Hakim from Microsoft\n\nAbstract: Large language models (LLMs) have recently seen widespread adoption, in both academia and industry. As these models grow, they become valuable intellectual property (IP), reflecting enormous investments by their owners. Moreover, the high cost of cloud-based deployment has driven interest towards deployment to edge devices, yet this risks exposing valuable parameters to theft and unauthorized use. Current methods to protect models' IP on the edge have limitations in terms of practicality, loss in accuracy, or suitability to requirements. In this paper, we introduce a novel hybrid inference algorithm, named SLIP, designed to protect edge-deployed models from theft. SLIP is the first hybrid protocol that is both practical for real-world applications and provably secure, while having zero accuracy degradation and minimal impact on latency. It involves partitioning the model between two computing resources, one secure but expensive, and another cost-effective but vulnerable. This is achieved through matrix decomposition, ensuring that the secure resource retains a maximally sensitive portion of the model's IP while performing a minimal number of computations, and vice versa for the vulnerable resource. Importantly, the protocol includes security guarantees that prevent attackers from exploiting the partition to infer the secured information. Finally, we present experimental results that show the robustness and effectiveness of our method, positioning it as a compelling solution for protecting LLMs.",
+  "channel_url": "https://www.youtube.com/channel/UCKmzq2lAhDxLy36KtvVWpaQ",
+  "duration": 1740,
+  "channel": "Microsoft Security Response Center (MSRC)",
+  "uploader": "Microsoft Security Response Center (MSRC)",
+  "upload_date": "20241108"
+}
+
+0.08s - 2.40s | This text was transcribed using whisper model: large-v2
+
+ So, my name is Adam Hakim.
+2.40s - 5.12s |  Thank you very much for coming today.
+5.12s - 6.88s |  What I'll be introducing is
+6.88s - 10.60s |  a security solution we developed called SLIP.
+10.60s - 14.20s |  It's supposed to protect AI models from being stolen.
+14.20s - 17.52s |  So, much of what you saw today is about red teaming models,
+17.52s - 20.92s |  but here we are servicing the model owner,
+20.92s - 22.96s |  trying to protect their IP,
+22.96s - 24.72s |  their model from being stolen.
+24.72s - 27.20s |  So, many of us would like to have
+27.24s - 29.92s |  AI models on our personal devices,
+29.92s - 33.40s |  on our laptops and tablets and mobile phones,
+33.40s - 35.68s |  but putting them there comes with
+35.68s - 38.24s |  significant risk for the model owner.
+38.24s - 40.92s |  For example, Microsoft developed
+40.92s - 44.92s |  a flagship AI feature called Recall,
+44.92s - 46.80s |  which enables you, you might have heard of it,
+46.80s - 49.20s |  which enables you to search everything you did
+49.20s - 51.60s |  on your PC using natural language.
+51.60s - 54.08s |  It has multiple AI models in it,
+54.08s - 57.20s |  and it deployed this feature and all the AI models
+57.20s - 62.20s |  on a series of PCs called Copilot Plus PCs.
+63.08s - 65.60s |  And what happened very quickly is that a hacker,
+65.60s - 67.28s |  maybe somebody in this conference,
+67.28s - 70.32s |  was able to access all of these AI models
+70.32s - 71.84s |  and upload them online.
+71.84s - 74.56s |  So, all the hard work from the development team
+74.56s - 76.80s |  was available now for anybody to take
+76.80s - 79.16s |  and to use this feature on hardware
+79.16s - 81.84s |  that it wasn't intended for.
+81.84s - 84.76s |  So, this is a use case for why we need a way
+84.76s - 89.44s |  to deploy AI models on edge devices,
+89.44s - 91.52s |  but in a way that they are protected.
+91.52s - 94.16s |  So, what I'll cover today is an introduction,
+94.16s - 96.96s |  overview of our technique called Sleep.
+96.96s - 99.12s |  Sleep is comprised of two components.
+99.12s - 100.88s |  One is model-weight decomposition,
+100.88s - 103.68s |  how we split up a model into two entities,
+103.68s - 105.52s |  and then a secure inference protocol,
+105.52s - 109.72s |  how we execute these two separate entities together
+109.72s - 112.96s |  to achieve a protected inferencing,
+112.96s - 115.04s |  and then how we apply Sleep for CNNs,
+115.04s - 118.92s |  and finally, some conclusions.
+118.92s - 122.16s |  So, a organization that I come from in Microsoft
+122.16s - 123.42s |  is called WSSI.
+123.42s - 125.40s |  Its mission is to deliver integrated
+125.40s - 127.52s |  Silicon Plus OS platform.
+127.52s - 130.64s |  It recently contributed by developing the hardware SOC
+130.64s - 132.28s |  for Copilot Plus PCs,
+132.28s - 135.84s |  and I'm the manager of a data science group in Israel
+135.84s - 137.28s |  that does security work,
+137.28s - 140.60s |  which is part of the project that you'll see today,
+140.60s - 143.40s |  inference optimization, and also a computer vision work.
+144.36s - 147.40s |  So, this is the team that developed the solution.
+147.40s - 151.08s |  It has data scientists, engineers,
+151.08s - 154.24s |  cryptography researchers, security researchers.
+154.24s - 157.56s |  It's actually, our solution is a result of collaboration
+157.56s - 159.08s |  of multiple disciplines.
+160.24s - 163.64s |  So, LMs are valuable, as you might as well know.
+163.64s - 166.68s |  They cost a lot of money to create.
+166.68s - 168.96s |  The cost comes from various attributes,
+168.96s - 171.44s |  the computing resources it costs to create them,
+171.44s - 174.24s |  which can reach for like Gemini Ultra and GPT-4
+174.24s - 176.32s |  to hundreds of millions of dollars.
+176.32s - 179.76s |  The value also comes from any proprietary data
+179.76s - 181.90s |  involved in creating them,
+181.90s - 184.44s |  the collection and annotation efforts,
+184.44s - 187.04s |  and any secret source that the model owner has
+187.04s - 188.72s |  to create these models.
+188.72s - 190.32s |  So, they're very valuable.
+190.32s - 194.28s |  And also, inferencing with LMs is expensive.
+194.28s - 196.96s |  So, a model owner has their model deployed
+196.96s - 198.48s |  on some cloud service,
+198.48s - 203.48s |  and charge GPT, it would cost over $700,000 per day
+203.48s - 207.64s |  just to operate and to service to clients, to users.
+207.64s - 209.92s |  And Microsoft is trying to make it cheaper.
+209.92s - 214.04s |  So, how do you make inferencing of models cheaper?
+214.04s - 218.60s |  Well, you move them to a free computing resource, the Edge.
+218.60s - 222.92s |  All of your laptops and devices are a way to execute LLMs
+222.92s - 227.92s |  without cost for the model owner or for cloud services.
+229.12s - 231.00s |  But, putting models on the Edge,
+231.00s - 233.32s |  as I mentioned, as you saw with Recall,
+233.32s - 236.28s |  is risky because the Edge is penetrable.
+236.28s - 240.96s |  And we classify the capability of hackers
+240.96s - 245.96s |  from cyber software attacks from five to zero,
+247.24s - 250.20s |  and for physical hardware attacks from four to zero,
+250.20s - 252.00s |  in terms of the hacker's capabilities.
+252.00s - 257.00s |  And we can say that currently, current hardware is penetrable
+257.32s - 260.56s |  and advanced hacker might be able to steal models,
+260.56s - 265.56s |  to steal model weights by having some capabilities
+265.72s - 268.88s |  and indefinite hold of devices,
+268.88s - 271.88s |  which most hackers can obtain when it comes to Edge devices.
+273.32s - 277.16s |  So, our goal is to enable deploying LLMs,
+277.16s - 280.80s |  expensive LLMs that cost a lot of money to create
+280.80s - 283.76s |  on the Edge by providing the highest level of security
+283.76s - 285.36s |  for their IP.
+285.36s - 288.00s |  And so, we wanna enable a model owner that has valuable IP
+288.00s - 291.88s |  to offload inference to any personal device,
+291.88s - 294.60s |  and by doing so, distribute cost of inference
+294.60s - 298.00s |  towards clients, bring models closer to the inputs
+298.00s - 303.00s |  to gain also privacy and to enable offline inference.
+303.48s - 306.60s |  And of course, protect model IP while doing so.
+307.56s - 311.68s |  So, we looked around what kind of software solutions exist
+311.68s - 314.56s |  to protect their models, when they're on the Edge,
+314.56s - 317.96s |  there's different fields that try to accomplish this,
+317.96s - 320.08s |  but all of them have different problems.
+320.08s - 324.20s |  So, for example, model obfuscation has two guarantees,
+324.20s - 325.96s |  homomorphic encryption, if you're familiar,
+325.96s - 328.28s |  is considered mostly impractical,
+328.28s - 330.96s |  but we found a framework that works very well
+330.96s - 332.92s |  for the problem, it fits the problem well,
+332.92s - 335.48s |  and it can provide strong guarantees,
+335.52s - 338.24s |  and that's hybrid inference, running a model
+338.24s - 340.36s |  by splitting it up to two portions,
+340.36s - 343.68s |  and I'll show you exactly what this means in a few slides.
+343.68s - 346.72s |  So, this is our technique, we published a paper on it,
+346.72s - 350.92s |  you can find it online, it's called SLIP,
+350.92s - 353.04s |  stands for Securing LLMs IP,
+353.04s - 355.92s |  and using the technique we call weight decomposition,
+355.92s - 358.36s |  and we also have a few patents on it,
+358.36s - 360.56s |  and we're currently working on applying it
+360.56s - 363.52s |  to the recall models I showed you earlier to protect them.
+363.52s - 365.92s |  So, the SLIP framework works like this,
+365.92s - 368.16s |  it has two components, as I mentioned,
+368.16s - 370.24s |  one is a model weight decomposition,
+370.24s - 374.88s |  you take a model theta, and you split it to two portions,
+374.88s - 376.48s |  theta C and theta D.
+377.32s - 380.76s |  Theta C is sent to Charlie, a trusted entity,
+380.76s - 382.72s |  a cloud, a trusted execution environment,
+382.72s - 385.84s |  a protected server, and theta D is sent to David,
+385.84s - 390.16s |  an untrusted entity, for example, just your user device,
+390.16s - 391.44s |  or a normal execution environment.
+391.44s - 394.08s |  So, one model, two portions,
+394.08s - 395.96s |  and then the secure inference protocol
+395.96s - 398.76s |  is in charge of enabling communication
+398.76s - 401.36s |  between those two entities,
+401.36s - 405.00s |  as you're performing inferencing or prompting the model,
+405.00s - 408.00s |  but it has to do so, enable communication,
+408.00s - 409.88s |  while protecting Charlie's model,
+409.88s - 414.12s |  the portion we sent to Charlie, protecting it from David.
+414.12s - 417.32s |  So, the portion we put on the trusted entity
+417.32s - 420.56s |  should not be exposed to the untrusted entity.
+420.56s - 421.84s |  So, that's the framework.
+423.56s - 426.44s |  Our assumptions are that the secure entity,
+426.44s - 429.28s |  a trusted entity is completely secure,
+429.28s - 431.84s |  and any attacks on the trusted entity
+431.84s - 434.24s |  is out of scope for this work.
+434.24s - 436.96s |  The untrusted entity is completely adversarial,
+436.96s - 439.76s |  so anything we place on the untrusted entity
+439.76s - 442.20s |  can entirely be stolen,
+442.20s - 444.40s |  it completely belongs to the attacker,
+444.40s - 447.12s |  and of course, we don't rely on the transparency,
+447.12s - 449.72s |  sorry, the secrecy of the protocol for any guarantees,
+449.72s - 451.32s |  so the protocol is completely transparent,
+451.32s - 452.84s |  I'm sharing it with you today,
+452.84s - 457.20s |  and it's published, as I mentioned, as well.
+457.20s - 459.84s |  The requirements is to, the trusted entity,
+459.84s - 463.96s |  the secure entity, is expensive to run inferencing on,
+463.96s - 466.28s |  it's an expensive computing resource,
+466.28s - 467.52s |  so we have to make sure
+467.52s - 469.68s |  that there's a minimal amount of computation
+469.68s - 471.16s |  on the trusted entity.
+471.16s - 473.32s |  Because we have two portions of the model now,
+473.32s - 475.16s |  and they have to communicate between them,
+475.16s - 476.88s |  it creates latency, so we have to make sure
+476.88s - 480.40s |  that the solution has as low latency as possible,
+480.40s - 483.00s |  and the output of the model needs to remain the same,
+483.00s - 484.88s |  so we need to keep the model integrity,
+484.88s - 486.84s |  and of course, provide IP protection.
+487.72s - 491.52s |  So here's the solution, the gist of it.
+491.52s - 495.08s |  We take a layer of neural network,
+495.08s - 496.32s |  represented here by W,
+496.32s - 501.32s |  just a matrix of neural network parameters,
+501.52s - 504.48s |  and we split it up to WD and WC,
+504.48s - 506.20s |  the two portions that I mentioned.
+506.20s - 508.36s |  Each of them multiply the inputs,
+508.36s - 510.00s |  and we receive the final output A,
+510.00s - 511.64s |  as if we didn't do anything.
+511.64s - 515.00s |  And the flow, the inferencing flow goes like this.
+515.00s - 519.64s |  So David has WD, and has the prompt X,
+519.64s - 521.52s |  for example, George Walker Bush
+521.52s - 524.52s |  is an American politician who served,
+524.52s - 526.24s |  the prompt is sent to Charlie,
+526.24s - 531.24s |  which multiplies with Charlie's version of the model
+531.24s - 534.80s |  to obtain AC, and then AD is sent to Charlie,
+534.80s - 538.04s |  it merges with Charlie's portion
+538.04s - 539.52s |  to receive the final output,
+539.52s - 542.40s |  and then some activation function is performed on A,
+542.40s - 544.12s |  which is common in neural networks,
+544.12s - 546.44s |  and we receive the final output
+546.44s - 549.16s |  as the 43rd president of the United States.
+549.16s - 552.00s |  I think that's the correct answer, you should know better.
+553.36s - 555.20s |  And so that's the flow.
+555.20s - 557.80s |  And what we're trying to achieve is that WC,
+559.08s - 563.92s |  the portion on Charlie, has the most amount of IP,
+563.92s - 564.96s |  the most amount of value,
+564.96s - 568.12s |  because that will be kept on the secure entity on Charlie,
+569.52s - 571.12s |  but have the least amount of compute,
+571.12s - 573.60s |  because Charlie is expensive to use.
+573.60s - 575.24s |  So the most amount of information
+575.24s - 577.16s |  with the minimum amount of operations.
+577.16s - 579.48s |  And WD should be the opposite.
+579.48s - 582.16s |  The most amount of computations,
+582.16s - 583.80s |  because it's a cheaper resource,
+583.80s - 586.40s |  it's your just normal device,
+586.40s - 589.04s |  but because it's exposed and untrusted,
+589.04s - 591.80s |  it should have the most amount of IP as possible.
+592.80s - 595.76s |  And so how do we achieve these properties?
+595.76s - 598.44s |  Let's define these properties a bit better.
+598.44s - 602.00s |  So one property we call efficiency,
+602.00s - 605.16s |  the secure portion should have minimal computations,
+605.16s - 609.12s |  or we can say parameters per flops, as possible.
+609.12s - 612.52s |  And effectiveness is about the exposed portion
+612.52s - 614.84s |  should be entirely useless,
+614.84s - 617.44s |  and resilience is about the exposed portion
+618.48s - 619.96s |  should remain useless,
+619.96s - 622.20s |  even after we try to retrain it.
+622.20s - 624.48s |  So let's say I'm an attacker,
+624.48s - 627.08s |  I have hold of the exposed portion,
+627.08s - 629.44s |  and I can try to use a public available dataset
+629.44s - 631.88s |  to retrain the portion that I have
+631.88s - 634.04s |  to try to regain its original performance.
+634.04s - 637.40s |  So resilience is about preventing that as well.
+637.40s - 639.28s |  So these are the properties that we're looking to achieve.
+639.28s - 641.24s |  And how do we obtain them?
+641.24s - 644.24s |  A decomposition that is efficient, effective, and resilient.
+645.32s - 647.68s |  We use singular value decomposition,
+648.52s - 651.24s |  mathematical operation, running algebra.
+651.24s - 654.00s |  So let's assume we have some matrix W,
+654.00s - 656.76s |  and now we transform it to a different representation,
+656.76s - 658.60s |  U, sigma, and V here.
+659.44s - 663.84s |  U holds what is called the singular vectors of W,
+663.84s - 668.20s |  and sigma has the corresponding singular values of W.
+668.20s - 670.68s |  So these are the singular components of W,
+670.68s - 673.24s |  which we obtain after doing this operation,
+673.24s - 675.12s |  a singular value decomposition.
+675.12s - 677.44s |  And the plan here, what we wanna do,
+678.20s - 680.72s |  because U has the singular vectors
+680.72s - 682.80s |  sorted from the most important,
+682.80s - 686.96s |  the most highly valued singular vectors on the left side,
+686.96s - 689.20s |  and the least important on the right side.
+689.20s - 692.04s |  So this arranges the amount of information
+692.04s - 693.72s |  that W has for us.
+693.72s - 696.44s |  So what we can do is take the top,
+696.44s - 699.32s |  most important singular vectors and values
+699.32s - 702.36s |  from U and sigma, and keep them on Charlie,
+702.36s - 706.00s |  and define them as WC, that's the valuable part,
+706.00s - 709.60s |  but that has low computation that we can put on Charlie.
+709.60s - 714.24s |  And the remaining, the brunt of the computations,
+714.24s - 716.76s |  most of the singular vectors that have less value,
+716.76s - 719.76s |  the remaining ones, will go to WD, to David,
+719.76s - 722.20s |  and they can be exposed to an attacker
+722.20s - 724.76s |  and given without worry.
+724.76s - 728.68s |  So to provide some illustration,
+728.68s - 732.20s |  what this decomposition is and how it works,
+732.20s - 733.36s |  we have an image of a cat here,
+733.36s - 735.44s |  so everything is always more clearer
+735.88s - 737.48s |  and understandable when there's cats.
+737.48s - 741.16s |  So for this cat, what we do, again,
+741.16s - 742.52s |  a singular value decomposition,
+742.52s - 745.20s |  and you can see on the left an image of a cat
+745.20s - 750.12s |  that was created just using 16 singular vectors
+750.12s - 752.72s |  out of the 800 available vectors there.
+752.72s - 755.04s |  So it's a kind of a form of compression, right?
+755.04s - 757.16s |  You already see for just 16 vectors,
+757.16s - 761.16s |  2% of the original data, a very clear image of the cat,
+761.16s - 764.00s |  and the remaining 98% barely shows
+764.00s - 765.60s |  anything resembling a cat.
+765.60s - 768.76s |  And if we increase that portion to 10%,
+768.76s - 770.88s |  you already see a very clear image of the cat,
+770.88s - 773.52s |  just 80 vectors out of the 800,
+773.52s - 776.80s |  but the remaining portion already doesn't show anything
+776.80s - 781.80s |  about the cat, but that's 90% from the original matrix.
+782.40s - 785.08s |  So it's often using compression, this technique,
+785.08s - 788.40s |  but it's very useful here for us to split up a model
+788.40s - 791.80s |  to that small portion, which is most value,
+791.80s - 794.68s |  and the large portion, which just doesn't have any value.
+796.40s - 800.80s |  And so for a given model, we don't want to decompose,
+800.80s - 802.88s |  to split up every single layer.
+802.88s - 804.84s |  We want to find the most optimal layers,
+804.84s - 808.08s |  the most important layers, and split those.
+808.08s - 811.44s |  And so we define the model we put on Charlie
+811.44s - 815.84s |  as all the WCs from the layers that we select to split,
+815.84s - 818.40s |  and David will have all the WDs
+818.40s - 820.00s |  from the layers we select to split,
+820.00s - 823.60s |  but also any layers that we don't select to decompose at all
+823.60s - 825.92s |  the insignificant or redundant layers
+825.92s - 830.44s |  that David can have for free without worry of exposing IP.
+830.44s - 832.44s |  So how do we select which layer?
+832.44s - 834.20s |  And I'll show you some experiments
+834.20s - 837.24s |  that we did to find those layers.
+837.24s - 840.20s |  So first of all, our experiments were done on GPT-2,
+840.20s - 843.12s |  on Phi2, and Lama27b, popular models,
+843.12s - 845.08s |  and we benchmarked their performance
+845.08s - 848.96s |  using a world prediction on Wikitext datasets,
+848.96s - 852.08s |  a common benchmark to test the performance of LLMs,
+852.08s - 855.92s |  and our evaluation metric is perplexity.
+855.92s - 857.16s |  The lower the perplexity is,
+857.16s - 859.04s |  the better the model is performing.
+859.04s - 860.64s |  That's how you should think about that.
+860.64s - 863.24s |  And here's the architecture of GPT-2,
+863.24s - 867.08s |  just so you understand a bit how it looks inside.
+867.08s - 871.72s |  So GPT-2 essentially has an initial part,
+871.72s - 873.92s |  which we call the embedding layers,
+873.92s - 877.68s |  and then 12 identical decoder blocks,
+877.68s - 879.24s |  which have identical architecture
+879.24s - 882.24s |  but have different parameters inside them.
+882.24s - 885.88s |  And finally, there's the output,
+885.88s - 887.64s |  some output layers at the end.
+889.36s - 894.36s |  In each decoder block, we have this architecture inside.
+894.68s - 896.72s |  There's several different layer types.
+896.72s - 899.10s |  One is called, some are called attention layers,
+899.10s - 901.32s |  some are called feed-forward layers,
+901.32s - 904.20s |  and on each of them, we can decide
+904.20s - 906.26s |  to focus on for this decomposition.
+907.68s - 909.56s |  So first of all, what we see here,
+909.56s - 911.08s |  for different layer types,
+911.08s - 914.68s |  we see the magnitude of singular values
+914.68s - 917.52s |  for GPT-2 different layers.
+917.52s - 919.68s |  So in the x-axis, you see the index
+919.68s - 921.44s |  of the different singular values.
+921.44s - 923.24s |  There's 800 of them, almost.
+923.24s - 925.84s |  And on the y-axis, you see the value
+925.84s - 928.00s |  of the singular values, the magnitude,
+928.00s - 930.72s |  and the magnitude sort of quantifies
+930.72s - 931.84s |  the information content
+931.84s - 934.32s |  for each corresponding singular vector.
+934.32s - 936.56s |  And you can see a very clear phenomenon
+936.56s - 938.32s |  for all of these models,
+938.32s - 941.60s |  is that just a few first singular values
+941.60s - 944.60s |  and corresponding vectors already capture
+944.60s - 945.88s |  most of the information.
+945.88s - 949.68s |  So there's a very strong decay of the values
+949.68s - 951.56s |  just looking at after five,
+951.56s - 953.98s |  about five singular values and vectors.
+953.98s - 955.94s |  So this means we can reach efficiency.
+955.94s - 959.36s |  We can just take a small amount of vectors and values
+959.36s - 964.14s |  and hold most of the information of the models by doing so.
+966.07s - 969.23s |  And so let's look at an experiment that tested this.
+970.67s - 973.55s |  And this is, again, the architecture of GPT-2.
+973.55s - 975.95s |  We look at the first decoder block here.
+975.95s - 979.87s |  Inside that block, there's a layer called CFC layer.
+979.87s - 983.35s |  And we're just gonna remove different amounts
+983.35s - 985.65s |  of singular components, values and vectors,
+986.55s - 989.07s |  from that specific layer in that block.
+990.31s - 991.71s |  So you can see the x-axis,
+991.71s - 994.59s |  different amounts of components that we moved,
+995.23s - 998.43s |  and then the perplexity score of the model.
+998.43s - 1000.71s |  And so the baseline performance of GPT-2
+1000.71s - 1003.51s |  is around perplexity of 40.
+1003.51s - 1006.63s |  But when we move one singular vector
+1006.63s - 1009.47s |  from one layer in just one block,
+1009.47s - 1012.31s |  you can see the performance drops already
+1012.31s - 1014.03s |  from 40 to 1,000.
+1014.03s - 1016.67s |  So moving one vector out of the entire model,
+1016.67s - 1019.03s |  and the model is degraded completely.
+1019.03s - 1020.95s |  For example, if we look at the prompter,
+1020.95s - 1023.31s |  Joshua Kabush is an American politician who served,
+1023.31s - 1026.19s |  and the response of the model is nonsense.
+1026.19s - 1027.81s |  As a lawyer, and there, and there.
+1027.81s - 1029.63s |  And just removing one vector.
+1029.63s - 1032.31s |  So the model's value is destroyed easily
+1033.51s - 1034.97s |  by removing just a few vectors,
+1034.97s - 1039.97s |  and we see that repeat for GPT-2, for Phi-2, for LAMA-27B.
+1040.11s - 1041.43s |  You see, again, on the x-axis,
+1041.43s - 1043.89s |  the different amounts of vectors were removed,
+1043.89s - 1047.19s |  and the perplexity jumps to thousands,
+1047.19s - 1048.87s |  and tens of thousands, and millions,
+1048.87s - 1050.31s |  which is completely useless
+1050.31s - 1052.07s |  after just hiding away on Charlie,
+1052.07s - 1054.97s |  removing a few singular components.
+1057.51s - 1059.55s |  So this is looking at the different layer types,
+1059.55s - 1061.79s |  and now how we choose, out of the 12 blocks,
+1061.79s - 1063.91s |  how do we choose which block to remove?
+1063.91s - 1066.79s |  So, because we don't want to do all of the blocks.
+1066.79s - 1068.83s |  So what we did in this experiment
+1068.83s - 1070.71s |  is we evaluated perplexity
+1071.69s - 1074.67s |  after bypassing several consecutive blocks.
+1074.67s - 1078.07s |  So we test the performance of the model each time,
+1078.07s - 1080.71s |  removing different amounts of blocks from the model.
+1080.91s - 1083.91s |  And we'd like to see how the model performs
+1083.91s - 1087.07s |  after removing different numbers of blocks.
+1087.07s - 1090.59s |  So in this graph, on the x-axis,
+1090.59s - 1094.75s |  we have the block index from zero to 32.
+1094.75s - 1098.25s |  This is Phi-2, so Phi-2 has 32 blocks.
+1099.59s - 1103.29s |  And this is the result of the perplexity score
+1103.29s - 1105.07s |  after removing the first block,
+1105.07s - 1107.07s |  and this one is for the fourth block,
+1107.07s - 1109.99s |  and this one is for the last block.
+1110.03s - 1111.43s |  And then, we repeat this
+1111.43s - 1114.99s |  by removing three consecutive blocks this time,
+1114.99s - 1117.03s |  and that results in the first dot,
+1117.03s - 1118.99s |  and this is the last dot is removing
+1118.99s - 1120.59s |  the last three consecutive blocks.
+1120.59s - 1122.71s |  And we do the same looking at five
+1122.71s - 1124.19s |  and seven consecutive blocks.
+1124.19s - 1127.07s |  And finally, we receive these graphs.
+1127.07s - 1130.27s |  So you can see a very clear pattern emerge here,
+1130.27s - 1133.07s |  that the middle blocks of all these LLMs
+1133.07s - 1134.47s |  are quite redundant.
+1134.47s - 1136.25s |  You can remove, in some cases,
+1136.25s - 1138.39s |  up to seven consecutive blocks,
+1138.39s - 1142.07s |  and keep the performance close to the original level.
+1142.07s - 1145.35s |  But if you remove blocks from the beginning or the end,
+1145.35s - 1147.11s |  but mostly in the beginning,
+1147.11s - 1149.21s |  the performance will drop quite considerably.
+1149.21s - 1152.39s |  So this shows us where is the information
+1152.39s - 1155.95s |  that we need to hide on Charlie, on the secure entity.
+1155.95s - 1157.47s |  It's in the beginning, mostly,
+1157.47s - 1160.15s |  but some also at the end of blocks.
+1160.15s - 1163.15s |  So Meta did a similar study on this
+1163.15s - 1164.71s |  and found the same pattern
+1164.71s - 1166.35s |  where the first and last layers
+1166.35s - 1167.75s |  are the most important ones.
+1168.55s - 1170.25s |  And that's the bottom line.
+1170.25s - 1175.25s |  So we focus on removing and decomposing blocks
+1175.39s - 1177.55s |  from the beginning and the end of the model.
+1178.39s - 1182.95s |  Lastly, for this part, we also looked at resilience.
+1182.95s - 1184.87s |  So this graph is a bit hard to read,
+1184.87s - 1187.17s |  so I'll explain just one dot here.
+1188.59s - 1193.59s |  On this dot, we removed 0.6% of the model
+1195.67s - 1197.15s |  and hid that away on Charlie,
+1197.15s - 1200.89s |  and offloaded to an edge device 99.4% of the model.
+1200.89s - 1204.79s |  So most of the model, almost all of it, is still exposed.
+1204.79s - 1207.23s |  And the performance of the model outright
+1207.23s - 1209.35s |  is about in the millions, perplexity,
+1209.35s - 1212.05s |  which is ridiculous, it's completely useless.
+1212.05s - 1215.51s |  But now we took this model and we retrained it
+1215.51s - 1217.31s |  using a publicly available dataset
+1218.23s - 1220.39s |  to try to regain its original performance.
+1220.39s - 1222.75s |  And what you see is that the performance
+1222.75s - 1226.19s |  reaches about 300 perplexity, which is still a lot.
+1226.19s - 1229.83s |  Anything above 100, we consider a useless model.
+1229.83s - 1234.23s |  And so retraining phi after onload of 0.6% of the model,
+1234.23s - 1236.79s |  it produces perplexity that is high,
+1236.79s - 1238.63s |  demonstrating that our technique
+1240.59s - 1243.23s |  still has good resilience.
+1243.23s - 1245.59s |  So conclude everything you saw so far,
+1245.59s - 1248.13s |  which I know is a lot to do in half an hour.
+1249.83s - 1252.59s |  We were able to show an efficient decomposition,
+1252.59s - 1255.41s |  a negligible amount of computations
+1255.41s - 1257.93s |  need to be placed on the secure entity, on Charlie,
+1257.93s - 1259.85s |  below 1%.
+1259.85s - 1262.39s |  The exposed model that we put on David
+1262.39s - 1265.77s |  is completely useless without using Charlie's portion.
+1267.33s - 1270.57s |  We saw that it's well above 10,000.
+1270.57s - 1275.25s |  And the resilience was, well, good as well.
+1275.25s - 1278.29s |  The model quality post-training was above 100 perplexity.
+1278.29s - 1280.17s |  And you have to think about all the cost
+1280.17s - 1283.69s |  that an attacker would have to invest
+1283.73s - 1287.57s |  R&D cost, compute cost, to try to perform this attack.
+1287.57s - 1291.17s |  And we see this cost as a security bar for this attack.
+1291.17s - 1293.81s |  So how much does an attacker need to invest
+1293.81s - 1296.73s |  in order to try to take the exposed portion of the model
+1296.73s - 1300.77s |  and recover it through data science means
+1301.73s - 1304.85s |  to its original, or close to its original performance.
+1306.41s - 1308.13s |  So yeah, fine-tuning attack recovers
+1308.13s - 1310.05s |  model to poor performance.
+1310.89s - 1313.61s |  Next part is the secure inference protocol.
+1314.41s - 1315.25s |  So we have these two portions.
+1315.25s - 1316.09s |  One is on David, one is on Charlie.
+1316.09s - 1317.81s |  They belong to the same model.
+1317.81s - 1319.29s |  And we need to execute them together
+1319.29s - 1322.37s |  to receive the correct final output.
+1324.13s - 1329.13s |  So this is the scheme I showed you before.
+1329.13s - 1332.09s |  And it's a scheme that we can easily attack.
+1332.09s - 1337.09s |  So because the input X is seen in this case,
+1337.85s - 1339.89s |  both by Charlie and by David,
+1339.89s - 1343.05s |  and the output is also seen by David,
+1343.05s - 1345.97s |  David can use the inputs to Charlie
+1345.97s - 1347.89s |  and the outputs to Charlie
+1347.89s - 1350.53s |  to try to learn what Charlie is doing.
+1350.53s - 1353.93s |  So he can try to recover the secured weights
+1353.93s - 1356.13s |  by observing multiple inputs and outputs.
+1356.13s - 1361.13s |  He can actually create a set of linear equations
+1361.97s - 1365.53s |  using inputs and outputs that will solve what WC is.
+1365.53s - 1368.45s |  And to prevent this, what we have to do
+1368.45s - 1371.73s |  is mask all the information that David sees
+1371.73s - 1374.65s |  using a one-time padding, if that's familiar.
+1374.65s - 1377.05s |  So any information that sends to David
+1377.05s - 1379.53s |  is masked using this function here.
+1379.53s - 1384.53s |  And David computes his inputs based on the mask information.
+1387.21s - 1390.17s |  And the mask information is sent back to Charlie.
+1390.17s - 1393.25s |  Charlie knows what was done, the masking,
+1393.25s - 1395.65s |  so he knows how to de-mask it.
+1395.65s - 1399.33s |  And then we receive on Charlie a clean version
+1399.33s - 1402.25s |  of David's input, David's output,
+1402.25s - 1403.61s |  and we can merge them together
+1403.61s - 1407.81s |  and have a clean outputs again.
+1407.81s - 1409.69s |  So we have a theorem that shows
+1409.69s - 1411.41s |  that this is perfectly secure.
+1411.41s - 1416.41s |  Our SerialD only ever observes uniform noise,
+1416.53s - 1421.05s |  which it cannot use in any way to learn what WC is.
+1421.05s - 1423.05s |  So thanks to this masking.
+1423.05s - 1424.77s |  This is also efficient masking.
+1424.77s - 1428.01s |  So the mask is cheaply added and removed at runtime.
+1428.01s - 1430.73s |  It doesn't cause too much latency.
+1430.73s - 1433.57s |  And it's based on pre-computed masks
+1433.57s - 1435.17s |  and mask correction terms.
+1435.17s - 1437.41s |  So we have to create a lot of masks
+1437.41s - 1440.49s |  and correction masks in advance
+1440.49s - 1445.49s |  and use them on runtime to prevent additional latencies.
+1448.88s - 1452.12s |  So also we have a theorem showing that a lemma
+1452.12s - 1454.32s |  that the outcome of de-masking is equivalent
+1454.32s - 1455.60s |  to the results that will be achieved
+1455.60s - 1456.60s |  in the absence of masking.
+1456.60s - 1461.60s |  So this protocol doesn't degrade the quality of the LLMs.
+1463.89s - 1468.41s |  So we implemented SLEEP on V3, a Microsoft model.
+1470.17s - 1472.05s |  And we tried different configurations
+1472.05s - 1474.57s |  of how to split up a model.
+1474.57s - 1478.61s |  We looked at partitioning the first and the last block
+1478.61s - 1482.15s |  or the first up to the first five and last five blocks.
+1482.15s - 1484.09s |  We used different amounts of singular vectors
+1484.09s - 1487.33s |  we chose to remove in each occurrence, 10, 20, or 50.
+1487.37s - 1489.21s |  And that resulted in different latency.
+1489.21s - 1492.13s |  So the latency target was about 1.3x
+1494.09s - 1497.41s |  compared to the baseline performance of the model.
+1498.93s - 1500.77s |  And we were able to see different configurations
+1500.77s - 1505.57s |  achieved between 1.3x, 1.6x, which is around our target.
+1505.57s - 1506.89s |  So you can trade these things off.
+1506.89s - 1510.97s |  You can choose to split up more
+1510.97s - 1513.37s |  and put more of the model on Charlie,
+1513.37s - 1515.57s |  but that will cost you more latency.
+1515.57s - 1516.61s |  And you can play around with that
+1516.61s - 1518.37s |  to achieve the level that you want.
+1519.93s - 1524.01s |  So next, we started off doing this for LLMs,
+1524.01s - 1526.97s |  but we saw the need to do it on CNNs as well
+1526.97s - 1529.05s |  based on the request that we received.
+1529.05s - 1533.49s |  So there's a bit of changes when it comes to CNNs.
+1534.69s - 1538.01s |  When we chose, in LLMs, we chose the first and last blocks
+1538.01s - 1540.41s |  and we said that those contain the most IP.
+1540.41s - 1543.41s |  In CNNs, we can focus on the most significant
+1543.41s - 1544.73s |  and efficient convolution blocks.
+1544.73s - 1548.21s |  So the similar notion of blocks in CNNs as well.
+1550.37s - 1553.17s |  In LLMs, we did the singular value decomposition,
+1553.17s - 1554.69s |  which I just showed you,
+1554.69s - 1557.13s |  to find the most informative information
+1557.13s - 1558.77s |  in the weight matrices.
+1558.77s - 1561.33s |  And in CNN, it's a bit different.
+1561.33s - 1565.29s |  The convolution layers have these blocks of weights
+1565.29s - 1567.89s |  in each layer, and this block of weight
+1567.89s - 1571.41s |  has multiple 2D slices in it,
+1571.41s - 1573.97s |  and we can choose the most significant 2D slices
+1575.25s - 1577.69s |  to put on Charlie to hide away,
+1577.69s - 1582.49s |  and then the remaining to leave on the untrusted entity.
+1582.49s - 1585.53s |  So similar notion, but a bit of a difference
+1585.53s - 1586.73s |  in how this is done.
+1586.73s - 1588.97s |  So this is an example on YOLO-X.
+1588.97s - 1591.41s |  You can see the different blocks that YOLO-X has
+1591.41s - 1594.05s |  and the significance based on the gradients
+1594.05s - 1595.49s |  of all of the blocks,
+1595.49s - 1597.85s |  and you can see that we did some calculation
+1597.85s - 1599.61s |  to find the most efficient block
+1599.61s - 1603.93s |  in terms of parameters versus the operations.
+1603.93s - 1605.21s |  That's block number five.
+1605.21s - 1608.69s |  And here is an example that shows
+1608.69s - 1613.53s |  that just using 0.34% of the model,
+1613.53s - 1614.97s |  hiding that away,
+1614.97s - 1617.41s |  degrades the performance of the exposed model
+1618.45s - 1620.89s |  to below 10 mean average precision.
+1620.89s - 1623.21s |  So that's the metric for CNNs we use here,
+1623.21s - 1624.89s |  mean average precision score,
+1624.89s - 1628.45s |  and the original model is about 70,
+1628.45s - 1631.17s |  and just removing 0.3 of the model,
+1631.17s - 1633.49s |  it brings it down, in our technique,
+1634.05s - 1635.73s |  brings it down to below 10.
+1636.97s - 1638.61s |  Completely useless again.
+1638.61s - 1641.25s |  Of course, we had to test for resilience as well.
+1641.25s - 1642.97s |  What if we take the exposed portion,
+1642.97s - 1646.41s |  the 99 point something percent,
+1646.41s - 1649.89s |  and try to retrain it to gain the original performance,
+1649.89s - 1652.57s |  and we found that if you have 30%
+1652.57s - 1654.37s |  of the original training data set,
+1654.37s - 1656.89s |  that's amount to some sort of money,
+1657.97s - 1659.17s |  amount of money,
+1659.17s - 1662.13s |  and if you have 10% of the,
+1662.13s - 1664.13s |  invest 10% of the training time,
+1664.13s - 1665.33s |  and the R&D cost,
+1665.33s - 1668.01s |  you can recover the model to the original performance.
+1668.01s - 1670.77s |  So that means the security of the model
+1670.77s - 1675.77s |  is bounded by the cost invested to recover it.
+1679.65s - 1680.89s |  So to conclude,
+1680.89s - 1683.37s |  you saw that AI models can be decomposed effectively,
+1683.37s - 1685.97s |  efficiently, and with strong resilience.
+1685.97s - 1688.81s |  You saw that Sleep can secure models on edge devices
+1688.81s - 1691.09s |  while maintaining acceptable latency.
+1691.13s - 1693.49s |  We had some theoretical contribution here.
+1693.49s - 1696.33s |  We developed and published a novel hybrid inference framework
+1696.33s - 1701.01s |  that hopefully can be further advanced.
+1701.01s - 1703.97s |  Our team was able to successfully navigate
+1703.97s - 1706.85s |  various deployment and development challenges
+1706.85s - 1708.97s |  to implement a working prototype of Sleep
+1708.97s - 1710.73s |  for CNNs and LLMs.
+1710.73s - 1712.37s |  We have some future directions here,
+1712.37s - 1713.93s |  protecting training data,
+1713.93s - 1715.57s |  protecting privacy,
+1715.57s - 1720.41s |  obfuscating the exposed portion on David even further,
+1720.41s - 1721.89s |  protecting the embedding matrix,
+1721.89s - 1724.85s |  and of course, improving various deployment aspects,
+1724.85s - 1727.33s |  latency, memory efficiency, and bit depth,
+1727.33s - 1728.17s |  and stuff like that.
+1728.17s - 1730.33s |  So thank you very much for listening, for attending,
+1730.33s - 1733.89s |  and I'll be in the Q&A area for any questions.
+1733.89s - 1734.73s |  Thank you very much.
+1734.73s - 1737.93s |  Thank you so much, Adam.

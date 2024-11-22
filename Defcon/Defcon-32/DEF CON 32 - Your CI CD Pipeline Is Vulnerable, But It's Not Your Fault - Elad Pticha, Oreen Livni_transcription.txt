@@ -1,0 +1,314 @@
+{
+  "webpage_url": "https://www.youtube.com/watch?v=3dHZ-l3XSsE",
+  "title": "DEF CON 32 - Your CI CD Pipeline Is Vulnerable, But It's Not Your Fault - Elad Pticha, Oreen Livni",
+  "description": "Are you really sure that the code executed inside your pipelines is secure? Join us as we explore how command injection in a single CI/CD pipeline component can create a major vulnerability in Google's flagship project, Bazel.\n\nOur research reveals a command injection vulnerability within Bazel GitHub Action, showcasing the potential compromise of the entire open-source project. Through live demonstrations, we illustrate how threat actors can exploit seemingly secure pipelines and tamper widely used repositories with malicious code.\n\nBy attending, you'll gain actionable insights into securing your CI/CD pipelines and learn practical strategies to protect your projects from similar vulnerabilities.",
+  "channel_url": "https://www.youtube.com/channel/UC6Om9kAkl32dWlDSNlDS9Iw",
+  "duration": 1544,
+  "channel": "DEFCONConference",
+  "uploader": "DEFCONConference",
+  "upload_date": "20241016"
+}
+
+13.39s - 20.03s | This text was transcribed using whisper model: large-v2
+
+ Yeah, hear me. Thank you guys for joining us today. It's the last day of DEF CON. Appreciate that and
+20.47s - 25.79s |  Thank you for joining to our talk. You'll see ICD pipeline is vulnerable, but it's not your fault
+26.11s - 28.97s |  So without further ado, let's move on
+29.51s - 34.30s |  In a minute. We are not moving on
+35.98s - 39.46s |  Try it again
+39.46s - 45.38s |  Yeah, so my name is Elad. I'm a security researcher at PsyCode with seven years of experience
+46.06s - 50.74s |  mainly focusing on web application security and supply chain security and
+52.14s - 59.26s |  I'm love I'm love hacking random stuff. Basically everything with an IP and I'm from PsyCode
+61.02s - 65.70s |  Hi, my name is Orin, I hope the presentation will work as I saw it
+67.90s - 71.86s |  So I have also seven years of experience in cybersecurity
+72.42s - 75.62s |  In my background I used to research Kerberos and networking
+75.66s - 81.42s |  But currently I focus on supply chain security on the same research team with Elad
+83.22s - 84.54s |  Thank you Orin
+84.54s - 90.98s |  So for our agenda today, we're gonna start and speak about CICD platforms about GitHub actions
+91.62s - 97.30s |  Then we'll speak about command injections 101 and see how command injections
+97.54s - 100.70s |  appears and takes place in CICD platforms
+101.22s - 104.34s |  Then we'll take this and we tell the story of Buzzer
+104.82s - 112.54s |  How we found a critical vulnerability a CICD vulnerability in a major Google owned open source project
+113.22s - 119.56s |  We'll continue with the demo and then we'll go home with some take up takeaways and a recap
+120.82s - 124.74s |  So starting with GitHub actions and CICD platforms
+125.10s - 128.94s |  So what is it is even CICD platforms?
+129.14s - 131.10s |  So they are
+131.10s - 138.46s |  building and testing a tool meaning they can do all the manual actions that we as a person do and
+139.10s - 145.98s |  They are events trigger meaning we have different SCMs like GitHub, GitLab and Bitbucket
+145.98s - 152.02s |  And they have some sort of features, right? You can create a pull request. You can create an issue
+152.02s - 157.14s |  You can create anything else and those events will trigger that pipeline
+158.14s - 165.34s |  So there are many many CICD platforms there GitLab CI, GitHub actions, Jenkins and
+165.98s - 169.10s |  today we are going to speak about GitHub actions and
+170.42s - 174.94s |  Why we chose GitHub actions. There are so many Jenkins and others
+176.10s - 182.78s |  Because GitHub actions have four million public pipelines around the ecosystem
+183.30s - 186.18s |  That is huge and it's appealing for attack
+186.74s - 190.22s |  for in a huge attack vectors for attackers
+191.78s - 194.42s |  So let's a little bit visualize this, right?
+194.62s - 198.58s |  So we have all the events in the left side of the screen
+198.58s - 204.66s |  We can create a new commit to the repository. We can create a new issue. We can create a new pull request
+205.06s - 210.26s |  Then we have the pipeline that will be triggered based on that on those events
+210.70s - 213.26s |  Then we can create any any
+214.26s - 220.26s |  Action that we want to do meaning we can create a task that is logging in to our
+220.70s - 226.82s |  Google Cloud we can create a task that builds and Docker image and push that to the registry
+226.90s - 232.90s |  so basically we can do anything that we that we want doing that pipeline one and
+233.78s - 236.94s |  Just to understand how the basic flow works
+237.50s - 239.50s |  Let's imagine that
+239.50s - 247.22s |  We have a push new push to the repository right new commit to domain branch maybe a side branch everything is okay
+248.18s - 251.42s |  Based on that the pipeline will start to run
+253.10s - 258.58s |  That pipeline will log in to our cloud environment could be any one of them and
+258.82s - 264.06s |  Maybe we'll create a new blob in a bucket. So pretty pretty easy, right?
+264.06s - 269.06s |  But out of the pipeline itself logs in to our cloud environment because we ourselves need some
+274.14s - 280.22s |  authentication tokens, right? Access tokens. So GitHub actions have a key store that the
+280.78s - 287.14s |  encrypt encrypted save those access tokens and decrypt them runtime
+287.38s - 292.30s |  So all the secrets are being saved encrypted and during runtime
+292.30s - 295.22s |  They are being decrypted and being and being used
+295.82s - 299.38s |  so we can have our production environment a
+299.98s - 306.30s |  staging environment keys DB access tokens all of those inside our pipeline key store and
+307.54s - 309.18s |  Probably think about that
+309.18s - 317.18s |  It's appealing target for an attack for attackers because if an attacker will be able to control over our pipeline
+317.82s - 324.46s |  It will be able to steal those tokens and do whatever he wants, right? And
+326.38s - 328.38s |  Among those tokens
+328.46s - 330.46s |  We have a special one
+330.54s - 332.50s |  the GitHub token
+332.50s - 334.50s |  that GitHub token
+334.54s - 340.90s |  Spawns in every pipeline that we create and can do any action in the repository itself
+341.18s - 347.06s |  It can create new permits you can create new releases it can create new actions new pull request
+347.42s - 353.30s |  Based on these permissions. So from an attacker perspective if he steals that token
+353.42s - 358.50s |  He can do whatever the maintainer does whatever the owner can do
+359.74s - 364.94s |  That GitHub token has variety of permissions. It can do all that I mentioned
+365.54s - 368.42s |  Previously and way more so think about that
+369.10s - 376.34s |  Stealing the GitHub action with the GitHub token with a privileged permissions could gain an attacker a
+376.94s - 379.66s |  privileged permission to the repository itself
+380.50s - 386.66s |  Helping everybody that is using that repository and all of its end users down the line
+388.06s - 389.38s |  so
+389.38s - 396.98s |  Too many to understand our attackers are able to take over those pipelines or when we'll take the stage
+397.70s - 402.30s |  Thank you a lot
+403.42s - 409.54s |  So after understanding the basics of pipelines what permissions they have and how do they run
+410.26s - 418.46s |  Now we can dive into the more interesting part of how command injections come into a form in CI CD pipelines
+419.86s - 425.14s |  So just for example, I have this PHP code. It's not related to pipeline yet
+425.54s - 432.74s |  Raise your hand if you ever encountered this kind of vulnerability if you ever seen it, okay
+434.22s - 441.38s |  Perfect. So about half of the people has seen this vulnerable code and what is the problem here? The problem is
+442.42s - 444.22s |  simple
+444.22s - 448.18s |  this website will execute a command using
+449.06s - 452.02s |  unsanitized user controlled input, right
+452.66s - 457.86s |  So what that means is that a user could perform a command injection attack
+458.38s - 460.38s |  by providing a
+460.58s - 462.58s |  malicious user name
+465.38s - 468.54s |  Very bad. We don't want that in our pipeline and
+469.30s - 471.82s |  The same logic goes for pipelines
+472.90s - 477.54s |  because if we will use in our pipeline a user controlled input
+478.42s - 481.78s |  In an unsanitized way that means that an attacker
+482.38s - 486.54s |  could gain access to our pipeline and extract the secrets and
+487.18s - 493.46s |  Run inside our environment and do all the malicious things a lot of described before so we would definitely
+494.42s - 496.42s |  Don't want this to happen
+496.54s - 497.70s |  right
+497.70s - 501.66s |  to understand how get up
+502.18s - 508.92s |  Get up pipelines injections look like we'll first get I have to get familiar with get up workflows
+509.74s - 513.78s |  So get up workflow is a single step of the entire pipeline
+514.54s - 519.30s |  And it is a yaml configuration file. That's it. That's everything we have to know
+520.54s - 526.86s |  to see our first example of a github workflow this github workflow is called test issue and
+528.30s - 534.86s |  We can see the on entry on entry means on what triggers will this pipeline be executed?
+535.22s - 537.96s |  So since it is using the issues
+538.60s - 541.76s |  Keyword it means that any issue related event
+542.76s - 549.32s |  Under repository will trigger the pipeline. So whether an issue is opened assigned to someone else
+550.12s - 556.32s |  Closed the pipeline will run and here we can see a step of the pipeline
+557.04s - 564.60s |  Step is a single instruction of the pipeline and it will of course run under the same VM of the pipeline and
+565.60s - 570.72s |  The run keyword means that we're simply gonna use a bash command
+571.88s - 572.96s |  Okay
+572.96s - 579.12s |  So here we can see echo which is print and we will it will print the issues title
+579.64s - 581.96s |  Okay, that that's still basics
+581.96s - 589.52s |  And what will happen is before the pipeline will run github will replace that placeholder the github event issue title
+589.76s - 592.20s |  with the actual issues title
+593.20s - 598.04s |  So, for example, if someone has created this is a new issue
+599.52s - 606.32s |  It will create an event that will trigger our pipeline and then in the bit logs
+606.32s - 613.88s |  We will see that this is a new issue was printed because the pipeline used the user-controlled input to run a command
+614.60s - 622.12s |  so for example, I can have that issue title or that issue title and
+623.08s - 626.28s |  They and I can also have emojis in the issue title
+626.28s - 632.76s |  I don't know if it will print them or not. But another example for totally valid issue title
+633.84s - 635.84s |  Would be that one
+638.48s - 644.16s |  It works it works totally fine on github because it is not their fault and
+644.84s - 651.84s |  What will happen here is the same idea from what we've previously seen in the PHP code here
+652.12s - 654.12s |  The pipeline will run
+654.24s - 656.24s |  this command
+656.56s - 658.56s |  Under the run
+658.88s - 660.88s |  execution entry
+660.92s - 666.32s |  Right, and it will concatenate more commands after the echo command
+666.44s - 675.12s |  Which will dump the memory of the pipeline and then send all the secrets to the to an attacker controlled server
+675.76s - 679.68s |  So that's an example for something you wouldn't want to have in your organization
+680.60s - 682.24s |  Because then
+682.24s - 688.96s |  An attacker will receive your pipey token your docker hub token your GCP token your github token
+689.12s - 692.36s |  So basically whatever you use in your pipeline
+694.73s - 699.57s |  So what is the solution for that? The solution is pretty simple
+700.69s - 704.05s |  It is from the github officials documentation
+704.69s - 708.17s |  You will just have to first set the value of
+709.17s - 712.69s |  The user controlled input to an environment variable and
+713.53s - 717.49s |  Then use the environment variable in the command execution
+718.09s - 723.91s |  Okay, that's a simple solution for bash injection in general and it also works in pipeline
+725.73s - 727.89s |  Okay, that's it thank you very much
+728.85s - 730.85s |  I
+734.65s - 736.33s |  Mean
+736.33s - 740.57s |  Well, if it were not protected we wouldn't be here today, right? So
+741.81s - 745.93s |  Now after understanding the basics of command injection attacks
+746.53s - 751.21s |  We can now explain the new attack vector we have invented
+751.89s - 756.17s |  that allowed us to find thousands of vulnerabilities in open source projects and
+757.05s - 758.49s |  also in
+758.49s - 764.05s |  The Basel project which which is a flagship repository of Google
+764.61s - 768.73s |  Which could affect millions of end-users if being compromised?
+770.72s - 773.24s |  So let's begin with the story of buzzer
+773.88s - 780.53s |  This is the same workflow as we have seen before and it will again
+781.69s - 784.17s |  be triggered on issue events and
+785.01s - 792.05s |  And since we're taking security very seriously in our organization we follow the official documentation and
+792.69s - 795.35s |  Before executing the command we have first set
+796.05s - 800.25s |  the user control input to an environment variable, but then
+800.97s - 803.49s |  we have this new step and
+804.57s - 811.25s |  Here we can see the users keyword and what the users keyword means is that we are importing logic
+811.89s - 815.29s |  From something called costume action to our project
+816.53s - 823.73s |  So now it means that I can get vulnerable code that someone else has written and that we run under my
+824.17s - 826.17s |  pipelines permissions
+827.17s - 829.21s |  So costume actions in a word
+830.13s - 832.17s |  It is pre-built logic
+832.17s - 835.61s |  It's like you can think about it like a dependency in code
+835.69s - 842.09s |  Someone else has written a module a costume action and then to create pipelines faster
+842.09s - 846.85s |  I can just import it to my project and use it and I can pass parameters to it
+846.85s - 852.01s |  Like I do to a function it you'll return something or it can be like a void
+852.29s - 856.13s |  Costume action that will just perform something and that's it. Perfect
+857.13s - 858.37s |  and
+858.37s - 862.77s |  For that reason github has created the github marketplace
+862.77s - 866.93s |  Which is like the ecosystem for pipelines and there are many open source
+868.09s - 875.33s |  Costume actions and there are thousands over thousands and you could just import and use them and deploy faster and work better
+876.01s - 879.37s |  Well, you can work better, but safer
+880.21s - 881.89s |  we'll have to
+881.89s - 883.89s |  figure out
+884.45s - 891.29s |  So, let's take my workflow for example, I've written the workflow and I'm using one costume action as a dependency
+892.29s - 893.57s |  But
+893.57s - 897.77s |  What happens is that this costume actions happens to use another?
+898.25s - 903.85s |  dependency itself and that the costume action dependency has three more dependencies and
+904.05s - 908.05s |  This has more dependencies and more dependencies and next thing, you know
+909.53s - 915.11s |  You have tons of dependencies and what could happen if one of the dependencies
+916.11s - 919.99s |  Brings command vulnerability to my project
+920.43s - 926.83s |  Then I'm in real trouble, right? Because that means that now by injecting code I
+928.71s - 932.87s |  Could affect the pipeline because everything you see here is
+933.47s - 939.91s |  Part is part of my dependencies. Everything runs on my pipelines permission and environment
+939.91s - 946.27s |  So dumping the secrets from there could mean that an attacker gain control to my organization
+946.27s - 951.15s |  And I would wouldn't even know that I have imported this vulnerable this vulnerability
+952.23s - 955.19s |  So, how would it look like from the codes perspective?
+956.27s - 959.43s |  Let's say we have a workflow and it is using
+960.59s - 961.83s |  importing
+961.83s - 967.51s |  action one action one is using action to an action to
+968.47s - 970.47s |  Contains the same vulnerability
+971.15s - 973.43s |  from the first from the
+973.95s - 975.55s |  previous chapter
+975.55s - 977.55s |  So that means that now
+977.87s - 985.19s |  That means that now my pipeline has command injection vulnerability, even though it's not my fault
+987.15s - 989.57s |  That brought the next question
+993.98s - 995.18s |  Thank You Wayne
+995.18s - 1001.10s |  So it's all working fine in this demo lab and visualization
+1001.10s - 1003.10s |  right, but
+1003.58s - 1006.50s |  How do we exploit this in scale?
+1007.30s - 1008.38s |  meaning
+1008.38s - 1010.38s |  going over the UI and
+1010.94s - 1017.78s |  Going over one by one and checking all those custom actions and navigating to different GitHub
+1018.54s - 1020.86s |  Repositories, it's not scalable, right?
+1021.58s - 1023.58s |  Want to want to walk?
+1024.14s - 1027.70s |  So we thought about different methods
+1028.70s - 1034.06s |  The first phase we are gonna index all the GitHub atmosphere
+1034.46s - 1039.38s |  Meaning all the workflows all the command all the custom actions
+1040.18s - 1043.26s |  everything into into one place and
+1044.22s - 1046.22s |  How we gonna do that?
+1046.38s - 1048.38s |  using Raven
+1048.54s - 1056.50s |  Raven will allow us will allow us to query all GitHub atmosphere into a single DB and
+1057.78s - 1063.18s |  Will query and search result and vulnerabilities based on that DB
+1063.86s - 1069.30s |  So just a quick recap about Raven, which is an open source project now
+1069.74s - 1075.74s |  It will download all the workflows among GitHub ecosystem into a Redis DB
+1076.54s - 1081.50s |  then it will index them to a graph DB and therefore J1 and
+1081.94s - 1087.38s |  Then we will be able to query anything that we want based on that results
+1087.86s - 1089.10s |  and
+1089.10s - 1091.10s |  That's how it looks like
+1091.18s - 1095.58s |  so we have all the connections all the custom actions all the
+1096.46s - 1102.42s |  Workflows all the jobs all the steps everything that we mentioned in a single place. That's amazing and
+1103.26s - 1111.14s |  Just a closer look with all the workflows which are connected to some steps and in the end goal
+1111.38s - 1114.14s |  They are importing a single custom action
+1114.70s - 1115.78s |  so
+1115.78s - 1121.54s |  By finding a vulnerability inside that action will gain us a vulnerability
+1122.10s - 1124.30s |  inside all of those workflows
+1124.94s - 1126.94s |  insane
+1127.10s - 1131.38s |  Second part querying querying based of those results
+1132.74s - 1134.74s |  We queried thousands of
+1134.98s - 1139.42s |  Workflows I start waiting in GitHub atmosphere meaning
+1139.82s - 1144.98s |  So it will be an important one that will affect millions probably users
+1146.22s - 1150.90s |  we found thousands of vulnerability in different severity levels and
+1151.78s - 1155.26s |  Today I want to talk about one of them
+1156.34s - 1158.34s |  Buzzle
+1158.46s - 1165.34s |  Buzzle is a build and test tool that is widely used among the community. It's a project owned by Google
+1165.34s - 1168.10s |  It's a flagship flagship by them
+1168.38s - 1173.66s |  It used by Google internally and a few other companies that you probably heard of
+1175.78s - 1182.38s |  And now for the exploitation phase, how do you take how do we take that finding and exploit it?
+1184.54s - 1187.66s |  Navigating to the repository itself and to the workflow itself
+1187.90s - 1192.62s |  We see that that workflow doesn't seem vulnerable to anything, right?
+1192.66s - 1200.26s |  We saw how command ejections look looks like by utilizing a user input inside the workflow itself
+1200.50s - 1202.58s |  So we don't have nothing like that
+1203.34s - 1207.46s |  We only have a custom action in another repository
+1208.26s - 1212.98s |  managed by other maintainers and other developers and
+1213.98s - 1218.74s |  It passes two inputs the first one issue title
+1219.30s - 1221.30s |  the second one issue body
+1221.54s - 1223.18s |  so
+1223.18s - 1225.18s |  Probably makes you think like
+1225.74s - 1227.74s |  navigating to the custom action and
+1228.46s - 1230.46s |  That's we have it
+1231.02s - 1237.66s |  The custom action were vulnerable was vulnerable to a command ejection vulnerability like we saw before
+1238.70s - 1240.70s |  But wait a minute, not only that
+1241.58s - 1243.58s |  Remember the GitHub token that we saw before?
+1244.58s - 1247.98s |  That workflow has a full permission to the repository
+1248.38s - 1254.94s |  meaning exploiting that vulnerability will gain us a full permission to the repository not only
+1255.66s - 1258.06s |  compromising the repository itself like but
+1258.98s - 1265.34s |  Compromising everyone that are using it. Let's move to the demo, right?
+1266.86s - 1271.62s |  So in the demo we'll have two sides of the screen in the left side
+1271.62s - 1275.46s |  We'll have a repository a vulnerable one and in the right side
+1275.46s - 1283.70s |  We'll have an attacker server that is waiting to get the connection and waiting to run malicious commands inside that pipeline
+1284.14s - 1292.10s |  So at the left side of the screen as I said before we have a repository
+1293.62s - 1301.62s |  Navigating to that repository and we'll be able to see that it's pretty empty one. It doesn't have any releases
+1302.26s - 1307.70s |  None at all and the with me is pretty empty. Keep that in mind
+1309.62s - 1314.66s |  Scrolling back and a maintainer saw a new issue in that repository
+1315.18s - 1320.18s |  That issue will contain some build logs and some events on the OS machine
+1320.18s - 1326.98s |  And what it doesn't know it has one malicious command that will compromise the entire pipeline
+1327.46s - 1331.74s |  inject malicious code will connect to a remote server and
+1332.50s - 1339.38s |  Will execute some more commands. So by clicking milestone the pipeline starts to run
+1340.58s - 1342.58s |  running the pipeline will
+1343.42s - 1345.42s |  Execute our command injection
+1345.90s - 1351.30s |  it will bring a malicious script from the attacker server as we can see and
+1351.86s - 1359.18s |  Will dump all the secrets in the memory of that pipeline and will use that to create new releases
+1359.74s - 1362.86s |  inject malicious code to that repository and
+1363.66s - 1365.66s |  way more
+1365.74s - 1371.82s |  After the injection works was successfully completed. We are navigating back to the repository itself
+1372.58s - 1374.34s |  And we can see we have new release
+1374.34s - 1377.26s |  By a GitHub action user not even our user
+1378.38s - 1382.46s |  Scrolling down and we have that appsec village picture right in there
+1383.10s - 1384.38s |  and
+1384.38s - 1389.70s |  From the user perspective. It's only not only will hurt the repository itself
+1390.10s - 1396.86s |  We can see that the user will clone the latest version and will do a simple make build command
+1397.74s - 1403.70s |  But what he doesn't know that in the moment he will do a make build command all of his
+1404.06s - 1410.02s |  Environment variables will be sent to a remote attacker server with along with some system information
+1410.74s - 1412.74s |  public private keys
+1413.14s - 1417.66s |  DB information and everything that he has in his environment
+1417.94s - 1424.02s |  That is insane. So not only hurting the repository itself that has 22
+1424.38s - 1428.90s |  Thousand stars it will hurt millions of fan users down the line
+1430.18s - 1431.78s |  insane
+1431.78s - 1433.26s |  so
+1433.26s - 1435.26s |  for some recap and takeaways
+1436.78s - 1442.82s |  The takeaways are separated to a blue and red team so everybody can take something from that
+1443.98s - 1446.06s |  first one insecure input
+1446.82s - 1451.10s |  Don't just pass insecure input just to an inline script
+1451.70s - 1458.94s |  Like you do in code and other methods don't use untrusted user input in untrusted ways
+1460.10s - 1464.78s |  The second one is custom actions and particularly composite actions
+1464.98s - 1471.06s |  they are importing logic to inside your pipeline, so be care about that and
+1471.78s - 1479.06s |  Make sure that you not running a vulnerable one that will compromise your entire GitHub workflow
+1479.86s - 1483.54s |  And the last one do I need to stress that enough like
+1484.70s - 1486.50s |  everything in
+1486.50s - 1488.98s |  cybersecurity least privilege principle
+1489.22s - 1494.62s |  So make sure your workflow as the minimum privilege it needs to be
+1495.30s - 1499.50s |  so is one so no extra permissions and
+1500.98s - 1505.78s |  That's it. Thank you for listening to us. We have more details. Thank you
+1506.42s - 1518.93s |  We also want to say that Raven is open source and it is a quick with
+1519.73s - 1526.77s |  query library from our previous two years of research GitHub action, so if you want to use it either for
+1528.05s - 1531.69s |  for bad bounties red team or for internal
+1532.33s - 1539.29s |  Security you are more than welcome. We will share the the QR code for the GitHub repository as well. Thank you

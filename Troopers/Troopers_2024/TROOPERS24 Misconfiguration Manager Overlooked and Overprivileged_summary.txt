@@ -1,0 +1,76 @@
+## Introduction to SCCM
+- **Microsoft Configuration Manager** (formerly System Center Configuration Manager) is an endpoint management platform used to manage Windows enterprise operations.
+- It can be used to deploy applications, manage software updates, install operating systems, and handle compliance settings.
+- SCCM is commonly used, with an estimated 99% of Active Directory environments leveraging it.
+- It is not tied to Active Directory and can be used to manage multiple sites or forests, making it useful for red teamers moving between forests.
+- SCCM is old (30 years) and has a lot of insecure defaults, making it prone to misconfigurations.
+
+## Why SCCM is Interesting for Attackers and Defenders
+- SCCM is ubiquitous and commonly misconfigured, providing a potential avenue for domain compromise, forest compromise, or remote forest compromise.
+- It can be used to move between forests, ignoring the Active Directory hierarchy.
+- It is often misconfigured, with insecure defaults, and old advice from the community may no longer be secure.
+- As SCCM is used to manage Windows enterprise operations, compromising it can provide significant control over the environment.
+
+## SCCM Terminology
+- A **hierarchy** is the full SCCM installation and security boundary, similar to a forest in Active Directory.
+- A **site** is an environment that provides services to a scope of client devices (or clients), which are systems joined to SCCM to receive updates, policies, and software.
+- The **primary site** is where clients receive policy and software from, and it is administered using the **Configuration Manager Console**.
+- The **primary site server** controls the site and all messages pass through it. It is also referred to as the **site server**.
+- The **site database server** hosts the database containing client configuration data, policies, software locations, and administrative roles/assignments.
+- A **central administration site** is optional and used when there are more than 150,000 devices. It sits at the top of the hierarchy with multiple primary sites beneath it.
+- **Secondary sites** contain a partial copy of the database and are usually located in remote offices with poor bandwidth.
+- **Site system roles** are other servers with specific functions:
+  - **SMS Provider**: Interface for the Configuration Manager Console, allowing admins to interact with the site database.
+  - **Management Point**: First point of contact for clients to report to and retrieve policy from.
+  - **Distribution Point**: Location where software is stored for clients to download and install.
+- Communication between these systems is complex, with clients reporting to management points, receiving policy, and then downloading software from distribution points. Admins interact with SMS providers to manage the site database.
+
+## SCCM Accounts and Misconfigurations
+- SCCM has many accounts, and misconfigurations can lead to domain privilege escalation.
+- **Client Push Installation**: Account used by the site server to install the SCCM client on new computers, requiring local admin privileges on all clients. Automatic site-wide client push installation can be abused by spoofing a new SCCM device to gain incoming authentication.
+- **Network Access Account (NAA)**: A domain account used when a client is not domain-joined to retrieve software updates from a distribution point. It is commonly overprivileged and misconfigured, providing an easy path to domain admin privileges. It can be retrieved by local privilege escalation on a client or by spoofing a computer account to request the policy and de-obfuscate the secrets.
+- **Domain Join Account**: Used to join new computers to the domain, this account gains ownership of the computer. If a computer with this account is promoted to a domain controller, it could provide ownership of privileged assets.
+- **Task Sequence Accounts**: Depending on configuration, various accounts can be used within task sequences, potentially providing additional attack vectors.
+- **SCCMis commonly configured with a single account for all functions**, leading to overprivileged accounts and easy escalation to domain admin.
+- **Creds may persist beyond account rotation** due to the WMI/SIM repository on Windows, allowing retrieval of rotated NAA credentials.
+
+## Demo: Dumping NAA Credentials
+- **Sharp SCCM** tool is used with the `local secrets-m WMI` command to dump NAA credentials by decrypting the system master keys and querying the WMI database.
+- Alternatively, the `get secrets` command can be used with a spoofed computer account to request the policy and de-obfuscate the secrets without local admin privileges.
+
+## Hierarchy Takeover Attacks
+- Hierarchy takeover enables attackers to run commands on any system in the environment, useful for targeting specific groups or assets.
+- SCCM supports various methods to execute code on machines, including PowerShell, application deployment, package deployment, and CMPivot for reading information without touching the system.
+- To take over a hierarchy, gain the **Full Administrator** role in any site, as there is no security boundary between sites in the same hierarchy.
+- **NTLM Relay** is a person-in-the-middle attack where an attacker coerces NTLM authentication from a domain account and relays it to another system to access that system with the incoming account's privileges.
+- The primary site server's domain computer account requires local admin on all other site system roles and is a DBA on the site database, making it a prime target for NTLM Relay attacks.
+- Various combinations of hierarchy takeover attacks are possible by coercing NTLM from the primary site server and relaying it to other site system roles to gain control of SCCM.
+
+## Hierarchy Takeover Demo
+- **Takeover 1**: Coerce NTLM from the primary site server, relay it to the MS SQL service on the site database, and execute SQL statements to grant full administrator privileges.
+- **Garrett's SCCM Hunter project** is used to generate the SQL statements to add a user to the full administrator role.
+- **PetitPotam** is used to coerce NTLM authentication from the primary site server's domain computer account.
+- The NTLM authentication is relayed to the site database, and SQL statements are executed to add the low-prev user to the full administrator role.
+
+## Stories from the Field
+- **Overprivileged NAA**: Local admin on every client, domain admin accounts used as NAA, NAA with admin privileges on SCCM servers, and previous privileged NAA credentials persisting after account rotation.
+- **RustLA** shared a story where two domain admin accounts for different domains/forests were configured as NAA, providing cross-forest escalation.
+- **Domain Join Account**: SCCM can have a domain join account to join new computers to the domain. This account gains ownership of the computer, and if that computer becomes a domain controller or privileged asset, it could provide ownership of critical systems.
+- **SCCM Clients and Domain Controllers**: By default, SCCM does not enroll domain controllers as clients, but many organizations enable this. If attackers compromise SCCM, they can execute code on domain controllers, compromising the entire domain.
+- **Origin of Takeover 1**: Found a connection string for a database, crawled SQL links, and discovered a link to a central administration site database. Cracked DBA creds, logged in, and added themselves to the full administrator group.
+- **Audit-style assessment**: Observed SCCM site server attempting to authenticate to a non-existent CISO's laptop for 2 years. A DNS record could have been created to capture a relay and take over privileged systems.
+
+## Misconfiguration Manager
+- A living knowledge base inspired by the Certified Pre-Owned paper and Push Security's SAS Attacks Matrix.
+- Aims to demystify the vast and complex world of SCCM attacks, defenses, and detections.
+- Structured similarly to MITRE ATT&CK, with a matrix of offensive and defensive techniques:
+  - **Cred**: Credential access techniques.
+  - **Elevate**: Privilege escalation techniques.
+  - **ATT&CK**: Code execution on a client.
+  - **Recon**: Techniques for finding SCCM servers and using SCCM for recon.
+  - **Takeover**: NTLM Relay-based takeover methods.
+- Each offensive technique includes a description, ATT&CK TTPs, requirements, impact, sub-techniques, execution instructions, and references.
+- Defensive techniques include prevention, detection, and canary measures, with links to offensive techniques and additional defensive resources.
+- An **audit script** is provided to help organizations identify misconfigurations and potential issues, particularly takeover and elevation vulnerabilities.
+- Microsoft is taking SCCM security seriously and has started enabling organizations to fix misconfigurations, such as supporting Extended Protection for Authentication to prevent hierarchy takeover.
+- The project is maintained on GitHub, and contributions and collaboration are welcomed through the SCCM channel in the Bloodhound Gang Slack.

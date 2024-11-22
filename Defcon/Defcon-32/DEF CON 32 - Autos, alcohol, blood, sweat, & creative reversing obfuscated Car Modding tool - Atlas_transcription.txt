@@ -1,0 +1,345 @@
+{
+  "webpage_url": "https://www.youtube.com/watch?v=uKvkBchZkA0",
+  "title": "DEF CON 32 - Autos, alcohol, blood, sweat, & creative reversing obfuscated Car Modding tool - Atlas",
+  "description": "reversing can feel uber powerful... like you hold God's honest truth within your hands... most humans don't understand what you can see and comprehend.\n\nuntil someone tries to hide the truth from you... limit your knowledge... keep you from your glorious purpose!\n\nobfuscated code can be a real downer.\n\nthis talk focuses on the story of how i took on an interesting obfuscated target (an automotive modder's tool with ability to flash firmware and tweak engines), in fun and exciting ways.\n\nwe'll discuss several problems with obfuscated code, an approach i took (and tooling), playing in the guts of machine code, and customizations to binary analysis tools that came out of the journey...\n\nthere will be much hex, disassembly, green on black, total carnage.\n\nyou will walk away with powerful ideas and new tools to help you in your pursuit of truth. you will be entertained, enriched, educated, and hopefully inspired. instead of thinking that \"atlas is smart\" my goal is you feeling, and being, more powerful.\n\ncome with Vivisect installed to follow along!",
+  "channel_url": "https://www.youtube.com/channel/UC6Om9kAkl32dWlDSNlDS9Iw",
+  "duration": 2452,
+  "channel": "DEFCONConference",
+  "uploader": "DEFCONConference",
+  "upload_date": "20241016"
+}
+
+0.00s - 5.80s | This text was transcribed using whisper model: large-v2
+
+ Good morning, oh good afternoon DEF CON. Uh today we have a talk on automobiles, alcohol,
+5.80s - 12.88s |  blood, sweat, and creative revers- reversing of obfuscated car moding tool. And with our
+12.88s - 17.88s |  speaker Atlas. Thank you sir. Thank you Fals. I'm sorry True. Hi everyone, welcome. How
+23.46s - 30.06s |  many of you came because it had the word automotive in it? Alright, good. Uh obfuscation,
+30.06s - 37.46s |  who came because it said obfuscation? Excellent. Well thank you all. I don't care why you
+37.46s - 42.10s |  came, you're here. I'm very grateful for you. I hope that we have a lot of fun today. Uh as
+42.10s - 47.30s |  per usual if you've come to a talk of mine I've crammed in way too much stuff and we're
+47.30s - 54.81s |  gonna see just how well and how much we can fit in. And because of timing I'm going to
+54.81s - 59.31s |  probably just come out here and look at the slides that you're seeing cause I, yeah
+59.31s - 64.31s |  whatever. So who is this Atlas dork? Hi. This is my home. I was created here at DEF CON in
+66.65s - 71.65s |  2013. Um and this is my family. I'm a hacker of things, I ride a motorcycle, I've got three
+77.25s - 86.90s |  amazing daughters who have nothing to do with technology. If you dare there is a QR code
+86.92s - 92.42s |  that has all sorts of ways to get a hold of me. I'll leave that up for about ten more
+92.42s - 103.43s |  seconds. So I work in R&D and cyber physical systems for a company called Grim and Grim is
+103.43s - 112.56s |  represented, stand up. My dear friends down here wore huge Grim t-shirts, ask how many of
+112.56s - 119.62s |  them work for Grim. A lot of love here. Alright, so my job is to break into things and I'm
+126.32s - 132.30s |  I set many goals, some of them attainable in the near term, many of them long term goals, some
+132.30s - 137.80s |  of them like if I do these three projects that are year long then I'll achieve this thing. So
+137.80s - 144.24s |  I think in these many different ways. But my ultimate goal typically is remote code execution
+144.24s - 149.26s |  on a device thing in a running program. For cars and uh and particularly the small ECUs that
+150.22s - 155.22s |  run your cars. My favorite way to gain code execution on an ECU like your brake controller,
+159.22s - 165.86s |  your power steer, power steering controller is through the update process or diagnostics
+165.86s - 170.86s |  process. Your tool plugs in, I'm sorry, runs on Windows, there's some software, have a
+171.86s - 176.86s |  have a hardware tool plugs into the OBD2 port on your car and then talks over the the
+181.00s - 186.00s |  vehicle CAN network to tell the car things what to do. Now, for that, for the really cool
+190.94s - 196.34s |  stuff that we really like to do, there's an authentication mechanism so the tool says no, I'm
+196.34s - 202.04s |  not just some Joe Schmo, I'm I'm supposed to be doing this. Give me all the goods, let me do
+202.06s - 206.16s |  all the cool things. Now there are a couple different ways that this is done, well a number
+206.16s - 210.50s |  of different ways but two primary standards of the way that this is done. But it generally
+210.50s - 215.30s |  comes with some sort of back and forth, a seed key exchange or some sort of authentication
+215.30s - 220.30s |  mechanisms like what you might like. Um and then, well I won't get into exactly how I gain
+222.88s - 228.69s |  code execution at that point but there are many different cool things that you can do. Set
+228.73s - 234.27s |  diagnostics level is the uh is the way that you tell an ECU to go into a certain mode.
+234.27s - 239.55s |  Sometimes you can change parameters, sometimes you can update firmware. Um but then
+239.55s - 245.35s |  there's a security access uh hex 27 or an authentication hex 29, these are the service
+245.35s - 251.83s |  numbers that are that are used in the messages. And that sets up the back and forth
+251.83s - 256.85s |  authentication process. So it could be simple key uh seed key exchange and we just walked
+260.41s - 270.30s |  through that basically. Moving right along. Alright so the goal for me in this project that
+273.78s - 278.78s |  I'm talking about is to gain access to the code that calculates the seed key exchange or the
+281.28s - 285.92s |  authentication mechanism. Uh there are many different things that that can go into that but I
+285.92s - 290.86s |  don't care. I want them all. Uh this this all started a couple years ago when one
+290.86s - 297.54s |  manufacturer that we already had access to added a new authentication mechanism that we didn't
+297.54s - 302.94s |  have access to and so it's like we gotta have this and then I made the I made the, I won't say
+302.94s - 309.72s |  mistake, I made the decision to use this as a mentoring tool. Instead of going hog wild after it,
+309.72s - 314.46s |  I leaned into other people who are very capable, very skilled, very passionate and I allowed
+314.46s - 319.46s |  them to think on it, stew on it and work with it with me. Um but it did slow things down quite a
+321.46s - 330.31s |  bit. So I don't know if you can see this. If you can't, I apologize. Basically this is showing
+330.31s - 337.31s |  an obfuscated program. So when you install this tool, I'm I'm not gonna mention who, the tool
+337.31s - 344.05s |  has one executable program on a Windows pro uh on a Wi- Windows system and as soon as you load
+344.05s - 350.55s |  it up in your favorite disassembler, the entry code does some weird stuff. It pushes a value
+350.55s - 356.29s |  onto the stack, it makes a call and then it has a return. Well that call is literally a return.
+356.29s - 364.29s |  It's a no op call. So what happens when you push something on the stack and then you return?
+364.29s - 369.57s |  Well that's a jump. It's very common to uh to it's a common thing to use to obfuscate what
+369.59s - 375.49s |  you're trying to do. Malware does this, uh software does this. And it's the makings of a very
+375.49s - 382.51s |  long day. Now there are a number of ways to deal with obfuscated programs. Uh more than I
+382.51s - 386.85s |  listed here but these are the two that hit my brain. They they tickle my fancy. I like to
+386.85s - 392.05s |  emulate through things and do analysis through emulation. You probably heard a talk or two from
+392.05s - 396.65s |  me on that. And what I'm calling snatch and grab and that's actually what we're gonna talk about
+396.67s - 403.05s |  here today. Uh from an emulator perspective you might spin up QMU. QMU allows you to do all
+403.05s - 409.25s |  sorts of cool emulation things and it builds in a GDB debugger component where you can halt
+409.25s - 415.03s |  something and do twiddle and and all sorts of fun stuff. Maybe kernel debugging if if if we
+415.03s - 421.53s |  ever get to a point where uh where anti-debugging is really good enough to stop me from using
+421.55s - 426.99s |  this type of uh uh this type of mechanism then kernel debugging will be another option.
+426.99s - 431.63s |  Vivisection has a lot of cool stuff. A tool that I that I released and and actually spoke
+431.63s - 438.41s |  about last week at Black Hat. But not this time. No emulation in the initial things anyway.
+438.41s - 443.41s |  Emulation plays into pretty much everything that I do but not for this. So snatch and grab.
+443.53s - 448.53s |  So snatch and grab. Basically you start up the program. You run it. You attach you you connect
+452.27s - 458.01s |  it to the vehicle. You get all the functionality that you're really into. And you make sure
+458.01s - 463.01s |  that it's all working. It's all obviously able to be executed. You attach with a debugger and
+467.20s - 472.20s |  there are issues that that go around this but uh uh anti-debugging who's heard of it? Anybody
+472.32s - 477.32s |  uh tried to get around anti-debugging techniques? Well we're not even gonna worry about it. We
+481.50s - 486.30s |  attach it is very difficult to make it so you can't attach. If you can't if you actually can't
+486.30s - 491.30s |  attach then kernel debugging becomes a thing. Then we grab all the data and we store it and
+495.18s - 501.55s |  analyze it. I mean it sounds simple right? So for this I used a tool called Vivisect my
+501.57s - 507.67s |  favorite uh reversing tool. Vivisect has a built in vulnerability debugger. So we use VDB
+507.67s - 514.45s |  attached to the running program. Dump what the reason I wanted to use VDB is because VDB has a
+514.45s - 519.45s |  V snapshot. V plays into everything. It's kinda like V for Vendetta but Visigoth. Um and then
+523.77s - 531.78s |  magic happens. So here's a picture. If that's too much on my chart here's here's a closer
+531.80s - 536.80s |  picture. Basically it's just an attach and we say as soon as the attach is done run snapshot
+540.44s - 545.94s |  and it dumps all the memory maps out to a file including processor state and and so on so
+545.94s - 554.20s |  forth. So that we can easily analyze the full system state at that point. And here's the actual
+554.20s - 559.22s |  I had to zoom in yet again. So snapshot target dot vsnap. The next step was to import the data
+565.18s - 570.18s |  from the snapshot into a Vivisect workspace. Vivisect workspaces is basically holds all the
+573.38s - 578.26s |  things that you're analyzing when working with Vivisect doing reverse engineering. And you can
+578.26s - 582.96s |  use this for many many things including symbolic analysis and emulation but we won't get there
+582.96s - 587.96s |  right now. Uh it's basically it was a manual process when I started this. Uh it's continued to
+588.96s - 593.96s |  take shape. This will be wrapped into uh this will be wrapped into Vivisection shortly. Like
+597.98s - 604.77s |  within a week or two. I will be releasing next week. So basically we copy all of the memory
+607.41s - 612.41s |  maps. Who? Show of hands. Who's done debugging before and understands what a memory map is?
+613.41s - 618.41s |  If you do like infill proc maps in GDB or cat in a Linux system with a proc file system, cat
+623.15s - 628.15s |  slash proc slash pid slash maps and it'll list. Here are the different memory maps that exist.
+630.39s - 636.03s |  These four or five are from this program or this library and whatnot and so forth. That's what
+636.03s - 641.43s |  I'm talking about. So we we just take that's all been snapshotted away. We grab the snapshot
+641.43s - 646.43s |  memory maps. We copy them into a Vivisect workspace and then we do a little magic that says we
+650.17s - 655.17s |  have all the data. The PE that's been loaded into memory has all of its own data. Symbol data,
+657.51s - 662.51s |  names, things like that. And we tell the workspace to just steal that data. I'm giving you
+662.51s - 667.51s |  eye charts. We're skipping over quite a few slides here because at the end of the day, this was
+675.99s - 680.99s |  stolen from the built-in Vivisect parser. We just removed a few things that loaded the memory
+683.69s - 688.59s |  maps back in again. And that's the thing that I'm going to be wrapping into Vivisection. Reach
+688.61s - 693.05s |  out to me if you want it. You've got contact information for me on the slides. The slides
+693.05s - 698.05s |  should be available online. Okay. So there are a number of different ways that obfuscation is
+701.79s - 706.79s |  generally done. Any malware reverse engineers here? How about malware forward engineers? So
+712.75s - 717.83s |  there are three primary ones that I run into when I've done malware reversing or
+717.85s - 722.85s |  obfuscation. The first one is unpack or decrypt in place. So the program runs, loads up, the
+726.19s - 731.19s |  loader creates these memory maps and the initial part of the code does a lot of really annoying
+733.83s - 738.83s |  things but then it gets to a point where it decrypts itself into the existing memory maps. So
+742.13s - 746.41s |  that's one thing to be looking for because we're always looking for what's important. What are
+746.45s - 751.33s |  we interested in? The next one is to unpack or decrypt into new memory maps. So it just calls
+751.33s - 756.33s |  basically give me a new memory map, I will shit my stuff into it and then we'll execute from
+756.33s - 761.07s |  there. So anonymous memory maps may be very interesting as well. You have, you have named
+761.07s - 767.97s |  memory maps, you have anonymous memory maps. And then process hollowing or some variation
+767.97s - 773.49s |  thereof. So let's say you've got your malware or your, your obfuscated thing, starts another
+773.49s - 778.51s |  process and then decrypts its stuff across into that other process much like a debugger would.
+781.01s - 786.01s |  So these are all interesting things we're looking for. There are many variations on it. And
+787.21s - 792.21s |  determine very quickly by comparing what I had dumped into the vivisect workspace to what the
+794.29s - 799.29s |  original binary loaded in the vivisect workspace. And this was a decrypt in place binary. So
+799.29s - 804.29s |  that gives me an understanding of at least where I do need to focus. Maybe, maybe not
+807.67s - 813.41s |  cutting out where I don't. So let's go searching for things. Reversing, reverse engineering.
+813.41s - 818.41s |  You load a thing up into, into Ghidra or Ida or Binja and you want to do things, how do you, how
+821.25s - 826.25s |  do you do those things? I, I want to go find hex UDS things, hex 29, hex 27 as immediate
+826.61s - 832.86s |  constants. Uh oh. You see, we don't know anything about what we just dumped into the
+836.30s - 842.28s |  workspace. There's no code that's been identified. There are no strings that have been
+842.28s - 847.28s |  identified. Like you can, you can manually go, manually go through the like the 30 meg of
+848.72s - 853.72s |  memory maps and manually look for strings but yeah, I don't have that kind of time. So here
+854.24s - 862.41s |  actually is, is a picture of vivisect where I'm looking at a string that I want to find. But
+864.83s - 871.11s |  it's not identified as a string. In fact, nothing is except stuff that the loader told me was a
+872.81s - 880.14s |  string by going through the magic that we did before. So here's a different view of it. Maybe
+881.48s - 886.48s |  you, maybe you prefer this view. And of course my laser pointer cannot show up on the screen.
+886.50s - 893.49s |  So on the right hand side, if you can see this slide and you have great eyes, uh, you can see
+895.03s - 900.63s |  near the bottom, there starts to be some ASCII string looking things. Okay, really nifty.
+900.63s - 905.51s |  Including security array. I'm very interested in security array. Anything that starts in
+905.51s - 911.65s |  security is very um, uh, interesting to me. But unfortunately, viv doesn't know that that's a
+911.65s - 918.63s |  string yet. When I first did this, I actually just saved the workspace out and the workspace
+918.65s - 923.65s |  is unencrypted. And I just ran strings literally on the workspace to get an idea of what was
+925.19s - 930.19s |  there. Because they were decrypted. They were de-obfuscated. And when I found an interesting
+931.33s - 936.33s |  thing, and there are millions of strings. When I found an interesting thing, I went back into
+937.53s - 942.53s |  vivisect and found, hi there. I held down the wrong button. Are we back? No, not yet. What? Of
+942.65s - 979.49s |  course it is. I probably see it just as easily too. New pointer. I apologize. Not used to it yet.
+1009.26s - 1022.67s |  Okay. It does go fast though. So once I found a string that was interesting, I'd go into the
+1022.67s - 1026.51s |  vivisect CLI. There's a command line at the bottom and I just type search and I look for that
+1026.51s - 1035.26s |  string. It shows up and I can start turning it into strings by pressing S. All right, about a
+1035.26s - 1040.26s |  week ago I wrote a vivisection plugin component that allows me just to do that and make that
+1040.94s - 1047.76s |  available to you guys as well. The vivisection scan for strings. It brings up a starting memory
+1049.20s - 1054.04s |  map, an ending memory map, and if that's not granular enough, a starting address and an ending
+1054.04s - 1058.84s |  address, do you want to apply the strings when you find them? Like shove them into the
+1058.84s - 1063.84s |  workspace? And I said no. Because it turns out strings captures a whole bunch of binary
+1064.50s - 1069.50s |  code that just kind of happens to be alphanumeric. So let's take a look at this. I'm
+1072.14s - 1077.82s |  looking for ASCII strings. I can look for unicode and it allows you to set the minimum size
+1077.82s - 1084.28s |  defaults to five characters. That's generally good for me. So when we're done, if you can see
+1084.28s - 1092.17s |  this over here, because I told it not to apply the strings, it popped up a GUI, a widget that
+1092.17s - 1096.59s |  just printed out. Here's the location. Here's the strings. I did not make it so that you
+1096.59s - 1102.13s |  could click on the uh on the location yet. Uh that's coming next week. It's been very busy.
+1102.13s - 1108.37s |  Um so I get an idea and I'm able to scroll through and go oh this chunk of code is actually or
+1108.37s - 1117.76s |  this chunk of strings is really not strings. So I don't want all the strings so I zero in on a
+1117.76s - 1123.36s |  memory address range where I'm confident that those strings are what I want and they are real
+1123.40s - 1132.53s |  strings. So now I have strings. Look security access is right there. DPF soot PC uh automotive
+1135.41s - 1141.45s |  stuff. If that makes you happy that makes you happy. Um but I see some interesting things that
+1141.45s - 1149.09s |  aren't strings and I'm I'm curious about them. We'll come back to it. X86 32 or 64 bit doesn't
+1149.09s - 1154.09s |  matter. It's a variable length instruction set and it's really important that we get it right so
+1154.83s - 1159.83s |  that when we call something code it is code indeed. So if you get off by one byte you can tank
+1164.61s - 1171.24s |  an entire understanding of a segment of code. So how do we accurately identify code? Well it
+1174.72s - 1179.72s |  turns out there are 12 stack areas. Alright I gave you a hint. Actually I'm taking hands. How do
+1179.72s - 1184.72s |  I identify known good code? Yell it out. Look do you know how many things are good op codes
+1195.01s - 1206.44s |  that are not real? What's that? Ding ding ding give Travis a big hug. I'll get you later. Um
+1209.28s - 1214.28s |  yes. So with the hint he didn't need it. Uh we have 12 stacks identified. One for each thread
+1215.14s - 1220.14s |  that's running in the program in the system. Each one has its own stack. In the stack what's
+1223.62s - 1228.62s |  stored there? Return pointers. And a whole bunch of other fucking pointers that are very
+1230.72s - 1235.72s |  annoying and they're all large but it's a great teaching thing. How do I know if a pointer is a
+1236.08s - 1241.08s |  return? Well first of all we go to the pointer. And on the top you see a 32 bit representation
+1246.52s - 1251.52s |  of stuff around the stack. At this address 3F7FDD4 we see a an address 5143A6. It's blue
+1255.86s - 1262.33s |  because that's a valid memory address. Then we back up. Two bytes. And see if it disassembles.
+1262.45s - 1267.45s |  And now we're into what you're saying but it's we're into what you were saying a second ago but
+1269.59s - 1274.79s |  there's more to it. So sorry if I if I should shut you down too quickly. So we back up two
+1274.79s - 1279.79s |  bytes. Why? Because the smallest the smallest call in x86 is two bytes long. The longest call
+1281.57s - 1286.57s |  is like eight bytes. So we back up two bytes. Does it disassemble into a call? Yes! Okay
+1286.85s - 1291.85s |  cool. Now wait. Does that call stop? Because everyone's got its own size. Does it stop at the
+1296.79s - 1302.03s |  pointer that we're trying to investigate? No. Shit. Go back. Okay. Three bytes. Four bytes.
+1302.03s - 1307.03s |  Five. Six bytes. Whatever. We get a call. The instruction itself ends at the boundary where the
+1309.27s - 1314.57s |  pointer is pointing. Because that's what the that's what a return call is is to go to the next
+1314.61s - 1324.44s |  thing. And that is a pretty good likelihood that that's a return pointer. So I go to that
+1324.44s - 1329.44s |  location and I say C to make code. And sure enough we have a call to this address which is also
+1332.38s - 1337.38s |  valid. We have a jump after that. And then basically a a drop down to a ret. So this is looking
+1341.32s - 1346.32s |  very much like very good code. But that is a fuck ton of work. And after less than a minute
+1348.76s - 1353.76s |  of putting my mentee uh stew on it for for a day, I gave her a script and said so here's a
+1356.00s - 1360.10s |  script that'll kind of do that manually for or automatically for you. And that script I was
+1360.10s - 1364.38s |  going to include in the deck here I am not because I wrapped it into vivisection. You'll get
+1364.38s - 1369.38s |  to see that when I cut the next release. But whoops. Here's the problem. When I did that, code
+1370.38s - 1375.38s |  started getting identified. Cross references, strings, like magic was happening and then boom
+1381.68s - 1391.04s |  out of memory. I ended up uh analyzing this overnight on a machine where I gave myself an 80
+1391.04s - 1396.04s |  gig swap space just to see if it would work. Binja did the same thing. Barfed. And most of my
+1397.00s - 1404.01s |  work ended up being on a 500 plus megabyte workspace. Which I don't know about you or how
+1408.01s - 1414.03s |  how big your workspaces are but this takes 10 minutes to load. And if I'm doing it over a
+1414.03s - 1419.67s |  network because vivisect has a vivisect server and client mode, it takes 45 minutes to load.
+1419.67s - 1424.67s |  Okay. Need to work on this one. And we're in uncut territory here. That's fine I guess. So
+1428.57s - 1434.57s |  it also makes function recon completely useless. I don't know. I just released function
+1434.57s - 1439.15s |  recon in vivisection so you might not have had a chance to use it. But function recon basically
+1439.15s - 1444.15s |  straps in a specialized partial emulator into a function. And it follows every code path exactly
+1448.39s - 1454.89s |  once. And then every call it does that too and it keeps going and going and going until it runs
+1454.91s - 1460.31s |  out of code to hit. And it captures things like what strings did I run into? What function
+1460.31s - 1466.61s |  calls did I run to? What named functions did I call? Basically, reconnaissance on what a
+1466.61s - 1473.29s |  given subset of a program is going to do. Function recon is worthless on this binary. Or on
+1473.29s - 1481.66s |  this workspace. Because I analyzed all of NTDLL and user 32 and kernel 32 and all the things
+1481.66s - 1486.42s |  that I really don't give a shit about. Because it turns out we know what that is. That's not
+1487.16s - 1492.64s |  obfuscated. That would be a really dirty trick. But I mean, I did check. This is legitimate
+1492.64s - 1500.66s |  NTDLL and whatnot. So sometime by next week I could probably get done with function recon. But I
+1504.04s - 1510.04s |  think I'd like to make a change and not do that. Oh and I broke the viv server. Didn't not just
+1510.24s - 1516.24s |  work, it literally broke it where it would not try to send the data over the network. So I ended
+1521.58s - 1532.87s |  up fixing that. That was months ago. So I did wrap this into vivisection because the goal of
+1532.87s - 1539.13s |  vivisection is to kill all tedium and brain drain. We need your brains to be able to chew on
+1539.15s - 1545.15s |  the more important things, not just do these tedious horrible things. And we focus on
+1546.77s - 1553.69s |  starting maps and ending maps for stack. So we look for the pointers here. And we can restrict
+1553.69s - 1558.41s |  where the pointers can point to that we care about. So that we can skip NTDLL. We can skip
+1558.41s - 1564.41s |  kernel 32 DLL. Then I have a pull request in for the vivisect proper to allow us to turn on
+1569.45s - 1576.89s |  what's called one library. So that when you analyze a function and it hits outside that library,
+1576.89s - 1583.27s |  it jumps or it calls into NTDLL for example. It just stops. Because the NTDLL is going to have a
+1583.27s - 1593.43s |  name and that's kind of how we do reversing, right? So next, once we found strings, we have
+1593.43s - 1599.35s |  this one problem. There's no cross references. So the idea is we go to a string and then we have
+1599.37s - 1604.75s |  code that references the string. And so the code is instantly interesting to me. Nothing is
+1604.75s - 1611.63s |  referring to these strings. We just told them that it was strings. Okay. Now what? Well, while
+1611.63s - 1618.23s |  doing this in this particular tool, I noticed that around these groupings of strings that were
+1618.23s - 1623.65s |  very interesting to me were a whole bunch of non-strings. And it didn't look like code either.
+1623.83s - 1631.83s |  I started seeing a pattern in them. It was number, number, number, zero. Number, number, number,
+1631.83s - 1643.83s |  zero. Number, number, number, zero. And in this area of code, the address space is held within
+1643.99s - 1653.99s |  24 bits. It is, look at the, the address is 0075D289. In fact, the target binary starts at
+1653.99s - 1664.37s |  400,000 hex and ends at like 80A000. That was really interesting to me. And as you can see,
+1664.37s - 1673.55s |  these little byte groupings are valid pointers into this target binary address space. So I
+1673.57s - 1678.45s |  started going through and just hitting, going to one and hitting P. Make it a pointer. And
+1678.45s - 1683.41s |  suddenly that P goes through the analysis process for the pointer and it says, oh, suddenly I'm
+1683.41s - 1689.75s |  pointing at a function. Because it starts with the name sub. Oh, that's, that's curious. So I
+1689.75s - 1696.01s |  did that with a whole bunch of them. And they were all functions. So much so that I ended up
+1696.01s - 1702.47s |  writing a vivisection, actually no, I think I wrapped this into vivisect itself. Writing code
+1702.47s - 1705.67s |  that just allows you to make pointers and you just say, here's the start, here's the stop.
+1705.67s - 1716.10s |  Just make them all pointers. Turns out there are vast arrays of pointers to a whole ton of
+1716.10s - 1725.44s |  code. They end up being virtual function tables for C++. Is that familiar with anyone? C++
+1725.44s - 1733.65s |  reversing. Kudos to you. It's not fun. So we end up with these tables of functions that are
+1733.65s - 1741.45s |  used, so when you have the class object ball and you want to call the function bounce or get
+1741.45s - 1748.53s |  color or change color, they're just held in this table here and the code knows that bounce is
+1748.53s - 1756.92s |  offset four into this table. Make sense? And all of a sudden, while I'm digging through here
+1756.92s - 1762.26s |  making all sorts of cross, all sorts of pointers, I started seeing cross references to my
+1762.26s - 1773.90s |  strings. So now I know some code is referring to security array. I'm getting better. Getting
+1773.90s - 1780.90s |  happier. And then I made this, so here's the vivisect code or functionality to create a
+1780.90s - 1786.44s |  pointer array. Actually, if you just hold down shift and hit P, capital P is pointer array.
+1786.44s - 1791.64s |  Pops up a dialogue. Here's a starting address. Here's a stop address. Or if you'd rather this
+1791.64s - 1796.64s |  many, so you can put in a number into the count and it'll ignore the stop address. It'll just do
+1796.64s - 1802.62s |  that many. And then if we run into a null pointer, do we care and do we keep going or do we call
+1802.62s - 1813.44s |  that the end? So these are all useful to me, and so I put them in here. So the vtable entries, I
+1813.44s - 1818.94s |  don't know if you can see that, but the first entry in most virtual tables is called a
+1818.94s - 1828.88s |  destructor. C++ programmers? Again? Okay, a number of you. When you create a class, you write code
+1828.88s - 1834.92s |  for a constructor and a destructor. When you instantiate the object, it runs the constructor,
+1834.92s - 1842.02s |  which basically tells, it sets up the different data structures in place. Creates strings,
+1842.02s - 1846.86s |  creates subobjects, other things like that. A destructor is tasked with making sure that
+1846.86s - 1852.82s |  everything gets cleaned up appropriately. So if you have a C++ class that has a bunch of
+1852.82s - 1859.46s |  strings in it, your destructor will roll through and say, all right, do this destructor thing for
+1859.46s - 1866.04s |  the strings here, strings there, strings here and otherwise. Or other C++ objects that are
+1866.04s - 1881.82s |  wrapped in. So the destructor is a highly valuable resource. How much time do I have? I'm
+1881.82s - 1890.64s |  going faster than I thought. No blood dripping out of your ears? I'm doing good. All right. So
+1890.64s - 1895.28s |  when we get involved in C++ analysis, no, don't worry, I'm not going to take you too far down
+1895.28s - 1901.68s |  that road. I didn't warn you enough. And it is, actually, it's another talk. I need to give
+1901.68s - 1908.76s |  another talk on this particular thing. C++ objects, what creates them? It's really important
+1908.76s - 1913.80s |  because once you create a C++ object, you just kind of tote it around. You know, I make the
+1913.80s - 1921.16s |  function call over here, here's a C++ object, and the C++ object, the goal for object-oriented
+1921.16s - 1926.52s |  programming is that that virtual function table maintains all the logic about how to do
+1926.52s - 1932.16s |  everything necessary with that object. So it's kind of self-contained. And then I just say, call
+1932.16s - 1937.40s |  this function on here's my ball, you know, or whatever the object is. And then that function
+1937.40s - 1944.20s |  says, I know that a ball can do a bounce. I don't have to know what that thing is, you know, what
+1944.20s - 1949.88s |  goes into bouncing that ball. I know that I can call bounce on that ball and it'll be good. So
+1952.16s - 1959.20s |  tracing V tables, very, very interesting. So about a dozen years ago, I spent some time writing
+1959.20s - 1966.88s |  symbolic analysis for structures and building in structure reconstitution, basically. Using a set
+1966.88s - 1974.76s |  of code and symbolic data about what the code is doing. And it's a simple or difficult way of
+1974.76s - 1984.40s |  saying the symbolic data is this is this pointer plus 12. Instead of this pointer and then a bunch
+1984.40s - 1990.72s |  of instructions that modify what that register is doing. The symbolic analysis just traces that and
+1990.72s - 2003.48s |  makes it easy for me to say, oh, this is offset 12 into that structure, all golden. So the first
+2003.48s - 2009.80s |  thing that I'm wanting to do when I do C++ structure analysis is to go through all the functions in
+2009.80s - 2014.96s |  the V table, because the V table lists all functions that know how to do that thing with that
+2014.96s - 2027.08s |  ball. Or that diagnostics utility. I then analyze how this pointer is being accessed. And I can
+2027.08s - 2033.28s |  identify what things go where in memory. That becomes really important when I'm looking at other
+2033.28s - 2046.97s |  code so that I know what offset 12 really means. Other things. As I said, the destructor is very,
+2046.97s - 2053.41s |  very powerful. And I don't know if you can see that. This is the first function in one of the V
+2053.41s - 2060.41s |  tables we looked at earlier. And it looks really simple. It calls free object. That's what I call
+2060.41s - 2067.25s |  it. This is sub underscore some number. So free object. This object. And I like to name things by
+2067.25s - 2074.89s |  the address of the virtual function table. And then down here, based on what's returned or
+2075.25s - 2081.37s |  based on the arg one, we decide whether or not to decrement and free that object. Okay. Seems
+2081.37s - 2089.37s |  simple enough. But free object is where all the really fun magic happens. So free object goes
+2089.37s - 2097.05s |  through whatever this class or this object is and does the real dirty magic. You'll notice here
+2097.05s - 2104.09s |  something that is often found in dealing with C++ code. At the top of this little box, there's a
+2104.09s - 2113.77s |  move D word. So ESI is being used as this pointer right now. And the very first the very first
+2113.77s - 2120.69s |  pointer in that object is a pointer to a virtual function table. And one thing that you'll notice
+2120.69s - 2128.69s |  is that as C++ code is used in different ways. So, for example, we created the object the class
+2128.77s - 2135.25s |  ball. And we have a subclass that inherits from it called basketball. And then another one that
+2135.25s - 2139.37s |  is very different that inherits from ball called football. And if you don't know what the
+2139.37s - 2145.05s |  difference is there, try to bounce them both. So they both have their own bounce functions. But
+2145.05s - 2151.65s |  they're both a ball. So sometimes what we'll do is we'll say, yeah, no, I really want the ball
+2151.65s - 2158.99s |  version of bounce. I don't actually want the basketball to have this control. So oftentimes
+2159.03s - 2165.95s |  code will jam in the appropriate virtual function table for that when your when your code
+2165.95s - 2172.95s |  asks for that. So as we're going through this free object, ignore the top. It's basically just
+2173.23s - 2179.63s |  memory protection things. So we we jam in this virtual table. I just call it six because I
+2179.63s - 2185.87s |  didn't know what to do with it at that point. We then move 16 into EDI. That'll be important
+2185.87s - 2196.95s |  very, very shortly. We compare EDI to this this plus 608, this six plus this 608 offset. I'll
+2196.95s - 2202.83s |  tell you in advance the spoilers. It's a string. It's a C++ string, which is not like your
+2202.83s - 2212.56s |  ASCII string. We then move seven into a local variable and move on. And based on whether or
+2212.56s - 2221.68s |  not this offset into that this string basically the size of the string is being compared
+2221.68s - 2231.08s |  against 16. If the string is 16 bytes or more, C++ will create a new object of the right size or
+2231.08s - 2238.04s |  something that's flexible and move the string into that. If the string is less than 16 bytes,
+2238.04s - 2244.96s |  then there's enough room in the C++ structure for a string to just house the string. So this
+2244.96s - 2251.68s |  is why I know this is a string. And that's a very common element for C++ reversing. So we
+2251.68s - 2257.72s |  come down here. If it's greater if it's 16 bytes or greater, then I know that I have a
+2257.72s - 2264.20s |  pointer to the thing that actually holds the ASCII string. So I free that. And then I move
+2264.20s - 2272.40s |  down to the next thing. And I compare 15 or I move 15 into EBP. And I shove that all over to
+2272.40s - 2278.60s |  make sure that this string that we are in the process of deconstructing doesn't ever do that
+2278.60s - 2285.00s |  again. So it's as soon as we free that memory, we say it's okay, it's 15. That's not true.
+2285.00s - 2290.24s |  Actually, it's going to be zero. We're going to delete it. But as it moves down, compare EDI
+2290.24s - 2298.16s |  against another offset. So some other string. We go down because EDI is still 16. So we
+2298.16s - 2310.62s |  actually see in this particular object multiple points of clearly this is a string. In fact, we
+2310.62s - 2316.62s |  then run into another embedded object that's special. And we call some code to clean it up. I
+2316.62s - 2321.74s |  won't go into right now. But then we do another thing. Hey, compare this thing against EDI. EDI
+2321.74s - 2331.42s |  is still 16. And if it's less than or if it's greater than 16, call decrement and free. And so
+2331.42s - 2345.41s |  on and so forth. So just to recap C++ reconstitution approach. Look for a whole bunch of
+2345.41s - 2353.88s |  function pointers. All grouped together. Look for cross references to the start of the branch.
+2353.88s - 2360.24s |  Is that the beginning of a bunch of pointers? Is that the beginning of a virtual function table?
+2360.24s - 2369.16s |  Very likely. Kind of investigation is the right key there. Analyze those functions for how they
+2369.16s - 2374.80s |  deal with the this pointer that's handed in. And every call and convention on every architecture
+2374.80s - 2380.72s |  has its own this pointer argument. Typically, it's the first one. On 32-bit, you see a lot of
+2380.72s - 2386.64s |  this call that's ECX. That's why you're seeing that here. So analyze the first function in the
+2386.64s - 2394.95s |  virtual function table. If it's a destructor, it will tell you almost everything else that you
+2394.95s - 2403.86s |  really need to know. And then make good use of it. I hope you didn't come here expecting Oday.
+2403.86s - 2410.18s |  That wasn't my bent. I'm a mentor. Hopefully I've taught you how to fish. Go fish for
+2410.18s - 2418.58s |  yourself. So the real conclusion. Think outside the box. Make your tools do new things. If your
+2418.58s - 2424.90s |  tools are incapable of doing new things, make your own tools. Understand why things work the way
+2424.90s - 2433.54s |  they do. Because that leads you to be more powerful. Then go hunting. Figure out what you
+2433.54s - 2441.94s |  think the code or the behavior should look like. And use your brain to create new tooling. Use
+2441.94s - 2448.58s |  the existing tooling in creative new ways. Because you're the real power. Go forth and do
+2448.58s - 2449.14s |  great things.

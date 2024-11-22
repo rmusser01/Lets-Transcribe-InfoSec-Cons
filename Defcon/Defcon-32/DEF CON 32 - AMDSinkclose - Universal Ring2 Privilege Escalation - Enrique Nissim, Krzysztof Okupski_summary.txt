@@ -1,0 +1,56 @@
+**Introduction to AMD SYNCLOS**
+
+- Presented by Enrique Nissim and Kristof Okupski, principal security consultants at IOactive
+- Focus on **System Management Mode (SMM)**, a powerful execution mode in x86 architecture
+- SMM grants full access to IO devices and memory, beneficial for attackers seeking persistence
+- SMM code is hidden from the OS and hypervisor, making it invisible to antivirus and EDRs
+
+**Privilege Levels and SMM Functionality**
+
+- Simplified privilege levels: applications in ring three, OS in ring zero, hypervisor below OS, and SMM
+- **SMM Operation**: 
+  - Divided into boot time and run time phases
+  - During boot, firmware loads SMM code into **SMRAM**
+  - **System Management Interrupt (SMI)** triggers SMM operation, saving processor state into SMRAM
+
+**Previous Work and Architectural Flaw**
+
+- Previous research focused on vendor misconfigurations and software vulnerabilities
+- Current focus on an **architectural flaw in AMD processors**
+- **SMM Security Mechanisms**:
+  - CPU in SMM mode can access SMRAM; normal mode cannot
+  - **TSEC region** configuration protects SMRAM by overlapping memory segments
+
+**AMD vs Intel in SMM Access**
+
+- Intel restricts access to **Model-Specific Registers (MSRs)** related to SMM, only accessible in SMM
+- AMD allows access to these MSRs from ring zero if **SMM block bit** is set
+- **Documentation Bug**: Fields in TSEC mask register not covered by SMM block
+
+**Exploitation and Proof of Concept**
+
+- **T-CLOSE and A-CLOSE Fields**: 
+  - Focus on T-CLOSE, which redirects data accesses to MMIO instead of SMRAM
+  - When set, allows attacker-controlled data fetches
+- Exploit involves setting T-CLOSE, triggering SMI, and redirecting execution
+- Use of **SPI Controller**: Relocate SPI controller bar over SMM entry point to control execution
+
+**Debugging and Exploit Development**
+
+- Challenges in debugging due to system crashes and lack of SMM debugging frameworks
+- Use of PCI squirrel for debugging, which retains data across reboots
+- Creation of a **fake GDT** to redirect execution to a controlled payload
+
+**Impact and Mitigations**
+
+- Vulnerability affects a wide range of AMD systems, including Ryzen and EPYC
+- **Mitigations**:
+  - Microcode updates from AMD
+  - OEMs can modify SMM entry point code to abort execution if T-CLOSE is set
+- Vulnerability has persisted for nearly two decades, emphasizing architectural complexity
+
+**Conclusions and Future Work**
+
+- The architectural flaw in AMD processors poses significant security risks
+- Exploit demonstrates the complexity and flexibility of CPU architecture can benefit attackers
+- Further research and understanding of architecture are crucial for developing effective mitigations

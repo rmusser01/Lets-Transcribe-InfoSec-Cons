@@ -1,0 +1,45 @@
+## Introduction
+- **Justin Applegate**, **Ava Peterson**, **Justin Mott**, and **Wyatt Pangirl** are the presenters.
+- They are students and graduates of **Brigham Young University** with experience in CTFs and the U.S. Cyber Team.
+- The team chose a **Vilo home mesh Wi-Fi device** as their target for a semester-long project.
+
+## Project Overview
+- The team's goals were to:
+  - Acquire the firmware for white-box testing.
+  - Establish a shell on the device for debugging and firmware extraction.
+  - Find pre-authentication remote code execution (RCE) vulnerabilities.
+
+## Reconnaissance
+- **Vilo Living**, the router manufacturer, is a new startup with limited products and online presence.
+- No previous Common Vulnerabilities and Exposures (CVEs), technical breakdowns, or consumer reviews were found.
+- The router was one of the cheapest available, making it an attractive target for students.
+- The router is administered through a mobile app, and the firmware was not publicly available.
+
+## Firmware Acquisition
+- The team disassembled the router and attempted to solder UART pins, resulting in the death of one router.
+- A second router provided access to a Linux logon screen, but the UART interface died after 30 seconds, making password entry difficult.
+- The team pulled the APK from Google Play and found a custom service running on **TCP port 5432** for app-to-router interactions during initial setup.
+- This custom protocol used a 15-byte header and a payload, with fields for opcodes, sequence numbers, and data.
+- The app used a hard-coded key for encryption, which could be reversed to generate their own keys for communication.
+- The team used a **Saleae logic analyzer** to successfully extract the firmware from the flash memory chip.
+
+## Vulnerability Search and Exploitation
+- The team spent time emulating the firmware on their machines using **QEMU**, **chroot**, and **GDB breakpoints**.
+- They also compiled their own executables using **uclibc-ng** and **buildroot** to create a toolchain.
+- In total, the team found **nine vulnerabilities**, including four critical pre-authentication buffer overflows and an authenticated command injection.
+- One of the buffer overflows was exploited using a **one-shot ROP gadget** to control the return address register and the stack pointer.
+- The team accidentally discovered a blind, authenticated command injection vulnerability while attempting to exploit the buffer overflows.
+- This vulnerability was found in the **sysconf binary**, which formatted a **UDHCPC bash command** with variables, including the router hostname.
+- By controlling the router hostname through the app, arbitrary RCE could be achieved by injecting a bash command.
+- The team wrote a script to the writable and persistent **/folly** directory, which downloaded and executed a compiled C bind shell for remote access.
+
+## Vendor Communication
+- The team spent four months on the project and then attempted to contact the vendor to disclose the vulnerabilities.
+- Initial attempts to contact the vendor through email, social media, and support tickets were unsuccessful.
+- After a month, they were able to reach the developers, who requested 90 days to address the issues.
+- The team followed up multiple times and received a response just before their self-imposed deadline, stating that a new firmware update had been released.
+
+## Conclusion
+- The team expected the initial stages of the project to be easier but found that acquiring the firmware and gaining the initial root shell took two months.
+- They emphasize that IoT and embedded products still have a long way to go in terms of security.
+- The team invites interested parties to explore their detailed write-up and documentation on **GitHub** and connect with them on **LinkedIn**.

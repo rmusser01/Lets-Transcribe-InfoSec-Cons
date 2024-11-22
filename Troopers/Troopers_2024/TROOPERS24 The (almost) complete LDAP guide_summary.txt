@@ -1,0 +1,58 @@
+**Introduction**
+- Talk by Sapir Federovsky at TROOPERS24 IT security conference
+- Focuses on LDAP (Lightweight Directory Access Protocol) and its usage, traffic flows, encryption, and applications in Active Directory (AD) environments
+
+**LDAP Usage**
+- Used by IT administrators, Windows by default, and attackers for information retrieval, user creation, and other purposes
+- Understanding default Windows behavior is crucial for accurate detection and avoiding false positives
+- Examples of default behavior include GPO (Group Policy Object) updates and GMSA (Group Managed Service Accounts) password retrieval
+
+**LDAP Basics**
+- Important parameters in an LDAP search query include base object, scope, parameter, size limit, time limit, filter, and attributes
+- **Base Object**: The folder to search in, with scope controlling the depth of the search
+- **Parameter**: Active Directory doesn't support this, so its value should always be zero
+- **Size and Time Limit**: Control the size of the response and create a timeout, respectively, and can be used to differentiate between default behavior and attacker activity
+- **Filter**: Specifies the conditions for the search
+- **Attributes**: Determine the information retrieved for objects matching the filter
+
+**LDAP Flow**
+- Connection initialization uses functions like LDAP init (default port 389) and LDAP SSL init (default port 636)
+- LDAP connect function is created, though it's often done automatically by the LDAP bind function
+- LDAP bind function handles authentication, with LDAP simple bind being clear text and LDAP bind as supporting various authentication methods
+- **Authentication Methods**: The choice of method affects decryption, as the decryption key is located in the bind response
+
+**LDAP Filters and Controls**
+- LDAP filters determine the conditions for the search and can be combined using logical operators like OR
+- Example filter for delegation-vulnerable accounts includes resource-based, constrained, and unconstrained delegation checks
+- LDAP controls modify the behavior of the search request, e.g., LDAP server show deleted OID retrieves deleted objects, and dirsync retrieves changes since the previous search
+
+**Encrypted LDAP Sessions**
+- GSS API (Generic Security Services Application Program Interface) encryption is used with Kerberos or NTLM
+- Kerberos decryption involves extracting keys from AS, TGS, and AP response packets to decrypt the LDAP message
+- NTLM decryption is more complex, involving multiple steps to derive the decryption key from the NTLM SSP (Security Support Provider) in the bind request
+- Wireshark can decrypt both Kerberos and NTLM encrypted LDAP traffic with the appropriate credentials
+
+**Active Directory Web Services (ADWS)**
+- ADWS uses SOAP XML messages that encapsulate LDAP parameters and are faster than LDAP
+- It runs on a different port and is not supported by Wireshark or LDAP ETW (Event Tracing for Windows) client provider
+- ADWS traffic can be decrypted and parsed like GSS API encrypted LDAP traffic
+- Tools like Active Directory PowerShell module and SharpAWS use ADWS, making detection of enumeration techniques challenging
+
+**Enumeration Techniques and Tools**
+- LDAPNOMNOM uses LDAPING to enumerate users, employing a static syntax and anonymous logon, making detection easier
+- AD Explorer uses encrypted LDAP traffic with NTLM authentication and a null domain name, providing a potential detection signature
+- Bloodhound uses some unique LDAP controls and filters, and its queries can be translated to plain English for better understanding
+- SharpAWS, a new tool, uses ADWS and performs a specific additional query, making detection possible
+
+**LDAP for Defense**
+- Creating defensive tools with LDAP is straightforward and can help identify risk spots and misconfigurations
+- Example queries include finding users with SPNs (Service Principal Names), disabled authentication, group memberships, and GPO (Group Policy Object) details
+
+**ETW for LDAP Monitoring**
+- Microsoft Windows LDAP client ETW provider captures events like search filters and attributes on the client side
+- Microsoft Windows Active Directory domain service ETW provider on the domain controller captures LDAP and ADWS events, but generates a large volume of logs
+
+**Conclusion**
+- LDAP remains relevant and widely used, especially in AD environments
+- Decrypting LDAP traffic and monitoring ADWS traffic are crucial for detecting attack tools and techniques
+- LDAP can be leveraged for defense through query automation, and ETW provides a powerful tool for monitoring LDAP and ADWS activity, despite the volume of logs generated.

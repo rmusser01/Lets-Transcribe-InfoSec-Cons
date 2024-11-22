@@ -1,0 +1,881 @@
+{
+  "webpage_url": "https://www.youtube.com/watch?v=n7GVxDxwOUc",
+  "title": "BlueHat 2024: S13: Patterns in the Shadows: Scaling Threat Hunting & Intel for Modern Adversaries",
+  "description": "BlueHat 2024: S13: Patterns in the Shadows: Scaling Threat Hunting and Intelligence for Modern Adversaries Presented by Mark Parsons and Colin Cowie from Sophos\n\nAbstract: In 2022 Sophos MDR launched a dedicated threat hunting and intelligence team to counter the evolving threats. This talk will share insights on implementing and scaling a successful threat hunt & intel program, highlighting the symbiotic relationship between these disciplines to enhance security operations. By leveraging clustering techniques, our intelligence analysts provide context by profiling and attributing \"\"patterns of life\"\" comprised of TTPs, vulnerability abuse, infrastructure, tooling, malware and motivations over time. Threat hunters create, contribute, and monitor these clusters through various hunting methods.\n\nWe will present a case study on the STAC6451 cluster, when a ransomware actor automated Mimic ransomware deployment across multiple environments. We discuss the SPADE tool which identified STAC6451 through anomaly-based hunting; programmatically generating baselines to detect command and control activity across 25,000 environments. Then, we showcase practical challenges and successes of clustering when multiple threat actors may be operating within the same environment, and how hypothesis driven hunts from these clusters allowed for identification of newly compromised environments and expansion of the cluster.\n\nWe then discuss the nuances of clustering in scenarios involving multiple Nation State actors in the same environment, using distinct patterns of life to identify unique hunt opportunities. \n\nFinally, we will emphasize the importance of tracking clusters over time. Covering how our CTI team utilizes statistical analysis and data viz tools to monitor the discrete aspects of clusters and initiate the creation of new clusters programmatically. Concluding with how tool specific hunts identified new intrusions, and how pivoting to infrastructure hunting, where we successfully predicted what threat actor C2 infrastructure would look like, led to the identification of vulnerabilities in security vendor programs, & tracking the actor over time.",
+  "channel_url": "https://www.youtube.com/channel/UCKmzq2lAhDxLy36KtvVWpaQ",
+  "duration": 2326,
+  "channel": "Microsoft Security Response Center (MSRC)",
+  "uploader": "Microsoft Security Response Center (MSRC)",
+  "upload_date": "20241108"
+}
+
+0.00s - 8.02s | This text was transcribed using whisper model: large-v2
+
+ In a world where credentials are sold for less than a cup of coffee and state-sponsored
+8.02s - 13.84s |  hackers moonlight in criminal cartels, how do you identify a threat actor's attribution
+13.84s - 14.84s |  or motivations?
+14.84s - 20.24s |  When you have 25,000 clients with logs all over the place and they don't even understand
+20.24s - 24.36s |  what a threat cluster might even be, how do you know that you're protecting them effectively?
+24.36s - 27.64s |  How do you know to threat hunt the right thing at the right time?
+28.28s - 33.44s |  Well, these are the exact questions that we asked ourselves two years ago when Sophos
+33.44s - 38.56s |  started a dedicated threat intelligence and dedicated threat hunting practice to support
+38.56s - 41.32s |  the managed detection response service that we were offering.
+41.32s - 46.16s |  Now, this hunt and intel team, they're not service offerings that we sell at Sophos.
+46.16s - 50.44s |  They're purely to support the quality of our managed detection response operations and
+50.44s - 52.76s |  enable us to really dive into the research.
+52.76s - 57.56s |  Today, we'll start with talking about what threat clustering is and how we approached
+57.56s - 62.56s |  creating a threat clustering system at Sophos, and then we'll discuss various case studies.
+62.56s - 66.56s |  Specifically, the first one we're going to discuss is a bit of an unsolved mystery where
+66.56s - 72.52s |  we identified what we believe to be a threat actor that was there with unknown motivations,
+72.52s - 75.40s |  and what we uncovered as we dug deeper led us to believe there may have been another
+75.40s - 79.68s |  person or actor or operator present in that environment at the exact same time.
+79.68s - 85.48s |  Our second case study discusses our identification of what we initially thought was a singular
+85.48s - 90.64s |  APT actor, and then over time as we dove in, we were able to identify what we believe
+90.64s - 95.16s |  to be three different actors operating in coordination with one another.
+95.16s - 98.52s |  And then finally, we'll discuss some of the things that we've learned over the past two
+98.52s - 103.56s |  years of creating these two different teams and trying to scale up and match the pace
+103.56s - 106.40s |  of growth at Sophos.
+106.40s - 107.40s |  I'm Colin Cowie.
+107.40s - 109.56s |  I'm a Senior Threat Intelligence Analyst at Sophos.
+109.56s - 111.84s |  I've been with Sophos for four and a half years.
+111.84s - 113.76s |  I'm based out of the Seattle area.
+113.76s - 115.04s |  This is my second blue hat.
+115.60s - 116.60s |  I'm honored to be back again.
+116.60s - 120.76s |  I've had a great time at the event, and I'm hoping that this will be my second of many.
+120.76s - 121.76s |  I'm Mark Parsons.
+121.76s - 126.76s |  I'm a reformed professional snowboard coach with a threat hunting problem.
+126.76s - 129.12s |  This is my first year ever giving any kind of conference talk.
+129.12s - 132.04s |  I've given four this year, and I have my first time at blue hat.
+132.04s - 134.04s |  So I really appreciate the time and invitation to be here.
+134.04s - 135.04s |  I'm really excited.
+135.04s - 138.84s |  Now, I just wanted to poll the audience real quick.
+138.84s - 143.04s |  Who here in their day jobs works with threat clusters or is familiar with that term due
+143.04s - 144.04s |  to their job?
+145.04s - 146.04s |  Okay, got a couple hands.
+146.04s - 150.04s |  So it sounds like threat clustering might be something that's new to a few of your folks
+150.04s - 152.04s |  here, which we'll get into in just a bit.
+152.04s - 157.04s |  So again, as the threat actors change what they're doing, we need to change how we create
+157.04s - 159.04s |  our SOC and our operations center.
+159.04s - 162.04s |  The first thing I want to call to your attention is the size of the attack surface.
+162.04s - 167.04s |  As threat actors have changed how they attack, the threat surface has expanded.
+167.04s - 171.04s |  We now need to ingest all different types of telemetry, come up with new methodologies
+171.04s - 172.04s |  to hunt that telemetry.
+173.04s - 176.04s |  And on top of that, we can't really hunt what we can't see.
+176.04s - 179.04s |  And so that's where this has expanded in our minds, right?
+179.04s - 183.04s |  We now can't just look at a singular firewall and say, okay, we see the threat actor coming
+183.04s - 184.04s |  in.
+184.04s - 185.04s |  We left a telnet port open.
+185.04s - 187.04s |  We're all done.
+187.04s - 191.04s |  Secondly, I want to call out the fact that there's all this specialization occurring.
+191.04s - 195.04s |  When I'm threat hunting, and as we'll discuss in one of these instances, when I uncover
+195.04s - 199.04s |  three different C2 implants, and I've said these have never been found before.
+199.04s - 201.04s |  They've bypassed all of our detections.
+201.04s - 205.04s |  I don't have the time personally to stop my investigation and hunts to go and reverse
+205.04s - 206.04s |  that.
+206.04s - 210.04s |  I can hand it to a team, and the malware reverse engineering team can break that malware apart,
+210.04s - 212.04s |  describe it to me, and tell me that you're correct.
+212.04s - 214.04s |  There are three different clusters here.
+214.04s - 216.04s |  The code bases are distinctly different.
+216.04s - 218.04s |  You need to go look at this more.
+218.04s - 222.04s |  And so through this specialization, it brings us to my third point, which is that we need
+222.04s - 226.04s |  to have specialized roles and work collaboratively with one another, because we don't have the
+226.04s - 229.04s |  time to keep up with actors as they become more and more sophisticated.
+229.04s - 236.70s |  Now, going back to threat clustering, people have been tracking hackers for as long as
+236.70s - 240.70s |  people have been hacking, but modern threat clustering, as we know, it really starts back
+240.70s - 247.70s |  in 2013 with the Mandiant, or maybe it was FireEye back then, or Google Cloud, the APT1
+247.70s - 252.70s |  report, where they discussed a persistent Chinese espionage campaign.
+252.70s - 256.70s |  Later that year, there was an annual threat report published by CrowdStrike, where they
+256.70s - 259.70s |  shared some more insight into how they track threat actors.
+259.70s - 265.70s |  At CrowdStrike, they track by geographical attribution, and they use things like kittens,
+265.70s - 269.70s |  pandas, and bears to define and track those clusters.
+269.70s - 274.70s |  A year later, Mandiant began publishing threat actors under the name FIN, specifically started
+274.70s - 276.70s |  with the FIN4 report.
+276.70s - 283.70s |  This is the beginning of tracking threat actors by motivation beyond just geographical region.
+283.70s - 289.70s |  Now, five years later, as the industry has continued to evolve, threat clustering as
+289.70s - 295.70s |  a practice had to evolve, and Mandiant put out this great blog post about UNCs, or what
+295.70s - 297.70s |  they call uncategorized groups.
+297.70s - 303.70s |  This is a technique that Mandiant leverages to identify and track threat actors before
+303.70s - 308.70s |  we can necessarily know all of the details about their potential attribution or where
+308.70s - 310.70s |  they're operating out of.
+310.70s - 316.70s |  Another report that I wanted to highlight is really a fundamental bit of research that
+316.70s - 320.70s |  helped us at Sophos guide how we were going to create our threat clustering practice is
+320.70s - 326.70s |  the Microsoft blog article called Ransomware as a Service, Understanding the Cybercrime
+326.70s - 329.70s |  Gig Economy and How to Protect Yourself.
+329.70s - 334.70s |  In this blog, Microsoft details some of the different threat actors that are operating
+334.70s - 336.70s |  in the ransomware ecosystem.
+336.70s - 341.70s |  And it's really clear after reading that how or why threat clustering is important because
+341.70s - 346.70s |  of how nuanced it is with these different criminal service offerings, malware as a service,
+346.70s - 349.70s |  ransomware as a service, initial access brokers.
+349.70s - 354.70s |  It's a very complex ecosystem of criminal actors.
+354.70s - 360.70s |  In 2023, Microsoft changed how they tracked threat actors, and they put out a blog article
+360.70s - 363.70s |  where they shared details about their new changes.
+363.70s - 367.70s |  But they also shared some details in that blog about why they were making those changes
+367.70s - 369.70s |  and some of the methodologies that they leverage.
+369.70s - 375.70s |  And this research from Microsoft was really helpful for us as a smaller Intel team to
+375.70s - 380.70s |  create our practice and our process for investigating threat clusters.
+380.70s - 386.70s |  And two years after the creation of our intelligence team, we're able to publicly present on some
+386.70s - 391.70s |  of our actual research that we have identified through our investigations, which we'll talk
+391.70s - 393.70s |  more about here in a bit.
+393.70s - 399.70s |  But to summarize, at Sophos, we define threat clusters as a group of related threat activity
+399.70s - 404.70s |  exhibiting a specific pattern of behavior that we can use as a basis for tracking.
+404.70s - 409.70s |  We mentioned earlier that Mandiant calls uncategorized groups UNCs.
+409.70s - 413.70s |  At Sophos, we have a term called STACs, or Sophos Threat Activity Clusters.
+413.70s - 416.70s |  I'm pretty proud of myself for coming up with that acronym.
+417.70s - 422.70s |  These STACs are used for tracking adversary groups that we're investigating, specifically
+422.70s - 427.70s |  looking at their core tools, tactics, and procedures, their potential attributions or
+427.70s - 431.70s |  strategic motivations, and additionally, their more traditional indicators of compromise
+431.70s - 433.70s |  or observables.
+433.70s - 438.70s |  Example cluster names are STAC1870 or STAC4663.
+438.70s - 442.70s |  This is just to give you perspective of what that actually looks like on paper.
+442.70s - 447.70s |  And this graphic here on the right side of the screen is just a zoomed out picture using
+447.70s - 452.70s |  PYViz, a network graphing library that shows some of the relationships between malware,
+452.70s - 456.70s |  incidents, tools, and known clusters.
+456.70s - 463.84s |  Now, when we are investigating intrusion activity, before we can create a new cluster, the first
+463.84s - 468.84s |  thing that we do is review and see if there's any overlap with existing clusters.
+468.84s - 469.84s |  This is a known adversary.
+469.84s - 473.84s |  And if it's not a known adversary that we haven't seen before or we're not tracking,
+473.84s - 476.84s |  then we'll go about and create a new cluster.
+476.84s - 480.84s |  During the cluster creation process, the first thing that we do is we look at the threat
+480.84s - 482.84s |  actor's strategical motivation.
+482.84s - 486.84s |  We try to identify, is this someone who is sponsored by a foreign government?
+486.84s - 488.84s |  Is this a politically motivated hacktivist?
+488.84s - 490.84s |  Is this an initial access broker?
+490.84s - 492.84s |  Are they a ransomware affiliate?
+492.84s - 495.84s |  Maybe they're financially motivated, but we can't quite tell whether they're an affiliate
+495.84s - 496.84s |  or a broker yet.
+496.84s - 499.84s |  And then lastly, sometimes we just don't know.
+499.84s - 504.84s |  And so we will continue to create a cluster and track them even if we're unable to assess
+504.84s - 506.84s |  their actual motivation.
+506.84s - 511.84s |  After creating a cluster, it moves it over to a monitoring and review process.
+511.84s - 517.84s |  This covers three different domains, specifically tactical, operational, and strategical knowledge.
+517.84s - 523.84s |  Tactical knowledge is your things like indicators of compromise, observables, domains, IP addresses.
+523.84s - 527.84s |  Operational knowledge are things like when is the adversary active?
+527.84s - 530.84s |  What time of day are they frequently performing intrusions?
+530.84s - 536.84s |  And lastly, strategical knowledge is their associations, motivations, and attribution.
+536.84s - 541.84s |  And finally, as we continue to investigate clusters and monitor them throughout their
+541.84s - 546.84s |  lifecycle, we will frequently merge or split threat actors as needed.
+546.84s - 551.84s |  Sometimes we gain additional insight that helps us determine that what was believed
+551.84s - 555.84s |  to be one cluster is actually two different threat actors working together.
+555.84s - 560.84s |  And if we identify a cluster that is so persistent and severe that we've seen them for a continued
+560.84s - 564.84s |  period of time, we may promote that to a named entity.
+564.84s - 569.84s |  This is something that we use to help highlight longstanding campaigns, which we'll be discussing
+569.84s - 570.84s |  here later.
+570.84s - 577.84s |  And instead of doing a schema around animals like bears and pandas, we decided to do shades
+577.84s - 578.84s |  of color.
+578.84s - 581.84s |  So if it's a cyber criminal actor, they get a shade of green.
+581.84s - 585.84s |  And if they're a state-sponsored threat actor, they get a shade of red.
+585.84s - 591.84s |  And later, you'll be hearing about our Crimson Palace intrusion set.
+591.84s - 593.84s |  So that's how we track these actors, right?
+593.84s - 597.84s |  When we've grouped them together, it allows us to pinpoint how we should think about their
+597.84s - 598.84s |  techniques.
+598.84s - 601.84s |  And that's great, but really, how do we find them?
+601.84s - 605.84s |  And so the first two hunting methodologies I'm going to show you, the first one's already
+605.84s - 609.84s |  up there, indicator-driven, is going to be essential for us to track these actors over
+609.84s - 610.84s |  time.
+610.84s - 614.84s |  Now, commonly, this has been known as if there's an intrusion that's already occurred,
+614.84s - 617.84s |  we go and find that IP address, we find that hash in our network.
+617.84s - 619.84s |  Threat hunting is about finding something new.
+619.84s - 622.84s |  So I want you to rethink that.
+622.84s - 625.84s |  When you have an intrusion set that occurs, I want you to take that command-and-control
+625.84s - 628.84s |  infrastructure, and I want you to pattern what it looks like and then use open-source
+628.84s - 632.84s |  intelligence to go find other matching patterns or indicators that look like that.
+632.84s - 637.84s |  You then take that data set and then look at your customers now and say, do we see intrusions
+637.84s - 640.84s |  from these unknown IP addresses, looking for unknowns?
+640.84s - 643.84s |  There can be some false positives, unfortunately, but it's a lot better than saying, did we
+643.84s - 645.84s |  see the thing that they already saw?
+645.84s - 648.84s |  Which you still should do, but that's just a threat feed.
+648.84s - 650.84s |  After that, we have behavior-driven threat hunting, right?
+650.84s - 654.84s |  So this is where we take an actual technique of something that we want to look for.
+654.84s - 660.84s |  So, for instance, Acura Ransomware, they use a very specific R-clone command line that
+660.84s - 663.84s |  excludes a bunch of different things that they don't want to collect.
+663.84s - 667.84s |  We use that as a detection or hunt item first to say, do we see this again?
+667.84s - 672.84s |  And we'll cover a few more behavior-driven approaches in the next use case.
+672.84s - 674.84s |  Finally, anomaly-driven.
+674.84s - 678.84s |  And this is how we identify new threat actors and new threat clusters.
+678.84s - 681.84s |  And what this means is that we're going to take rare, we're going to use statistical
+681.84s - 685.84s |  methods and apply it to a data set and say, is this rare or not?
+685.84s - 687.84s |  That's not good enough, though.
+687.84s - 691.84s |  In my opinion, we should be looking at our logs in three broad strokes of telemetry.
+691.84s - 692.84s |  Endpoint.
+692.84s - 695.84s |  So this is process, file, write, registry, write, anything that occurs on a virtual or
+695.84s - 696.84s |  physical machine.
+696.84s - 697.84s |  Network.
+697.84s - 699.84s |  Any intercommunication at any layer.
+699.84s - 701.84s |  And then finally, identity, right?
+701.84s - 702.84s |  And that can apply all to the cloud.
+702.84s - 705.84s |  It can apply to the actual process context.
+705.84s - 707.84s |  Again, they're broad stroke for a reason.
+707.84s - 711.84s |  And I want you to think about anomalies as occurring between not just one data set but
+711.84s - 714.84s |  more like two data sets and then over time.
+714.84s - 718.84s |  So when we see a truly rare event that should not happen, right, like a short-lived scheduled
+718.84s - 723.84s |  task where they write one and they write it, run it, and delete it very quickly over time,
+723.84s - 726.84s |  but they use an IP address to cause a network creation for lateral movement.
+726.84s - 729.84s |  And we also have some other tools that we'll discuss this with as well.
+729.84s - 731.84s |  But that will come in a few slides.
+731.84s - 737.84s |  And so you heard from Mark about some of his methods for using statistics to hunt for anomalies.
+737.84s - 742.84s |  Within the intelligence team, we also try to leverage statistics to help scale up our
+742.84s - 743.84s |  hunting capabilities.
+743.84s - 749.84s |  Sophos launched their MDR service four years ago, and since then we've grown from just
+749.84s - 751.84s |  2,000 customers to over 20,000.
+751.84s - 756.84s |  And it's been harder to actually just identify overlap using pattern recognition and analyst
+756.84s - 757.84s |  intuition.
+757.84s - 761.84s |  And so now we've been looking at ways that we can scale up programmatically and identify
+761.84s - 763.84s |  clusters in our data sets.
+763.84s - 766.84s |  This starts with fetching data from our threat intelligence platform.
+766.84s - 771.84s |  At Sophos, we leverage OpenCTI, which is an open source threat intelligence platform
+771.84s - 774.84s |  that's based on the STIX framework.
+774.84s - 779.84s |  From there, we leverage Python to pull data from OpenCTI and perform statistical analysis
+779.84s - 785.84s |  and comparisons, specifically looking at Jacquard index coefficients as well as direct overlap
+785.84s - 787.84s |  of atomic indicators.
+787.84s - 793.84s |  And then finally, after performing that number crunching and that comparison, we present
+793.84s - 799.84s |  the data in a web platform for our Intel analysts to use and consider in their investigation.
+800.84s - 805.84s |  Specifically, we use libraries like DataTables, Plotly, and pyViz.
+805.84s - 808.84s |  Here's just a little preview of what that looks like.
+808.84s - 814.84s |  And this is something that we're still building out, but it's really used to augment our intelligence
+814.84s - 815.84s |  assessments.
+815.84s - 820.84s |  The first step when we have a new incident is to compare overlap with existing incidents.
+820.84s - 827.84s |  The main data types that we look at are malware usage, tool usage, MITRE attack patterns,
+827.84s - 832.84s |  observables, and victimology as well, which is where that customer is actually located
+832.84s - 834.84s |  and what their sector is.
+834.84s - 838.84s |  From there, we try to present a score to the analysts, which they can then use to further
+838.84s - 840.84s |  help their investigation.
+840.84s - 845.84s |  After we've compared incidents against each other and maybe identified a new cluster activity,
+845.84s - 849.84s |  we also compare incidents against known campaigns.
+849.84s - 854.84s |  This is looking at our Sophos threat activity clusters and measuring those same different
+854.84s - 859.84s |  processes of how much malware overlap is there, how much tool overlap there is.
+859.84s - 863.84s |  And this is something that we're still building out, but we've been testing around with different
+863.84s - 864.84s |  entity weighting types.
+864.84s - 869.84s |  Potentially maybe want to look at some machine learning in the future, but it's something
+869.84s - 877.66s |  that has been really helpful as we've continued to grow at Sophos and have more data.
+877.66s - 878.66s |  So that's great.
+878.66s - 882.66s |  It's wonderful to be able to collect all these actors and say, okay, this is you and this
+882.66s - 883.66s |  is A, B, and C.
+883.66s - 884.66s |  But now we need to hunt them.
+884.66s - 889.66s |  So I'm going to walk you through how we created an anomaly-based tool called SPADE, which
+889.66s - 890.66s |  is the acronym.
+890.66s - 894.66s |  I called it SPADE because it helps you dig, but it's like the Session and Process Anomaly
+894.66s - 896.66s |  and Discovery Examination Tool.
+896.66s - 898.66s |  So it's much better said as an acronym.
+898.66s - 899.66s |  So sorry to make you suffer it.
+899.66s - 903.66s |  But the thing we're going to look at specifically is command and control.
+903.66s - 906.66s |  And now command and control you can think of as the remote control systems that allow
+906.66s - 909.66s |  threat actors to operate within the environment.
+909.66s - 912.66s |  When they're there, we're going to start looking at specifically discovery commands.
+912.66s - 916.66s |  The reason why is because these are going to happen early on in the attack life cycle.
+916.66s - 919.66s |  And it's post-exploitation, so we know they're actually going to spend some time there.
+919.66s - 923.66s |  Now, typical detection engineering logic is to look for a single parent process executing
+923.66s - 926.66s |  a single discovery command.
+926.66s - 929.66s |  When you're looking at 25,000 clients, it's really noisy.
+929.66s - 931.66s |  It's very brittle as a detection object and hunt item.
+931.66s - 935.66s |  So what we started to do was look at these as a subset of discovery patterns.
+935.66s - 939.66s |  Now, another aspect of this is we're looking for human operators, right, human patterns.
+939.66s - 941.66s |  So we're going to factor in time.
+941.66s - 945.66s |  So now we're going to break time into two-hour sessions with a session of discovery commands
+945.66s - 948.66s |  where more than two of them occur out of that subset of 14,
+948.66s - 952.66s |  and then pair that with a parent process.
+952.66s - 955.66s |  After that, we're going to then pattern that across that singular host,
+955.66s - 958.66s |  saying what do those sessions and those parent process executions look like.
+958.66s - 960.66s |  And again, we're looking for human operators.
+960.66s - 964.66s |  So then we're going to remove any sessions that have a high process count
+964.66s - 967.66s |  or repeats of the same discovery command because that's probably a program
+967.66s - 970.66s |  doing what it should be doing programmatically.
+970.66s - 973.66s |  Now, that leaves with a smaller subset.
+973.66s - 975.66s |  But we have a lot of environments to look at.
+975.66s - 979.66s |  So we're going to pattern it across that specific environment now.
+979.66s - 984.66s |  And we're going to look for repeat pairs of parent processes and discovery sessions
+984.66s - 986.66s |  because, again, we have 25,000 customers to look at.
+986.66s - 988.66s |  There's lots of different machines out there.
+988.66s - 991.66s |  And we're going to look for repeat patterns of that parent process to discovery command
+991.66s - 994.66s |  and say that's likely a configuration that's set up
+994.66s - 998.66s |  because, again, we have to think about how do you deploy your command and control implant.
+998.66s - 1001.66s |  Do you put it across every machine? Maybe.
+1001.66s - 1005.66s |  But you're more likely going to put it across a few in a smaller subset
+1005.66s - 1007.66s |  so it allows us to narrow things down.
+1007.66s - 1011.66s |  Now, it leaves us with still a small subset on a per-environment basis
+1011.66s - 1013.66s |  but very large when we think about things at scale.
+1013.66s - 1017.66s |  So we're going to think about the other aspect of telemetry I talked about, networks.
+1017.66s - 1019.66s |  Network communications.
+1019.66s - 1021.66s |  What does command and control do? It communicates externally.
+1021.66s - 1024.66s |  Now, it doesn't talk to every single IP address.
+1024.66s - 1026.66s |  It talks to just a few.
+1026.66s - 1029.66s |  We're going to take those process pairs that we've identified
+1029.66s - 1033.66s |  and say we don't want to see the ones that talk to every external IP address, just one.
+1033.66s - 1035.66s |  And that's how we programmatically identified
+1035.66s - 1037.66s |  and kept pace with the nation-state threat actor
+1037.66s - 1041.66s |  deploying 28 different command and control chains in 28 weeks.
+1041.66s - 1045.66s |  And they were using process injection, shellcode loaders, three different C2 frameworks,
+1045.66s - 1050.66s |  and I could programmatically find them across all 25,000 clients with the click of a button.
+1050.66s - 1051.66s |  It worked pretty well.
+1051.66s - 1053.66s |  And I said to myself, we need to scale this.
+1053.66s - 1055.66s |  We can't just rebuild our tool.
+1055.66s - 1058.66s |  We have to change that tool and allow it to do something else.
+1058.66s - 1064.66s |  What if we specified that parent process and said let's look at web servers?
+1064.66s - 1066.66s |  Let's look at perimeter technologies.
+1066.66s - 1068.66s |  And so I said let's look at IIS web servers.
+1068.66s - 1072.66s |  And I said let's look for those anomalies in discovery commands occurring.
+1072.66s - 1076.66s |  And that's when we found stack 6541.
+1076.66s - 1081.66s |  So the first thing they did at the very end of March was enable XP command shell.
+1081.66s - 1085.66s |  After that, they then used the set command to then write binary data,
+1085.66s - 1089.66s |  and they did 22,000 executions in 10 minutes writing that into a file.
+1089.66s - 1090.66s |  It failed.
+1090.66s - 1093.66s |  And that's where we caught them trying to actually move laterally
+1093.66s - 1097.66s |  from the impacted web shell to the SQL host, and they were peeing it,
+1097.66s - 1099.66s |  trying to say where are you? Where's my implant? Why isn't this working?
+1099.66s - 1101.66s |  I don't have my second stage.
+1101.66s - 1103.66s |  Okay, they came back later.
+1103.66s - 1104.66s |  That didn't work.
+1104.66s - 1106.66s |  They ingressed a script with certutil,
+1106.66s - 1109.66s |  and then that script is going to use WSH with an XMLHTTP
+1109.66s - 1112.66s |  to bring down CobaltStrike and ingress their tool.
+1112.66s - 1116.66s |  They also brought in, and this is, again, part of the unsolved mystery,
+1116.66s - 1122.66s |  an actual AV tool, the CentennialStaticEngineScanner.exe.
+1122.66s - 1124.66s |  We unfortunately didn't see them execute this,
+1124.66s - 1126.66s |  so we don't know what they were doing with it.
+1126.66s - 1129.66s |  They then used DLL side loading to execute CobaltStrike.
+1129.66s - 1131.66s |  They then created a new account under Help Desk.
+1131.66s - 1136.66s |  That Help Desk account went to dump the registry for credentials.
+1136.66s - 1139.66s |  Now, this would be how you would form a threat cluster, right?
+1139.66s - 1142.66s |  All of these different aspects, these tools, these capabilities,
+1142.66s - 1145.66s |  are one aspect that Colin was just discussing.
+1145.66s - 1147.66s |  Now, the reason I want to bring that to your attention
+1147.66s - 1150.66s |  is not because of this, but when we dove further back in time,
+1150.66s - 1152.66s |  it's what we identified later, earlier, actually.
+1152.66s - 1154.66s |  So, in the beginning of February,
+1154.66s - 1158.66s |  we identified that their SQL server was brute-forced,
+1158.66s - 1161.66s |  and then from there, they actually enabled XPCommandShell.
+1161.66s - 1163.66s |  Didn't they already enable it?
+1163.66s - 1165.66s |  Wait, they enabled it at the end of March.
+1165.66s - 1168.66s |  If you're already there, why would you enable it a second time
+1168.66s - 1170.66s |  if you already did that in February?
+1170.66s - 1172.66s |  So, that's, as analysts, what we need to think about is,
+1172.66s - 1173.66s |  why are you doing these things?
+1173.66s - 1175.66s |  And this is our first sign of, like,
+1175.66s - 1177.66s |  is there more than one person here, maybe?
+1177.66s - 1179.66s |  And then what was more interesting is what they did after that.
+1179.66s - 1181.66s |  They started to use a completely different set of techniques,
+1181.66s - 1183.66s |  where they then wrote malicious binary data
+1183.66s - 1186.66s |  into their own ThreatAfterCreatedSQL table.
+1186.66s - 1190.66s |  Using this command, they then used the Lulbin bulk copy program
+1190.66s - 1196.66s |  to query that out and then write their own rogue AnyDesk instance
+1196.66s - 1200.66s |  to perform their own C2 through a covert channel.
+1200.66s - 1203.66s |  So, they didn't just do this again.
+1203.66s - 1207.66s |  They did it multiple times, and they deployed these commands here,
+1207.66s - 1210.66s |  which allows them to understand the instance ID of their RMM, okay?
+1210.66s - 1213.66s |  And they wrote it out to that ipinfo.txt file,
+1213.66s - 1215.66s |  and then after that, they didn't stop.
+1215.66s - 1217.66s |  A few days later, they came back and created a d.bat file.
+1217.66s - 1220.66s |  That d.bat file used net.exe.
+1220.66s - 1222.66s |  And I want you to pay attention to the languages, right?
+1222.66s - 1224.66s |  Line 2 through 5.
+1224.66s - 1227.66s |  Why would they do this across multiple languages?
+1227.66s - 1229.66s |  Don't they know who they're targeting?
+1229.66s - 1231.66s |  What if they didn't?
+1231.66s - 1233.66s |  What if this is at scale?
+1233.66s - 1236.66s |  After that, they then used a completely different technique
+1236.66s - 1240.66s |  to capture credentials by sending a WDigest registry key.
+1240.66s - 1242.66s |  So, this is where they came,
+1242.66s - 1245.66s |  they deployed their actions on objectives a few days later.
+1245.66s - 1249.66s |  And that 03.bat file then executed pp2.exe,
+1249.66s - 1251.66s |  which went on to deploy a host of other tools
+1251.66s - 1254.66s |  alongside mimic ransomware.
+1254.66s - 1256.66s |  And what was interesting, as we'll see in a little bit,
+1256.66s - 1258.66s |  is the times that they did this.
+1258.66s - 1260.66s |  It happened not once, but a few times.
+1260.66s - 1262.66s |  And it happened over that other pattern of attack
+1262.66s - 1264.66s |  that I already identified.
+1264.66s - 1266.66s |  So, how do we start tracking this actor?
+1266.66s - 1268.66s |  Now that we've found this new aspect that went undetected
+1268.66s - 1270.66s |  because it was all lolbins,
+1270.66s - 1272.66s |  the ransomware didn't detonate effectively,
+1272.66s - 1274.66s |  so there's no telemetry there.
+1274.66s - 1275.66s |  So, we still need to track this actor
+1275.66s - 1277.66s |  and see what else they're doing.
+1277.66s - 1280.66s |  So, we used a behavioral-based detection item.
+1280.66s - 1281.66s |  And we looked at the process executions
+1281.66s - 1284.66s |  of command.exe spawning BCP,
+1284.66s - 1286.66s |  specifically when we would do the query out to executables.
+1286.66s - 1288.66s |  Or we can create another behavioral detection
+1288.66s - 1290.66s |  looking for the batch files.
+1290.66s - 1291.66s |  And what was interesting about this
+1291.66s - 1294.66s |  is if you whitelist out the C flag,
+1294.66s - 1295.66s |  it actually took the...
+1295.66s - 1298.66s |  So, I registered out every single file that was queried out,
+1298.66s - 1300.66s |  and these batch files are written all the time,
+1300.66s - 1302.66s |  but they're always done with the C flag.
+1302.66s - 1305.66s |  So, if you remove that and create your hunt effectively
+1305.66s - 1307.66s |  by whitelisting certain things that you can trust
+1307.66s - 1309.66s |  or believe that you can trust
+1309.66s - 1312.66s |  and then try to detect other aspects of that same chain,
+1312.66s - 1316.66s |  you create a robust detection or hunting toolset.
+1316.66s - 1319.66s |  And when I patterned this across all of our environments,
+1319.66s - 1321.66s |  it got really exciting.
+1321.66s - 1322.66s |  I live on the East Coast.
+1322.66s - 1323.66s |  Colin lives on the West Coast.
+1323.66s - 1325.66s |  And I didn't wait for him to wake up
+1325.66s - 1327.66s |  and sign out at 9 a.m. that day.
+1327.66s - 1328.66s |  I started collecting all this data.
+1328.66s - 1330.66s |  I was like, the timestamps on this are wild.
+1330.66s - 1331.66s |  You got to check it out.
+1331.66s - 1335.01s |  Investigating timestamp data
+1335.01s - 1337.01s |  is something that we do a lot here at Sophos.
+1337.01s - 1339.01s |  Specifically, we like to leverage
+1339.01s - 1341.01s |  a data visualization library called Plotly
+1341.01s - 1344.01s |  to create different graphics to help us investigate.
+1344.01s - 1347.01s |  One of our techniques is to create these Gantt charts,
+1347.01s - 1349.01s |  specifically looking at different customer environments
+1349.01s - 1351.01s |  and trying to understand,
+1351.01s - 1354.01s |  is the adversary performing these intrusions using automation
+1354.01s - 1356.01s |  or are they doing this manually?
+1356.01s - 1360.01s |  And based off of this investigation of this specific cluster,
+1360.01s - 1363.01s |  we believe that they are definitely leveraging automation
+1363.01s - 1365.01s |  to help facilitate their attacks.
+1365.01s - 1366.01s |  Specifically, in late March,
+1366.01s - 1369.01s |  we identified attempts to deploy ransomware
+1369.01s - 1370.01s |  at multiple customer environments.
+1370.01s - 1372.01s |  And one thing I wanted to highlight here
+1372.01s - 1375.01s |  is that all three of our initial customers in this cluster
+1375.01s - 1377.01s |  were all based out of India,
+1377.01s - 1380.01s |  which is something that we'll talk a little bit more about here in a bit.
+1380.01s - 1385.54s |  Now, when we are investigating threat activity clusters,
+1385.54s - 1387.54s |  we definitely look at public research.
+1387.54s - 1389.54s |  Maybe someone already knows about it.
+1389.54s - 1391.54s |  Chances are someone else in the industry
+1391.54s - 1395.54s |  has seen a similar attack in their telemetry.
+1395.54s - 1398.54s |  And with this cluster, stack 6451,
+1398.54s - 1400.54s |  that certainly was the case.
+1400.54s - 1403.54s |  The first overlap we found was this blog from Trend Micro
+1403.54s - 1406.54s |  published in January of 2023
+1406.54s - 1409.54s |  about mimic ransomware abusing a program called Everything,
+1409.54s - 1412.54s |  which is for searching for its encryption process.
+1412.54s - 1414.54s |  There were some overlaps with this,
+1414.54s - 1418.54s |  particularly the tools like mimic ransomware and Everything,
+1418.54s - 1421.54s |  but there wasn't any direct observable overlaps.
+1421.54s - 1426.54s |  However, Elastic Security Labs in January of this year,
+1426.54s - 1428.54s |  they published about an intrusion
+1428.54s - 1431.54s |  at a financial services company in India
+1431.54s - 1433.54s |  where they identified an adversary
+1433.54s - 1436.54s |  using the Centennial Static Engine
+1436.54s - 1439.54s |  deploying Cobalt Strike with an interesting obfuscation technique
+1439.54s - 1441.54s |  called Sleep Patcher,
+1441.54s - 1444.54s |  as well as they provided some command and control values.
+1444.54s - 1447.54s |  And we found direct overlap in the patterns of C2 values
+1447.54s - 1451.54s |  as well as in some of the techniques leveraged
+1451.54s - 1452.54s |  and mentioned in this write-up
+1452.54s - 1454.54s |  as well as observed in our incident response.
+1454.54s - 1456.54s |  Another thing that's interesting here
+1456.54s - 1460.54s |  is that the adversary was impersonating Microsoft domains
+1460.54s - 1465.54s |  and they were registering those with Cloud Strike or, sorry.
+1465.54s - 1466.54s |  CloudFlare.
+1466.54s - 1467.54s |  CloudFlare.
+1467.54s - 1468.54s |  Registering with CloudFlare
+1468.54s - 1473.54s |  and definitely some interesting trends there.
+1473.54s - 1477.54s |  And then the last blog article that we identified overlap with
+1477.54s - 1479.54s |  is this one from SecureNix.
+1479.54s - 1483.54s |  They specifically mentioned that a Turkish hacker
+1483.54s - 1487.54s |  is carrying out these attacks against Microsoft SQL servers
+1487.54s - 1489.54s |  to deliver domain-wide mimic ransomware.
+1489.54s - 1491.54s |  And in this blog article,
+1491.54s - 1495.54s |  they mentioned that they recovered a log file from AnyDesk,
+1495.54s - 1497.54s |  and we talked about AnyDesk earlier in this presentation
+1497.54s - 1498.54s |  because we saw that in our data.
+1498.54s - 1500.54s |  And in this AnyDesk log,
+1500.54s - 1503.54s |  they found Turkish language communication from the threat actor.
+1503.54s - 1506.54s |  And so we had a lot of head scratching
+1506.54s - 1510.54s |  trying to determine and assess the adversary's motivation.
+1510.54s - 1513.54s |  Are they geopolitically motivated, targeting companies in India?
+1513.54s - 1516.54s |  Are they a Turkish threat actor?
+1516.54s - 1520.54s |  But unfortunately, we were unable to determine the final motivation.
+1520.54s - 1523.54s |  And part of the reason why is after those first three cases,
+1523.54s - 1525.54s |  we continued to hunt for it
+1525.54s - 1528.54s |  and we found this adversary impacting organizations
+1528.54s - 1530.54s |  that were not based in India.
+1530.54s - 1532.54s |  So that was a little bit of a weaker tie there.
+1532.54s - 1536.54s |  And unfortunately, we were unable to determine the motivation.
+1536.54s - 1539.54s |  So if anyone has any hints on this mystery,
+1539.54s - 1540.54s |  please come find me afterwards.
+1540.54s - 1544.54s |  I'd be happy to chat more in depth about some of our observations.
+1544.54s - 1549.62s |  Really, really frustrating, personally.
+1549.62s - 1551.62s |  So this next case is near and dear to my heart.
+1551.62s - 1553.62s |  I lost about a year and a half of my life
+1553.62s - 1555.62s |  tracking this actor specifically,
+1555.62s - 1557.62s |  or actors as we came to find out.
+1557.62s - 1559.62s |  And it was a fascinating time, right?
+1559.62s - 1561.62s |  You wake up every single day and you're like,
+1561.62s - 1563.62s |  okay, what is this APT going to do next?
+1563.62s - 1566.62s |  And I got to just sit there on the shoulder and say,
+1566.62s - 1567.62s |  hi, what are you doing?
+1567.62s - 1568.62s |  What are you going to deploy?
+1568.62s - 1569.62s |  How are you going to move?
+1569.62s - 1572.62s |  Because we had a mixed estate in this instance specifically.
+1572.62s - 1574.62s |  So there was some challenge for us
+1574.62s - 1576.62s |  to actually properly remediate and investigate things.
+1576.62s - 1579.62s |  So when we would evict them from the server subnets,
+1579.62s - 1581.62s |  they would actually reside in the endpoints and come back.
+1581.62s - 1584.62s |  So it made for a really interesting way to actually monitor them.
+1585.62s - 1590.62s |  So this is another instance of why we are using clustering, right?
+1590.62s - 1592.62s |  So when we first identified this threat actor attack,
+1592.62s - 1594.62s |  we started with a singular cluster.
+1594.62s - 1598.62s |  And they were not the first ones chronologically in the environment.
+1598.62s - 1600.62s |  It was actually cluster Bravo.
+1600.62s - 1602.62s |  So they're called stack, oh, apologies.
+1602.62s - 1604.62s |  They're stack 1870.
+1604.62s - 1606.62s |  I'm going to refer to them as cluster Alpha,
+1606.62s - 1608.62s |  cluster Bravo, and cluster Charlie
+1608.62s - 1611.62s |  because it's going to be a lot easier for me to say that on stage.
+1611.62s - 1613.62s |  So the stack numbers are written at the top.
+1613.62s - 1615.62s |  But cluster Bravo is here.
+1615.62s - 1617.62s |  And now what we did over time
+1617.62s - 1619.62s |  is that we needed to actually identify and create
+1619.62s - 1620.62s |  what this attack flow looked like.
+1620.62s - 1622.62s |  So we did that by taking the attack vector
+1622.62s - 1624.62s |  of the machine that they would authenticate from,
+1624.62s - 1626.62s |  the account they used to authenticate,
+1626.62s - 1628.62s |  the machine that they would target,
+1628.62s - 1630.62s |  the malware they deployed when they were there.
+1630.62s - 1632.62s |  Finally, when that malware was deployed,
+1632.62s - 1633.62s |  what was the command and control infrastructure
+1633.62s - 1635.62s |  that it communicated back to?
+1635.62s - 1637.62s |  So we're going to look at things from a multitude of perspectives,
+1637.62s - 1639.62s |  reaching out what malware was deployed
+1639.62s - 1642.62s |  and then where did it go back when it was actually live on the box.
+1642.62s - 1644.62s |  The attacker started with this desktop machine.
+1644.62s - 1646.62s |  They pivoted using the admin F account.
+1646.62s - 1649.62s |  They then moved to the DC sync machine as their first attack
+1649.62s - 1650.62s |  where they deployed, at the time,
+1650.62s - 1653.62s |  an unknown piece of malware called C Corridor.
+1653.62s - 1655.62s |  They very quickly, within two hours, cleaned that up
+1655.62s - 1658.62s |  and then moved laterally to the AMS machine.
+1658.62s - 1659.62s |  They did a different attack there
+1659.62s - 1661.62s |  where they deployed the agent shim attack,
+1661.62s - 1663.62s |  which is where we're trying to do defense evasion
+1663.62s - 1666.62s |  and actually shim our agent's telemetry off of the process
+1666.62s - 1668.62s |  for their subsequent actions
+1668.62s - 1672.62s |  of using RDR leak diag LALBIN to capture credentials.
+1672.62s - 1673.62s |  A few days later, they came back
+1673.62s - 1676.62s |  and used a local admin account to attack the file server
+1676.62s - 1678.62s |  where they deployed the C Corridor malware.
+1678.62s - 1680.62s |  There was a change in technique.
+1680.62s - 1683.62s |  This began to beacon externally.
+1683.62s - 1686.62s |  They immediately set up a user J context,
+1686.62s - 1689.62s |  or a scheduled task under the user J context
+1689.62s - 1691.62s |  and moved laterally.
+1691.62s - 1693.62s |  What was interesting and something that I, as a threat hunter,
+1693.62s - 1694.62s |  find very challenging to do
+1694.62s - 1696.62s |  is that they actually failed to do something right here
+1696.62s - 1700.62s |  before this was to create a remote service.
+1700.62s - 1702.62s |  They tried to actually create that service,
+1702.62s - 1703.62s |  but they did a typo.
+1703.62s - 1705.62s |  I was able to take that and pattern that
+1705.62s - 1706.62s |  across the rest of our environment
+1706.62s - 1709.62s |  by monitoring them effectively every single day.
+1709.62s - 1710.62s |  During all of this intrusion set,
+1710.62s - 1712.62s |  I, as a threat hunter,
+1712.62s - 1714.62s |  am going in and monitoring actively
+1714.62s - 1715.62s |  what those intrusion sets look like
+1715.62s - 1717.62s |  and immediately creating threat hunts.
+1717.62s - 1719.62s |  That's that specialization I was talking about earlier
+1719.62s - 1722.62s |  is that we have IR responders that are managing these events.
+1722.62s - 1724.62s |  I'm sitting there like, okay, what did we see over here?
+1724.62s - 1725.62s |  What was that? Is that new?
+1725.62s - 1727.62s |  Or they'll come to me and say, hey, hey, hey,
+1727.62s - 1729.62s |  this technique is something really odd.
+1729.62s - 1730.62s |  I've never seen this before.
+1730.62s - 1731.62s |  You should be going and hunting for it.
+1731.62s - 1734.62s |  That's where that specialization occurs.
+1734.62s - 1736.62s |  Again, back to them moving laterally, though,
+1736.62s - 1738.62s |  with their remote scheduled task, that hypervisor.
+1738.62s - 1741.62s |  They deployed the C-corridor malware again.
+1741.62s - 1742.62s |  Something really weird happened here
+1742.62s - 1744.62s |  because we're not looking at this over time right now.
+1744.62s - 1747.62s |  They actually paused and they stopped attacking.
+1747.62s - 1749.62s |  This attacker was very fast in their pace
+1749.62s - 1752.62s |  and they were very precise in how they cleaned things up.
+1752.62s - 1754.62s |  Here, they actually stopped completely.
+1754.62s - 1757.62s |  They left their implant set up to actually be recurring
+1757.62s - 1758.62s |  but didn't execute that recurrence.
+1758.62s - 1761.62s |  They did a singular beacon out and stopped.
+1761.62s - 1762.62s |  When they came back a week later,
+1762.62s - 1765.62s |  their behavior patterns changed.
+1765.62s - 1767.62s |  The reason why is you see that little A
+1767.62s - 1769.62s |  at the top right of there?
+1769.62s - 1770.62s |  That was because Cluster Alpha
+1770.62s - 1773.62s |  had deployed to that machine a day prior.
+1773.62s - 1774.62s |  And so I think there was potentially
+1774.62s - 1775.62s |  some deconfliction occurring
+1775.62s - 1777.62s |  where they were saying, okay, I'm on this machine.
+1777.62s - 1778.62s |  I know you're present here.
+1778.62s - 1780.62s |  I don't want to get in your way.
+1780.62s - 1782.62s |  You can have that box.
+1782.62s - 1783.62s |  The reason why is because when they came back,
+1783.62s - 1785.62s |  they deployed laterally to the endpoints
+1785.62s - 1786.62s |  before they stopped appearing within the environment.
+1786.62s - 1788.62s |  We only saw them for a month.
+1788.62s - 1791.62s |  We then repeated this process with the other attackers.
+1791.62s - 1793.62s |  Alpha attacked from the VPN subnets.
+1793.62s - 1795.62s |  They used a different subset of accounts
+1795.62s - 1798.62s |  and they attacked a different subset of machines.
+1798.62s - 1799.62s |  They then functioned primarily
+1799.62s - 1803.62s |  through the Merlin C2 backdoor, a VMnet executable
+1803.62s - 1805.62s |  that they kept in a Microsoft directory,
+1805.62s - 1808.62s |  so a little bit of an easy find there.
+1808.62s - 1809.62s |  After that, it went on to create
+1809.62s - 1812.62s |  all of these different pieces of malware on disk.
+1812.62s - 1813.62s |  That didn't mean that there weren't
+1813.62s - 1815.62s |  standalone instances of some of that malware.
+1815.62s - 1816.62s |  There were.
+1816.62s - 1817.62s |  But all of those pieces of malware
+1817.62s - 1820.62s |  went on to deploy the same things in a secondary manner.
+1820.62s - 1822.62s |  So that's one aspect of that,
+1822.62s - 1824.62s |  creating things in a singular cluster.
+1824.62s - 1825.62s |  We can tie those things together
+1825.62s - 1828.62s |  because it all came from the same place.
+1828.62s - 1831.62s |  When it communicated, there were also other low overlaps.
+1831.62s - 1833.62s |  The Rudebird sample and the Eagerbee sample
+1833.62s - 1835.62s |  had the exact same hard-coded IP addresses
+1835.62s - 1837.62s |  inside of that malware.
+1837.62s - 1838.62s |  So they were deployed from the same machines,
+1838.62s - 1840.62s |  deployed from the same accounts,
+1840.62s - 1842.62s |  communicating back to the same things.
+1842.62s - 1844.62s |  Now, there were standalone instances
+1844.62s - 1847.62s |  of that command-and-control infrastructure,
+1847.62s - 1849.62s |  but it was distinctly separate and different
+1849.62s - 1852.62s |  from clusters Bravo and Charlie.
+1852.62s - 1855.62s |  Again, now with cluster Charlie,
+1855.62s - 1857.62s |  we repeated the exact same process.
+1857.62s - 1860.62s |  They attacked just one time from the VPN subnet.
+1860.62s - 1862.62s |  They used the admin C account just one time.
+1862.62s - 1864.62s |  They attacked the 365 machine,
+1864.62s - 1865.62s |  where they deployed yet again
+1865.62s - 1866.62s |  another piece of custom malware,
+1866.62s - 1868.62s |  PocoProxy for command-and-control.
+1868.62s - 1869.62s |  This was also unknown at the time,
+1869.62s - 1873.62s |  and yet distinctly different from the other two clusters.
+1873.62s - 1875.62s |  They used a different subset of accounts.
+1875.62s - 1877.62s |  They used remote-scheduled tasks to move laterally,
+1877.62s - 1879.62s |  much like cluster Bravo did.
+1879.62s - 1880.62s |  And then on top of that,
+1880.62s - 1884.62s |  they again used PocoProxy to deploy their malware.
+1884.62s - 1886.62s |  And they were really noisy, right?
+1886.62s - 1888.62s |  So the way that they mapped the environment
+1888.62s - 1893.62s |  is they used hundreds and hundreds of PowerShell queries
+1893.62s - 1895.62s |  to look at the EVTX files,
+1895.62s - 1897.62s |  and then they immediately scraped the IP addresses out,
+1897.62s - 1899.62s |  and 10 minutes later, down to the second,
+1899.62s - 1901.62s |  started pinging the entire environment
+1901.62s - 1903.62s |  to see where can they go.
+1903.62s - 1905.62s |  So I thought that was incredibly noisy
+1905.62s - 1907.62s |  and a very different technique than cluster Alpha,
+1907.62s - 1908.62s |  which was using a very similar approach
+1908.62s - 1910.62s |  of scraping the EVTX files
+1910.62s - 1912.62s |  to understand where different targets
+1912.62s - 1913.62s |  were in the environment,
+1913.62s - 1916.62s |  but they did it in a much more precise manner,
+1916.62s - 1918.62s |  so that the way they deployed that technique
+1918.62s - 1920.62s |  was distinctly different.
+1920.62s - 1923.62s |  On top of that, they used a Mac v...
+1923.62s - 1925.62s |  Excuse me. I need some water.
+1926.62s - 1928.62s |  to deploy what this time we believe to be
+1928.62s - 1931.62s |  a credential capture tool,
+1931.62s - 1933.62s |  which would capture LSA credentials.
+1933.62s - 1935.62s |  They then used the HUI loader for,
+1935.62s - 1936.62s |  again, through DLL side loading
+1936.62s - 1938.62s |  to deploy a CobaltStrike implant,
+1938.62s - 1941.62s |  and then they modified the AT exec
+1941.62s - 1943.62s |  in packet tool in a very slight way
+1943.62s - 1945.62s |  to do lateral movement.
+1945.62s - 1947.62s |  On top of that, their domains
+1947.62s - 1949.62s |  were distinctly separate again
+1949.62s - 1953.62s |  from clusters Alpha and Bravo.
+1953.62s - 1954.62s |  So this is what it looks like
+1954.62s - 1956.62s |  when you lay them all out,
+1956.62s - 1957.62s |  and what's really intriguing
+1957.62s - 1958.62s |  is I was sitting there and saying,
+1958.62s - 1961.62s |  okay, we see all these different patterns going on.
+1961.62s - 1962.62s |  This is all well and good,
+1962.62s - 1963.62s |  and I think I have one way of saying
+1963.62s - 1965.62s |  that these are potentially different, right?
+1965.62s - 1966.62s |  I've monitored their behaviors.
+1966.62s - 1968.62s |  I've looked at their attack paths.
+1968.62s - 1969.62s |  They seem to be separate,
+1969.62s - 1971.62s |  but I talked about collaboration,
+1971.62s - 1972.62s |  and this is where I went to the
+1972.62s - 1973.62s |  malware reverse engineering team,
+1973.62s - 1975.62s |  and I said, hey, can you please look at
+1975.62s - 1976.62s |  that Poco proxy sample?
+1976.62s - 1978.62s |  Can you look at that Merlin sample?
+1978.62s - 1980.62s |  Can you look at the POW heartbeat sample,
+1980.62s - 1982.62s |  and can you tell me if they're related or not, right?
+1982.62s - 1984.62s |  And that's that C-Core door sample,
+1984.62s - 1985.62s |  and they were able to take their time
+1985.62s - 1986.62s |  breaking this malware apart,
+1986.62s - 1989.62s |  identifying new command and control IP addresses,
+1989.62s - 1990.62s |  and really getting in the weeds
+1990.62s - 1991.62s |  into how that malware functioned,
+1991.62s - 1994.62s |  and confirmed that it really did,
+1994.62s - 1996.62s |  the code bases were entirely separate,
+1996.62s - 1999.62s |  and so again, it's through these multitude of lenses
+1999.62s - 2000.62s |  overlapping with one another
+2000.62s - 2002.62s |  that we believe that there were separate actors
+2002.62s - 2004.62s |  functioning within the environment,
+2004.62s - 2005.62s |  and because we're leveraging clustering,
+2005.62s - 2008.62s |  we're able to effectively split them apart,
+2008.62s - 2010.62s |  and that's not to say that there weren't
+2010.62s - 2012.62s |  some things that did occur that were the same.
+2012.62s - 2013.62s |  They were on the same servers,
+2013.62s - 2015.62s |  they were on the same networks,
+2015.62s - 2018.62s |  they all used the same time of day to attack,
+2018.62s - 2020.62s |  which Connell will talk about right now.
+2020.62s - 2022.62s |  And one other thing I wanted to highlight here,
+2022.62s - 2025.62s |  this analysis into this one victim network,
+2025.62s - 2028.62s |  this is a government agency in the South China Sea,
+2028.62s - 2030.62s |  and given just the complexity of the malware
+2030.62s - 2032.62s |  and the victimology alone,
+2032.62s - 2034.62s |  we had a strong suspicion that this was
+2034.62s - 2035.62s |  the People's Republic of China
+2035.62s - 2038.62s |  performing an espionage campaign.
+2038.62s - 2040.62s |  However, we needed to prove that,
+2040.62s - 2043.62s |  and so what we did is we looked at the entire timeline
+2043.62s - 2045.62s |  of multiple months of activity,
+2045.62s - 2046.62s |  and we tried to get rid of all the noise,
+2046.62s - 2049.62s |  get rid of automated beaconing activity,
+2049.62s - 2051.62s |  get rid of stuff from scheduled tasks,
+2051.62s - 2054.62s |  and let's hone in on just the adversary behaviors,
+2054.62s - 2057.62s |  try to get timestamps that are associated
+2057.62s - 2059.62s |  with an actual human operator
+2059.62s - 2061.62s |  running commands against our target,
+2061.62s - 2062.62s |  mapping all this out with Plotly,
+2062.62s - 2064.62s |  using a density heat map,
+2064.62s - 2067.62s |  and looking at both UTC and UTC plus eight,
+2067.62s - 2068.62s |  which is Beijing time,
+2068.62s - 2070.62s |  it's pretty clear that this adversary
+2070.62s - 2072.62s |  is active Monday through Friday,
+2072.62s - 2074.62s |  9 a.m. to 5 p.m.
+2074.62s - 2077.62s |  They might even get a lunch break in around noon as well.
+2077.62s - 2079.62s |  But this is about threat clustering,
+2079.62s - 2081.62s |  so let's split this up further.
+2081.62s - 2083.62s |  We took those timestamps,
+2083.62s - 2085.62s |  and we tried to determine exactly
+2085.62s - 2087.62s |  what processes were related to Cluster Alpha,
+2087.62s - 2090.62s |  what processes relate to Cluster Bravo,
+2090.62s - 2092.62s |  and what was related to Cluster Charlie.
+2092.62s - 2094.62s |  The things I wanted to highlight here
+2094.62s - 2096.62s |  is that by splitting up by cluster
+2096.62s - 2098.62s |  and performing this more in-depth analysis
+2098.62s - 2100.62s |  of pattern of lives,
+2100.62s - 2101.62s |  we were able to make assessments
+2101.62s - 2103.62s |  that most likely Cluster Charlie
+2103.62s - 2105.62s |  is active in the first half of the week,
+2105.62s - 2107.62s |  whereas Cluster Alpha is active
+2107.62s - 2109.62s |  in the second half of the week.
+2109.62s - 2111.62s |  You heard earlier about Cluster Bravo
+2111.62s - 2113.62s |  and some of the techniques that we observed there.
+2113.62s - 2114.62s |  This cluster is interesting
+2114.62s - 2117.62s |  because we only saw them in this victim network
+2117.62s - 2119.62s |  for a small period of time,
+2119.62s - 2121.62s |  but they did have some really interesting techniques
+2121.62s - 2123.62s |  that we then pivoted on.
+2123.62s - 2125.62s |  Working with our counterparts at Sophos Labs,
+2125.62s - 2128.62s |  we investigated this agent shimming technique
+2128.62s - 2130.62s |  that we had never seen before.
+2130.62s - 2132.62s |  It was undetected, unblocked,
+2132.62s - 2134.62s |  and we started to release additional detections
+2134.62s - 2136.62s |  and controls around it.
+2136.62s - 2137.62s |  After releasing that,
+2137.62s - 2139.62s |  we found 11 other victims
+2139.62s - 2141.62s |  in the exact same country.
+2141.62s - 2143.62s |  Now, these victims were not government agencies.
+2143.62s - 2145.62s |  They were actually critical infrastructure,
+2145.62s - 2148.62s |  some of which were in the medical sector.
+2148.62s - 2149.62s |  This is just one example
+2149.62s - 2152.62s |  of how we were able to have success
+2152.62s - 2156.62s |  by engaging all the different foundational teams
+2156.62s - 2158.62s |  within our process of investigating
+2158.62s - 2161.62s |  from threat hunting to malware analysts
+2161.62s - 2162.62s |  to threat intelligence,
+2162.62s - 2165.62s |  ultimately to help support our analysis
+2165.62s - 2170.62s |  and assessments about this adversarial cluster.
+2170.62s - 2171.62s |  One other final note is that
+2171.62s - 2173.62s |  after we continued to investigate this cluster,
+2173.62s - 2175.62s |  we actually did find one instance
+2175.62s - 2177.62s |  where they were downloading malware
+2177.62s - 2180.62s |  that was hosted on a compromised web server
+2180.62s - 2181.62s |  on a Windows server
+2181.62s - 2182.62s |  at a different network environment,
+2182.62s - 2184.62s |  so that was something that we hadn't really seen before
+2184.62s - 2188.62s |  from an espionage-related threat actor.
+2188.62s - 2190.62s |  Now, let's talk about what we've learned
+2190.62s - 2192.62s |  over the past two years
+2192.62s - 2194.62s |  of performing these threat hunting
+2194.62s - 2197.62s |  and threat intelligence practices.
+2197.62s - 2199.62s |  The main takeaways that we have
+2199.62s - 2201.62s |  is that automation is really important
+2201.62s - 2204.62s |  to help augment your capabilities.
+2204.62s - 2206.62s |  Pattern recognition alone
+2206.62s - 2208.62s |  is not going to work as you continue to scale,
+2208.62s - 2210.62s |  and so by leveraging statistical methods
+2210.62s - 2212.62s |  for both hunting and intelligence,
+2212.62s - 2214.62s |  it can really help us punch above our weight
+2214.62s - 2216.62s |  in what we're able to do.
+2216.62s - 2218.62s |  The second key takeaway that I have
+2218.62s - 2222.62s |  is external attribution assessments are exhausting.
+2222.62s - 2223.62s |  While we were reviewing
+2223.62s - 2224.62s |  some of the public research
+2224.62s - 2226.62s |  related to the Crimson Palace campaign,
+2226.62s - 2228.62s |  we definitely found a lot of public research
+2228.62s - 2229.62s |  that was related,
+2229.62s - 2233.62s |  some of which they mentioned subclusters of APT41.
+2233.62s - 2234.62s |  There's an overlap
+2234.62s - 2236.62s |  with something called backdoor diplomacy
+2236.62s - 2238.62s |  that Bitdefender published on
+2238.62s - 2240.62s |  with some minor overlap to AP15,
+2240.62s - 2241.62s |  and when we started to investigate,
+2241.62s - 2243.62s |  we spent a lot of time just chatting
+2243.62s - 2246.62s |  about what we believe about the overlap
+2246.62s - 2249.62s |  between public clusters and our research,
+2249.62s - 2250.62s |  and at the end of the day,
+2250.62s - 2252.62s |  if you have high-quality data,
+2252.62s - 2254.62s |  you should stay grounded in your data
+2254.62s - 2256.62s |  and not waste too much time
+2256.62s - 2258.62s |  thinking about the potential overlap
+2258.62s - 2259.62s |  with other vendors.
+2259.62s - 2261.62s |  Conversely, if you're more limited
+2261.62s - 2262.62s |  in what you have available to you,
+2262.62s - 2264.62s |  that's a wonderful way to expand
+2264.62s - 2265.62s |  what is visible to you
+2265.62s - 2267.62s |  and understand those new attack paths.
+2267.62s - 2268.62s |  But the last takeaway
+2268.62s - 2269.62s |  is that communication
+2269.62s - 2272.62s |  between hunting and intelligence is critical.
+2272.62s - 2274.62s |  So only because I was able to go to Colin
+2274.62s - 2275.62s |  and say, I'm seeing these TTPs
+2275.62s - 2276.62s |  leveraged in this way
+2276.62s - 2278.62s |  and this is where I'm seeing them attack,
+2278.62s - 2279.62s |  am I able to understand
+2279.62s - 2280.62s |  that this is some threat actor
+2280.62s - 2282.62s |  that I need to go and chase.
+2282.62s - 2283.62s |  That same type of collaboration
+2283.62s - 2285.62s |  where we identify a new type of ransomware
+2285.62s - 2287.62s |  or a change in a ransomware note,
+2287.62s - 2289.62s |  he can go to the malware analysis team
+2289.62s - 2290.62s |  and say, hey,
+2290.62s - 2291.62s |  what are the code-based differences
+2291.62s - 2294.62s |  between Akira or this other malware family
+2294.62s - 2296.62s |  or this other ransomware family
+2296.62s - 2297.62s |  or this other ransomware family?
+2297.62s - 2299.62s |  And he can then come say to me,
+2299.62s - 2301.62s |  oh, that cluster that we just saw,
+2301.62s - 2303.62s |  that's actually a new person on the block.
+2303.62s - 2304.62s |  You need to go hunt for them right now.
+2304.62s - 2305.62s |  Their detections
+2305.62s - 2306.62s |  or our detection logic,
+2306.62s - 2307.62s |  our hunt logic
+2307.62s - 2308.62s |  may be faulty
+2308.62s - 2309.62s |  when it comes to their tactics and techniques.
+2309.62s - 2311.62s |  And so using that collaborative approach
+2311.62s - 2313.62s |  of doing malware versus engineering,
+2313.62s - 2314.62s |  threat intelligence,
+2314.62s - 2315.62s |  and then threat hunting
+2315.62s - 2316.62s |  really allows us
+2316.62s - 2318.62s |  to really punch above our weight.
+2318.62s - 2319.62s |  So thank you very much, folks.
+2319.62s - 2320.62s |  Really appreciate your time.

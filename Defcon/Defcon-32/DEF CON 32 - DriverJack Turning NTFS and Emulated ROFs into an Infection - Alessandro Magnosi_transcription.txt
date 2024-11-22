@@ -1,0 +1,447 @@
+{
+  "webpage_url": "https://www.youtube.com/watch?v=kWSP4F5dxTw",
+  "title": "DEF CON 32 - DriverJack Turning NTFS and Emulated ROFs  into an Infection - Alessandro Magnosi",
+  "description": "This article reassesses complex cyberattack tactics, focusing specifically on existing security measures and emerging weaknesses. We begin our investigation by examining initial methods of deployment in contemporary attacks, including those that focus on simulated read-only filesystems and NTFS vulnerabilities. Since the improvements made to the Windows security architecture in 2011, which include the enforcement of Driver Signature Enforcement (DSE) and Hypervisor-protected Code Integrity (HVCI), the nature of cyber threats has changed, requiring new ways to carry out attacks.\n\nOur research presents a new method that takes advantage of previously uncovered weaknesses in emulated filesystems, allowing attackers to covertly install and maintain harmful programs. In addition, we uncover new NTFS vulnerabilities that enable attackers to conceal their presence and sustain persistence within victim systems. The study also investigates alternate methods for delivering and executing malware in usermode. In addition, we discuss several Indicators of Compromise (IOCs) to identify and detect these tactics.",
+  "channel_url": "https://www.youtube.com/channel/UC6Om9kAkl32dWlDSNlDS9Iw",
+  "duration": 2832,
+  "channel": "DEFCONConference",
+  "uploader": "DEFCONConference",
+  "upload_date": "20241016"
+}
+
+0.59s - 8.07s | This text was transcribed using whisper model: large-v2
+
+ Okay. Hi there. Thanks a lot for sticking out with us. Today I'm going to speak around
+8.07s - 14.35s |  about driver jack, which is an unusual technique to load the driver on Windows 11, abusing
+14.35s - 23.07s |  NTFS features and CDFS bug, I'd say. So, just before starting, a few words about me. I'm
+23.07s - 28.95s |  Alessandro Magnozzi. I work for BSI, British Standards Institute. I mainly do research,
+28.95s - 36.39s |  but like a huge part of my daily business is consulting in adversary simulation, device
+36.39s - 42.03s |  security and appsec. I go on internet with the name Kletz Virus. You can reach me out
+42.03s - 50.91s |  on GitHub or Twitter. Like, feel free to reach out. Now, just before starting, I'm going
+50.91s - 57.43s |  to just give a bit of information about this project. This project was started in 2022
+57.43s - 64.35s |  with Jonas Lake from Secret Club. Um, we started working on a POC to abuse ISOs to
+64.35s - 68.99s |  load malicious drivers on Windows. Then we completely forgot about that for at least
+68.99s - 74.27s |  one year because I was working on other stuff. And then in 2023, I had an engagement that
+74.27s - 81.51s |  supported the development of this technique a bit further. Now, the engagement was a bit
+81.55s - 88.87s |  um, like it was an OT engagement and uh, the main um, the main uh, aim of this OT engagement
+88.87s - 96.27s |  was to deploy a kernel rootkit on an OT workstation. Now, regardless of the engagement, the
+96.27s - 102.11s |  engagement was pretty well uh, and we found ourself in a situation where we could tamper
+102.11s - 110.11s |  um, ISO files that were distributed to machines via an update catalog. Uh, so this gave us
+110.11s - 117.59s |  a motivation to read, resume the uh, research that we were doing in 2022 and we tried to
+117.59s - 122.23s |  understand if we could develop it further. Now, we didn't know exactly what to expect
+122.23s - 126.95s |  from the malware that we were generating. Uh, we just need, we just know that we wanted
+126.95s - 131.15s |  something to backdoor an installer, present on an ISO and then we want to weaponize it
+131.15s - 136.75s |  in a, the best way possible. Of course, ISOs have been weaponized for years right now for
+136.75s - 141.43s |  their ability to uh, to bypass multi W but this was not really what we wanted to do. We
+141.43s - 146.87s |  want, we didn't want to just provide an ISO to our uh, customer. We had in the position of
+146.87s - 153.11s |  weaponize an I, an ISO. Uh, and then we just wanted to execute some code and like deploy
+153.11s - 159.51s |  some vectors around, I don't know if you uh, if you uh, are aware uh, always aware about the
+159.51s - 164.11s |  um, what StackSnap was doing back in 2011 but we wanted to achieve something like
+164.11s - 170.19s |  backdooring DLL on different softwares to intercept communication, intercept code going and
+170.19s - 177.39s |  arriving from PLCs and doing stuff like that with uh, using side loading with hooking or uh,
+177.39s - 184.17s |  DLL proxying on uh, certain specific DLL used by this kind of software. And the addition, and
+184.17s - 188.91s |  the additional thing that we wanted to achieve was deploying a kernel driver on these boxes.
+188.91s - 195.99s |  Now the uh, we started and one example of the ISOs that we end up backdooring was step 7
+195.99s - 202.13s |  installation media and the reason for this is that it's naturally deployed by using ISO files
+202.13s - 209.63s |  and it's pretty difficult to backdoor because um, step 7 use, utilized a back, a bootstrap to
+209.63s - 215.07s |  uh, launch the installer. Meaning that um, meaning that it actually performs an integrity
+215.07s - 219.75s |  check on the content of the disk before actually launching the installer and it has 2
+219.75s - 225.85s |  layer of checks so you need to, you need, you need to, if you want to um, uh, execute malicious
+225.85s - 230.93s |  code using the installer, you need to find a way to not tamper with any existing DLL and any
+230.93s - 235.93s |  existing executable on the disk. Um, talking about deploying the Windows uh, rootkit, a
+239.19s - 244.61s |  Windows rootkit um, usually when you need to deploy a rootkit on Windows, a kernel rootkit, a
+244.85s - 249.15s |  kernel driver on Windows, what you end up doing is you call create service, you create a
+249.15s - 254.43s |  service for the service driver and then you start the service with the driver. Of course one
+254.43s - 260.33s |  requirement for this is that the driver file that you are loading needs to be on disk. Um, now
+260.33s - 265.33s |  this can be done manually by manually placing uh, a registry key in the file system and then
+268.33s - 273.47s |  calling anti-load driver to load the driver. This is a bit more stealth uh, way of loading a
+273.47s - 278.11s |  driver and it's uh, in, in the name for this the thing is Windows log event evasion because it
+278.11s - 282.65s |  doesn't generate the event that is usually created when you create a service and start the
+282.65s - 289.65s |  service. But of course there is something else that uh, that sticks up. So like there, there is
+289.65s - 293.99s |  a every time you, you load the driver regardless if you're using the serve, the start service,
+293.99s - 298.99s |  the create service or you use directly the anti-load driver uh, function. Uh, you generate uh,
+299.59s - 304.59s |  an event uh, which is the load driver event that is a sysmon event and an event 6 that provides
+307.83s - 312.03s |  all the information about the driver you be loaded. So even if it's more stealthy uh, there is
+312.03s - 317.03s |  still this that's the, that, that, that appears on, on as an event on the Windows log. So we
+319.17s - 324.17s |  wanted a technique that would help us bypass this event load driver as well. Uh, and so we
+325.17s - 330.17s |  ended up creating 4 uh, 4 libraries framework. I mean 2 of them are the core of this
+332.87s - 339.51s |  presentation which is IOCDFS, IOCDFS lib and driver jack uh, that will be abused to load a
+339.51s - 344.41s |  driver on Windows. The other 2 are collateral projects. They were not supposed to be part of
+344.41s - 350.69s |  the project. They, they just are RPC exec. I will just talk about it briefly. RPC execs is a
+350.69s - 355.69s |  less common way to execute on Windows uh, on local or remote processes without requiring uh,
+358.79s - 364.69s |  RX memory to be allocated in target process. And interleaver is uh, it became a sort of P
+364.69s - 370.73s |  manipulation library um, that we cannot share completely but I will share a simple block
+370.73s - 376.71s |  which is coupling P. You can find coupling P which is coupling preserve on my GitHub page.
+376.73s - 382.17s |  Now coupling P is a short version of interleaver. It doesn't manipulate completely the uh, the P
+382.17s - 387.17s |  file but it, it's an extension to what Nick Lenders implemented back in 2000, 20, 20? I don't
+390.15s - 396.45s |  remember exactly. Uh, so coupling is a framework that takes uh, target DLL, clone the export
+396.45s - 401.45s |  address, the export address table and uh, include it in uh, DLL that you developed. Uh, now
+401.67s - 406.67s |  this is used usually for DLL side loading using the DLL main function as uh, main entry point
+410.41s - 416.41s |  for the DLL. Now the problem is that this process is destructive so if you have some exports in
+416.41s - 422.79s |  your payload DLL, these will be erased. So coupling P just solves the problem and it just
+422.79s - 428.03s |  preserved the existing export address table and just add the forwards afterward. That's it.
+428.05s - 433.65s |  Not, not, not, not really a, not really a difficult project. Uh, RPC proxy invoke instead or
+433.65s - 438.65s |  RPC exec is uh, general library that we implemented to as I said is to execute code on local
+440.93s - 446.87s |  or remote processes. Uh, it's, it's uh, borrowed by browser exploitation. It abuses the
+446.87s - 451.87s |  NDR server call to, to execute arbitrary calls. Uh, it doesn't require RX memory and we
+452.61s - 457.61s |  also implemented in a way that it doesn't require a valid RPC binding handle for uh, for
+460.69s - 466.39s |  execution. This is, this, there is a reason for this. We wanted something that we could use to
+466.39s - 472.23s |  execute arbitrary calls in any server, even in any service, in any processes, even if it
+472.23s - 478.61s |  wasn't actually using RPC and we wanted to avoid maintaining, like we wanted to be able to
+478.65s - 485.15s |  erase tracks if we wanted and using this technique we can load RPC, initialize it remotely,
+485.15s - 491.05s |  execute our stuff, our stuff and then just get rid of RPC RT4 completely by freeing the
+491.05s - 496.07s |  library and no traces will remain in the service. The process. Uh, the code is there. There
+498.07s - 504.37s |  are also some demos around um, that you can check. It's just for functionality. The project
+504.37s - 511.17s |  code is implemented and it has some not limitation but is implemented nerfed. Uh, meaning
+511.17s - 517.41s |  that it's not using for example uh, code pattern search for uh, for locating the required
+517.41s - 523.49s |  uh, the required entry point in RPC RT4. RPC RT4 changes over time a lot so you need to
+523.49s - 527.49s |  adjust it to depending on your version, on your Windows version or you need to implement
+527.49s - 532.93s |  yourself the code that actually do the pattern searches. Previous research. So when it
+532.93s - 539.73s |  comes to the core of the research or loading a driver on Windows, you have a few ways to
+539.73s - 543.81s |  load a valid driver or an unsigned code on Windows to execute unsigned code on Windows.
+543.81s - 548.51s |  You can either, actually there are four. So the first one was implemented by Gabrielle
+548.51s - 554.05s |  Landau not long ago uh, by exploiting a new vulnerable class that is false file immutability.
+554.05s - 557.75s |  I didn't put it in the slides just because it wasn't available when I started doing this
+557.75s - 562.55s |  research but go check it out because it's an incredible research. Uh, but the standard
+562.57s - 567.51s |  way to uh, load unsigned code on Windows are either you, it's not unsigned, you, you load
+567.51s - 574.49s |  signed code so you have a kernel driver that you want to load, you uh, join the um, you
+574.49s - 581.13s |  join the um, Microsoft developer program. Microsoft sign your own driver and you're
+581.13s - 586.13s |  good to go. You can use a fake signature so before 2015 Microsoft allowed um, kernel drivers
+587.13s - 592.13s |  signed with uh, with a valid code signing certificate and cross signed by an EV uh, CA
+595.43s - 600.41s |  certificate to load on Windows. So if you have a certificate that was expired before or
+600.41s - 607.01s |  issued before 2015 and you have a leaked EV CA certificate, you can still use, you can
+607.01s - 612.01s |  still set up your own uh, fake uh, timestamp server and you can back sign one of these
+612.31s - 618.97s |  drivers and you can uh, generate a signature that is expired so signed with an expired
+618.97s - 625.31s |  certificate but still valid to load on Windows. Uh, the, the third and last technique was
+625.31s - 630.89s |  uh, using a vulnerable driver. Now as you can understand, we didn't have, we didn't have
+630.89s - 637.53s |  any kernel driver uh, on the developer program. We didn't have any EV CA certificate leaked
+637.55s - 642.15s |  and unknown that we can, that we could use so we went to the route of uh, using a
+642.15s - 648.49s |  vulnerable driver to load our unsigned code. Now of course, we then started the research
+648.49s - 654.83s |  to one for abusable vulnerable drivers and we found 4 of them, 2 of them we just uh, report
+654.83s - 660.87s |  to the vendors because they were not useful to us. 2 of them we kept them. Um, now usually
+660.87s - 665.27s |  when you want to load unsigned code on Windows, you search for of course there are a lot of
+665.31s - 668.59s |  vulnerabilities affecting vulnerable drivers. Buffer overflow, user after free, there are a
+668.59s - 673.99s |  lot, not just this that I, that I um, that I included here. But usually what you want is to
+673.99s - 679.79s |  have a stable, a stable physical memory read write, virtual memory read write or for example
+679.79s - 686.07s |  uh, unprotected MSR access. Um, MSR stands for model specific register. Now the first, this
+686.07s - 693.07s |  was abused a lot in 2018, 2020. So when you have and it appears when you have an unco-
+693.11s - 700.11s |  an unrestricted code uh, call to uh, WR uh, MSR. So there is a specific model specific
+700.11s - 703.85s |  register on Windows which is the uh, well actually not on Windows, it's not specific to
+703.85s - 708.85s |  Windows but it's the IA uh, 32 L star that contains on Windows the pointer to um, the system
+712.39s - 719.23s |  call dispatch function. So on, before KPTI was introduced uh, this points to KI system call
+719.27s - 724.27s |  64. After KPTI mitigation uh, this points to KI system call 64 uh, shadow but regardless this
+726.97s - 733.71s |  points to a dispatch function that is responsible to switch to um, that is responsible to
+733.71s - 739.65s |  switch to um, from user mode to kernel mode and execute and dispatch to the relevant system
+739.65s - 745.23s |  call uh, handler on kernel side. Now if you have an unrestricted call to and you can
+745.23s - 750.43s |  override this register, what you can do is you can weaponize it to point to your user
+750.43s - 755.43s |  defined uh, handler and this is abused in MSR exec by Xerox uh, from back engineering uh,
+758.91s - 765.91s |  magnificent tool to be honest. Um, and this literally implements its own uh, dispatch
+765.91s - 770.91s |  function that swap to kernel mode using the swap JS uh, instruction. Uh, disables maps map
+771.81s - 776.81s |  and executes arbitrary code uh, stored in a user mode buffer. Uh, afterward it uses ROP to
+782.55s - 787.55s |  sorry, it uses ROP to uh, restore maps map and restore the IA uh, L 32 L star. Now this, the
+793.93s - 798.67s |  other, the other vulnerable pattern that we have is arbitrary physical memory access. Now uh,
+798.69s - 804.67s |  usually when uh, this, this presents itself in two forms. Either a call, a restricted call to
+804.67s - 810.61s |  ZW map your sec uh, map your section or that can map whatever physical address in a linear
+810.61s - 816.45s |  address or by using mmap IO space. Now the vulnerable pattern that we found the most was
+816.45s - 821.85s |  this. It's abusable, it's less abusable than ZW map your section because these actually
+821.85s - 827.33s |  provide uh, access that uh, you can't specify the access right so you can't specify read
+827.35s - 832.85s |  write uh, instead of read. And this usually is used for privilege escalation. So if you have a
+832.85s - 838.83s |  pattern that like this, so you have a call to mmap IO space, IO allocate MDL and then mm, mm
+838.83s - 844.23s |  build MDL for non-page pool and then mmap lock page specific, specify cache. You have a
+844.23s - 851.07s |  pattern where you can actually uh, allocate page memory, page pool memory, sorry, non-page
+851.07s - 856.61s |  pool memory in a user mode buffer and using a technique known as proc scanning you can
+856.63s - 862.69s |  identify e-process structure in the non-page pool and swap tokens around to achieve uh,
+862.69s - 869.27s |  privilege escalation. And then there is the prints of all other vulnerabilities uh, arbitrary
+869.27s - 873.71s |  virtual read, arbitrary kernel virtual uh, memory read write. This presents itself in a lot
+873.71s - 879.81s |  of different ways. Can be a mem move, a mem copy, a ZW write virtual memory, can be a
+879.81s - 885.79s |  direct pointer assignment uh, it can be whatever. Now this is used for a lot of different
+885.83s - 891.53s |  stuff uh, let alone bypass DSC for example or just mapping arbitrary stuff in memory, in
+891.53s - 898.17s |  kernel memory. And this is heavily abused by tools like ADMapper or KDU to load your driver
+898.17s - 904.55s |  in memory. Now of course Windows doesn't like this uh, so they started introducing a lot of
+904.55s - 911.19s |  different mitigations. Since 2018 there was the introduction of uh, KBDI after the
+911.19s - 916.63s |  Spectrum Meltdown uh, attack. Uh, then they started introducing VBS, virtualization
+916.63s - 922.67s |  based security and started enforcing HVCI. After the HVCI they introduced KDP which we will
+922.67s - 929.07s |  see. And then they implemented the Microsoft uh, driver block list and afterward they
+929.07s - 934.55s |  started introducing support first for kernel chat, control enforcement, enforcement
+934.55s - 939.55s |  technology that uh, neutralize, neutralizes ROP based attack. And then in like weeks ago uh,
+942.55s - 948.93s |  they announced that Windows 11 24H2 will support uh, Intel VTRP, redirection protection
+948.93s - 953.93s |  that kills another black class that we will gonna see in like now. So VBS is uh, is
+957.41s - 962.27s |  really, is really tough for uh, for exploiting vulnerable drivers because HVCI want to
+962.27s - 967.27s |  prevents you from abusing a vulnerable driver to load your VTL0 rootkit in memory. Now how
+970.73s - 975.75s |  it works, well you have now the Windows low is, is, is runs on top of the hypervisor and uh, it
+979.15s - 985.59s |  divides the, divides the, the, the trust level into trust level, the VTL1 and VTL0. Now your
+985.59s - 990.59s |  own kernel runs in VTL0. Now this is the guest uh, operating system, the guest operating
+992.63s - 999.03s |  OS and what it, what it, what it, what it does is that this uses a normal uh, page structured
+999.03s - 1003.97s |  approach to, for address resolution to map a physical address into a linear address. So you
+1003.97s - 1008.97s |  have your CR3, you have your um, you have your uh, PML4 entry, then you have your uh, page
+1012.01s - 1016.89s |  directory pointer entry, then you have your page directory entry, the page table entry and
+1016.89s - 1021.65s |  then finally you have your, your physical address. This physical address though is a guest
+1021.67s - 1027.11s |  physical address, meaning that there is another layer, second layer access resolution that is
+1027.11s - 1032.11s |  translates a guest physical address into a real physical address that is managed entirely by, by
+1035.05s - 1040.05s |  the hypervisor. Uh, using extended page tables. Now what is the problem for us? Is that before
+1043.79s - 1048.79s |  this was introduced, page protection was kernel based. So when you had control of kernel, you
+1049.57s - 1055.47s |  could do literally anything. So if you had a virtual, if you had a virtual read write, you
+1055.47s - 1060.55s |  could literally locate the digi options for example, that is the global variable and like
+1060.55s - 1065.79s |  managing the driver signature enforcement and you could just override it. You could nullify
+1065.79s - 1071.09s |  it, load your unsigned code and then restore it of course because it, even though it was
+1071.09s - 1076.09s |  possible to modify it, it was still protected by kernel patch guard. Um, KPP, kernel page
+1076.77s - 1081.77s |  protect, kernel, yeah, patch guard. Uh, but now, now it's different because now the
+1084.71s - 1089.71s |  enforcement is done and hypervisor level. Now HVCI does two things and in together with KDP
+1093.55s - 1099.39s |  that's a lot of problems. Like HVCI enforces that any page is either writable or executable,
+1099.39s - 1104.39s |  can be bought. So this is designed to um, to avoid you from writing your own code and
+1106.69s - 1112.13s |  kernel memory and then execute it. So and now this protection is enforced on hypervisor level
+1112.13s - 1118.23s |  meaning that you, even if you have your fantastic read write primitive, uh, you can't change
+1118.23s - 1122.81s |  the protection of a page because even though you are changing the protection of the page on
+1122.81s - 1128.11s |  the first level address translation, this memory protection does not propagate to the second
+1128.11s - 1133.89s |  level address translation and it's there that the protection is enforced. So if you have read
+1133.95s - 1138.63s |  write, it's gonna be read write even if you change the protection on VTL zero. And if it's
+1138.63s - 1144.59s |  read execute, it's gonna be read execute even if you try to change the protection on VTL zero.
+1144.59s - 1150.87s |  And with KDP you have another problem because certain area of memory, data section of
+1150.87s - 1157.45s |  memory, are protected by this KDP that enforces that the page is read only. So for example
+1157.45s - 1162.11s |  G option is protected that way. So now even if you have an arbitrary read write and the
+1162.13s - 1166.47s |  page should be read write, it's actually read only so even if you have it, you can't change
+1166.47s - 1173.97s |  G options to zero anymore. So what is the strategy around this? Well, luckily someone very
+1173.97s - 1178.99s |  smart, smarter than me of course, uh, developed a technique which is called page remapping
+1178.99s - 1184.73s |  and page remapping attack exploited um, it's not a bug, it's like a limitation of KDP. KDP
+1184.73s - 1189.73s |  doesn't enforce how pages on the guest are translated to pages on the host system. So
+1192.47s - 1198.95s |  meaning that not enforcing that, what I can do, one possible thing I can do is I can copy
+1198.95s - 1203.95s |  over my con, the content I want to modify to another page. I can modify the um, the page
+1206.75s - 1211.75s |  structures on VTL zero to make it point to a read write page on the hypervisor level. And
+1214.39s - 1220.19s |  this will effectively make my page read write. And I can modify then the content. So
+1220.21s - 1225.21s |  Satoshi Sanda developed a proof of concept and use it, used a null byte page to nullify DSC
+1229.13s - 1234.13s |  in exact this way. Now this is also usable for executing arbitrary code. Um, and we have
+1237.67s - 1244.61s |  two main strategies for executing arbitrary code even if HBCI is enabled. So this depends
+1244.63s - 1249.63s |  a lot on the um, this depends a lot on the uh, Intel CPU level. So if you have, if you have
+1252.57s - 1258.51s |  any CPU that is before Tiger Lake, before 11 generation, you can still use ROP because this
+1258.51s - 1263.25s |  kind of CPU doesn't, do not support chat. So you can use kernel forge. Kernel forge is a
+1263.25s - 1268.25s |  technique implemented firstly by Crash and also discussed by Conor McGar uh, in his, in a
+1268.31s - 1273.31s |  blog post. And he uses a thread and a dummy event to modify the kernels, the, the thread, the
+1277.35s - 1284.35s |  thread kernel stack uh, at run time. Meaning that it will replace frame on kernel side of the, of
+1284.35s - 1290.83s |  a thread to make it execute a ROP chain on return. Executing arbitrary code. And on, if
+1290.83s - 1297.33s |  instead you have uh, uh, CPU that is before 12 generation, you can use the page remapping
+1297.35s - 1302.35s |  attack as I said uh, that abuses MULK. Now why before 12 generation? I can say, actually I
+1304.73s - 1310.73s |  should say a CPU before 12 generation and before Windows and a version of Windows before 24
+1310.73s - 1315.73s |  H2 because as I said uh, Windows 11 24 H2 and uh, supports Intel BTRP that is a killer
+1319.67s - 1325.31s |  exactly for this kind of attack, for page remapping attack. So it avoids any user from being
+1325.33s - 1330.33s |  able to redirect a page from VTL zero to remap to another page in the, in the OS system.
+1333.77s - 1340.27s |  Now and what about if we have something, what about if we have something uh, more? Um, I
+1340.27s - 1345.41s |  actually, I actually, I'm actually exploring some other technique for trying to bypass HVCI
+1345.41s - 1350.81s |  but currently these are the only way I uh, thought that large pages could also be used for
+1350.81s - 1355.83s |  this kind of thing but apparently it's not gonna, it's not really working. So, but we still,
+1358.79s - 1364.97s |  even if we can do stuff, we still need to load a vulnerable driver to execute any of these
+1364.97s - 1371.07s |  strategies. So if we want to load a vulnerable driver we need to be aware that there is
+1371.07s - 1375.15s |  something called driver block list that will probably prevent us from loading a known
+1375.15s - 1380.55s |  vulnerable driver on Windows. Now the driver block list is a black list and of course it
+1380.55s - 1386.09s |  has some problems that were identified by Will Dorman and Yarden Shafir another researcher. The
+1386.09s - 1392.49s |  block list by itself is, is just a collection of ashes and uh, file names and file version that
+1392.49s - 1397.17s |  are supposed to be not loaded on Windows and if the driver block list is enabled it will
+1397.17s - 1402.17s |  prevent normal uh, normal vulnerable drivers to be loaded but it has a measure flow. The
+1402.61s - 1407.61s |  coverage is ridiculous. So uh, I, I made a bit of, a little script to check how many uh, how
+1412.25s - 1419.25s |  many drivers were blocked from the load driver projects. Uh, this just check the um, the ashes
+1419.25s - 1425.09s |  but it's, it's, it's really, it's really ridiculous. The coverage is really ridiculous. And also
+1425.09s - 1430.63s |  it can be disabled by admin. Uh, of course when we bypass the block list we need to be aware
+1430.63s - 1435.53s |  that there is also the CRL, the CRL. So even if a driver is not in the block list it doesn't
+1435.53s - 1440.51s |  mean that the certificate is still valid. So there are other, there are other, there are, there
+1440.51s - 1447.63s |  are other things that may prevent us from loading uh, uh, a vulnerable driver on Windows. And
+1447.63s - 1452.53s |  now to the meat of this presentation, what can we do to load a malicious uh, vulnerable driver
+1452.53s - 1457.97s |  on Windows using this like unusual technique? So let's talk about a bit about the anti-object
+1458.83s - 1464.91s |  manager. So the anti-object manager is a subsystem on Windows that provide access to resources
+1464.91s - 1471.25s |  uh, using uh, name value approach. It's not entirely correct but it's the most, it's the most
+1471.25s - 1478.49s |  accurate the, the simplification. Uh, it provides access to these objects using a unified API
+1478.49s - 1483.49s |  and uh, it like every object is, is, is uh, it can be indexed by uh, using a name, can be
+1483.49s - 1488.49s |  recovered using a name. And these names are uh, categorized in uh, in categories that we call
+1492.63s - 1497.63s |  namespaces. Now uh, you probably already seen the uh, object manager in WinObject, SysInternals
+1500.77s - 1505.11s |  and you can see a graphical representation of the object manager. So you have all these
+1505.11s - 1510.11s |  objects with the type associated and uh, you have the name categorized in namespaces. Now
+1510.71s - 1515.71s |  usually uh, when you, this is actually used um, this categorization is used because any
+1518.71s - 1524.25s |  namespace is as a certain accessibility. So if I want for example to make uh, an object
+1524.25s - 1529.25s |  available in to the Win32 layer, I usually use a sim link that connect the global, which is the
+1531.95s - 1536.97s |  global um, namespace to the specific object I want to, I want to connect it with. And this is what
+1537.19s - 1542.19s |  you usually do even with drivers uh, for example. Now the empty object manager uh, is in uh, of
+1549.90s - 1554.90s |  course uh, provides access to object to other subsystem like the IOManager, the process
+1554.90s - 1560.68s |  manager, the memo, the memory manager, et cetera. And whenever, whenever an object of type
+1560.68s - 1565.68s |  file is uh, is, is, is accessed by the IOManager, the IOManager will immediately check the
+1566.14s - 1571.14s |  file object and will dispatch it to the relevant driver that is meant to handle that, that
+1574.40s - 1579.40s |  specific file object. Now the NTFS driver manage the NTFS file system. What kind of file
+1581.98s - 1586.98s |  system is the NTFS file system? So the NTFS uh, NTFS is a complex file system. Uh, it was
+1588.72s - 1593.06s |  always designed by Microsoft for extensibility and to support different kind of other file
+1593.10s - 1598.78s |  systems like FAT32 et cetera. And the main, the main thing that I want you to memorize for
+1598.78s - 1604.48s |  now is that every file on Windows is a set of attributes of course and every file has at least
+1604.48s - 1609.08s |  one stream associated. So every file on Windows is actually, can actually be referred to as a
+1609.08s - 1614.08s |  triple. It's, it's tripled. Triple, triple. So um, so and um, and usually you have oh, I don't
+1614.28s - 1619.28s |  know what I'm saying. So usually you have the file name, the stream type uh, the stream name
+1622.62s - 1626.62s |  and the stream type. Every file has at least one stream. So if you specific, if you create a
+1626.62s - 1631.46s |  file with just the file name, you are immediately, it means that the other, the stream name
+1631.46s - 1637.80s |  and the stream type are defaulting back to something. For files is the data stream and for
+1637.80s - 1642.80s |  directories you have the index allocation stream. But they are usually always a triple. Um,
+1644.60s - 1649.04s |  now another thing I want you to memorize is the concept of reparse points. Because this was
+1649.04s - 1655.42s |  meant for extensibility, uh, NTFS supports a lot of type of reparse point. The main and
+1655.42s - 1660.48s |  common, the most common reparse points that you will see in NTFS are three. Although there
+1660.48s - 1665.50s |  are like 20 or 30 different reparse tags. So reparse types. So reparse point types. So the
+1668.46s - 1672.96s |  main, the most common are junction points that points directory that links directory to
+1672.98s - 1679.02s |  directories. Uh, mount point that links directories to drives to, to mounted drives and
+1679.02s - 1684.26s |  symbolic links that link files to other files. So this is not to be confused with link file.
+1684.26s - 1690.10s |  Link file are regular files. They have a data stream and they are just regular files. They
+1690.10s - 1696.54s |  need to be parsed to access to another location on the file system. Uh, indeed symbolic
+1696.56s - 1703.26s |  links are an NTFS features. Meaning that they are just, they are just literally linked on
+1703.26s - 1709.84s |  NTFS. They link directly on NTFS uh, to another file. And usually a reparse point is always a
+1709.84s - 1714.54s |  reparse tag. Which in this case is symbolic link. And are reparse, reparse data that will
+1714.54s - 1719.54s |  actually point to the real file that is pointed to. Now about CDFS. CDFS is a way more um, is a
+1720.26s - 1725.26s |  way simpler file system. It's, it just, it just comprises uh, root directory and then it
+1731.26s - 1736.30s |  has directory and, and then there's directory entries and file entries that are associated
+1736.30s - 1743.40s |  and are always parsed from the root directory. Is um, is an implementation of the ISO uh,
+1743.40s - 1748.42s |  9667s and 960 and um, the important thing is that the CDFS file system probe, the CDFS file
+1754.62s - 1761.46s |  system uh, is also uh, also apply, applies to optical disk as much as applies to ISO files. So
+1761.46s - 1767.50s |  ISO files are a beautiful implementation of this CDFS file system. Now just to give a bit of
+1767.50s - 1772.94s |  difference to the NTFS. Of course CDFS does not support reparse point, does not support a lot
+1772.94s - 1777.28s |  of things that are supported by NTFS, but also it has a completely different threat model. So
+1777.28s - 1784.12s |  NTFS supports rich permissions. So it has an AC, an ACL and the ACL is associated with
+1784.12s - 1789.50s |  different AC entries, access control entries which define what, what can be done on each
+1789.50s - 1795.40s |  file by each user in the system. For CD file system this is not a problem because the
+1795.40s - 1801.24s |  content on a CD is supposed to be, is supposed to be immutable. So everyone has access to a
+1801.24s - 1807.68s |  file system. If you mount a drive, anyone, an admin, a regular user, anyone has access to the
+1807.68s - 1814.48s |  mounted files, to the files on the mounted drive. And yeah, as I said before, the CDFS driver as
+1817.32s - 1822.36s |  much as NTFS driver communicates with the IO manager, the IO manager have a, the, has a
+1822.36s - 1827.36s |  request to access a file and after passing through the filter manager, it provides access to the
+1828.02s - 1833.02s |  required NTFS or CDFS driver um, accordingly to what is the device driver associated with the
+1837.10s - 1844.10s |  file object. Now when you load an ISO on Windows, what it, what it's, the CDFS driver will
+1844.10s - 1849.10s |  automatically load the content of this uh, ISO file using the CD common read. Now one thing
+1852.10s - 1856.72s |  that I want to stress out here is that an ISO file in comparison with a CD, with an optical
+1856.72s - 1861.72s |  CD, an ISO file uh, is mapped in uh, physical memory somewhere. So somewhere this ISO file is
+1865.22s - 1870.22s |  mapped in memory. Uh, so this creates some problems and we'll see what exactly. So when you
+1872.36s - 1877.36s |  try to access a file, what you end up doing is you end up calling the NTCC copy read, copy read.
+1877.52s - 1882.52s |  Now this points to a file object, we will describe the file object and just exploring a bit with
+1888.02s - 1894.16s |  where this, where this file object were located, we started noticing that the physical address
+1894.16s - 1900.20s |  associated with this file object were always the same. So if you remap one of this file object in
+1900.20s - 1905.20s |  a read write page and you overwrite the content of this file object, the file object will be
+1906.18s - 1911.18s |  will flush the uh, content of the modified file back to the physical memory where the ISO was
+1914.36s - 1919.36s |  loaded. This means that it's not read only at all. And so we developed this IOCDFS lib that you
+1922.84s - 1927.84s |  can use to uh, just modify any content on any ISO file that was mounted in the system. Now I
+1928.82s - 1933.82s |  want to, I want to specify this doesn't work for CD, real CD drive. It just works for ISO files
+1938.42s - 1943.42s |  and the reason is potentially that it's because they are mapped on physical memory when they are
+1945.70s - 1950.70s |  loaded the first time. Of course for caching. Indeed they are more uh, it's easier to get a file
+1951.04s - 1956.04s |  on, on an ISO in, in comparison with uh, with a CD. Now I'm not gonna go through this but there
+1960.84s - 1967.08s |  are some limitation on what you can change on the file. So if you overwrite over the file uh,
+1967.08s - 1973.42s |  sides uh, the real file sides, not the file sides on disk but the, the virtual sides, it's the
+1973.42s - 1979.46s |  change is not gonna, it's not gonna appear. So you can, you can, you can change less but you
+1979.46s - 1985.82s |  can change more. And if you write, you try to write over the file on, over the file sides on
+1985.82s - 1992.80s |  disk, you end up actually breaking some stuff. So your program will crash probably um, and
+1992.80s - 1996.54s |  you're gonna have problems. So these are the margin tolerance where, where, where you can
+1996.54s - 2004.18s |  actually replace the file. Now, but it, this is cool but it's abusable. Now yeah it's abusable,
+2004.18s - 2008.92s |  there are some use case scenario where we can actually abuse it uh, for a lot of different
+2008.94s - 2015.22s |  means. But one of the means is hide the fact that we have a driver on an ISO for example. We can
+2015.22s - 2020.22s |  load an encrypted blob on an ISO and then we can just modify it after the ISO was emulated. So
+2024.56s - 2030.12s |  we found another thing that we could abuse and this is um, I don't know how much it's, this is
+2030.12s - 2035.14s |  known but like if we have a file on disk and we try to link, we try to use the same name to, to
+2035.16s - 2040.16s |  create a link, of course the file is gonna say no, I'm not gonna use this name because it's
+2044.14s - 2049.14s |  already here. But for some reason if we specify the link name with a stream name associated to
+2052.68s - 2057.68s |  it, it will create a reparse point for the file. So this will create a reparse point for the
+2057.68s - 2063.82s |  file that will overshadow the data stream that is present on the file on disk. Now this means
+2063.84s - 2069.28s |  that at this, at this time after I created the reparse point, the file or and the the original
+2069.28s - 2074.28s |  file, the original ATXT is still there but it's not gonna be, no one is gonna be able to find it
+2076.12s - 2081.12s |  unless I delete the reparse point. And this is abusable. Why? Because well I can create an ISO
+2084.56s - 2090.36s |  and I can use this as trusted installer, I need to elevate my privilege as trusted installer and I
+2090.38s - 2095.38s |  can use this to redirect the, a file, a driver file on C, Windows system 32 to something that is
+2100.02s - 2107.34s |  on the ISO for example. But this has a problem, the driver, of course the driver file, the driver
+2107.34s - 2113.68s |  location, the image loaded is gonna be, is gonna show that I'm loading something bad. So I be a
+2113.68s - 2118.68s |  bit more smart, a bit smarter, I create another ISO and this point I will use a coherent
+2122.46s - 2127.46s |  directory structure. So now I, and I, I place W, of course I can place whatever driver I want here,
+2129.70s - 2134.70s |  here for example there is WinIO. And I do the same thing but still I have a problem because when I
+2139.50s - 2145.44s |  load the driver it still say okay this sounds correct but there is still, I mean it's still
+2145.44s - 2150.84s |  saying listen you are loading from an ISO file, you're not loading from the system blue
+2150.84s - 2155.52s |  directory, you're loading from just an external drive. You're trying to fool me, you didn't
+2155.52s - 2163.48s |  manage to though. Then uh this is just to show that the file is still there, so if I, if you
+2163.48s - 2168.02s |  delete the reparse point, the original file is still there. Okay just to, just to prove the
+2168.02s - 2173.02s |  point. But then we notice another thing, so a direct NTFS link is not enough to bypass to fool
+2176.00s - 2180.70s |  the, the load driver event. But then we notice another thing, if we go to the empty object
+2180.74s - 2185.74s |  manager we notice that every driver is actually loaded not using C Windows system 32 but is
+2188.14s - 2193.14s |  loaded using system root. System 32 driver and the name of the driver. What is this system
+2195.42s - 2200.42s |  32? The system 32 is a symbolic link and not an, not an NTFS symbolic link, it's an NT
+2202.56s - 2208.90s |  symbolic link uh that is pointing to the device that I use for booting. In my case is device
+2208.90s - 2213.90s |  RDS volume 3. But it's pointed to by the boot device, right? But this means and if I inspect
+2217.00s - 2223.18s |  the boot device, I notice that I can actually delete this symlink. So this is actually a
+2223.18s - 2229.92s |  permanent symlink, meanings that it's been artificially created to have a ref count of 1.
+2229.92s - 2236.42s |  But I can make it, I can as system I can make it temporary, load like artificially lowering the
+2236.44s - 2241.82s |  ref count to 0 again and then I can delete it. So what can I, what can I do with this? I, I can
+2241.82s - 2248.16s |  obtain system privileges, I can back up the original boot device, I can replace the boot device
+2248.16s - 2253.76s |  symlink with the ISO and then I can restart the service and see what happens. And what happens
+2253.76s - 2258.76s |  is that it works. But the driver load event still shows that I'm loading from an ISO so still I
+2259.76s - 2267.58s |  wasn't able to fool it. And another problem is that if I inspect the driver in system
+2272.72s - 2277.88s |  informer or a similar tool, I've noticed that the driver is showing for example a missing
+2277.88s - 2285.34s |  description. It's showing stuff that indicates that I loaded a malicious, another driver. What
+2285.34s - 2292.34s |  if we swap the drive letters? What if I do a drive swap for this is something that nobody will
+2292.34s - 2297.40s |  ever think of doing and there is a reason for that. Because if you try to swap the drive
+2297.40s - 2302.50s |  letters, your program, your, your system will probably crash at a certain point. There is
+2302.50s - 2307.50s |  nothing, but if you do it for just a second and you keep everything consistent so you don't just
+2310.14s - 2316.78s |  remove the letters, but you swap into other letters, it actually might work. So the, I'm not
+2316.80s - 2321.86s |  showing the screen shot because I'm showing you a video afterward but the, the technique is
+2321.86s - 2328.54s |  this. We mount an ISO with an encrypted blob, we just respect the directory structure, we
+2328.54s - 2333.08s |  change the boot device to CD-ROM, we swap drive letters, we load the driver, we restore
+2333.08s - 2337.98s |  immediately the drive letters, we restore the boot device and then we can at, at that point we
+2337.98s - 2346.74s |  can use, we can abuse the driver that has loaded the memory even if we unmount the ISO file.
+2346.74s - 2352.76s |  Now what about using other techniques? Well I, I can use other techniques uh to, to load the
+2352.76s - 2359.12s |  malicious driver uh but in this case for example I can use uh all the partition that is
+2359.12s - 2364.14s |  assigned to the transactional file system. It's not supposed to be accessible by any user, it's
+2366.60s - 2373.10s |  not supposed to be writable, but we discovered that if you access this kind of location with
+2373.10s - 2378.64s |  the additional, with, with the, with the, with the required permissions, in this case backup
+2378.64s - 2385.98s |  intent, say restore, say backup privilege, a maximum file, maximum allowed as uh, as um, as
+2385.98s - 2391.22s |  access right, you can actually override this. You can actually access these locations and you
+2391.22s - 2396.56s |  can actually write files on them. So and this is a proof of course where I actually am
+2396.56s - 2403.54s |  writing, I'm writing on uh the transactional file system uh locations. Is there any benefit? I
+2403.54s - 2409.54s |  don't see any benefit in doing it. Uh it can just give you an additional way of exploiting the
+2409.54s - 2414.54s |  same vulnerability in, in other ways, not using an ISO. So let's demo it. So Windows 11, HVCI is
+2417.62s - 2422.62s |  enabled. Uh I have a simple load of a driver and I hope uh, I hope it actually, because this
+2430.41s - 2435.41s |  doesn't actually, oops. Oops. I did a mistake. Okay. So it doesn't show, I don't know how to
+2440.79s - 2449.89s |  make play. Like it doesn't show the right, uh huh. Okay. Now it seems it works. Yeah. So okay,
+2456.19s - 2461.19s |  here we are seeing that we are targeting the AALP SSI GPO is uh an Intel driver and we are
+2462.19s - 2467.19s |  loading our driver, we are switching everything and we're loading the driver. Now the driver has
+2469.29s - 2474.79s |  been loaded, the name is that and if you can see, honestly I would, I would challenge to spot
+2474.79s - 2480.51s |  the difference. The description is the right one but and if you try to point to the what, what
+2480.51s - 2485.51s |  file was loaded, it will actually open the right directory but indeed we loaded another. You
+2486.51s - 2491.51s |  can, you can actually spot it from the sides. From the sides. It's 28 kilobyte which is the
+2495.41s - 2503.34s |  sides of WinIO. And you can see also from the hash, that is the same hash of WinIO which is a
+2503.34s - 2508.24s |  vulnerable driver that is not currently blocked by Microsoft block list. We can do another
+2508.24s - 2516.45s |  attempt, this time on Windows, I don't know if there is anything I'm showing. Yeah. I'm, I'm
+2516.47s - 2521.47s |  proving that is WinIO here. So you will see that there is the WinIO handle uh showing up in
+2523.51s - 2530.08s |  devices and when I will get there, bit of fate. So we have WinIO loaded. Now when I unload the
+2536.92s - 2543.46s |  driver that is not unloadable usually, WinIO disappears. So it was WinIO all along. But it
+2544.38s - 2549.38s |  doesn't show up anywhere practically and we fooled the driver loader into thinking that we
+2554.26s - 2559.26s |  actually loaded a driver on C Windows system 32 as, as, as it was normal. Now on Windows
+2563.50s - 2568.50s |  10 or when HDCI is not enabled, we can just strictly integrate it with KDU for example. Same
+2569.38s - 2574.38s |  technique, same driver as base uh for exploitation. I still need to, no. Come on. Yes. So
+2587.01s - 2592.01s |  still driver jack is executing, arrives. It overwrites the content in memory because the driver
+2594.15s - 2599.15s |  is encrypted as I said on the ISO. And then it just loads the drive and straight executes
+2602.09s - 2606.53s |  KDU. The vulnerable driver was already loaded because we loaded to the driver, with the
+2606.53s - 2611.53s |  driver jack technique. The name is WinIO and we can execute our unsigned code on Windows. Now
+2615.14s - 2620.94s |  of course if you want to execute with HVCI enabled, you need to use one of the other thing that
+2620.94s - 2625.94s |  I showed before. Candleforge, uh Malk, or unless if, if, or, or you can use, or you can just
+2626.94s - 2631.94s |  disable HVCI all together. So the full chain that we used was we weaponized the step 7
+2636.98s - 2641.98s |  installation media. Um in, in this way initially we used that child process immediately because as
+2644.02s - 2649.02s |  I said uh the set up of the step 7 installation media uses multiple process to install. So we
+2649.02s - 2654.02s |  could blend in with an additional process. We rewrite and execute an additional file so we,
+2658.82s - 2665.06s |  there was no malware on the ISO except of a minimal DLL use for site loading. And then what we
+2665.06s - 2671.40s |  do is we use driver jack, we, we execute uh we install the full candle rootkit. Uh we were
+2671.40s - 2677.44s |  targeting Windows 10. HVCI was not a problem in this case. And, and then we just keep going
+2677.44s - 2682.44s |  with additional, with additional compromise step. So portability, we have integration with
+2684.84s - 2689.84s |  KDU uh if HVCI is disabled. If it's enabled and you have uh inter-K chat not supported you can
+2692.14s - 2697.14s |  use Candleforge as I said. If it's um, if HVCI is HVCI is HVC- oh my gosh. If, if hypervisor
+2702.26s - 2707.42s |  protected code, enforced code, code integrity is enabled and you don't have Intel VT
+2707.44s - 2712.44s |  but you have inter-K chat can use mark. Otherwise, well, the, the best chance so far uh is to
+2714.64s - 2719.64s |  just uh disable code integrity and ask for a reboot. Um because there is no currently, there is
+2722.98s - 2728.72s |  not currently a technique. As I said, I, I mistakenly believe that you could actually abuse
+2728.72s - 2734.96s |  large pages for it. I'm still trying to check it if, if it's possible but it doesn't look like
+2735.00s - 2740.00s |  it's working fine. And as key takeaways, I mean you can download the box uh the the for
+2742.84s - 2747.84s |  driver jack is, is already, is already public. You can, you can go and take a look. Um for like
+2750.38s - 2756.88s |  detection, as detection advice, I would always try to detect if uh someone is escalating
+2756.88s - 2762.26s |  privileges to system or trusted installer using no means. Uh monitor for drive letter change
+2762.30s - 2767.30s |  to just prevent this trick from uh bypassing detection. Uh of course monitor for changes in
+2770.20s - 2775.80s |  the anti-object manager especially for global links. Uh keep your hardware up to date is very
+2775.80s - 2781.94s |  important because as, as we've seen, the more we go to modern CPUs et cetera, the, the more
+2781.94s - 2788.52s |  difficulties to exploit this kind of bugs. And then, and then there is the one of the detection
+2788.52s - 2794.08s |  opportunity which is the probably best is when there is a drove, a driver load event, implement
+2794.08s - 2799.36s |  an hash cross check. So there is an hash present on the driver load event. The only thing you
+2799.36s - 2805.10s |  need to do is going on the file list, on the file path that is was, that was loaded, perform
+2805.10s - 2810.94s |  like calculate the check at run time and then compare the, the hashes. The hashes is are not
+2810.94s - 2816.68s |  possible to fool. So uh if the hashes are not matching it means that something happened that
+2816.70s - 2821.70s |  was bad. So another driver was loaded in place of the original one. And that's it. Thanks a
+2824.28s - 2825.78s |  lot for, for coming.

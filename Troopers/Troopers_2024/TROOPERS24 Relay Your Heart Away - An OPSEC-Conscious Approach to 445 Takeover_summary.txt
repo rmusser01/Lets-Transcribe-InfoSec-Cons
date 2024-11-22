@@ -1,0 +1,73 @@
+**Introduction**
+- Presenter: Nick Powers
+- Topic: NTLM relay-related tradecraft
+- Focus: OPSEC-conscious approach to taking over Port 445
+
+**About the Presenter**
+- Works at Specter Ops in the Adversary Simulation team
+- Experience in red teaming, pen testing, and offensive security
+- Twitter handle: @Zenergy
+
+**Agenda**
+- Why control over Port 445 is important for NTLM relay attacks
+- Existing solutions to the problem and their OPSEC concerns
+- Reverse engineering to identify an alternative approach
+- Tooling and automation for the technique
+- Demonstration of abusing the technique
+
+**Why Control Port 445?**
+- Targeted NTLM relay attacks still work in mature organizations
+- Examples: HCP to LDAP, Shadow Credentials, Resource-Based Constrained Delegation (RBCD), Relay of SMB/HCP
+- Abuse cases: ADCS Escalation, SCCM Takeover, SMB/HCP to MSSQL (SCCM Takeover 1)
+- Inbound SMB authentication relay can be more involved, especially over C2
+- Controlling Port 445 is crucial for successful NTLM relay attacks
+
+**Existing Solutions**
+- Approaches based on WinDivert driver: HWFW Bypass, Portbender, Sharp Relay, Stream Divert, Divert TCP Con
+- Custom LSA authentication provider: LSA RelayX
+- Disabling Landman Server Service and rebooting the host
+- Existing solutions have OPSEC concerns:
+  - Potential BSOD when loading/interacting with drivers
+  - Single point of failure for detection/prevention
+  - Complexities of loading/interacting with drivers/modules in user mode
+  - Stability issues and potential reboot when loading custom LSA authentication provider
+  - Waiting/forcing a reboot may not be an option
+
+**Reverse Engineering**
+- Goal: Release target port (445) without rebooting, loading drivers, or loading modules into LSAS
+- Identified process bound to Port 445: System process (PID 4)
+- Triaged relevant loaded modules/drivers: AFD, TCPIP, netbt.sys, etc.
+- Used IDAfree for static analysis to identify functions related to port/socket/bind
+- Used WinDebug for dynamic analysis to set breakpoints and step through execution
+- Found inet acquire port function and is port in exclusion function call
+- Verified that port 445 was being used by checking the RDX register
+
+**Unbinding Port 445**
+- Started with Servnet driver, which is responsible for binding to Port 445
+- Identified functions related to unbinding: close listen socket, close endpoint, delete served name
+- Found driver unload function call in Servnet close endpoint function
+- Service dependencies are important: Servnet depends on Serv2, which depends on Landman Server
+- Stopping services in the correct order (Landman Server, Serv2, Servnet) triggers driver unload
+- Verified that port 445 unbinding was successful by checking RDX register in inet release port function
+
+**Automating the Abuse**
+- Tools for interacting with Service Control Manager: WMI Exec Pro, sc.exe, proxy tools (Proxifier, Proxycap)
+- Created PoC scripts in Python and BoF to automate service control interactions
+- Bonus: Rebinding Port 445 is easy due to service triggers - set Landman Server start type to auto
+- Tools for tunneling and reverse port forwarding: SSH, Cobalt Strike, etc.
+
+**Demonstration**
+- Used SCCM Hunter to identify and target an SCCM site database with mssql listening
+- Verified that port 445 was bound and then unbound it using the Python script (check, stop)
+- Set up a reverse port forward to redirect incoming traffic
+- Used ntlm relay x to relay authentication and execute a SQL statement to add a domain user as an administrator
+- Verified successful relay and new administrator privileges in the SCCM site database
+- Executed arbitrary code on the primary site server with elevated privileges
+- Cleaned up by removing the added domain user and deleting the executed script
+
+**Summary**
+- Simple interactions with the Service Control Manager can result in port 445 unbinding.
+- This technique provides a lower-touch solution for targeted NTLM relay attacks over C2.
+- Detection ideas: Look for non-standard processes listening on port 445 or disabling services in a particular order.
+- No stability issues encountered during assessments, but understand dependencies on named pipes.
+- No detections or preventions encountered during assessments, but telemetry is present.

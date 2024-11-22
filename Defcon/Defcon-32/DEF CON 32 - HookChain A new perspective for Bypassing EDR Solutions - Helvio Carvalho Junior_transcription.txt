@@ -1,0 +1,274 @@
+{
+  "webpage_url": "https://www.youtube.com/watch?v=0L6TlFYwy2U",
+  "title": "DEF CON 32 - HookChain A new perspective for Bypassing EDR Solutions -  Helvio Carvalho Junior",
+  "description": "In the current digital security ecosystem, where threats evolve rapidly and with complexity, companies developing Endpoint Detection and Response (EDR) solutions are in constant search for innovations that not only keep up but also anticipate emerging attack vectors. In this context, this article introduces the HookChain, a look from another perspective at widely known techniques, which when combined, provide an additional layer of sophisticated evasion against traditional EDR systems.\n\nThrough a precise combination of IAT Hooking techniques, dynamic SSN resolution, and indirect system calls, HookChain redirects the execution flow of Windows subsystems in a way that remains invisible to the vigilant eyes of EDRs that only act on Ntdll.dll, without requiring changes to the source code of the applications and malwares involved.\n\nThis work not only challenges current conventions in cybersecurity but also sheds light on a promising path for future protection strategies, leveraging the understanding that continuous evolution is key to the effectiveness of digital security.\n\nBy developing and exploring the HookChain technique, this study significantly contributes to the body of knowledge in endpoint security, stimulating the development of more robust and adaptive solutions that can effectively address the ever-changing dynamics of digital threats. This work aspires to inspire deep reflection and advancement in the research and development of security technologies that are always several steps ahead of adversaries.",
+  "channel_url": "https://www.youtube.com/channel/UC6Om9kAkl32dWlDSNlDS9Iw",
+  "duration": 2364,
+  "channel": "DEFCONConference",
+  "uploader": "DEFCONConference",
+  "upload_date": "20241016"
+}
+
+0.00s - 6.50s | This text was transcribed using whisper model: large-v2
+
+ Welcome Vegas! Woohoo! Let's go guys! Ladies and gentlemen, LVO. Thank you guys to be here.
+15.68s - 20.68s |  It is amazing experience to be here for my first time. And let's talk about EDR, XDR bypassing.
+20.68s - 25.68s |  First of all, our agenda. Uh, a little bit who I am. Uh, a little bit what is hookchain and what
+36.76s - 41.76s |  is not hookchain is. And these research limitations. And after that, let's talk about the
+42.76s - 47.76s |  basics to understand how does hookchain works. And after, look through hookchain itself.
+57.64s - 62.64s |  Who I am? My name is Elvio Junior, aka Maverick. Uh, my undergraduation school, uh, I did
+65.44s - 70.44s |  uh, airplane pilot. So yes, I am a pilot. And I was the pilot for the first time in my life.
+71.76s - 76.76s |  The first in America Latina to learn OSCE 3. Uh, and I studying, or maybe studying to OSCE.
+82.80s - 87.80s |  This research, uh, that I have no much time to study OSCE. And what I like? I like low
+91.34s - 96.34s |  level exploitation, buffer overflow, shell coding, malware and so on. And also I am CEO
+97.34s - 102.34s |  of SecForUs, a company, a Brazilian company that uh, provide training and researching,
+107.84s - 112.84s |  consulting and so on. What is the motivation of this talk and this research? Many people
+117.12s - 122.12s |  believes that I, I have solution X, that I top of the Gartner and I am a hundred percent
+127.30s - 132.30s |  protected. No, there is no silver bullet. And when I doing, uh, pentesting or red team
+138.58s - 143.58s |  exercise, I just need to bypass your environment. I don't need to bypass everything, just
+148.28s - 153.28s |  your environment. So, and fool undetectable. Sometimes it happens. And what is hookchain?
+156.60s - 161.60s |  Hookchain is a technique. It is not a tool. I'm not pretending to launch a tool. Yeah,
+164.20s - 169.20s |  obviously I need to do some programming. I need to, to create a code to prove the concept,
+172.04s - 177.04s |  but it is a technique. Okay? And what is the focus of hookchain? Do hook, do bypassing of
+177.40s - 182.40s |  monitoring of EDRs and XDRs inside of NTDLL. In other words, a hundred percent user land.
+195.94s - 200.94s |  Nothing about kernel land. Okay? And limitation. As I said, it is uh, 64 bits programming
+201.50s - 206.50s |  and limited just to NTDLL. User land hooks. And I'm not pretending here to classify the EDR
+220.58s - 225.58s |  vendors, XDR vendors as his effectivity. I'm just launching a new technique. Okay? I need
+225.84s - 230.84s |  to do some tests, but I'm focused just in one point, not entire ecosystem. So, I'm not
+240.08s - 245.08s |  pretending to classify EDRs. It must be clear for, for all guys. During this study, I, I
+246.00s - 251.00s |  did a public call for vendors to work together with me to get early access to this code, to
+260.14s - 265.14s |  this technique, and no one answered. When I published some bypass in LinkedIn, I received
+265.68s - 270.68s |  some calls, not too happy calls sometimes, but I received just three years, three weeks ago,
+279.06s - 284.06s |  some calls in order to test this. Okay? And let's go to the technical things. First of
+287.26s - 292.26s |  all, we have almost two layers in order to protect and split the time block. Okay? So,
+295.44s - 300.44s |  inside of our operational test. Ring zero, kernel land, and ring three, user land. To
+304.94s - 309.94s |  transition between user land to kernel land, in a few words, we have just one way to do
+314.48s - 319.48s |  this. Using a gate calling system call, or system dispatcher and so on, that I can
+319.84s - 324.84s |  transit from user mode to the kernel mode. In general, we have this picture where we have
+332.92s - 337.92s |  user process, system services, and so on. Doesn't matter what, uh, is the, his level is, it
+340.68s - 345.70s |  is a system level, a certain level, or uh, a simple non-privileged user process. Every time
+349.84s - 354.84s |  I need to do this transition. In general, this, this is a responsibility to NTDLL to do this
+359.38s - 364.38s |  for me. So, this is a common stack call where I have one common application for, that must
+369.72s - 375.06s |  be, that need to be, for example, need to execute first a virtual lock to locate a, a
+375.08s - 380.08s |  memory, and the common stack call, the application will call this from kernel 32 DLL, and
+383.16s - 388.16s |  the kernel 32 will call another, uh, API inside of NTDLL, and the NTDLL will prepare stack
+394.20s - 399.20s |  call parameters, register parameters, and we will execute uh, assembly instruction
+399.98s - 404.98s |  called sys call that will transit from user mode to the kernel mode. This is just another
+413.86s - 418.86s |  image to explain that. So, I have the user mode application and the important here, system
+421.60s - 426.60s |  service number. There is a table called system service descriptor table where I have an
+427.54s - 432.54s |  indexes from zero to, I have no idea how much, more than four hundred, uh, numbers that match
+441.82s - 446.82s |  each ID from a pointer to a kernel function. So, when I need to transit from the user mode
+447.82s - 452.82s |  to kernel mode, I put the system service number inside of register RAL, sorry about the
+460.80s - 465.80s |  names, but uh, I put this number in this register and I execute the system call
+469.14s - 474.14s |  instruction. And system call will come to the kernel uh, address space and this ke- this
+474.14s - 479.14s |  function will uh, match inside of this table and get the pointer to the real kernel
+483.58s - 488.58s |  function. And the real kernel function will be executed and return to the user mode space
+490.38s - 495.38s |  with the return of the the executed function. Doesn't matter uh, what this means. This is
+497.76s - 504.06s |  another uh, uh, uh, image to illustrate that. System service call, system service
+504.06s - 509.06s |  descriptor, the table with the indexes and uh, the pointers to the function and the real
+511.66s - 516.66s |  code from, to the function. Okay? And when I execute some proxies uh, un-executed or uh,
+521.70s - 526.70s |  when I load uh, DLL inside of another proxies, when I initiate uh, uh, a proxies, several
+527.42s - 532.42s |  actions are, have been done behind the scenes. One of the most important that uh, uh, to the
+537.70s - 542.70s |  stock is related to import address table. Import address table in a few words is a table
+545.10s - 550.10s |  that uh, the name of the function that I want to execute, for example, uh, create proxies and
+550.78s - 555.78s |  the name of the function and the uh, ID representing, ID representing inside of this table
+563.18s - 568.72s |  that when I run this, when I run the the application, the operational system that the
+568.72s - 573.72s |  loading of the operational system will look through uh, all loaded DLLs and fill this table
+573.78s - 578.78s |  with the address, the real address of this function in the operational system. Virtual
+582.26s - 588.36s |  address of course, but the virtual address. So when I try to execute this proxies, my
+588.36s - 593.36s |  application will comes uh, to the import address table and request, import address table, what
+596.00s - 601.00s |  is the real virtual address to this function? And put this for example in a history and
+603.74s - 608.74s |  after that call the address of this hazards, history in order to call the uh, real uh,
+611.52s - 616.52s |  function code. And another things that image loader do is uh, look through the, the loaded
+620.62s - 625.62s |  DLLs if this DLLs uh, it uh, was already loaded, the recursive loading and so on and fill
+628.20s - 633.44s |  this, this function pointer. There is another image to, to illustrate this, this same
+633.46s - 638.46s |  thing that I have the name of the DLLs and the functions that I imported in my application by
+640.46s - 647.00s |  the full and the, the, the name and the code of the application inside the, the uh, the
+647.00s - 652.00s |  targeted DLL. Let's start talking about the techniques. Uh, when I, when I saw this, this
+652.04s - 657.04s |  kind of hooking uh, we need to say, we must say that the techniques that we use to attack,
+666.88s - 671.90s |  it's the same techniques that the EDR vendors are using to protect. The first time that uh,
+674.94s - 679.94s |  someone published uh, uh, something related with this techniques in, in Windows, in
+682.04s - 687.04s |  1995. So uh, a few, few years ago. Uh, and what is hook? Like a interception of the stack
+694.52s - 699.52s |  call. When I try to execute some function, this function uh, I, I'm not executing the
+702.10s - 707.10s |  real function. I, I will be uh, intercepted and redirected to another function. Like a
+707.88s - 712.88s |  man in the middle. In this case it will be a function in the middle. But it's the same
+715.68s - 720.68s |  concept. Okay? The, the most common techniques to do that is using instruction jump or call
+724.36s - 729.36s |  or I can use import address table hooking. How can I do that? Let's see. Uh, talking
+730.36s - 735.36s |  about jumping. This is a strategy that I, I'm uh, that we can see here. It's the most
+740.94s - 745.94s |  common strategy uh, used by EDR and XDR vendors. That is, when I run a, an application,
+750.38s - 755.38s |  uh, NTDLL is the first DLL uh, that is, is attached to my process. And after that, the
+759.76s - 764.76s |  EDR DLL will be uh, attached and the DLL from EDR will patch or change in memory uh, the
+771.54s - 776.54s |  instructions of the NTDLL. So when I try to execute for example this function, this
+778.20s - 783.22s |  function is uh, uh, changed to jump to address space of EDR uh, code. In order that the EDR
+783.58s - 788.58s |  can uh, check our parameters and response and so on. This is uh, an example of original
+797.70s - 803.20s |  execution flow where when I get the address of the, the, the, the function, the target
+803.20s - 808.20s |  function, we will receive the real address. But if after the EDR changes or after our
+808.92s - 813.92s |  change that, because we will change this table, uh, after that, instead of receive the
+818.10s - 823.10s |  address of the real function, the original function, we will receive an address to a
+825.64s - 832.64s |  hooked function or to a uh, function in the middle in this case. Okay? So we will receive a
+832.66s - 837.66s |  malicious function or uh, when I EDR doing that, the, the, the address of the EDR function.
+840.10s - 845.10s |  So when I call this address, we will call the received function. In this case, uh, arbitrary
+848.28s - 853.28s |  code from EDR or from our perspective and it is a decision if we will or not execute the
+853.80s - 858.80s |  real function. In uh, talking about EDR infrastructure, the EDR will uh, analyze the
+865.88s - 870.88s |  parameters and decide yes, uh, LV is a good guy, I can allow this. Oh no, LV is a bad
+874.56s - 879.56s |  guy, let's drop this. And uh, uh, pop, pop up alert and uh, send this to, to SOC and
+879.58s - 884.58s |  so on. Uh, this is a, that I am talking, this is a, uh, when I EDR load EDR, put an, another
+893.76s - 898.76s |  DLL and it will be redirected and decide yes, no, execute or no, and do if, yeah, LV is a
+903.04s - 908.04s |  good guy, let's uh, permit this execution, so do system call, include, uh, uh, uh, uh,
+909.64s - 914.64s |  kernel land, it's everything as usual and after that come back to the user land process.
+918.12s - 923.12s |  Ok, I can see here an unhooked API, ok, so I can see this typically uh, instructions where
+928.46s - 933.46s |  uh, there is a, a, a moving from RLCX to R10 and after that there is a, an ID here in
+934.00s - 939.00s |  hexadecimal, uh, where I put this ID in uh, EAX or RAX, doesn't matter, and after that there is a
+948.62s - 953.62s |  system call. This is a typical uh, uh, code from NTDLL's uh, uh, functions that will
+956.86s - 961.86s |  translate from user land to kernel land. And here we can see how can I, how can I, uh,
+964.06s - 969.06s |  HTTP API where he is unhooked and he is unhooked API. As you can see, there is no this
+972.40s - 977.40s |  typical code, there is a jump code where I'm doing uh, uh, jumping or interception to the
+981.18s - 986.18s |  API or to the EDR uh, code. Ok, such that the most common bypasses is remapping NTDLL and
+993.56s - 998.56s |  but to do that we need to load the NTDLL from the disk or from the another uh, memory area.
+1003.10s - 1008.10s |  It's, seems to be malicious in most of case. Uh, another technique, it's direct syscall
+1011.04s - 1016.04s |  when instead of goes through NTDLL, I get the system service number and do uh, and execute
+1016.24s - 1021.24s |  the system call inside of my, my process. This sounds malicious again because the system
+1029.18s - 1034.18s |  call was not coming back from NTDLL memory address space, it's coming from my application
+1037.92s - 1042.92s |  address space. Ok, and EDR catch this. I direct syscall, it's a syscall, it's a syscall
+1046.04s - 1051.04s |  similar to direct syscall but instead of uh, do uh, system call instruction inside of my
+1053.74s - 1058.74s |  application, I will jump it to a address inside of NTDLL that exists just system call
+1061.68s - 1066.68s |  instruction. So, who will execute NTDLL? So, sounds less malicious. But in this case, the
+1066.68s - 1071.68s |  stack trace will be broken because I'm executing directly from my code inside of NTDLL. In
+1080.02s - 1085.02s |  general, the application doesn't do that. The application in general calls system 32 DLL,
+1088.16s - 1093.16s |  kernel base DLLs, GDI DLL and so on. And this DLL will call NTDLL and, and etcetera. So,
+1097.40s - 1102.40s |  sounds malicious. Then, there are amazing guys uh, without this research, this talk today was
+1107.28s - 1114.38s |  not possible. So, this is amazing guys uh, created he- uh, Heaven Gate technique, Hell's
+1114.38s - 1119.38s |  Gate technique and the Hallows Gate technique. So, uh, for this research I used the part of
+1120.36s - 1125.36s |  Hallows Gate technique in order to uh, resolve dynamically uh, the system service numbers.
+1132.00s - 1137.00s |  Okay? So, let's understand a little bit better about Hallows Gate, this part of Hallows Gate.
+1138.68s - 1143.68s |  In general, Hallows Gate locate the current address of the uh, target function, the function
+1144.68s - 1149.68s |  that I want to execute. For example, uh, create a virtual memory or um, create processor and
+1155.40s - 1160.40s |  look that uh, that code that we, we saw, the, the typically code and check if the typically
+1164.04s - 1169.04s |  code uh, match with these uh, uh, these instructions. If yes, okay, this function was not
+1169.04s - 1174.04s |  hooked. If no, the function is hooked. Okay? So, we can uh, see that and how can I uh, get
+1186.56s - 1191.56s |  the system service number if, if the function is hooked. The real code uh, does not exist
+1192.02s - 1197.02s |  more there. How, how can I see this? Let's, let, let's see uh, uh, another screen here. We can
+1202.16s - 1207.16s |  see that the functions are linear. So, we can see here, for example, the system service
+1211.08s - 1216.08s |  number six, system service number seven, this function is hooked. So, in general I have no
+1217.08s - 1222.08s |  idea what's the, the, the system service ID of this function and the next function will be
+1225.28s - 1230.28s |  nine and we, the next function will be ten. In other words, we can see the neighborhood uh,
+1233.22s - 1238.22s |  functions before and after our uh, uh, uh, desired function in order to calculate. If this
+1238.38s - 1243.38s |  function is six, that function is seven. My function will be eight. So, we can dynamically
+1249.82s - 1254.82s |  check this. This is hollows gate technique, okay? And uh, before this, this research, this
+1258.76s - 1263.76s |  study, uh, in a sunny day, uh, playing with my two uh, boys, my two boys, uh, playing with
+1268.28s - 1273.28s |  two kids, I have an idea. Whoa! The major part of EDRs are hooking in an NTDLL. If I step
+1279.82s - 1284.82s |  above and try to catch or try to do a, a, a function in the middle, uh, changing the flow
+1288.16s - 1293.16s |  before NTDLL, okay? Because, because some uh, uh, several EDRs are checking if we are
+1294.02s - 1299.02s |  changing NTDLL. So, because they are changing there, the EDR are checking if we also change
+1305.26s - 1310.26s |  there and flag us as malicious. So, if EDR are checking there, and what if I did or I do
+1315.70s - 1320.70s |  this in a step above? So, to check the uh, viability of this technique, I, I create a
+1323.34s - 1328.34s |  code in order to check the EDRs hookings. So, nine percent of EDRs are hooking just in NTDLL.
+1336.02s - 1341.02s |  So, the technique can be viable, okay? And I created the new technique called hook chain.
+1341.02s - 1346.04s |  What is hook chain? Hook chain, the first step, I will uh, resolve system service number.
+1355.70s - 1360.72s |  After that, create a table where I store their system service number in uh, on an address of
+1361.02s - 1366.02s |  my custom stub function. In other words, the function that will be executed instead of
+1373.90s - 1378.90s |  original function. EDR do this, whoa, I can do this also. And implant or change the import
+1384.48s - 1389.48s |  address table from our proxies to our custom stub function. So, this is the hook chain
+1390.72s - 1395.72s |  and after that, continue as usual. With this, I have in more details the hook chain implant
+1402.06s - 1407.06s |  flow. First one, uh, I resolve dynamically, map some critical functions because in this,
+1412.34s - 1417.34s |  in this phase, uh, I have no, uh, I had no bypass at EDR yet. So, I have no bypass at EDR
+1420.72s - 1425.72s |  yet. So, I need to use some functions not uh, monitored by EDR in order to change some
+1428.12s - 1433.12s |  memory address and change some uh, memory areas and so on. Read and et cetera. Uh, so I
+1436.66s - 1441.66s |  map statically these main functions that I call it here, critical functions. And after that
+1444.10s - 1449.10s |  I create a table. We will see the structure of this table uh, later on. Uh, uh, we create a
+1450.78s - 1457.78s |  table that holds system service number that I already mapped. The function address, the real
+1457.78s - 1462.78s |  function address inside of NTDLL and uh, the, the closest uh, address that holds a system
+1468.86s - 1473.86s |  call instruction inside of NTDLL. And after that, I load it, I preloaded some functions.
+1474.82s - 1479.82s |  For example, uh, if we will run uh, MetaExploit payload or Havoc payload uh, payload and uh, I
+1485.56s - 1490.56s |  have no idea. Uh, there are another uh, DLLs that must be called before the execution of
+1492.94s - 1497.94s |  this payload. Because a simple uh, a simple executable for example has no access to the uh,
+1498.26s - 1503.26s |  URL uh, APIs or uh, crypto APIs. So we must preload this DLL in order to change the import
+1510.88s - 1515.88s |  address table of this DLL. So here we preloaded these DLLs and after that do the magics.
+1518.44s - 1523.44s |  Change the import address table of all needed DLLs. In this time I, I, I need to say that
+1524.32s - 1529.32s |  there's not a good idea to change the import address table of all loaded DLLs. I tried that
+1535.36s - 1540.36s |  and I lose my hair trying that and that not a good idea. Believe me, believe me. So I, I, I
+1544.66s - 1549.66s |  created like a, a blacklist DLLs where I put inside of the application and uh, do this
+1553.58s - 1558.58s |  preloading and after that changing that. This is the typical flow after hookchain planting,
+1561.88s - 1566.88s |  the simplified version. So my application must call virtual unlock for example to create a
+1570.06s - 1576.20s |  malicious error in order to put there a MetaExploit shellcode for example. And I need to
+1576.20s - 1581.20s |  create this, I will call kernel to 32 DLL. Instead of call direct NT DLL, I will call
+1583.44s - 1588.44s |  DLL this function. As I hook it, as I did the uh, function in the middle, I will, this,
+1591.68s - 1596.68s |  this flow will be redirected to my application stub code. This application's stub code
+1599.36s - 1604.36s |  will, will check several things and create a stack frame, a stack call, create uh, uh, put
+1606.40s - 1612.00s |  the, the, the, the uh, the information inside the registers and after that do a
+1612.10s - 1617.10s |  indirect syscall in order to execute. And kernel mode as usual. Here there is uh, I can
+1622.54s - 1627.54s |  present you the, the first struct that I, that I uh, I will use. I will use here uh, a
+1630.82s - 1635.82s |  list, okay, with this system call information and each entry of this list uh, has a system
+1636.38s - 1641.38s |  service number, real address from the real function, okay, uh, the, the um, address of the
+1652.36s - 1657.36s |  function or the address that holds the system call instruction and the address of my stub
+1658.36s - 1663.36s |  function that will be redirected to. And uh, a hash use it to bypass uh, static analysis
+1669.16s - 1674.16s |  instead of the name of the functions and the, and so on, okay. And this is the entire flow
+1677.84s - 1682.84s |  where the same, my application want to execute some function, will call kernel 32 DLL and
+1682.84s - 1687.84s |  that call kernel base DLL and after that I will check in a import address table. When I
+1695.34s - 1700.34s |  check in import address table instead of receive the original address I will receive my stub
+1701.82s - 1706.82s |  function. So the application will be, will redirect to my stub function. Inside of this
+1707.10s - 1712.10s |  function uh, I can check the system call list, the list that I saw and the list there are
+1716.78s - 1721.78s |  several items in order to check, get the parameters that were the real function, syscall uh, uh,
+1723.36s - 1728.36s |  address and so on. Create the stack call frame and put everything that we, we need in the
+1729.04s - 1734.04s |  registers and after that do indirect syscall. Okay? What are the advantages of that? How this
+1741.72s - 1746.72s |  works? What, why? Uh, reduction of probability to identification for several reasons. The
+1750.36s - 1755.36s |  first one, total time of execution. As I have several times similar to the, to the, to the
+1758.44s - 1763.44s |  regular execution, the, the DDR cannot flag us because the, the total time of execution, the
+1765.34s - 1771.64s |  telemetry of total time of execution will be okay. Will be uh, seems, seems to be uh,
+1771.64s - 1776.66s |  valid. And stack, stack framing. Talking about stack frame, I'm flowing, I'm uh, uh, uh,
+1780.92s - 1785.92s |  executing as usual. Coming for a kernel 32 for example, kernel base and so on. So, I'm
+1789.16s - 1794.16s |  not stepping steps. Yeah, I'm not skipping steps. Okay? And the most important, I did not or I
+1802.18s - 1807.18s |  uh, uh, uh, I, I didn't need to change the code of the original application. For example, we
+1807.92s - 1812.92s |  will see in demo, when I want to execute mimikatz for example, I uh, uh, uh, I don't need to
+1821.86s - 1826.86s |  touch the code. I just execute the hookchain in order to implant and execute mimikatz. That's
+1827.00s - 1832.00s |  it. Because the hookchain implant and uh, uh, uh, uh, everything that we need. The
+1838.44s - 1843.44s |  function in the middle. Let's see the first demo where we will execute and uh, command and
+1847.78s - 1852.78s |  control using Havok. Okay, this is uh, flag as malicious as usual. And let's see this
+1857.76s - 1864.14s |  first one. Here we can see uh, Bitdefender updated with uh, advanced threat protection
+1871.32s - 1876.32s |  full enable and in the left side we can see our uh, console where uh, we will have, let me
+1881.92s - 1886.92s |  see, uh, let's stop here. Just uh, uh, uh, uh, uh, uh, uh, uh, uh, uh, uh, uh, uh, uh, uh, uh,
+1888.76s - 1893.76s |  uh, let me put here together in order to, okay. Okay, no problem. Uh, first time I will implant a
+1900.54s - 1905.54s |  hookchain, after that download remotely from HTTP the malicious payload and after that
+1906.26s - 1911.26s |  execute this malicious payload. So we are using Havok to do that. And here we go. Executed
+1922.90s - 1927.90s |  our first, first command control. We can interact with that without any identification. Thank
+1928.18s - 1937.46s |  you guys. You are amazing. It's just a starting one. Let's go. Let's go back to the
+1945.36s - 1952.89s |  presentation. Whoa. Here it is. Looking in details we have. The first step is mapping everything
+1953.69s - 1958.69s |  that we need. So in this operational system we have four, 472 NTDLL functions where we can
+1970.77s - 1975.77s |  map and these functions are hooked or I need this as a critical function. And after that I
+1975.99s - 1980.99s |  create this table, okay. This is the, the, the showing of this table and after that I do the
+1987.77s - 1992.77s |  import address table hooking. So I can see here the output of this, this hookings in kernel
+1995.47s - 2002.20s |  to 32, kernel base user 32 and so on. Let's talk about the real environment. The first of
+2002.20s - 2007.22s |  all, thank you for all friends, all Brazilian community that there are most, most guys
+2014.46s - 2019.46s |  here. Woo hoo! Uh that share with me uh your environment license and help me and support me in
+2019.46s - 2024.48s |  order to make this research works. Uh without you guys nothing will be possible. Uh thank
+2034.88s - 2039.88s |  you, thank, thank you so much. And because obviously some EDR vendors are not too happy
+2040.72s - 2045.72s |  and not sharing their licenses or their environment in order that I test. So uh there are a
+2052.30s - 2057.30s |  lot of friends uh sharing his environment with me in order to, to make this test, okay. So
+2059.80s - 2064.80s |  we did this in a closed environment as the focus, the focus of this research is talking about
+2070.74s - 2075.74s |  uh EDR protections uh and we will touch here else, else us uh I disabled the run as PPL and
+2081.62s - 2087.82s |  coordination guard inside of the windows because the tar- the, the target the full focus, it
+2087.82s - 2092.82s |  is not the windows, it is not the EDR and the XDR products. So, let's execute the second
+2093.82s - 2098.82s |  DEM for you guys. The same as again, we have the antivirals, EDR working with advanced
+2111.56s - 2116.56s |  threat protection and we will execute uh as usual, Mimikatz. I download it from GitHub
+2124.64s - 2129.64s |  put on my server as you can see and execute this guy in a protected environment. And let's
+2135.12s - 2144.73s |  see this working. Woo! It's not all. Execute and show a coffee, it, it's uh easiest part.
+2150.71s - 2155.71s |  Let's dump the creds. Without creds, we have nothing. So, let's dump the creds. Let's
+2159.01s - 2164.01s |  yeah, we can touch the else us without any identification with regular Mimikatz guys.
+2171.09s - 2180.38s |  Woo! Coming to the end, uh we are able to test with 66 uh percent of the products uh
+2187.52s - 2192.52s |  present in Gartner and in additional four other products. So, we are able to test with
+2195.10s - 2200.10s |  and this is the result table. Okay? We tested remote process injection, meterpreter and
+2206.04s - 2211.04s |  have walk as non-privileged user and meterpreter loading QE model, Mimikatz, procdump
+2218.58s - 2223.58s |  and a custom a hundred percent developed by me, a hundred percent developed by me.
+2225.02s - 2230.02s |  Assembly else us dump. Okay? I create this in order to do this test. And this is the result
+2236.50s - 2241.50s |  table. Okay? This is the products that I, I was able to test. And as you can see uh we, we
+2243.78s - 2248.78s |  have uh a lot of effectivity in order to, to doing this little things. Uh as I told you guys,
+2255.88s - 2260.88s |  uh three weeks ago two vendors uh reached me in order to, to test uh again. The sentinel one
+2266.06s - 2271.06s |  was the first and the second one was the trench. This results that I'm showing you uh the
+2274.30s - 2279.30s |  sentinel one was able to uh stop hookchain. They did some patches in his product and uh
+2285.10s - 2290.10s |  I was able to, to test this and stop it at all. Okay? Deadline, end line. Uh and the trench uh
+2295.12s - 2300.12s |  still working on this, this uh uh identification. And they tried some behaviors but, but not
+2302.56s - 2307.56s |  at all. Okay? The other vendors, non-contact. Okay? I love it this uh this phrase of
+2317.89s - 2322.89s |  Sif Hawking. I'm just a child asking who, how and why. Occasionally I found the answer.
+2328.67s - 2333.67s |  Thank you guys. This is my contact. Full white paper, source code, reference and feel free
+2340.61s - 2345.61s |  to contact me, feel free to reach me by uh LinkedIn. My LinkedIn, it's my name and
+2347.83s - 2352.95s |  just Elvio Junior and that's it. Now it's your time, time to ask questions. Thank you.

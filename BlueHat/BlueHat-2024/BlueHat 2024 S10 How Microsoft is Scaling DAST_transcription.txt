@@ -1,0 +1,526 @@
+{
+  "webpage_url": "https://www.youtube.com/watch?v=kfuOzDwv874",
+  "title": "BlueHat 2024: S10: How Microsoft is Scaling DAST",
+  "description": "BlueHat 2024: Session 10: How Microsoft is Scaling DAST Presented by Jason Geffner from Microsoft\n\nAbstract: Take a rare look inside how Microsoft is working to use automated reverse engineering techniques to secure its own web services. This talk discusses common challenges that enterprises face when scaling Dynamic Application Security Testing (DAST), including getting developers to provide service API specs, manual configuration of authentication and authorization, and scanning bandwidth limitations and latency. We present innovative automated solutions developed by Microsoft to address these challenges, including Automated Discovery of API Endpoints, Transparent Authentication & Authorization, and Accelerated DAST.",
+  "channel_url": "https://www.youtube.com/channel/UCKmzq2lAhDxLy36KtvVWpaQ",
+  "duration": 1773,
+  "channel": "Microsoft Security Response Center (MSRC)",
+  "uploader": "Microsoft Security Response Center (MSRC)",
+  "upload_date": "20241108"
+}
+
+0.00s - 3.72s | This text was transcribed using whisper model: large-v2
+
+ At Microsoft, all of our engineering teams
+3.72s - 8.64s |  use the Security Development Lifecycle, or SDL,
+8.64s - 11.36s |  to ensure that our products are built in accordance
+11.36s - 15.84s |  with Microsoft's Secure Future Initiative.
+15.84s - 20.84s |  And a key component of the SDL is security testing.
+21.14s - 24.40s |  I'm sure I don't have to explain to everyone in this room
+24.40s - 29.16s |  that the goal of security testing is to find
+29.20s - 31.92s |  and to mitigate security vulnerabilities
+31.92s - 36.34s |  in products and services before attackers can discover
+36.34s - 39.40s |  and exploit those vulnerabilities.
+40.34s - 44.00s |  Now, most enterprises have pretty mature programs
+44.00s - 48.46s |  in place already for doing things like code reviews
+48.46s - 51.48s |  and penetration testing and red teaming
+51.48s - 55.12s |  and static application security testing, or SAST.
+56.00s - 59.74s |  But the same enterprises often struggle
+59.74s - 61.84s |  when it comes to doing DAST,
+61.84s - 65.28s |  or Dynamic Application Security Testing,
+65.28s - 69.56s |  especially in the context of scaling DAST
+69.56s - 72.38s |  to scanning their web services.
+73.60s - 75.96s |  So let's start off by talking why that is,
+75.96s - 80.96s |  why it's so hard to do this, and what DAST is all about.
+83.14s - 86.82s |  So DAST, or Dynamic Application Security Testing,
+86.82s - 89.74s |  is a software testing process
+89.74s - 93.78s |  that seeks to elicit security vulnerabilities
+93.78s - 98.78s |  in a product or service by testing that software at runtime.
+100.38s - 103.54s |  Now, in the context of testing web services,
+103.54s - 108.54s |  this typically takes the form of sending malformed requests
+108.66s - 113.46s |  to a web server and trying to discover vulnerabilities
+113.46s - 117.28s |  in the server based on the responses sent
+117.28s - 120.06s |  to those malformed requests.
+120.06s - 122.26s |  And this could be done manually,
+122.26s - 124.70s |  but it's more often done through automation
+124.70s - 127.22s |  with a DAST tool.
+127.22s - 130.46s |  And the truth is there are dozens,
+130.46s - 135.10s |  if not hundreds of DAST tools that already exist, right?
+135.86s - 140.86s |  You got Burp Suite, and you have Zap, and Nuclei,
+141.42s - 144.58s |  and Microsoft even has a DAST tool
+144.58s - 146.66s |  that we created named Wrestler.
+146.66s - 148.82s |  And if you're really old, like I am,
+148.82s - 151.90s |  you've probably used Nikto back in the day.
+151.90s - 155.86s |  So there is no end to the number of DAST tools
+155.86s - 157.94s |  that enterprises can use.
+157.94s - 159.90s |  So when it comes to DAST,
+159.90s - 161.68s |  enterprises actually don't have a problem
+161.68s - 165.90s |  with finding one or more DAST tools to meet their needs.
+167.08s - 169.24s |  But the place where they struggle
+169.24s - 172.36s |  is taking the DAST tools they want to run
+172.36s - 175.58s |  and actually running them at scale.
+176.48s - 180.44s |  And the reason is that to run DAST tools at scale
+180.44s - 184.12s |  and to get them to actually exercise the functionality
+184.12s - 187.44s |  of the enterprise's servers,
+187.44s - 189.72s |  DAST tools need to do two things.
+189.72s - 193.80s |  First, they need to know what web endpoints are exposed
+193.80s - 195.72s |  on each server to be scanned.
+195.72s - 198.74s |  And secondly, they need to make sure
+198.74s - 203.30s |  that they can actually get the server's logic
+203.30s - 206.40s |  to process their requests.
+206.40s - 208.44s |  It sounds easy, but we're gonna talk about
+208.44s - 213.36s |  why those two things are really hard to actually scale.
+214.76s - 217.16s |  All right, now, back in the old days,
+217.16s - 220.68s |  if you wanted to run a DAST tool against a web server,
+220.68s - 223.40s |  all you would have to do is provide as input
+223.40s - 226.08s |  to the DAST tool,
+226.08s - 230.44s |  the starting point of the web server that you want to scan,
+230.44s - 232.98s |  you know, the root address
+232.98s - 235.46s |  for like the homepage of the server.
+235.46s - 238.72s |  And the DAST tool would start off by spidering
+238.72s - 241.52s |  or crawling that website
+241.52s - 245.72s |  in order to find all of the content on the site, right?
+245.72s - 247.64s |  It would start at the homepage
+247.64s - 250.28s |  and it would look at the HTML for the homepage
+250.28s - 255.20s |  and find all of the subpages linked to from the homepage.
+255.20s - 257.60s |  It would visit each of those subpages
+257.60s - 259.80s |  and look at their HTML content,
+259.80s - 262.32s |  find all the pages that those link to,
+262.32s - 264.56s |  on and on and on.
+264.56s - 268.80s |  And eventually it would be able to discover
+268.80s - 271.74s |  all of the static content on the site
+271.74s - 275.36s |  and all of the dynamic functionality on the site.
+276.00s - 277.08s |  And when I say dynamic functionality,
+277.08s - 282.08s |  I mean web endpoints that accepts input from the user.
+282.16s - 284.16s |  And once it has a list
+284.16s - 286.80s |  of all of these dynamic endpoints on the site,
+286.80s - 290.64s |  the DAST tool could then go about sending malformed input
+290.64s - 292.04s |  to each of those endpoints to again,
+292.04s - 294.48s |  try to discover security vulnerabilities
+294.48s - 298.14s |  based on the responses from the web server.
+299.36s - 303.24s |  And this approach, it still works reasonably well
+303.24s - 307.64s |  for traditional websites and traditional web applications,
+307.64s - 312.08s |  but it doesn't work for web services
+312.08s - 317.08s |  that only expose their functionality through API endpoints.
+318.48s - 319.88s |  What do I mean by that?
+319.88s - 323.56s |  Let's say that I have an app on my phone
+324.70s - 329.70s |  and this app communicates with the server api.azure.com.
+331.44s - 333.12s |  And by the way, it's not a real server.
+333.96s - 335.24s |  I'm just making it up for example purposes,
+335.24s - 336.32s |  so bear with me.
+337.20s - 339.52s |  And when I start up this app on my phone,
+339.52s - 343.04s |  it logs into that server by sending a request
+343.04s - 347.56s |  to api.azure.com slash login to that endpoint.
+347.56s - 351.60s |  And that endpoint is hard-coded into my app.
+351.60s - 353.72s |  And once the app is logged in,
+353.72s - 358.56s |  it might send a request to api.azure.com slash services
+358.56s - 362.20s |  or api.azure.com slash products.
+362.20s - 366.96s |  And each of these endpoint URLs is hard-coded into the app.
+366.96s - 368.42s |  But here's the thing.
+368.42s - 373.42s |  If I use my web browser to navigate to api.azure.com,
+374.76s - 378.46s |  the server would just give me a 404 error
+378.46s - 382.92s |  because this server, this web service server,
+382.92s - 385.20s |  it doesn't have a homepage.
+385.20s - 388.76s |  It doesn't have an index anywhere
+388.76s - 392.00s |  of all of its API endpoints.
+392.76s - 394.96s |  So the DAST tool that I wanna use
+394.96s - 397.38s |  doesn't really have a starting point to use
+397.38s - 400.24s |  to be able to do its crawling, to do its spidering,
+400.24s - 405.24s |  to discover all of the API endpoints on this web service.
+406.88s - 408.72s |  So what are we to do about this?
+408.72s - 413.70s |  Well, thankfully, there exists something called
+413.70s - 415.58s |  an open API specification.
+415.58s - 419.76s |  So modern DAST tools or most modern DAST tools
+419.76s - 424.24s |  allow the user to specify as input to the DAST tool
+424.24s - 428.76s |  a list of endpoints for the service,
+428.76s - 430.72s |  for the DAST tool to scan.
+430.72s - 434.04s |  So instead of providing just the homepage address,
+434.04s - 437.56s |  you provide a list of the APIs.
+437.56s - 440.36s |  And this list comes in the form
+440.36s - 443.94s |  of a special kind of document
+443.94s - 448.64s |  called an open API specification or open API spec.
+448.64s - 450.60s |  And you might've heard of it referred to
+450.60s - 455.16s |  as a Swagger specification or a Swagger spec,
+455.16s - 458.12s |  but it's a text file,
+458.12s - 461.90s |  usually comes in the form of JSON or YAML.
+461.90s - 466.44s |  And this document is a list of all of the API endpoints
+466.44s - 470.40s |  exposed by a given service.
+470.40s - 472.24s |  And for each of these endpoints,
+472.24s - 477.20s |  it will have a list of the parameters accepted by the API.
+477.20s - 479.48s |  And for each of the parameters,
+479.48s - 483.64s |  it'll have metadata that describes the expected format
+483.64s - 485.88s |  of each parameter.
+485.88s - 489.74s |  So a DAST tool can take this open API spec
+489.74s - 492.40s |  and then know what endpoints to test
+492.40s - 495.84s |  and know what types of malformed input to send
+495.84s - 498.24s |  based on the parameters and the parameter types.
+499.72s - 502.62s |  But where does this open API spec come from?
+503.90s - 506.34s |  Well, it turns out that there are software packages
+506.34s - 508.74s |  that exist that can generate
+508.74s - 511.62s |  these open API specs automatically.
+512.70s - 516.42s |  But these software packages require a few things.
+516.42s - 518.58s |  First, they require access
+518.58s - 522.56s |  to the target web services source code.
+524.14s - 525.86s |  Secondly, they require access
+525.86s - 530.18s |  to the target web services build environment.
+530.18s - 535.18s |  And thirdly, they require the services developer or owner
+535.86s - 538.46s |  to integrate the software package
+538.46s - 541.42s |  into the services build pipeline.
+543.62s - 548.62s |  So let's assume that I work for some central security teams
+550.14s - 552.26s |  for a large enterprise.
+553.18s - 557.74s |  And my company has hundreds, thousands,
+557.74s - 562.58s |  tens of thousands, maybe 100,000 services that we run,
+562.58s - 565.58s |  both internally facing and externally facing.
+565.58s - 570.06s |  And I task the owner of each service
+570.06s - 572.46s |  with going through this manual process
+572.46s - 576.74s |  of integrating an open API spec generating package
+576.74s - 580.72s |  into each of their services build pipelines.
+581.94s - 585.64s |  What do you think they're gonna say back to me?
+585.64s - 587.24s |  I see someone laughing.
+587.24s - 589.92s |  I see a thumbs down from over there.
+589.92s - 592.10s |  They wouldn't be too happy with me.
+592.94s - 596.02s |  They'd probably have a lot of choice words
+596.02s - 599.54s |  to share with me, but I tell you what they should be saying.
+599.54s - 600.78s |  They should be saying,
+600.78s - 605.78s |  Jason, why isn't the security team automating this for us?
+607.70s - 611.14s |  And they'd be right to push back like that
+611.14s - 615.74s |  because generating open API specs in this way
+615.74s - 617.98s |  just doesn't scale.
+617.98s - 620.62s |  It's too manual a process
+620.62s - 623.50s |  and it's very expensive for an enterprise to do it,
+623.50s - 626.74s |  especially if there are tens of thousands
+626.74s - 628.38s |  or hundreds of thousands of services
+628.38s - 629.54s |  that we're talking about.
+629.54s - 633.46s |  Now, thankfully, there are ways to scale
+633.46s - 636.42s |  open API spec generation
+636.42s - 639.76s |  without going through these manual processes.
+640.90s - 642.86s |  So let's take a look at some of these approaches.
+642.86s - 646.66s |  One way is to monitor the requests
+646.66s - 648.82s |  sent to a target web service
+648.90s - 652.42s |  and to use automation to try to extrapolate
+652.42s - 655.70s |  an open API spec based on the traffic seen
+655.70s - 659.14s |  being sent to the target web service.
+659.14s - 662.10s |  And this monitoring could be performed client-side
+662.10s - 664.98s |  or server-side or somewhere in the middle,
+664.98s - 667.90s |  like on a gateway or a load balancer,
+667.90s - 670.66s |  as long as those middle points
+670.66s - 673.26s |  can see the decrypted traffic.
+673.26s - 677.88s |  And this is a scalable, automatable solution.
+677.88s - 682.88s |  But its ability to identify the endpoints
+682.88s - 684.88s |  exposed by a web service
+684.88s - 687.64s |  is limited to the traffic that is seen
+687.64s - 689.44s |  by the monitoring solution
+690.40s - 693.68s |  within the time window that we're running the monitoring.
+695.04s - 697.84s |  So let's go back to this api.azure.com example.
+697.84s - 698.80s |  Let's say that I have one of these
+698.80s - 700.90s |  monitoring solutions in place,
+700.90s - 705.90s |  monitoring requests sent to api.azure.com for a week.
+706.90s - 710.86s |  Well, what happens if, during that week,
+710.86s - 715.86s |  no clients end up calling the api.azure.com
+716.22s - 719.50s |  slash logout endpoint?
+720.58s - 724.06s |  Well, in that case, that API endpoint
+724.06s - 726.10s |  is never going to make its way
+726.10s - 730.14s |  into the automatically generated open API spec.
+730.14s - 732.82s |  And furthermore, even for API endpoints
+732.82s - 735.10s |  that are called during this time window,
+735.10s - 738.38s |  if there are optional parameters to those APIs
+738.38s - 741.06s |  that are not passed within that time window,
+741.06s - 744.66s |  they're again going to be missing from the open API spec.
+744.66s - 748.62s |  So this solution is not ideal.
+749.70s - 753.54s |  Now, another approach is to use automation
+753.54s - 756.74s |  to statically analyze the source code for a web service
+756.74s - 760.30s |  and to try to automatically generate an open API spec
+761.22s - 763.82s |  based on the API endpoint routes
+763.82s - 766.86s |  that the automation can find in source code.
+766.86s - 770.14s |  And Microsoft has internally prototyped
+770.14s - 772.42s |  this type of solution,
+772.42s - 776.06s |  but what we found is that it's been pretty hard
+776.06s - 780.86s |  to get it to reliably discover all API endpoints
+780.86s - 785.86s |  and all parameters simply by parsing abstract syntax trees.
+787.70s - 792.14s |  And this type of solution also can't really handle scenarios
+792.14s - 795.46s |  where there are API endpoint routes
+795.46s - 797.90s |  that are registered dynamically at runtime
+797.90s - 799.78s |  that aren't easily discoverable
+799.78s - 802.54s |  by a static analysis solution.
+804.22s - 807.98s |  What else do we have?
+807.98s - 810.50s |  Well, maybe LLMs can save the day.
+812.34s - 815.46s |  We've also at Microsoft prototyped a variation
+815.46s - 817.78s |  of the static analysis solution
+817.78s - 821.50s |  that tries to use an LLM to look at the source code
+821.50s - 824.94s |  and to try to derive an open API spec
+824.94s - 827.06s |  based on the source code.
+827.06s - 831.78s |  And I tell you, we've actually had some promising results.
+832.98s - 837.38s |  Unfortunately, it's not deterministic
+837.38s - 839.74s |  and also still requires access
+839.74s - 842.10s |  to the source code for each service.
+842.10s - 845.54s |  So if we truly want to scale DAST
+845.54s - 849.90s |  to tens of thousands or hundreds of thousands of services,
+849.90s - 853.90s |  we need to automatically and deterministically
+853.90s - 857.78s |  generate open API specs for each service
+857.78s - 862.78s |  and ensure that our approach discovers all API endpoints
+862.94s - 866.08s |  and all defined API parameters.
+867.26s - 871.34s |  And even if we had a type of solution in place,
+871.34s - 875.72s |  which we don't yet, or we didn't up until recently,
+875.72s - 879.54s |  we would still need to ensure that our DAST tools
+880.18s - 884.30s |  can actually exercise the functionality of those services.
+884.30s - 886.18s |  So to explain what I mean by that,
+886.18s - 890.02s |  let's put open API spec generation on hold for a moment.
+890.02s - 891.50s |  We'll come back to it.
+891.50s - 894.86s |  And let's talk about authentication and authorization
+894.86s - 898.30s |  and how those add even more wrinkles
+898.30s - 902.90s |  to this set of problems.
+902.90s - 907.90s |  Most enterprise web services expect clients
+908.58s - 910.98s |  to provide to them credentials
+910.98s - 914.30s |  when sending requests to the web services.
+914.30s - 915.82s |  All right, so let's say that I did have
+915.82s - 919.18s |  an open API spec for a web service
+919.18s - 923.94s |  and I gave it to a DAST tool that I was orchestrating.
+923.94s - 927.34s |  And the DAST tool took this open API spec,
+927.34s - 929.02s |  took the list of endpoints and the parameters
+929.02s - 932.44s |  and started sending malformed requests to those endpoints
+932.44s - 936.22s |  but without any authentication credentials.
+936.22s - 939.27s |  What do you think would happen?
+939.27s - 944.27s |  Well, the web service would likely reject most,
+945.61s - 949.07s |  if not all, of the requests being sent
+949.07s - 952.87s |  because there are no credentials that's not authenticated.
+952.87s - 955.83s |  And here's the thing, those rejections that are sent
+955.83s - 959.83s |  by the web service would likely happen
+959.83s - 964.19s |  before the endpoint logic even processes
+964.19s - 966.67s |  the malformed requests.
+966.67s - 969.59s |  And that significantly limits our ability
+969.59s - 973.11s |  to use a DAST tool to actually exercise
+973.11s - 976.45s |  the functionality of the web service.
+977.67s - 979.91s |  Because to fully exercise the functionality
+979.91s - 982.79s |  of a web service, the DAST tool needs
+982.79s - 986.79s |  to provide credentials to the service.
+986.79s - 990.61s |  It needs to have the web service actually validate
+990.61s - 993.19s |  the credentials that were sent in the request
+993.19s - 996.47s |  and the web service needs to recognize
+997.15s - 1000.11s |  the authenticated account as being authorized
+1000.11s - 1002.83s |  to even send those requests to the endpoints
+1002.83s - 1005.73s |  that the DAST tool is trying to communicate with.
+1006.95s - 1009.49s |  So what options do we have here?
+1009.49s - 1014.49s |  Well, we could use a unique set of credentials
+1015.11s - 1018.67s |  per service that we want to test.
+1019.55s - 1022.75s |  And we could centrally orchestrate that testing
+1022.75s - 1025.83s |  by associating one set of credentials
+1025.83s - 1028.27s |  with each specific service.
+1028.27s - 1031.07s |  But this adds a lot of complexity for us.
+1031.07s - 1034.59s |  Another option we have is we could use one set
+1034.59s - 1037.35s |  of credentials and have it apply globally
+1037.35s - 1039.91s |  to all of our services, to have them all accept
+1039.91s - 1043.03s |  this one set of testing credentials.
+1043.03s - 1046.43s |  But that opens us up to a single kind
+1046.43s - 1051.43s |  of centralized point of compromise.
+1051.55s - 1053.71s |  And for either of these approaches,
+1054.67s - 1057.99s |  the owners of the services would still need
+1057.99s - 1060.19s |  to manually configure their services
+1060.19s - 1065.19s |  to allow the testing accounts to send authorized requests
+1065.75s - 1067.87s |  to the service.
+1067.87s - 1070.15s |  So just like before, with the example of,
+1070.15s - 1072.11s |  hey, asking all these service owners
+1072.11s - 1075.07s |  around the entire company to configure
+1075.07s - 1076.79s |  their service build pipeline.
+1076.79s - 1078.71s |  If I ask them, hey, please update
+1078.71s - 1080.71s |  your service configuration to allow
+1080.71s - 1082.19s |  our centralized testing accounts
+1082.19s - 1084.75s |  to send authorized requests to your service.
+1084.75s - 1088.55s |  Again, they would very likely push back against that.
+1088.55s - 1090.87s |  It's an immense amount of toil,
+1090.87s - 1092.15s |  a lot of engineering time,
+1092.15s - 1095.27s |  a lot of engineering costs, et cetera.
+1095.27s - 1099.83s |  So it's another way of saying using test accounts
+1099.83s - 1106.24s |  for scaling DAST does not scale either.
+1106.24s - 1110.26s |  So I've just spent the past 19 minutes
+1110.26s - 1112.00s |  talking with you about problems.
+1112.00s - 1114.68s |  All the challenges in this space,
+1114.68s - 1118.12s |  why it's so hard to do DAST at scale.
+1119.08s - 1122.12s |  So what's Microsoft's solution?
+1122.12s - 1124.88s |  How do we scale open API spec generation?
+1124.88s - 1129.52s |  How do we scale authentication and authorization for DAST?
+1130.52s - 1135.12s |  Well, Microsoft is in a pretty good place
+1135.12s - 1139.92s |  in that we own the Azure platforms
+1139.92s - 1142.64s |  on which all of our web services run,
+1143.54s - 1147.12s |  which means that we have a path or a bridge
+1148.12s - 1152.00s |  to each service's host system.
+1153.18s - 1157.52s |  And because of that, we are developing a DAST agent
+1157.52s - 1161.56s |  that can be deployed to all of our first party web services
+1161.56s - 1164.84s |  that are running in non-production environments.
+1164.84s - 1167.92s |  And using a post-deployment agent means several things.
+1167.92s - 1171.22s |  First, we no longer need access
+1171.22s - 1173.60s |  to each service's source code.
+1173.60s - 1175.84s |  Secondly, we no longer need access
+1175.84s - 1178.08s |  to each service's built environment.
+1178.08s - 1181.92s |  And thirdly, and arguably most importantly,
+1181.92s - 1185.76s |  we no longer need service owners
+1185.76s - 1190.04s |  to manually update their service's build pipelines.
+1190.04s - 1194.40s |  Now, this agent has full access to the running state
+1194.40s - 1199.16s |  of each service's process in memory.
+1199.16s - 1201.96s |  And this gives it the ability to inspect memory at runtime
+1201.96s - 1206.96s |  and to load new code into the running process.
+1207.18s - 1209.80s |  So to see how we take advantage of this approach,
+1209.80s - 1214.80s |  let's take a look at how web services process requests.
+1215.60s - 1218.00s |  Now, I want you to think of this theater
+1218.00s - 1222.32s |  as a web services request handling pipeline.
+1223.28s - 1227.08s |  All right, so a new web request comes into the theater
+1227.08s - 1230.08s |  from the very back at the top of the stairs.
+1230.08s - 1235.08s |  And it goes down step by step until it reaches the stage,
+1236.92s - 1240.04s |  the final endpoint handler.
+1240.04s - 1243.28s |  Now, each step along this pipeline
+1243.28s - 1247.50s |  is a functional component called a middleware handler
+1247.50s - 1249.24s |  or a middleware component.
+1249.24s - 1251.18s |  And each of these components or handlers
+1251.18s - 1254.94s |  has the opportunity to handle the request in the pipeline
+1254.94s - 1257.74s |  before handing the request down
+1257.74s - 1260.50s |  to the next step in the pipeline.
+1260.50s - 1263.30s |  So you could imagine maybe the first step
+1263.30s - 1266.30s |  checks to see, oh, for this incoming web request,
+1266.30s - 1269.64s |  does it need to be redirected to another server?
+1270.78s - 1272.92s |  Maybe the next step in the pipeline
+1272.92s - 1276.26s |  checks to see, oh, is the requested endpoint,
+1276.26s - 1280.78s |  is it for a static content or is it for a dynamic endpoint?
+1281.38s - 1284.02s |  And the step after that perhaps check to see,
+1284.02s - 1286.54s |  does the requested endpoint,
+1286.54s - 1289.52s |  does it require authentication credentials?
+1290.46s - 1294.74s |  Well, our agents is able to discover this pipeline
+1294.74s - 1299.66s |  in memory at runtime and virtually walk down
+1299.66s - 1302.06s |  each step in the pipeline
+1302.06s - 1306.02s |  to find the endpoint routing middleware.
+1306.02s - 1310.18s |  And this middleware component contains a mapping
+1310.58s - 1314.42s |  to all registered API endpoints
+1314.42s - 1316.92s |  that the web service has.
+1318.40s - 1320.46s |  And because of that,
+1320.46s - 1322.90s |  once it finds this middleware component,
+1322.90s - 1324.98s |  it's able to process the metadata
+1324.98s - 1329.22s |  associated with each of these registered API endpoints.
+1329.22s - 1330.74s |  And with that metadata,
+1330.74s - 1335.74s |  it can automatically generate an open API spec at runtime
+1335.78s - 1341.44s |  with no human involvement required.
+1341.44s - 1345.40s |  The agent is also able to find the handlers
+1345.40s - 1347.92s |  or the middleware components in the pipeline
+1347.92s - 1350.56s |  responsible for performing authentication
+1350.56s - 1353.88s |  and authorization checks.
+1353.88s - 1357.76s |  And what it does is for each of these components for auth,
+1357.76s - 1362.48s |  it inserts a hook before each of those steps.
+1363.52s - 1367.56s |  And this hook acts kind of like a theater usher.
+1367.56s - 1370.32s |  And what this usher does is it looks to see
+1370.32s - 1373.72s |  if the incoming request that's being handled
+1373.72s - 1378.72s |  is coming from one of our centrally orchestrated DAST tools.
+1379.08s - 1383.60s |  And if so, our hook ushers the request
+1383.60s - 1388.56s |  down past the normal authentication check
+1388.56s - 1392.32s |  or down past the normal authorization step,
+1392.32s - 1397.16s |  allowing our request to get around
+1397.16s - 1400.40s |  the normal authentication and authorization steps.
+1401.52s - 1406.52s |  And this means that not only are we not gonna be blocked
+1407.04s - 1407.88s |  by those checks,
+1407.88s - 1412.36s |  but we don't even need to use testing account credentials.
+1412.36s - 1416.04s |  And that means that from a security standpoint,
+1416.04s - 1417.60s |  there aren't even any credentials
+1417.60s - 1420.32s |  to be stolen or compromised.
+1420.32s - 1422.60s |  And of course, it also means that service owners
+1422.60s - 1426.32s |  no longer would need to configure their services
+1426.36s - 1430.60s |  to support some testing account credentials
+1430.60s - 1432.76s |  that we ask them to use.
+1432.76s - 1434.40s |  And of course, if the usher determines
+1434.40s - 1436.80s |  that the incoming request is not from
+1436.80s - 1439.24s |  one of our centrally orchestrated DAST tools,
+1439.24s - 1442.76s |  then it ensures that the request is handed down
+1442.76s - 1444.80s |  to the normal authentication step
+1444.80s - 1448.48s |  or normal authorization step to be checked like normal.
+1449.84s - 1452.48s |  Now, because we're Microsoft,
+1452.48s - 1455.48s |  I'm sure it'll come as no surprise to most of you
+1455.48s - 1460.48s |  that most of our services here are written in ASP.NET.
+1460.48s - 1461.52s |  And because of that,
+1461.52s - 1466.52s |  our agent's current implementation is specific to ASP.NET.
+1468.12s - 1470.00s |  But the same approach that we just talked about
+1470.00s - 1474.52s |  of route discovery via runtime memory inspection
+1474.52s - 1477.84s |  and runtime authentication authorization hooking
+1477.84s - 1480.52s |  could certainly be implemented for web services
+1480.52s - 1485.52s |  written in other frameworks like PHP, Node.js, et cetera.
+1487.40s - 1488.80s |  I mentioned a moment ago
+1489.68s - 1493.64s |  about how our authentication and authorization hooks
+1493.64s - 1496.16s |  check to see if the incoming request
+1496.16s - 1498.60s |  is from one of our orchestrated DAST tools.
+1498.60s - 1501.08s |  And the way that we facilitate this
+1501.08s - 1505.64s |  is that the agent runs a reverse proxy at runtime
+1505.64s - 1508.88s |  on the host system that facilitates the communication
+1508.88s - 1513.60s |  between the orchestrated DAST tool and the web service.
+1513.60s - 1515.56s |  And the hooks can determine
+1515.56s - 1517.92s |  if the client's endpoint of the socket
+1517.92s - 1521.26s |  is actually from this reverse proxy.
+1522.48s - 1524.88s |  And the DAST tools that we run,
+1524.88s - 1529.36s |  we actually run them inside of confidential containers.
+1529.36s - 1531.88s |  And we use these remote confidential containers
+1531.88s - 1533.36s |  for several reasons.
+1533.36s - 1537.46s |  First of all, the trusted execution environments
+1537.46s - 1541.74s |  ensure that if somehow an attacker is able to compromise
+1541.74s - 1546.30s |  the service hosting our DAST containers,
+1546.30s - 1548.54s |  that they still can't tamper with the code
+1548.54s - 1551.94s |  or the data in our containers.
+1551.94s - 1555.36s |  Confidential containers also enable our agents
+1555.36s - 1558.46s |  to verify the attestation report of the container
+1558.46s - 1560.54s |  that it's communicating with.
+1560.54s - 1562.72s |  And this ensures that the container
+1562.72s - 1564.82s |  that the agent is talking with
+1564.82s - 1569.82s |  was built from one of our DAST container images
+1570.00s - 1571.82s |  that we expect it to be built from.
+1571.82s - 1575.46s |  And also ensures that the agent can confirm
+1575.46s - 1577.46s |  that the container it's talking with
+1577.46s - 1579.54s |  has a security policy applied to it
+1579.54s - 1584.54s |  that matches our official DAST container security policy.
+1584.98s - 1587.54s |  Now we use one container per web service
+1587.54s - 1591.18s |  and each container operates in its own pod.
+1591.18s - 1595.14s |  And this ensures that our DAST containers
+1595.14s - 1598.22s |  and DAST tools can't communicate with each other.
+1598.22s - 1601.42s |  Also, we ensure that each pod is firewalled
+1601.42s - 1605.46s |  to prevent any outbound traffic from the pod,
+1605.46s - 1608.42s |  ensuring that exfiltration isn't gonna happen.
+1608.42s - 1610.70s |  And we also use firewalling to ensure
+1610.70s - 1612.70s |  that the only incoming connections allowed
+1612.70s - 1617.70s |  into each container are connections from the agents
+1617.70s - 1620.62s |  that actually launched the container.
+1620.62s - 1623.38s |  Now, all these protections work together
+1623.38s - 1627.84s |  to ensure that attackers can't impersonate
+1627.84s - 1631.04s |  our centrally orchestrated DAST tools,
+1631.04s - 1634.26s |  to ensure that attackers can't circumvent
+1634.26s - 1639.00s |  our target services authentication and authorization checks,
+1639.00s - 1642.20s |  and to ensure that attackers can't exfiltrate
+1642.20s - 1646.30s |  the scanning results of the DAST tools that we're running.
+1646.30s - 1649.18s |  And we also support another scenario
+1649.18s - 1654.18s |  where instead of using remote confidential containers,
+1654.54s - 1659.42s |  we actually allow the agents to pull
+1659.42s - 1663.06s |  the DAST container image and actually locally start
+1663.06s - 1665.18s |  that container on the same host
+1665.18s - 1667.58s |  that's running the web service.
+1667.58s - 1671.30s |  And this allows for much, much faster DAST scanning
+1671.30s - 1675.24s |  because the DAST tool is running on the same physical host
+1675.24s - 1677.10s |  as the target web service,
+1677.10s - 1680.34s |  which means that the DAST requests no longer need
+1680.34s - 1684.42s |  to go through physical network infrastructure.
+1684.42s - 1686.44s |  It's all on the same physical box.
+1686.44s - 1690.16s |  Very, very, very quick scanning.
+1690.16s - 1693.64s |  Now, in addition to continuing to develop this DAST agent
+1693.64s - 1696.60s |  and in continuing to work towards rolling out
+1696.60s - 1700.14s |  this solution to all services at Microsoft,
+1700.14s - 1704.54s |  we also see opportunities of using this agentic approach
+1704.54s - 1707.82s |  for more advanced DAST concepts as well.
+1707.82s - 1710.74s |  So for example, we would love to use this
+1710.74s - 1712.34s |  for code coverage monitoring.
+1712.34s - 1715.06s |  So how nice would it be to know not only what percentage
+1715.06s - 1718.14s |  of DAST endpoints are being scanned with this solution,
+1718.14s - 1721.62s |  but also to know what percentage of code blocks
+1721.62s - 1725.74s |  in the target service are being executed or exercised
+1725.74s - 1729.70s |  as a result of our DAST scanning.
+1729.70s - 1732.78s |  We could associate our DAST security findings
+1732.78s - 1736.78s |  with the code blocks responsible for those findings.
+1736.78s - 1739.86s |  We can converge and deduplicate findings
+1739.86s - 1741.62s |  across multiple DAST tools.
+1741.62s - 1744.02s |  And of course, because it's 2024,
+1744.02s - 1745.94s |  got to talk about AI again.
+1745.94s - 1748.80s |  We could use AI to identify false positives
+1748.80s - 1753.46s |  and to determine findings, actual risk confidence.
+1754.50s - 1759.06s |  So if any of this work sounds exciting to you,
+1759.06s - 1761.52s |  or if you have any questions about any of it,
+1761.52s - 1765.02s |  please come find me in the villages over there for Q&A,
+1765.02s - 1767.58s |  and I would love to talk with you about it more.
+1767.58s - 1768.42s |  Thank you.

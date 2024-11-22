@@ -1,0 +1,165 @@
+{
+  "webpage_url": "https://www.youtube.com/watch?v=fc6c2hP86Wk",
+  "title": "DEF CON 32 - Unlocking the Gates  Hacking a secure Industrial Remote Access Solution - Moritz Abrell",
+  "description": "Industrial VPN gateways play a crucial role in operational technology by enabling secure remote access to systems within industrial networks. However, their importance goes hand in hand with increased security risks, as their architecture makes them lucrative targets for threat actors. Over the years, we have seen such devices being used in various industrial environments, which underlines their widespread use in critical infrastructures.\n\nThis talk is about a security analysis of a widely used industrial remote access solution. We will dive deep into and expose various vulnerabilities. This includes rooting the device, bypassing hardware-based security mechanisms such as the use of a hardware security module, and reverse engineering software and firmware. Ultimately, we will show how various identified vulnerabilities allowed us to hijack remote access sessions, creating significant security risks.",
+  "channel_url": "https://www.youtube.com/channel/UC6Om9kAkl32dWlDSNlDS9Iw",
+  "duration": 1105,
+  "channel": "DEFCONConference",
+  "uploader": "DEFCONConference",
+  "upload_date": "20241016"
+}
+
+4.85s - 9.85s | This text was transcribed using whisper model: large-v2
+
+ So, hi DEF CON, thanks for having me here today. Also, many thanks for those who made it to a
+12.29s - 18.59s |  Sunday 10 AM DEF CON talk, I really appreciate it. My name is Moritz Abra and I am super
+18.59s - 23.99s |  excited to present my research, Unlocking the Gates, Hacking a Secure Industrial Remote
+23.99s - 29.01s |  Access Gateway. In this session we will delve deep into an industrial remote access gateway,
+29.63s - 34.63s |  uncover vulnerabilities and exploit them to affect critical infrastructure worldwide. But
+39.31s - 44.71s |  first of all, a few words about myself. My name is Moritz Abra, I'm working as a senior IT
+44.71s - 50.35s |  security consultant and penetration tester at the German company SUS. So, I love breaking
+50.35s - 57.13s |  stuff and I also regularly conduct security research and the results has been presented at
+57.15s - 64.02s |  various security conferences such as Black Hat or DEF CON. So, how does an industrial
+64.02s - 70.36s |  remote access solution work? Well, they all operate similarly. For instance, a device
+70.36s - 76.80s |  inside the industrial network establishes a VPN connection to a VPN server. And this server
+76.80s - 83.04s |  is usually operated by the vendor itself. Now, if a service technician wants to connect to
+83.06s - 88.06s |  this uh industrial network, he uses vendor provided software to initiate a VPN connection.
+90.62s - 96.70s |  Finally, the VPN server routes between those connections and thus the technician is able to
+96.70s - 103.21s |  reach the targeted infrastructure through the industrial router. So, to analyze such a
+103.21s - 110.19s |  solution, we need to acquire an industrial remote access gateway. And I chose the EVON
+110.23s - 115.23s |  COSI Plus by HMS for several reasons. Firstly, it is widely used and the vendor claims that
+119.01s - 124.01s |  over a half of a million of devices are connected, meaning finding vulnerabilities could have a
+126.51s - 131.51s |  significant impact. Furthermore, a similar device has already been considered in the past
+131.71s - 136.71s |  where some problems were identified resulting in a complete refactoring. So, the vendor
+140.79s - 147.19s |  claims that the COSI Plus is developed with a focus on security and this involves, for
+147.19s - 153.47s |  example, a hardware security module with a route of trust, individual certificates and secure
+153.47s - 158.47s |  boot. And the solution was also tested and analyzed by an independent company and this
+158.91s - 163.91s |  company issued a certificate available on the vendor's website stating that the hardware
+167.41s - 174.49s |  backend and associated software were tested. So, let's take a closer look at this secure
+174.49s - 179.49s |  gateway. Here we can see the hardware and here the disassembled view. And aside from the
+180.49s - 185.49s |  mentioned hardware security module, nothing really special is going on on the PCB. But due
+191.17s - 197.27s |  to the advanced hardware security claims, I initially skipped the hardware analysis to avoid
+197.27s - 203.25s |  damaging something. And since firmware update files are encrypted, we need a different
+203.25s - 208.25s |  approach. So, the goal was to find vulnerabilities in the software or firmware using a pure
+210.79s - 217.04s |  black box approach. Surprisingly, this was quite easy. The device allows uploading custom
+219.98s - 224.98s |  open VPN configuration files and open VPN on the other hand allows custom com- executing
+227.52s - 234.30s |  custom commands using the up parameter. So, I attempted to upload a custom VPN configuration
+234.30s - 239.30s |  with a command. But, unfortunately, the parameter was blacklisted. However, bypassing the
+243.14s - 248.14s |  filter was also relatively easy. I added two dashes to the up parameter and this bypassed the
+251.48s - 258.12s |  blacklist without breaking the parameter itself. And finally, the command executed with root
+258.12s - 264.40s |  privileges. I then uploaded a new VPN configuration file including a reverse shell. And
+266.54s - 271.54s |  finally, received this root shell. Nevertheless, this was only possible with administrative
+273.92s - 278.92s |  access to the device. But, there is a way around this. I found a persistent cross-site
+281.38s - 288.00s |  scripting vulnerability originating from FTP login attempts. This means, when an
+288.00s - 293.00s |  administrative user visits the login page, the injected JavaScript executes. And the
+295.64s - 301.68s |  attacker, to make things more convenient, there is an insecure cookie containing the base 64
+301.68s - 308.58s |  encoded administrative password in plain text. At this point, I would also like to credit
+308.58s - 313.58s |  Khan Ganeshin who reported probably this issue for a similar device to the vendor, uh, already
+315.72s - 320.72s |  in 2015. Anyway, combining these vulnerabilities creates the following exploit chain. An
+320.94s - 325.94s |  attacker injects JavaScript code through an FTP login attempt. An administrator visits the
+330.12s - 335.12s |  login page. The administrator's browser loads JavaScript from the attacker server. The
+337.92s - 343.06s |  malicious JavaScript accesses and sends the plain text administrative password to the
+343.06s - 348.06s |  attacker. The attacker then uploads a malicious open VPN configuration and the command
+348.38s - 353.38s |  executes with root privileges. Alright, so, let's see this in action. On the left side, we
+361.07s - 367.60s |  can see the victim browser and on the right side, the attacker executing the exploit. Now,
+373.40s - 378.40s |  the victim visits the login page and the malicious JavaScript is executed. The attacker
+379.02s - 386.61s |  then uploads the open VPN configuration and after a moment, finally receives a reverse shell.
+396.16s - 401.16s |  Now, with root access to the device, I was able to analyze the firmware internals. And one
+404.86s - 409.88s |  of my first interests was how encrypted passwords in configuration files are encrypted. For
+409.92s - 414.92s |  example, are attackers able to decrypt sensitive data such as passwords or VPN certificates
+418.90s - 425.70s |  found in configuration files? So, I grabbed the used prefix and found the responsible code in
+425.70s - 430.70s |  an ARM binary. And due to the use of well-known open SSL functions, the encryption could be
+433.32s - 438.38s |  quickly reverse engineered and the hard-coded key and IV could be found in the read-only
+438.38s - 443.38s |  data section. So, by re-implementing the encryption algorithm with the found key and IV, we
+445.72s - 450.72s |  are now able to decrypt encrypted passwords. Great, but now I was looking for the firmware
+454.00s - 459.00s |  update encryption. Remember, firmware update files are encrypted. So, during this, I found
+461.40s - 467.44s |  references to the use of the hardware security module. So, I decided to have a closer look to
+467.44s - 472.44s |  this HSM, which is from the EdgeLog family by NXP. And in regard to the application node, I
+476.48s - 481.48s |  analyzed the I2C communication passively. And in regard to the APDO specification, we
+484.96s - 489.96s |  observed the APDO command structure indicating it isn't encrypted, but the payload is. Thus,
+490.46s - 495.46s |  we cannot eavesdrop on the physical connection between the HSM and the SOC. So, I went back to
+501.55s - 507.39s |  the device and further analyzed the encryption and finally was able to reconstruct it, which
+507.39s - 512.39s |  can be summarized as follows. Four bytes are read from an unencrypted flash memory, which
+514.23s - 519.23s |  represents the length of data to be read in the next step. Then this data is decrypted using the
+521.43s - 528.21s |  IMX6 cryptographic acceleration and assurance module. Afterwards, session keys are derived
+528.21s - 533.21s |  from this data and used to encrypt the communication using AES and CBC mode. And since I had a
+536.69s - 542.77s |  single device only, I do not know if the data stored on the unencrypted flash is unique or
+542.77s - 550.61s |  device specific. Next, I attempted to access keys directly from the rooted device using the
+550.63s - 557.76s |  block and trust middleware from NXP. So, I developed a small proof of concept tool to access
+557.76s - 562.76s |  data on the HSM. However, the policies are configured correctly and I was not able to access
+564.86s - 571.30s |  keys. Ok, so we cannot eavesdrop on the physical communication and we also cannot access data
+573.64s - 578.64s |  stored on the HSM. But, how does the firmware encryption work? So, I further reverse
+579.56s - 584.56s |  engineered the update process, which can be summarized as follows. A key type is read from
+588.40s - 593.40s |  the update file. Next, an encrypted key and IV is read. The encrypted key is decrypted by the
+597.84s - 602.84s |  HSM and stored in a file. An encrypted bash script is extracted from the update file and
+603.58s - 608.58s |  decrypts, uh, and decrypted using the plain text key. And finally, the parser script extracts
+613.80s - 621.72s |  the different firmware parts and decrypts it using the plain text key. So, in summary, each
+621.72s - 627.76s |  firmware version has its own encryption key, but with access to a rooted device, we can
+627.76s - 634.64s |  decrypt the key and therefore leak firmware specific encryption keys. So, as a proof of
+634.64s - 640.68s |  concept, I decrypted such a key using the rooted device and used it to decrypt the firmware
+640.68s - 648.73s |  update, for example, the root file system. Alright, so we can decrypt configuration files
+648.73s - 655.37s |  using static keys and we can also decrypt firmware updates using our rooted device and its
+655.37s - 661.23s |  hardware security module. So, now let's move on to the last topic, the backend
+661.27s - 666.27s |  communication. As expected, communication with the vendor's API is encrypted and mutual
+668.71s - 673.71s |  authentication is enforced. So, if we want to analyze the communication using a TLS proxy,
+676.25s - 682.39s |  our certificate needs to be trusted by the Evon Cozy Plus. And we also need the client
+682.39s - 688.89s |  certificate trusted by the backend. So, placing our own certificate in the hard-coded trust
+688.89s - 693.89s |  store is simple, but extracting the client certificate turned out to be difficult. In fact,
+697.13s - 703.63s |  we also found the hard-coded pass to the client certificate and key, but while the public
+703.63s - 710.07s |  key looks good, something seems to be wrong with the private key and it looks like it is
+710.07s - 717.73s |  filled up with null bytes. So, it turned out that this is not the private key itself, instead
+717.73s - 724.07s |  it is a, it is a so-called reference key and the actual key is securely stored at the
+724.07s - 729.07s |  HSM. So, extracting the key is not possible. But, I found a workaround. We can use this
+734.17s - 741.05s |  open SSL configuration which references a specific open SSL engine to implement the HSM
+741.05s - 746.05s |  for encryption. And now, by using this configuration, we can use open SSL encryption
+747.73s - 756.05s |  aware tools like curl on the device itself to communicate with the backend. This also
+756.05s - 760.95s |  means without the device's private key, we cannot route the communication through a TLS
+760.95s - 767.39s |  proxy. And therefore, I used the following alternative approach to analyze the backend
+767.39s - 772.39s |  communication. First, we intercept a request initiated by the device. Then we use curl on
+773.39s - 778.39s |  the device to send this exact request and retrieve the response received on the device.
+783.43s - 789.13s |  Afterwards, we can implement this response in our own web server and proceed with the next
+789.13s - 795.67s |  request or stage. And by doing so, I observed the following endpoints. And especially this
+796.49s - 801.49s |  one was quite interesting. In detail, the device generates a certificate signing request
+805.77s - 811.91s |  during account assignment and sends it to the backend. The vendor server then signs this
+811.91s - 818.91s |  request and the signed certificate can then be requested by the device. Afterwards, the
+818.91s - 825.55s |  device has a certificate signed by the vendor which contains the device's serial number. And
+825.57s - 831.17s |  this certificate is then used for authentication against the VPN server and the serial number
+831.17s - 836.17s |  in the certificate is used by the VPN server to assign it to a specific account or a client.
+838.91s - 845.35s |  Therefore, I ask myself, can I get signed certificates for other devices by generating a
+845.35s - 850.35s |  certificate signing request with a foreign serial number? And to verify this, I reported my
+850.49s - 855.49s |  thoughts and assumptions to the vendor and they gave me a serial number of a device located at
+859.13s - 864.13s |  the vendor's lab. So, I generated a certificate signing request including this serial number
+866.81s - 871.81s |  and sent it to the API using my routed device. And indeed, the request was successful and I
+874.75s - 881.52s |  received a certificate for the foreign serial number. Afterwards, I successfully used the
+881.56s - 887.16s |  certificate to initiate a VPN session in the context of the device located at the vendor's
+887.16s - 892.16s |  lab. This in turn had the following impacts. First of all, the VPN session of the original
+895.50s - 900.50s |  device was overwritten and therefore no longer accessible. Next, if a user tries to connect to
+902.94s - 907.94s |  this serial number or device, he gets forwarded to the attacker without noticing. And due to
+908.94s - 915.58s |  the missing network restrictions inside the VPN tunnel, the attacker is able to access all
+915.58s - 920.58s |  services of the connected clients. So, let me illustrate this. An attacker can use a routed
+923.72s - 930.42s |  EvonCozyPlus to get the correctly signed certificate for a foreign device. Then he is able
+930.42s - 935.90s |  to use the certificate for VPN authentication, which results in a loss of connection of the
+935.90s - 940.90s |  original device. Now, if a user of this solution tries to connect to this device, he will be
+943.36s - 949.88s |  forwarded to the attacker and therefore the attacker is able to attack the victim's client,
+949.88s - 956.64s |  for example, accessing the client's remote desktop service. And last but not least, the
+956.64s - 963.12s |  attacker can imitate the original infrastructure to eavesdrop on sensitive data, for example,
+963.14s - 968.14s |  authentication data, or if the victim uploads a secret program to a PLC. And given that the
+971.82s - 978.20s |  serial numbers are more or less enumeratable, this attack is scalable and we are able to
+978.20s - 985.18s |  disconnect more than 500,000 devices. This means that energy plants, industrial facilities,
+987.38s - 993.72s |  critical infrastructures, or oil platforms all around the world are no longer accessible and the
+993.74s - 1000.31s |  users trying to connect to them could be attacked. So, let me conclude. We were able to route
+1003.81s - 1010.25s |  the device and decrypt encrypted passwords. Afterwards, we used the routed device to get
+1010.25s - 1014.89s |  firmware specific encryption keys and getting correctly signed certificates for other
+1014.89s - 1019.89s |  devices used for VPN authentication. With these certificates, we were finally able to impact the
+1020.03s - 1025.03s |  whole remote access solution accessing devices of connected users and eavesdrop on sensitive
+1027.87s - 1035.19s |  data. Of course, we reported the vulnerabilities to the manufacturer who immediately patched
+1035.19s - 1042.19s |  the backend so getting certificates for other devices was no longer possible and a fixed
+1042.19s - 1047.21s |  firmware version was also recently released. But what can we learn from this? First of all, it
+1047.21s - 1052.21s |  is important to consider the risks and increase the tech surface of remote access solutions,
+1056.29s - 1063.17s |  especially with infrastructure operated in the cloud or by third parties. And as
+1063.17s - 1069.01s |  demonstrated in this talk, exploiting vulnerabilities in such solutions could impact many
+1069.01s - 1074.01s |  facilities and maybe your infrastructure too. And for the security researchers among us,
+1074.75s - 1079.75s |  some of the vulnerabilities shown were found by gaining root access, meaning similar
+1082.71s - 1089.29s |  vulnerabilities may exist in other solutions and waiting for you to be found. Sometimes, you
+1089.29s - 1095.23s |  just have to find the right initial foothold. And with that said, thanks for joining this
+1095.23s - 1100.23s |  talk. Connect with me on X and feel free to check out the blog post. Thanks.

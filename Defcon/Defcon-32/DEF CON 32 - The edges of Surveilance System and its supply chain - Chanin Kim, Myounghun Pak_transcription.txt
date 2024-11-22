@@ -1,0 +1,482 @@
+{
+  "webpage_url": "https://www.youtube.com/watch?v=v6VMEeUcqzo",
+  "title": "DEF CON 32 - The edges of Surveilance System and its supply chain - Chanin Kim, Myounghun Pak",
+  "description": "With the development of artificial intelligence and image processing technology, the video industry such as CCTV is developing greatly. However, CCTV video may infringe on an individual's privacy, and personal information may be leaked due to hacking or illegal video collection. As such, Surveillance System's Security issues are also increasing, the importance of the video surveillance industry is becoming more prominent.\n\nIn order to prevent hacking or illegal video collection, research on camera security is being conducted. However, there is a lack of awareness of NVR (Network Video Recorder), a device that actually watches videos recorded by cameras, and research on this is also insufficient.\n\nWe selected Hikvision and Dahua, which have a high NVR market share, as target vendors, and also selected Synology's NVR-related package, Surveillance Station, as targets. Before proceeding with vulnerability analysis, several problems occurred during the file system extraction process, but U-Boot mitigation was successfully bypassed through various methods. Afterwards, various types of vulnerabilities were discovered through analysis, and OEM verification was also conducted to increase impact. We present exploit scenarios for surveillance devices through vulnerability linkage and present supply chain security issues in the Surveillance System.",
+  "channel_url": "https://www.youtube.com/channel/UC6Om9kAkl32dWlDSNlDS9Iw",
+  "duration": 2628,
+  "channel": "DEFCONConference",
+  "uploader": "DEFCONConference",
+  "upload_date": "20241016"
+}
+
+0.75s - 5.75s | This text was transcribed using whisper model: large-v2
+
+ Hello DEF CON. Thank you for coming to our presentation.
+5.75s - 8.75s |  We are excited to share our talk titled,
+8.75s - 12.75s |  Watchers Being Watched, Exploiting the Surveillance System and Its Supply Chain.
+12.75s - 17.75s |  We'll talk about our vulnerability research on surveillance system devices.
+17.75s - 19.75s |  Please enjoy.
+19.75s - 22.75s |  First, let us introduce our research group.
+22.75s - 27.75s |  I'm Chani Kim, and I'm currently working as an offensive researcher at S2W.
+27.75s - 34.75s |  He's Myungwoo Park, and he's a student attending a university in Korea, enjoying offensive research.
+34.75s - 39.45s |  And this is what we'll show you in this talk.
+39.45s - 46.45s |  We'll be talking about a $30,000 bounty and a four-month journey to become a DEF CON speaker.
+46.45s - 49.45s |  In our talk, we'll cover how we extract the firmware,
+49.45s - 52.45s |  then the steps we took to analyze the vulnerabilities,
+52.45s - 58.45s |  and after that, the various vulnerabilities that could be exploited in the war and their scenarios.
+58.45s - 62.45s |  In the last, the impact of our research on the supply chain.
+62.45s - 66.45s |  That's it. Please look forward to it.
+66.45s - 70.45s |  This video will be the final goal, which happened in the real world.
+70.45s - 74.45s |  We wanted to see why we're doing this research.
+74.45s - 76.45s |  This was posted by Iranian hackers,
+77.45s - 83.45s |  and we would like to show that we have successfully demonstrated what the video is showing.
+83.45s - 85.45s |  Let's watch the video.
+85.45s - 107.39s |  That's like a hacker from a movie, isn't it?
+107.39s - 112.77s |  Next, why is making our surveillance device more securely important?
+112.77s - 116.77s |  We can see surveillance devices everywhere in our lives.
+116.77s - 119.77s |  Because of the COVID-19 pandemic outbreak,
+119.77s - 124.77s |  the demand for surveillance devices has been surging for various purposes,
+124.77s - 129.77s |  such as a main store, smart cities, and for those access control.
+129.77s - 135.77s |  Thus, the global surveillance device market is currently worth $4.1 billion.
+135.77s - 139.77s |  So, in these circumstances, surrounding by such devices,
+139.77s - 145.77s |  MVRs are taking on a more essential role in our lives and those users.
+145.77s - 149.37s |  Next is our target.
+149.37s - 152.37s |  Many people don't know much about MVR,
+152.37s - 154.37s |  but as we just highlighted,
+154.37s - 160.37s |  MVR is more than just important since it plays a brand-like role in all the surveillance systems.
+160.37s - 164.37s |  Therefore, we selected MVR as our target.
+164.37s - 168.26s |  So, what is an MVR?
+168.26s - 175.26s |  A network video recorder called MVR stores recorded video from CCTVs and live cameras
+175.26s - 178.26s |  and monitors or manages real-time video.
+178.26s - 180.26s |  Due to the nature of managing these videos,
+180.26s - 183.26s |  many devices can access them over the Internet.
+183.26s - 186.26s |  And the screen you see below is the MVR screen.
+186.26s - 192.18s |  This is our detailed research motivation.
+192.18s - 195.18s |  First, as we investigated enough online,
+195.18s - 201.18s |  there was not as much as studies on it compared to CCTV or IP camera system.
+201.18s - 205.18s |  And as a result of a showdown search,
+205.18s - 210.18s |  we found that more than 30,000 devices are exposed to the Internet.
+211.18s - 216.18s |  However, there are cases where critical vulnerabilities have been discovered previously.
+216.18s - 221.18s |  There was a case when the Miraebonnet became popular in 2021,
+221.18s - 227.18s |  Hikvision's pre-auth RCE vulnerability was maliciously used for a DDoS attack.
+227.18s - 233.18s |  So, we are motivated by such examples which are serious vulnerabilities.
+233.18s - 237.81s |  Next is vendor choice.
+237.81s - 240.81s |  We chose four vendors, Hikvision and Tawa,
+240.81s - 245.81s |  because they have the highest market share in the world's surveillance system.
+245.81s - 250.81s |  We chose vendor A, which has the highest market share in Korea.
+250.81s - 253.81s |  Lastly, regardless of market share,
+253.81s - 258.81s |  we also selected Shinology's surveillance station package as a target vendor.
+258.81s - 265.81s |  This is because Shinology is famous for security and has an image of being safe,
+265.81s - 273.82s |  so we wanted to check whether surveillance-related packages were also the same.
+273.82s - 277.82s |  Next, let us tell you about our firmware extraction methodology.
+277.82s - 281.82s |  We tried a variety of methods to extract the firmware,
+281.82s - 284.82s |  and this picture is a list of what we tried.
+284.82s - 290.65s |  Since three of these products had UART ports available,
+290.65s - 293.65s |  we tried to extract the firmware through UART.
+293.65s - 299.65s |  Shinology allowed root share access via SSH, so no other method was needed.
+301.65s - 306.65s |  Before that, let us tell you why we didn't perform the extraction via remote access.
+306.65s - 312.65s |  Hikvision and Tawa supported remote access, but only limited share access was possible.
+312.65s - 319.65s |  We tried many ways to bypass it, but they failed, so we had no choice but to use UART.
+320.65s - 327.65s |  We identified the UART port on the PC board and connected the cable to make it interactable with the U-boot share.
+327.65s - 333.65s |  However, all three devices were not regular U-boots but modified U-boots,
+333.65s - 337.65s |  so we couldn't use the U-boot share as shown in the picture on the right.
+337.65s - 340.65s |  We started looking for a way to bypass it.
+340.65s - 351.34s |  First, in the case of Hikvision, we couldn't bypass UART mitigation on the first NVR we purchased,
+351.34s - 358.34s |  so we used the downgrade method of repurchasing an older version of the Hikvision device.
+358.34s - 361.34s |  The older version device had lower UART versions,
+361.34s - 366.34s |  and there were differences from mitigation applied to the latest U-boot.
+366.34s - 376.46s |  We were able to access the U-boot share using Hikvision's U-boot mitigation bypass technique we could find on the Internet.
+376.46s - 384.06s |  And last, we updated the older version of the product to the latest firmware.
+384.06s - 389.53s |  The bypass technique already known in the older version…
+389.53s - 411.82s |  On the latest version, there was no reaction even though we tried our best on giving command input.
+411.82s - 416.82s |  But as shown in the picture on the right, which is the older version,
+416.82s - 423.82s |  using setenv and semicolons caused the command injection, so we were able to insert U-boot command.
+424.82s - 430.82s |  Since we could use the U-boot command list, we were able to obtain a kernel share for the device
+430.82s - 434.82s |  by adding bin share to the rdnid argument in bootargs.
+434.82s - 439.26s |  Next, the case of Dahua.
+439.26s - 442.26s |  In Dahua, several U-boot command lists were available,
+442.26s - 447.26s |  but the most important command list such as printenv did not exist,
+447.26s - 451.26s |  so we used setenv to print the changed argument once again
+451.26s - 456.26s |  to check the value of the environment variable with the keys we know.
+456.26s - 460.83s |  However, bigger problem awaited us.
+460.83s - 466.83s |  We modified bootargs and booted the device, but we couldn't see the kernel output.
+466.83s - 470.83s |  In order to use the kernel share, of course, there must be kernel output.
+470.83s - 474.83s |  So we looked for a way to check the kernel output.
+474.83s - 481.46s |  First, we knew that the environment section exists using the mtdpart command
+481.46s - 485.46s |  and to print the contents of this environment section,
+485.46s - 490.46s |  we used the ntdump command to print the contents of the environment variable.
+492.46s - 497.46s |  Now that we were able to check the key values of the environment variable,
+497.46s - 505.46s |  we changed the value of each environment variable one by one to see if we could grab the kernel output.
+505.46s - 510.46s |  We found out that there was an environment variable called dhkeyboard
+510.46s - 516.46s |  that specifies the kernel output mode, so we could change it to 0 to get kernel output.
+516.46s - 519.78s |  Next is vendor A.
+519.78s - 523.78s |  In the case of vendor A, unlike the previous two cases,
+523.78s - 526.78s |  it was not possible to even use the ubuntu share.
+526.78s - 530.78s |  As you can see, as soon as we booted the device,
+530.78s - 534.78s |  type password has appeared and we couldn't use any ubuntu command list.
+535.78s - 541.78s |  Vendor A was calling the secure UART and we started doing a lot of research to bypass this.
+541.78s - 547.15s |  We learned about the glitching attack through a lot of research
+547.15s - 550.15s |  and let the ubuntu code to perform this attack.
+550.15s - 555.15s |  By reading the code, booting algorithm in the ubuntu system says that
+555.15s - 559.15s |  if the initialization process was successful or lost the kernel,
+559.15s - 563.15s |  and if it fails, it restarts the bootloader share.
+563.15s - 568.15s |  We assumed that vendor A wouldn't have exception handling for this method,
+568.15s - 573.91s |  and we found a way to make the initialization process fail.
+573.91s - 576.91s |  Let us tell you how to perform this attack.
+576.91s - 581.91s |  First, we will explain the process of loading kernel during the normal boot sequence.
+582.91s - 586.91s |  First, load the kernel into RAM from flash memory.
+586.91s - 591.91s |  Second, the CPU rests the kernel loaded into RAM and decompresses it.
+592.91s - 598.91s |  If the decompression is successful, the CPU starts the kernel and terminates the execution of uboot.
+599.91s - 606.91s |  Now, let us tell you the boot sequence's difference between performing the attack and vice versa.
+607.91s - 612.91s |  As with the normal process, load the kernel into RAM from flash memory.
+612.91s - 619.91s |  At this time, we gave it an electric shock which caused the kernel to be broken and to be loaded into RAM.
+620.91s - 625.91s |  As the CPU tries to decompress the broken kernel in RAM, it naturally fails.
+626.91s - 632.91s |  When this happens, the CPU restarts the bootloader share as I mentioned earlier.
+633.91s - 637.91s |  Through previous research, we learned that the attack is carried out
+637.91s - 642.91s |  by connecting the chip select and data out on the pad of flash memory.
+642.91s - 647.91s |  Therefore, we checked the data sheet of the flash memory available at vendor A
+647.91s - 650.91s |  and found out which chip should be connected.
+650.91s - 654.91s |  We are now all set, but how do we connect these two pads?
+655.91s - 661.91s |  We created a specialized tool for performing this particular attack
+661.91s - 664.91s |  by attaching the heads of jumper cables together.
+664.91s - 666.91s |  Looks very easy, right?
+667.91s - 669.91s |  Here is a demo of this attack.
+670.91s - 681.74s |  If we give it an electric shock and boom, we can use the bootloader share.
+682.74s - 692.19s |  Once we had the kernel shares for all devices, we needed to extract the file system.
+692.19s - 697.19s |  We ejected out the file system to our NAS using NFS and USB.
+697.19s - 705.19s |  One thing we didn't know was that the USB had to be formatted as XFS for the device to recognize it.
+706.19s - 713.60s |  As you can see, we were able to successfully transfer all devices' file systems to our NAS.
+715.60s - 721.60s |  However, we encountered a big failure while configuring the AWS analysis environment
+721.60s - 727.60s |  because most file systems were read-only, so no files could be modified or written.
+727.60s - 732.60s |  Now, even though we had a root share, the shares become unusable once the device boots up,
+732.60s - 734.60s |  so we had to bypass it.
+734.60s - 741.98s |  We found out that only the root file and device directory were modifiable,
+741.98s - 744.98s |  so we decided to use bind-mount.
+744.98s - 749.98s |  We discovered that when we bind-mount an arbitrary file in a writeable directory,
+749.98s - 752.98s |  the file becomes editable.
+752.98s - 757.98s |  We immediately bind-mounted ETC password to a writeable location.
+758.98s - 761.98s |  Now, we can modify ETC password.
+762.98s - 767.98s |  However, the main binary ran an integrity check and rebooted the device
+767.98s - 770.98s |  when changes to file contents were detected.
+770.98s - 775.42s |  So, we found a way to get around this.
+775.42s - 779.42s |  First, we cloned ETC password to a writeable directory.
+779.42s - 786.42s |  If you look at the picture on the right, you can see that the root share is set to DSH, a restricted share.
+786.42s - 794.30s |  Second, bind-mount is performed in the RCS script after the initialization process is completed
+794.30s - 798.30s |  and immediately before starting the main binary.
+798.30s - 806.16s |  Next, we ran the main binary, and when the web service becomes available,
+806.16s - 809.16s |  we changed the contents of the bind-mounted file.
+809.16s - 815.60s |  Finally, we have a restricted root share access via SSH.
+815.60s - 819.60s |  Now, we can replicate the file system using NFS.
+819.60s - 825.60s |  Additionally, this bind-mounting replaces the original file contents when the device is rebooted,
+825.60s - 830.60s |  so we created the previous process as a share script and used it.
+830.60s - 839.85s |  Next, we'll discuss the vulnerabilities we discovered and the MBR hacking scenarios we created by linking these vulnerabilities.
+839.85s - 844.85s |  Here, we will explain one scenario for each vendor we targeted.
+844.85s - 849.22s |  First, let's look at the scenario for vendor A.
+849.22s - 853.22s |  The code on the left is the query string parsing logic used in the web page.
+853.22s - 860.22s |  It calculates the start and end of the parameters based on the equal and n% characters.
+860.22s - 866.22s |  This parameter named length is used as the parameter for SDRN copy.
+866.22s - 873.22s |  Therefore, since the length is a controller parameter by the attacker, it can cause a buffer overflow.
+873.22s - 880.54s |  So, let's insert a large number of characters into the query string parameter.
+880.54s - 888.54s |  As you can see, the return address is overwritten because there is no canary successfully manipulating the PC register.
+888.54s - 893.14s |  However, we encountered a few problems.
+893.14s - 898.14s |  First, Annex was enabled, so we needed to perform the ROP.
+898.14s - 906.14s |  Next, since the payload must be successfully delivered to the server, we could only insert printable characters.
+906.14s - 913.14s |  All gadgets in the binary start with 1, so we could not use gadgets within binary.
+913.14s - 918.14s |  For this reason, we also couldn't leak the libc address.
+918.14s - 921.14s |  So, how do we write the exploit code?
+921.14s - 923.14s |  We found several solutions.
+923.14s - 929.14s |  First, we discovered that the R0 register holds a stack address at a certain size.
+929.14s - 935.14s |  We confirmed that this stack address contains the string we inserted into the query string.
+935.14s - 942.14s |  Next, since the main binary has a 32-bit address space, it has low entropy.
+942.14s - 950.14s |  Lastly, the Lydie binary spawns a new child process whenever the child process dies.
+950.14s - 955.14s |  What do you think? Doesn't it seem like everything except for protocols?
+955.14s - 963.14s |  Look here. As I mentioned, the R0 register holds a stack address containing the string we can manipulate.
+963.14s - 967.14s |  At that time, we can control the fish register.
+967.14s - 974.14s |  Now, we needed to reboot the binary until the fish register holds the libc system address.
+974.14s - 976.14s |  Here is the method.
+976.14s - 982.14s |  We send a request that makes the R0 register to hold the libshare command payload.
+982.14s - 987.14s |  Then, we set an arbitrary libc system address in the fish register.
+987.14s - 990.14s |  Now, let's start brute-forcing.
+990.14s - 992.14s |  Before long, we obtained a share.
+992.14s - 1001.14s |  Fortunately, we got the share within 600 tries, not the expected 2 to the power of 16 tries.
+1001.14s - 1003.14s |  Great, we got a root share.
+1003.14s - 1005.14s |  But what can we do with it?
+1005.14s - 1011.14s |  All critical files like video, account, user password were encrypted.
+1011.14s - 1018.14s |  So, we found additional vulnerabilities in the device so we can take over the admin web page.
+1018.14s - 1025.14s |  Unfortunately, since this vulnerability has not been patched yet, we cannot disclose it in here.
+1025.14s - 1031.14s |  Alright, we can now access the device management page with admin privileges.
+1031.14s - 1033.14s |  Now, we can do anything.
+1033.14s - 1040.14s |  This is the real-time video manipulating scenario created by chaining the explained vulnerabilities.
+1040.14s - 1044.14s |  The attacker infiltrates the MVR through RCE.
+1044.14s - 1057.41s |  Then, using a vulnerability we cannot disclose here, the attacker gains access to the admin web page.
+1057.41s - 1068.45s |  Finally, the attacker manipulates the real-time video.
+1068.45s - 1072.45s |  Here is the demo video of this scenario.
+1072.45s - 1079.45s |  When we send a payload, the MVR screen is tampered.
+1079.45s - 1084.66s |  Thank you.
+1084.66s - 1089.66s |  Next, let's discuss the missing authorization scenario for Synology.
+1089.66s - 1094.66s |  Synology performs a load of MVR through the surveillance station package.
+1094.66s - 1098.66s |  Let's look at the authorization code of this package's API handler.
+1098.66s - 1105.66s |  First, it verifies if the user sending the request is logged in through the isAuthorized function.
+1105.66s - 1111.66s |  Then, it checks if the user has permission to use the surveillance station package.
+1111.66s - 1113.66s |  Doesn't it seem like something is missing?
+1113.66s - 1122.66s |  It doesn't check if the user has necessary permissions to use specific features, whether the user is an admin or a guest.
+1122.66s - 1130.66s |  So, we found that even with guest permissions, one could abuse all features of the Synology surveillance station.
+1130.66s - 1137.66s |  We discovered that surveillance station features include reboot, shutdown, and package installation.
+1137.66s - 1141.66s |  Additionally, we found something unusual.
+1141.66s - 1147.66s |  Some requests usable in surveillance station are forwarded to the NAS's core package.
+1147.66s - 1156.66s |  Regardless of how the requesters identify, these requests are forwarded to the core package as admin,
+1156.66s - 1163.66s |  allowing a guest using surveillance station to request to the Synology NAS with admin privileges.
+1163.66s - 1170.66s |  We received a CVE with CVESS score 9.9 from Synology.
+1170.66s - 1175.66s |  Next, let's look at the scenario of hijacking real-time video.
+1175.66s - 1182.66s |  In a normal flow, guests do not have access to the camera, so they cannot view video on the front end.
+1182.66s - 1188.66s |  However, due to the vulnerability, even guests can obtain video information.
+1188.66s - 1199.66s |  Synology returns the RTSP server address and access credentials in the response, granting attackers unlimited access to the videos.
+1199.66s - 1204.66s |  Let's look at the scenario. Here, we included a request to terminate the layout.
+1204.66s - 1207.66s |  The attacker sends a request to terminate the layout,
+1207.66s - 1218.82s |  disconnecting all live video layouts connected to Synology on all computers.
+1218.82s - 1224.82s |  Then, the attacker sends getLiveViewPath request to steal the video information,
+1224.82s - 1234.50s |  and requests the video from the RTSP server using the stolen information.
+1234.50s - 1242.31s |  Now, the attacker has hijacked the real-time video.
+1242.31s - 1247.38s |  Here is the demo.
+1247.38s - 1250.38s |  When we send the payload,
+1250.38s - 1257.38s |  and boom, the layout is terminated and we can watch the live video.
+1257.38s - 1259.70s |  Thank you.
+1259.70s - 1275.80s |  Next, we will introduce the vulnerabilities and scenarios of DAWA.
+1275.80s - 1281.80s |  The first vulnerability is called reachable assertion, and we will explain how we found it.
+1281.80s - 1286.80s |  While analyzing the login function, we discovered that there are many login options.
+1286.80s - 1292.80s |  As shown in the table below, there are six types of assert time and password type pairs.
+1292.80s - 1296.80s |  By default, the assert type and password type are set to default.
+1297.80s - 1304.80s |  The data sent in the request includes the username, hashed password, session, assert type, and password type.
+1304.80s - 1310.80s |  If the request is successful, a response containing true is received.
+1310.80s - 1317.80s |  We are curious about what will happen when attempting to log in with different authentication types
+1317.80s - 1321.80s |  will lead us to unable to analyze the login options.
+1321.80s - 1327.80s |  During the analysis, we found a developer's mistake in the processing of the login request data
+1327.80s - 1332.80s |  and were able to shut down the device with a reachable assertion as a result.
+1332.80s - 1335.80s |  Now, let me explain the vulnerability.
+1335.80s - 1342.80s |  First, before processing the login logic, the function's getPasswordType and its password value are called.
+1342.80s - 1347.80s |  The getPasswordType function extracts assert type and password type by parsing
+1347.80s - 1352.80s |  and compares specific strings such as default and default, respectively.
+1352.80s - 1357.80s |  If the strings match, the function returns a type for their own.
+1357.80s - 1364.80s |  If the type is both default, it returns 4, and if it is OTP and SSC, it returns 7.
+1364.80s - 1370.80s |  The next function is called isPasswordValid and parses the login parameters
+1370.80s - 1375.80s |  based on the type value returned by the previous function getPasswordType
+1375.80s - 1377.80s |  and creates a string object.
+1377.80s - 1383.80s |  The series of process enters when assert type and password type are set to default.
+1383.80s - 1390.80s |  You can see that there is an exception handling logic that checks to see if those parameters are null
+1390.80s - 1394.80s |  before generating a string object for both parameters.
+1394.80s - 1400.80s |  Most of the branches have this null exception handling logic, but not all of them.
+1401.80s - 1407.80s |  The following code handles the case when the authentication type is OTP and WSSC.
+1407.80s - 1414.80s |  As seen in the code below, string objects for authority input and password type variables are created,
+1414.80s - 1419.80s |  but there is no exception handling logic for these objects.
+1419.80s - 1427.80s |  So, we remove the authority input parameter, set the authentication type to OTP, WSSC, and send a request.
+1427.80s - 1433.80s |  As a result, the authority input is set to null, which causes a retrieval assertion to be drawn
+1433.80s - 1439.80s |  when creating a string object for that parameter, causing the main binary to exit.
+1439.80s - 1444.80s |  When the main binary terminates, the watchdog causes the device to reboot.
+1444.80s - 1447.80s |  This is a pretty simple vulnerability.
+1447.80s - 1453.80s |  The following vulnerabilities are very important because they require the device to reboot.
+1454.80s - 1458.80s |  The second vulnerability is LP injection.
+1458.80s - 1462.80s |  First, that will set permissions by group, and once creating an account,
+1462.80s - 1468.80s |  it can only perform tasks included in the permissions of the assigned group.
+1468.80s - 1475.80s |  This group information is stored in a file named groupsec and is encrypted using ASCBC.
+1475.80s - 1479.80s |  We tried analyzing the source code to find the key in IV,
+1479.80s - 1484.80s |  but it was quite complicated and eventually failed to find it.
+1484.80s - 1490.80s |  However, since the configuration information must be decrypted and loaded into memory
+1490.80s - 1496.80s |  during the main binary boot process, so we performed a dynamic analysis of the boot process,
+1496.80s - 1502.37s |  and unfortunately, we were able to find the decrypted data.
+1502.37s - 1506.37s |  The structure of the decrypted groupsec file is as follows.
+1506.37s - 1510.37s |  The columns are ID, name, authority, and memo.
+1510.37s - 1517.37s |  Each column is separated by a column, and each line is separated by a line feed.
+1517.37s - 1522.37s |  When adding or modifying group information, the getline function is called
+1522.37s - 1526.37s |  as part of the process of saving the changed data.
+1526.37s - 1531.37s |  This function generates a line with the ID, name, authority, and memo,
+1531.37s - 1535.37s |  extracted from the logon request separated by columns.
+1535.37s - 1540.37s |  We found out that there was no validation checking procedure of the input value
+1540.37s - 1544.37s |  until generating a line with the getline function.
+1544.37s - 1551.90s |  So, we added a line feed to the memo to tamper the structure and restarted the device
+1551.90s - 1556.90s |  to see what would happen during the parsing process of the groupsec file.
+1556.90s - 1561.90s |  As a result, the device entered the initialization routine
+1561.90s - 1564.90s |  and recreated the groupsec file.
+1564.90s - 1569.90s |  When entering the initialization routine, the user can change the add-in password on the web
+1569.90s - 1571.90s |  and perform any actions.
+1571.90s - 1577.90s |  We were curious if the initialization routine would still be entered if the file was deleted.
+1577.90s - 1580.90s |  After deleting the file and rebooting the device,
+1580.90s - 1585.90s |  we found that it still enters the initialization routine.
+1585.90s - 1591.90s |  Let me introduce the first scenario of DAWA using two vulnerabilities mentioned above.
+1591.90s - 1594.90s |  By using Retrieval Assertion and Alpha Injection,
+1594.90s - 1599.90s |  an attacker can take over the device and obtain admin privileges.
+1599.90s - 1606.90s |  First, the attacker obtains an account with UsUserManagedPrivileges through credential stuffing.
+1606.90s - 1611.90s |  Next, the structure of the groupsec file is tampered through Alpha Injection.
+1611.90s - 1618.88s |  Then, the attacker reboots the device using Retrieval Assertion.
+1618.88s - 1627.65s |  When rebooted, the device enters the initialization routine,
+1627.65s - 1633.65s |  allowing the attacker to change the admin password and perform malicious activities.
+1633.65s - 1641.99s |  Next is Stack Overflow.
+1641.99s - 1648.99s |  First, this vulnerability occurs not in the main binary but in a background service called AOL.
+1648.99s - 1653.99s |  This service is used to attempt online recovery when the device is abnormal
+1653.99s - 1656.99s |  and is open on port 8088.
+1656.99s - 1661.99s |  Since this port is not forwarded, it can only be accessed from the same network.
+1661.99s - 1666.99s |  It consists of 16 bytes of fixed size of headers and data.
+1666.99s - 1672.99s |  For header, the constitutional data byte index 0 indicates the function index
+1672.99s - 1676.99s |  and the byte chat indexes 4 to 7 indicate the data size.
+1676.99s - 1682.99s |  The data is then used as an argument for the input handler remitted by the data size.
+1682.99s - 1687.99s |  However, the pinpoint is that the data size can be publicated.
+1687.99s - 1691.99s |  Now, let me explain the request processing procedure.
+1691.99s - 1698.06s |  The following function is called PerMessage.
+1698.06s - 1704.06s |  First, this function uses the structure with the way which consists of functions
+1704.06s - 1708.06s |  and variables related to each feature.
+1708.06s - 1711.06s |  As shown in the table on the left,
+1712.06s - 1717.06s |  each structure includes the permission level index verification function,
+1717.06s - 1720.06s |  parameter parsing function, handler function,
+1720.06s - 1724.06s |  parameter allocation free function, and next table pointer.
+1724.06s - 1727.06s |  There are about 20 such tables.
+1727.06s - 1730.06s |  Here is how it works internally.
+1730.06s - 1736.06s |  The function iterates through a loop calling the index verification function of each structure
+1736.06s - 1740.06s |  with the first byte of the header as an argument.
+1740.06s - 1744.06s |  The index verification function, as seen in the code on the bottom right,
+1744.06s - 1751.06s |  checks if the value obtained by subtracting a specific constant number from the argument is not 0.
+1751.06s - 1754.06s |  If the result is 0, it returns 0.
+1754.06s - 1757.06s |  Otherwise, it returns minus 1.
+1757.06s - 1759.06s |  Referring back to the code on the left,
+1759.06s - 1764.06s |  if the return value is greater than 0 or meaning a matching index is found,
+1764.06s - 1769.06s |  the current table pointer is told in the A to variable and 0 is returned.
+1769.06s - 1776.06s |  If the matching index is found, minus 1 is returned and the request is not processed.
+1776.06s - 1780.76s |  Next, the dpStackParse function is called.
+1780.76s - 1786.76s |  This function retrieves the table corresponding to the index and calls the parseParam function.
+1786.76s - 1789.76s |  As shown in the parseParam function on the right,
+1789.76s - 1796.76s |  it appropriately processes the data according to the requested function and then returns the result.
+1796.76s - 1800.76s |  Finally, once all preprocessing steps are complete,
+1800.76s - 1806.76s |  the dpHandleQuery function is called to register the input handler and then execute it.
+1806.76s - 1811.14s |  There are many different functions that could be called,
+1811.14s - 1816.14s |  including login, query, and update, but they all require the login.
+1816.14s - 1820.14s |  So, we started analyzing the login function first.
+1820.14s - 1825.42s |  The function is executed if the first byte is A0.
+1825.42s - 1832.42s |  The data consists of username, password, and a random value with a double ampersand used as a delimiter.
+1832.42s - 1838.42s |  The vulnerability occurs when parsing this data, which we'll explain in a moment.
+1838.42s - 1841.66s |  As you can see in the code on the right,
+1841.66s - 1849.66s |  the strings for the username and password are set to 128 and 160 bytes respectively,
+1849.66s - 1853.66s |  and the memory is initialized with a memset.
+1853.66s - 1860.66s |  Next, the addStringString function is called to find the positions of the double ampersands and null.
+1860.66s - 1864.66s |  The data before the first double ampersand is copied to username,
+1864.66s - 1869.66s |  and the data before the next double ampersand is copied to password.
+1869.66s - 1874.66s |  The problem is that there is no length validation checking during the copying process,
+1874.66s - 1877.66s |  allowing us to input data of any size.
+1877.66s - 1881.66s |  As a result, a buffer overflow occurs.
+1882.66s - 1887.66s |  You can cover the return address by putting 156 bytes of random data,
+1887.66s - 1893.98s |  the desired value, and the password location, as shown below.
+1893.98s - 1898.98s |  Since there was no stack canary, we couldn't manipulate the PC register.
+1898.98s - 1903.98s |  However, we encountered an issue where we couldn't include a null in the payload,
+1903.98s - 1905.98s |  making our pain possible.
+1905.98s - 1909.98s |  We didn't want to conclude with just a simple buffer overflow,
+1909.98s - 1913.98s |  so we began analyzing the source code.
+1913.98s - 1916.98s |  Fortunately, we found some useful functions.
+1916.98s - 1921.98s |  There were functions for rebooting, starting SSH, removing intersettings,
+1921.98s - 1925.98s |  performing a soft recovery, and killing all MBR-related binaries.
+1925.98s - 1929.98s |  Among these, the most interesting function was the soft recovery.
+1929.98s - 1935.98s |  This function deletes the configure directory, resetting all configuration information.
+1936.98s - 1941.98s |  As seen in the previous vulnerability, if the groupseq file is deleted or tampered,
+1941.98s - 1944.98s |  the initialization routine is entered upon reboot,
+1944.98s - 1948.98s |  allowing the admin password to be changed.
+1948.98s - 1953.98s |  Therefore, we manipulated the PC register to call the soft recovery function.
+1953.98s - 1957.98s |  However, soft recovery deleted even the network files,
+1957.98s - 1960.98s |  making external access impossible.
+1960.98s - 1965.22s |  Unfortunately, we faced another challenge.
+1965.22s - 1968.22s |  After several days of analysis and contemplation,
+1968.22s - 1972.22s |  it soon came to my head that during the boot,
+1972.22s - 1977.22s |  there is a process where configuration files in the configure directory
+1977.22s - 1980.22s |  are decrypted and loaded into memory.
+1980.22s - 1983.22s |  So, we began analyzing the boot loads.
+1983.22s - 1988.22s |  As a result, we found that the network configuration file is loaded first,
+1988.22s - 1993.22s |  and then the account file is loaded around 5 seconds later.
+1994.22s - 2000.22s |  I was curious to see what would happen if the main binary center soft recovery failed
+2000.22s - 2004.22s |  within 5 seconds of loading the network configuration file.
+2004.22s - 2010.22s |  The most fortunate point is that AOR is loaded before the main binary boots.
+2010.22s - 2017.22s |  First, we kill the main binary using the recover assertion, causing the device to reboot.
+2017.22s - 2021.22s |  Then, we wait until the network configuration file is loaded.
+2021.22s - 2026.22s |  In our case, it took approximately 10 seconds for the device.
+2026.22s - 2033.22s |  Next, we send the soft recovery failure to AOR, which deletes all configuration files.
+2033.22s - 2038.22s |  Then, the main binary can't access the account configuration file
+2038.22s - 2041.22s |  and enters the initialization routine.
+2041.22s - 2045.22s |  As a result, we are able to change the admin account.
+2046.22s - 2052.22s |  Let me explain the admin takeover vulnerability using recover assertion and stack buffer overflow.
+2052.22s - 2056.22s |  First, we will reboot the device via recover assertion.
+2056.22s - 2063.27s |  After rebooting, wait for the network configuration file to be loaded,
+2063.27s - 2072.03s |  and then send the soft recovery failure to AOR to remove all configuration files.
+2072.03s - 2079.26s |  In the process of loading account setting files such as groupsec,
+2079.26s - 2084.26s |  it enters an initialization routine because the files do not exist.
+2084.26s - 2091.74s |  The attacker changes the admin password and gains access to the admin page.
+2091.74s - 2093.74s |  This is a demo.
+2093.74s - 2110.34s |  The last vulnerability is from HikeVision.
+2110.34s - 2116.34s |  HikeVision was much more solid compared to other devices, making it more challenging.
+2116.34s - 2121.34s |  However, we found an interesting vector, a local subs component.
+2121.34s - 2126.34s |  That is a plugin that must be installed for users to view video from the web.
+2126.34s - 2134.34s |  This plugin runs with admin privileges on Windows and is accessible on port 33686,
+2134.34s - 2137.34s |  meaning anyone on the same network can access it.
+2137.34s - 2144.34s |  It was a very interesting plugin, so we started analyzing it and found the vulnerability.
+2144.34s - 2151.34s |  Due to an ending associated with a bounty for this vendor, we can't disclose detailed root cause.
+2151.34s - 2157.34s |  In short, it is a vulnerability that allows RCE by sending a crafted message.
+2157.34s - 2160.34s |  Instead, we will show you a demo.
+2160.34s - 2164.34s |  Through RCE, we can completely take control of Windows.
+2164.34s - 2168.34s |  With admin privileges, we can perform any actions.
+2168.34s - 2179.18s |  The next vulnerability is OS command injection,
+2179.18s - 2185.18s |  which allows a user with admin privileges to execute arbitrary commands.
+2185.18s - 2192.18s |  We create a scenario to take control of the internal network using these two vulnerabilities.
+2192.18s - 2197.18s |  First, we obtain admin privileges through credential stuffing.
+2197.18s - 2203.81s |  Next, we offer a reversal through command injection to enter the MVR.
+2203.81s - 2214.50s |  Then, we perform network scanning to find Windows computers using the application named local subs component.
+2214.50s - 2221.50s |  Finally, by exploiting the plugin RCE, we could take control of Windows and perform malicious activities.
+2221.50s - 2225.14s |  Here is the demo.
+2225.14s - 2236.91s |  By just pressing the button, we can automatically take control of Windows computer in the...
+2253.07s - 2260.07s |  One of the things we learned during the project is the Hikvision and our Huzy OEM supplier.
+2260.07s - 2270.07s |  Both companies also sell under their own brands, but they are relabeled and sell to various retailers in the U.S. such as Lorex and Luma.
+2270.07s - 2277.07s |  This means that devices are being used all around us without realizing that they are made in China.
+2277.07s - 2282.07s |  First, OEM stands for Original Equipment Manufacturer.
+2282.07s - 2292.07s |  It refers to the manufacturing method in which a company outsources the production of its products to another company and then sells them under its own brand.
+2292.07s - 2299.07s |  If a product is made by Company A, it's sold under the brand name of Company B.
+2299.07s - 2304.07s |  Company A becomes the OEM supplier and Company B becomes the OEM vendor.
+2304.07s - 2308.07s |  The images below show Dallas MVR and OEM MVR.
+2308.07s - 2311.07s |  They look very similar, don't they?
+2312.07s - 2315.07s |  This picture illustrates the OEM sales process.
+2315.07s - 2324.07s |  Products manufactured by OEM suppliers like Hikvision and Dahua are relabeled by OEM vendors and sold to users.
+2324.07s - 2335.07s |  If a vulnerability occurs in a product produced by an OEM supplier, it can affect the products sold by the OEM vendor as well.
+2335.07s - 2340.07s |  This means that many devices can be impacted by the same vulnerability.
+2340.07s - 2347.07s |  So, we decided to check if the vulnerabilities were valid for OEMs using the same firmware.
+2347.07s - 2355.07s |  First, we ran bin-deep on the main binaries of Dahua and OEM vendor Bush and found that the logic was similar.
+2355.07s - 2360.07s |  Hikvision also confirmed similar through deeping.
+2360.07s - 2368.07s |  After confirming that OEM vendors use similar firmware, we decided to purchase devices and test them.
+2368.07s - 2375.07s |  For Hikvision, we purchased Anki and Ampibis. 4 out of 6 vulnerabilities were valid.
+2375.07s - 2382.07s |  For Dahua, we purchased Zhiyun and EGPS. 4 out of 6 of the 7 vulnerabilities were valid, respectively.
+2382.07s - 2391.07s |  We confirmed that the vulnerabilities were validly exploited and reported them to Mitre, KISA, which is the Korean CNA,
+2391.07s - 2400.07s |  to get CBs and KBEs, which increased the number of recognized vulnerabilities by 61%.
+2400.07s - 2406.35s |  Finally, we will show you a video of vulnerability testing on OEM vendors.
+2406.35s - 2410.35s |  The first video is the OEM vendor testing for Dahua.
+2410.35s - 2415.35s |  By sending Dahua's recover assertion payload, we could shut down all devices.
+2415.35s - 2422.26s |  The second video is OEM vendor testing for Hikvision.
+2422.26s - 2431.26s |  After sending the voice command injection payload, we could connect a reverse shell and input the shutdown command to turn off all devices.
+2431.26s - 2439.61s |  Also, we were curious about how many devices were affected by the vulnerabilities we found.
+2439.61s - 2442.61s |  So, we searched using Shoda.
+2442.61s - 2452.95s |  In the case of Hikvision, most model devices' names or firmware versions were not present in the banner data.
+2452.95s - 2457.95s |  So, we needed a different approach to identify as many as possible.
+2457.95s - 2465.95s |  We found that for MBR devices, when accessing the login page, a config.json file is requested.
+2465.95s - 2470.95s |  This file contains the configuration information related to MBR.
+2470.95s - 2481.95s |  For version information, we used the web version and plug-in version coded in the C.js to search for devices with versions equal to or lower than the one we did our study.
+2481.95s - 2488.95s |  As a result, we found that approximately 130,000 devices were vulnerable.
+2488.95s - 2494.95s |  For Dahua, since the device name was present in the banner, we simply searched for it.
+2494.95s - 2499.95s |  As a result, we found approximately 100,000 devices.
+2499.95s - 2503.95s |  Finally, we came to the conclusion part.
+2503.95s - 2509.95s |  First of all, this is what we would like to comment to offensive researchers in MBR field like us.
+2509.95s - 2514.95s |  The vulnerabilities we discovered during our research period include.
+2514.95s - 2520.95s |  Even when analyzing one-day cases, we found that these vulnerabilities were statically numerous.
+2520.95s - 2527.95s |  So, when you want to analyze your MBR, we recommend that you focus on these vulnerabilities.
+2528.95s - 2540.95s |  We conducted an analysis focusing on HTTP communication process of domain binary in order to achieve good results as much as possible over the project of four months.
+2540.95s - 2550.95s |  However, MBRs have numerous attack surfaces, including private protocols with their cloud service, SDK communication with VMS,
+2550.95s - 2558.95s |  private protocols used to communicate with MBRs or IP cameras, and communication with other sensors.
+2558.95s - 2568.95s |  Therefore, we recommend that you do not focus solely on analyzing the HTTP process, but analyze various attack surfaces.
+2568.95s - 2573.95s |  The following is what we would like to recommend to users.
+2574.95s - 2583.95s |  What we felt while conducting a one-day case study is that as long as MBR is not exposed to the external network, it is safe from these attacks.
+2583.95s - 2594.95s |  Major MBR vendors provide solutions that allow external access using things like DDNS without exposing the device to an external network.
+2594.95s - 2600.95s |  You can take advantage of these solutions to keep your devices safe from these attacks.
+2600.95s - 2606.80s |  Thank you to people who helped us with research.
+2606.80s - 2612.30s |  Especially, thank you to Dr. Junsang Yoo.
+2612.30s - 2614.30s |  Thank you for listening to our presentation.
+2614.30s - 2618.30s |  If you have any questions, please contact us on Twitter below.
+2618.30s - 2622.30s |  More details of our research can be found via the QR code on the right.
+2622.30s - 2623.30s |  Thank you.

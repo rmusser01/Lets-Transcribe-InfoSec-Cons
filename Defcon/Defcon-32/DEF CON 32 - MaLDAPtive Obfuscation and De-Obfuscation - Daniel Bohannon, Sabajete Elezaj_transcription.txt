@@ -1,0 +1,807 @@
+{
+  "webpage_url": "https://www.youtube.com/watch?v=mKRS5Iyy7Qo",
+  "title": "DEF CON 32 - MaLDAPtive: Obfuscation and De-Obfuscation - Daniel Bohannon, Sabajete Elezaj",
+  "description": "DAP is no stranger to the security spotlight. While LDAP is a protocol (Lightweight Directory Access Protocol) and Active Directory is the most popular directory services system that supports a subset of LDAP, the terms \u201cLDAP\u201d and \u201cAD\u201d are tightly coupled when discussing the execution, detection and prevention of attacks targeting directory services data.\n\nIn the last decade the widespread offensive value of querying AD data via LDAP was cemented with the release of open-source tools such as BloodHound and PingCastle. However, proper visibility of LDAP queries mostly remains a privileged asset for those organizations with deep pockets, and the commercial security tools providing this visibility are often woefully fixated on simple signature-based detections.\n\nMaLDAPtive is the 2,000-hour (and counting) quest of offensive and defensive LDAP exploration and tool-building. This research includes mind-bending depths of obfuscation across all elements of LDAP queries (many undocumented and most never seen in the wild), all baked into an obfuscation/de-obfuscation/detection framework built upon our ground-up custom LDAP search filter tokenizer and syntax tree parser.\n\nCome witness the release of our MaLDAPtive research and open-source framework: transforming LDAP from \u201clightweight\u201d to \u201cheavyweight.\u201d",
+  "channel_url": "https://www.youtube.com/channel/UC6Om9kAkl32dWlDSNlDS9Iw",
+  "duration": 2802,
+  "channel": "DEFCONConference",
+  "uploader": "DEFCONConference",
+  "upload_date": "20241016"
+}
+
+0.00s - 12.76s | This text was transcribed using whisper model: large-v2
+
+ How's everyone doing? I'm genuinely surprised. So either
+12.76s - 15.14s |  y'all went to bed early or you never went to bed. So thank you
+15.14s - 18.70s |  so much for being here. This talk is maladaptive. It's diving
+18.70s - 22.70s |  really, really deep into LDAP obfuscation, deobfuscation and
+22.70s - 26.62s |  detection. My name is Daniel Bohannon. Everyone I know calls
+26.62s - 29.78s |  me Debo for short, so feel free to call me that. I'm a principal
+29.78s - 32.58s |  threat researcher for a startup company called Permiso Security
+32.58s - 35.52s |  doing cloud and identity stuff. For the last better part of a
+35.52s - 39.08s |  decade, I've been really focused on end point security, doing
+39.08s - 42.38s |  some IR and threat research at Mandiant, Microsoft. And I have
+42.38s - 45.56s |  a little bit of a problem with obfuscation. It's kind of an
+45.56s - 48.20s |  obsession of mine of taking things that look normal and
+48.20s - 52.16s |  making them look just absolutely crazy. And then as a defender,
+52.20s - 54.90s |  looking for ways to detect those things. Another thing I'm really
+54.90s - 57.04s |  passionate about is coffee and books and all the great
+57.04s - 59.04s |  conversations that happen around both of those things.
+59.04s - 66.14s |  Hello, everyone. So I'm Sabayita. You can call me Sabi for
+66.14s - 70.34s |  short. I'm originally from Albania, recently moved to
+70.34s - 74.48s |  Germany, Berlin, working for Solaris as a senior cyber
+74.48s - 78.48s |  security engineer. I'm passionate about cyber defense.
+78.52s - 83.30s |  Currently, I'm also working on the field, doing a little
+83.30s - 86.40s |  incident response detection engineering and time and time
+86.42s - 90.36s |  allows threat hunting. I do have also some experience in
+90.36s - 94.50s |  consulting and government. Love mountains. You can see even the
+94.50s - 98.70s |  gold there. And enjoy moving a lot at the Great Espresso.
+98.70s - 103.39s |  All right. So to kick things off, we're going to do a little
+103.39s - 106.41s |  historical lesson on Active Directory and LDAP. And then
+106.41s - 108.63s |  we're going to break down kind of the components of LDAP so we
+108.63s - 111.15s |  know which pieces we're talking about when we get into the main
+111.15s - 114.13s |  piece of the talk, which is diving crazy deep into all the
+114.13s - 116.77s |  obfuscation. And then at the end, we'll talk more about our
+116.79s - 119.73s |  solution. We don't like to just create problems. We want to
+119.73s - 121.33s |  actually have some real solutions there so that
+121.33s - 123.99s |  defenders can walk away equipped with something really
+123.99s - 128.47s |  beneficial. And then we'll do a demo and a tool release at the
+128.47s - 132.87s |  end. So let's get going. We are going to go back in time to the
+132.87s - 135.31s |  days of disco balls and DeLoreans, talking about the
+135.31s - 139.85s |  1980s. The Directory Access Protocol, or the DAP, was a
+139.85s - 142.81s |  directory service kind of at that time. LDAP is the
+142.83s - 147.23s |  lightweight version. That's the L in LDAP. Between 93 and 97,
+147.23s - 149.03s |  you have three different versions of LDAP come onto the
+149.03s - 154.17s |  scene. In 1998, the Open LDAP Project released Open LDAP. And
+154.17s - 156.01s |  then what's important for this presentation is in the year
+156.01s - 160.11s |  2000, Microsoft released Active Directory in which they kind of
+160.11s - 163.75s |  ensured compliance with LDAP. So it's important to remember
+163.75s - 167.29s |  there's a server and client side component here. So Active
+167.29s - 169.99s |  Directory, we chose that because it's the most popular, most
+170.01s - 173.51s |  widely used application service or directory service
+173.51s - 176.21s |  application in use. And so we wanted to make sure all the
+176.21s - 179.39s |  rules of obfuscation that we were discovering and building
+179.39s - 183.01s |  would work against an Active Directory server. So that's the
+183.01s - 185.83s |  server side component. You have clients that will issue LDAP
+185.83s - 189.93s |  queries or LDAP, what are called search filters. And then LDAP is
+189.93s - 191.83s |  literally the protocol that allows that exchange of
+191.83s - 195.89s |  information between the client side and the server side. On the
+195.93s - 200.87s |  offensive side, LDAP or AD in general is quite a popular
+200.87s - 203.27s |  topic. And you look at open source tooling in the last
+203.27s - 206.01s |  decade, you have things like PowerView from the folks at
+206.01s - 209.25s |  SpectreOps, BloodHound, SharpHound, SoapHound, any kind
+209.25s - 211.89s |  of hound, right? Looking for really quick ways to get
+211.89s - 214.59s |  information from an offensive perspective, but also for
+214.59s - 217.59s |  defensive perspectives. With BloodHound and PingCastle,
+217.59s - 220.63s |  looking for ways to give defenders quick visibility into
+220.63s - 225.63s |  attack paths so that they can make better choices and
+226.41s - 230.45s |  increase the complexity for an attacker just to come in and get
+230.45s - 233.91s |  a really short path to DA or whatever else they want. So as
+233.91s - 236.41s |  defenders, we should then ask, okay, if attackers are using
+236.41s - 240.29s |  this, what are our data sources for defending? And so this is
+240.29s - 243.05s |  actually kind of a point of frustration for us. When we
+243.05s - 245.95s |  started this research, even till today, there's not that many
+245.95s - 249.43s |  options for production ready telemetry gathering for LDAP
+249.43s - 253.49s |  search filters. What we use in our lab environment was Silk ETW
+253.49s - 256.53s |  by Ruben Boonen, and actually one of the modules that were
+256.53s - 259.79s |  released with Mount Adaptive is a telemetry module to allow you
+259.79s - 261.93s |  to install these things, configure them, so you can have
+261.93s - 264.41s |  locally that client-side visibility. And then on the
+264.41s - 267.41s |  server side, there are options like, kind of like debug mode
+267.41s - 269.57s |  options, but those are not generally recommended to turn on
+269.57s - 272.97s |  in production. So if you want this visibility in production,
+272.97s - 277.05s |  the best case right now is get Microsoft Windows Defender.
+277.05s - 279.45s |  CrowdStrike has some stuff I've heard as well, but in terms of
+279.45s - 283.15s |  like, if you want to just trust the detections they have, cool.
+283.15s - 286.31s |  If you want to have all the data so you can validate, then maybe
+286.31s - 290.39s |  explore your options a little bit. So another thing to keep in
+290.39s - 292.65s |  mind is there are big differences between client-side
+292.65s - 296.03s |  and server-side logs when it comes to LDAP. For all the
+296.03s - 298.69s |  hackers in the room, you're going to love client-side logs
+298.69s - 302.07s |  because it's basically like WYSIWYG. Like any obfuscation
+302.07s - 305.13s |  we're going to talk about, you put that in, that's exactly what
+305.13s - 307.63s |  it looks like in those client-side logs. Awesome for
+307.63s - 311.27s |  obfuscation evasion. With an important caveat, it depends how
+311.29s - 315.47s |  you're issuing that query. So a lot of the mechanisms, like the
+315.47s - 321.41s |  ADDZ accelerator in PowerShell, will use the WLDAP32.dll to
+321.41s - 324.67s |  route that request. If that's the case, then the data will show
+324.67s - 327.75s |  up in an ETW stream for the LDAP provider and you can scoop it
+327.75s - 331.55s |  out. However, some folks have noticed there are many other
+331.55s - 335.15s |  ways to talk to an Active Directory server. So Soap Hound
+335.15s - 337.83s |  is an example from Falcon Force where they said, hey, let's just
+337.83s - 340.69s |  make soap requests directly to the domain controller and avoid
+340.71s - 344.75s |  any kind of client-side logging. So because of this, it's still a
+344.75s - 347.65s |  valuable data source, but it's important to look at the server
+347.65s - 352.33s |  side logs as well. There is significant normalization that
+352.33s - 355.59s |  occurs in server-side logs. So a lot of the obfuscation we'll
+355.59s - 358.53s |  talk about is normalized, but there are still some interesting
+358.53s - 362.27s |  tricks that do persist. And yeah, that's all I'll say about
+362.27s - 366.91s |  that right now. So over the next 40ish minutes, we're going to be
+366.91s - 370.55s |  doing an absolute speed run through all of the obfuscations
+370.57s - 375.05s |  that we've enumerated and built out for this research. This is
+375.05s - 378.95s |  something we've spent over 2,000 hours of R&D on. For the record,
+379.25s - 382.21s |  that's too much R&D. Don't recommend it to anybody. But
+382.21s - 386.09s |  here we are. So we're really happy to get this out there and
+386.09s - 388.85s |  then let our minds think about something else. And as I
+388.85s - 390.73s |  mentioned earlier, we're going to be doing a demo and tool
+390.73s - 394.07s |  release for maladaptive. And the name comes from maladaptive
+394.07s - 396.37s |  because typically people would think of LDAP queries as like a
+396.37s - 400.31s |  pretty simple, rigid kind of a language. So how flexible can it
+400.33s - 402.93s |  really be? And we hope to convince you pretty quickly
+402.93s - 406.77s |  that it can be pretty flexible. So with that, let's look at the
+406.77s - 409.45s |  LDAP overview so we know which pieces of an LDAP search
+409.45s - 412.15s |  request we're talking about for each obfuscation technique.
+414.56s - 420.16s |  So we're going to let's dive deep into the anatomy of an LDAP
+420.16s - 424.74s |  search request. We'll be looking at RFC 4511. There are many
+424.74s - 428.40s |  components to an LDAP search request, but we're going to be
+428.40s - 434.40s |  focused on the four main ones, which is the base object, where
+434.40s - 437.60s |  in the active directory structure to start the search,
+437.88s - 442.24s |  the scope that says how far to let the search run, the filter,
+442.28s - 445.76s |  which is the logic of what to look for in the directory
+445.76s - 449.04s |  structure, and the attribute selection, which are the
+449.08s - 454.72s |  properties that we want to bring back. As defenders, most people
+454.72s - 459.12s |  focus on the filter for detecting malicious LDAP
+459.12s - 462.84s |  queries. So for this reason, it's also going to be our
+462.84s - 468.72s |  primary obfuscation focus. We don't want to overlook also the
+468.72s - 472.20s |  base object and attribute selection. So they are going to
+472.20s - 477.28s |  be our secondary and tertiary obfuscation focus. As filter is
+477.28s - 481.08s |  the main one, let's see what it's made, what makes up a
+481.08s - 485.12s |  filter. So well, it's made up of tokens, there are five
+485.12s - 489.48s |  required tokens that we have group start and group end, they
+489.48s - 493.56s |  hold in the middle the attribute and the value for it, and the
+493.56s - 497.68s |  comparison operator. So here, for example, we are looking, I'm
+497.68s - 503.52s |  looking for myself, basically. There are also two optional
+503.52s - 507.44s |  tokens, which is boolean operator and extensible match
+507.44s - 511.56s |  filter. Debo is going to talk about these in the upcoming
+511.56s - 515.12s |  slides. But just so you know, these are bitwise values, they
+515.12s - 518.60s |  have different meanings based on the attributes, and Microsoft
+518.60s - 522.48s |  documents all of these per attribute. So different numbers
+522.48s - 529.12s |  mean actually different things to different attributes. In this
+529.12s - 532.00s |  one, basically, we're looking for objects that are not
+532.00s - 536.44s |  disabled, let's say. Most people actually do not write simple
+536.44s - 540.56s |  filters like this, they do try to combine multiple filters, and
+540.56s - 544.84s |  they do that with a boolean operator to create a filter
+544.84s - 552.68s |  list. So it's not going to look actually as a pretty tree just
+552.68s - 557.48s |  like this one, but as a single row, usually. So it's going to
+557.48s - 560.52s |  be composed of two filters, which together they make up a
+560.52s - 564.20s |  filter list. And the whole string is actually called the
+564.20s - 566.52s |  search filter for an LDAP search request.
+569.33s - 573.01s |  Oh, sorry. No, we don't don't need help with PowerPoint
+573.01s - 574.77s |  transitions. Moving on.
+578.16s - 581.36s |  Hold on. It looks like you could use some help with crowd
+581.36s - 586.84s |  where hilarious. Oh, clippy. I have trivia and jokes. I don't
+586.84s - 588.60s |  know I could use that on a Sunday morning. How about y'all?
+590.24s - 593.16s |  What do you call the biggest LDAP search request in history?
+594.08s - 599.68s |  Any takers? It's pronounced 10 and a half megabytes. Because
+599.68s - 603.36s |  that's the limit for a search request. Now, clippy actually
+603.36s - 607.16s |  comes armed with sources. But just know that that's a lot of
+607.16s - 609.68s |  data. And keep in mind LDAP is not just for querying
+609.68s - 612.04s |  information. It's also for updating records. But for the
+612.04s - 615.60s |  purpose of recon, I encourage anybody in this room to issue
+615.60s - 618.96s |  something even close to 10 and a half megs and see how much
+618.96s - 623.52s |  shows up in your logs. All right. Thanks, Sabi. So now that
+623.52s - 625.84s |  we had a good idea of the different components of LDAP
+625.84s - 628.40s |  that we're going to be looking at, let's actually do the fun
+628.40s - 632.20s |  stuff of obfuscation. For all the defenders in the room, it's
+632.20s - 635.36s |  going to get dark and bleak before it gets bright again. But
+635.36s - 638.96s |  we promise there is a light at the end of the tunnel. So as
+638.96s - 641.00s |  Sabi mentioned, the filter is going to be the primary
+641.00s - 644.12s |  obfuscation focus because it really is kind of the primary
+644.12s - 647.48s |  defensive detection focus today. And we're going to spend most of
+647.48s - 649.92s |  our time on the filter. And then a lot of the techniques
+649.92s - 652.52s |  that work on the filter will then be applied to the base
+652.52s - 657.12s |  object and attribute selection as well. There's a lot of things
+657.12s - 660.76s |  that we discovered that are not documented. Some of it was sheer
+660.76s - 663.24s |  luck. Some of it was brute forcing. Some of it was the fact
+663.24s - 664.92s |  that when you build an obfuscation framework, you're
+664.92s - 667.24s |  kind of defining the boundaries of a language and it's going to
+667.24s - 670.56s |  break out sometimes and teach you things that still work. And
+670.56s - 674.12s |  so we'll try to mention things that are undocumented and then
+674.16s - 677.68s |  also put this undocumented icon at the top. So we're going to
+677.68s - 680.76s |  start by looking at these five tokens and looking at
+680.76s - 683.40s |  obfuscation that can be applied to each, beginning with the
+683.40s - 684.12s |  attribute token.
+687.48s - 692.60s |  So let's see how what we can do to obfuscate the attribute. We
+692.60s - 696.08s |  can actually do casing. It is case sensitive, so we can play
+696.08s - 703.00s |  with it. We can use object, our OID object identifier. OID
+703.00s - 706.56s |  object identifier, Microsoft defines it as a dotted string
+706.56s - 710.64s |  of numbers, which is actually quite true, because you can also
+710.68s - 713.80s |  add this OID prefix at the beginning of it, and it's still
+713.80s - 718.12s |  going to work, which is also case sensitive. Another thing
+718.12s - 722.52s |  that is really fascinating and undocumented is that we can add
+722.52s - 727.44s |  prefixes of zeros to each octet on this part, and it executes
+727.44s - 731.00s |  just fine. It will also show just like this also on client
+731.00s - 736.24s |  sidelocks. Another thing we can do for attribute obfuscation is
+736.28s - 741.48s |  ambiguous name resolution. So the same applies as above. So we
+741.48s - 746.12s |  can use insensitive casing and OID notation even for the ANR.
+746.72s - 751.32s |  But what is exactly ANR? So in case you know some name, but you
+751.32s - 756.40s |  don't know in which property it actually is, you can search and
+756.40s - 759.00s |  what it would actually do depending on the version of
+759.00s - 762.64s |  Active Directory, it will logically transform this single
+762.64s - 768.04s |  term into this query. So basically everything is ended in
+768.04s - 771.72s |  a wildcard, except for some attributes that do not support
+771.72s - 776.56s |  this. And in case your search actually contains a space just
+776.72s - 781.28s |  like us, we are looking for domain admins. Then it's going
+781.28s - 785.84s |  to be added another this one. So these four ones, because it
+785.84s - 788.56s |  will treat it as a first name, last name, last name, first
+788.56s - 793.92s |  name. Some nice obfuscation tricks. So we can use ANR, for
+793.92s - 797.96s |  example, if we're trying to search for curb TGT. And we can
+797.96s - 801.68s |  also use which is the second example, only the some parts of
+801.68s - 805.44s |  it, and it's going to be an explicit wildcard. So we'll
+805.44s - 808.24s |  still even on the second example, we are still going to
+808.24s - 812.80s |  have the same results. And the third example, which is very
+812.80s - 816.64s |  nice, we actually discovered that if you add an implicit
+816.64s - 822.40s |  wildcard, after that, everything you add is going to be ignored.
+822.96s - 826.76s |  So you can play with it, but you're still going to be to get
+826.76s - 834.52s |  the result of ANR and return the curb TGT. And just as this also
+834.52s - 838.24s |  going to be handled from our detection framework. If you
+838.24s - 842.60s |  don't want to do all the crazy stuff with a wildcard, and just
+842.60s - 846.76s |  be explicit, you can actually just add an equal sign, which is
+846.76s - 849.20s |  document the which is the documented way to get the
+849.20s - 855.16s |  information. As a recap, for attribute obfuscation, we can
+855.16s - 858.84s |  do casing, object identifier notation, and ambiguous name
+858.84s - 864.72s |  resolution. Oh, sleepy again. Do you know where else ambiguous
+864.72s - 869.88s |  name resolution exists? We don't know Clippy where Microsoft
+869.92s - 872.96s |  what is more ambiguous than resolving to rename your
+872.96s - 875.52s |  products every six months. Am I right?
+877.40s - 880.08s |  I did not know Clippy was allowed to make Microsoft burns.
+880.08s - 883.96s |  I don't know if that was cleared. Thanks, Clippy. So one
+883.96s - 886.56s |  token down, we've talked about attributes. Next, we're gonna
+886.56s - 889.24s |  look at the comparison operator. Most of the time, this is an
+889.24s - 892.56s |  equal sign. When it comes to active directories implementation
+892.56s - 896.32s |  of LDAP, you also have the approximately equal to because
+896.32s - 899.48s |  casing doesn't matter. But it does. It doesn't prevent you
+899.48s - 902.32s |  from using the wildcard and hex characters that we'll be talking
+902.32s - 904.88s |  a lot more about later. But we're really going to focus on
+904.88s - 907.76s |  the range operator. So greater than equal to less than equal
+907.76s - 910.48s |  to. So here's an example a lot of red teamers would be familiar
+910.48s - 913.32s |  with service principal name equal star means give us the
+913.32s - 916.16s |  objects that have an SPN, any value, I don't care, but it must
+916.16s - 919.48s |  be defined. Well, technically, we could rewrite this with a
+919.48s - 922.84s |  string operator and say, hey, make sure it's present, it has a
+922.84s - 924.92s |  value that is greater than or equal to the alphabetical
+924.92s - 928.56s |  sorting of a string that begins with equals, or the exclamation
+928.56s - 932.36s |  point, or is less than ZZZ. So there are other ways logically
+932.36s - 935.36s |  that you can accomplish this equivalence, this presence
+935.36s - 939.24s |  filter. One really important note, if you think about the
+939.24s - 942.12s |  printable range of ASCII characters, this is the proper
+942.12s - 944.92s |  ordering that we all know and love and have agreed upon as a
+944.92s - 948.36s |  standard as an industry. We do not know why, but there is an
+948.36s - 952.52s |  abnormal range or sorting for strings in Active Directory.
+952.52s - 954.76s |  Casing doesn't matter, so we get rid of those, but you have all
+954.76s - 956.96s |  of the digits and alpha characters at the end. You have
+956.96s - 959.92s |  this very specific grouping of special characters, and then all
+959.92s - 962.48s |  the other characters fall right into the middle. This took us
+962.48s - 965.28s |  probably five days to find because it only occurred, this
+965.28s - 968.64s |  bug only occurred like one out of 1,000 iterations. But this
+968.64s - 972.12s |  is, this is the ordering. So our obfuscation framework handles
+972.16s - 975.60s |  that, but just know it's kind of weird. Another thing we can do
+975.60s - 979.04s |  is use the range filters for precise values. So SAM account
+979.04s - 982.32s |  type equals this number ending with 368. This is another
+982.32s - 984.88s |  bitwise value, but let's say that detections were looking at
+984.88s - 987.36s |  this. Well, you could also, instead of saying ends with
+987.36s - 991.96s |  368, say greater than equals to 7, less than equal to 9, and
+991.96s - 994.96s |  then specifically exclude the 7 and 9, so logically you're left
+994.96s - 998.64s |  with an 8. If you're like me and are a more visual person, I like
+998.64s - 1002.00s |  to think of it as a timeline. And so greater than equal to 7,
+1002.00s - 1005.44s |  less than equal to 9, and then let's just pop off the 7 and 9,
+1005.44s - 1009.32s |  so you're left with the 8. There are a lot of kind of flavors or
+1009.32s - 1012.72s |  recipes we built into the obfuscation module, showing a
+1012.72s - 1015.28s |  couple of them here. One of my favorites is actually using
+1015.28s - 1018.76s |  ranges for exclusions. In this last example where you can say
+1018.76s - 1021.92s |  give me the presence filter, but then exclude everything outward
+1021.92s - 1025.40s |  and inclusive of the numbers 7 and 9, so you're left with 8. So
+1025.40s - 1027.44s |  again, those are all random options in the obfuscation
+1027.44s - 1030.88s |  filter, the obfuscation module. This works for numbers. It also
+1030.92s - 1033.56s |  works for strings with a caveat that suffixes are a little
+1033.56s - 1038.46s |  tricky, but yeah, it is still quite effective for those
+1038.46s - 1040.80s |  things. So in review for the second token type of comparison
+1040.80s - 1043.96s |  operator, we have approximately equal to, we have the logical
+1043.96s - 1046.04s |  equivalence for the presence filter, and then we can use the
+1046.04s - 1048.74s |  range operators to do some really fun stuff for precise
+1048.74s - 1051.58s |  values, whether they're strings or numbers. And defenders should
+1051.58s - 1054.08s |  be pretty familiar with some of these we just looked at, because
+1054.08s - 1058.48s |  it's actually part of the sharp hound project. So that same
+1058.48s - 1061.38s |  account type, service principal name. So again, these are pretty
+1061.38s - 1064.06s |  relevant examples, and you can see that if a detection was
+1064.06s - 1066.32s |  looking for this, it would probably get smoked by what we
+1066.32s - 1070.26s |  just showed you. So the third token type is the Boolean
+1070.26s - 1072.94s |  operator. Mostly we think of ANDs and ORs, but when it comes
+1072.94s - 1077.54s |  to LDAP, the NOT is where things get really crazy really fast. So
+1077.54s - 1079.54s |  let's take a really practical example. Let's say you're
+1079.54s - 1081.80s |  looking for country equals Albania. You want to have all
+1081.80s - 1084.34s |  those objects that come out of active directory. One thing you
+1084.34s - 1087.12s |  can do is just throw a bunch of Boolean operators inside of it,
+1087.12s - 1089.46s |  and logically it doesn't matter if you AND and OR one thing,
+1089.46s - 1092.12s |  it's still going to be that same one thing. Additionally, you can
+1092.12s - 1095.42s |  also put in double negation. Again, logically this is still
+1095.42s - 1098.26s |  going to give you country equals Albania, the same number of
+1098.26s - 1103.14s |  objects. Additionally, if you wanted to do a Boolean operator,
+1103.14s - 1105.54s |  you can technically slide it right inside of the filter
+1105.54s - 1107.74s |  itself. So in this case, if we're looking for location
+1107.74s - 1110.84s |  equals KUKES, which is a city inside of Albania, you can see
+1110.84s - 1112.88s |  that bottom example, that Boolean is sitting directly
+1112.88s - 1116.72s |  inside of the group start, group end filters, or tokens. In our
+1117.38s - 1120.22s |  parser that we wrote for this research, we handle this
+1120.22s - 1122.42s |  similarly, but do call out the distinction because it is
+1122.42s - 1125.52s |  extremely important for certain kinds of detections, as well as
+1125.52s - 1128.72s |  obfuscation and deobfuscation scenarios. Most of the time
+1128.72s - 1131.12s |  though, you're dealing with a slightly more complex filter
+1131.12s - 1134.20s |  like this. So this is saying, I want to know when the country is
+1134.20s - 1139.26s |  Albania, and either the location is KUKES or Tirana, two cities.
+1139.26s - 1141.74s |  It's important to know that the Boolean operator has kind of a
+1141.74s - 1145.00s |  scope of influence. So in this case there are two Booleans, and
+1145.02s - 1148.12s |  you can see the boxes around the filters that they affect. If we
+1148.12s - 1151.20s |  added in a third set, there are now three groups. And so as
+1151.20s - 1153.64s |  we're parsing it, we basically create a stack of Boolean
+1153.64s - 1156.76s |  operators to know exactly how many Booleans are affecting the
+1156.76s - 1160.64s |  filter that we're looking at. One really, really fun feature
+1160.64s - 1163.48s |  is the not Boolean operator. So let's slide that in there. The
+1163.48s - 1167.08s |  not only affects the first filter, or the first Boolean
+1167.08s - 1170.84s |  operator that it modifies. So we can see location equals KUKES is
+1170.84s - 1173.58s |  modified by that not, but the filter just below it is
+1173.60s - 1177.64s |  completely, it doesn't modify it at all. So this is another one
+1177.64s - 1180.94s |  that we have to track, as well as a lot of crazy things like
+1180.94s - 1183.72s |  negation, traversal, because you can have lots of layers in
+1183.72s - 1186.38s |  between and you have to track the Booles all the way. Lots of
+1186.38s - 1189.82s |  fun, honestly a lot of headaches, but yeah, it's built
+1189.82s - 1191.82s |  into the parser so we don't have to think about that anymore, and
+1191.82s - 1195.06s |  we'll see that in the demos towards the end. My personal
+1195.06s - 1197.86s |  favorite obfuscation technique with Boolean operators is logical
+1197.86s - 1200.64s |  inversion. So for any math nerds in the house, this is known as
+1200.66s - 1205.20s |  De Morgan's law, but basically not A or B is the same as not A
+1205.20s - 1208.20s |  and not B with the inverse sitting below. So what you can
+1208.20s - 1211.90s |  do is take any LDAP search filter, choose a spot and negate
+1211.90s - 1214.14s |  it. In this case, we're going to choose the whole filter and now
+1214.14s - 1216.68s |  everything else kind of to the right of that is going to be in
+1216.68s - 1220.58s |  scope for obfuscation. So step number two is identifying within
+1220.58s - 1224.22s |  that in scope section, all the ands and ors and inverting them.
+1224.22s - 1227.12s |  And then the third step is locating all the filters and
+1227.12s - 1229.42s |  inverting them from a negation perspective. So none of these
+1229.44s - 1232.08s |  filters are negated, so we're going to add that not and those
+1232.08s - 1235.54s |  are now negated. Now, this is logically the same as what we
+1235.54s - 1238.22s |  started with. Again, this is a lot of headaches if you're
+1238.22s - 1241.56s |  parsing this manually, and so in the parser, we basically have a
+1241.56s - 1244.62s |  concept of what's the logical inclusion. Is this included true
+1244.62s - 1247.66s |  or false? What's the logical Boolean? Is it and or? And we
+1247.66s - 1250.42s |  also maintain a stack of all those Boolean operator tokens
+1250.42s - 1253.24s |  for your convenience. So in review for the third token type
+1253.24s - 1256.80s |  of Boolean operator, we have the additive nature, double negation
+1256.82s - 1261.72s |  and then DeMorgan's laws for the Boolean operator inversion. Oh
+1261.72s - 1265.92s |  goodness, okay. What is my least favorite LDAP token type? I'm
+1265.96s - 1268.20s |  assuming Boolean operator, but let's see what happens here.
+1268.92s - 1271.52s |  Yep, Boolean operator because I'm afraid of getting tied up
+1271.52s - 1275.74s |  in knots. Oh, that's cringe, Cliffy. Cliffy's losing steam
+1275.74s - 1278.24s |  fast. Yeah, get that out of the way. Okay. All right, the fourth
+1278.24s - 1281.28s |  token type, extensible match filter. So Sabi mentioned this
+1281.28s - 1284.16s |  before. This is for attributes that have bitwise values. It's
+1284.16s - 1288.20s |  an integer, uh, number, but it actually represents a base two
+1288.20s - 1291.40s |  add-ins, um, for all the bitwise flags based on which attribute
+1291.40s - 1296.58s |  that it is. Uh, so, uh, it is, um, there are four values that
+1296.58s - 1299.96s |  are supported by, uh, the, by Active Directory's LDAP
+1299.96s - 1302.84s |  implementation. We're going to focus on the first two because
+1302.84s - 1304.92s |  they're the most interesting in terms of obfuscation and that's
+1304.92s - 1308.12s |  the and and the or. Um, for me, I remember the or because it
+1308.12s - 1314.64s |  ends with dot 804. So 804 is or, 803 is not or. All right. So
+1314.64s - 1317.00s |  here's an example. User account control, and you can see in the
+1317.00s - 1319.40s |  red is the extensible match filter. Um, in this case, it's
+1319.40s - 1323.16s |  an 803, so that's an and, and it's the number 515, which is
+1323.16s - 1326.92s |  the base two add-ins 1, 2, and 512. So one of the things we
+1326.92s - 1329.32s |  can do is what we've called bitwise breakout. So we can
+1329.32s - 1333.16s |  break that, uh, 515 out into 1 and 514. Again, as long as we
+1333.16s - 1337.00s |  have the proper grouping of add-ins, we can do this. 514 is
+1337.00s - 1340.44s |  actually 2 and 512. So we can break that out even further. So
+1340.44s - 1343.08s |  from a detection perspective, we can spread our logic across many
+1343.08s - 1346.88s |  different filters, which is really, really complicated, but
+1346.88s - 1349.92s |  it's also fun. Uh, if you started with an or, the same
+1349.92s - 1351.96s |  trick applies. Just make sure that the Boolean operator you
+1351.96s - 1354.36s |  add is an or instead of an and and that it matches the
+1354.36s - 1358.68s |  extensible match filter. Um, this is a pretty trivial example,
+1358.68s - 1361.48s |  but a lot of real world examples can get pretty crazy. Like this
+1361.48s - 1364.68s |  is a git domain user from PowerView. Massive number. You
+1364.68s - 1367.24s |  can imagine all of the random groupings and regroupings of,
+1367.24s - 1370.44s |  uh, base two add-ins to produce the same value in your overall
+1370.44s - 1375.08s |  search filter. Um, so another thing we can do is if you have a
+1375.08s - 1378.60s |  filter that is a precise value. So this is looking for the exact
+1378.60s - 1383.16s |  ones and zero set to equal this number. Um, what you can do is,
+1383.16s - 1385.76s |  uh, use this little formula. You can and, you can add the
+1385.76s - 1388.56s |  extensible match filter of and for all the one bits. You can
+1388.56s - 1391.40s |  add the or extensible match filter for all the zero bits and
+1391.40s - 1395.24s |  negate it and then and both of those filters together. What's
+1395.24s - 1398.28s |  really cool about this is now we have extensible match filters
+1398.28s - 1401.00s |  and we can use the first breakout type to break those
+1401.00s - 1404.20s |  into smaller and smaller random groupings of those base to add
+1404.20s - 1406.52s |  in. So we're not going to take this further, but this could
+1406.52s - 1409.80s |  explode into 10, 15, 20 different filters all slammed
+1409.80s - 1413.48s |  together. So interview for the fourth token type of extensible
+1413.48s - 1415.56s |  match filter. We have the bitwise breakout with the and
+1415.56s - 1418.20s |  and or, and then also the precise breakout, uh, which kind
+1418.20s - 1424.32s |  of combines the second one, uh, with the first one. Thanks
+1424.32s - 1428.88s |  Debo. Let's look at what we can do to obfuscate a little, the
+1428.88s - 1433.68s |  value. We are still in the filter section. So excluding a
+1433.68s - 1437.44s |  couple of attribute types, just like seeing here, it is still
+1437.44s - 1442.64s |  casing doesn't matter. So it's cases sensitive and we can also
+1442.64s - 1446.56s |  do prepended zeros to anything that are bitwise digits or
+1446.64s - 1451.44s |  numbers. And we got some undocumented feature regarding
+1451.44s - 1456.32s |  timestamps is that we originally noticed that sometimes
+1456.32s - 1460.24s |  milliseconds were present, but it didn't actually seem to
+1460.24s - 1464.00s |  matter. If you change the millisecond seconds values or
+1464.00s - 1468.32s |  remove them, it turns out you can actually add literally
+1468.32s - 1474.80s |  anything as long as you have a capital Z in it. So, and
+1474.80s - 1478.16s |  technically it is going to be treated still as a correct
+1478.16s - 1482.08s |  timestamp in the results. And it doesn't need to be only
+1482.08s - 1486.08s |  capital Z. It can also be it's hex encoding representation,
+1486.72s - 1491.84s |  which leads us to the next point, which is hex encoding
+1491.84s - 1495.92s |  for value obfuscation. And it's our favorite thing to do, to be
+1495.92s - 1501.60s |  honest, the hex encoding itself, it exists to be able to, to
+1501.68s - 1505.20s |  escape certain special characters, which Microsoft has
+1505.20s - 1509.20s |  detailed here very well, but you can also escape any printable
+1509.20s - 1514.88s |  characters that you want to as well. So you can swap these with
+1514.88s - 1518.08s |  the hex representations, and it's still going to be to give
+1518.08s - 1521.44s |  you the same results. And is going to show just like this on
+1521.44s - 1526.80s |  the client side logs. Again, our parser, our parser parses
+1526.80s - 1530.88s |  codes, decodes all the values. So it's all being handled.
+1532.08s - 1536.32s |  One undocumented thing is that Microsoft says that the hex
+1536.32s - 1539.04s |  representation should be followed by two characters,
+1540.08s - 1544.64s |  representative SK hex character. But that's actually not true for
+1544.64s - 1548.96s |  the first 16 characters, you can drop the leading zero, and it's
+1548.96s - 1554.08s |  still going to work. Wildcards, we mentioned a little bit, even
+1554.08s - 1558.08s |  the wildcards. So for example, instead of looking for the
+1558.16s - 1562.48s |  wildcard TGT, you can also just look for RBG and see what you
+1562.48s - 1568.24s |  get. These, actually, for wildcards, we are not the only
+1568.24s - 1572.40s |  ones who have been looking for evasion purposes. So even the
+1572.40s - 1577.44s |  researcher Hope Walker, these are two very well great posts,
+1577.44s - 1581.20s |  blog posts recent, it's a researcher at SpectreOps. And
+1581.20s - 1587.52s |  she outlines using wildcards for evasion purposes. As a recap,
+1587.52s - 1591.20s |  for value, we can do casing, we can do prepended zeros, time
+1591.20s - 1596.40s |  steps, hex encoding, and wildcards. The good news is,
+1596.40s - 1600.16s |  that's all you can do with obfuscation. Nah, I'm lying,
+1600.16s - 1604.32s |  you guys, we got much more. So until now, we actually were
+1604.32s - 1608.00s |  looking for top and obfuscation. Let's see outside of it a
+1608.00s - 1612.88s |  little. And for example, for filter wide obfuscation, you can
+1613.52s - 1617.68s |  actually add group start and group end as long as as much as
+1617.68s - 1622.40s |  you want, as long as you stay until the depth of 99. You can
+1622.40s - 1627.52s |  also add white space all over, and it is significant. And it
+1627.52s - 1634.16s |  can be new line tab, etc. Garbage filters, again, need
+1634.16s - 1637.84s |  here, actually, you need to be careful if you're looking for if
+1637.84s - 1641.76s |  you're actually using logical or or logical end, because in
+1641.84s - 1645.84s |  case you're looking for logical end, you need to make sure the
+1645.84s - 1651.68s |  properties exist. But you can go crazy with ours. And lastly,
+1651.68s - 1657.84s |  is filter filter reordering. So until now, we only handled the
+1657.84s - 1662.88s |  filter. Let's see what we can do with base object. As a
+1662.88s - 1666.80s |  reminder, the base object is where in the active directory
+1666.80s - 1670.16s |  structure, we want to see we want to start the search, there
+1670.16s - 1672.96s |  are some good detection opportunities that we feel
+1672.96s - 1677.44s |  aren't discussed as much. And for example, like some offensive
+1677.44s - 1681.52s |  tools, just like certify, they have a very benign common and
+1681.52s - 1685.60s |  super search, super common search filter. So in this case
+1685.60s - 1688.88s |  is the base object, and it's looking for public key services,
+1689.68s - 1695.44s |  we are going to focus from a syntax perspective on a simple,
+1695.44s - 1699.76s |  really simple object like this. All the tricks we've seen until
+1699.76s - 1703.04s |  now, okay, for example, they still work, which is the casing
+1703.04s - 1707.44s |  we can play, you can do also the hex encoding for the value
+1707.44s - 1713.20s |  portion, you can use the ID notation of the attributes, and
+1713.20s - 1719.44s |  also supports the ID prefix as well as the or prefix. And
+1719.44s - 1723.84s |  whitespace, it actually can be added at the end, as well as
+1723.84s - 1729.20s |  between the slashes of the LDAP prefix. Something interesting
+1729.28s - 1733.36s |  is that it's true for the base object, but not for the value in
+1733.36s - 1737.60s |  the filter is that as long as hex is not present, you can
+1737.60s - 1740.80s |  actually encapsulate it with double quotes. And it will show
+1740.80s - 1745.28s |  up this way in client log side logs, but it's not going to look
+1745.28s - 1751.12s |  like this on server side logs. Lastly, is the attribute
+1751.12s - 1754.64s |  selection basically is which attributes properties do you
+1754.64s - 1759.36s |  want to be returned in the results. And here also case in
+1759.36s - 1763.68s |  doesn't matter, you can substitute just like previously,
+1763.68s - 1767.52s |  you can also use object identifier notation also
+1767.52s - 1773.20s |  supports adding ID prefix and prepended zeros, add whitespace
+1773.20s - 1778.08s |  only after the attributes that are on the ID syntax. Not sure
+1778.08s - 1782.00s |  why but yeah, a lot of trial and error to be honest. We have
+1782.08s - 1787.04s |  the option also to add duplicate attributes and garbage
+1787.04s - 1791.92s |  attributes, literally anything you want. And the person who's
+1791.92s - 1797.60s |  going to to answer about this is no one else than Clippy. Hey,
+1797.60s - 1801.68s |  Daniel, what do you call this character? Asterix, wildcard or
+1801.68s - 1802.16s |  splat?
+1804.08s - 1807.52s |  I think this is an ages question. But all three are
+1807.52s - 1809.84s |  true. But there's a lot of there's a lot of space down
+1809.84s - 1813.60s |  there. So let's see what Clippy has to say. F all the above. So
+1813.60s - 1816.00s |  two more important things here is from an input perspective and
+1816.00s - 1819.04s |  the attribute selection. If the only value defined is a wild
+1819.04s - 1822.88s |  card, it will return all the properties, even just the same
+1822.88s - 1825.28s |  as if you don't define any attribute selection. What's
+1825.28s - 1828.32s |  fascinating is that in the server side logs, that wild card
+1828.32s - 1831.12s |  is going to literally be printed as the string square brackets,
+1831.12s - 1835.76s |  all all all lowercase. Now, if you'll notice, he is that if you
+1835.76s - 1838.96s |  have a list of attributes, and any one of those is a wild card,
+1838.96s - 1842.32s |  then it will, the server side logs will translate that wild
+1842.32s - 1846.00s |  card into this other string all with list. If you are and you
+1846.00s - 1848.40s |  should be if you are parsing these attribute selection
+1848.40s - 1852.40s |  values, you need to know that this weird string is prepended
+1852.40s - 1854.64s |  to the first attribute. So you have to do a really specific
+1854.64s - 1858.00s |  split and translation that we that we do in the logging
+1858.00s - 1860.00s |  module. But just know there's some weirdness that goes on
+1860.00s - 1864.40s |  there. Thanks, Clippy. All right, now that is actually the
+1864.40s - 1867.20s |  end of the obfuscation portion. So we've talked about the search
+1867.20s - 1869.20s |  filter, we've talked about the base object, the attribute
+1869.20s - 1872.80s |  selection. So for all the defenders in the room, what now?
+1872.80s - 1876.08s |  So from a solution perspective, we're going to focus on three
+1876.08s - 1879.76s |  steps. One is parsing, two is enriching, and then three is the
+1879.76s - 1882.88s |  actual detection itself. So from a parsing perspective, when we
+1882.88s - 1885.84s |  started this research, there was no parser for LDAP search
+1885.84s - 1889.36s |  filters. And so we naively said, let's just build a parser. How
+1889.36s - 1891.84s |  hard could it be? To be honest, that was over half of the
+1891.84s - 1894.64s |  research, but it was one of the most interesting and
+1894.64s - 1897.68s |  fulfilling parts of this. And so we wrote a C sharp state
+1897.68s - 1901.04s |  machine parser to firstly do tokenization. So that means when
+1901.04s - 1903.36s |  you have a string come in, that's the entire search filter,
+1903.36s - 1905.68s |  let's break it into tokens. So we know which ones are
+1905.68s - 1908.96s |  attributes, values, comparison operator, etc. Next, you want to
+1908.96s - 1911.76s |  organize those tokens into a representation that allows you
+1911.76s - 1915.28s |  to understand the structure of nested Boolean operators and
+1915.28s - 1917.68s |  filters and filter lists and all those sorts of things. And
+1917.68s - 1920.16s |  then you can move on to actual enrichment, which is step
+1920.16s - 1923.12s |  number two. So here's an example of using all the conversion
+1923.20s - 1926.64s |  modules within Mount Adaptive to start with a string, break it
+1926.64s - 1929.68s |  into tokens, and then every step of the way, we try to decode
+1929.68s - 1932.48s |  and enrich however much we can. So as Sabi mentioned, when
+1932.48s - 1934.88s |  there are hex values, we'll automatically decode them for
+1934.88s - 1939.04s |  you. But we leave the original syntax as well. One distinction
+1939.04s - 1942.96s |  between, so in our parsing, we do tokenization, and then we
+1942.96s - 1946.48s |  basically create a parse tree or syntax tree, which is almost
+1946.48s - 1949.44s |  an abstract syntax tree, but we drop the abstract part because
+1949.44s - 1952.00s |  abstract says, let's drop things that don't need to be there,
+1952.00s - 1954.64s |  like insignificant white space. Well, by definition,
+1954.64s - 1956.88s |  obfuscation doesn't need to be there. So we actually want to
+1956.88s - 1960.00s |  keep all those insignificant things so we can recreate the
+1960.00s - 1963.52s |  input from that parse tree. And then after we break this into
+1963.52s - 1965.68s |  tokens and do those enrichments, we'll then group them into
+1965.68s - 1968.80s |  filters and branches and a tree structure to do certain kinds of
+1968.80s - 1971.28s |  obfuscation and detections that require that kind of tree
+1972.00s - 1975.52s |  grouping functionality as we go through and parse it. And then
+1975.52s - 1979.12s |  the final step is actually detect. So we try to make it as
+1979.12s - 1981.52s |  simple as possible. We wrapped all this inside of a single
+1981.52s - 1984.48s |  function called find evil. So you can pipe any number of
+1984.48s - 1986.80s |  search filters you want into find evil. And for each of those
+1986.80s - 1989.36s |  filters, it will parse it, do all the enrichment we just
+1989.36s - 1991.60s |  talked about. It will run it through all our complete
+1991.60s - 1994.24s |  detection rule set, which we are releasing with maladaptive. So
+1994.24s - 1997.36s |  65 rules and counting. And then for each of those detections,
+1997.36s - 2000.32s |  the rule carries with it a dynamic score or weight, if you
+2000.32s - 2002.88s |  will, as well as an explanation. So it'll give you an example of
+2002.88s - 2005.12s |  what kind of thing it's looking for. And then it will actually
+2005.12s - 2008.32s |  show you the specific part of your search filter that flagged
+2008.32s - 2011.84s |  on that rule, as well as in the name, you can see. It'll
+2011.84s - 2014.48s |  actually pull out specific values. So it should be really
+2014.48s - 2017.36s |  colorfully obvious, as you'll see in the demo, of exactly why
+2017.36s - 2019.92s |  this thing was flagged for this rule. And if you look at the
+2019.92s - 2023.04s |  bottom, as I said, we spent over half the time just building
+2023.04s - 2026.24s |  this parser. We wrote and rewrote every piece of this
+2026.24s - 2029.04s |  parser two to three times to make it as fast as we possibly
+2029.04s - 2032.24s |  could. And in this example, we're parsing this search filter
+2032.24s - 2036.56s |  100,000 times, doing full parsing, full detections, and
+2036.64s - 2040.16s |  it's clocking in at just under 4.4 seconds. And that's on a
+2040.16s - 2043.28s |  moderately spec laptop, because we know that the number the
+2043.28s - 2045.44s |  volume of search filters in production environments is
+2045.44s - 2048.24s |  massive. And so we wanted this to be really usable right out of
+2048.24s - 2052.88s |  the box. Oh, and shout out to Olaf Hartung at Falcon Force.
+2052.88s - 2055.12s |  He was really instrumental in taking all these rules for us
+2055.12s - 2057.84s |  and running them multiple times across his entire client data
+2057.84s - 2060.64s |  set, since we don't have that data set, and then giving us
+2060.64s - 2062.96s |  feedback and stats on hey, which rules need to be tuned a little
+2062.96s - 2065.28s |  bit. So, Olaf, if you're watching, thanks so much, buddy,
+2065.28s - 2068.48s |  we really appreciate it. So, instead of talking more about
+2068.48s - 2070.88s |  the solution, let's go into the last section and actually just
+2070.88s - 2073.76s |  show a demo. If you haven't picked up on it by now, we
+2073.76s - 2076.48s |  really like to have fun. When you spend 2,000 hours on
+2076.48s - 2078.88s |  something, you have to trick yourself into being motivated,
+2078.88s - 2082.48s |  so we added colors however we can. This is our ASCII art, and
+2082.48s - 2084.96s |  it's actually a fully functioning LDAP query that
+2084.96s - 2088.88s |  will return any object that has a name property. Clippy seems
+2088.88s - 2090.64s |  to like it as well. I can't tell if he's hanging out or
+2090.64s - 2094.00s |  trying to eat the terminal or what's going on. So, in the
+2094.00s - 2097.60s |  first example, this is that Albania, Kukiz, Tirana filter
+2097.60s - 2100.40s |  example with a little bit of obfuscation. So, if we tokenize
+2100.40s - 2103.44s |  it, we can see it breaks out which things are attributes,
+2103.44s - 2106.56s |  values, et cetera. If we do the enriched tokens, we can now see
+2106.56s - 2109.12s |  it says hey, this is a defined attribute, and it translates to
+2109.12s - 2112.32s |  the letter L, and we have these other context objects as well.
+2112.32s - 2114.64s |  So, if we look at the context object, remember this is things
+2114.64s - 2117.28s |  like the Boolean operator. We group all these things into
+2117.28s - 2120.32s |  filters so that we can write detection logic against the
+2120.32s - 2122.88s |  entire filter. So, we can easily access the string values, but
+2122.96s - 2125.36s |  then we have a dictionary and list of the full token objects.
+2125.36s - 2128.00s |  So, all the metadata nested from tokenization we can find in
+2128.00s - 2130.56s |  the filter, and then if we look at the context object for the
+2130.56s - 2133.84s |  Boolean operator, we'll see this is a logically inclusive filter.
+2133.84s - 2136.16s |  This is tracking that full stack of Boolean operators that
+2136.16s - 2139.12s |  you still have direct access to, and then every single value
+2139.12s - 2142.08s |  goes through the full value parsing. So, any hex characters
+2142.08s - 2144.72s |  are parsed. At any time, you can look for the raw content or
+2144.72s - 2147.44s |  the decoded content. Pipe that into Find Evil, and we can see
+2147.44s - 2150.08s |  these are the individual rules that matched for this
+2150.08s - 2152.56s |  particular search filter. This is just showing a couple
+2152.56s - 2155.12s |  properties. In the next demos, you'll see a little better view
+2155.12s - 2158.80s |  of the entirety of the rules. Let's do another parsing
+2158.80s - 2160.96s |  example, this time using the bitwise value. So, remember all
+2160.96s - 2164.88s |  the bitwise breakout were like 515 can be 1, 2, 5, 12. Well,
+2164.88s - 2167.28s |  here's a rule that flag and says, hey, if user account
+2167.28s - 2171.12s |  control attribute has the flag 128 set to true, then flag this
+2171.12s - 2173.04s |  alert. I won't go into the details of why that's an
+2173.04s - 2176.24s |  interesting detection, but what we want to show you is when we
+2176.24s - 2178.16s |  parse this value, we automatically know this is a
+2178.16s - 2181.28s |  bitwise attribute, and we parse the value to get those base two
+2181.28s - 2184.88s |  add-ins, either in a dictionary format or a list format. So,
+2184.88s - 2187.68s |  you can immediately write detections for combinations of
+2187.68s - 2190.64s |  true and false. Now, keep in mind this is per filter, so that
+2190.64s - 2192.96s |  breakout stuff does complicate it a bit, but you can at least
+2192.96s - 2197.04s |  extract the flags and aggregate it back together for your final
+2197.04s - 2200.88s |  detections across the entirety of the search filter. The last
+2200.88s - 2204.96s |  parsing example is looking for some actually kind of crazy
+2204.96s - 2207.28s |  stuff. So, decoding hex characters in this first
+2207.28s - 2210.16s |  example, that's easy sauce. So, this is trusted domain, easy
+2210.16s - 2213.36s |  detection, but when it's things like wildcards, they're actually
+2213.36s - 2216.24s |  missing characters. So, we can't precisely say what the person
+2216.24s - 2219.60s |  was looking for, but in our detection module, you have the
+2219.60s - 2222.72s |  ability to define strings of interest, like curb TGT, domain
+2222.72s - 2225.36s |  admins, domain controllers, and the parser and the detection
+2225.36s - 2227.76s |  rules will go through and actually expand the wildcards
+2227.76s - 2230.48s |  and say, hey, does this wildcarded string match any of
+2230.48s - 2233.44s |  your sensitive terms? And that also handles the two ANR
+2233.44s - 2235.60s |  scenarios that Sabi mentioned earlier, with the implicit
+2235.60s - 2239.28s |  wildcard or the explicit wildcard. So, yeah, those are
+2239.28s - 2241.20s |  some really fun detections that go beyond just pure
+2241.20s - 2244.08s |  deobfuscation, but really kind of logically looking at some
+2244.08s - 2245.84s |  suspicious strings of interest.
+2247.76s - 2252.40s |  And finally, we've put all this together into a colorful
+2252.40s - 2256.48s |  interactive menu to make it fun to explore. We can test our
+2256.48s - 2261.28s |  input, the LDAP search filter, and we can explore the
+2261.28s - 2265.20s |  obfuscation menus for all the techniques we covered in this
+2265.20s - 2272.08s |  presentation. Wildcards are also supported. We can add
+2272.08s - 2276.40s |  obfuscation layer by layer, and we can also remove it. And if
+2276.40s - 2280.32s |  you're lazy, you can use all wildcards to randomly apply all
+2280.32s - 2280.88s |  the options.
+2282.88s - 2288.56s |  Let's test again. The search filter still works. Detection
+2288.56s - 2293.12s |  module is built in, and find evils shows a full summary of
+2293.12s - 2297.76s |  detections, scores, explanations, and more colors.
+2299.52s - 2302.88s |  Lastly, if you don't like interactive menus, we have full
+2302.88s - 2308.32s |  CLI support. So the interactive menu lets you randomly choose
+2308.32s - 2313.28s |  ingredients, and you can copy out the receipt for non-interactive
+2313.28s - 2317.36s |  user. All the functions for pretty printing and detection
+2317.36s - 2320.40s |  summaries are also available via CLI.
+2330.00s - 2332.88s |  Thank you. It's always awkward in Blue Teamer talks, and they're
+2332.88s - 2336.08s |  like, was that a shell? Like, do we clap or not? And so, yeah,
+2336.08s - 2338.72s |  our apologies for not including a dramatic pause. But yeah,
+2338.72s - 2342.08s |  hopefully that was really fun for everyone. So we're almost
+2342.08s - 2344.32s |  done here, but we just want to reiterate that Sabi and I are
+2344.32s - 2346.56s |  both defenders, and from the very beginning of this research,
+2346.56s - 2349.92s |  we knew that we had not seen people talking about this, and
+2349.92s - 2352.48s |  to be honest, attackers didn't really need this help. So why
+2352.48s - 2355.44s |  hand them a fully loaded machine gun when defenders still often
+2355.44s - 2357.52s |  don't even have the telemetry in the first place? So from the
+2357.52s - 2359.60s |  very beginning, we weren't strong-armed. We decided that
+2359.60s - 2362.56s |  we wanted to release this in a unique kind of two-stage
+2362.56s - 2365.20s |  approach. So today what we've released is everything we've
+2365.20s - 2368.40s |  talked about, minus the obfuscation module. We're
+2368.40s - 2372.64s |  releasing a corpus of 1,337 benign obfuscated examples, so
+2372.64s - 2374.96s |  you don't even have to run our code to look at examples of
+2374.96s - 2378.56s |  obfuscated search filters. For anyone who's really ambitious,
+2378.56s - 2381.60s |  you have the full parser, and the deobfuscation modules look
+2381.60s - 2384.08s |  suspiciously like the obfuscation ones. So if you want
+2384.08s - 2386.64s |  to do a little bit, go for it. But just keep in mind, we spent
+2386.72s - 2389.12s |  over 1,000 hours on the obfuscation module, so there is
+2389.12s - 2392.24s |  a heck of a lot of craziness that we put in there. Our goal,
+2392.88s - 2395.76s |  pending a CFP response, is hopefully by the end of this
+2395.76s - 2399.12s |  year to do a part two of this presentation to focus really
+2399.12s - 2402.88s |  deeply on all the differences in client and server-side logging,
+2402.88s - 2405.44s |  a lot of the weird scenarios we had to build into the parser to
+2405.44s - 2408.48s |  support all of this, and then at that point, releasing the
+2408.48s - 2412.24s |  obfuscation module. So yeah, just want to make that really
+2412.24s - 2414.08s |  clear. That's clear on the GitHub, which will be on the
+2414.08s - 2416.96s |  last slide as well. But again, as defenders, we wanted to try
+2416.96s - 2419.76s |  to be as creative as possible and help defenders not be
+2419.76s - 2423.12s |  completely throwing tomatoes at us up on the stage. And we made
+2423.12s - 2425.84s |  this very clear in the CFP process. Big red text, no
+2425.84s - 2429.12s |  surprises. So we're really happy that there was support in us
+2429.12s - 2432.96s |  doing that kind of a release. So the final takeaways. LDAP is
+2432.96s - 2436.80s |  still widely used by attackers. It's very valuable. And in our
+2436.80s - 2439.76s |  opinion, defensively, it's still kind of immature in terms of
+2440.56s - 2443.04s |  detection. It seems to be a lot of kind of string-based
+2443.04s - 2445.68s |  detections. And even looking at blog posts of people doing LDAP
+2445.68s - 2448.32s |  hunting, there just aren't as many of them as I would like to
+2448.32s - 2452.24s |  see, that we would like to see. And then lastly, we released
+2452.24s - 2455.68s |  Maldaptive to help try to bring awareness to what can happen to
+2455.68s - 2458.08s |  show that we shouldn't just be doing string-based detections,
+2458.08s - 2460.88s |  and we're providing the parser in all of our detection modules
+2460.88s - 2463.36s |  so that hopefully you can right out of the gate start using it
+2463.36s - 2465.52s |  in your environment if you already have a mechanism to get
+2465.52s - 2470.00s |  all of those search filters. Our unofficial takeaway is we
+2470.00s - 2471.60s |  wanted to leave you with something a little different.
+2472.40s - 2476.32s |  And so we wanted to leave you with each of our favorite
+2476.32s - 2479.04s |  Albanian proverb. So I'm going to go first. I'm not a native
+2479.04s - 2482.72s |  speaker, so forgive my pronunciation. But mine is
+2482.72s - 2486.72s |  rošsa malet, which literally means live long like a mountain.
+2486.72s - 2489.76s |  It's kind of a blessing of well-being. I like to think of
+2489.76s - 2492.00s |  it in this scenario as we just climbed a crazy mountain
+2492.00s - 2495.44s |  together. I'm a little out of breath personally. But in this
+2495.44s - 2498.24s |  industry, we have to help each other out. We have to recognize
+2498.24s - 2501.36s |  the shoulders that we stand on. And so when you see someone else
+2501.36s - 2503.20s |  struggling up the mountain trying to understand what
+2503.20s - 2506.16s |  you're learning, help them up. Get them to the top, and then
+2506.16s - 2508.00s |  they'll be able to see the next mountain they're going to climb
+2508.00s - 2509.52s |  and the person they're going to bring along with them.
+2511.93s - 2516.57s |  And my favorite expression, and I think the audience would
+2516.57s - 2521.05s |  agree with me here, Diba, is to ljutem jo mokap se letraš,
+2521.05s - 2524.49s |  which it means please no more paperclips.
+2528.09s - 2531.69s |  It was fun while it lasted. All right. And with that, we just
+2531.69s - 2534.41s |  want to say thank you so much for your time. Thank you DefCon
+2534.41s - 2537.53s |  and to all the organizers. We had such a great time putting
+2537.53s - 2540.17s |  this research together, and we're really happy to be here.
+2540.17s - 2542.97s |  Here's all of our contact information. Here's the link to
+2542.97s - 2545.21s |  Maldaptive. Please reach out, and we'll be up here for
+2545.21s - 2558.17s |  questions. But thank you again for your time. Any brave souls
+2558.17s - 2563.23s |  for questions? Questions or criticisms, everything is
+2563.23s - 2575.77s |  welcome. One right here, yeah. So the question is what was our
+2575.77s - 2579.93s |  process for finding all the undocumented stuff? Well,
+2579.93s - 2584.25s |  sometimes luck, sometimes I think the best answer that we
+2584.25s - 2587.13s |  can give is people ask us why do you make obfuscation
+2587.13s - 2590.57s |  frameworks? It's kind of a little twisted, but it's really
+2590.57s - 2593.77s |  a way of kind of working backwards and defining a
+2593.77s - 2596.41s |  grammar, because it's all a language, right? What's
+2596.41s - 2599.29s |  linguistically, syntactically allowed in a language, whether
+2599.29s - 2602.33s |  that's PowerShell or LDAP or anything else? So our
+2602.33s - 2606.57s |  understanding is, let's say, actually when Sabi wrote the
+2606.57s - 2609.29s |  hex encoding function to take values and do hex encoding,
+2609.93s - 2612.01s |  we wrote that function, we plugged it into our test
+2612.01s - 2614.89s |  harness, and one out of every 500 examples would fail. It
+2614.89s - 2617.05s |  wouldn't return the same results we expected. And we
+2617.05s - 2619.77s |  eventually realized that's because hex values or hex
+2619.77s - 2623.21s |  characters in the value is not allowed when the extensible
+2623.21s - 2625.45s |  match filter is defined, right? So that is now an
+2625.45s - 2628.57s |  incompatibility that no one said anywhere, but our tool
+2628.57s - 2630.97s |  helped us find because it found an example that broke what we'd
+2630.97s - 2633.53s |  expected to see. So that's how we found a lot of these
+2633.53s - 2635.53s |  examples. And then just some tricks you kind of learn along
+2635.53s - 2637.77s |  the way, like, hey, pre-pinning zeros, that seems like
+2637.77s - 2639.77s |  something that someone might have thought to ignore because
+2639.77s - 2642.17s |  it's insignificant, but it still shows up in logs,
+2642.17s - 2644.57s |  therefore it's meaningful to us. And so some of those tricks
+2644.57s - 2646.25s |  you just kind of pick up along the way and keep carrying
+2646.25s - 2660.81s |  forward. But yeah, great question. Thank you. Yeah. Yeah,
+2660.81s - 2663.77s |  good question. So the question was in our research against the
+2663.77s - 2667.13s |  obfuscation techniques we found, how effective was Windows
+2667.13s - 2669.77s |  Defender or other tools like that? We don't have access to
+2669.77s - 2675.05s |  those tools, so I actually don't know. In general, I'd say I've
+2675.05s - 2677.77s |  spent the last decade doing real-time detections, actually
+2677.77s - 2680.33s |  spending some time at Microsoft in Defender telemetry looking
+2680.33s - 2683.61s |  at how we detect processes and stuff like that on the
+2683.61s - 2686.41s |  endpoint. So what I would say that a lot of red teamers
+2686.41s - 2688.89s |  criticize blue teamers for is why do you make static kind of
+2688.89s - 2692.41s |  rigid detections? Sometimes it's out of ignorance. Sometimes
+2692.41s - 2694.97s |  more likely it's out of performance. So I mean, there
+2694.97s - 2697.05s |  are millions and millions and millions of search filters
+2697.05s - 2701.29s |  flying around doing crazy regexes to try to find these
+2701.29s - 2703.85s |  bizarre scenarios probably is going to bring down performance
+2703.85s - 2706.33s |  overall. So from a product's perspective, that's, I think,
+2706.41s - 2708.49s |  why a lot of decisions are made, but we don't have any direct
+2708.49s - 2711.85s |  insight into Defender or anyone else on how they're stacking up
+2711.85s - 2716.01s |  against this. If anyone from Microsoft or anyone else wants
+2716.01s - 2717.77s |  to reach out, we'd be more than happy to share more of the
+2717.77s - 2720.49s |  research in detail and help if there's anything that we can do
+2720.49s - 2723.85s |  to protect the community in that regard. Great question. Thank
+2723.85s - 2735.47s |  you. Any last questions? Yes. The question was did we have
+2735.47s - 2739.95s |  trouble with all the colors for formatting? Trouble to who? The
+2739.95s - 2756.97s |  answer is yes. So we actually did, we split our programming
+2756.97s - 2759.29s |  actually partially. We use PowerShell core. So we did a lot
+2759.29s - 2761.45s |  of it in Windows, a lot of it on Mac, a little bit in Linux,
+2761.45s - 2763.77s |  just to test compatibility. But yeah, in terms of color
+2763.77s - 2765.85s |  differences, we actually stuck with the original colors, the
+2765.85s - 2769.37s |  original 16. We experimented with the dark colors for things
+2769.37s - 2774.25s |  like distinguished name values. Those are the darkened version
+2774.25s - 2778.33s |  of all the RDNs to represent the overall tokens. But that
+2778.33s - 2781.29s |  darkness shows up better on Windows. On Mac, it actually
+2781.29s - 2784.81s |  doesn't quite show up as much. But yeah, so that was a factor
+2784.81s - 2788.65s |  we had to kind of play around with. But yeah, I like the color
+2788.65s - 2793.34s |  question. I've never gotten that before. So thank you. All
+2793.34s - 2795.02s |  right. I think with this, we're out of time. We'll be around
+2795.02s - 2796.86s |  front if anyone else wants to talk or ask questions. But
+2796.86s - 2798.70s |  again, thank you everyone for coming to the talk. Have a good
+2798.70s - 2799.50s |  one.

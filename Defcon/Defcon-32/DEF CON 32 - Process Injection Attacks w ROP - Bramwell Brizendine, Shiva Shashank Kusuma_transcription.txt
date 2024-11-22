@@ -1,0 +1,252 @@
+{
+  "webpage_url": "https://www.youtube.com/watch?v=1Hx-PzyGtX0",
+  "title": "DEF CON 32 - Process Injection Attacks w ROP - Bramwell Brizendine, Shiva Shashank Kusuma",
+  "description": "This talk showcases techniques for process injection using advanced return-oriented programming (ROP). Process injection via ROP introduces significant hurdles, requiring many WinAPIs to be chained together, each with complex parameters and return values. We give practical details on how to best manage this. One seemingly insurmountable challenge is in identifying the target binary, as string comparison can be extremely difficult in ROP, as needed ROP gadgets may be lacking. We unveil a unique, universal solution, giving a reliable means of string comparison via ROP, which works all the time, allowing a specific process to be pinpointed and injected into via ROP.\n\nWe created numerous patterns for different WinAPIs, allowing for as many as a dozen ways of preparing a specific WinAPI via ROP, if using an approach centered around the PUSHAD instruction. With some WinAPIs, there are zero patterns for PUSHAD, forcing us to rely upon the much lauded \u201csniper\u201d approach. We document all such variations of patterns for the WinAPIs in our demonstrated process injection. This research is not intended to demo a one-off example of process injection via ROP, but to provide a methodology that can be used time and time again, providing unique templates for others to use the same WinAPIs when attempting process injection via ROP.",
+  "channel_url": "https://www.youtube.com/channel/UC6Om9kAkl32dWlDSNlDS9Iw",
+  "duration": 1367,
+  "channel": "DEFCONConference",
+  "uploader": "DEFCONConference",
+  "upload_date": "20241016"
+}
+
+1.52s - 6.52s | This text was transcribed using whisper model: large-v2
+
+ Welcome, welcome, welcome to DEF CON. My name is Dr. Bramal Brizendine. I am the director of
+8.86s - 14.34s |  the Verona Lab, which deals with vulnerability research. Creator of the Shell Wasp, which
+14.34s - 19.88s |  allows us to utilize Windows syscalls in shellcode. I've created the Jop Rocket and Rop
+19.88s - 24.32s |  Rocket, both of which deal with return oriented programming and jump oriented programming.
+24.32s - 28.72s |  And I've also created an NSA funded research project called Sherem, which allows us to
+28.72s - 34.96s |  analyze, uh, shellcode. Uh, I've spoken at many different conferences in the past, um, and
+34.96s - 39.96s |  I'm also an assistant professor of cyber security. I have a PhD in cyber operations, which
+42.40s - 48.58s |  is a highly technical degree. And all of those, uh, previous projects have, um, previously
+48.58s - 53.58s |  been presented at DEF CON, so check them out. My co-speaker is, uh, Shiver Shashank Kusama.
+53.58s - 58.58s |  He is a research assistant and, uh, he has a master's in computer science and is pursuing a
+61.58s - 66.12s |  master's in cyber security. Uh, he's looking for internship opportunities for the summer as
+66.12s - 71.12s |  well. So, our agenda. What are we going to focus on? Well, firstly, we'll talk briefly about a
+73.96s - 79.76s |  general approach to shellcodeless ROP. How do we create unique patterns to facilitate
+79.76s - 85.68s |  process injection? Some generic ROP techniques for process injection. And then we will look
+85.68s - 90.70s |  at a sample process injection technique that has a, uh, highly novel solution to a rather
+93.40s - 100.40s |  significant problem. We'll have a demo and then we'll have another brief, uh, uh, process
+100.40s - 106.34s |  injection and then we'll, we will conclude. So, some, uh, preliminary words on our
+106.36s - 112.16s |  experiment. Now this, when we, we conducted this research, we did it on a contrived binary, uh,
+112.16s - 116.90s |  one of those intentionally vulnerable and is filled with convenient gadgets because we want
+116.90s - 122.18s |  our work to be applicable not just to one particular vulnerable binary, but to
+122.18s - 126.48s |  potentially, uh, any binary. So, we want to discover everything that is possible. And this
+126.48s - 133.32s |  research is really focused on, uh, ROP from the standpoint of you compromise a binary. It's
+133.36s - 137.70s |  not something where we're trying to integrate ROP and some kind of custom malware or some
+137.70s - 144.14s |  kind of custom red team software. So, let's introduce the idea of shellcodeless ROP. What
+144.14s - 149.04s |  does it mean exactly? Well, it's this idea of instead of a bypassing data execution
+149.04s - 154.86s |  prevention DEP, we are instead going to invoke the, uh, functionality of a shellcode
+154.86s - 159.86s |  directly via ROP gadgets. And it's something that has very seldom been done in the Windows
+160.24s - 165.24s |  ecosystem. And when you see it, it's almost always two, three APIs chained together. But
+169.88s - 176.18s |  you'll see, uh, later today that we have, uh, vastly, uh, more APIs to achieve what we want to
+176.18s - 181.26s |  do. Some also, uh, some previous work on shellcodeless job. There's a video link in the
+181.26s - 187.52s |  slides, so I do encourage you to, uh, check it out if you're interested. So, in terms of
+187.52s - 191.42s |  approaching shellcodeless job there, or shellcodeless ROP, there are a couple approaches we
+191.42s - 198.20s |  could take. One is utilizing push add, where we're going to populate values on, uh, certain
+198.20s - 204.44s |  registers, uh, with certain predefined values. Um, and then that causes them to be loaded
+204.44s - 209.18s |  onto the stack in a, a certain predefined order. And we'll also use move dereference or the
+209.18s - 214.08s |  sniper technique. And this allows us to precisely write our values to the stack and we can
+214.08s - 220.98s |  then increment or decrement to the next, uh, slot that we want to provide values for. So,
+220.98s - 226.66s |  those are both critically, uh, important for us. And I want to reemphasize the importance of
+226.66s - 230.50s |  this idea of finding patterns. Because again, we're not really just approaching one process
+230.50s - 235.04s |  injection technique, but we want our work to be applicable broadly to many different
+235.04s - 240.74s |  techniques. How do we do this in terms of return oriented programming? So, we really want to
+240.74s - 245.58s |  emphasize that, you know, we have these particular slots, uh, where we have, uh, registers
+245.58s - 251.28s |  going in a certain order. Uh, so we really, uh, weaponize this in terms of developing new
+251.28s - 257.66s |  patterns for different APIs, uh, both Windows APIs as well as native APIs to allow us to invoke
+257.66s - 265.16s |  those easily using return oriented programming. So, and when using many different APIs, we
+265.18s - 270.46s |  want to be able to chain them together. Lar- kind of like in the sense where you have a, uh, a
+270.46s - 273.56s |  ROP chain, you have different, uh, ROP gadgets chained together. We'll be chaining different
+273.56s - 279.86s |  APIs together. So, you may get one, uh, return value. Uh, in this case, uh, open process
+279.86s - 286.14s |  runtime address is provided to us in EAX. We can use that subsequently in a pattern for open
+286.14s - 291.14s |  process because of course we need to call open process. So, a large part of our research is
+291.36s - 297.56s |  really focused on generating a lot of these different types of patterns and actually we've
+297.56s - 302.58s |  developed more than 150 unique patterns to provide a lot of opportunities. Um, we'll talk
+305.58s - 309.72s |  more in depth about some of them and we'll give some examples, but historically, uh, some of
+309.72s - 315.12s |  the tools that have done this have been things like, uh, Mona, Mona, you know, Virtual Alloc,
+315.12s - 320.20s |  Virtual Protect, and you have a couple patterns. So, it's not a significant number of patterns.
+320.22s - 326.10s |  So, let's talk now briefly about some generic ROP techniques that we can use to help us with,
+326.10s - 331.10s |  uh, process injection. So, one is the idea of using function output, using that function
+333.50s - 339.90s |  output as a way to, um, to be a parameter. So, get product address and a little library
+339.90s - 345.74s |  often go hand in hand and they're very familiar and well known. Uh, so with a little library,
+345.76s - 351.96s |  we can get a handle to a module, uh, which is the, the base address of a certain DLL and that's
+351.96s - 357.60s |  required for get product address. So, we take the output from the one, which is going to be
+357.60s - 364.44s |  returned to us in EAX and then we use that subsequently in, uh, get product address. And
+364.44s - 368.94s |  we'll do this time and time again. So, return values as well as other out parameters if
+368.94s - 374.32s |  you're dealing with native APIs. And then this gets a little bit more complex. So,
+374.36s - 379.64s |  structures is parameters. Can we do that with return oriented programming? And we actually
+379.64s - 384.50s |  can. So, with a structure, we need to look clearly at the, the definition of the structure and
+384.50s - 388.38s |  then we need to build that byte by byte through return oriented programming. And we'll
+388.38s - 392.44s |  typically do that with a series of move dereferences and we can just increment and
+392.44s - 398.52s |  decrement to the, to the next slot as we slowly build our, uh, our structure. And in some
+398.52s - 403.00s |  cases, we may actually have nested structures. So, take a look at adjust hook and privileges.
+403.00s - 408.98s |  We have several nested structures and it needs to be done exactly correctly or else it
+408.98s - 413.98s |  simply will just not work. Um, one thing that is also, uh, immensely important is this idea
+417.42s - 422.42s |  of storing important values, um, addresses, handles, things which may be obtained by
+425.96s - 430.40s |  calling a Windows API. If we call a Windows API to obtain one of these values, well that
+430.44s - 434.60s |  takes a lot of effort. And if we needed it again, well of course we don't want to call it a
+434.60s - 441.04s |  second time. So, we will make an effort to save that value somewhere in memory and then we
+441.04s - 445.82s |  can retrieve it later. So, we might have a common reference point. We move ESP to a
+445.82s - 450.28s |  location, maybe we advance forward 500 bytes and we just start writing different values
+450.28s - 455.26s |  there. And that common, uh, reference point can, will change from gadget to gadget but we
+455.26s - 460.26s |  can manually calculate that and make adjustments, uh, as need be. So, again you'll have
+460.26s - 465.46s |  lots of important values and you can save them and then retrieve them subsequently, uh,
+465.46s - 470.66s |  later on. So, one other thing we did is, and this is actually, uh, completely novel,
+470.66s - 476.10s |  combining move dereference and push add in terms of building a pattern. So, we can use that
+476.10s - 482.74s |  to create a, a, a ROP chain pattern. Uh, push add you can have a maximum of 4 parameters, 5
+482.74s - 488.86s |  if you use ESP but that can be rather, uh, challenging to do. Um, so we can do push add and
+488.88s - 494.52s |  then do the remainder. We can supply those via move dereference. Now, if you have the option
+494.52s - 499.50s |  to, uh, place your strings and data in the payload directly, then by all means do it.
+499.50s - 504.06s |  Because it's going to save you effort. Again, if you have a common reference point, you can
+504.06s - 507.90s |  use these. You have a pointer to a string. And you, some of you might be saying, well, what
+507.90s - 513.24s |  about EDR? Well, yes, EDR will be an issue at times and so this may not always be plausible.
+513.24s - 518.24s |  If you have no payload size restrictions, one option is to obfuscate some of this and then
+518.26s - 524.94s |  you could use a ROP to go and de-obfuscate it as need be. So, let's get into an actual, uh,
+524.94s - 529.00s |  process injection technique. Now, this is based on something that I actually did at Hack in the
+529.00s - 535.44s |  Box Amsterdam 2023. That was all Windows syscalls and shellcode. This obviously is not. It's
+535.44s - 539.64s |  return oriented programming. And so these are more, uh, these are Windows APIs and native
+539.64s - 544.66s |  APIs. It's not necessarily strikingly original. Um, but in any case, we have a new URL. We're
+544.88s - 551.48s |  going to create that. It's going to slither up inside of our victim target and external
+551.48s - 556.92s |  process and then we're going to write our shellcode there and then cause it to launch. So, in
+556.92s - 562.72s |  terms of ROP, the actual complete chain of gadgets that we have, 29 gadgets. It's an
+562.72s - 569.36s |  extraordinary amount. Uh, I'm not familiar with any, uh, ROP chain in the Windows ecosystem
+569.36s - 574.60s |  that has anywhere near this level of gadgets. And so it's a lot of work to, to maintain
+574.60s - 580.18s |  these from, um, from API, API call to API call. And it would be a lot more, actually, if we
+580.18s - 586.42s |  did not use that technique of storing and retrieving certain values that we need. So, let's
+586.42s - 591.18s |  talk about load library. We can use that with, uh, push add and a pattern. So, we load the
+591.18s - 596.96s |  particular values into, uh, registers and then we go and do push add. Then that causes it to
+596.96s - 603.24s |  go in a predefined, uh, location. And so, let's see what happens exactly. So, we, we have our
+603.24s - 607.80s |  stack values there and those correspond to our pattern. So, we have red 8. That means we're
+607.80s - 612.48s |  going to do this ROP NOP. We're going to skip 8 bytes. So, we skip that. We do a jump EVP
+612.48s - 616.94s |  dereference. We, therefore, invoke load library. We have a return address. We have a
+616.94s - 623.26s |  parameter. Everything checks out. And then we get a result. Exact result that we want. So,
+623.26s - 629.86s |  we get the base address of NTDLL. And then we can use that subsequently for git proc
+629.86s - 633.60s |  address, which, which is our next one. And we'll do the same thing. We'll populate different
+633.60s - 639.00s |  values into the registers that we can then call push add. And we get the runtime address. In
+639.00s - 645.32s |  this case, we're doing create tool help 32 snapshot. An extremely important thing that we'll
+645.32s - 649.62s |  talk about momentarily. So, these are the patterns for load library. We have a lot of them,
+649.62s - 655.32s |  9. And git proc address, we have 11. So, that gives us a lot of flexibilities because if you're
+655.32s - 660.22s |  trying to do something, you don't have a particular gadget while you just give up. If you do,
+660.22s - 665.90s |  then the chain is incomplete. But having multiple patterns, we can drill down deeper and
+665.90s - 671.26s |  maybe find something that actually works. In any case, our next API is create tool help 32
+671.26s - 675.60s |  snapshot, which will allow us to take a snapshot of all the active processes that are out
+675.62s - 681.12s |  there. And it's immensely important. We need it to discover, uh, the different PIDs. We're
+681.12s - 687.10s |  going to target one of those. So, there are actually 11 patterns. So, a lot of flexibility
+687.10s - 692.30s |  there in terms of how you can invoke it with the push add instruction. Um, there's an example
+692.30s - 697.08s |  of the ROP and we got the push add at the bottom. Virtual alloc, um, it's one way to allocate
+697.08s - 701.32s |  memory. Yes, some EDR can block it. There are other ways you could do it. Uh, the pattern for
+701.34s - 705.78s |  that is very, uh, familiar. Uh, one of, one of the most familiar goes back probably about 15
+705.78s - 710.94s |  years. Um, but with this, we're going to allocate a region of memory. We're going to use that
+710.94s - 717.52s |  for a couple very, uh, important, uh, things. One of which is to build the process entry 32.
+717.52s - 723.22s |  The process entry 32 is where we're going to go in and check our PID and we're going to check
+723.22s - 729.15s |  our, uh, string. So, the first thing is going to be process 32 first. It's going to kick
+729.17s - 736.13s |  everything off. It's going to initiate the whole, uh, process. So, how are we going to do
+736.13s - 739.61s |  that? Uh, first we actually need to build the structure. So, we can go ahead and build the
+739.61s - 744.05s |  structure via ROP and our move dereferences. Most of it are null bytes, so it's relatively
+744.05s - 749.55s |  simple. We have a DW size. Uh, it's an arbitrary value, so you can make it whatever you want.
+749.55s - 754.25s |  And then once we're done, we get a pointer to that. We supply that pointer as the parameter.
+754.29s - 759.93s |  So, all of that work and we just get a pointer to that. So, again, the idea of being able to, uh,
+759.93s - 763.67s |  dynamically locate something in memory and use that as kind of like a pointer can be very
+763.67s - 769.37s |  useful. And then the patterns for process 32 first and process 32 next are actually
+769.37s - 774.75s |  interchangeable. So, one of the biggest challenges is this idea of string comparison. How do
+774.75s - 780.51s |  we do that with ROP? Well, the gadgets are not really very common, so that can be very, uh,
+780.55s - 786.19s |  problematic. We need to identify a specific process, otherwise you really can't proceed
+786.19s - 791.55s |  forward. So, you're kind of at a, an, uh, you can't really go forward without this. So, we
+791.55s - 795.39s |  came up with a solution. We're going to build our own custom function in memory. It's an
+795.39s - 800.63s |  enumerate process function. And we're actually writing the raw assembly. So, remember we
+800.63s - 805.77s |  made a writable memory with virtual alloc. We can write our code there. You can do it other
+805.77s - 809.91s |  ways as well. And so, this will cycle through process 32 next. It can do it hundreds of
+809.91s - 816.79s |  times. It'll loop until it finds the exact, uh, string, VU player. We can supply that and
+816.79s - 820.89s |  then once it does that, it'll go ahead and exit out. So, how do we write that? Well, we
+820.89s - 825.79s |  simply just compile it. We can then write our bytes to memory using the move dereference
+825.79s - 830.23s |  technique one by one until they're all written. Make sure the code is executable and there
+830.23s - 833.67s |  are multiple ways in which you can do that. And then we need to supply the appropriate
+833.67s - 839.13s |  values. So, things like our HP snapshot, our, our VU player string, uh, dereference
+839.13s - 845.03s |  process 32 address. And then how do we kick it off? Uh, again, multiple ways, but in this
+845.03s - 848.37s |  case, we're going to do a simple push ret, which will then push the address onto the stack
+848.37s - 853.71s |  and then return to that. And then we can, uh, immediately start executing our custom code
+853.71s - 860.25s |  that we just wrote there. And so, that'll invoke process 32, uh, repeatedly until it finds
+860.25s - 867.13s |  our particular PID. In this case, we have VU player. It's going to look at offset 24 and
+867.13s - 872.13s |  once it finds offset 24, then again, it's going to break out of that loop. And, um, from
+872.13s - 877.03s |  there, the base of the structure, we can just go to simply offset 8. Offset 8 will then hold
+877.03s - 882.05s |  the PID. We can capture that PID. In this case, it's 668. And how do we do that via return
+884.45s - 888.89s |  oriented programming? Well, we just basically take exactly what I said, translate it to ROP.
+888.89s - 895.29s |  So, some move dereferences, some POPs, uh, sequence of 8, uh, increments. And, uh, in this
+895.29s - 901.39s |  case, we have a different PID, B98. And, uh, we can supply that. Uh, we can save that to
+901.39s - 907.37s |  memory so we can use that later. Remember the idea of save and then retrieve. And then that
+907.37s - 916.49s |  brings us to our next API. And with that, we're going to have Shiva, uh, take the podium.
+916.49s - 921.43s |  Here we take this PID that we just obtained after all of that hard work and, uh, we are going
+921.43s - 926.43s |  to convert that into the handle to the process. We got to have this. It's impossible to move
+926.43s - 931.89s |  forward if you don't have a PID to your target process. And we don't want to just randomly
+931.89s - 936.77s |  inject into some other unknown process. Uh, so this one we are going to use both push add as
+936.77s - 941.77s |  well as move dereference technique. So, here we have multiple patterns for open process. And
+943.43s - 948.61s |  then we'll follow that up after push add. And we also have a move dereference with the
+948.61s - 953.61s |  process ID. In this ROP chain, the process ID has been provided by move dereference, uh, with
+954.43s - 959.43s |  everything else being done via push add. Next, we'll open a handle to our current process with
+962.61s - 968.75s |  open process token. And then we'll use that. So, right here we have a handle and we are using
+968.75s - 976.12s |  ROP to create a pointer to hold the access token that we'll retrieve. With adjust token
+976.12s - 981.06s |  privileges, uh, we are going to take that token handle and we can then change the privileges as
+981.08s - 987.78s |  we need. We need to do this to avoid some problems that could happen otherwise. And this
+987.78s - 993.40s |  requires multiple complex structures such as token privileges, such as, uh, where we can
+993.40s - 1001.20s |  specify the AC privilege and AC debug privilege. With adjust token privileges, uh, here we
+1001.20s - 1006.74s |  have a ROP. So, we are setting disable all privileges to false. And what that means is that
+1006.74s - 1013.32s |  whatever we specify inside the new state structure will be then done. With adjust token
+1013.36s - 1019.30s |  privileges, we can then go inspect via the debugger and see if it has all of our values. Like
+1019.30s - 1024.64s |  AC privilege enabled and AC debug privilege. And then everything is going according to the
+1024.64s - 1029.64s |  plan. Our goal with this is to take a common DLL URL mon, create a file for it, and then go
+1032.14s - 1037.32s |  ahead and map that out. And then we can inject our payload into that, then causing that to be
+1037.32s - 1042.32s |  executed. And we'll do this with these APIs which we'll be talking about. So, create file A is
+1044.52s - 1049.86s |  the first. We get a handle to the URL mon, which is our file. We are going to be using this
+1049.86s - 1056.54s |  later on, uh, but we are going to do this with sequence of moody references. And here we are
+1056.54s - 1061.78s |  providing the absolute address, the string pointer to that, and also generic read. We are
+1061.78s - 1066.78s |  doing generic read to avoid some possible detections. And then NT create section, a lower
+1069.28s - 1074.28s |  level native API will allow us to then create a section object for URL mon DLL, and here we are
+1075.92s - 1080.92s |  doing page read only. And then with drop we are specifying the sec image. NT map your
+1083.80s - 1089.64s |  section. Now that we have the URL mon section handle, we can now map that view of the
+1089.66s - 1095.10s |  section into address space of VU player. We'll do this purely through moody references,
+1095.10s - 1102.00s |  because, uh, we have many nulls and also we have page read only, so it's a bit more limited.
+1102.00s - 1106.78s |  One more important thing is providing the base address or pointer to the base address, and
+1106.78s - 1113.28s |  that will receive a base address inside of VU player. So that will be provided to us, as you
+1113.28s - 1120.77s |  can see in this example, which we'll be talking about later, so it is very important.
+1120.79s - 1125.79s |  Virtual protect EX will then allow us to change the target DLL URL mon to RWX, and so we are
+1127.97s - 1132.53s |  going to do this with sequence of moody references, because remember we have limited
+1132.53s - 1138.47s |  permissions for it. And so we'll get the handle to the VU player as well as the base address
+1138.47s - 1145.42s |  that we just retrieved, and then once it's done, we'll have the page execute read write. Here
+1145.42s - 1149.66s |  is a route where we can provide the pointer to the base address. We then go and dereference
+1149.74s - 1155.64s |  that and we'll pull the base address out of that, and then we do the moody reference. Write
+1155.64s - 1161.42s |  process memory allows us to inject the shellcode into the process memory of VU player. We are
+1161.42s - 1166.82s |  doing this via push add as well as moody references, which you can see right here, so
+1166.82s - 1173.56s |  pointing to the shellcode up there, and also providing the size. Same thing here, we are, we
+1173.56s - 1178.56s |  have the shellcode and the size and then the remaining parameters with push add. Write
+1178.56s - 1183.40s |  process memory at this point, once this is done, then our shellcode will be injected into
+1183.40s - 1188.60s |  inside of URL mon, which is an external process. So we have gone from one process to a
+1188.60s - 1194.88s |  completely different process, and the shellcode is just sitting there waiting for us. So how
+1194.88s - 1199.02s |  do we cause it to execute? The answer is very simple, it's create remote thread, but the
+1199.02s - 1203.76s |  actual technique is not so simple. So we'll have a moody reference and also push add
+1203.76s - 1209.86s |  pattern, and then we'll have a sequence of moody references. We'll go inside the other
+1209.86s - 1218.04s |  space of VU player, and then we do the push add. So here is some of our ROP, we can
+1218.04s - 1222.64s |  provide the LP parameter as well as the address, and then we follow that up after push
+1222.64s - 1228.48s |  add, and finally with create remote thread, our injected shellcode will execute. We have
+1228.48s - 1236.52s |  achieved our goal. Let's do a demo. We start the things with create help 32 snapshot and
+1236.52s - 1241.78s |  we have been given a handle. Let's write the enum process function to memory byte by
+1241.78s - 1248.42s |  byte. We invoke the function using push thread. Now we are inside the function, special
+1248.42s - 1254.56s |  function that we created, and let's take the process entry. Let's see what we have as the
+1254.56s - 1261.58s |  first entry. We have system. Let's move forward until we find our desired PID, and we
+1261.64s - 1268.34s |  finally found the PID for VU player. That's good. We'll keep moving forward, and we'll do
+1268.34s - 1274.78s |  the create file A. We'll get a handle from create file A. Let's verify what we have. We
+1274.78s - 1279.62s |  have the URL mount, that's good. Let's map that out using empty map section, and let's
+1279.62s - 1283.52s |  check the base address. Right now we don't have any base address, but right after the
+1283.52s - 1291.65s |  function execution, we'll get the base address, and base address has been provided. We'll
+1291.67s - 1297.11s |  change the permissions for the base address, and we'll see, we have, we have the base
+1297.11s - 1304.99s |  execute read write permissions. We have the MZ, it's a PE file, and let's inject the shellcode
+1304.99s - 1311.89s |  using write process memory. And let's see what we have. We have successfully injected the
+1311.89s - 1316.89s |  shellcode into external process. And finally, create remote thread. We got it.
+1325.73s - 1332.80s |  Thank you Shiva. So we're going to wrap things up very briefly here. So, I just want to say,
+1333.02s - 1337.48s |  our, you know, our goal is not to enumerate all process injection techniques. We've seen
+1337.48s - 1341.86s |  talks like that before, but we really want to provide a methodology in terms of how we can do
+1341.86s - 1346.16s |  that with ROP, and focus on the practicalities. We want to provide a novel concept of
+1346.16s - 1352.20s |  building a enumerate processes function purely via ROP, which can be extendable to other
+1352.20s - 1356.68s |  process injection techniques, and then create a rich set of patterns that we can utilize
+1356.68s - 1360.98s |  for that purpose. With that, we'd like to thank you, and invite you to check out the ROP
+1360.98s - 1361.58s |  Rocket tool.

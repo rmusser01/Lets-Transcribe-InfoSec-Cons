@@ -1,0 +1,396 @@
+{
+  "webpage_url": "https://www.youtube.com/watch?v=sfma7ymwmdA",
+  "title": "DEF CON 32 - Bug Hunting In VMware Device Virtualization - JiaQing Huang, Hao Zheng, Yue Liu",
+  "description": "In this presentation, we will unveil a new attack surface: Device Virtualization in VMKernel. This isan unknown territory that has not been explored by security researchers to date. During the reverse engineering of the VMware Hypervisor, we discovered 8 vulnerabilities related to device virtualization, 3 of them have been assigned CVE number (some vulnerabilities have even been successfully exploited in Tianfu Cup), and the remaining 5 of our vulnerabilities have been officially confirmed by VMware.\n\nFirstly we will delve into the loading process of vmm, the implementation of data sharing between vmm and vmx, and VMware's UserRPC, which facilitates communication between the Hypervisor and the Host. These mechanisms are crucial in virtual device emulation.\n\nThen We will explain security issues in various parts of the USB system, including the host controller, VUsb middleware, and VUsb backend devices, based on the vulnerabilities we have unearthed.\n\nIn the end, We will primarily discuss the similarities and differences in SCSI-related device emulation in the virtual disk system between VMware Workstation and ESXi Additionally, we will cover design flaws related to disk device emulation that we discovered in VMKernel.",
+  "channel_url": "https://www.youtube.com/channel/UC6Om9kAkl32dWlDSNlDS9Iw",
+  "duration": 2351,
+  "channel": "DEFCONConference",
+  "uploader": "DEFCONConference",
+  "upload_date": "20241016"
+}
+
+1.36s - 11.52s | This text was transcribed using whisper model: large-v2
+
+ We are excited to share our talk with you and also feel a little disappointed for we
+11.52s - 14.96s |  cannot arrive at DEF CON in person.
+14.96s - 20.00s |  And we do hope our talk will serve as a guide for anyone who's looking to start VMware security
+20.00s - 21.00s |  research.
+21.00s - 28.40s |  Firstly, allow me to introduce us to you.
+28.40s - 33.80s |  My name is Jiaxin Huang, and Hao Zheng and me are both security researchers of Tenggong
+33.80s - 36.36s |  team at Xianxin Group.
+36.36s - 41.12s |  And we are both interested in reverse engineering and visualization security.
+41.12s - 49.20s |  Yueliu is our team leader, and our team consists of lots of people interested in viral security
+49.20s - 50.20s |  domain.
+50.20s - 53.56s |  And we have a website to post our blog on it.
+53.56s - 57.96s |  So if you are interested in it, make sure to follow us.
+57.96s - 65.20s |  And if you have any questions, feel free to DM or email us.
+65.20s - 66.60s |  Here's the short story.
+66.60s - 69.96s |  Let's describe our visualization backcounting journey.
+69.96s - 76.32s |  We actually started to research visualization security from the end of 2022.
+76.32s - 81.76s |  And in that time, we basically know nothing about visualization.
+81.76s - 85.24s |  So why are we interested in it?
+85.24s - 89.60s |  Because visualization is involved in lots of hacking contests.
+89.60s - 93.28s |  And it's a very hard, very challenging target.
+93.28s - 98.88s |  And for myself, I want to reverse engineer it and learn how it works.
+98.88s - 102.30s |  So what have we achieved in last year?
+102.30s - 108.80s |  We successfully escaped from the paralyzed desktop on GeekCon 2023.
+108.80s - 115.44s |  And we reported lots of workstation EXXI bugs to VMware.
+115.44s - 125.41s |  And we learned a lot, not just about visualization, but about the whole architecture of the entire
+125.41s - 126.41s |  computer.
+126.41s - 129.21s |  So what can we bring to you today?
+129.21s - 135.09s |  Firstly, we will introduce the VMware visualization architecture to you.
+135.09s - 141.77s |  Most people hunting bugs directly from debugging the virtual device is code, but we choose
+141.77s - 143.89s |  to take a bigger view.
+143.89s - 149.41s |  We studied it from reverse engineering the whole VMware visualization architecture.
+149.41s - 154.29s |  And this helped us to figure out which code and how they can be influenced by the guest
+154.29s - 155.69s |  OS.
+155.69s - 161.05s |  And hopefully, it will bring some new idea to you.
+161.05s - 167.33s |  And later, we will use the bugs that we found in USB visualization and SCSI visualization
+167.33s - 172.41s |  to explain the possible source of 3D in virtual device.
+172.41s - 179.01s |  And anyway, a virtual device is still the most cost-effective choice in visualization
+179.01s - 180.01s |  bug hunting.
+180.01s - 190.08s |  Okay, let's start the first part, VMware Hypervisor Reverse Engineering.
+190.08s - 195.40s |  If you are new to VMware visualization, I do have some tips for you.
+195.40s - 202.12s |  The most important binary on VMware workstation or EXXI is VMX.
+202.12s - 208.44s |  It is responsible for starting the virtual machine and contains most of virtual device
+208.44s - 209.44s |  code.
+209.44s - 215.96s |  And no matter it is EXXI or workstation, their VMX is identical.
+215.96s - 219.68s |  And basically, just use different system API.
+219.68s - 224.60s |  And in this part, we will use workstation for example.
+224.60s - 231.20s |  And also, debugging VMware workstation on the Windows can be much easier.
+231.20s - 239.60s |  OpenVM tools shares a lot of code with VMX, like IO function, event loop, and this can
+239.60s - 243.80s |  really speed up your reverse engineering procedure.
+243.92s - 252.48s |  And also, as a beginner, you may need to collect CVs, papers, device documents, and even check
+252.48s - 254.60s |  the QEMU code.
+254.60s - 261.00s |  Just utilize every information you can find to reverse engineering.
+261.00s - 265.80s |  So first question, where should we start?
+265.80s - 271.40s |  If you already learned something about Hypervisor, there's always a loop that handles switching
+271.40s - 273.92s |  or switch out of virtual machine.
+273.92s - 281.92s |  So we will locate the loop code and start reverse engineering the Hypervisor from there.
+281.92s - 288.24s |  Also, we know that VMX is a user mode process.
+288.24s - 291.64s |  So it should access the kernel for switching.
+291.64s - 294.36s |  So they should have a kernel module.
+294.36s - 298.56s |  And on Windows, it's VMX86.
+298.56s - 307.64s |  And if we are talking about the EXXI, it just directly communicates with the VM kernel.
+307.64s - 313.64s |  And tools such as API monitor can help us analyze the communication process between
+313.64s - 320.69s |  the VMX and the host OS kernel.
+320.69s - 328.25s |  So of course, the OS lock screen can help us to figure out the meaning of the device
+328.25s - 331.86s |  IO control.
+331.86s - 336.46s |  So it won't be hard to locate the main loop code.
+336.46s - 342.98s |  You can see that VMX uses the IO control ROM VM switch into the virtual machine.
+342.98s - 348.58s |  And it's blocked until the virtual machine needs to force you to help.
+348.58s - 354.18s |  The VMX will get the return code of the IO control ROM VM and call the corresponding
+354.18s - 360.86s |  user RPC handler to handle the virtual machine request.
+360.86s - 364.22s |  So what is the user RPC?
+364.22s - 372.02s |  And it's a mechanism that VMware designed for VMM to interact with VMX on host.
+372.02s - 379.38s |  And very similar to Hypercall, but on user space process VMX.
+379.38s - 383.66s |  User RPC contains lots of code related to device emulation.
+383.66s - 389.50s |  And basically, it is the start of device emulation.
+389.50s - 395.78s |  And it will only take one argument, which is user RPC block pointer.
+395.78s - 399.18s |  And it's a shared area memory region.
+399.18s - 405.06s |  Shared area is another mechanism for shared data with VMX and VMM.
+405.06s - 412.58s |  You may not be able to see some data be changed in VMX because they may be modified in VMM.
+412.58s - 418.42s |  So if we want to know what is passed in user RPC block, we should figure out how the shared
+418.42s - 421.69s |  area works.
+421.69s - 429.05s |  The implementation of shared area is related to creation and loading of VMM.
+429.05s - 436.69s |  So we need to study it from the initialization process and pay attention to every memory
+436.69s - 438.49s |  location cost.
+438.49s - 446.94s |  And also remember to check the interaction between VMware VMX and VMX86.
+446.94s - 455.10s |  We will notice that there is a EOF object called VMM block embedded into VMX binary.
+455.10s - 460.74s |  Also there are lots of VMM extensions stored in VMM block section.
+460.74s - 463.54s |  And these are also EOF object.
+463.54s - 472.18s |  VMX will link them with VMM block in memory to construct the actual VMM binary according
+472.18s - 476.77s |  to the user's configuration.
+476.77s - 481.41s |  Okay, let's take a look at the VMM block.
+481.41s - 490.09s |  We can see there are predefined export symbols such as user RPC block and their corresponding
+490.09s - 494.97s |  mapping address in the shared per-VCPU VMX section.
+494.97s - 499.01s |  And some virtual devices require the shared memory too.
+499.01s - 504.13s |  So VMX will define this export symbol in it too.
+504.17s - 510.05s |  After these symbols have been defined, VMX will calculate the total size of shared area
+510.05s - 515.17s |  memories and allocate the corresponding memory space.
+515.17s - 523.25s |  Now we have seen how shared memory were allocated, but how do VMM access them?
+523.25s - 527.61s |  You will notice that VMM block has two sections.
+527.61s - 534.37s |  One of them contains VMM's GDT information and the other contains the VMM's virtual address
+534.37s - 538.52s |  mapping information.
+538.52s - 546.08s |  And combined with this information, we will see VMX is responsible for allocating memory
+546.08s - 551.40s |  and building the page table structures based on VMM block's information.
+551.40s - 559.52s |  And VMX86 will further populate the page table information and allow the VMM EOF file, which
+559.52s - 562.68s |  is constructed by VMX.
+562.68s - 570.84s |  And VMX, VMM block, VMX86 work together to build the VMM's environment and mapping the
+570.84s - 574.76s |  host allocated address to VMM's virtual address.
+574.76s - 580.72s |  So if you need to know how to manipulate data in shared area region, you will need to check
+580.72s - 584.48s |  the VMM's code.
+584.48s - 590.24s |  And VMX choose to run which user RPC code handler is depending on the return code of
+590.24s - 593.26s |  the IO control VM run.
+593.26s - 598.86s |  So it's time for us to check how VMWare's VMM switch works.
+598.86s - 603.94s |  And the most important structure is cross page.
+603.94s - 612.34s |  It's a one page size memory region allocated for each vCPU by VMX86.
+612.34s - 619.10s |  And it's responsible for storing the context between VMM and the host.
+619.10s - 625.02s |  Just like the VM says, VMCS in Intel VT.
+625.02s - 633.78s |  We can check the monitor loader section to see its virtual address on the VMM's environment.
+633.78s - 643.98s |  When VMX code IO control run VM, it will cause the VMX86 cause the host switch to VMM code
+644.30s - 652.34s |  and saving the crew and CPU state to cross page and restore the VMM's CPU state.
+652.34s - 659.08s |  And the operation to switch out is the opposite of this process.
+659.08s - 666.12s |  Now we can check the VMM's code to see user RPC is implemented through the platform user
+666.12s - 667.12s |  code.
+667.12s - 675.64s |  It saves the user RPC opcode and the platform code invocation number 100 to the cross page.
+675.64s - 685.60s |  And the platform code 100 will cause the VMX86 to return the user RPC code to VMX.
+685.60s - 693.68s |  So when IO control run VM returned, VMX can call the corresponding user RPC code handler.
+693.68s - 702.16s |  Also whenever VMM prepare to call user RPC, you will see VMM modify the user RPC block
+702.16s - 707.97s |  to transfer data to VMX process.
+707.97s - 713.69s |  So now we finally understand the whole user RPC implementation.
+713.69s - 722.49s |  And based on this knowledge, we are able to further reverse engineering the device visualization.
+722.49s - 730.81s |  For port IO emulation, VMM will reserve the x86 IO instructions and may attempt to use
+730.81s - 737.32s |  the user RPC to call VMX to process.
+737.32s - 743.40s |  And not all of the port IO callback will be registered in VMX process.
+743.40s - 750.02s |  There are some devices implement their IO callback in VMM.
+750.02s - 759.18s |  For MMM IO, in most cases, VMX associates the memory region with an ID and implement
+759.18s - 764.04s |  the callback in VMM.
+764.60s - 772.20s |  Most MMM IO functions in VMM automatically will call user RPC to handle the device emulation.
+772.20s - 777.56s |  But they may access the shared area to transfer data to VMX.
+777.56s - 784.16s |  So you need to check the code in VMM to understand what happened when you access the MMM IO region
+784.16s - 788.24s |  in guest machine.
+788.24s - 794.76s |  Also, physical memory access is another important part we need to analyze.
+794.76s - 800.52s |  We will not discuss too much about the memory mapping structure, but you should know that
+800.52s - 805.40s |  on Windows, the main guest memory is mapped as a file.
+805.40s - 811.24s |  And on EXXI, it is mapped by vmkernel.
+811.24s - 817.68s |  When VMX gets the physical memory region object, it will first check the object's type.
+817.68s - 824.75s |  And in most cases, it will directly access the point field.
+824.75s - 833.83s |  And the last interesting thing is we also found that on EXXI's VMM, some virtual devices
+833.83s - 837.79s |  MMM IO will not always call user RPC.
+837.79s - 843.35s |  They will call user RPC only when hosted emulation is enabled.
+843.35s - 851.87s |  Instead of using user RPC to interact with VMX, they use vmk code directly call vmkernel
+851.87s - 855.51s |  to handle device emulation.
+855.51s - 861.83s |  So although VMX are identical on EXXI and Workstation,
+861.83s - 869.19s |  virtual device emulation code won't always be the same by default.
+869.19s - 881.77s |  And basically, this graph describes the result of our VMware hypervisor analysis.
+881.77s - 887.53s |  Anyway, it is important for you to check the VMM code when you reverse engineering the
+887.53s - 889.93s |  device visualization.
+889.93s - 897.41s |  If you are not sure where device's data comes from, you can go check the VMM's code.
+897.41s - 904.97s |  If you are not sure how to trigger the device's code, you can go check the VMM's code.
+904.97s - 916.00s |  And if you want to find some new device's code, go check the VMM's code.
+916.00s - 926.97s |  Okay, let's enter in the second part, VMWare device visualization bug hunting.
+926.97s - 929.45s |  Let's start from the USB part.
+929.45s - 934.73s |  Basically, we can divide the USB emulation into three parts.
+934.73s - 944.93s |  USB host controller emulation, like EHCI, EHCI, XHCI.
+944.93s - 948.77s |  The second part, VUSB emulation.
+948.77s - 952.93s |  These are objects described in the USB specification.
+952.93s - 960.85s |  For example, URB object, USB pipe object, and USB port object.
+960.85s - 965.73s |  And the third part, VUSB backend device emulation.
+965.73s - 977.33s |  And these are actual USB devices, such as Bluetooth, HID, and RNG, and so on.
+977.33s - 986.17s |  So as you can see, when guests want to access the USB device, it will need to put data in
+986.17s - 993.25s |  memory and access the host controller MMIO space, which will trigger the VMM handles
+993.49s - 999.49s |  MMIO access, causing the corresponding user RPC co-handler in VMX.
+999.49s - 1007.73s |  Then it will convert the data into URB object, and eventually processed by the backend USB
+1007.73s - 1008.73s |  device.
+1008.73s - 1015.45s |  If it tries to access a USB device plugged in the host machine, it will also need another
+1015.45s - 1018.01s |  service to help.
+1018.01s - 1025.08s |  And we actually find bugs in all these three parts.
+1025.08s - 1034.00s |  The first bug is in the host controller part, and it's an uninitialized memory.
+1034.00s - 1038.52s |  Before we start it, let me just explain some concepts.
+1038.52s - 1045.36s |  In control transfer, a USB device accepts a type of request called a standard device
+1045.36s - 1051.36s |  request, which begins in the format offset setup packet.
+1051.36s - 1062.52s |  So it will be 8 bytes at least, and it has a WLAN field, in the case of subsequent data.
+1062.52s - 1067.64s |  The USB device may use this type of data, but the host controller does not transfer
+1067.64s - 1070.36s |  data based on this unit.
+1070.36s - 1079.20s |  For example, in UHCI, data is transferred in units of transfer descriptors.
+1079.20s - 1088.16s |  So when VMX handles the UHCI emulation, it retrieves the first TD on Quickhead, and extracts
+1088.16s - 1094.40s |  the WLAN field from the setup packet, and uses this size to determine the size of data
+1094.40s - 1097.72s |  buffer for URB object.
+1097.72s - 1104.52s |  After allocation is finished, it will copy the data into URB object, and they do lots
+1104.52s - 1108.96s |  of checks to prevent buffer overflow.
+1109.00s - 1111.88s |  Let's back to the allocation process.
+1111.88s - 1119.88s |  It's actually when we're depending on the target USB device you are transferring to.
+1119.88s - 1127.60s |  A different type of backend USB device will result in URB object with different fields.
+1127.60s - 1133.72s |  For example, HID device will allocate URB object with all the additional fields besides
+1133.72s - 1136.52s |  the data buffer of the URB.
+1136.68s - 1145.67s |  Also, HID device will use Matlock for data allocation.
+1145.67s - 1148.59s |  So there are some problems here.
+1148.59s - 1155.31s |  Allocating WLAN-sized URB doesn't mean you will get WLAN-sized data from guest sub-ITDs.
+1155.31s - 1159.31s |  And Matlock allocation lets the memory un-initialized.
+1159.31s - 1165.19s |  Also backend USB device will return data through the same URB buffer, so it will eventually
+1165.19s - 1171.16s |  let the HIP data leak to the guest OS.
+1171.16s - 1177.52s |  And the second bug is user-after-free appeared in BUSB emulation code.
+1177.52s - 1183.04s |  Again, let's first explain some concepts.
+1183.04s - 1191.72s |  In XHCI, there is a structure called device context which stores the USB device status.
+1191.72s - 1197.48s |  It is constructed by device load context and end-point context.
+1197.48s - 1202.20s |  Device load context holds the USB device information.
+1202.20s - 1205.44s |  End-point context holds the information for a single end-point.
+1205.44s - 1210.04s |  Also, each end-point has one or more transfer rings.
+1210.04s - 1215.32s |  They are transfer request blocks on the transfer rings.
+1215.32s - 1220.28s |  And XHCI transfer data are based on this unit.
+1220.28s - 1225.20s |  In order to explain this bug, we need to look back at an older bug.
+1225.20s - 1228.40s |  And the old bug's part is very interesting.
+1228.40s - 1233.84s |  It only alters the sequence between the calls to release transfer ring and the code that
+1233.84s - 1238.32s |  assign values to end-point context.
+1238.32s - 1244.34s |  Let's first figure out how transfer ring release works.
+1244.34s - 1251.66s |  Firstly, it will get transfer ring object from the end-point context.
+1251.66s - 1258.02s |  Second, it will retrieve the VUSB device object based on the USB port number saved
+1258.02s - 1261.90s |  in the device load context.
+1261.90s - 1269.34s |  Then it will obtain the VUSB pipe object from the VUSB device object based on the end-point
+1269.34s - 1270.86s |  ID.
+1270.86s - 1277.66s |  And after that, it will release all the URB object on that VUSB pipe object.
+1277.66s - 1283.53s |  And finally, it will release the transfer ring object.
+1283.53s - 1292.05s |  Also, it will release the possible URB object on back-end USB device in case there may be
+1292.05s - 1296.79s |  dangling pointer on back-end USB device.
+1296.79s - 1299.71s |  So it seems no problems here.
+1299.71s - 1307.51s |  However, it's actually not the URB object could become the dangling pointer.
+1307.51s - 1313.15s |  It is because that the transfer ring object pointer is not only hold by the end-point
+1313.15s - 1314.15s |  context.
+1314.15s - 1320.95s |  A URB object also holds a point that point to a field of transfer ring object.
+1320.95s - 1327.79s |  And this field is responsible for tracking the corresponding TRP when XHCI return the
+1327.79s - 1332.80s |  USB device response to the guest.
+1332.80s - 1339.52s |  And before the patch, XHCI command-like configure end-point could modify the end-point context
+1339.52s - 1344.40s |  contents before releasing the transfer ring.
+1344.40s - 1351.00s |  So it may lead the type stored in end-point context mismatch with the VUSB pipe object
+1351.00s - 1354.20s |  type.
+1354.20s - 1361.56s |  And this will cause the function return without a VUSB pipe object and left the URB object
+1361.56s - 1365.92s |  on that VUSB pipe object not be freed.
+1365.92s - 1373.56s |  And the previous pointer now becomes the dangling pointer and causing user after free.
+1373.56s - 1382.32s |  So now our question is, after this patch, is it possible to make the VUSB pipe object
+1382.32s - 1385.36s |  mismatch again?
+1385.36s - 1392.12s |  We know VMX will need to check the port number stored in slot context to find the VUSB device
+1392.12s - 1393.68s |  object.
+1393.68s - 1400.84s |  So if we can modify the port number, it may lead VMX find a wrong VUSB device object.
+1400.84s - 1407.86s |  So in that case, it will also find a wrong VUSB pipe object.
+1407.86s - 1412.16s |  We do have address device command can make this possible.
+1412.16s - 1417.36s |  You can see the address device command only modifies the slot context and the control
+1417.36s - 1420.60s |  end-point context.
+1420.60s - 1425.32s |  So firstly, we finish the device configuration process.
+1425.32s - 1430.12s |  And we create the transfer ring on non-control end-point.
+1430.12s - 1434.64s |  And then we transfer URB data on these transfer rings.
+1434.64s - 1441.20s |  In the end, we use the address device command on that device to modify the device port number.
+1441.24s - 1446.40s |  Now, if we try to release the transfer ring on that end-point, it will fail to find the
+1446.40s - 1451.24s |  right VUSB pipe object and causing UAF again.
+1451.24s - 1457.00s |  So this is a bug that happens between host controller and the VUSB emulation.
+1457.00s - 1465.44s |  And the cause is it fails to manage the object lifetime in VUSB emulation.
+1465.44s - 1470.60s |  And the third bug is in the USB backend device emulation.
+1470.60s - 1479.38s |  And it is out-of-boundary will be triggered within the system API.
+1479.38s - 1481.98s |  Let's start with some concepts.
+1481.98s - 1489.22s |  The guest OS communicates with the smart card through the virtual smart card reader.
+1489.22s - 1496.94s |  And the guest OS uses CCID protocol to interact with the virtual smart card reader.
+1496.94s - 1503.66s |  The application data units, APD, serve as the payload for interaction between the smart
+1503.66s - 1507.02s |  card reader and the smart card.
+1507.02s - 1513.38s |  And you can see their relationship are very like the host controller and the USB device.
+1513.38s - 1522.10s |  And you may already seen that both of these data structure has the length field.
+1522.10s - 1528.70s |  And it is always need to be careful handling this length field.
+1528.70s - 1534.82s |  VMware do checks whether the message length field of CCID protocol match the length field
+1534.82s - 1535.82s |  of command APD.
+1535.82s - 1543.86s |  But it fails to verify whether these two fields conform to the size of URP buffer.
+1543.86s - 1550.62s |  It directly uses this field as arguments to call the Windows S card transmit API.
+1550.62s - 1556.74s |  Clearly, S card transmits cannot check whether the length match the data buffer.
+1556.74s - 1562.34s |  So it will out-of-bound access to the heap data and write it to the smart card on your
+1562.34s - 1563.34s |  host.
+1563.34s - 1566.94s |  Also, you may be able to read it back.
+1566.94s - 1572.34s |  So it's kind of interesting.
+1572.34s - 1579.10s |  Okay, in conclusion, it's very challenging to defend such complex system.
+1579.18s - 1587.22s |  VUSB emulation can be attacked, USB device emulation can be attacked, and host controller
+1587.22s - 1589.86s |  emulation can be attacked too.
+1589.86s - 1600.62s |  Also, we still have cases cannot present, but you can defer the binary to found.
+1600.62s - 1605.14s |  And maybe more attack scenarios in the future.
+1605.14s - 1615.14s |  We will be plugging EVO USB device and leverage the VMX to execute the code, or leverage local
+1615.14s - 1621.02s |  USB service to privilege the escalation.
+1621.02s - 1625.06s |  And anyway, that's the USB part.
+1625.06s - 1631.46s |  And next part will be presented by my colleague.
+1631.46s - 1637.98s |  And we will show you that how SCSI works different on ESXi and Workstation by default.
+1637.98s - 1644.96s |  Hello, everyone.
+1644.96s - 1645.96s |  I'm Zhenghao.
+1645.96s - 1649.72s |  I'm the speaker on this topic.
+1649.72s - 1655.76s |  Now it's my turn to expose VMkernel, a whole new attack surface.
+1655.76s - 1663.04s |  But I will first talk about some differences between ESXi and Workstation.
+1663.04s - 1668.48s |  Because our new attack surface is hidden in these small differences.
+1668.48s - 1679.24s |  ESXi is a Type-1 hypervisor that runs directly on the host's physical hardware, while Workstation
+1679.24s - 1689.20s |  is a Type-2 hypervisor that is installed on top of an existing host operating system.
+1689.20s - 1695.96s |  Workstation supports more configurations and devices than ESXi, which means that in
+1695.96s - 1704.16s |  certain situations, Workstation can be audited at more points than ESXi.
+1704.16s - 1713.36s |  In some specific devices, the data flow direction of ESXi and Workstation is different.
+1713.52s - 1723.56s |  Next, I will take SCSI device emulation as an example to demonstrate the vulnerabilities
+1723.56s - 1731.72s |  on different attack surfaces caused by different data flow orientations.
+1731.72s - 1736.48s |  This is an overview of the SCSI data flow.
+1736.48s - 1742.36s |  You can see that there are two paths for writing data to the disk.
+1742.36s - 1747.04s |  One through VMkernel and one through VMX.
+1747.04s - 1757.80s |  These are two completely different code paths, belonging to ESXi and Workstation, respectively.
+1757.80s - 1765.36s |  The specific code path of SCSI in Workstation is shown in the figure.
+1765.36s - 1777.28s |  If the user calls the MPI function SCSIORequest command, it will enter the LSILogic MPO process
+1777.28s - 1787.84s |  SCSIOMessage function, where it will confirm whether the environment is the hosted emulation.
+1788.00s - 1799.76s |  Finally, the LSILogic hosted process SCSIOMessage function calls the relevant handler in VMX
+1799.76s - 1803.32s |  through user RPC.
+1803.32s - 1811.40s |  The specific code path of SCSI in ESXi is shown in the figure.
+1811.40s - 1821.92s |  ESXi divides the situation into whether the environment itself is in hosted emulation.
+1821.92s - 1828.76s |  If it's in hosted emulation, it's the same as the Workstation path.
+1828.76s - 1838.32s |  Otherwise, it goes to LSILogic VMk process SCSIOMessage.
+1838.32s - 1846.16s |  Go to VMkernel through VMk core arguments.
+1846.16s - 1856.20s |  Because of this small code gap, ESXi has a new attack surface that Workstation does not have.
+1856.20s - 1865.20s |  Next, I will introduce the vulnerabilities I found on these two different paths.
+1865.20s - 1875.24s |  The first vulnerability we will talk about is located in VMX, and the official description
+1875.24s - 1880.84s |  is out-of-bounds read-write vulnerability.
+1880.84s - 1889.80s |  As a tool for storing data, stability is the most critical and basic requirement for disks.
+1890.20s - 1898.84s |  VMware implements corresponding disk verification capabilities in device emulation.
+1898.84s - 1907.60s |  One of the disk verification capabilities is to detect data corruption through checksum.
+1907.60s - 1912.96s |  This is where the vulnerability occurs.
+1912.96s - 1919.08s |  Before we start, let's first introduce a SCSI command.
+1919.08s - 1930.28s |  In the SCSI command reference menu, there is a command called write16 that allows the
+1930.28s - 1938.32s |  operation of 8-byte logical block address and 4-byte transfer length.
+1938.32s - 1948.52s |  This shows that we can use this command to access any address in the 64-bit space, provided
+1948.52s - 1952.92s |  there is no disk capacity limit check.
+1952.92s - 1962.20s |  VMware did not implement the disk capacity limit check in its disk verification program
+1962.20s - 1964.92s |  implementation.
+1964.92s - 1973.56s |  As can be seen in the figure, after applying for a heap of a corresponding size according
+1973.72s - 1985.40s |  to the disk capacity, only the operation is checked to see if it is a read or write operation.
+1985.40s - 1989.88s |  Obviously, this is a heap overflow.
+1989.88s - 1999.88s |  The write16 and other read and write commands in the SCSI command reference menu allow us
+1999.88s - 2003.72s |  to access any 8-byte address.
+2003.72s - 2011.97s |  This allows us to easily perform arbitrary read and write operations.
+2011.97s - 2020.53s |  The vulnerability we will discuss next is located in VMkernel, and the official description
+2020.53s - 2024.37s |  is out-of-bounds read.
+2024.37s - 2029.73s |  Still start with the SCSI command reference menu.
+2029.81s - 2038.69s |  In the SCSI command reference menu, there is a command called unmap, which can unmap
+2038.69s - 2044.53s |  one or more logical basic addresses.
+2044.53s - 2054.77s |  The structure of unmap itself is relatively complex and is divided into three parts.
+2054.77s - 2062.37s |  unmap command, unmap parameter list, and unmap block descriptor.
+2062.37s - 2071.57s |  Let's first look at the structure definition of unmap command in the SCSI command reference
+2071.57s - 2073.01s |  menu.
+2073.01s - 2082.05s |  The focus of the figure is the parameter length, which indicates the total length of the unmapped
+2082.13s - 2085.09s |  parameter data.
+2085.09s - 2093.73s |  The unmapped parameter list is divided into two parts, unmapped parameter list header
+2093.73s - 2098.05s |  and unmapped block descriptor data.
+2098.05s - 2106.37s |  The unmapped parameter list header consists of three fields, unmapped data length, unmapped
+2106.37s - 2111.49s |  block descriptor data length, and reserved.
+2111.49s - 2119.49s |  The unmapped block descriptor consists of two fields, unmapped logical block address
+2119.49s - 2123.33s |  and number of logical blocks.
+2123.33s - 2131.01s |  These two fields indicate the starting address and length of the block that the user wants
+2131.01s - 2133.89s |  to unmap.
+2133.97s - 2142.93s |  This is an open view of the three unmapped structures so that everyone can easily understand
+2142.93s - 2147.33s |  the structure of the unmapped command.
+2147.33s - 2156.53s |  The three structures are very closely related, and we will focus on parameter list length
+2156.53s - 2160.77s |  and unmapped block descriptor data length.
+2160.85s - 2164.05s |  Those fields indicate the length.
+2164.05s - 2171.89s |  Unmapped block descriptor data length indicates the length of all subsequent unmapped block
+2171.89s - 2174.69s |  descriptors.
+2174.69s - 2182.53s |  Parameter list length includes not only the length of all unmapped block descriptors,
+2182.53s - 2188.93s |  but also the length of the unmapped parameter list header.
+2188.93s - 2197.25s |  Let's see how VMware implements the unmapped command according to the SCSI commands reference
+2197.25s - 2199.81s |  menu.
+2199.81s - 2208.21s |  Before actually running the unmapped command, the vscsi-check-unmapped-cmd function will
+2208.21s - 2210.77s |  be entered first.
+2210.77s - 2219.09s |  In this function, a heap of the corresponding size is requested according to the parameter
+2219.09s - 2226.45s |  list length, and all the unmapped data is copied to the heap.
+2226.45s - 2235.33s |  After the unmapped data is copied, the content of the data will be checked, but it forgets
+2235.41s - 2242.93s |  to check the relationship between parameter list length and unmapped block descriptor
+2242.93s - 2252.05s |  data length, and the number of unmapped block descriptors is determined based on the unmapped
+2252.05s - 2254.93s |  block descriptor data length.
+2254.93s - 2263.01s |  The user can set a special parameter list to carry a large number of unmapped block
+2263.01s - 2268.69s |  descriptors, but only check the first unmapped block descriptor.
+2270.69s - 2274.53s |  Check completed, enter the actual use stage.
+2275.57s - 2284.85s |  According to the code in the figure, parameter list length is used as the boundary length,
+2284.85s - 2292.85s |  which allows the previously unchecked unmapped block descriptor to be put into use.
+2293.97s - 2302.45s |  The unchecked logical block size is used as the size variable in the code shown in the
+2302.45s - 2307.01s |  figure, and overviews out-of-bounds read.
+2307.01s - 2316.61s |  In fact, it is this out-of-bounds read that actually causes the crash, not the so-called
+2316.61s - 2318.05s |  out-of-bounds read.
+2318.53s - 2326.37s |  Regarding the new attack surface of VMkernel, I have summarized the following three major
+2326.37s - 2326.93s |  points.
+2327.65s - 2337.57s |  Modify the existing sandbox protection mechanism, elevate the current process privileges, virtual
+2337.57s - 2338.61s |  machine escape.
+2339.65s - 2342.53s |  OK, thank you for your listening.
+2342.53s - 2348.85s |  If you have any problem, you can contact us with Twitter.
